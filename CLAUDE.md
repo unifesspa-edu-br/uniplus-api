@@ -92,9 +92,41 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.ym
 dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --startup-project src/selecao/Unifesspa.UniPlus.Selecao.API
 ```
 
+## Workflow obrigatório
+
+### Regra de ouro: sem issue, sem código
+
+- **NUNCA implementar código sem uma issue/story vinculada no GitHub** — toda implementação deve estar rastreada
+- **NUNCA trabalhar diretamente na `main`** — sempre criar feature branch a partir de uma issue
+- **NUNCA criar diretório local avulso** — sempre clonar o repositório remoto primeiro
+- Antes de iniciar qualquer implementação, verificar:
+  1. Existe uma issue aberta no GitHub para o trabalho?
+  2. A issue tem critérios de aceite claros?
+  3. Se não existe, **criar a issue primeiro** e só depois implementar
+- Ao criar a branch, vincular à issue: `feature/{issue-number}-{slug}` ou `fix/{issue-number}-{slug}`
+
+### Fluxo de trabalho
+
+```
+1. Issue no GitHub (story, task ou bug)
+2. Clonar o repositório (ou pull se já clonado)
+3. Criar feature branch: git checkout -b feature/{issue-number}-{slug}
+4. Implementar na branch
+5. Commit(s) com conventional commits
+6. Push + criar PR vinculando a issue (Closes #N)
+7. Review + merge
+```
+
+### Repositórios da organização
+
+- Organização GitHub: `unifesspa-edu-br`
+- `uniplus-api` — Backend .NET 10
+- `uniplus-web` — Frontend Angular 20
+- `uniplus-docs` — Documentação
+
 ## Git conventions
 
-- **Branch naming:** `feature/{slug}`, `fix/{slug}`, `chore/{slug}`, `docs/{slug}`
+- **Branch naming:** `feature/{issue-number}-{slug}`, `fix/{issue-number}-{slug}`, `chore/{slug}`, `docs/{slug}`
 - **Commits:** conventional commits em pt-BR — `feat(selecao): adicionar endpoint de criação de edital`
 - **NUNCA commitar direto na main** — sempre feature branch + PR
 - **NUNCA adicionar Co-Authored-By**
