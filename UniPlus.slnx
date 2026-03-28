@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/ingresso/">
+    <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj" />
+    <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.Application/Unifesspa.UniPlus.Ingresso.Application.csproj" />
+    <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
+    <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/selecao/">
+    <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.API/Unifesspa.UniPlus.Selecao.API.csproj" />
+    <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Application/Unifesspa.UniPlus.Selecao.Application.csproj" />
+    <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Domain/Unifesspa.UniPlus.Selecao.Domain.csproj" />
+    <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/Unifesspa.UniPlus.Infrastructure.Common/Unifesspa.UniPlus.Infrastructure.Common.csproj" />
+    <Project Path="src/shared/Unifesspa.UniPlus.SharedKernel/Unifesspa.UniPlus.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Application.Tests/Unifesspa.UniPlus.Ingresso.Application.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Ingresso.ArchTests/Unifesspa.UniPlus.Ingresso.ArchTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Domain.Tests/Unifesspa.UniPlus.Ingresso.Domain.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Integration.Tests/Unifesspa.UniPlus.Ingresso.Integration.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Selecao.Application.Tests/Unifesspa.UniPlus.Selecao.Application.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Selecao.ArchTests/Unifesspa.UniPlus.Selecao.ArchTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Selecao.Domain.Tests/Unifesspa.UniPlus.Selecao.Domain.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Selecao.Integration.Tests/Unifesspa.UniPlus.Selecao.Integration.Tests.csproj" />
+  </Folder>
+</Solution>

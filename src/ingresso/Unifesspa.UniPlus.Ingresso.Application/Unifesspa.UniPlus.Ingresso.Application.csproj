@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.SharedKernel\Unifesspa.UniPlus.SharedKernel.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Ingresso.Domain\Unifesspa.UniPlus.Ingresso.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
