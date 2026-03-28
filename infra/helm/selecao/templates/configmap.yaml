@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-selecao-config
+  labels:
+    app: {{ .Release.Name }}-selecao-api
+    app.kubernetes.io/name: uniplus-selecao
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.env.ASPNETCORE_ENVIRONMENT }}
+  ASPNETCORE_URLS: {{ .Values.env.ASPNETCORE_URLS }}

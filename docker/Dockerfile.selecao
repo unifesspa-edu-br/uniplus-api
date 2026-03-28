@@ -1,0 +1,37 @@
+# ---- Restore + Build ----
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Copiar arquivos de configuração da solution
+COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx ./
+
+# Copiar csproj para restore otimizado (cache de camadas)
+COPY src/shared/ src/shared/
+COPY src/selecao/ src/selecao/
+
+# Restaurar dependências
+RUN dotnet restore src/selecao/UniPlus.Selecao.Api/UniPlus.Selecao.Api.csproj
+
+# Copiar código-fonte e compilar
+COPY src/shared/ src/shared/
+COPY src/selecao/ src/selecao/
+RUN dotnet publish src/selecao/UniPlus.Selecao.Api/UniPlus.Selecao.Api.csproj \
+    -c Release \
+    -o /app/publish \
+    --no-restore
+
+# ---- Runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# Criar usuário não-root para segurança
+RUN groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
+
+COPY --from=build /app/publish .
+
+# Configurar usuário não-root
+USER appuser
+
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "UniPlus.Selecao.Api.dll"]
