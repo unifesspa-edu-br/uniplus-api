@@ -1,0 +1,29 @@
+name: Bug
+description: Reportar um comportamento incorreto
+labels: ["bug"]
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição do bug
+      description: O que aconteceu e o que deveria ter acontecido
+    validations:
+      required: true
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: Passos para reproduzir
+      description: Passo a passo para reproduzir o problema
+      placeholder: |
+        1. Acessar ...
+        2. Clicar em ...
+        3. Observar ...
+    validations:
+      required: true
+  - type: textarea
+    id: ambiente
+    attributes:
+      label: Ambiente
+      description: Navegador, SO, versão da API, etc.
+    validations:
+      required: false

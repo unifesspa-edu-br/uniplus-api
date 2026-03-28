@@ -1,0 +1,37 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+packages/
+*.nupkg
+project.lock.json
+.vs/
+TestResults/
+StrykerOutput/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Secrets
+appsettings.*.local.json
+*.pfx
+*.key
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Coverage
+coverage/
+*.coverage
+*.coveragexml

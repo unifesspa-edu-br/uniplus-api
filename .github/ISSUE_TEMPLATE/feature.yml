@@ -1,0 +1,28 @@
+name: Nova funcionalidade
+description: Propor uma nova funcionalidade ou melhoria
+labels: ["feat"]
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição
+      description: Descreva a funcionalidade desejada
+      placeholder: Como [persona], quero [ação], para [benefício]
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Critérios de aceite
+      description: Como validar que a funcionalidade está completa
+      placeholder: |
+        - [ ] Dado ..., quando ..., então ...
+    validations:
+      required: false
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto adicional
+      description: Referências a requisitos (RF/RN), legislação ou documentação
+    validations:
+      required: false
