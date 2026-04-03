@@ -8,7 +8,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
@@ -17,7 +17,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "6379:6379"
     healthcheck:
@@ -27,21 +27,33 @@ services:
       retries: 5
 
   kafka:
-    image: apache/kafka:3.8.0
+    image: apache/kafka:4.2.0
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
-      CLUSTER_ID: "UniPlusDevCluster001"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
     ports:
       - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -51,15 +63,22 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0
+    image: quay.io/keycloak/keycloak:26.5
     command: start-dev
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: ${POSTGRES_USER}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     ports:
@@ -67,6 +86,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && timeout 1 cat <&3 | grep -q 'UP'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
   postgres_data:
