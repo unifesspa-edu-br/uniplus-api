@@ -23,6 +23,8 @@ appsettings.*.local.json
 *.key
 .env
 .env.*
+!.env.example
+!**/.env.example
 
 # OS
 .DS_Store
