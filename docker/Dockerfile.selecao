@@ -1,5 +1,5 @@
 # ---- Restore + Build ----
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.100 AS build
 WORKDIR /src
 
 # Copiar arquivos de configuração da solution
@@ -10,22 +10,23 @@ COPY src/shared/ src/shared/
 COPY src/selecao/ src/selecao/
 
 # Restaurar dependências
-RUN dotnet restore src/selecao/UniPlus.Selecao.Api/UniPlus.Selecao.Api.csproj
+RUN dotnet restore src/selecao/Unifesspa.UniPlus.Selecao.API/Unifesspa.UniPlus.Selecao.API.csproj
 
 # Copiar código-fonte e compilar
 COPY src/shared/ src/shared/
 COPY src/selecao/ src/selecao/
-RUN dotnet publish src/selecao/UniPlus.Selecao.Api/UniPlus.Selecao.Api.csproj \
+RUN dotnet publish src/selecao/Unifesspa.UniPlus.Selecao.API/Unifesspa.UniPlus.Selecao.API.csproj \
     -c Release \
-    -o /app/publish \
-    --no-restore
+    -o /app/publish
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Criar usuário não-root para segurança
-RUN groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
+# Instalar curl para health checks e criar usuário não-root
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
 
 COPY --from=build /app/publish .
 
@@ -34,4 +35,4 @@ USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "UniPlus.Selecao.Api.dll"]
+ENTRYPOINT ["dotnet", "Unifesspa.UniPlus.Selecao.API.dll"]

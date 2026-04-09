@@ -39,15 +39,17 @@ Os módulos são **independentes** — cada um compila e faz deploy como serviç
 
 ## Pré-requisitos
 
-- .NET 10 SDK
-- Docker e Docker Compose
-- PostgreSQL 18, Redis, Kafka (via Docker Compose)
+- .NET 10 SDK (10.0.100+)
+- Docker e Docker Compose v2
 
 ## Como executar
 
 ```bash
-# Subir dependências
-docker compose up -d
+# Criar arquivo de variáveis de ambiente
+cp docker/.env.example docker/.env
+
+# Subir infraestrutura (PostgreSQL, Redis, Kafka, MinIO, Keycloak)
+docker compose -f docker/docker-compose.yml up -d
 
 # Executar módulo Seleção
 dotnet run --project src/selecao/Unifesspa.UniPlus.Selecao.API
@@ -55,6 +57,8 @@ dotnet run --project src/selecao/Unifesspa.UniPlus.Selecao.API
 # Executar módulo Ingresso
 dotnet run --project src/ingresso/Unifesspa.UniPlus.Ingresso.API
 ```
+
+Para o guia completo com troubleshooting, veja [docs/setup-ambiente-local.md](docs/setup-ambiente-local.md).
 
 ## Testes
 

@@ -5,10 +5,10 @@
 - **Runtime:** .NET 10 / C# 14
 - **ORM:** Entity Framework Core 10 (Npgsql)
 - **Banco de dados:** PostgreSQL 18
-- **Mensageria:** Apache Kafka 3.8 (KRaft)
-- **Cache:** Redis 7
+- **Mensageria:** Apache Kafka 4.2 (KRaft)
+- **Cache:** Redis 8
 - **Storage:** MinIO (S3-compatible)
-- **Autenticação:** Keycloak 26 (Gov.br)
+- **Autenticação:** Keycloak 26.5 (Gov.br)
 - **CQRS:** MediatR 14
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
