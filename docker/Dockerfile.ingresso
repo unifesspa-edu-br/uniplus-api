@@ -5,27 +5,31 @@ WORKDIR /src
 # Copiar arquivos de configuração da solution
 COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx ./
 
+# Remover global.json no build Docker (a imagem sdk:10.0 pode conter apenas RC)
+RUN rm -f global.json
+
 # Copiar csproj para restore otimizado (cache de camadas)
 COPY src/shared/ src/shared/
 COPY src/ingresso/ src/ingresso/
 
 # Restaurar dependências
-RUN dotnet restore src/ingresso/UniPlus.Ingresso.Api/UniPlus.Ingresso.Api.csproj
+RUN dotnet restore src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj
 
 # Copiar código-fonte e compilar
 COPY src/shared/ src/shared/
 COPY src/ingresso/ src/ingresso/
-RUN dotnet publish src/ingresso/UniPlus.Ingresso.Api/UniPlus.Ingresso.Api.csproj \
+RUN dotnet publish src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj \
     -c Release \
-    -o /app/publish \
-    --no-restore
+    -o /app/publish
 
 # ---- Runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Criar usuário não-root para segurança
-RUN groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
+# Instalar curl para health checks e criar usuário não-root
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
 
 COPY --from=build /app/publish .
 
@@ -34,4 +38,4 @@ USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "UniPlus.Ingresso.Api.dll"]
+ENTRYPOINT ["dotnet", "Unifesspa.UniPlus.Ingresso.API.dll"]
