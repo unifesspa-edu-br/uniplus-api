@@ -1,0 +1,50 @@
+name: Epic
+description: Tema estratégico que agrupa várias Features
+title: "Epic: "
+labels: ["epic"]
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição
+      description: Qual o tema estratégico que este Epic representa?
+      placeholder: Visão geral do tema, problema de negócio ou capacidade técnica que justifica o Epic
+    validations:
+      required: true
+  - type: textarea
+    id: objetivos
+    attributes:
+      label: Objetivos
+      description: O que se espera entregar ao final do Epic
+      placeholder: |
+        - Objetivo 1
+        - Objetivo 2
+    validations:
+      required: true
+  - type: textarea
+    id: features
+    attributes:
+      label: Features previstas
+      description: Liste as Features que este Epic deve conter (serão criadas como sub-issues)
+      placeholder: |
+        - [ ] Feature A
+        - [ ] Feature B
+    validations:
+      required: false
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Critérios de sucesso
+      description: Como validar que o Epic foi concluído
+      placeholder: |
+        - [ ] Todas as Features entregues em produção
+        - [ ] Métrica X atingida
+    validations:
+      required: false
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Referências
+      description: ADRs, requisitos (RF/RN), legislação, documentos de proposta
+    validations:
+      required: false
