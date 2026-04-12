@@ -44,7 +44,7 @@ body:
         - M (médio — até 1 dia)
         - G (grande — até 3 dias; considerar dividir)
     validations:
-      required: false
+      required: true
   - type: textarea
     id: notas
     attributes:
