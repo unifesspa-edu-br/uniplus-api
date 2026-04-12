@@ -1,0 +1,58 @@
+name: User Story
+description: Incremento implementável com critérios de aceite testáveis (sub-issue de uma Feature)
+title: "US-FX-NN: "
+labels: ["story"]
+body:
+  - type: input
+    id: feature_pai
+    attributes:
+      label: Feature pai
+      description: Número da Feature à qual esta Story pertence (use # para referenciar, ex.= #42)
+      placeholder: "#42"
+    validations:
+      required: true
+  - type: textarea
+    id: narrativa
+    attributes:
+      label: Narrativa
+      description: Formato "como/quero/para"
+      placeholder: |
+        Como [persona],
+        quero [ação],
+        para [benefício].
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Critérios de aceite
+      description: Usar checkboxes para cada critério testável
+      placeholder: |
+        - [ ] Dado ..., quando ..., então ...
+        - [ ] Dado ..., quando ..., então ...
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks (decomposição técnica)
+      description: Lista preliminar de Tasks — cada uma virará sub-issue com label `task`
+      placeholder: |
+        - [ ] Task 1
+        - [ ] Task 2
+    validations:
+      required: false
+  - type: textarea
+    id: dependencias
+    attributes:
+      label: Dependências
+      description: Issues ou decisões que bloqueiam esta Story
+    validations:
+      required: false
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Referências
+      description: ADRs, RFs, RNs, legislação
+    validations:
+      required: false

@@ -1,0 +1,54 @@
+name: Task
+description: Unidade técnica de trabalho — 1 Task = 1 Pull Request (sub-issue de uma Story)
+title: "task(escopo): "
+labels: ["task"]
+body:
+  - type: input
+    id: story_pai
+    attributes:
+      label: Story pai
+      description: Número da Story à qual esta Task pertence (ex.= #56)
+      placeholder: "#56"
+    validations:
+      required: true
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: O que precisa ser feito
+      description: Descrição objetiva e acionável
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: Checklist do que caracteriza a Task como concluída
+      placeholder: |
+        - [ ] Código implementado
+        - [ ] Testes unitários cobrindo o novo comportamento
+        - [ ] Build passando
+        - [ ] PR aberto e vinculado (Closes #N)
+      value: |
+        - [ ] Código implementado
+        - [ ] Testes unitários cobrindo o novo comportamento
+        - [ ] Build passando
+        - [ ] PR aberto e vinculado (Closes #N)
+    validations:
+      required: true
+  - type: dropdown
+    id: esforco
+    attributes:
+      label: Esforço estimado
+      options:
+        - P (pequeno — até 4h)
+        - M (médio — até 1 dia)
+        - G (grande — até 3 dias; considerar dividir)
+    validations:
+      required: false
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas técnicas
+      description: Pontos de atenção, arquivos envolvidos, referências a ADRs
+    validations:
+      required: false
