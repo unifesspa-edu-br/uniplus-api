@@ -1109,6 +1109,18 @@
             "claim.name": "cpf",
             "jsonType.label": "String"
           }
+        },
+        {
+          "name": "aud-uniplus",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "uniplus",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ]
     },
