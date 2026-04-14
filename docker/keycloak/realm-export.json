@@ -1,6 +1,7 @@
 {
   "id": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
   "realm": "unifesspa",
+  "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and digits(1) and notUsername",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -33,7 +34,7 @@
   "verifyEmail": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
-  "resetPasswordAllowed": false,
+  "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "bruteForceProtected": false,
   "permanentLockout": false,
@@ -51,15 +52,6 @@
         "id": "ec6d0eec-86e7-44cb-9415-c35bf8641696",
         "name": "gestor",
         "description": "Gestor de processo seletivo",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
-        "attributes": {}
-      },
-      {
-        "id": "c19380e4-cd15-4c80-bc73-53a24788b145",
-        "name": "uma_authorization",
-        "description": "${role_uma_authorization}",
         "composite": false,
         "clientRole": false,
         "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
@@ -108,8 +100,7 @@
         "composite": true,
         "composites": {
           "realm": [
-            "offline_access",
-            "uma_authorization"
+            "offline_access"
           ],
           "client": {
             "account": [
@@ -511,6 +502,7 @@
         "client": "account-console",
         "roles": [
           "manage-account",
+          "view-profile",
           "view-groups"
         ]
       }
@@ -748,7 +740,8 @@
         "display.on.consent.screen": "false",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false",
-        "dpop.bound.access.tokens": "false"
+        "dpop.bound.access.tokens": "false",
+        "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
@@ -809,7 +802,8 @@
         "display.on.consent.screen": "false",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false",
-        "dpop.bound.access.tokens": "false"
+        "dpop.bound.access.tokens": "false",
+        "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
@@ -842,7 +836,7 @@
       "redirectUris": [],
       "webOrigins": [],
       "notBefore": 0,
-      "bearerOnly": true,
+      "bearerOnly": false,
       "consentRequired": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
@@ -959,7 +953,7 @@
         "http://localhost:4200/*"
       ],
       "webOrigins": [
-        "/*"
+        "http://localhost:4200"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -982,7 +976,8 @@
         "display.on.consent.screen": "false",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false",
-        "dpop.bound.access.tokens": "false"
+        "dpop.bound.access.tokens": "false",
+        "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
@@ -1016,7 +1011,6 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
       "redirectUris": [
         "/*"
       ],
@@ -1972,7 +1966,7 @@
         "subComponents": {},
         "config": {
           "kc.user.profile.config": [
-            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"cpf\",\"displayName\":\"${cpf}\",\"validations\":{},\"annotations\":{},\"permissions\":{\"view\":[],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"nomeSocial\",\"displayName\":\"${nomeSocial}\",\"validations\":{},\"annotations\":{},\"permissions\":{\"view\":[],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"cpf\",\"displayName\":\"${cpf}\",\"validations\":{},\"annotations\":{},\"permissions\":{\"view\":[\"admin\", \"user\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"nomeSocial\",\"displayName\":\"${nomeSocial}\",\"validations\":{},\"annotations\":{},\"permissions\":{\"view\":[\"admin\", \"user\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
           ]
         }
       }
@@ -2880,7 +2874,7 @@
   "users": [
     {
       "username": "admin@teste",
-      "email": "admin@teste",
+      "email": "admin@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Usuário",
@@ -2888,9 +2882,15 @@
       "realmRoles": [
         "admin"
       ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
       "attributes": {
         "cpf": [
-          "11111111111"
+          "52998224725"
         ],
         "nomeSocial": [
           "Admin Teste"
@@ -2899,14 +2899,14 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin123",
-          "temporary": false
+          "value": "Changeme!123",
+          "temporary": true
         }
       ]
     },
     {
       "username": "gestor@teste",
-      "email": "gestor@teste",
+      "email": "gestor@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Usuário",
@@ -2914,9 +2914,15 @@
       "realmRoles": [
         "gestor"
       ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
       "attributes": {
         "cpf": [
-          "22222222222"
+          "11144477735"
         ],
         "nomeSocial": [
           "Gestor Teste"
@@ -2925,14 +2931,14 @@
       "credentials": [
         {
           "type": "password",
-          "value": "gestor123",
-          "temporary": false
+          "value": "Changeme!123",
+          "temporary": true
         }
       ]
     },
     {
       "username": "avaliador@teste",
-      "email": "avaliador@teste",
+      "email": "avaliador@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Usuário",
@@ -2940,9 +2946,15 @@
       "realmRoles": [
         "avaliador"
       ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
       "attributes": {
         "cpf": [
-          "33333333333"
+          "39053344705"
         ],
         "nomeSocial": [
           "Avaliador Teste"
@@ -2951,14 +2963,14 @@
       "credentials": [
         {
           "type": "password",
-          "value": "avaliador123",
-          "temporary": false
+          "value": "Changeme!123",
+          "temporary": true
         }
       ]
     },
     {
       "username": "candidato@teste",
-      "email": "candidato@teste",
+      "email": "candidato@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Usuário",
@@ -2966,9 +2978,14 @@
       "realmRoles": [
         "candidato"
       ],
+      "clientRoles": {
+        "account": [
+          "view-profile"
+        ]
+      },
       "attributes": {
         "cpf": [
-          "44444444444"
+          "24843803480"
         ],
         "nomeSocial": [
           "Candidato Teste"
@@ -2977,8 +2994,8 @@
       "credentials": [
         {
           "type": "password",
-          "value": "candidato123",
-          "temporary": false
+          "value": "Changeme!123",
+          "temporary": true
         }
       ]
     }
