@@ -1069,8 +1069,8 @@
       "description": "",
       "protocol": "openid-connect",
       "attributes": {
-        "include.in.token.scope": "false",
-        "display.on.consent.screen": "true",
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false",
         "gui.order": "",
         "consent.screen.text": "",
         "include.in.openid.provider.metadata": "true"
