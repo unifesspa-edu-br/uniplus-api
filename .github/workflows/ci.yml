@@ -49,9 +49,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - run: dotnet test --configuration ${{ env.BUILD_CONFIG }} --no-build --no-restore \
-          /p:CollectCoverage=true \
-          /p:CoverletOutputFormat=opencover
+      - run: dotnet test --configuration ${{ env.BUILD_CONFIG }} --no-build --no-restore /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
