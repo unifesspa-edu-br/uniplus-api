@@ -4,7 +4,7 @@
   "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and digits(1) and notUsername",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
-  "revokeRefreshToken": false,
+  "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
   "accessTokenLifespan": 300,
   "accessTokenLifespanForImplicitFlow": 900,
@@ -36,16 +36,16 @@
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
-  "bruteForceProtected": false,
+  "bruteForceProtected": true,
   "permanentLockout": false,
   "maxTemporaryLockouts": 0,
   "bruteForceStrategy": "MULTIPLE",
   "maxFailureWaitSeconds": 900,
-  "minimumQuickLoginWaitSeconds": 60,
+  "minimumQuickLoginWaitSeconds": 10,
   "waitIncrementSeconds": 60,
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
-  "failureFactor": 30,
+  "failureFactor": 5,
   "roles": {
     "realm": [
       {
@@ -494,6 +494,32 @@
       "roles": [
         "offline_access"
       ]
+    },
+    {
+      "client": "selecao-web",
+      "roles": [
+        "admin",
+        "gestor",
+        "avaliador",
+        "candidato"
+      ]
+    },
+    {
+      "client": "ingresso-web",
+      "roles": [
+        "admin",
+        "gestor",
+        "candidato"
+      ]
+    },
+    {
+      "client": "portal-web",
+      "roles": [
+        "admin",
+        "gestor",
+        "avaliador",
+        "candidato"
+      ]
     }
   ],
   "clientScopeMappings": {
@@ -714,10 +740,10 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:4300/*"
+        "http://localhost:4201/*"
       ],
       "webOrigins": [
-        "http://localhost:4300"
+        "http://localhost:4201"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -744,7 +770,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
@@ -776,10 +802,10 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:4100/*"
+        "http://localhost:4202/*"
       ],
       "webOrigins": [
-        "http://localhost:4100"
+        "http://localhost:4202"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -806,7 +832,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
@@ -980,7 +1006,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
@@ -1011,38 +1037,32 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": [
-        "/*"
-      ],
-      "webOrigins": [
-        "/*"
-      ],
+      "redirectUris": [],
+      "webOrigins": [],
       "notBefore": 0,
-      "bearerOnly": false,
+      "bearerOnly": true,
       "consentRequired": false,
-      "standardFlowEnabled": true,
+      "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "publicClient": false,
-      "frontchannelLogout": true,
+      "frontchannelLogout": false,
       "protocol": "openid-connect",
       "attributes": {
         "logout.confirmation.enabled": "false",
         "realm_client": "false",
         "oidc.ciba.grant.enabled": "false",
-        "client.secret.creation.time": "1775766916",
         "backchannel.logout.session.required": "true",
         "standard.token.exchange.enabled": "false",
         "frontchannel.logout.session.required": "true",
-        "post.logout.redirect.uris": "+",
         "display.on.consent.screen": "false",
         "oauth2.device.authorization.grant.enabled": "false",
         "backchannel.logout.revoke.offline.tokens": "false",
         "dpop.bound.access.tokens": "false"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
@@ -1069,8 +1089,8 @@
       "description": "",
       "protocol": "openid-connect",
       "attributes": {
-        "include.in.token.scope": "false",
-        "display.on.consent.screen": "true",
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false",
         "gui.order": "",
         "consent.screen.text": "",
         "include.in.openid.provider.metadata": "true"
@@ -1108,6 +1128,18 @@
             "access.token.claim": "true",
             "claim.name": "cpf",
             "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "aud-uniplus",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "uniplus",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
           }
         }
       ]
@@ -1826,13 +1858,35 @@
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
   "smtpServer": {},
-  "eventsEnabled": false,
+  "eventsEnabled": true,
   "eventsListeners": [
     "jboss-logging"
   ],
-  "enabledEventTypes": [],
-  "adminEventsEnabled": false,
-  "adminEventsDetailsEnabled": false,
+  "enabledEventTypes": [
+    "LOGIN",
+    "LOGIN_ERROR",
+    "LOGOUT",
+    "LOGOUT_ERROR",
+    "REFRESH_TOKEN",
+    "REFRESH_TOKEN_ERROR",
+    "CODE_TO_TOKEN",
+    "CODE_TO_TOKEN_ERROR",
+    "UPDATE_PASSWORD",
+    "UPDATE_PASSWORD_ERROR",
+    "SEND_RESET_PASSWORD",
+    "SEND_RESET_PASSWORD_ERROR",
+    "RESET_PASSWORD",
+    "RESET_PASSWORD_ERROR",
+    "IDENTITY_PROVIDER_LOGIN",
+    "IDENTITY_PROVIDER_LOGIN_ERROR",
+    "CLIENT_LOGIN",
+    "CLIENT_LOGIN_ERROR",
+    "TOKEN_EXCHANGE",
+    "TOKEN_EXCHANGE_ERROR",
+    "PERMISSION_TOKEN"
+  ],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
   "identityProviders": [],
   "identityProviderMappers": [],
   "components": {
@@ -2873,7 +2927,7 @@
   },
   "users": [
     {
-      "username": "admin@teste",
+      "username": "admin",
       "email": "admin@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
@@ -2905,7 +2959,7 @@
       ]
     },
     {
-      "username": "gestor@teste",
+      "username": "gestor",
       "email": "gestor@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
@@ -2937,7 +2991,7 @@
       ]
     },
     {
-      "username": "avaliador@teste",
+      "username": "avaliador",
       "email": "avaliador@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
@@ -2969,7 +3023,7 @@
       ]
     },
     {
-      "username": "candidato@teste",
+      "username": "candidato",
       "email": "candidato@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
@@ -2999,5 +3053,6 @@
         }
       ]
     }
-  ]
+  ],
+  "eventsExpiration": 2592000
 }
