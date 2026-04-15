@@ -714,10 +714,10 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:4300/*"
+        "http://localhost:4201/*"
       ],
       "webOrigins": [
-        "http://localhost:4300"
+        "http://localhost:4201"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -776,10 +776,10 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:4100/*"
+        "http://localhost:4202/*"
       ],
       "webOrigins": [
-        "http://localhost:4100"
+        "http://localhost:4202"
       ],
       "notBefore": 0,
       "bearerOnly": false,
