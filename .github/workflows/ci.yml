@@ -19,6 +19,9 @@ env:
   BUILD_CONFIG: Release
   SOLUTION_PATH: UniPlus.slnx
   COVERAGE_DIR: coverage
+  # Força actions JavaScript a rodar em Node.js 24 (Node 20 deprecado,
+  # removido em set/2026). Recomendação oficial do aviso de deprecação.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   # Threshold de cobertura (Domain + Application).
   # Escada gradual definida na issue #21: o piso aumenta a cada sprint
   # até atingir 80% quando a suíte de testes estiver madura.
