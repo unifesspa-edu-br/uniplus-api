@@ -6,16 +6,33 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   DOTNET_VERSION: 10.0.x
   BUILD_CONFIG: Release
-  TEST_PATH: UniPlus.slnx
+  SOLUTION_PATH: UniPlus.slnx
+  COVERAGE_DIR: coverage
+  # Threshold de cobertura (Domain + Application).
+  # Escada gradual definida na issue #21: o piso aumenta a cada sprint
+  # até atingir 80% quando a suíte de testes estiver madura.
+  # Atualizar este valor à medida que a cobertura real evolui — nunca abaixar.
+  COVERAGE_THRESHOLD: 0
 
 jobs:
   build:
+    name: Build, Test and Coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
@@ -29,21 +46,79 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIG }} --no-restore
+
       - name: Run tests with coverage
         run: |
-          dotnet test ${{ env.TEST_PATH }} --configuration ${{ env.BUILD_CONFIG }} --no-restore \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=${{ github.workspace }}/coverage/ \
-            /p:Threshold=80 \
-            /p:ThresholdType=line \
-            /p:ThresholdStat=total
+          dotnet test ${{ env.SOLUTION_PATH }} \
+            --configuration ${{ env.BUILD_CONFIG }} \
+            --no-build \
+            --logger "trx" \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --results-directory ${{ env.COVERAGE_DIR }}
+
+      - name: Merge coverage reports
+        if: always()
+        run: |
+          dotnet reportgenerator \
+            "-reports:${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml" \
+            "-targetdir:${{ env.COVERAGE_DIR }}/report" \
+            "-reporttypes:Cobertura;HtmlSummary;TextSummary;MarkdownSummaryGithub"
+
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          if [ -f "${{ env.COVERAGE_DIR }}/report/SummaryGithub.md" ]; then
+            cat "${{ env.COVERAGE_DIR }}/report/SummaryGithub.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Enforce coverage threshold (Domain + Application >= ${{ env.COVERAGE_THRESHOLD }}%)
+        run: |
+          report="${{ env.COVERAGE_DIR }}/report/Cobertura.xml"
+          if [ ! -f "$report" ]; then
+            echo "::error::Relatório de cobertura não encontrado em $report"
+            exit 1
+          fi
+
+          line_rate=$(grep -oP 'line-rate="\K[0-9.]+' "$report" | head -1)
+          if [ -z "$line_rate" ]; then
+            echo "::error::Não foi possível extrair line-rate do relatório Cobertura"
+            exit 1
+          fi
+
+          pct=$(awk "BEGIN{printf \"%.2f\", $line_rate * 100}")
+          threshold=${{ env.COVERAGE_THRESHOLD }}
+          echo "Cobertura (Domain + Application): ${pct}% (mínimo: ${threshold}%)"
+
+          if awk "BEGIN{exit !($line_rate * 100 < $threshold)}"; then
+            echo "::error::Cobertura ${pct}% abaixo do mínimo exigido (${threshold}%)"
+            exit 1
+          fi
 
       - name: Upload coverage reports
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
-          path: '**/coverage.opencover.xml'
+          path: |
+            ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
+            ${{ env.COVERAGE_DIR }}/report/**
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results
+          path: ${{ env.COVERAGE_DIR }}/**/*.trx
+          if-no-files-found: warn
           retention-days: 30
