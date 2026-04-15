@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    # Inclui branches feat/** para validar PRs empilhados (PR alvo != main)
+    branches:
+      - main
+      - 'feat/**'
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
