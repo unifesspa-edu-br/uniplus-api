@@ -494,6 +494,32 @@
       "roles": [
         "offline_access"
       ]
+    },
+    {
+      "client": "selecao-web",
+      "roles": [
+        "admin",
+        "gestor",
+        "avaliador",
+        "candidato"
+      ]
+    },
+    {
+      "client": "ingresso-web",
+      "roles": [
+        "admin",
+        "gestor",
+        "candidato"
+      ]
+    },
+    {
+      "client": "portal-web",
+      "roles": [
+        "admin",
+        "gestor",
+        "avaliador",
+        "candidato"
+      ]
     }
   ],
   "clientScopeMappings": {
@@ -744,7 +770,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
@@ -806,7 +832,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
@@ -980,7 +1006,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
@@ -1042,7 +1068,7 @@
         "dpop.bound.access.tokens": "false"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
