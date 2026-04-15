@@ -2873,7 +2873,7 @@
   },
   "users": [
     {
-      "username": "admin@teste",
+      "username": "admin",
       "email": "admin@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
@@ -2905,7 +2905,7 @@
       ]
     },
     {
-      "username": "gestor@teste",
+      "username": "gestor",
       "email": "gestor@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
@@ -2937,7 +2937,7 @@
       ]
     },
     {
-      "username": "avaliador@teste",
+      "username": "avaliador",
       "email": "avaliador@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
@@ -2969,7 +2969,7 @@
       ]
     },
     {
-      "username": "candidato@teste",
+      "username": "candidato",
       "email": "candidato@teste.unifesspa.edu.br",
       "enabled": true,
       "emailVerified": true,
