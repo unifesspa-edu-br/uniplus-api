@@ -4,7 +4,7 @@
   "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and digits(1) and notUsername",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
-  "revokeRefreshToken": false,
+  "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
   "accessTokenLifespan": 300,
   "accessTokenLifespanForImplicitFlow": 900,
