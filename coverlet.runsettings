@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuração do coletor XPlat Code Coverage (coverlet.collector).
+
+  Escopo do quality gate (issue #21): cobertura mínima de 80% aplicada
+  às camadas Domain e Application. Infrastructure/API ficam fora do
+  threshold porque são cobertas por testes de integração (Sprint 2+).
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[Unifesspa.UniPlus.*.Domain]*,[Unifesspa.UniPlus.*.Application]*</Include>
+          <Exclude>[*.Tests]*,[*.ArchTests]*,[*.Integration.Tests]*</Exclude>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/Migrations/*.cs,**/*.g.cs,**/*.Designer.cs</ExcludeByFile>
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
