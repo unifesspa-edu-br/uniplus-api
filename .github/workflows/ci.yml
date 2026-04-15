@@ -15,61 +15,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
+      - uses: actions/checkout@v5
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props', '**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - run: dotnet restore
-      - run: dotnet build --configuration ${{ env.BUILD_CONFIG }} --no-restore
-
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - run: |
+      - name: Run tests with coverage
+        run: |
           dotnet test ${{ env.TEST_PATH }} --configuration ${{ env.BUILD_CONFIG }} --no-restore \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./coverage/
+            /p:CoverletOutput=${{ github.workspace }}/coverage/ \
+            /p:Threshold=80 \
+            /p:ThresholdType=line \
+            /p:ThresholdStat=total
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
-          path: coverage/coverage.opencover.xml
+          path: '**/coverage.opencover.xml'
+          if-no-files-found: error
           retention-days: 30
