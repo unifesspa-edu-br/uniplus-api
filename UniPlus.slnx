@@ -17,6 +17,7 @@
     <Project Path="src/shared/Unifesspa.UniPlus.SharedKernel/Unifesspa.UniPlus.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Unifesspa.UniPlus.Infrastructure.Common.Tests/Unifesspa.UniPlus.Infrastructure.Common.Tests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.Application.Tests/Unifesspa.UniPlus.Ingresso.Application.Tests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.ArchTests/Unifesspa.UniPlus.Ingresso.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.Domain.Tests/Unifesspa.UniPlus.Ingresso.Domain.Tests.csproj" />

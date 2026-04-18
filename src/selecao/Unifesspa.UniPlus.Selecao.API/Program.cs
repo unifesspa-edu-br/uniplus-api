@@ -1,5 +1,6 @@
 using Serilog;
 
+using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
@@ -7,7 +8,9 @@ using Unifesspa.UniPlus.Selecao.Infrastructure;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig.ReadFrom.Configuration(context.Configuration));
+    loggerConfig
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext());
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -20,6 +23,7 @@ builder.Services.AddEndpointsApiExplorer();
 string connectionString = builder.Configuration.GetConnectionString("SelecaoDb")
     ?? throw new InvalidOperationException("Connection string 'SelecaoDb' não configurada.");
 
+builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddSelecaoApplication();
 builder.Services.AddSelecaoInfrastructure(connectionString);
 
@@ -27,6 +31,7 @@ builder.Services.AddHealthChecks();
 
 WebApplication app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
