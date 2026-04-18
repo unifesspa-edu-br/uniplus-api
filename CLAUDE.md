@@ -68,6 +68,89 @@ Application NUNCA depende de Infrastructure ou API.
 - **File-scoped namespaces** em todos os arquivos .cs
 - **ConfigureAwait(false)** em awaits de código de biblioteca
 - **TreatWarningsAsErrors** habilitado globalmente
+- **Logging com `[LoggerMessage]` source generator** — nunca usar `_logger.LogInformation(...)` e similares diretamente (ver seção abaixo)
+
+## Logging de alta performance — `[LoggerMessage]` source generator
+
+**Regra obrigatória:** toda chamada a `ILogger` deve passar por um método `partial` decorado com `[LoggerMessage]`. Chamadas diretas a `_logger.LogInformation`, `_logger.LogWarning`, etc. são **proibidas** — o analisador `CA1848` trata isso como erro por causa do `TreatWarningsAsErrors`.
+
+### Por que
+
+O source generator de `[LoggerMessage]` (.NET 6+) gera código que:
+
+1. **Evita avaliação de argumentos quando o log level está desativado** — o `IsEnabled(LogLevel.X)` é chamado antes de tocar nos parâmetros. Com `_logger.LogInformation("valor {V}", ObterValor())`, o `ObterValor()` executa sempre, mesmo quando `Information` está desligado em produção.
+2. **Elimina boxing de value types** (structs, ints, longs, DateTimeOffset, etc.).
+3. **Parseia o message template uma única vez**, na compilação — não a cada chamada.
+4. **Zero alocações temporárias** para o array `params object[]` das extensões padrão.
+
+### Padrão idiomático
+
+Classe `partial`, método `private static partial void Log{Ação}` no fim da classe, `ILogger` como primeiro parâmetro:
+
+```csharp
+namespace Unifesspa.UniPlus.Selecao.Application.Behaviors;
+
+using MediatR;
+using Microsoft.Extensions.Logging;
+
+public sealed partial class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
+{
+    private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
+
+    public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger) => _logger = logger;
+
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+    {
+        string requestName = typeof(TRequest).Name;
+        LogProcessando(_logger, requestName);                       // chamada idiomática
+        TResponse response = await next(ct).ConfigureAwait(false);
+        LogConcluido(_logger, requestName, stopwatch.ElapsedMilliseconds);
+        return response;
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Processando {RequestName}")]
+    private static partial void LogProcessando(ILogger logger, string requestName);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Concluído {RequestName} em {ElapsedMs}ms")]
+    private static partial void LogConcluido(ILogger logger, string requestName, long elapsedMs);
+}
+```
+
+### Convenções de estilo
+
+- **Método é `private static partial void`** — `static` aproveita-se do fato de `ILogger` vir como parâmetro, evitando captura de `this`.
+- **Nome começa com `Log`** seguido do verbo/ação (`LogProcessando`, `LogConcluido`, `LogValidationError`).
+- **Placeholders em `{PascalCase}`** batendo com o nome do parâmetro. O Serilog e os enrichers (ex.: `PiiMaskingEnricher`) usam esses nomes como chave estruturada.
+- **`Exception` sempre como último parâmetro** quando presente — o source generator reconhece e emite no `LogEvent.Exception` sem precisar `{Exception}` no template.
+- **`EventId` opcional** — incluir apenas se houver consumidor que filtra por ID (raro no Uni+). Se omitido, o gerador atribui um automaticamente.
+
+### Casos especiais — `SkipEnabledCheck`
+
+Quando o argumento passado ao log envolver computação cara (ex.: serialização de DTO, formatação complexa), usar `SkipEnabledCheck = true` + guarda manual `IsEnabled` no call site para evitar também a avaliação do argumento **na chamada**:
+
+```csharp
+public void RegistrarResultado(ResultadoInscricao resultado)
+{
+    if (_logger.IsEnabled(LogLevel.Debug))
+    {
+        string snapshot = JsonSerializer.Serialize(resultado);   // só executa se Debug está ligado
+        LogResultadoDetalhado(_logger, snapshot);
+    }
+}
+
+[LoggerMessage(Level = LogLevel.Debug, Message = "Resultado detalhado: {Snapshot}", SkipEnabledCheck = true)]
+private static partial void LogResultadoDetalhado(ILogger logger, string snapshot);
+```
+
+Sem `SkipEnabledCheck`, o source generator sempre gera a guarda internamente — mas a `JsonSerializer.Serialize(resultado)` executa antes da chamada do método, no call site, antes da guarda. Esse é o cenário que o analisador `CA1873` (Avoid potentially expensive logging) sinaliza.
+
+### Referências
+
+- [CA1848 — Use the LoggerMessage delegates](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1848)
+- [CA1873 — Avoid potentially expensive logging](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1873)
+- [Compile-time logging source generation](https://learn.microsoft.com/dotnet/core/extensions/logging/source-generation)
+- Exemplos no projeto: `src/*/API/Middleware/GlobalExceptionMiddleware.cs`, `src/*/Application/Behaviors/LoggingBehavior.cs`
 
 ## Comandos úteis
 
