@@ -1,5 +1,6 @@
 using Serilog;
 
+using Unifesspa.UniPlus.Infrastructure.Common.Logging;
 using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
@@ -8,9 +9,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig
-        .ReadFrom.Configuration(context.Configuration)
-        .Enrich.FromLogContext());
+    loggerConfig.ConfigurarSerilog(context.Configuration));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

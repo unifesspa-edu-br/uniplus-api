@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 
 using Serilog.Context;
 
@@ -8,6 +9,7 @@ public sealed class CorrelationIdMiddleware
 {
     public const string HeaderName = "X-Correlation-Id";
     public const string LogContextProperty = "CorrelationId";
+    public const int MaxCorrelationIdLength = 128;
 
     private readonly RequestDelegate _next;
 
@@ -35,10 +37,10 @@ public sealed class CorrelationIdMiddleware
 
     private static string ObterOuGerarCorrelationId(HttpContext context)
     {
-        if (context.Request.Headers.TryGetValue(HeaderName, out Microsoft.Extensions.Primitives.StringValues valor))
+        if (context.Request.Headers.TryGetValue(HeaderName, out StringValues valor))
         {
-            string? existente = valor.ToString();
-            if (!string.IsNullOrWhiteSpace(existente))
+            string existente = valor.ToString();
+            if (!string.IsNullOrWhiteSpace(existente) && existente.Length <= MaxCorrelationIdLength)
             {
                 return existente;
             }

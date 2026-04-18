@@ -43,7 +43,9 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
-# Projetos de teste — nomes de métodos xUnit usam underscores por convenção
-# (Fato_QuandoCondicao_DeveProduzirResultado). CA1707 é suprimido apenas aqui.
+# Projetos de teste — convenções xUnit:
+# - CA1707: nomes de métodos com underscores (Fato_QuandoCondicao_DeveProduzirResultado)
+# - CA2007: xUnit não usa SynchronizationContext; ConfigureAwait é desnecessário
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA2007.severity = none
