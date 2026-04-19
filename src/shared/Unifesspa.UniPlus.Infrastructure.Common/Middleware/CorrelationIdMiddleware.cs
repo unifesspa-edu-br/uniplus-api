@@ -21,14 +21,14 @@ public sealed partial class CorrelationIdMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, ICorrelationIdAccessor accessor)
+    public async Task InvokeAsync(HttpContext context, ICorrelationIdWriter writer)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(accessor);
+        ArgumentNullException.ThrowIfNull(writer);
 
         string correlationId = ObterOuGerarCorrelationId(context);
 
-        accessor.SetCorrelationId(correlationId);
+        writer.SetCorrelationId(correlationId);
         context.Response.Headers[HeaderName] = correlationId;
 
         using (LogContext.PushProperty(LogContextProperty, correlationId))
