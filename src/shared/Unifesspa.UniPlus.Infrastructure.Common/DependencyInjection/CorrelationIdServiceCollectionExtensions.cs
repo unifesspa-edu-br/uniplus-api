@@ -1,6 +1,8 @@
-namespace Unifesspa.UniPlus.Infrastructure.Common.Middleware;
+namespace Unifesspa.UniPlus.Infrastructure.Common.DependencyInjection;
 
 using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 
 public static class CorrelationIdServiceCollectionExtensions
 {

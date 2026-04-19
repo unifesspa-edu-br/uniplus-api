@@ -1,5 +1,6 @@
 using Serilog;
 
+using Unifesspa.UniPlus.Infrastructure.Common.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Common.Logging;
 using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 using Unifesspa.UniPlus.Selecao.API.Middleware;

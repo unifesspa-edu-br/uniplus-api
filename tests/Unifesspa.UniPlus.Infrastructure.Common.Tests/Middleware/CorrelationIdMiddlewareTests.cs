@@ -67,6 +67,9 @@ public class CorrelationIdMiddlewareTests
     [Fact]
     public async Task InvokeAsync_DurantePipeline_AccessorDeveRetornarMesmoValor()
     {
+        // Instanciação direta é segura aqui porque o AsyncLocal que guarda o
+        // valor é estático: qualquer CorrelationIdAccessor enxerga o mesmo
+        // fluxo lógico. Em produção a instância vem via DI como Singleton.
         const string idExistente = "scoped-flow";
         (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idExistente;
