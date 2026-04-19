@@ -59,7 +59,7 @@ Application NUNCA depende de Infrastructure ou API.
 ## Padrões obrigatórios
 
 - **Soft delete** em todas as entidades: `IsDeleted`, `DeletedAt`, `DeletedBy`
-- **PII masking** em logs: CPF `***.***.***-XX`, nunca logar dados sensíveis
+- **PII masking** em logs: CPF `***.***.***-XX`, nunca logar dados sensíveis — aplicado automaticamente pelo `PiiMaskingEnricher` (registrado no pipeline Serilog via `ConfigurarSerilog`) a todas as propriedades estruturadas, inclusive aninhadas (`StructureValue`, `SequenceValue`, `DictionaryValue`)
 - **Result pattern** para retorno de operações: `Result<T>` com `DomainError`
 - **CQRS** via MediatR: Commands para escrita, Queries para leitura
 - **Value objects** para dados de domínio: `Cpf`, `Email`, `NomeSocial`, `NotaFinal`, `NumeroEdital`
