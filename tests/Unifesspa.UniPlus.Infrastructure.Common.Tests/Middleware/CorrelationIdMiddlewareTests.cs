@@ -115,6 +115,45 @@ public class CorrelationIdMiddlewareTests
         Guid.TryParse(headerResposta, out _).Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData("abc\r\n\r\n[admin] linha forjada")]
+    [InlineData("valor\rcom\rcarriage-return")]
+    [InlineData("valor\ncom\nnewline")]
+    [InlineData("valor\tcom\ttab")]
+    [InlineData("valor\0com\0null")]
+    public async Task InvokeAsync_ComHeaderContendoCaracteresDeControle_DeveGerarNovoUuid(string idMalicioso)
+    {
+        DefaultHttpContext context = new();
+        context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idMalicioso;
+        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
+
+        await middleware.InvokeAsync(context, accessor);
+
+        string? headerResposta = context.Response.Headers[CorrelationIdMiddleware.HeaderName];
+        headerResposta.Should().NotBe(idMalicioso);
+        Guid.TryParse(headerResposta, out _).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("válido-acentuado")]
+    [InlineData("测试中文")]
+    [InlineData("emoji-😀-teste")]
+    [InlineData("espaco interno")]
+    public async Task InvokeAsync_ComHeaderContendoCaracteresInvalidos_DeveGerarNovoUuid(string idInvalido)
+    {
+        DefaultHttpContext context = new();
+        context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idInvalido;
+        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
+
+        await middleware.InvokeAsync(context, accessor);
+
+        string? headerResposta = context.Response.Headers[CorrelationIdMiddleware.HeaderName];
+        headerResposta.Should().NotBe(idInvalido);
+        Guid.TryParse(headerResposta, out _).Should().BeTrue();
+    }
+
     [Fact]
     public async Task InvokeAsync_DeveEnriquecerLogContextComCorrelationId()
     {
