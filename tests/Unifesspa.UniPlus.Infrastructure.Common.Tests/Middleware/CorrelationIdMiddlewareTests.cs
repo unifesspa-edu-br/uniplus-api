@@ -185,37 +185,32 @@ public class CorrelationIdMiddlewareTests
     [Fact]
     public async Task InvokeAsync_DeveEnriquecerLogContextComCorrelationId()
     {
+        // LogContext.PushProperty (chamada pelo middleware) atua sobre um
+        // AsyncLocal estático, não sobre uma instância de ILogger. Portanto
+        // qualquer logger com Enrich.FromLogContext() enxerga a propriedade,
+        // inclusive um logger local. Isso permite testar o enrichment sem
+        // substituir o singleton Log.Logger — swap global seria frágil se o
+        // xUnit passasse a paralelizar testes entre classes.
         const string id = "log-ctx-test";
         List<LogEvent> capturados = new();
         CapturingSink sink = new(capturados);
 
-        Logger loggerDeTeste = new LoggerConfiguration()
+        await using Logger loggerDeTeste = new LoggerConfiguration()
             .MinimumLevel.Verbose()
             .Enrich.FromLogContext()
             .WriteTo.Sink(sink)
             .CreateLogger();
 
-        ILogger loggerOriginal = Log.Logger;
-        Log.Logger = loggerDeTeste;
+        (DefaultHttpContext context, _) = CriarContexto();
+        context.Request.Headers[CorrelationIdMiddleware.HeaderName] = id;
 
-        try
+        CorrelationIdMiddleware middleware = new(_ =>
         {
-            (DefaultHttpContext context, _) = CriarContexto();
-            context.Request.Headers[CorrelationIdMiddleware.HeaderName] = id;
+            loggerDeTeste.Information("log dentro do pipeline");
+            return Task.CompletedTask;
+        });
 
-            CorrelationIdMiddleware middleware = new(_ =>
-            {
-                Log.Information("log dentro do pipeline");
-                return Task.CompletedTask;
-            });
-
-            await middleware.InvokeAsync(context, new CorrelationIdAccessor());
-        }
-        finally
-        {
-            Log.Logger = loggerOriginal;
-            await loggerDeTeste.DisposeAsync();
-        }
+        await middleware.InvokeAsync(context, new CorrelationIdAccessor());
 
         capturados.Should().ContainSingle();
         capturados[0].Properties.Should().ContainKey(CorrelationIdMiddleware.LogContextProperty);
