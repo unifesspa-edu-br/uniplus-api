@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 
-public sealed class CorrelationIdAccessor : ICorrelationIdAccessor
+public sealed class CorrelationIdAccessor : ICorrelationIdWriter
 {
     // AsyncLocal estático de propósito: o isolamento vem do ExecutionContext,
     // não da instância do accessor. Permite registro Singleton no DI sem risco

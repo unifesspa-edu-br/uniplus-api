@@ -18,7 +18,7 @@ public class CorrelationIdMiddlewareTests
     public async Task InvokeAsync_SemHeaderNoRequest_DeveGerarUuidValido()
     {
         DefaultHttpContext context = new();
-        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
@@ -35,7 +35,7 @@ public class CorrelationIdMiddlewareTests
         const string idExistente = "request-12345";
         DefaultHttpContext context = new();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idExistente;
-        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
@@ -49,7 +49,7 @@ public class CorrelationIdMiddlewareTests
     {
         DefaultHttpContext context = new();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = "   ";
-        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
@@ -84,7 +84,7 @@ public class CorrelationIdMiddlewareTests
     public async Task InvokeAsync_DeveChamarProximoMiddleware()
     {
         DefaultHttpContext context = new();
-        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         bool proximoFoiChamado = false;
 
         CorrelationIdMiddleware middleware = new(_ =>
@@ -104,7 +104,7 @@ public class CorrelationIdMiddlewareTests
         string idAbusivo = new('a', CorrelationIdMiddleware.MaxCorrelationIdLength + 1);
         DefaultHttpContext context = new();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idAbusivo;
-        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
@@ -125,7 +125,7 @@ public class CorrelationIdMiddlewareTests
     {
         DefaultHttpContext context = new();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idMalicioso;
-        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
@@ -144,7 +144,7 @@ public class CorrelationIdMiddlewareTests
     {
         DefaultHttpContext context = new();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idInvalido;
-        ICorrelationIdAccessor accessor = Substitute.For<ICorrelationIdAccessor>();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);

@@ -7,7 +7,14 @@ public static class CorrelationIdServiceCollectionExtensions
     public static IServiceCollection AddCorrelationIdAccessor(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        services.AddSingleton<ICorrelationIdAccessor, CorrelationIdAccessor>();
+
+        // Registrar a implementação concreta como singleton e resolver as duas
+        // interfaces para a MESMA instância. ICorrelationIdAccessor fica
+        // disponível amplamente (read-only); ICorrelationIdWriter é usado
+        // apenas pelo middleware.
+        services.AddSingleton<CorrelationIdAccessor>();
+        services.AddSingleton<ICorrelationIdAccessor>(sp => sp.GetRequiredService<CorrelationIdAccessor>());
+        services.AddSingleton<ICorrelationIdWriter>(sp => sp.GetRequiredService<CorrelationIdAccessor>());
         return services;
     }
 }
