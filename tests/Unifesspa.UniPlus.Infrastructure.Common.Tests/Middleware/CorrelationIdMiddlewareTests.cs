@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Common.Tests.Middleware;
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 
 using NSubstitute;
 
@@ -17,11 +18,12 @@ public class CorrelationIdMiddlewareTests
     [Fact]
     public async Task InvokeAsync_SemHeaderNoRequest_DeveGerarUuidValido()
     {
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
+        await dispararOnStarting();
 
         string? headerResposta = context.Response.Headers[CorrelationIdMiddleware.HeaderName];
         headerResposta.Should().NotBeNullOrWhiteSpace();
@@ -33,12 +35,13 @@ public class CorrelationIdMiddlewareTests
     public async Task InvokeAsync_ComHeaderExistenteNoRequest_DeveReutilizarValor()
     {
         const string idExistente = "request-12345";
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idExistente;
         ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
+        await dispararOnStarting();
 
         context.Response.Headers[CorrelationIdMiddleware.HeaderName].ToString().Should().Be(idExistente);
         accessor.Received(1).SetCorrelationId(idExistente);
@@ -47,12 +50,13 @@ public class CorrelationIdMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComHeaderEmBrancoNoRequest_DeveGerarNovoUuid()
     {
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = "   ";
         ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
+        await dispararOnStarting();
 
         string? headerResposta = context.Response.Headers[CorrelationIdMiddleware.HeaderName];
         headerResposta.Should().NotBeNullOrWhiteSpace();
@@ -64,7 +68,7 @@ public class CorrelationIdMiddlewareTests
     public async Task InvokeAsync_DurantePipeline_AccessorDeveRetornarMesmoValor()
     {
         const string idExistente = "scoped-flow";
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idExistente;
         CorrelationIdAccessor accessor = new();
         string? idObservadoDentroDoPipeline = null;
@@ -76,6 +80,7 @@ public class CorrelationIdMiddlewareTests
         });
 
         await middleware.InvokeAsync(context, accessor);
+        await dispararOnStarting();
 
         idObservadoDentroDoPipeline.Should().Be(idExistente);
     }
@@ -83,7 +88,7 @@ public class CorrelationIdMiddlewareTests
     [Fact]
     public async Task InvokeAsync_DeveChamarProximoMiddleware()
     {
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, _) = CriarContexto();
         ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         bool proximoFoiChamado = false;
 
@@ -102,12 +107,13 @@ public class CorrelationIdMiddlewareTests
     public async Task InvokeAsync_ComHeaderAcimaDoTamanhoMaximo_DeveGerarNovoUuid()
     {
         string idAbusivo = new('a', CorrelationIdMiddleware.MaxCorrelationIdLength + 1);
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idAbusivo;
         ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
+        await dispararOnStarting();
 
         string? headerResposta = context.Response.Headers[CorrelationIdMiddleware.HeaderName];
         headerResposta.Should().NotBe(idAbusivo);
@@ -123,12 +129,13 @@ public class CorrelationIdMiddlewareTests
     [InlineData("valor\0com\0null")]
     public async Task InvokeAsync_ComHeaderContendoCaracteresDeControle_DeveGerarNovoUuid(string idMalicioso)
     {
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idMalicioso;
         ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
+        await dispararOnStarting();
 
         string? headerResposta = context.Response.Headers[CorrelationIdMiddleware.HeaderName];
         headerResposta.Should().NotBe(idMalicioso);
@@ -142,16 +149,37 @@ public class CorrelationIdMiddlewareTests
     [InlineData("espaco interno")]
     public async Task InvokeAsync_ComHeaderContendoCaracteresInvalidos_DeveGerarNovoUuid(string idInvalido)
     {
-        DefaultHttpContext context = new();
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
         context.Request.Headers[CorrelationIdMiddleware.HeaderName] = idInvalido;
         ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
         CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
 
         await middleware.InvokeAsync(context, accessor);
+        await dispararOnStarting();
 
         string? headerResposta = context.Response.Headers[CorrelationIdMiddleware.HeaderName];
         headerResposta.Should().NotBe(idInvalido);
         Guid.TryParse(headerResposta, out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_HeaderEscritoSomenteNoFlushDaResposta()
+    {
+        // Garante que a escrita foi registrada via OnStarting e não aplicada
+        // imediatamente. Protege o invariante contra alguém desfazer a
+        // mudança e voltar para a escrita síncrona.
+        (DefaultHttpContext context, Func<Task> dispararOnStarting) = CriarContexto();
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
+        CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
+
+        await middleware.InvokeAsync(context, accessor);
+
+        context.Response.Headers.ContainsKey(CorrelationIdMiddleware.HeaderName).Should().BeFalse(
+            "o header só deve ser aplicado quando o flush da resposta disparar OnStarting");
+
+        await dispararOnStarting();
+
+        context.Response.Headers.ContainsKey(CorrelationIdMiddleware.HeaderName).Should().BeTrue();
     }
 
     [Fact]
@@ -172,7 +200,7 @@ public class CorrelationIdMiddlewareTests
 
         try
         {
-            DefaultHttpContext context = new();
+            (DefaultHttpContext context, _) = CriarContexto();
             context.Request.Headers[CorrelationIdMiddleware.HeaderName] = id;
 
             CorrelationIdMiddleware middleware = new(_ =>
@@ -193,6 +221,40 @@ public class CorrelationIdMiddlewareTests
         capturados[0].Properties.Should().ContainKey(CorrelationIdMiddleware.LogContextProperty);
         capturados[0].Properties[CorrelationIdMiddleware.LogContextProperty]
             .ToString().Trim('"').Should().Be(id);
+    }
+
+    // Cria um DefaultHttpContext com IHttpResponseFeature customizado que
+    // captura os callbacks registrados em Response.OnStarting (o feature
+    // default lança NotSupportedException). Retorna também um delegate que
+    // dispara os callbacks na ordem LIFO, emulando o comportamento de
+    // Kestrel ao iniciar o flush da resposta.
+    private static (DefaultHttpContext, Func<Task>) CriarContexto()
+    {
+        TestHttpResponseFeature feature = new();
+        DefaultHttpContext context = new();
+        context.Features.Set<IHttpResponseFeature>(feature);
+        return (context, feature.DispararOnStartingAsync);
+    }
+
+    private sealed class TestHttpResponseFeature : HttpResponseFeature
+    {
+        private readonly List<(Func<object, Task> Callback, object State)> _callbacks = new();
+
+        public override void OnStarting(Func<object, Task> callback, object state)
+        {
+            ArgumentNullException.ThrowIfNull(callback);
+            ArgumentNullException.ThrowIfNull(state);
+            _callbacks.Add((callback, state));
+        }
+
+        public async Task DispararOnStartingAsync()
+        {
+            // LIFO conforme Kestrel
+            for (int i = _callbacks.Count - 1; i >= 0; i--)
+            {
+                await _callbacks[i].Callback(_callbacks[i].State);
+            }
+        }
     }
 
     private sealed class CapturingSink : ILogEventSink

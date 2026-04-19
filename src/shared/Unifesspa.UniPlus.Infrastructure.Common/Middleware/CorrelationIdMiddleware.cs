@@ -29,7 +29,16 @@ public sealed partial class CorrelationIdMiddleware
         string correlationId = ObterOuGerarCorrelationId(context);
 
         writer.SetCorrelationId(correlationId);
-        context.Response.Headers[HeaderName] = correlationId;
+
+        // Postergar a escrita do header até o início do flush da resposta
+        // garante que o valor sobreviva a qualquer mutação feita por
+        // middlewares/filtros downstream e seja comprometido logo antes do
+        // status line ser enviado ao cliente.
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers[HeaderName] = correlationId;
+            return Task.CompletedTask;
+        });
 
         using (LogContext.PushProperty(LogContextProperty, correlationId))
         {
