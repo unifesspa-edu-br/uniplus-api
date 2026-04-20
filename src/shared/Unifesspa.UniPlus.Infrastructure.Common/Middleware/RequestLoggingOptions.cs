@@ -8,17 +8,35 @@ public sealed class RequestLoggingOptions
 {
     public const string SectionName = "RequestLogging";
 
-    // Listas são `IList<string>` mutáveis (setter público) porque o binder
-    // de `IConfiguration.Bind` e `Configure<T>(Action<T>)` precisam mutar a
-    // instância após construção. CA2227 é suprimido: DTOs de Options são
-    // explicitamente projetados para esse ciclo de vida. Os consumidores
-    // internos copiam o conteúdo para `FrozenSet` e não mutam a lista.
+    /// <summary>
+    /// Nomes de parâmetros de query string cujo valor deve ser mascarado no log
+    /// (comparação case-insensitive após decodificação percent-encoding). Defaults
+    /// cobrem o mínimo regulatório LGPD: cpf, email, senha, password, token.
+    /// Configuração amplia os defaults em vez de substituir — é impossível
+    /// acidentalmente remover um parâmetro sensível via appsettings.
+    /// </summary>
     [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "DTO de IOptions: binder exige setter mutável.")]
     public IList<string> NomesParametrosSensiveis { get; set; } = DefaultsNomesParametrosSensiveis();
 
+    /// <summary>
+    /// Prefixos de path silenciados para respostas de sucesso (status &lt; 400).
+    /// Match case-insensitive com boundary em '/': <c>/health</c> cobre
+    /// <c>/health</c>, <c>/health/</c>, <c>/health/ready</c>, <c>/health/db/postgresql</c>,
+    /// mas <b>não</b> <c>/healthy</c>, <c>/health-ui</c> ou <c>/healthcheck</c> —
+    /// apenas separadores hierárquicos de URL são aceitos como extensão do prefixo.
+    /// Trailing slash na entrada ou no request é normalizado. Para silenciar apenas
+    /// uma rota exata, declare-a sem filhos (o match também casa o prefixo puro).
+    /// Respostas de erro (status &ge; 400) em paths silenciados são <b>sempre</b>
+    /// logadas — silenciar falhas equivaleria a apagar alarmes.
+    /// Lista vazia desativa o silenciamento.
+    /// </summary>
     [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "DTO de IOptions: binder exige setter mutável.")]
-    public IList<string> PathsSilenciados { get; set; } = DefaultsPathsSilenciados();
+    public IList<string> PrefixosSilenciados { get; set; } = DefaultsPrefixosSilenciados();
 
+    /// <summary>
+    /// String que substitui o valor de parâmetros sensíveis no log. Default "***".
+    /// Não pode ser vazio — validado na inicialização.
+    /// </summary>
     public string ValorMascarado { get; set; } = "***";
 
     // Os defaults são expostos para que validadores e testes possam checar a
@@ -30,7 +48,7 @@ public sealed class RequestLoggingOptions
     // prefixo com boundary em `/`). Assim `/health` cobre automaticamente
     // `/health/ready`, `/health/live`, `/health/db/postgresql` e qualquer
     // outro subpath exposto por libraries de health-check.
-    public static IList<string> DefaultsPathsSilenciados() =>
+    public static IList<string> DefaultsPrefixosSilenciados() =>
         ["/health", "/metrics"];
 }
 
@@ -49,13 +67,13 @@ internal sealed class RequestLoggingOptionsValidator : IValidateOptions<RequestL
             erros.Add($"{nameof(RequestLoggingOptions.NomesParametrosSensiveis)} não pode estar vazio — remover masking de PII viola LGPD.");
         }
 
-        if (options.PathsSilenciados is null)
+        if (options.PrefixosSilenciados is null)
         {
-            erros.Add($"{nameof(RequestLoggingOptions.PathsSilenciados)} não pode ser nulo — use uma lista vazia para desativar o silenciamento.");
+            erros.Add($"{nameof(RequestLoggingOptions.PrefixosSilenciados)} não pode ser nulo — use uma lista vazia para desativar o silenciamento.");
         }
-        else if (options.PathsSilenciados.Any(p => !p.StartsWith('/')))
+        else if (options.PrefixosSilenciados.Any(p => !p.StartsWith('/')))
         {
-            erros.Add($"{nameof(RequestLoggingOptions.PathsSilenciados)} contém path inválido — cada entrada deve começar com '/'.");
+            erros.Add($"{nameof(RequestLoggingOptions.PrefixosSilenciados)} contém path inválido — cada entrada deve começar com '/'.");
         }
 
         if (string.IsNullOrEmpty(options.ValorMascarado))

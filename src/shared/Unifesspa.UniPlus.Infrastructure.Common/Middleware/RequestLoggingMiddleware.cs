@@ -33,7 +33,7 @@ public sealed partial class RequestLoggingMiddleware
         // ordenado para iteração em hot path sem custo de enumerator —
         // FrozenSet.Contains não serve porque precisamos de prefix match com
         // boundary, não igualdade.
-        _prefixosSilenciados = options.Value.PathsSilenciados
+        _prefixosSilenciados = options.Value.PrefixosSilenciados
             .Select(NormalizarPrefixo)
             .Where(p => p.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
