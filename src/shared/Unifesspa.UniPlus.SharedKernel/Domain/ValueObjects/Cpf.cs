@@ -21,7 +21,7 @@ public sealed record Cpf
         return Result<Cpf>.Success(new Cpf(apenasDigitos));
     }
 
-    public string Mascarado => $"***.***.***.{Valor[9..]}";
+    public string Mascarado => $"***.***.***-{Valor[9..]}";
 
     public override string ToString() => Mascarado;
 

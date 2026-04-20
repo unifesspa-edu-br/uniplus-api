@@ -26,5 +26,6 @@
     <Project Path="tests/Unifesspa.UniPlus.Selecao.ArchTests/Unifesspa.UniPlus.Selecao.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Selecao.Domain.Tests/Unifesspa.UniPlus.Selecao.Domain.Tests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Selecao.Integration.Tests/Unifesspa.UniPlus.Selecao.Integration.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.SharedKernel.Tests/Unifesspa.UniPlus.SharedKernel.Tests.csproj" />
   </Folder>
 </Solution>
