@@ -37,15 +37,9 @@ public sealed class RequestLoggingOptions
     /// </summary>
     public string ValorMascarado { get; set; } = "***";
 
-    // Os defaults são expostos para que validadores e testes possam checar a
-    // intenção inicial da configuração sem depender de uma nova instância.
     public static IList<string> DefaultsNomesParametrosSensiveis() =>
         ["cpf", "email", "senha", "password", "token"];
 
-    // Cada entrada é tratada como prefixo de rota pelo middleware (match por
-    // prefixo com boundary em `/`). Assim `/health` cobre automaticamente
-    // `/health/ready`, `/health/live`, `/health/db/postgresql` e qualquer
-    // outro subpath exposto por libraries de health-check.
     public static IList<string> DefaultsPrefixosSilenciados() =>
         ["/health", "/metrics"];
 }
