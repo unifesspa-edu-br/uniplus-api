@@ -1,27 +1,35 @@
 namespace Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 
+using System.Collections.Frozen;
 using System.Diagnostics;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 public sealed partial class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestLoggingMiddleware> _logger;
     private readonly QueryStringMasker _masker;
+    private readonly FrozenSet<string> _pathsSilenciados;
 
     public RequestLoggingMiddleware(
         RequestDelegate next,
         ILogger<RequestLoggingMiddleware> logger,
-        QueryStringMasker masker)
+        QueryStringMasker masker,
+        IOptions<RequestLoggingOptions> options)
     {
         ArgumentNullException.ThrowIfNull(next);
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(masker);
+        ArgumentNullException.ThrowIfNull(options);
         _next = next;
         _logger = logger;
         _masker = masker;
+        _pathsSilenciados = FrozenSet.ToFrozenSet(
+            options.Value.PathsSilenciados,
+            StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -48,7 +56,10 @@ public sealed partial class RequestLoggingMiddleware
 
             // Severidade proporcional à categoria HTTP: 5xx é falha do servidor,
             // 4xx sinaliza problema no lado do cliente e demais respostas são
-            // tráfego operacional normal.
+            // tráfego operacional normal. Paths de infraestrutura (health,
+            // metrics) são silenciados quando bem-sucedidos para não saturar
+            // observabilidade com probes de liveness/readiness; respostas de
+            // erro continuam sendo reportadas porque sinalizam problema real.
             if (statusCode >= 500)
             {
                 LogRequestServerError(_logger, method, path, query, statusCode, elapsedMs);
@@ -57,7 +68,7 @@ public sealed partial class RequestLoggingMiddleware
             {
                 LogRequestClientError(_logger, method, path, query, statusCode, elapsedMs);
             }
-            else
+            else if (!_pathsSilenciados.Contains(path))
             {
                 LogRequestSucesso(_logger, method, path, query, statusCode, elapsedMs);
             }

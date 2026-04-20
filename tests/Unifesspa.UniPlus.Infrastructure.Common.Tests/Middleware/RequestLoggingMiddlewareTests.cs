@@ -30,7 +30,8 @@ public class RequestLoggingMiddlewareTests
                 return Task.CompletedTask;
             },
             NullLogger<RequestLoggingMiddleware>.Instance,
-            CriarMasker());
+            CriarMasker(),
+            CriarOptions());
 
         await middleware.InvokeAsync(context);
 
@@ -105,6 +106,59 @@ public class RequestLoggingMiddlewareTests
         queryValue.Should().NotContain("12345678900");
     }
 
+    [Theory]
+    [InlineData("/health")]
+    [InlineData("/health/ready")]
+    [InlineData("/health/live")]
+    [InlineData("/metrics")]
+    public async Task InvokeAsync_ComPathSilenciadoESucesso_NaoDeveEmitirLog(string path)
+    {
+        // Probes Kubernetes (liveness/readiness) batem endpoints de infra a
+        // cada poucos segundos. Silenciar respostas bem-sucedidas evita
+        // saturar observabilidade com tráfego sem valor acionável, preservando
+        // signal-to-noise útil para debugging.
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", path, 200);
+
+        eventos.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("/HEALTH")]
+    [InlineData("/Health")]
+    [InlineData("/HeAlTh/ReAdY")]
+    public async Task InvokeAsync_ComPathSilenciadoEmGrafiaVariada_DeveIgnorarCaseInsensitive(string path)
+    {
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", path, 200);
+
+        eventos.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(500)]
+    [InlineData(503)]
+    public async Task InvokeAsync_ComPathSilenciadoERespostaErro_DeveLogarParaVisibilidadeDeFalha(int statusCode)
+    {
+        // Health check que retorna 503 (dependência down) é informação crítica —
+        // silêncio em erros equivale a apagar alarme. Mantemos o log.
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", "/health", statusCode);
+
+        eventos.Should().ContainSingle();
+        eventos[0].Level.Should().Be(LogEventLevel.Error);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ComListaDePathsSilenciadosCustomizada_DeveRespeitarConfiguracaoInjetada()
+    {
+        RequestLoggingOptions opcoes = new() { PathsSilenciados = ["/custom/noise"] };
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", "/custom/noise", 200, opcoes: opcoes);
+        List<LogEvent> eventosHealth = await ExecutarERetornarLogsAsync("GET", "/health", 200, opcoes: opcoes);
+
+        // /custom/noise silenciado por config; /health volta a ser logado porque
+        // a lista customizada substituiu a default.
+        eventos.Should().BeEmpty();
+        eventosHealth.Should().ContainSingle();
+    }
+
     [Fact]
     public async Task InvokeAsync_QuandoProximoLancaExcecao_DeveRegistrarLogEPropagar()
     {
@@ -117,7 +171,8 @@ public class RequestLoggingMiddlewareTests
             RequestLoggingMiddleware middleware = new(
                 _ => throw new InvalidOperationException("falha simulada"),
                 factory.CreateLogger<RequestLoggingMiddleware>(),
-                CriarMasker());
+                CriarMasker(),
+            CriarOptions());
 
             Func<Task> acao = () => middleware.InvokeAsync(context);
 
@@ -152,7 +207,8 @@ public class RequestLoggingMiddlewareTests
                     return Task.CompletedTask;
                 },
                 factory.CreateLogger<RequestLoggingMiddleware>(),
-                CriarMasker());
+                CriarMasker(),
+            CriarOptions());
 
             using (LogContext.PushProperty(CorrelationIdMiddleware.LogContextProperty, correlationId))
             {
@@ -171,15 +227,21 @@ public class RequestLoggingMiddlewareTests
     }
 
     [Fact]
-    public async Task Construtor_ComNext_OuLogger_Nulo_DeveLancar()
+    public async Task Construtor_ComDependenciaNula_DeveLancarArgumentNullException()
     {
-        Func<RequestLoggingMiddleware> criarSemNext = () => new RequestLoggingMiddleware(null!, NullLogger<RequestLoggingMiddleware>.Instance, CriarMasker());
-        Func<RequestLoggingMiddleware> criarSemLogger = () => new RequestLoggingMiddleware(_ => Task.CompletedTask, null!, CriarMasker());
-        Func<RequestLoggingMiddleware> criarSemMasker = () => new RequestLoggingMiddleware(_ => Task.CompletedTask, NullLogger<RequestLoggingMiddleware>.Instance, null!);
+        Func<RequestLoggingMiddleware> semNext =
+            () => new RequestLoggingMiddleware(null!, NullLogger<RequestLoggingMiddleware>.Instance, CriarMasker(), CriarOptions());
+        Func<RequestLoggingMiddleware> semLogger =
+            () => new RequestLoggingMiddleware(_ => Task.CompletedTask, null!, CriarMasker(), CriarOptions());
+        Func<RequestLoggingMiddleware> semMasker =
+            () => new RequestLoggingMiddleware(_ => Task.CompletedTask, NullLogger<RequestLoggingMiddleware>.Instance, null!, CriarOptions());
+        Func<RequestLoggingMiddleware> semOptions =
+            () => new RequestLoggingMiddleware(_ => Task.CompletedTask, NullLogger<RequestLoggingMiddleware>.Instance, CriarMasker(), null!);
 
-        criarSemNext.Should().Throw<ArgumentNullException>();
-        criarSemLogger.Should().Throw<ArgumentNullException>();
-        criarSemMasker.Should().Throw<ArgumentNullException>();
+        semNext.Should().Throw<ArgumentNullException>();
+        semLogger.Should().Throw<ArgumentNullException>();
+        semMasker.Should().Throw<ArgumentNullException>();
+        semOptions.Should().Throw<ArgumentNullException>();
 
         await Task.CompletedTask;
     }
@@ -190,7 +252,8 @@ public class RequestLoggingMiddlewareTests
         RequestLoggingMiddleware middleware = new(
             _ => Task.CompletedTask,
             NullLogger<RequestLoggingMiddleware>.Instance,
-            CriarMasker());
+            CriarMasker(),
+            CriarOptions());
 
         Func<Task> acao = () => middleware.InvokeAsync(null!);
 
@@ -201,7 +264,8 @@ public class RequestLoggingMiddlewareTests
         string method,
         string path,
         int statusCode,
-        string? query = null)
+        string? query = null,
+        RequestLoggingOptions? opcoes = null)
     {
         DefaultHttpContext context = CriarContexto(method, path, query);
         (Logger logger, List<LogEvent> eventos) = CriarLoggerSerilog();
@@ -216,7 +280,8 @@ public class RequestLoggingMiddlewareTests
                     return Task.CompletedTask;
                 },
                 factory.CreateLogger<RequestLoggingMiddleware>(),
-                CriarMasker());
+                CriarMasker(opcoes),
+                CriarOptions(opcoes));
 
             await middleware.InvokeAsync(context);
         }
@@ -243,6 +308,9 @@ public class RequestLoggingMiddlewareTests
 
     private static QueryStringMasker CriarMasker(RequestLoggingOptions? opcoes = null) =>
         new(Options.Create(opcoes ?? new RequestLoggingOptions()));
+
+    private static IOptions<RequestLoggingOptions> CriarOptions(RequestLoggingOptions? opcoes = null) =>
+        Options.Create(opcoes ?? new RequestLoggingOptions());
 
     private static (Logger Logger, List<LogEvent> Eventos) CriarLoggerSerilog()
     {
