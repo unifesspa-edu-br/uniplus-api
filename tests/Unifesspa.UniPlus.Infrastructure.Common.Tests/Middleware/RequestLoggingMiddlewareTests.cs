@@ -160,23 +160,60 @@ public class RequestLoggingMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_QuandoProximoLancaExcecao_DeveRegistrarLogEPropagar()
+    public async Task InvokeAsync_QuandoProximoLancaExcecao_DeveLogarNivelErrorComExceptionEPropagar()
     {
+        // Cenário defensivo: GlobalExceptionMiddleware normalmente absorve
+        // exceções e seta status 5xx. Se por algum motivo a exception
+        // escapar (bug no pipeline, middleware removido), o request-logger
+        // precisa sinalizar a falha — não pode aparecer como Information 200.
         DefaultHttpContext context = CriarContexto("GET", "/api/x");
+        (Logger logger, List<LogEvent> eventos) = CriarLoggerSerilog();
+        InvalidOperationException falhaSimulada = new("falha simulada");
+
+        try
+        {
+            using SerilogLoggerFactory factory = new(logger);
+            RequestLoggingMiddleware middleware = new(
+                _ => throw falhaSimulada,
+                factory.CreateLogger<RequestLoggingMiddleware>(),
+                CriarMasker(),
+                CriarOptions());
+
+            Func<Task> acao = () => middleware.InvokeAsync(context);
+
+            await acao.Should().ThrowAsync<InvalidOperationException>()
+                .Where(ex => ReferenceEquals(ex, falhaSimulada));
+        }
+        finally
+        {
+            await logger.DisposeAsync();
+        }
+
+        LogEvent log = eventos.Should().ContainSingle().Subject;
+        log.Level.Should().Be(LogEventLevel.Error);
+        log.Exception.Should().BeSameAs(falhaSimulada);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_QuandoProximoLancaExcecaoEmPathSilenciado_DeveAindaLogar()
+    {
+        // Silenciamento aplica-se apenas a requests bem-sucedidos. Falha
+        // (exception) em /health não pode desaparecer — é exatamente quando
+        // o oncall precisa enxergar.
+        DefaultHttpContext context = CriarContexto("GET", "/health");
         (Logger logger, List<LogEvent> eventos) = CriarLoggerSerilog();
 
         try
         {
             using SerilogLoggerFactory factory = new(logger);
             RequestLoggingMiddleware middleware = new(
-                _ => throw new InvalidOperationException("falha simulada"),
+                _ => throw new InvalidOperationException("dependência indisponível"),
                 factory.CreateLogger<RequestLoggingMiddleware>(),
                 CriarMasker(),
-            CriarOptions());
+                CriarOptions());
 
-            Func<Task> acao = () => middleware.InvokeAsync(context);
-
-            await acao.Should().ThrowAsync<InvalidOperationException>();
+            await FluentActions.Invoking(() => middleware.InvokeAsync(context))
+                .Should().ThrowAsync<InvalidOperationException>();
         }
         finally
         {
@@ -184,6 +221,7 @@ public class RequestLoggingMiddlewareTests
         }
 
         eventos.Should().ContainSingle();
+        eventos[0].Level.Should().Be(LogEventLevel.Error);
     }
 
     [Fact]
