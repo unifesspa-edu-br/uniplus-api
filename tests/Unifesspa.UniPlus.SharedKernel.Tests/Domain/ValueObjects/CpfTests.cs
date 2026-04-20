@@ -51,22 +51,16 @@ public sealed class CpfTests
         resultado.Error!.Code.Should().Be("Cpf.Vazio");
     }
 
-    [Fact]
-    public void Criar_DadoCpfComMenosDeOnzeDigitos_DeveRetornarFailureCpfInvalido()
+    [Theory]
+    [InlineData("123.456.789", "menos de 11 dígitos")]
+    [InlineData("123.456.789-0123", "mais de 11 dígitos")]
+    [InlineData("abcdefghijk", "sem dígitos suficientes após extração")]
+    public void Criar_DadoCpfComQuantidadeDeDigitosInvalida_DeveRetornarFailure(string cpfInvalido, string razao)
     {
-        Result<Cpf> resultado = Cpf.Criar("123.456.789");
+        Result<Cpf> resultado = Cpf.Criar(cpfInvalido);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("Cpf.Invalido");
-    }
-
-    [Fact]
-    public void Criar_DadoCpfComMaisDeOnzeDigitos_DeveRetornarFailureCpfInvalido()
-    {
-        Result<Cpf> resultado = Cpf.Criar("123.456.789-0123");
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("Cpf.Invalido");
+        resultado.IsFailure.Should().BeTrue(razao);
+        resultado.Error!.Code.Should().Be("Cpf.Invalido", razao);
     }
 
     [Theory]
