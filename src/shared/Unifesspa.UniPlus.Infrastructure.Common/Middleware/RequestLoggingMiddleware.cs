@@ -99,19 +99,29 @@ public sealed partial class RequestLoggingMiddleware
     // falsos positivos que meramente começam com o prefixo (`/healthy`,
     // `/health-ui`). O boundary garante que apenas separadores hierárquicos
     // de URL contam como extensão do prefixo.
+    //
+    // Trabalha com `ReadOnlySpan<char>` em vez de `string` para não alocar
+    // em requests com trailing slash — hot path executa por request. Os
+    // prefixos em `_prefixosSilenciados` já estão normalizados (sem trailing
+    // slash, exceto "/") desde o construtor.
     private bool DeveSilenciar(string path)
     {
-        string pathNormalizado = NormalizarPrefixo(path);
+        ReadOnlySpan<char> pathSpan = path.AsSpan();
+        if (pathSpan.Length > 1 && pathSpan[^1] == '/')
+        {
+            pathSpan = pathSpan.TrimEnd('/');
+        }
+
         foreach (string prefixo in _prefixosSilenciados)
         {
-            if (pathNormalizado.Equals(prefixo, StringComparison.OrdinalIgnoreCase))
+            if (pathSpan.Equals(prefixo, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            if (pathNormalizado.Length > prefixo.Length &&
-                pathNormalizado.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase) &&
-                pathNormalizado[prefixo.Length] == '/')
+            if (pathSpan.Length > prefixo.Length &&
+                pathSpan.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase) &&
+                pathSpan[prefixo.Length] == '/')
             {
                 return true;
             }
@@ -121,8 +131,9 @@ public sealed partial class RequestLoggingMiddleware
     }
 
     // Normaliza removendo trailing slash exceto no caso raiz "/", que é
-    // preservado como path canônico da raiz. Strings vazias são tratadas
-    // como "/" pelo chamador (ver InvokeAsync).
+    // preservado como path canônico da raiz. Usado apenas no construtor
+    // (caminho frio) — o hot path do DeveSilenciar faz a normalização
+    // equivalente via span sem alocação.
     private static string NormalizarPrefixo(string valor) =>
         valor.Length > 1 && valor.EndsWith('/') ? valor.TrimEnd('/') : valor;
 
