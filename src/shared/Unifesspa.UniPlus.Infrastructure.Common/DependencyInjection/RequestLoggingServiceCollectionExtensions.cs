@@ -33,14 +33,13 @@ public static class RequestLoggingServiceCollectionExtensions
 
         // Binder de IConfiguration e Action<T> agregam às listas pré-populadas
         // em vez de substituí-las. Normalizar aqui: remover brancos, deduplicar
-        // case-insensitive e preservar ordem de inserção. Para o caso de uso
-        // (masking PII + silêncio de paths) essa semântica "defaults como piso,
-        // config amplia" é a mais segura — impede que um appsettings remova
-        // acidentalmente `cpf` da proteção.
+        // case-insensitive e preservar ordem de inserção. Mutação in-place
+        // respeita o contrato get-only da propriedade — nunca reassignamos,
+        // apenas editamos a lista que já foi construída com os defaults.
         optionsBuilder.PostConfigure(opts =>
         {
-            opts.NomesParametrosSensiveis = NormalizarLista(opts.NomesParametrosSensiveis);
-            opts.PrefixosSilenciados = NormalizarLista(opts.PrefixosSilenciados);
+            NormalizarListaInPlace(opts.NomesParametrosSensiveis);
+            NormalizarListaInPlace(opts.PrefixosSilenciados);
         });
 
         // Validação executada uma vez ao materializar `IOptions<T>`. O flag
@@ -55,29 +54,38 @@ public static class RequestLoggingServiceCollectionExtensions
         return services;
     }
 
-    private static List<string> NormalizarLista(IList<string>? entrada)
+    private static void NormalizarListaInPlace(IList<string> lista)
     {
-        if (entrada is null || entrada.Count == 0)
+        if (lista.Count == 0)
         {
-            return [];
+            return;
         }
 
+        // Duas passadas: a primeira coleta o estado normalizado em buffer
+        // temporário (trim + dedup case-insensitive + skip de brancos,
+        // preservando ordem de primeira ocorrência). A segunda substitui o
+        // conteúdo da lista original via Clear + Add. Evita a complexidade
+        // e o custo O(N²) de remoções sucessivas em IList durante iteração.
         HashSet<string> vistos = new(StringComparer.OrdinalIgnoreCase);
-        List<string> saida = new(entrada.Count);
-        foreach (string item in entrada)
+        List<string> normalizada = new(lista.Count);
+        foreach (string item in lista)
         {
             if (string.IsNullOrWhiteSpace(item))
             {
                 continue;
             }
 
-            string normalizado = item.Trim();
-            if (vistos.Add(normalizado))
+            string trimmed = item.Trim();
+            if (vistos.Add(trimmed))
             {
-                saida.Add(normalizado);
+                normalizada.Add(trimmed);
             }
         }
 
-        return saida;
+        lista.Clear();
+        foreach (string item in normalizada)
+        {
+            lista.Add(item);
+        }
     }
 }
