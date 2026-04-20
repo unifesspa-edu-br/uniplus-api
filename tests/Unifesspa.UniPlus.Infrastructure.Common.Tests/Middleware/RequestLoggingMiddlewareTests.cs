@@ -136,6 +136,63 @@ public class RequestLoggingMiddlewareTests
         eventos.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task InvokeAsync_ComPathSilenciadoEQueryString_DeveContinuarSilenciandoPorqueHttpRequestPathExcluiQuery()
+    {
+        // Regressão explícita: ASP.NET separa HttpRequest.Path e HttpRequest.QueryString
+        // em propriedades distintas. Um atacante (ou ferramenta de probe) que inclua
+        // query params em /health não consegue driblar o silêncio — o path comparado
+        // é exatamente "/health".
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", "/health", 200, query: "?cpf=12345678900&v=1");
+
+        eventos.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("/health/")]
+    [InlineData("/metrics/")]
+    public async Task InvokeAsync_ComPathSilenciadoETrailingSlash_DeveSilenciar(string path)
+    {
+        // Clientes (proxies, load balancers, Kubernetes probes) podem adicionar
+        // trailing slash ao path. Sem normalização, `/health/` escaparia do match
+        // exato contra `/health` — fazendo com que metade das probes caísse no
+        // log operacional.
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", path, 200);
+
+        eventos.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("/health/db")]
+    [InlineData("/health/redis")]
+    [InlineData("/health/db/postgresql")]
+    [InlineData("/metrics/prometheus")]
+    public async Task InvokeAsync_ComSubpathDePathSilenciado_DeveSilenciar(string path)
+    {
+        // Libraries como AspNetCore.HealthChecks.UI expõem subpaths granulares.
+        // Match por prefixo com boundary em `/` permite silenciar a família
+        // inteira declarando apenas o prefixo-pai.
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", path, 200);
+
+        eventos.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("/healthy")]       // "/health" + "y" — não é subpath
+    [InlineData("/health-ui")]     // "/health" + "-ui" — não é subpath
+    [InlineData("/healthcheck")]   // "/health" + "check" — não é subpath
+    [InlineData("/metricsxpto")]   // "/metrics" + "xpto" — não é subpath
+    public async Task InvokeAsync_ComPathSimilarMasSemBoundary_NaoDeveSilenciar(string path)
+    {
+        // Boundary guard: prefix match só aceita `/` como separador após o prefixo.
+        // Caso contrário, rotas de negócio com nomes que começam com "health"
+        // ("/healthy", "/health-report") cairiam silenciosamente no vazio.
+        List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", path, 200);
+
+        eventos.Should().ContainSingle();
+        eventos[0].Level.Should().Be(LogEventLevel.Information);
+    }
+
     [Theory]
     [InlineData(500)]
     [InlineData(503)]
