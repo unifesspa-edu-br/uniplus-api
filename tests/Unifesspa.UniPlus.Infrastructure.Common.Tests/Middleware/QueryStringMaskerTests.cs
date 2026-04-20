@@ -147,7 +147,10 @@ public class QueryStringMaskerTests
         // Garante que o masker respeita a configuração injetada, não uma lista
         // hardcoded — requisito para que appsettings possa ampliar a proteção
         // sem recompilar (ex.: adicionar "matricula" em produção).
-        RequestLoggingOptions opcoes = new() { NomesParametrosSensiveis = ["matricula", "rg"] };
+        RequestLoggingOptions opcoes = new();
+        opcoes.NomesParametrosSensiveis.Clear();
+        opcoes.NomesParametrosSensiveis.Add("matricula");
+        opcoes.NomesParametrosSensiveis.Add("rg");
         QueryStringMasker masker = CriarMasker(opcoes);
         QueryString query = new("?cpf=123&matricula=98765&rg=AB-12");
 

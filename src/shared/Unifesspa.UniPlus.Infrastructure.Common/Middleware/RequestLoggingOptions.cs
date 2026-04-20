@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.Extensions.Options;
 
 public sealed class RequestLoggingOptions
@@ -13,10 +11,11 @@ public sealed class RequestLoggingOptions
     /// (comparação case-insensitive após decodificação percent-encoding). Defaults
     /// cobrem o mínimo regulatório LGPD: cpf, email, senha, password, token.
     /// Configuração amplia os defaults em vez de substituir — é impossível
-    /// acidentalmente remover um parâmetro sensível via appsettings.
+    /// acidentalmente remover um parâmetro sensível via appsettings. Para substituir
+    /// integralmente os defaults, chamar <c>Clear()</c> antes de adicionar novos
+    /// valores via <c>Configure&lt;T&gt;(Action)</c>.
     /// </summary>
-    [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "DTO de IOptions: binder exige setter mutável.")]
-    public IList<string> NomesParametrosSensiveis { get; set; } = DefaultsNomesParametrosSensiveis();
+    public IList<string> NomesParametrosSensiveis { get; } = DefaultsNomesParametrosSensiveis();
 
     /// <summary>
     /// Prefixos de path silenciados para respostas de sucesso (status &lt; 400).
@@ -30,8 +29,7 @@ public sealed class RequestLoggingOptions
     /// logadas — silenciar falhas equivaleria a apagar alarmes.
     /// Lista vazia desativa o silenciamento.
     /// </summary>
-    [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "DTO de IOptions: binder exige setter mutável.")]
-    public IList<string> PrefixosSilenciados { get; set; } = DefaultsPrefixosSilenciados();
+    public IList<string> PrefixosSilenciados { get; } = DefaultsPrefixosSilenciados();
 
     /// <summary>
     /// String que substitui o valor de parâmetros sensíveis no log. Default "***".
@@ -59,28 +57,40 @@ internal sealed class RequestLoggingOptionsValidator : IValidateOptions<RequestL
         ArgumentNullException.ThrowIfNull(options);
 
         List<string> erros = new();
+        ValidarNomesParametrosSensiveis(options.NomesParametrosSensiveis, erros);
+        ValidarPrefixosSilenciados(options.PrefixosSilenciados, erros);
+        ValidarValorMascarado(options.ValorMascarado, erros);
 
-        // Entradas em branco são normalizadas (dropadas) pelo PostConfigure do
-        // DI extension — aqui validamos apenas o estado final, após normalização.
-        if (options.NomesParametrosSensiveis is null || options.NomesParametrosSensiveis.Count == 0)
+        return erros.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(erros);
+    }
+
+    private static void ValidarNomesParametrosSensiveis(IList<string> lista, List<string> erros)
+    {
+        if (lista is null || lista.Count == 0)
         {
             erros.Add($"{nameof(RequestLoggingOptions.NomesParametrosSensiveis)} não pode estar vazio — remover masking de PII viola LGPD.");
         }
+    }
 
-        if (options.PrefixosSilenciados is null)
+    private static void ValidarPrefixosSilenciados(IList<string> lista, List<string> erros)
+    {
+        if (lista is null)
         {
             erros.Add($"{nameof(RequestLoggingOptions.PrefixosSilenciados)} não pode ser nulo — use uma lista vazia para desativar o silenciamento.");
+            return;
         }
-        else if (options.PrefixosSilenciados.Any(p => !p.StartsWith('/')))
+
+        if (lista.Any(p => !p.StartsWith('/')))
         {
             erros.Add($"{nameof(RequestLoggingOptions.PrefixosSilenciados)} contém path inválido — cada entrada deve começar com '/'.");
         }
+    }
 
-        if (string.IsNullOrEmpty(options.ValorMascarado))
+    private static void ValidarValorMascarado(string valor, List<string> erros)
+    {
+        if (string.IsNullOrEmpty(valor))
         {
             erros.Add($"{nameof(RequestLoggingOptions.ValorMascarado)} não pode ser vazio — valor mascarado é o que aparece nos logs no lugar do dado sensível.");
         }
-
-        return erros.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(erros);
     }
 }

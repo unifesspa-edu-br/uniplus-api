@@ -30,13 +30,16 @@ public class RequestLoggingServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddRequestLogging_ComActionConfigure_DeveSobrescreverDefaults()
+    public void AddRequestLogging_ComActionConfigureLimpandoDefaults_DeveSubstituirCompletamente()
     {
         ServiceCollection services = new();
 
         services.AddRequestLogging(configure: opts =>
         {
-            opts.NomesParametrosSensiveis = ["matricula"];
+            // Limpar + adicionar expressa substituição explícita. Sem Clear,
+            // a semântica seria merge com os defaults (ver teste abaixo).
+            opts.NomesParametrosSensiveis.Clear();
+            opts.NomesParametrosSensiveis.Add("matricula");
             opts.ValorMascarado = "[hidden]";
         });
 
@@ -118,7 +121,7 @@ public class RequestLoggingServiceCollectionExtensionsTests
         // já chegou no sink de logs em produção.
         ServiceCollection services = new();
 
-        services.AddRequestLogging(configure: opts => opts.NomesParametrosSensiveis = []);
+        services.AddRequestLogging(configure: opts => opts.NomesParametrosSensiveis.Clear());
 
         using ServiceProvider provider = services.BuildServiceProvider();
         Func<RequestLoggingOptions> acao = () => provider.GetRequiredService<IOptions<RequestLoggingOptions>>().Value;
