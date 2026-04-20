@@ -36,6 +36,7 @@ public class QueryStringMaskerTests
     [InlineData("?senha=123abc", "?senha=***")]
     [InlineData("?password=secret", "?password=***")]
     [InlineData("?token=jwt.abc.def", "?token=***")]
+    [InlineData("?cpf=", "?cpf=***")]
     public void Mascarar_ParametroSensivelIsolado_DeveSubstituirValor(string entrada, string esperado)
     {
         QueryStringMasker masker = CriarMasker();
