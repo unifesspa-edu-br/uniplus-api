@@ -16,9 +16,7 @@ public sealed class QueryStringMasker
         ArgumentNullException.ThrowIfNull(options);
         RequestLoggingOptions valor = options.Value;
 
-        // Snapshot imutável das opções no momento da construção: o masker é
-        // singleton de longa duração e FrozenSet oferece lookup mais rápido
-        // do que HashSet normal a um custo de build pago uma única vez aqui.
+        // FrozenSet: build custoso amortizado (singleton), lookup mais rápido que HashSet.
         _nomesSensiveis = FrozenSet.ToFrozenSet(valor.NomesParametrosSensiveis, StringComparer.OrdinalIgnoreCase);
         _valorMascarado = valor.ValorMascarado;
     }
@@ -57,9 +55,8 @@ public sealed class QueryStringMasker
             }
 
             string keyEncoded = pedaco[..eqIdx];
-            // Decodifica a chave para comparar com a lista ignorando URL-encoding,
-            // mas preserva o encoding original ao reescrever o par — evita vetores
-            // de bypass como `?%63%70%66=123` escaparem do masking.
+            // Segurança: compara a chave decodificada para não deixar bypass via
+            // percent-encoding (ex.: `?%63%70%66=123` equivale a `?cpf=123`).
             string keyDecoded = Uri.UnescapeDataString(keyEncoded);
 
             sb.Append(keyEncoded);

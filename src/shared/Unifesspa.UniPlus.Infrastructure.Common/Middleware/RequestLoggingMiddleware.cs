@@ -28,11 +28,7 @@ public sealed partial class RequestLoggingMiddleware
         _logger = logger;
         _masker = masker;
 
-        // Prefixos são normalizados removendo trailing slash (exceto o caso
-        // especial "/", preservado como raiz). Armazenados como ImmutableArray
-        // ordenado para iteração em hot path sem custo de enumerator —
-        // FrozenSet.Contains não serve porque precisamos de prefix match com
-        // boundary, não igualdade.
+        // ImmutableArray (não FrozenSet): matching é prefix+boundary, não igualdade.
         _prefixosSilenciados = options.Value.PrefixosSilenciados
             .Select(NormalizarPrefixo)
             .Where(p => p.Length > 0)
@@ -47,12 +43,9 @@ public sealed partial class RequestLoggingMiddleware
         long startTimestamp = Stopwatch.GetTimestamp();
         Exception? falha = null;
 
-        // try/catch/throw + finally: capturamos a exception apenas como
-        // contexto para o log (mantendo stack trace via `throw;`) e a
-        // deixamos propagar para o GlobalExceptionMiddleware decidir a
-        // resposta. Sem essa captura, uma exception que escapasse daria
-        // um log Information com status 200 (default) — mascarando falha
-        // como sucesso.
+        // Capturamos para elevar o log a Error; `throw;` preserva stack para o
+        // GlobalExceptionMiddleware. Sem isso, exception que escapa o pipeline
+        // aparece como Information 200 no log (default do status code).
         try
         {
             await _next(context).ConfigureAwait(false);
@@ -70,15 +63,6 @@ public sealed partial class RequestLoggingMiddleware
             string query = _masker.Mascarar(context.Request.QueryString);
             int statusCode = context.Response.StatusCode;
 
-            // Presença de exception força nível Error independentemente do
-            // status code observado — evita que uma falha silenciosa (status
-            // não alterado) apareça como sucesso no log. Severidade
-            // proporcional à categoria HTTP: 5xx é falha do servidor,
-            // 4xx sinaliza problema no lado do cliente e demais respostas são
-            // tráfego operacional normal. Paths de infraestrutura (health,
-            // metrics) são silenciados quando bem-sucedidos para não saturar
-            // observabilidade com probes de liveness/readiness; respostas de
-            // erro continuam sendo reportadas porque sinalizam problema real.
             if (falha is not null || statusCode >= 500)
             {
                 LogRequestServerError(_logger, method, path, query, statusCode, elapsedMs, falha);
@@ -94,16 +78,7 @@ public sealed partial class RequestLoggingMiddleware
         }
     }
 
-    // Match case-insensitive por prefixo com boundary em `/`. Aceita o path
-    // exato ou subpaths (`/health`, `/health/`, `/health/db`) mas rejeita
-    // falsos positivos que meramente começam com o prefixo (`/healthy`,
-    // `/health-ui`). O boundary garante que apenas separadores hierárquicos
-    // de URL contam como extensão do prefixo.
-    //
-    // Trabalha com `ReadOnlySpan<char>` em vez de `string` para não alocar
-    // em requests com trailing slash — hot path executa por request. Os
-    // prefixos em `_prefixosSilenciados` já estão normalizados (sem trailing
-    // slash, exceto "/") desde o construtor.
+    // Span evita alocação no hot path em requests com trailing slash.
     private bool DeveSilenciar(string path)
     {
         ReadOnlySpan<char> pathSpan = path.AsSpan();
@@ -130,10 +105,6 @@ public sealed partial class RequestLoggingMiddleware
         return false;
     }
 
-    // Normaliza removendo trailing slash exceto no caso raiz "/", que é
-    // preservado como path canônico da raiz. Usado apenas no construtor
-    // (caminho frio) — o hot path do DeveSilenciar faz a normalização
-    // equivalente via span sem alocação.
     private static string NormalizarPrefixo(string valor) =>
         valor.Length > 1 && valor.EndsWith('/') ? valor.TrimEnd('/') : valor;
 
@@ -143,10 +114,8 @@ public sealed partial class RequestLoggingMiddleware
     [LoggerMessage(Level = LogLevel.Warning, Message = "HTTP {Method} {Path}{Query} respondeu {StatusCode} em {ElapsedMs}ms")]
     private static partial void LogRequestClientError(ILogger logger, string method, string path, string query, int statusCode, double elapsedMs);
 
-    // Exception é o último parâmetro (convenção do source generator de
-    // LoggerMessage): o gerador reconhece o tipo e emite no LogEvent.Exception
-    // em vez de no template de mensagem — preserva stack trace estruturada
-    // nos sinks sem polui-lo com a representação textual.
+    // Exception no último parâmetro: convenção do source generator do LoggerMessage —
+    // vai para LogEvent.Exception (stack estruturada nos sinks), não para o template.
     [LoggerMessage(Level = LogLevel.Error, Message = "HTTP {Method} {Path}{Query} respondeu {StatusCode} em {ElapsedMs}ms")]
     private static partial void LogRequestServerError(ILogger logger, string method, string path, string query, int statusCode, double elapsedMs, Exception? ex);
 }
