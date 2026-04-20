@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.SharedKernel\Unifesspa.UniPlus.SharedKernel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Infrastructure.Common.Tests" />
+  </ItemGroup>
+
 </Project>

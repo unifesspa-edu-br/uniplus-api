@@ -22,7 +22,7 @@ public sealed partial class PiiMaskingEnricher : ILogEventEnricher
         }
     }
 
-    public static string MascararCpf(string texto)
+    internal static string MascararCpf(string texto)
     {
         if (string.IsNullOrEmpty(texto))
         {
