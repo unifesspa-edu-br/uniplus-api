@@ -95,18 +95,18 @@ public class RequestLoggingServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddRequestLogging_ComPathSilenciadoInvalido_DeveFalharValidacao()
+    public void AddRequestLogging_ComPrefixoSilenciadoInvalido_DeveFalharValidacao()
     {
         ServiceCollection services = new();
 
         services.AddRequestLogging(configure: opts =>
-            opts.PathsSilenciados.Add("health"));   // falta '/' inicial
+            opts.PrefixosSilenciados.Add("health"));   // falta '/' inicial
 
         using ServiceProvider provider = services.BuildServiceProvider();
         Func<RequestLoggingOptions> acao = () => provider.GetRequiredService<IOptions<RequestLoggingOptions>>().Value;
 
         acao.Should().Throw<OptionsValidationException>()
-            .WithMessage("*PathsSilenciados*");
+            .WithMessage("*PrefixosSilenciados*");
     }
 
     [Fact]

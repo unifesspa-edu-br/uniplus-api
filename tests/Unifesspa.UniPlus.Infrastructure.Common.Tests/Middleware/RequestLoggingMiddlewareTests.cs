@@ -207,9 +207,9 @@ public class RequestLoggingMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_ComListaDePathsSilenciadosCustomizada_DeveRespeitarConfiguracaoInjetada()
+    public async Task InvokeAsync_ComListaDePrefixosSilenciadosCustomizada_DeveRespeitarConfiguracaoInjetada()
     {
-        RequestLoggingOptions opcoes = new() { PathsSilenciados = ["/custom/noise"] };
+        RequestLoggingOptions opcoes = new() { PrefixosSilenciados = ["/custom/noise"] };
         List<LogEvent> eventos = await ExecutarERetornarLogsAsync("GET", "/custom/noise", 200, opcoes: opcoes);
         List<LogEvent> eventosHealth = await ExecutarERetornarLogsAsync("GET", "/health", 200, opcoes: opcoes);
 

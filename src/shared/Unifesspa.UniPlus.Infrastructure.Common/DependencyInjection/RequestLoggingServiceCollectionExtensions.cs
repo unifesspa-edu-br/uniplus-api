@@ -40,7 +40,7 @@ public static class RequestLoggingServiceCollectionExtensions
         optionsBuilder.PostConfigure(opts =>
         {
             opts.NomesParametrosSensiveis = NormalizarLista(opts.NomesParametrosSensiveis);
-            opts.PathsSilenciados = NormalizarLista(opts.PathsSilenciados);
+            opts.PrefixosSilenciados = NormalizarLista(opts.PrefixosSilenciados);
         });
 
         // Validação executada uma vez ao materializar `IOptions<T>`. O flag
