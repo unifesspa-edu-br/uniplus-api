@@ -32,6 +32,7 @@ builder.Services.AddHealthChecks();
 WebApplication app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
