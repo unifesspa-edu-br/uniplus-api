@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Common.Middleware;
 
-using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 using Microsoft.AspNetCore.Http;
@@ -12,7 +12,7 @@ public sealed partial class RequestLoggingMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestLoggingMiddleware> _logger;
     private readonly QueryStringMasker _masker;
-    private readonly FrozenSet<string> _pathsSilenciados;
+    private readonly ImmutableArray<string> _prefixosSilenciados;
 
     public RequestLoggingMiddleware(
         RequestDelegate next,
@@ -27,9 +27,17 @@ public sealed partial class RequestLoggingMiddleware
         _next = next;
         _logger = logger;
         _masker = masker;
-        _pathsSilenciados = FrozenSet.ToFrozenSet(
-            options.Value.PathsSilenciados,
-            StringComparer.OrdinalIgnoreCase);
+
+        // Prefixos são normalizados removendo trailing slash (exceto o caso
+        // especial "/", preservado como raiz). Armazenados como ImmutableArray
+        // ordenado para iteração em hot path sem custo de enumerator —
+        // FrozenSet.Contains não serve porque precisamos de prefix match com
+        // boundary, não igualdade.
+        _prefixosSilenciados = options.Value.PathsSilenciados
+            .Select(NormalizarPrefixo)
+            .Where(p => p.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToImmutableArray();
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -79,12 +87,44 @@ public sealed partial class RequestLoggingMiddleware
             {
                 LogRequestClientError(_logger, method, path, query, statusCode, elapsedMs);
             }
-            else if (!_pathsSilenciados.Contains(path))
+            else if (!DeveSilenciar(path))
             {
                 LogRequestSucesso(_logger, method, path, query, statusCode, elapsedMs);
             }
         }
     }
+
+    // Match case-insensitive por prefixo com boundary em `/`. Aceita o path
+    // exato ou subpaths (`/health`, `/health/`, `/health/db`) mas rejeita
+    // falsos positivos que meramente começam com o prefixo (`/healthy`,
+    // `/health-ui`). O boundary garante que apenas separadores hierárquicos
+    // de URL contam como extensão do prefixo.
+    private bool DeveSilenciar(string path)
+    {
+        string pathNormalizado = NormalizarPrefixo(path);
+        foreach (string prefixo in _prefixosSilenciados)
+        {
+            if (pathNormalizado.Equals(prefixo, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (pathNormalizado.Length > prefixo.Length &&
+                pathNormalizado.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase) &&
+                pathNormalizado[prefixo.Length] == '/')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Normaliza removendo trailing slash exceto no caso raiz "/", que é
+    // preservado como path canônico da raiz. Strings vazias são tratadas
+    // como "/" pelo chamador (ver InvokeAsync).
+    private static string NormalizarPrefixo(string valor) =>
+        valor.Length > 1 && valor.EndsWith('/') ? valor.TrimEnd('/') : valor;
 
     [LoggerMessage(Level = LogLevel.Information, Message = "HTTP {Method} {Path}{Query} respondeu {StatusCode} em {ElapsedMs}ms")]
     private static partial void LogRequestSucesso(ILogger logger, string method, string path, string query, int statusCode, double elapsedMs);

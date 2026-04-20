@@ -26,8 +26,12 @@ public sealed class RequestLoggingOptions
     public static IList<string> DefaultsNomesParametrosSensiveis() =>
         ["cpf", "email", "senha", "password", "token"];
 
+    // Cada entrada é tratada como prefixo de rota pelo middleware (match por
+    // prefixo com boundary em `/`). Assim `/health` cobre automaticamente
+    // `/health/ready`, `/health/live`, `/health/db/postgresql` e qualquer
+    // outro subpath exposto por libraries de health-check.
     public static IList<string> DefaultsPathsSilenciados() =>
-        ["/health", "/health/ready", "/health/live", "/metrics"];
+        ["/health", "/metrics"];
 }
 
 internal sealed class RequestLoggingOptionsValidator : IValidateOptions<RequestLoggingOptions>
