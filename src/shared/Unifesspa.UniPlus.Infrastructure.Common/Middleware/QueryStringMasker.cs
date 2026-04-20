@@ -4,19 +4,26 @@ using System.Collections.Frozen;
 using System.Text;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
-public static class QueryStringMasker
+public sealed class QueryStringMasker
 {
-    public const string MaskedValue = "***";
+    private readonly FrozenSet<string> _nomesSensiveis;
+    private readonly string _valorMascarado;
 
-    // Comparador ordinal case-insensitive cobre variantes como "CPF", "Cpf" e "cpf"
-    // sem depender de cultura — critério LGPD aplica-se igual ao parâmetro qualquer
-    // que seja a grafia enviada pelo cliente.
-    internal static readonly FrozenSet<string> NomesSensiveis = FrozenSet.ToFrozenSet(
-        new[] { "cpf", "email", "senha", "password", "token" },
-        StringComparer.OrdinalIgnoreCase);
+    public QueryStringMasker(IOptions<RequestLoggingOptions> options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        RequestLoggingOptions valor = options.Value;
 
-    public static string Mascarar(QueryString queryString)
+        // Snapshot imutável das opções no momento da construção: o masker é
+        // singleton de longa duração e FrozenSet oferece lookup mais rápido
+        // do que HashSet normal a um custo de build pago uma única vez aqui.
+        _nomesSensiveis = FrozenSet.ToFrozenSet(valor.NomesParametrosSensiveis, StringComparer.OrdinalIgnoreCase);
+        _valorMascarado = valor.ValorMascarado;
+    }
+
+    public string Mascarar(QueryString queryString)
     {
         if (!queryString.HasValue || queryString.Value!.Length <= 1)
         {
@@ -51,14 +58,15 @@ public static class QueryStringMasker
 
             string keyEncoded = pedaco[..eqIdx];
             // Decodifica a chave para comparar com a lista ignorando URL-encoding,
-            // mas preserva o encoding original ao reescrever o par.
+            // mas preserva o encoding original ao reescrever o par — evita vetores
+            // de bypass como `?%63%70%66=123` escaparem do masking.
             string keyDecoded = Uri.UnescapeDataString(keyEncoded);
 
             sb.Append(keyEncoded);
             sb.Append('=');
-            if (NomesSensiveis.Contains(keyDecoded))
+            if (_nomesSensiveis.Contains(keyDecoded))
             {
-                sb.Append(MaskedValue);
+                sb.Append(_valorMascarado);
             }
             else
             {

@@ -24,6 +24,7 @@ string connectionString = builder.Configuration.GetConnectionString("IngressoDb"
     ?? throw new InvalidOperationException("Connection string 'IngressoDb' não configurada.");
 
 builder.Services.AddCorrelationIdAccessor();
+builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddIngressoApplication();
 builder.Services.AddIngressoInfrastructure(connectionString);
 

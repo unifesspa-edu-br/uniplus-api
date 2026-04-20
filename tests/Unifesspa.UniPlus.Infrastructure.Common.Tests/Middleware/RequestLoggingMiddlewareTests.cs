@@ -5,8 +5,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-
-using NSubstitute;
+using Microsoft.Extensions.Options;
 
 using Serilog;
 using Serilog.Context;
@@ -30,7 +29,8 @@ public class RequestLoggingMiddlewareTests
                 proximoFoiChamado = true;
                 return Task.CompletedTask;
             },
-            NullLogger<RequestLoggingMiddleware>.Instance);
+            NullLogger<RequestLoggingMiddleware>.Instance,
+            CriarMasker());
 
         await middleware.InvokeAsync(context);
 
@@ -116,7 +116,8 @@ public class RequestLoggingMiddlewareTests
             using SerilogLoggerFactory factory = new(logger);
             RequestLoggingMiddleware middleware = new(
                 _ => throw new InvalidOperationException("falha simulada"),
-                factory.CreateLogger<RequestLoggingMiddleware>());
+                factory.CreateLogger<RequestLoggingMiddleware>(),
+                CriarMasker());
 
             Func<Task> acao = () => middleware.InvokeAsync(context);
 
@@ -150,7 +151,8 @@ public class RequestLoggingMiddlewareTests
                     context.Response.StatusCode = 200;
                     return Task.CompletedTask;
                 },
-                factory.CreateLogger<RequestLoggingMiddleware>());
+                factory.CreateLogger<RequestLoggingMiddleware>(),
+                CriarMasker());
 
             using (LogContext.PushProperty(CorrelationIdMiddleware.LogContextProperty, correlationId))
             {
@@ -171,11 +173,13 @@ public class RequestLoggingMiddlewareTests
     [Fact]
     public async Task Construtor_ComNext_OuLogger_Nulo_DeveLancar()
     {
-        Func<RequestLoggingMiddleware> criarSemNext = () => new RequestLoggingMiddleware(null!, NullLogger<RequestLoggingMiddleware>.Instance);
-        Func<RequestLoggingMiddleware> criarSemLogger = () => new RequestLoggingMiddleware(_ => Task.CompletedTask, null!);
+        Func<RequestLoggingMiddleware> criarSemNext = () => new RequestLoggingMiddleware(null!, NullLogger<RequestLoggingMiddleware>.Instance, CriarMasker());
+        Func<RequestLoggingMiddleware> criarSemLogger = () => new RequestLoggingMiddleware(_ => Task.CompletedTask, null!, CriarMasker());
+        Func<RequestLoggingMiddleware> criarSemMasker = () => new RequestLoggingMiddleware(_ => Task.CompletedTask, NullLogger<RequestLoggingMiddleware>.Instance, null!);
 
         criarSemNext.Should().Throw<ArgumentNullException>();
         criarSemLogger.Should().Throw<ArgumentNullException>();
+        criarSemMasker.Should().Throw<ArgumentNullException>();
 
         await Task.CompletedTask;
     }
@@ -185,7 +189,8 @@ public class RequestLoggingMiddlewareTests
     {
         RequestLoggingMiddleware middleware = new(
             _ => Task.CompletedTask,
-            NullLogger<RequestLoggingMiddleware>.Instance);
+            NullLogger<RequestLoggingMiddleware>.Instance,
+            CriarMasker());
 
         Func<Task> acao = () => middleware.InvokeAsync(null!);
 
@@ -210,7 +215,8 @@ public class RequestLoggingMiddlewareTests
                     context.Response.StatusCode = statusCode;
                     return Task.CompletedTask;
                 },
-                factory.CreateLogger<RequestLoggingMiddleware>());
+                factory.CreateLogger<RequestLoggingMiddleware>(),
+                CriarMasker());
 
             await middleware.InvokeAsync(context);
         }
@@ -234,6 +240,9 @@ public class RequestLoggingMiddlewareTests
 
         return context;
     }
+
+    private static QueryStringMasker CriarMasker(RequestLoggingOptions? opcoes = null) =>
+        new(Options.Create(opcoes ?? new RequestLoggingOptions()));
 
     private static (Logger Logger, List<LogEvent> Eventos) CriarLoggerSerilog()
     {
