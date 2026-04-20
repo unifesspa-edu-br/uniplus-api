@@ -9,13 +9,19 @@ public sealed partial class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestLoggingMiddleware> _logger;
+    private readonly QueryStringMasker _masker;
 
-    public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+    public RequestLoggingMiddleware(
+        RequestDelegate next,
+        ILogger<RequestLoggingMiddleware> logger,
+        QueryStringMasker masker)
     {
         ArgumentNullException.ThrowIfNull(next);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(masker);
         _next = next;
         _logger = logger;
+        _masker = masker;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -37,7 +43,7 @@ public sealed partial class RequestLoggingMiddleware
             long elapsedMs = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             string method = context.Request.Method;
             string path = context.Request.Path.HasValue ? context.Request.Path.Value! : "/";
-            string query = QueryStringMasker.Mascarar(context.Request.QueryString);
+            string query = _masker.Mascarar(context.Request.QueryString);
             int statusCode = context.Response.StatusCode;
 
             // Severidade proporcional à categoria HTTP: 5xx é falha do servidor,

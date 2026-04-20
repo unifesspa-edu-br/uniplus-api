@@ -24,6 +24,7 @@ string connectionString = builder.Configuration.GetConnectionString("SelecaoDb")
     ?? throw new InvalidOperationException("Connection string 'SelecaoDb' não configurada.");
 
 builder.Services.AddCorrelationIdAccessor();
+builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddSelecaoApplication();
 builder.Services.AddSelecaoInfrastructure(connectionString);
 
