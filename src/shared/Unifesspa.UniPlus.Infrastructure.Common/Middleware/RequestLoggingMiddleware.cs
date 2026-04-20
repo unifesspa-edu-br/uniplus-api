@@ -56,7 +56,7 @@ public sealed partial class RequestLoggingMiddleware
         }
         finally
         {
-            long elapsedMs = (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
+            double elapsedMs = Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             string method = context.Request.Method;
             string path = context.Request.Path.HasValue ? context.Request.Path.Value! : "/";
             string query = _masker.Mascarar(context.Request.QueryString);
@@ -87,15 +87,15 @@ public sealed partial class RequestLoggingMiddleware
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "HTTP {Method} {Path}{Query} respondeu {StatusCode} em {ElapsedMs}ms")]
-    private static partial void LogRequestSucesso(ILogger logger, string method, string path, string query, int statusCode, long elapsedMs);
+    private static partial void LogRequestSucesso(ILogger logger, string method, string path, string query, int statusCode, double elapsedMs);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "HTTP {Method} {Path}{Query} respondeu {StatusCode} em {ElapsedMs}ms")]
-    private static partial void LogRequestClientError(ILogger logger, string method, string path, string query, int statusCode, long elapsedMs);
+    private static partial void LogRequestClientError(ILogger logger, string method, string path, string query, int statusCode, double elapsedMs);
 
     // Exception é o último parâmetro (convenção do source generator de
     // LoggerMessage): o gerador reconhece o tipo e emite no LogEvent.Exception
     // em vez de no template de mensagem — preserva stack trace estruturada
     // nos sinks sem polui-lo com a representação textual.
     [LoggerMessage(Level = LogLevel.Error, Message = "HTTP {Method} {Path}{Query} respondeu {StatusCode} em {ElapsedMs}ms")]
-    private static partial void LogRequestServerError(ILogger logger, string method, string path, string query, int statusCode, long elapsedMs, Exception? ex);
+    private static partial void LogRequestServerError(ILogger logger, string method, string path, string query, int statusCode, double elapsedMs, Exception? ex);
 }
