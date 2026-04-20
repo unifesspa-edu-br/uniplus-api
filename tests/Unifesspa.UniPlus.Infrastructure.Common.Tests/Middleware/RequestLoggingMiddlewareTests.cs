@@ -207,6 +207,26 @@ public class RequestLoggingMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_ComListaDePrefixosVazia_DeveLogarTodosOsPathsIncluindoHealth()
+    {
+        // Validator aceita PrefixosSilenciados vazia explicitamente — é o modo
+        // documentado de desativar o silenciamento. Este teste trava esse
+        // contrato: se alguma normalização futura começar a reintroduzir
+        // defaults quando a lista está vazia, o teste falha antes de entrar
+        // em produção.
+        RequestLoggingOptions opcoes = new();
+        opcoes.PrefixosSilenciados.Clear();
+
+        List<LogEvent> eventosHealth = await ExecutarERetornarLogsAsync("GET", "/health", 200, opcoes: opcoes);
+        List<LogEvent> eventosMetrics = await ExecutarERetornarLogsAsync("GET", "/metrics", 200, opcoes: opcoes);
+
+        eventosHealth.Should().ContainSingle();
+        eventosHealth[0].Level.Should().Be(LogEventLevel.Information);
+        eventosMetrics.Should().ContainSingle();
+        eventosMetrics[0].Level.Should().Be(LogEventLevel.Information);
+    }
+
+    [Fact]
     public async Task InvokeAsync_ComListaDePrefixosSilenciadosCustomizada_DeveRespeitarConfiguracaoInjetada()
     {
         RequestLoggingOptions opcoes = new();
