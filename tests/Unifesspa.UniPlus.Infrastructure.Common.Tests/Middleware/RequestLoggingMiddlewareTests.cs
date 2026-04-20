@@ -268,7 +268,7 @@ public class RequestLoggingMiddlewareTests
     }
 
     [Fact]
-    public async Task Construtor_ComDependenciaNula_DeveLancarArgumentNullException()
+    public void Construtor_ComDependenciaNula_DeveLancarArgumentNullException()
     {
         Func<RequestLoggingMiddleware> semNext =
             () => new RequestLoggingMiddleware(null!, NullLogger<RequestLoggingMiddleware>.Instance, CriarMasker(), CriarOptions());
@@ -283,8 +283,6 @@ public class RequestLoggingMiddlewareTests
         semLogger.Should().Throw<ArgumentNullException>();
         semMasker.Should().Throw<ArgumentNullException>();
         semOptions.Should().Throw<ArgumentNullException>();
-
-        await Task.CompletedTask;
     }
 
     [Fact]
