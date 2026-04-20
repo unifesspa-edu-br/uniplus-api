@@ -87,8 +87,11 @@ public class RequestLoggingMiddlewareTests
         log.Properties["Method"].ToString().Trim('"').Should().Be("POST");
         log.Properties["Path"].ToString().Trim('"').Should().Be("/api/editais");
         log.Properties["StatusCode"].ToString().Should().Be("201");
-        long elapsed = long.Parse(log.Properties["ElapsedMs"].ToString(), System.Globalization.CultureInfo.InvariantCulture);
-        elapsed.Should().BeGreaterThanOrEqualTo(0);
+        double elapsed = double.Parse(log.Properties["ElapsedMs"].ToString(), System.Globalization.CultureInfo.InvariantCulture);
+        elapsed.Should().BeGreaterThanOrEqualTo(0d);
+        // Tipo preservado como ScalarValue de double: testar o tipo subjacente
+        // evita regressão que reintroduza truncamento para long.
+        ((Serilog.Events.ScalarValue)log.Properties["ElapsedMs"]).Value.Should().BeOfType<double>();
     }
 
     [Fact]
