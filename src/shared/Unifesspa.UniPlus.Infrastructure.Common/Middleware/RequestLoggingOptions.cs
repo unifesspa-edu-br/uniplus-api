@@ -68,12 +68,6 @@ internal sealed class RequestLoggingOptionsValidator : IValidateOptions<RequestL
 
     private static void ValidarPrefixosSilenciados(IList<string> lista, List<string> erros)
     {
-        if (lista is null)
-        {
-            erros.Add($"{nameof(RequestLoggingOptions.PrefixosSilenciados)} não pode ser nulo — use uma lista vazia para desativar o silenciamento.");
-            return;
-        }
-
         if (lista.Any(p => !p.StartsWith('/')))
         {
             erros.Add($"{nameof(RequestLoggingOptions.PrefixosSilenciados)} contém path inválido — cada entrada deve começar com '/'.");
