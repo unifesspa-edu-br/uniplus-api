@@ -7,6 +7,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+/// <summary>Middleware de logging estruturado de requests HTTP.</summary>
+/// <remarks>
+/// Mascara valores de query string via <see cref="QueryStringMasker"/>, mas não segmentos
+/// de path — PII em path segments vaza em camadas anteriores ao middleware (nginx, WAF, CDN,
+/// cabeçalho Referer). Rotas devem usar identificadores opacos (UUID), nunca dados sensíveis
+/// em path. Ver unifesspa-edu-br/uniplus-docs#68.
+/// </remarks>
 public sealed partial class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;

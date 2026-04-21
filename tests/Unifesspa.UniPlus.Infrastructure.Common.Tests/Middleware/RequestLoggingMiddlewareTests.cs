@@ -328,7 +328,7 @@ public class RequestLoggingMiddlewareTests
                 },
                 factory.CreateLogger<RequestLoggingMiddleware>(),
                 CriarMasker(),
-            CriarOptions());
+                CriarOptions());
 
             using (LogContext.PushProperty(CorrelationIdMiddleware.LogContextProperty, correlationId))
             {
