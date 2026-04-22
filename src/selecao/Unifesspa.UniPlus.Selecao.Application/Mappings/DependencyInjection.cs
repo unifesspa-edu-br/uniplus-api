@@ -6,7 +6,7 @@ using MediatR;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Selecao.Application.Behaviors;
+using Unifesspa.UniPlus.Application.Abstractions.Behaviors;
 
 public static class SelecaoApplicationServiceRegistration
 {

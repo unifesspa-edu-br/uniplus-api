@@ -5,7 +5,7 @@ using MediatR;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class ObterEditalQueryHandler : IRequestHandler<ObterEditalQuery, Result<EditalDto>>
 {

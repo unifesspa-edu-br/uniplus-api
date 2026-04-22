@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using Unifesspa.UniPlus.SharedKernel.Domain.Entities;
-using Unifesspa.UniPlus.SharedKernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 public sealed class Candidato : EntityBase
 {

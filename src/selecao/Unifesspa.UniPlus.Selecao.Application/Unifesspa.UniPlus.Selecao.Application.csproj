@@ -7,7 +7,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.SharedKernel\Unifesspa.UniPlus.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Selecao.Domain\Unifesspa.UniPlus.Selecao.Domain.csproj" />
   </ItemGroup>
 

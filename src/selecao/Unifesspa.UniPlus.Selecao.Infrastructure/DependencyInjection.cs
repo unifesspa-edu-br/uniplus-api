@@ -6,9 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Infrastructure.Common.Persistence.Interceptors;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.SharedKernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 public static class SelecaoInfrastructureRegistration
 {

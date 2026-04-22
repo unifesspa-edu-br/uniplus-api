@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.SharedKernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Edital : EntityBase
 {

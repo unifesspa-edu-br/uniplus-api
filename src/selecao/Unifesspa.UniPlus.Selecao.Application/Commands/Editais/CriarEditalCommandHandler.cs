@@ -5,8 +5,8 @@ using MediatR;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.SharedKernel.Domain.Interfaces;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CriarEditalCommandHandler : IRequestHandler<CriarEditalCommand, Result<Guid>>
 {

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using Unifesspa.UniPlus.SharedKernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 public sealed class SelecaoDbContext : DbContext, IUnitOfWork
 {

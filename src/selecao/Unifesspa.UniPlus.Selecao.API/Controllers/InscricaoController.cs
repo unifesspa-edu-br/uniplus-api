@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 [ApiController]
 [Route("api/v1/inscricoes")]

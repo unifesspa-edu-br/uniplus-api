@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.SharedKernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Cota : EntityBase
 {
