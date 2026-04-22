@@ -1,9 +1,9 @@
-namespace Unifesspa.UniPlus.SharedKernel.Tests.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.ValueObjects;
 
 using FluentAssertions;
 
-using Unifesspa.UniPlus.SharedKernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CpfTests
 {
@@ -75,6 +75,15 @@ public sealed class CpfTests
         resultado.Error!.Code.Should().Be("Cpf.Invalido");
     }
 
+    [Fact]
+    public void Criar_DadoCpfComTodosZeros_DeveRetornarFailure()
+    {
+        Result<Cpf> resultado = Cpf.Criar("000.000.000-00");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("Cpf.Invalido");
+    }
+
     [Theory]
     [InlineData("12345678901")]
     [InlineData("111.222.333-44")]
@@ -89,7 +98,7 @@ public sealed class CpfTests
     // ─── Mascaramento (LGPD) ───────────────────────────────────────────────
 
     [Fact]
-    public void Mascarado_DeveUsarHifenComoSeparadorDosDigitosVerificadores()
+    public void Mascarado_DeveRetornarPadraoComHifenAntesDosDoisUltimosDigitos()
     {
         Cpf cpf = Cpf.Criar("529.982.247-25").Value!;
 

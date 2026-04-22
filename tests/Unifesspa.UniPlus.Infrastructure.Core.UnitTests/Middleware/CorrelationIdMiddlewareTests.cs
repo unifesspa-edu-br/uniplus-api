@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Infrastructure.Common.Tests.Middleware;
+namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Middleware;
 
 using FluentAssertions;
 
@@ -11,7 +11,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 
-using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
+using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
 public class CorrelationIdMiddlewareTests
 {
