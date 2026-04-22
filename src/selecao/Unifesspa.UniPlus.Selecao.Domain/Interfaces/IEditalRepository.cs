@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.SharedKernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 public interface IEditalRepository : IRepository<Edital>
 {

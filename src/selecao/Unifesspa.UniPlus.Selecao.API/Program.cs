@@ -1,8 +1,8 @@
 using Serilog;
 
-using Unifesspa.UniPlus.Infrastructure.Common.DependencyInjection;
-using Unifesspa.UniPlus.Infrastructure.Common.Logging;
-using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
+using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Logging;
+using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Infrastructure;

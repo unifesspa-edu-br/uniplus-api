@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
-using Unifesspa.UniPlus.SharedKernel.Domain.Entities;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class Inscricao : EntityBase
 {

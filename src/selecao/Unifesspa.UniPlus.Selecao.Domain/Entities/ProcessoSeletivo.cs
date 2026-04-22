@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using Unifesspa.UniPlus.SharedKernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class ProcessoSeletivo : EntityBase
 {
