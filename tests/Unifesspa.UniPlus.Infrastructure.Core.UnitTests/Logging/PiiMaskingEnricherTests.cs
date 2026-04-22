@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Infrastructure.Common.Tests.Logging;
+namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Logging;
 
 using FluentAssertions;
 
@@ -8,7 +8,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Parsing;
 
-using Unifesspa.UniPlus.Infrastructure.Common.Logging;
+using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 
 public sealed class PiiMaskingEnricherTests
 {

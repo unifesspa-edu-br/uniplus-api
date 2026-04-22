@@ -1,11 +1,11 @@
-namespace Unifesspa.UniPlus.Infrastructure.Common.Tests.Middleware;
+namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Middleware;
 
 using FluentAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
+using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
 public class QueryStringMaskerTests
 {

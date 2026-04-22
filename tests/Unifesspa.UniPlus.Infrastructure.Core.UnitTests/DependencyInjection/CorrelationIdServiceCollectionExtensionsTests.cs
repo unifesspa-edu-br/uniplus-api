@@ -1,11 +1,11 @@
-namespace Unifesspa.UniPlus.Infrastructure.Common.Tests.DependencyInjection;
+namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.DependencyInjection;
 
 using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Infrastructure.Common.DependencyInjection;
-using Unifesspa.UniPlus.Infrastructure.Common.Middleware;
+using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
 public class CorrelationIdServiceCollectionExtensionsTests
 {
