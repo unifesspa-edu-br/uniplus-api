@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Ingresso.Application.Commands.Chamadas;
 
 using MediatR;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Ingresso.Domain.Entities;
 using Unifesspa.UniPlus.Ingresso.Domain.Interfaces;
-using Unifesspa.UniPlus.SharedKernel.Domain.Interfaces;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CriarChamadaCommandHandler : IRequestHandler<CriarChamadaCommand, Result<Guid>>
 {

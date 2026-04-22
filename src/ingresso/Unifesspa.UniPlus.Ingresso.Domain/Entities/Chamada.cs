@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Ingresso.Domain.Entities;
 
 using Unifesspa.UniPlus.Ingresso.Domain.Enums;
-using Unifesspa.UniPlus.SharedKernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Chamada : EntityBase
 {
