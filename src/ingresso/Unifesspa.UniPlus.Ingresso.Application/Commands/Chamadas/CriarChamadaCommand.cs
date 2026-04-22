@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Ingresso.Application.Commands.Chamadas;
 
 using MediatR;
 
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed record CriarChamadaCommand(
     Guid EditalId,

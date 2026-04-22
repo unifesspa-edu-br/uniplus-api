@@ -5,7 +5,7 @@ using MediatR;
 using Unifesspa.UniPlus.Ingresso.Application.DTOs;
 using Unifesspa.UniPlus.Ingresso.Domain.Entities;
 using Unifesspa.UniPlus.Ingresso.Domain.Interfaces;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class ObterChamadaQueryHandler : IRequestHandler<ObterChamadaQuery, Result<ChamadaDto>>
 {

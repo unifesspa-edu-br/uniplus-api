@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Ingresso.Application.Commands.Matriculas;
 using Unifesspa.UniPlus.Ingresso.Application.DTOs;
 using Unifesspa.UniPlus.Ingresso.Application.Queries.Matriculas;
-using Unifesspa.UniPlus.SharedKernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 [ApiController]
 [Route("api/v1/matriculas")]
