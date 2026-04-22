@@ -13,19 +13,21 @@
     <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/shared/">
-    <Project Path="src/shared/Unifesspa.UniPlus.Infrastructure.Common/Unifesspa.UniPlus.Infrastructure.Common.csproj" />
-    <Project Path="src/shared/Unifesspa.UniPlus.SharedKernel/Unifesspa.UniPlus.SharedKernel.csproj" />
+    <Project Path="src/shared/Unifesspa.UniPlus.Application.Abstractions/Unifesspa.UniPlus.Application.Abstractions.csproj" />
+    <Project Path="src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
+    <Project Path="src/shared/Unifesspa.UniPlus.Kernel/Unifesspa.UniPlus.Kernel.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Unifesspa.UniPlus.Infrastructure.Common.Tests/Unifesspa.UniPlus.Infrastructure.Common.Tests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Application.Tests/Unifesspa.UniPlus.Ingresso.Application.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Application.Abstractions.UnitTests/Unifesspa.UniPlus.Application.Abstractions.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Application.UnitTests/Unifesspa.UniPlus.Ingresso.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.ArchTests/Unifesspa.UniPlus.Ingresso.ArchTests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Domain.Tests/Unifesspa.UniPlus.Ingresso.Domain.Tests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Integration.Tests/Unifesspa.UniPlus.Ingresso.Integration.Tests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.Selecao.Application.Tests/Unifesspa.UniPlus.Selecao.Application.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Ingresso.IntegrationTests/Unifesspa.UniPlus.Ingresso.IntegrationTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Kernel.UnitTests/Unifesspa.UniPlus.Kernel.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Selecao.Application.UnitTests/Unifesspa.UniPlus.Selecao.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Selecao.ArchTests/Unifesspa.UniPlus.Selecao.ArchTests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.Selecao.Domain.Tests/Unifesspa.UniPlus.Selecao.Domain.Tests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.Selecao.Integration.Tests/Unifesspa.UniPlus.Selecao.Integration.Tests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.SharedKernel.Tests/Unifesspa.UniPlus.SharedKernel.Tests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Selecao.Domain.UnitTests/Unifesspa.UniPlus.Selecao.Domain.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Selecao.IntegrationTests/Unifesspa.UniPlus.Selecao.IntegrationTests.csproj" />
   </Folder>
 </Solution>
