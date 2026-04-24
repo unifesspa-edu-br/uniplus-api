@@ -43,8 +43,8 @@ public static class OidcAuthenticationConfiguration
             .ValidateDataAnnotations()
             .Validate(
                 options => !requireHttps
-                    || options.Authority is null
-                    || !options.Authority.StartsWith("http://", StringComparison.OrdinalIgnoreCase),
+                    || options.Authority is not string authority
+                    || !authority.StartsWith("http://", StringComparison.OrdinalIgnoreCase),
                 "Auth:Authority must use HTTPS outside Development.")
             .ValidateOnStart();
 
