@@ -20,6 +20,13 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
+// Minimal API endpoints use a separate JSON options pipeline (ConfigureHttpJsonOptions),
+// not the MVC one above. Keep both in sync for consistent serialization across the API.
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 
 string connectionString = builder.Configuration.GetConnectionString("IngressoDb")
