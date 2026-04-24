@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+namespace Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Provides access to the authenticated user context extracted from the current request.
@@ -33,7 +33,7 @@ public interface IUserContext
     bool HasRole(string role);
 
     /// <summary>
-    /// Gets roles scoped to a specific resource.
+    /// Gets roles scoped to a specific resource (resource_access claim in Keycloak).
     /// </summary>
     /// <param name="resourceName">The resource name.</param>
     /// <returns>The list of roles associated with the resource.</returns>

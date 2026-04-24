@@ -6,6 +6,8 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+
 /// <summary>
 /// Resolves authenticated user data from the current HTTP context.
 /// </summary>
