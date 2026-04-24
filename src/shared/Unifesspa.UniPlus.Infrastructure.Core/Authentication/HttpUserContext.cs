@@ -18,6 +18,7 @@ public sealed partial class HttpUserContext : IUserContext
     private static readonly string[] UserIdClaimCandidates = [ClaimTypes.NameIdentifier, OidcClaims.Sub];
     private static readonly string[] NameClaimCandidates = [ClaimTypes.Name, OidcClaims.Name, OidcClaims.PreferredUsername];
     private static readonly string[] EmailClaimCandidates = [ClaimTypes.Email, OidcClaims.Email];
+    private static readonly string[] DirectRoleClaimTypes = [ClaimTypes.Role, KeycloakClaims.Role, KeycloakClaims.Roles];
 
     private readonly ClaimsPrincipal? _user;
     private readonly ILogger<HttpUserContext> _logger;
@@ -62,37 +63,13 @@ public sealed partial class HttpUserContext : IUserContext
         return _resourceRolesCache.GetOrAdd(resourceName, ResolveResourceRoles);
     }
 
-    private IReadOnlyList<string> ResolveResourceRoles(string resourceName)
-    {
-        string claimValue = _user?.FindFirst(KeycloakClaims.ResourceAccess)?.Value ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(claimValue))
-        {
-            return [];
-        }
-
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(claimValue);
-            if (!document.RootElement.TryGetProperty(resourceName, out JsonElement resourceElement) ||
-                !resourceElement.TryGetProperty(KeycloakClaims.Roles, out JsonElement rolesElement) ||
-                rolesElement.ValueKind != JsonValueKind.Array)
-            {
-                return [];
-            }
-
-            return rolesElement
-                .EnumerateArray()
-                .Select(static role => role.GetString())
-                .OfType<string>()
-                .Distinct(RoleComparer)
-                .ToArray();
-        }
-        catch (JsonException ex)
-        {
-            LogMalformedClaim(_logger, KeycloakClaims.ResourceAccess, resourceName, ex);
-            return [];
-        }
-    }
+    private IReadOnlyList<string> ResolveResourceRoles(string resourceName) =>
+        ParseRolesFromJsonClaim(
+                KeycloakClaims.ResourceAccess,
+                _user?.FindFirst(KeycloakClaims.ResourceAccess)?.Value,
+                resourceName)
+            .Distinct(RoleComparer)
+            .ToArray();
 
     private string? GetFirstClaimValue(string[] claimTypes)
     {
@@ -119,41 +96,67 @@ public sealed partial class HttpUserContext : IUserContext
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    private string[] ResolveRoles()
-    {
-        List<string> roles =
-        [
-            .. (_user?.FindAll(ClaimTypes.Role).Select(static claim => claim.Value) ?? []),
-            .. (_user?.FindAll(KeycloakClaims.Role).Select(static claim => claim.Value) ?? []),
-            .. (_user?.FindAll(KeycloakClaims.Roles).Select(static claim => claim.Value) ?? []),
-        ];
-
-        string? realmAccess = _user?.FindFirst(KeycloakClaims.RealmAccess)?.Value;
-        if (!string.IsNullOrWhiteSpace(realmAccess))
-        {
-            try
-            {
-                using JsonDocument document = JsonDocument.Parse(realmAccess);
-                if (document.RootElement.TryGetProperty(KeycloakClaims.Roles, out JsonElement realmRoles) &&
-                    realmRoles.ValueKind == JsonValueKind.Array)
-                {
-                    roles.AddRange(
-                        realmRoles
-                            .EnumerateArray()
-                            .Select(static role => role.GetString())
-                            .OfType<string>());
-                }
-            }
-            catch (JsonException ex)
-            {
-                LogMalformedClaim(_logger, KeycloakClaims.RealmAccess, resourceName: null, ex);
-            }
-        }
-
-        return roles
+    private string[] ResolveRoles() =>
+        EnumerateDirectRoleClaims()
+            .Concat(ParseRolesFromJsonClaim(
+                KeycloakClaims.RealmAccess,
+                _user?.FindFirst(KeycloakClaims.RealmAccess)?.Value,
+                resourceName: null))
             .Where(static role => !string.IsNullOrWhiteSpace(role))
             .Distinct(RoleComparer)
             .ToArray();
+
+    private IEnumerable<string> EnumerateDirectRoleClaims()
+    {
+        if (_user is null)
+        {
+            yield break;
+        }
+
+        foreach (string claimType in DirectRoleClaimTypes)
+        {
+            foreach (Claim claim in _user.FindAll(claimType))
+            {
+                yield return claim.Value;
+            }
+        }
+    }
+
+    private string[] ParseRolesFromJsonClaim(string claimName, string? claimValue, string? resourceName)
+    {
+        if (string.IsNullOrWhiteSpace(claimValue))
+        {
+            return [];
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(claimValue);
+            JsonElement scope = document.RootElement;
+
+            if (resourceName is not null &&
+                (!scope.TryGetProperty(resourceName, out scope) || scope.ValueKind != JsonValueKind.Object))
+            {
+                return [];
+            }
+
+            if (!scope.TryGetProperty(KeycloakClaims.Roles, out JsonElement rolesArray) ||
+                rolesArray.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            return rolesArray
+                .EnumerateArray()
+                .Select(static role => role.GetString())
+                .OfType<string>()
+                .ToArray();
+        }
+        catch (JsonException ex)
+        {
+            LogMalformedClaim(_logger, claimName, resourceName, ex);
+            return [];
+        }
     }
 
     [LoggerMessage(
