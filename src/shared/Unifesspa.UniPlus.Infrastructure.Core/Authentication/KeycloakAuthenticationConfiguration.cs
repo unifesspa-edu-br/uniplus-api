@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -45,7 +46,7 @@ public static class KeycloakAuthenticationConfiguration
             .AddJwtBearer();
 
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-            .Configure<IOptions<AuthOptions>>((jwtOptions, authAccessor) =>
+            .Configure<IOptions<AuthOptions>, ILoggerFactory>((jwtOptions, authAccessor, loggerFactory) =>
             {
                 AuthOptions auth = authAccessor.Value;
 
@@ -62,6 +63,9 @@ public static class KeycloakAuthenticationConfiguration
                     ValidateIssuerSigningKey = true,
                     ClockSkew = auth.ClockSkew,
                 };
+
+                jwtOptions.Events.WithStructuredLogging(
+                    loggerFactory.CreateLogger("Unifesspa.UniPlus.Authentication.JwtBearer"));
             });
 
         services.AddHttpContextAccessor();
