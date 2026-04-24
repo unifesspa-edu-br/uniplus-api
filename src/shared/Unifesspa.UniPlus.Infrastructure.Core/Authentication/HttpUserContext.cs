@@ -15,9 +15,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 public sealed partial class HttpUserContext : IUserContext
 {
     private static readonly StringComparer RoleComparer = StringComparer.OrdinalIgnoreCase;
-    private static readonly string[] UserIdClaimCandidates = [ClaimTypes.NameIdentifier, KeycloakClaims.Sub];
-    private static readonly string[] NameClaimCandidates = [ClaimTypes.Name, KeycloakClaims.Name, KeycloakClaims.PreferredUsername];
-    private static readonly string[] EmailClaimCandidates = [ClaimTypes.Email, KeycloakClaims.Email];
+    private static readonly string[] UserIdClaimCandidates = [ClaimTypes.NameIdentifier, OidcClaims.Sub];
+    private static readonly string[] NameClaimCandidates = [ClaimTypes.Name, OidcClaims.Name, OidcClaims.PreferredUsername];
+    private static readonly string[] EmailClaimCandidates = [ClaimTypes.Email, OidcClaims.Email];
 
     private readonly ClaimsPrincipal? _user;
     private readonly ILogger<HttpUserContext> _logger;
