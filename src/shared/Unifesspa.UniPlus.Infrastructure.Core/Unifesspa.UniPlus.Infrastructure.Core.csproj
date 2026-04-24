@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
   </ItemGroup>
 

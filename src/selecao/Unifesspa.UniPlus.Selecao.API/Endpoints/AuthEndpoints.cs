@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Endpoints;
 
 using Microsoft.AspNetCore.Authorization;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Authentication endpoints for validating and inspecting the current authenticated user.
