@@ -152,6 +152,82 @@ Sem `SkipEnabledCheck`, o source generator sempre gera a guarda internamente —
 - [Compile-time logging source generation](https://learn.microsoft.com/dotnet/core/extensions/logging/source-generation)
 - Exemplos no projeto: `src/*/API/Middleware/GlobalExceptionMiddleware.cs`, `src/*/Application/Behaviors/LoggingBehavior.cs`
 
+## Supressão de análise de código — pirâmide Microsoft
+
+**Regra obrigatória:** quando uma regra de análise (CA…, SA…, IDE…) precisar ser suprimida, adotar a técnica **mais específica possível** seguindo a pirâmide documentada pela Microsoft. `TreatWarningsAsErrors` está ligado globalmente — qualquer warning vira build failure, então decisões de supressão são permanentes e devem ser auditáveis.
+
+### Pirâmide (do preferido ao evitado)
+
+| Nível | Técnica | Quando usar | Onde vive |
+|---|---|---|---|
+| **1º** | `[SuppressMessage]` atributo | Tipo/membro específico que legitimamente precisa violar a regra | No próprio símbolo ou em `GlobalSuppressions.cs` com `Scope`/`Target` |
+| **2º** | `.editorconfig` com glob de caminho | Regra que se aplica a uma **categoria de código** (todos os testes, todos os handlers, etc.) | `.editorconfig` na raiz |
+| **3º** | `<NoWarn>` em csproj | Evitar — só quando nível 2 não cobrir e nível 1 for impraticável por volume | csproj do projeto |
+| **4º** | `#pragma warning disable` inline | Evitar — bloco muito específico onde nem atributo encaixa (ex.: `catch (Exception)` em exception boundary) | Arquivo específico |
+
+### Por que esta ordem
+
+- **Nível 1 acopla a justificativa ao símbolo** — reviewer vê o atributo ao abrir o tipo, IntelliSense exibe a `Justification`, sobrevive a movimentações de arquivo.
+- **Nível 2 documenta uma política de camada** — "todo código de teste ignora CA2007" é uma regra universal, não uma exceção pontual.
+- **Nível 3 esconde a supressão** — fica num arquivo de projeto que reviewers raramente abrem; qualquer tipo novo no mesmo projeto herda a supressão sem saber.
+- **Nível 4 não sobrevive a refatorações** — pragma pode acabar em arquivo errado após split.
+
+### Exemplos canônicos
+
+**Nível 1 — atributo no símbolo (preferido)**
+
+```csharp
+using System.Diagnostics.CodeAnalysis;
+
+[SuppressMessage(
+    "Performance",
+    "CA1515:Consider making public types internal",
+    Justification = "xUnit 2.x IClassFixture<T> requires the fixture type to be public.")]
+public sealed class SelecaoApiFactory : ApiFactoryBase<Program> { }
+```
+
+**Nível 1 alternativo — `GlobalSuppressions.cs` quando o alvo é um tipo gerado (como `Program`)**
+
+```csharp
+using System.Diagnostics.CodeAnalysis;
+
+[assembly: SuppressMessage(
+    "Performance",
+    "CA1515:Consider making public types internal",
+    Justification = "Program is the entry point referenced by WebApplicationFactory<Program> in integration tests.",
+    Scope = "type",
+    Target = "~T:Program")]
+```
+
+**Nível 2 — política de camada no `.editorconfig`**
+
+```ini
+# Projetos de teste — convenções xUnit:
+# - CA1707: nomes de métodos com underscores (Fato_QuandoCondicao_DeveProduzirResultado)
+# - CA2007: xUnit não usa SynchronizationContext; ConfigureAwait é desnecessário
+# - CA1861: literais de array em assertions priorizam legibilidade; não é hot path
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1861.severity = none
+```
+
+### Regras de ouro
+
+- **Sempre preencher `Justification`** — é o único artefato que diz ao reviewer futuro *por quê* a regra foi violada. "N/A", "design decision" e strings vazias não contam; explicitar a restrição técnica (framework, padrão, contrato externo).
+- **Antes de suprimir, analisar a causa raiz.** Warnings frequentemente apontam problemas reais (naming, dependência invertida, catch-all). Suprimir sem entender é esconder dívida. Exemplo real neste projeto: CA1716 em `IntegrationTests.Shared` apontava palavra reservada **e** nome-lixeira — a correção foi renomear para `IntegrationTests.Fixtures` (ver ADR-001 do crosscutting).
+- **Nível 3 e 4 são exceções, não defaults.** Ao ler review de PR com `<NoWarn>` ou `#pragma` novo, questionar: "por que não nível 1 ou 2?".
+
+### Referências
+
+- [SuppressMessageAttribute — suppress code analysis warnings](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/suppress-warnings)
+- [Configure code analysis rules via .editorconfig](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/configuration-files)
+- [ADR-001 crosscutting](../../.compozy/tasks/crosscutting-project-structure/adrs/adr-001.md) — rejeição do prefixo "Shared" como fundamento de rename vs. supressão
+- Exemplos canônicos no projeto:
+  - `src/*/API/GlobalSuppressions.cs` — CA1515 para `Program` (nível 1 em assembly)
+  - `tests/*/Infrastructure/*ApiFactory.cs` — CA1515 atributo no tipo (nível 1)
+  - `.editorconfig` `[tests/**/*.cs]` — CA1707/CA2007/CA1861 (nível 2)
+
 ## Comandos úteis
 
 ```bash
