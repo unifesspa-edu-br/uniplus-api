@@ -40,7 +40,6 @@ builder.Services.AddSelecaoApplication();
 builder.Services.AddSelecaoInfrastructure(connectionString);
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
-builder.Services.AddHealthChecks();
 
 WebApplication app = builder.Build();
 
