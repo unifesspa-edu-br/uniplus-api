@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using Npgsql;
@@ -13,6 +15,10 @@ public sealed class PostgresHealthCheck : IHealthCheck
         _connectionString = connectionString;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Health check must isolate downstream failures and report Unhealthy instead of propagating exceptions to the readiness pipeline.")]
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
@@ -31,9 +37,7 @@ public sealed class PostgresHealthCheck : IHealthCheck
 
             return HealthCheckResult.Healthy("PostgreSQL está acessível.");
         }
-#pragma warning disable CA1031 // Captura genérica intencional em health check
         catch (Exception ex)
-#pragma warning restore CA1031
         {
             return HealthCheckResult.Unhealthy("PostgreSQL inacessível.", ex);
         }
