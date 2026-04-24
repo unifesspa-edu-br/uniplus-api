@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Ingresso.IntegrationTests.Infrastructure;
+namespace Unifesspa.UniPlus.IntegrationTests.Shared.Authentication;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;
@@ -8,9 +8,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-#pragma warning disable CA1812 // Instantiated by the ASP.NET Core authentication pipeline during tests.
-internal sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
-#pragma warning restore CA1812
+/// <summary>
+/// Authentication handler for integration tests. Accepts a fixed bearer token
+/// and builds a <see cref="ClaimsPrincipal"/> from request headers so tests can
+/// drive the user identity without issuing real JWTs.
+/// </summary>
+public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     public const string SchemeName = "Test";
     public const string AuthorizationScheme = "Bearer";
