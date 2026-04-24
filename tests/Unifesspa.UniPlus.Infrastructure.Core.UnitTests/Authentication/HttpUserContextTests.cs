@@ -83,6 +83,42 @@ public sealed class HttpUserContextTests
     }
 
     [Fact]
+    public void Cpf_Should_ReadUniPlusClaim_WhenPresent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("cpf", "529.982.247-25"));
+
+        context.Cpf.Should().Be("529.982.247-25");
+    }
+
+    [Fact]
+    public void Cpf_Should_ReturnNull_WhenClaimAbsent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("sub", "user-42"));
+
+        context.Cpf.Should().BeNull();
+    }
+
+    [Fact]
+    public void NomeSocial_Should_ReadUniPlusClaim_WhenPresent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("nomeSocial", "Maria dos Santos"));
+
+        context.NomeSocial.Should().Be("Maria dos Santos");
+    }
+
+    [Fact]
+    public void NomeSocial_Should_ReturnNull_WhenClaimAbsent()
+    {
+        HttpUserContext context = CreateContext(
+            new Claim("sub", "user-42"));
+
+        context.NomeSocial.Should().BeNull();
+    }
+
+    [Fact]
     public void GetResourceRoles_Should_ReturnRolesForNamedResource()
     {
         string resourceAccess = JsonSerializer.Serialize(new
@@ -135,6 +171,8 @@ public sealed class HttpUserContextTests
         context.UserId.Should().BeNull();
         context.Name.Should().BeNull();
         context.Email.Should().BeNull();
+        context.Cpf.Should().BeNull();
+        context.NomeSocial.Should().BeNull();
         context.Roles.Should().BeEmpty();
         context.GetResourceRoles("uniplus").Should().BeEmpty();
     }

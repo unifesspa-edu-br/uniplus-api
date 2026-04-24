@@ -42,6 +42,10 @@ public sealed partial class HttpUserContext : IUserContext
 
     public string? Email => GetFirstClaimValue(EmailClaimCandidates);
 
+    public string? Cpf => GetSingleClaimValue(UniPlusClaims.Cpf);
+
+    public string? NomeSocial => GetSingleClaimValue(UniPlusClaims.NomeSocial);
+
     public IReadOnlyList<string> Roles => _roles.Value;
 
     public bool HasRole(string role)
@@ -107,6 +111,12 @@ public sealed partial class HttpUserContext : IUserContext
         }
 
         return null;
+    }
+
+    private string? GetSingleClaimValue(string claimType)
+    {
+        string? value = _user?.FindFirst(claimType)?.Value;
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     private string[] ResolveRoles()

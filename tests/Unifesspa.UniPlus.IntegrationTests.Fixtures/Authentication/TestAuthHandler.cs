@@ -22,6 +22,8 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     public const string NameHeader = "X-Test-Name";
     public const string EmailHeader = "X-Test-Email";
     public const string RolesHeader = "X-Test-Roles";
+    public const string CpfHeader = "X-Test-Cpf";
+    public const string NomeSocialHeader = "X-Test-Nome-Social";
 
     public TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -52,6 +54,18 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             new("email", GetHeaderValue(EmailHeader, "test@unifesspa.edu.br")),
         ];
 
+        string? cpf = GetOptionalHeaderValue(CpfHeader);
+        if (cpf is not null)
+        {
+            claims.Add(new Claim("cpf", cpf));
+        }
+
+        string? nomeSocial = GetOptionalHeaderValue(NomeSocialHeader);
+        if (nomeSocial is not null)
+        {
+            claims.Add(new Claim("nomeSocial", nomeSocial));
+        }
+
         if (roles.Length > 0)
         {
             claims.Add(new Claim("realm_access", JsonSerializer.Serialize(new { roles })));
@@ -68,6 +82,12 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     {
         string? value = Request.Headers[headerName];
         return string.IsNullOrWhiteSpace(value) ? fallbackValue : value;
+    }
+
+    private string? GetOptionalHeaderValue(string headerName)
+    {
+        string? value = Request.Headers[headerName];
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     private string[] GetHeaderValues(string headerName)
