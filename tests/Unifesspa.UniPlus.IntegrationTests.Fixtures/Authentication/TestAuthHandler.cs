@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.IntegrationTests.Shared.Authentication;
+namespace Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 using System.Security.Claims;
 using System.Text.Encodings.Web;

@@ -6,7 +6,7 @@ using System.Text.Json;
 
 using FluentAssertions;
 
-using Unifesspa.UniPlus.IntegrationTests.Shared.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Ingresso.IntegrationTests.Infrastructure;
 
 public sealed class AuthEndpointsTests : IClassFixture<IngressoApiFactory>
