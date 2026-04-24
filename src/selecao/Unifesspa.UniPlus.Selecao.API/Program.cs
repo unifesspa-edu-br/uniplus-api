@@ -55,6 +55,6 @@ app.MapHealthChecks("/health");
 
 await app.RunAsync();
 
-#pragma warning disable CA1515 // Required for WebApplicationFactory in integration tests.
+// Required for WebApplicationFactory<Program> in integration tests; CA1515
+// suppression lives in GlobalSuppressions.cs, not inline.
 public partial class Program;
-#pragma warning restore CA1515
