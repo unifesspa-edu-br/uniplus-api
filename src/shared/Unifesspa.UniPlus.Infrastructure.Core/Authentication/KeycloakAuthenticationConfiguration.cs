@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
@@ -14,7 +15,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 public static class KeycloakAuthenticationConfiguration
 {
     /// <summary>
-    /// Adds Keycloak JWT authentication and the current user context services.
+    /// Binds <see cref="AuthOptions"/> and configures JWT Bearer authentication against Keycloak.
+    /// Options are validated at application startup (required fields, URL format, HTTPS outside Development).
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -29,57 +31,43 @@ public static class KeycloakAuthenticationConfiguration
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
 
-        string? authority = configuration["Auth:Authority"];
-        string? audience = configuration["Auth:Audience"];
-
-        if (string.IsNullOrWhiteSpace(authority))
-        {
-            throw new InvalidOperationException(
-                "Auth:Authority configuration is required. " +
-                "Please add it to appsettings.json with the OIDC provider URL.");
-        }
-
-        if (string.IsNullOrWhiteSpace(audience))
-        {
-            throw new InvalidOperationException(
-                "Auth:Audience configuration is required. " +
-                "Please add it to appsettings.json with the client ID or API audience.");
-        }
-
-        // Em produção o OIDC discovery (/.well-known/openid-configuration) deve ser obtido via HTTPS.
-        // Permitir http:// só em Development evita um foot-gun silencioso se alguém configurar
-        // Auth:Authority com http:// em Production.
         bool requireHttps = !environment.IsDevelopment();
-        if (requireHttps && authority.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(
-                $"Auth:Authority must use HTTPS outside Development. Current value: {authority}.");
-        }
+
+        services.AddOptions<AuthOptions>()
+            .Bind(configuration.GetSection(AuthOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(
+                options => !requireHttps || !options.Authority.StartsWith("http://", StringComparison.OrdinalIgnoreCase),
+                "Auth:Authority must use HTTPS outside Development.")
+            .ValidateOnStart();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.Authority = authority;
-                options.Audience = audience;
-                options.RequireHttpsMetadata = requireHttps;
+            .AddJwtBearer();
 
-                options.TokenValidationParameters = new TokenValidationParameters
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IOptions<AuthOptions>>((jwtOptions, authAccessor) =>
+            {
+                AuthOptions auth = authAccessor.Value;
+
+                jwtOptions.Authority = auth.Authority;
+                jwtOptions.Audience = auth.Audience;
+                jwtOptions.RequireHttpsMetadata = requireHttps;
+                jwtOptions.MapInboundClaims = false;
+
+                jwtOptions.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-
-                    // Default do framework é 5min. 30s é apertado mas tolera drift NTP
-                    // entre réplicas em Kubernetes, evitando 401 intermitente em bordas de expiração.
-                    ClockSkew = TimeSpan.FromSeconds(30),
+                    ClockSkew = auth.ClockSkew,
                 };
-
-                options.MapInboundClaims = false;
             });
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpUserContext>();
+
+        // TODO(#26-followup): registrar policies por role/permissão (Admin, Gestor, Avaliador, Candidato).
         services.AddAuthorization();
 
         return services;
