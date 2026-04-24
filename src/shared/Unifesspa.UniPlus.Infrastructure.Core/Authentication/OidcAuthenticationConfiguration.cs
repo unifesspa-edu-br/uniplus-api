@@ -75,10 +75,10 @@ public static class OidcAuthenticationConfiguration
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpUserContext>();
 
-        services.AddHttpClient(nameof(KeycloakHealthCheck));
+        services.AddHttpClient(nameof(OidcDiscoveryHealthCheck));
         services.AddHealthChecks()
-            .AddCheck<KeycloakHealthCheck>(
-                name: "keycloak",
+            .AddCheck<OidcDiscoveryHealthCheck>(
+                name: "oidc-discovery",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["ready", "auth"]);
 
