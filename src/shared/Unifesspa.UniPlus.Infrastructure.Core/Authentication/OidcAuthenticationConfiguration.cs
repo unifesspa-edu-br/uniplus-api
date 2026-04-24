@@ -13,19 +13,21 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
 /// <summary>
-/// Extension methods for configuring Keycloak authentication services.
+/// Extension methods for configuring OIDC/JWT Bearer authentication.
+/// Validation is OIDC-standard (issuer, audience, signing key, lifetime); the Keycloak
+/// reference in ADR-008 is about the current provider, not the code contract.
 /// </summary>
-public static class KeycloakAuthenticationConfiguration
+public static class OidcAuthenticationConfiguration
 {
     /// <summary>
-    /// Binds <see cref="AuthOptions"/> and configures JWT Bearer authentication against Keycloak.
+    /// Binds <see cref="AuthOptions"/> and configures JWT Bearer authentication against the OIDC authority.
     /// Options are validated at application startup (required fields, URL format, HTTPS outside Development).
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <param name="environment">The hosting environment — controls HTTPS metadata enforcement.</param>
     /// <returns>The configured service collection.</returns>
-    public static IServiceCollection AddKeycloakAuth(
+    public static IServiceCollection AddOidcAuthentication(
         this IServiceCollection services,
         IConfiguration configuration,
         IHostEnvironment environment)
