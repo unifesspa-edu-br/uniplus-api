@@ -30,11 +30,11 @@ public sealed partial class HttpUserContext : IUserContext
         _roles = new Lazy<IReadOnlyList<string>>(ResolveRoles);
     }
 
-    public string? UserId => GetFirstClaimValue(ClaimTypes.NameIdentifier, "sub");
+    public string? UserId => GetFirstClaimValue(ClaimTypes.NameIdentifier, KeycloakClaims.Sub);
 
-    public string? Name => GetFirstClaimValue(ClaimTypes.Name, "name", "preferred_username");
+    public string? Name => GetFirstClaimValue(ClaimTypes.Name, KeycloakClaims.Name, KeycloakClaims.PreferredUsername);
 
-    public string? Email => GetFirstClaimValue(ClaimTypes.Email, "email");
+    public string? Email => GetFirstClaimValue(ClaimTypes.Email, KeycloakClaims.Email);
 
     public IReadOnlyList<string> Roles => _roles.Value;
 
@@ -49,7 +49,7 @@ public sealed partial class HttpUserContext : IUserContext
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceName);
 
-        string claimValue = _user?.FindFirst("resource_access")?.Value ?? string.Empty;
+        string claimValue = _user?.FindFirst(KeycloakClaims.ResourceAccess)?.Value ?? string.Empty;
         if (string.IsNullOrWhiteSpace(claimValue))
         {
             return [];
@@ -59,7 +59,7 @@ public sealed partial class HttpUserContext : IUserContext
         {
             using JsonDocument document = JsonDocument.Parse(claimValue);
             if (!document.RootElement.TryGetProperty(resourceName, out JsonElement resourceElement) ||
-                !resourceElement.TryGetProperty("roles", out JsonElement rolesElement) ||
+                !resourceElement.TryGetProperty(KeycloakClaims.Roles, out JsonElement rolesElement) ||
                 rolesElement.ValueKind != JsonValueKind.Array)
             {
                 return [];
@@ -74,7 +74,7 @@ public sealed partial class HttpUserContext : IUserContext
         }
         catch (JsonException ex)
         {
-            LogMalformedClaim(_logger, "resource_access", resourceName, ex);
+            LogMalformedClaim(_logger, KeycloakClaims.ResourceAccess, resourceName, ex);
             return [];
         }
     }
@@ -89,17 +89,17 @@ public sealed partial class HttpUserContext : IUserContext
         List<string> roles =
         [
             .. (_user?.FindAll(ClaimTypes.Role).Select(static claim => claim.Value) ?? []),
-            .. (_user?.FindAll("role").Select(static claim => claim.Value) ?? []),
-            .. (_user?.FindAll("roles").Select(static claim => claim.Value) ?? []),
+            .. (_user?.FindAll(KeycloakClaims.Role).Select(static claim => claim.Value) ?? []),
+            .. (_user?.FindAll(KeycloakClaims.Roles).Select(static claim => claim.Value) ?? []),
         ];
 
-        string? realmAccess = _user?.FindFirst("realm_access")?.Value;
+        string? realmAccess = _user?.FindFirst(KeycloakClaims.RealmAccess)?.Value;
         if (!string.IsNullOrWhiteSpace(realmAccess))
         {
             try
             {
                 using JsonDocument document = JsonDocument.Parse(realmAccess);
-                if (document.RootElement.TryGetProperty("roles", out JsonElement realmRoles) &&
+                if (document.RootElement.TryGetProperty(KeycloakClaims.Roles, out JsonElement realmRoles) &&
                     realmRoles.ValueKind == JsonValueKind.Array)
                 {
                     roles.AddRange(
@@ -111,7 +111,7 @@ public sealed partial class HttpUserContext : IUserContext
             }
             catch (JsonException ex)
             {
-                LogMalformedClaim(_logger, "realm_access", resourceName: null, ex);
+                LogMalformedClaim(_logger, KeycloakClaims.RealmAccess, resourceName: null, ex);
             }
         }
 
