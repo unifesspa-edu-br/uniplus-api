@@ -3,12 +3,14 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
 /// <summary>
 /// Extension methods for configuring Keycloak authentication services.
@@ -70,6 +72,13 @@ public static class KeycloakAuthenticationConfiguration
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpUserContext>();
+
+        services.AddHttpClient(nameof(KeycloakHealthCheck));
+        services.AddHealthChecks()
+            .AddCheck<KeycloakHealthCheck>(
+                name: "keycloak",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready", "auth"]);
 
         // TODO(#26-followup): registrar policies por role/permissão (Admin, Gestor, Avaliador, Candidato).
         services.AddAuthorization();
