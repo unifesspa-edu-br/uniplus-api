@@ -49,6 +49,6 @@ public sealed class AuthEndpointsTests : IClassFixture<IngressoApiFactory>
         payload.RootElement.GetProperty("email").GetString().Should().Be("admin@teste.unifesspa.edu.br");
         payload.RootElement.GetProperty("roles").EnumerateArray().Select(static role => role.GetString())
             .Should().BeEquivalentTo(["admin", "gestor"]);
-        payload.RootElement.GetProperty("timestamp").GetDateTime().Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        payload.RootElement.GetProperty("timestamp").GetDateTimeOffset().Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
     }
 }

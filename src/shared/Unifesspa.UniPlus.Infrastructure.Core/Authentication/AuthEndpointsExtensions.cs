@@ -24,13 +24,13 @@ public static class AuthEndpointsExtensions
             .WithTags("Auth")
             .RequireAuthorization();
 
-        authGroup.MapGet("/me", (IUserContext userContext) => Results.Ok(new
+        authGroup.MapGet("/me", (IUserContext userContext, TimeProvider clock) => Results.Ok(new
         {
             userId = userContext.UserId,
             name = userContext.Name,
             email = userContext.Email,
             roles = userContext.Roles,
-            timestamp = DateTime.UtcNow,
+            timestamp = clock.GetUtcNow(),
         }))
         .WithName("GetAuthenticatedUser")
         .WithSummary("Returns the authenticated user")
