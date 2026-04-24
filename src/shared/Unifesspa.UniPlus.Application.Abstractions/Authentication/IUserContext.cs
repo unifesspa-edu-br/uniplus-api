@@ -21,6 +21,16 @@ public interface IUserContext
     string? Email { get; }
 
     /// <summary>
+    /// Gets the authenticated user's CPF, when exposed by the IdP via the <c>uniplus-profile</c> scope.
+    /// </summary>
+    string? Cpf { get; }
+
+    /// <summary>
+    /// Gets the authenticated user's social name, when exposed by the IdP via the <c>uniplus-profile</c> scope.
+    /// </summary>
+    string? NomeSocial { get; }
+
+    /// <summary>
     /// Gets the authenticated user's roles.
     /// </summary>
     IReadOnlyList<string> Roles { get; }
