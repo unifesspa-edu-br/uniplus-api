@@ -51,9 +51,3 @@ trim_trailing_whitespace = false
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.CA1861.severity = none
-
-# Fixtures de integration tests — xUnit 2.x exige que IClassFixture<T> seja público.
-# A supressão é escopada só aos ApiFactory para não mascarar CA1515 em outros tipos
-# do mesmo projeto que legitimamente deveriam ser internal.
-[tests/**/Infrastructure/*ApiFactory.cs]
-dotnet_diagnostic.CA1515.severity = none
