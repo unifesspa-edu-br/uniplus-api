@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.API.Endpoints;
+namespace Unifesspa.UniPlus.Ingresso.API.Endpoints;
 
 using Microsoft.AspNetCore.Authorization;
 

@@ -48,3 +48,7 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 await app.RunAsync();
+
+#pragma warning disable CA1515 // Required for WebApplicationFactory in integration tests.
+public partial class Program;
+#pragma warning restore CA1515
