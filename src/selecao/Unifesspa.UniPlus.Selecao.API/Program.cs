@@ -1,8 +1,11 @@
 using Serilog;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
+using Unifesspa.UniPlus.Selecao.API.Endpoints;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
@@ -23,11 +26,13 @@ builder.Services.AddEndpointsApiExplorer();
 string connectionString = builder.Configuration.GetConnectionString("SelecaoDb")
     ?? throw new InvalidOperationException("Connection string 'SelecaoDb' não configurada.");
 
+builder.Services.AddKeycloakAuth(builder.Configuration);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddSelecaoApplication();
 builder.Services.AddSelecaoInfrastructure(connectionString);
 
+builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddHealthChecks();
 
 WebApplication app = builder.Build();
@@ -35,6 +40,10 @@ WebApplication app = builder.Build();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseCorsConfiguration();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapAuthEndpoints();
 app.MapControllers();
 app.MapHealthChecks("/health");
 

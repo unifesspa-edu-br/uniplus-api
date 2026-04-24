@@ -13,7 +13,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/uniplus"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
     ports:
       - "5202:8080"
     depends_on:
@@ -44,7 +44,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/uniplus"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
     ports:
       - "5262:8080"
     depends_on:
