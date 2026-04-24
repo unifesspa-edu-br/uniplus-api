@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -14,9 +15,14 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 public sealed partial class HttpUserContext : IUserContext
 {
     private static readonly StringComparer RoleComparer = StringComparer.OrdinalIgnoreCase;
+    private static readonly string[] UserIdClaimCandidates = [ClaimTypes.NameIdentifier, KeycloakClaims.Sub];
+    private static readonly string[] NameClaimCandidates = [ClaimTypes.Name, KeycloakClaims.Name, KeycloakClaims.PreferredUsername];
+    private static readonly string[] EmailClaimCandidates = [ClaimTypes.Email, KeycloakClaims.Email];
+
     private readonly ClaimsPrincipal? _user;
     private readonly ILogger<HttpUserContext> _logger;
     private readonly Lazy<IReadOnlyList<string>> _roles;
+    private readonly ConcurrentDictionary<string, IReadOnlyList<string>> _resourceRolesCache = new(StringComparer.Ordinal);
 
     public HttpUserContext(
         IHttpContextAccessor httpContextAccessor,
@@ -30,11 +36,11 @@ public sealed partial class HttpUserContext : IUserContext
         _roles = new Lazy<IReadOnlyList<string>>(ResolveRoles);
     }
 
-    public string? UserId => GetFirstClaimValue(ClaimTypes.NameIdentifier, KeycloakClaims.Sub);
+    public string? UserId => GetFirstClaimValue(UserIdClaimCandidates);
 
-    public string? Name => GetFirstClaimValue(ClaimTypes.Name, KeycloakClaims.Name, KeycloakClaims.PreferredUsername);
+    public string? Name => GetFirstClaimValue(NameClaimCandidates);
 
-    public string? Email => GetFirstClaimValue(ClaimTypes.Email, KeycloakClaims.Email);
+    public string? Email => GetFirstClaimValue(EmailClaimCandidates);
 
     public IReadOnlyList<string> Roles => _roles.Value;
 
@@ -49,6 +55,11 @@ public sealed partial class HttpUserContext : IUserContext
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceName);
 
+        return _resourceRolesCache.GetOrAdd(resourceName, ResolveResourceRoles);
+    }
+
+    private IReadOnlyList<string> ResolveResourceRoles(string resourceName)
+    {
         string claimValue = _user?.FindFirst(KeycloakClaims.ResourceAccess)?.Value ?? string.Empty;
         if (string.IsNullOrWhiteSpace(claimValue))
         {
@@ -79,10 +90,24 @@ public sealed partial class HttpUserContext : IUserContext
         }
     }
 
-    private string? GetFirstClaimValue(params string[] claimTypes) =>
-        claimTypes
-            .Select(claimType => _user?.FindFirst(claimType)?.Value)
-            .FirstOrDefault(static value => !string.IsNullOrWhiteSpace(value));
+    private string? GetFirstClaimValue(string[] claimTypes)
+    {
+        if (_user is null)
+        {
+            return null;
+        }
+
+        foreach (string claimType in claimTypes)
+        {
+            string? value = _user.FindFirst(claimType)?.Value;
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
 
     private string[] ResolveRoles()
     {
