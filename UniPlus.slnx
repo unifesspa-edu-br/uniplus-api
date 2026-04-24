@@ -24,6 +24,7 @@
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.ArchTests/Unifesspa.UniPlus.Ingresso.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.IntegrationTests/Unifesspa.UniPlus.Ingresso.IntegrationTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.IntegrationTests.Shared/Unifesspa.UniPlus.IntegrationTests.Shared.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Kernel.UnitTests/Unifesspa.UniPlus.Kernel.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Selecao.Application.UnitTests/Unifesspa.UniPlus.Selecao.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Selecao.ArchTests/Unifesspa.UniPlus.Selecao.ArchTests.csproj" />
