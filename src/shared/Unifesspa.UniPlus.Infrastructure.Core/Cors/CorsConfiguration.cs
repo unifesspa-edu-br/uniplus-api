@@ -1,97 +1,54 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Cors;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+
+using FrameworkCorsOptions = Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions;
 
 /// <summary>
-/// Provides extension methods for configuring CORS (Cross-Origin Resource Sharing) policies.
+/// Extension methods for configuring CORS (Cross-Origin Resource Sharing) policies.
 /// </summary>
 public static class CorsConfiguration
 {
-    private const string DefaultPolicyName = "DefaultCorsPolicy";
+    public const string DefaultPolicyName = "DefaultCorsPolicy";
+
+    private static readonly string[] DefaultMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
+    private static readonly string[] DefaultHeaders = ["Content-Type", "Authorization", "Accept", "X-Requested-With"];
 
     /// <summary>
-    /// Adds CORS configuration based on application settings with environment-specific policies.
+    /// Binds <see cref="CorsOptions"/> and registers the default CORS policy.
+    /// Outside Development, startup fails if <see cref="CorsOptions.AllowedOrigins"/> is empty.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configuration">The application configuration.</param>
-    /// <param name="environment">The hosting environment.</param>
-    /// <returns>The configured service collection for method chaining.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when AllowedOrigins is not configured in non-development environments.</exception>
     public static IServiceCollection AddCorsConfiguration(
         this IServiceCollection services,
         IConfiguration configuration,
-        IWebHostEnvironment environment)
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
 
-        IConfigurationSection corsSection = configuration.GetSection("Cors");
-        string[] allowedOrigins = corsSection.GetSection("AllowedOrigins").Get<string[]>() ?? [];
-        bool allowAnyMethod = corsSection.GetValue<bool>("AllowAnyMethod");
-        bool allowAnyHeader = corsSection.GetValue<bool>("AllowAnyHeader");
-        bool allowCredentials = corsSection.GetValue<bool>("AllowCredentials");
+        services.AddOptions<CorsOptions>()
+            .Bind(configuration.GetSection(CorsOptions.SectionName))
+            .Validate(
+                options => environment.IsDevelopment() || options.AllowedOrigins.Count > 0,
+                "CORS AllowedOrigins must be configured outside Development. Set 'Cors:AllowedOrigins' with the list of trusted frontend origins.")
+            .ValidateOnStart();
 
-        services.AddCors(options =>
-        {
-            options.AddPolicy(DefaultPolicyName, builder =>
+        services.AddCors();
+
+        services.AddOptions<FrameworkCorsOptions>()
+            .Configure<IOptions<CorsOptions>>((frameworkOptions, ourOptionsAccessor) =>
             {
-                switch (allowedOrigins.Length)
-                {
-                    case > 0:
-                        builder.WithOrigins(allowedOrigins);
-
-                        break;
-                    default:
-                        {
-                            if (!environment.IsDevelopment())
-                            {
-                                throw new InvalidOperationException(
-                                    "CORS AllowedOrigins must be configured in non-development environments. " +
-                                    "Configure 'Cors:AllowedOrigins' in appsettings.json or environment variables " +
-                                    "to specify which origins are allowed to access this API.");
-                            }
-
-                            builder.AllowAnyOrigin();
-
-                            break;
-                        }
-                }
-
-                switch (allowAnyMethod)
-                {
-                    case true:
-                        builder.AllowAnyMethod();
-
-                        break;
-                    default:
-                        builder.WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS");
-
-                        break;
-                }
-
-                switch (allowAnyHeader)
-                {
-                    case true:
-                        builder.AllowAnyHeader();
-
-                        break;
-                    default:
-                        builder.WithHeaders("Content-Type", "Authorization", "Accept", "X-Requested-With");
-
-                        break;
-                }
-
-                if (allowCredentials && allowedOrigins.Length > 0)
-                {
-                    builder.AllowCredentials();
-                }
+                CorsOptions opts = ourOptionsAccessor.Value;
+                frameworkOptions.AddPolicy(
+                    DefaultPolicyName,
+                    builder => ConfigurePolicy(builder, opts, environment));
             });
-        });
 
         return services;
     }
@@ -99,8 +56,41 @@ public static class CorsConfiguration
     /// <summary>
     /// Applies the default CORS policy to the application pipeline.
     /// </summary>
-    /// <param name="app">The application builder.</param>
-    /// <returns>The application builder for method chaining.</returns>
     public static IApplicationBuilder UseCorsConfiguration(this IApplicationBuilder app) =>
         app.UseCors(DefaultPolicyName);
+
+    private static void ConfigurePolicy(CorsPolicyBuilder builder, CorsOptions options, IHostEnvironment environment)
+    {
+        if (options.AllowedOrigins.Count > 0)
+        {
+            builder.WithOrigins([.. options.AllowedOrigins]);
+        }
+        else if (environment.IsDevelopment())
+        {
+            builder.AllowAnyOrigin();
+        }
+
+        if (options.AllowAnyMethod)
+        {
+            builder.AllowAnyMethod();
+        }
+        else
+        {
+            builder.WithMethods(DefaultMethods);
+        }
+
+        if (options.AllowAnyHeader)
+        {
+            builder.AllowAnyHeader();
+        }
+        else
+        {
+            builder.WithHeaders(DefaultHeaders);
+        }
+
+        if (options.AllowCredentials && options.AllowedOrigins.Count > 0)
+        {
+            builder.AllowCredentials();
+        }
+    }
 }
