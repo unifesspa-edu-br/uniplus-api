@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.API.Middleware;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using FluentValidation;
@@ -17,6 +18,10 @@ internal sealed partial class GlobalExceptionMiddleware
         _logger = logger;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Global exception boundary: unhandled exceptions must be converted to RFC 9457 ProblemDetails before bubbling out of the pipeline.")]
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -30,9 +35,7 @@ internal sealed partial class GlobalExceptionMiddleware
             LogValidationError(_logger, context.Request.Path, ex);
             await EscreverRespostaValidacao(context, ex);
         }
-#pragma warning disable CA1031 // Middleware de exceções globais deve capturar todas as exceções não tratadas
         catch (Exception ex)
-#pragma warning restore CA1031
         {
             LogUnhandledError(_logger, context.Request.Path, ex);
             await EscreverRespostaErro(context);
