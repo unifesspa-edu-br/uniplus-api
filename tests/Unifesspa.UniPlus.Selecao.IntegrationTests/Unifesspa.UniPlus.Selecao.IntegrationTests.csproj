@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <!-- CA1515: xUnit IClassFixture<T> requires public fixture types. -->
-    <NoWarn>$(NoWarn);CA1515</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
