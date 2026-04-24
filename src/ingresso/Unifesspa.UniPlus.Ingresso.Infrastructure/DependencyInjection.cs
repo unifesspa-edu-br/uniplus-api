@@ -3,11 +3,12 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Ingresso.Domain.Interfaces;
 using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 public static class IngressoInfrastructureRegistration
 {
