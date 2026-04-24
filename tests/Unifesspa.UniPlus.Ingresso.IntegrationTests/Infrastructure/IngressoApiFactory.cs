@@ -2,9 +2,7 @@ namespace Unifesspa.UniPlus.Ingresso.IntegrationTests.Infrastructure;
 
 using Unifesspa.UniPlus.IntegrationTests.Shared.Hosting;
 
-#pragma warning disable CA1515 // Fixture needs to be visible to xUnit.
 public sealed class IngressoApiFactory : ApiFactoryBase<Program>
-#pragma warning restore CA1515
 {
     protected override IEnumerable<KeyValuePair<string, string?>> GetConfigurationOverrides() =>
     [
