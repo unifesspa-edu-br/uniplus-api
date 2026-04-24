@@ -26,7 +26,7 @@ builder.Services.AddEndpointsApiExplorer();
 string connectionString = builder.Configuration.GetConnectionString("IngressoDb")
     ?? throw new InvalidOperationException("Connection string 'IngressoDb' não configurada.");
 
-builder.Services.AddKeycloakAuth(builder.Configuration);
+builder.Services.AddKeycloakAuth(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddIngressoApplication();

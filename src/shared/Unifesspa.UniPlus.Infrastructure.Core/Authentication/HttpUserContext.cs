@@ -4,21 +4,27 @@ using System.Security.Claims;
 using System.Text.Json;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Resolves authenticated user data from the current HTTP context.
 /// </summary>
-public sealed class HttpUserContext : IUserContext
+public sealed partial class HttpUserContext : IUserContext
 {
     private static readonly StringComparer RoleComparer = StringComparer.OrdinalIgnoreCase;
     private readonly ClaimsPrincipal? _user;
+    private readonly ILogger<HttpUserContext> _logger;
     private readonly Lazy<IReadOnlyList<string>> _roles;
 
-    public HttpUserContext(IHttpContextAccessor httpContextAccessor)
+    public HttpUserContext(
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<HttpUserContext> logger)
     {
         ArgumentNullException.ThrowIfNull(httpContextAccessor);
+        ArgumentNullException.ThrowIfNull(logger);
 
         _user = httpContextAccessor.HttpContext?.User;
+        _logger = logger;
         _roles = new Lazy<IReadOnlyList<string>>(ResolveRoles);
     }
 
@@ -64,8 +70,9 @@ public sealed class HttpUserContext : IUserContext
                 .Distinct(RoleComparer)
                 .ToArray();
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            LogMalformedClaim(_logger, "resource_access", resourceName, ex);
             return [];
         }
     }
@@ -100,8 +107,9 @@ public sealed class HttpUserContext : IUserContext
                             .OfType<string>());
                 }
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
+                LogMalformedClaim(_logger, "realm_access", resourceName: null, ex);
             }
         }
 
@@ -110,4 +118,13 @@ public sealed class HttpUserContext : IUserContext
             .Distinct(RoleComparer)
             .ToArray();
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Falha ao fazer parse do claim {ClaimName} (recurso {ResourceName}); roles ignoradas.")]
+    private static partial void LogMalformedClaim(
+        ILogger logger,
+        string claimName,
+        string? resourceName,
+        Exception exception);
 }
