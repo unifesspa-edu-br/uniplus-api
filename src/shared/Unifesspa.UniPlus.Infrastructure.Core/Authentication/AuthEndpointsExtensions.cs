@@ -24,17 +24,18 @@ public static class AuthEndpointsExtensions
             .WithTags("Auth")
             .RequireAuthorization();
 
-        authGroup.MapGet("/me", (IUserContext userContext, TimeProvider clock) => Results.Ok(new
-        {
-            userId = userContext.UserId,
-            name = userContext.Name,
-            email = userContext.Email,
-            roles = userContext.Roles,
-            timestamp = clock.GetUtcNow(),
-        }))
-        .WithName("GetAuthenticatedUser")
-        .WithSummary("Returns the authenticated user")
-        .WithDescription("Returns user information extracted from the access token. Requires authentication.");
+        authGroup.MapGet("/me", (IUserContext userContext, TimeProvider clock) =>
+                Results.Ok(new AuthenticatedUserResponse(
+                    userContext.UserId,
+                    userContext.Name,
+                    userContext.Email,
+                    userContext.Roles,
+                    clock.GetUtcNow())))
+            .WithName("GetAuthenticatedUser")
+            .WithSummary("Returns the authenticated user")
+            .WithDescription("Returns user information extracted from the access token. Requires authentication.")
+            .Produces<AuthenticatedUserResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized);
 
         return endpoints;
     }
