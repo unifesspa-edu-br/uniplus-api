@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Infrastructure;
 
-using Unifesspa.UniPlus.IntegrationTests.Shared.Hosting;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 public sealed class SelecaoApiFactory : ApiFactoryBase<Program>
 {
