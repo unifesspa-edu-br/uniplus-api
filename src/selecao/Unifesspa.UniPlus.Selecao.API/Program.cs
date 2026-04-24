@@ -5,7 +5,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
-using Unifesspa.UniPlus.Selecao.API.Endpoints;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
@@ -43,7 +42,7 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseCorsConfiguration();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapAuthEndpoints();
+app.MapSharedAuthEndpoints();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
