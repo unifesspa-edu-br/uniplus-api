@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
@@ -24,6 +26,10 @@ public sealed class OidcDiscoveryHealthCheck : IHealthCheck
         _authOptions = authOptions;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Health check must isolate downstream failures and report Unhealthy instead of propagating exceptions to the readiness pipeline.")]
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         AuthOptions options = _authOptions.CurrentValue;
@@ -38,9 +44,7 @@ public sealed class OidcDiscoveryHealthCheck : IHealthCheck
                 ? HealthCheckResult.Healthy($"OIDC discovery respondeu {(int)response.StatusCode}.")
                 : HealthCheckResult.Unhealthy($"OIDC discovery respondeu {(int)response.StatusCode}.");
         }
-#pragma warning disable CA1031 // Captura genérica intencional em health check
         catch (Exception ex)
-#pragma warning restore CA1031
         {
             return HealthCheckResult.Unhealthy("OIDC discovery inacessível.", ex);
         }

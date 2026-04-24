@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Confluent.Kafka;
 
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -13,6 +15,10 @@ public sealed class KafkaHealthCheck : IHealthCheck
         _bootstrapServers = bootstrapServers;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Health check must isolate downstream failures and report Unhealthy instead of propagating exceptions to the readiness pipeline.")]
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
@@ -24,9 +30,7 @@ public sealed class KafkaHealthCheck : IHealthCheck
                 ? HealthCheckResult.Healthy("Kafka está acessível.")
                 : HealthCheckResult.Unhealthy("Kafka sem brokers disponíveis."));
         }
-#pragma warning disable CA1031 // Captura genérica intencional em health check
         catch (Exception ex)
-#pragma warning restore CA1031
         {
             return Task.FromResult(HealthCheckResult.Unhealthy("Kafka inacessível.", ex));
         }

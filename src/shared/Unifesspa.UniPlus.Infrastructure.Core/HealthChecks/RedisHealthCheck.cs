@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using StackExchange.Redis;
@@ -13,6 +15,10 @@ public sealed class RedisHealthCheck : IHealthCheck
         _connectionMultiplexer = connectionMultiplexer;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Health check must isolate downstream failures and report Unhealthy instead of propagating exceptions to the readiness pipeline.")]
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
@@ -21,9 +27,7 @@ public sealed class RedisHealthCheck : IHealthCheck
             await database.PingAsync().ConfigureAwait(false);
             return HealthCheckResult.Healthy("Redis está acessível.");
         }
-#pragma warning disable CA1031 // Captura genérica intencional em health check
         catch (Exception ex)
-#pragma warning restore CA1031
         {
             return HealthCheckResult.Unhealthy("Redis inacessível.", ex);
         }
