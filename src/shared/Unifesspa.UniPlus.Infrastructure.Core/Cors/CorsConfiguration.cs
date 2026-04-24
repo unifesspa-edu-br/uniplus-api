@@ -59,38 +59,10 @@ public static class CorsConfiguration
     public static IApplicationBuilder UseCorsConfiguration(this IApplicationBuilder app) =>
         app.UseCors(DefaultPolicyName);
 
-    private static void ConfigurePolicy(CorsPolicyBuilder builder, CorsOptions options, IHostEnvironment environment)
-    {
-        if (options.AllowedOrigins.Count > 0)
-        {
-            builder.WithOrigins([.. options.AllowedOrigins]);
-        }
-        else if (environment.IsDevelopment())
-        {
-            builder.AllowAnyOrigin();
-        }
-
-        if (options.AllowAnyMethod)
-        {
-            builder.AllowAnyMethod();
-        }
-        else
-        {
-            builder.WithMethods(DefaultMethods);
-        }
-
-        if (options.AllowAnyHeader)
-        {
-            builder.AllowAnyHeader();
-        }
-        else
-        {
-            builder.WithHeaders(DefaultHeaders);
-        }
-
-        if (options.AllowCredentials && options.AllowedOrigins.Count > 0)
-        {
-            builder.AllowCredentials();
-        }
-    }
+    private static void ConfigurePolicy(CorsPolicyBuilder builder, CorsOptions options, IHostEnvironment environment) =>
+        builder
+            .WithConfiguredOrigins(options.AllowedOrigins, environment)
+            .WithConfiguredMethods(options.AllowAnyMethod, DefaultMethods)
+            .WithConfiguredHeaders(options.AllowAnyHeader, DefaultHeaders)
+            .WithCredentialsIfConfigured(options.AllowCredentials, hasExplicitOrigins: options.AllowedOrigins.Count > 0);
 }
