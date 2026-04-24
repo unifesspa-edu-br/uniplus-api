@@ -43,6 +43,11 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
+# Camada API (hosts ASP.NET Core) — não possui SynchronizationContext, ConfigureAwait(false)
+# é no-op. Library code em Infrastructure.Core mantém ConfigureAwait(false) e CA2007 ativo.
+[src/**/*.API/**.cs]
+dotnet_diagnostic.CA2007.severity = none
+
 # Projetos de teste — convenções xUnit:
 # - CA1707: nomes de métodos com underscores (Fato_QuandoCondicao_DeveProduzirResultado)
 # - CA2007: xUnit não usa SynchronizationContext; ConfigureAwait é desnecessário
