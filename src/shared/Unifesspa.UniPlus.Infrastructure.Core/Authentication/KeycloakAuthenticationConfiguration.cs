@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+
 /// <summary>
 /// Extension methods for configuring Keycloak authentication services.
 /// </summary>
