@@ -27,6 +27,19 @@ public sealed class AuthEndpointsTests : IClassFixture<IngressoApiFactory>
     }
 
     [Fact]
+    public async Task GetMe_ShouldReturnUnauthorized_WhenTokenIsInvalid()
+    {
+        using HttpClient client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            TestAuthHandler.AuthorizationScheme,
+            "bogus-token");
+
+        HttpResponseMessage response = await client.GetAsync(GetMeUri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task GetMe_ShouldReturnAuthenticatedUser_WhenRequestHasMockJwt()
     {
         using HttpClient client = _factory.CreateClient();
