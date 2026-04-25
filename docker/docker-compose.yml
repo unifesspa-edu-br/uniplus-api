@@ -85,6 +85,12 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
+      # Canonicaliza o issuer dos tokens para http://localhost:8080 — independente
+      # do hostname usado pra acessar o Keycloak (host: localhost; rede docker: keycloak).
+      # Sem isso, tokens emitidos via host têm iss=localhost mas a discovery via
+      # rede interna retorna iss=keycloak, quebrando a validação JWT nas APIs.
+      KC_HOSTNAME: "http://localhost:8080"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     ports:

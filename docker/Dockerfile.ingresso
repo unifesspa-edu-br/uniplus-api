@@ -3,7 +3,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0.100 AS build
 WORKDIR /src
 
 # Copiar arquivos de configuração da solution
-COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx ./
+# .editorconfig é necessário porque políticas por glob (ex.: CA1812 em Controllers/)
+# vivem nele — sem ele o build dentro do container reverte às severidades default.
+COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig ./
 
 # Copiar csproj para restore otimizado (cache de camadas)
 COPY src/shared/ src/shared/
