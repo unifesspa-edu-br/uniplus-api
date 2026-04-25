@@ -9,7 +9,7 @@
 - **Cache:** Redis 8
 - **Storage:** MinIO (S3-compatible)
 - **Autenticação:** Keycloak 26.5 (Gov.br)
-- **CQRS/messaging:** Wolverine 5.x — abstrações `ICommandBus` / `IDomainEventDispatcher` em `Application.Abstractions/Messaging`, outbox transacional via `WolverineFx.EntityFrameworkCore`. Ver [ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md).
+- **CQRS/messaging:** Wolverine 5.x — abstração `ICommandBus` em `Application.Abstractions/Messaging` com implementação `WolverineCommandBus` (delega para `Wolverine.IMessageBus`). Ver [ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md). **Outbox transacional de domain events ainda não foi adotado** — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md) e [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158); `EntityBase.DomainEvents` continua presente no domínio mas não é drenado automaticamente.
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
 - **Observabilidade:** OpenTelemetry
@@ -61,7 +61,7 @@ Application NUNCA depende de Infrastructure ou API.
 - **Soft delete** em todas as entidades: `IsDeleted`, `DeletedAt`, `DeletedBy`
 - **PII masking** em logs: CPF `***.***.***-XX`, nunca logar dados sensíveis — aplicado automaticamente pelo `PiiMaskingEnricher` (registrado no pipeline Serilog via `ConfigurarSerilog`) a todas as propriedades estruturadas, inclusive aninhadas (`StructureValue`, `SequenceValue`, `DictionaryValue`)
 - **Result pattern** para retorno de operações: `Result<T>` com `DomainError`
-- **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, domain events via `AddDomainEvent` na entidade + outbox transacional, queries via repositórios. Padrões e exemplos em `docs/guia-wolverine-golden-path.md` (`uniplus-docs`)
+- **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, queries via repositórios. Domain events (`AddDomainEvent` em `EntityBase`) continuam acumulando na entidade — drenagem para outbox/bus está reprovada por enquanto (ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md) e [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158)). Não escrever código de aplicação que dependa do despacho automático de domain events. Padrões e exemplos em `docs/guia-wolverine-golden-path.md` (`uniplus-docs`)
 - **Value objects** para dados de domínio: `Cpf`, `Email`, `NomeSocial`, `NotaFinal`, `NumeroEdital`
 - **Factory methods** com construtores privados em todas as entidades
 - **Sealed classes** por padrão (exceto bases abstratas)
@@ -172,7 +172,6 @@ docker compose -f docker/docker-compose.yml up -d
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d
 
 # Migrations EF Core — NÃO rodar para entidades de domínio até #155 definir naming convention.
-# (A outbox do Wolverine não precisa de migration: o schema é criado via AddResourceSetupOnStartup.)
 dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --startup-project src/selecao/Unifesspa.UniPlus.Selecao.API
 ```
 
