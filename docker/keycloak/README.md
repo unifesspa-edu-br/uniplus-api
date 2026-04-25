@@ -73,6 +73,60 @@ A flag `loginWithEmailAllowed: true` do realm permite que o formulário de login
 
 O campo `email` permanece único (`duplicateEmailsAllowed: false`) — requisito para que o email funcione como identificador de login. `registrationEmailAsUsername` fica `false`, mantendo `username` e `email` como campos distintos.
 
+## Smoke tests via Direct Access Grants (ROPC)
+
+Para validar o fluxo OIDC ponta-a-ponta sem subir o frontend Angular — útil em debug rápido, integração contínua local e validação de mudanças no pipeline JWT — usa-se Direct Access Grants (Resource Owner Password Credentials) contra o client `admin-cli`.
+
+O `realm-export.json` reflete configuração de produção: senhas temporárias, `admin-cli` com lightweight access tokens (sem `sub`/`email`/atributos) e sem o scope `uniplus-profile`. Para destravar ROPC, rode o script de setup pós-import:
+
+```bash
+scripts/setup-keycloak-dev.sh
+```
+
+O script é idempotente e aplica via Admin API (sem alterar `realm-export.json`):
+
+| Patch | Por quê |
+|---|---|
+| Atribui `uniplus-profile` ao `defaultClientScopes` do `admin-cli` | Sem isso, tokens emitidos via `admin-cli` não carregam `cpf`/`nomeSocial` nem `aud=uniplus` (validação de audience falha nas APIs) |
+| Seta `client.use.lightweight.access.token.enabled=false` em `admin-cli` | Em Keycloak 26+, `admin-cli` vem com lightweight tokens — só `iss`/`azp`/`sid`/`scope`. Sem `sub`/`email`/atributos, o pipeline JWT rejeita |
+| Reseta senha dos 4 usuários de teste como `temporary=false` e limpa `requiredActions` | Senhas temporárias forçam `UPDATE_PASSWORD` action no primeiro login; ROPC quebra com 401 `invalid_grant` |
+
+Os ajustes vivem só na memória do Keycloak — `docker compose down -v` reverte tudo. Re-rode o script após recriar o volume do Postgres.
+
+### Exemplo de fluxo completo
+
+```bash
+# 1. Stack docker no ar + setup pós-import
+docker compose -f docker/docker-compose.yml up -d
+scripts/setup-keycloak-dev.sh
+
+# 2. Token de candidato
+TOKEN=$(curl -s -X POST 'http://localhost:8080/realms/unifesspa/protocol/openid-connect/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=password' -d 'client_id=admin-cli' \
+  -d 'username=candidato' -d 'password=Changeme!123' | jq -r .access_token)
+
+# 3. Endpoints autenticados
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5202/api/auth/me | jq
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:5202/api/profile/me | jq
+```
+
+Resposta esperada de `/api/profile/me`:
+
+```json
+{
+  "userId": "c1787064-fc4b-481a-9cbe-d8715932d4a0",
+  "name": "Usuário Candidato",
+  "email": "candidato@teste.unifesspa.edu.br",
+  "cpf": "24843803480",
+  "nomeSocial": "Candidato Teste",
+  "roles": ["candidato"],
+  "timestamp": "2026-04-25T01:06:24.367+00:00"
+}
+```
+
+> ⚠️ Em produção, ROPC **não deve ser usado** — frontends Angular usam Authorization Code com PKCE (clients `selecao-web`, `ingresso-web`, `portal-web`). Os patches deste script são exclusivamente de ergonomia para desenvolvimento e CI local.
+
 ## Política de senha
 
 O realm aplica a seguinte `passwordPolicy`:
