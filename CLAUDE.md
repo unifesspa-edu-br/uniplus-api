@@ -9,7 +9,7 @@
 - **Cache:** Redis 8
 - **Storage:** MinIO (S3-compatible)
 - **Autenticação:** Keycloak 26.5 (Gov.br)
-- **CQRS/messaging:** Wolverine 5.x — abstração `ICommandBus` em `Application.Abstractions/Messaging` com implementação `WolverineCommandBus` (delega para `Wolverine.IMessageBus`). Ver [ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md). **Outbox transacional de domain events ainda não foi adotado** — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md) e [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158); `EntityBase.DomainEvents` continua presente no domínio mas não é drenado automaticamente.
+- **CQRS/messaging:** Wolverine 5.x ([ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md)) — abstração `ICommandBus` em `Application.Abstractions/Messaging`. Outbox transacional de domain events **ainda não adotado** — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md) e [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158).
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
 - **Observabilidade:** OpenTelemetry
@@ -61,7 +61,7 @@ Application NUNCA depende de Infrastructure ou API.
 - **Soft delete** em todas as entidades: `IsDeleted`, `DeletedAt`, `DeletedBy`
 - **PII masking** em logs: CPF `***.***.***-XX`, nunca logar dados sensíveis — aplicado automaticamente pelo `PiiMaskingEnricher` (registrado no pipeline Serilog via `ConfigurarSerilog`) a todas as propriedades estruturadas, inclusive aninhadas (`StructureValue`, `SequenceValue`, `DictionaryValue`)
 - **Result pattern** para retorno de operações: `Result<T>` com `DomainError`
-- **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, queries via repositórios. Domain events (`AddDomainEvent` em `EntityBase`) continuam acumulando na entidade — drenagem para outbox/bus está reprovada por enquanto (ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md) e [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158)). Não escrever código de aplicação que dependa do despacho automático de domain events. Padrões e exemplos em `docs/guia-wolverine-golden-path.md` (`uniplus-docs`)
+- **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, queries via repositórios. Domain events (`AddDomainEvent` em `EntityBase`) continuam acumulando na entidade — drenagem para outbox/bus ainda não está implementada (estratégia em definição na [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158), precedida por reprovação técnica em #135 — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md)). **Trava: não escrever código de aplicação que assuma despacho automático de domain events** — esse invariante não está garantido nesta fase. Padrões e exemplos em `docs/guia-wolverine-golden-path.md` (`uniplus-docs`)
 - **Value objects** para dados de domínio: `Cpf`, `Email`, `NomeSocial`, `NotaFinal`, `NumeroEdital`
 - **Factory methods** com construtores privados em todas as entidades
 - **Sealed classes** por padrão (exceto bases abstratas)
@@ -88,19 +88,19 @@ O source generator de `[LoggerMessage]` (.NET 6+) gera código que:
 Classe `partial`, método `private static partial void Log{Ação}` no fim da classe, `ILogger` como primeiro parâmetro:
 
 ```csharp
-public sealed partial class PublicarEditalCommandHandler
+public sealed partial class EditalLogger(ILogger<EditalLogger> logger)
 {
-    private readonly ILogger<PublicarEditalCommandHandler> _logger;
-
-    public void Executar(Guid editalId)
+    public void RegistrarPublicacao(Guid editalId)
     {
-        LogPublicando(_logger, editalId);   // chamada idiomática (gerada em compile time)
+        LogPublicando(logger, editalId);   // chamada idiomática (gerada em compile time)
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Publicando edital {EditalId}")]
     private static partial void LogPublicando(ILogger logger, Guid editalId);
 }
 ```
+
+> O exemplo usa nome neutro de propósito — não é um handler Wolverine. Handlers seguem a convenção do framework (método `Handle` com o tipo do command como primeiro parâmetro); o padrão `[LoggerMessage]` aqui aplica-se a qualquer classe que precise de logging estruturado.
 
 ### Convenções de estilo
 
