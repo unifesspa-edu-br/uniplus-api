@@ -42,8 +42,18 @@ builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddSelecaoApplication();
 builder.Services.AddSelecaoInfrastructure(connectionString);
 
-// Wolverine como backbone CQRS/messaging — ver ADR-022. Outbox transacional
-// (PersistMessagesWithEntityFrameworkCore) é entregue na sub-task seguinte.
+// Wolverine como backbone CQRS/messaging — ver ADR-022.
+//
+// Esta configuração entrega APENAS o backbone do bus (ICommandBus → handler).
+// As policies abaixo preparam o pipeline transacional do Wolverine, mas NÃO
+// implementam outbox transacional de domain events. Em particular:
+//   - PersistMessagesWith* NÃO está configurado: domain events são entregues
+//     in-memory pelo bus, sem persistência durável de envelopes.
+//   - PublishDomainEventsFromEntityFrameworkCore NÃO está configurado:
+//     EntityBase.DomainEvents NÃO é drenado automaticamente em SaveChanges.
+//   - Atomicidade write+evento NÃO é garantida nesta fase.
+// A adoção de outbox transacional foi reprovada no spike de #135 (ver branch
+// spike/135-outbox-validation e a issue dedicada de outbox para os achados).
 builder.Host.UseWolverine(opts =>
 {
     opts.UseEntityFrameworkCoreTransactions();
