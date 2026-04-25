@@ -9,10 +9,12 @@ public sealed record NomeSocial
     public bool UsaNomeSocial => !string.IsNullOrWhiteSpace(Nome);
     public string NomeExibicao => UsaNomeSocial ? Nome! : NomeCivil;
 
-    private NomeSocial(string nomeCivil, string? nomeSocial)
+    // Parâmetro nomeado para casar com a propriedade Nome — EF Core
+    // mapeia constructor params para properties por convenção case-insensitive.
+    private NomeSocial(string nomeCivil, string? nome)
     {
         NomeCivil = nomeCivil;
-        Nome = nomeSocial;
+        Nome = nome;
     }
 
     public static Result<NomeSocial> Criar(string? nomeCivil, string? nomeSocial = null)

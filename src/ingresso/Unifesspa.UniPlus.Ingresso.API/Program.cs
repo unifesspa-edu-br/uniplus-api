@@ -10,8 +10,13 @@ using Unifesspa.UniPlus.Ingresso.API.Middleware;
 using Unifesspa.UniPlus.Ingresso.Application.Mappings;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
 
+using JasperFx.Resources;
+
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
+
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
+using Wolverine.Postgresql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -33,22 +38,33 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 
-string connectionString = builder.Configuration.GetConnectionString("IngressoDb")
-    ?? throw new InvalidOperationException("Connection string 'IngressoDb' não configurada.");
-
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddIngressoApplication();
-builder.Services.AddIngressoInfrastructure(connectionString);
+builder.Services.AddIngressoInfrastructure();
 
-// Wolverine como backbone CQRS/messaging — ver ADR-022. Outbox transacional
-// (PersistMessagesWithEntityFrameworkCore) é entregue na sub-task seguinte.
+// Wolverine como backbone CQRS/messaging — ver ADR-022.
+// Outbox transacional (issue #135): PersistMessagesWithPostgresql armazena
+// envelopes em wolverine.wolverine_outgoing_envelopes /
+// wolverine.wolverine_incoming_envelopes. AddResourceSetupOnStartup
+// (JasperFx.Resources) provisiona o schema em runtime — sem migration EF Core
+// (ver issue #155 para a estratégia formal de migrations das entidades de domínio).
+//
+// A connection string é lida dentro do callback (não capturada em closure) para
+// que WebApplicationFactory.ConfigureAppConfiguration consiga sobrescrever via
+// Testcontainers nos testes de integração — o callback executa durante o Build,
+// depois das fontes de configuração serem mescladas.
 builder.Host.UseWolverine(opts =>
 {
+    string connectionString = builder.Configuration.GetConnectionString("IngressoDb")
+        ?? throw new InvalidOperationException("Connection string 'IngressoDb' não configurada.");
+    opts.PersistMessagesWithPostgresql(connectionString, "wolverine");
     opts.UseEntityFrameworkCoreTransactions();
+    opts.PublishDomainEventsFromEntityFrameworkCore<EntityBase>(e => e.DomainEvents);
     opts.Policies.AutoApplyTransactions();
 });
+builder.Services.AddResourceSetupOnStartup();
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);

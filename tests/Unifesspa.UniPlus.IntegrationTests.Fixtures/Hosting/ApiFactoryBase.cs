@@ -24,10 +24,15 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
 
         builder.UseEnvironment("Development");
 
-        builder.ConfigureAppConfiguration((_, configurationBuilder) =>
+        // UseSetting escreve no IConfigurationBuilder do host antes do Program.cs
+        // do projeto-alvo executar — necessário porque o Program.cs lê a connection
+        // string eagerly via builder.Configuration. ConfigureAppConfiguration roda
+        // tarde demais (durante Build, depois de o Program.cs já ter capturado o
+        // valor) para sobrescrever connection strings.
+        foreach (KeyValuePair<string, string?> kv in GetConfigurationOverrides())
         {
-            configurationBuilder.AddInMemoryCollection(GetConfigurationOverrides());
-        });
+            builder.UseSetting(kv.Key, kv.Value);
+        }
 
         builder.ConfigureTestServices(services =>
         {

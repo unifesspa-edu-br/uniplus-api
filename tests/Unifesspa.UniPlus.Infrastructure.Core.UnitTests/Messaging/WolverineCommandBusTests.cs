@@ -19,7 +19,7 @@ public class WolverineCommandBusTests
         const string respostaEsperada = "ok";
         Wolverine.IMessageBus bus = Substitute.For<Wolverine.IMessageBus>();
         TestCommand command = new(Guid.NewGuid());
-        bus.InvokeAsync<string>(command, Arg.Any<CancellationToken>())
+        bus.InvokeAsync<string>(command, Arg.Is(CancellationToken.None))
            .Returns(Task.FromResult(respostaEsperada));
 
         WolverineCommandBus wrapper = new(bus);
@@ -27,7 +27,7 @@ public class WolverineCommandBusTests
         string resposta = await wrapper.Send(command, CancellationToken.None);
 
         resposta.Should().Be(respostaEsperada);
-        await bus.Received(1).InvokeAsync<string>(command, Arg.Any<CancellationToken>());
+        await bus.Received(1).InvokeAsync<string>(command, Arg.Is(CancellationToken.None));
     }
 
     [Fact]
