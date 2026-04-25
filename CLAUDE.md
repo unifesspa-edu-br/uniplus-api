@@ -9,7 +9,7 @@
 - **Cache:** Redis 8
 - **Storage:** MinIO (S3-compatible)
 - **Autenticação:** Keycloak 26.5 (Gov.br)
-- **CQRS/messaging:** Wolverine 5.x ([ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md)) — `ICommandBus` / `IDomainEventDispatcher` em `Application.Abstractions/Messaging`, outbox transacional via `WolverineFx.EntityFrameworkCore`. **MediatR foi descontinuado** no projeto (licenciamento comercial 07/2025).
+- **CQRS/messaging:** Wolverine 5.x — abstrações `ICommandBus` / `IDomainEventDispatcher` em `Application.Abstractions/Messaging`, outbox transacional via `WolverineFx.EntityFrameworkCore`. Ver [ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md).
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
 - **Observabilidade:** OpenTelemetry
@@ -61,7 +61,7 @@ Application NUNCA depende de Infrastructure ou API.
 - **Soft delete** em todas as entidades: `IsDeleted`, `DeletedAt`, `DeletedBy`
 - **PII masking** em logs: CPF `***.***.***-XX`, nunca logar dados sensíveis — aplicado automaticamente pelo `PiiMaskingEnricher` (registrado no pipeline Serilog via `ConfigurarSerilog`) a todas as propriedades estruturadas, inclusive aninhadas (`StructureValue`, `SequenceValue`, `DictionaryValue`)
 - **Result pattern** para retorno de operações: `Result<T>` com `DomainError`
-- **CQRS** via Wolverine: Commands para escrita (`ICommandBus.Send`), domain events (`AddDomainEvent` na entidade + outbox transacional), Queries via repositórios — ver `docs/guia-wolverine-golden-path.md` no repo `uniplus-docs`
+- **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, domain events via `AddDomainEvent` na entidade + outbox transacional, queries via repositórios. Padrões e exemplos em `docs/guia-wolverine-golden-path.md` (`uniplus-docs`)
 - **Value objects** para dados de domínio: `Cpf`, `Email`, `NomeSocial`, `NotaFinal`, `NumeroEdital`
 - **Factory methods** com construtores privados em todas as entidades
 - **Sealed classes** por padrão (exceto bases abstratas)
@@ -88,33 +88,17 @@ O source generator de `[LoggerMessage]` (.NET 6+) gera código que:
 Classe `partial`, método `private static partial void Log{Ação}` no fim da classe, `ILogger` como primeiro parâmetro:
 
 ```csharp
-namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
-
-using Microsoft.Extensions.Logging;
-
 public sealed partial class PublicarEditalCommandHandler
 {
-    public async Task<Result<Unit>> Handle(
-        PublicarEditalCommand command,
-        SelecaoDbContext db,
-        ILogger<PublicarEditalCommandHandler> logger,
-        CancellationToken ct)
+    private readonly ILogger<PublicarEditalCommandHandler> _logger;
+
+    public void Executar(Guid editalId)
     {
-        LogProcessando(logger, command.EditalId);                   // chamada idiomática
-        Edital? edital = await db.Editais.FindAsync([command.EditalId], ct).ConfigureAwait(false);
-        if (edital is null)
-            return Result<Unit>.Failure(EditalErrors.NaoEncontrado);
-        edital.Publicar();
-        await db.SaveChangesAsync(ct).ConfigureAwait(false);
-        LogConcluido(logger, command.EditalId);
-        return Result<Unit>.Success(Unit.Value);
+        LogPublicando(_logger, editalId);   // chamada idiomática (gerada em compile time)
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Publicando edital {EditalId}")]
-    private static partial void LogProcessando(ILogger logger, Guid editalId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Edital {EditalId} publicado")]
-    private static partial void LogConcluido(ILogger logger, Guid editalId);
+    private static partial void LogPublicando(ILogger logger, Guid editalId);
 }
 ```
 
@@ -151,7 +135,7 @@ Sem `SkipEnabledCheck`, o source generator sempre gera a guarda internamente —
 - [CA1848 — Use the LoggerMessage delegates](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1848)
 - [CA1873 — Avoid potentially expensive logging](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1873)
 - [Compile-time logging source generation](https://learn.microsoft.com/dotnet/core/extensions/logging/source-generation)
-- Exemplos no projeto: `src/*/API/Middleware/GlobalExceptionMiddleware.cs`, `src/*/Application/Behaviors/LoggingBehavior.cs`
+- Exemplos no projeto: `src/*/API/Middleware/GlobalExceptionMiddleware.cs`, `src/shared/Unifesspa.UniPlus.Infrastructure.Core/Middleware/RequestLoggingMiddleware.cs`
 
 ## Supressão de análise de código
 
@@ -187,8 +171,8 @@ docker compose -f docker/docker-compose.yml up -d
 # APIs em modo desenvolvimento
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d
 
-# Migrations EF Core — referência de comando (NÃO rodar para entidades de domínio até issue #155
-# definir naming convention e InitialCreate revisado; outbox do Wolverine usa AddResourceSetupOnStartup)
+# Migrations EF Core — NÃO rodar para entidades de domínio até #155 definir naming convention.
+# (A outbox do Wolverine não precisa de migration: o schema é criado via AddResourceSetupOnStartup.)
 dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --startup-project src/selecao/Unifesspa.UniPlus.Selecao.API
 ```
 
