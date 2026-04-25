@@ -10,6 +10,9 @@ using Unifesspa.UniPlus.Ingresso.API.Middleware;
 using Unifesspa.UniPlus.Ingresso.Application.Mappings;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
 
+using Wolverine;
+using Wolverine.EntityFrameworkCore;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, loggerConfig) =>
@@ -38,6 +41,15 @@ builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddIngressoApplication();
 builder.Services.AddIngressoInfrastructure(connectionString);
+
+// Wolverine como backbone CQRS/messaging — ver ADR-022. Outbox transacional
+// (PersistMessagesWithEntityFrameworkCore) é entregue na sub-task seguinte.
+builder.Host.UseWolverine(opts =>
+{
+    opts.UseEntityFrameworkCoreTransactions();
+    opts.Policies.AutoApplyTransactions();
+});
+builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 
