@@ -6,8 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Events;
 /// Publica domain events para os handlers registrados, intra-módulo (in-process) ou
 /// cross-módulo (via Kafka transport configurado no Wolverine). Aplicação publica eventos
 /// como <see cref="IDomainEvent"/> — tópicos, partições e headers são detalhe de routing
-/// gerenciado pelo Wolverine. Ver
-/// <a href="../../../../../docs/adrs/ADR-022-backbone-cqrs-wolverine.md">ADR-022</a>.
+/// gerenciado pelo Wolverine. Ver ADR-022 (uniplus-docs/docs/adrs/).
 /// </summary>
 public interface IDomainEventDispatcher
 {

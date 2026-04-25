@@ -6,8 +6,11 @@ using Unifesspa.UniPlus.Kernel.Domain.Events;
 internal sealed class WolverineDomainEventDispatcher(Wolverine.IMessageBus bus) : IDomainEventDispatcher
 {
     // Wolverine.IMessageBus.PublishAsync não aceita CancellationToken (publish é fire-and-forget,
-    // cancelamento ocorre no nível do routing). Mantemos o parâmetro ct na assinatura do contrato
-    // por consistência com ICommandBus.Send e para evolução futura.
+    // cancelamento ocorre no nível do routing). Honramos o ct no boundary do método para que
+    // caller que já cancelou veja OperationCanceledException em vez de publicação silenciosa.
     public Task Publish(IDomainEvent domainEvent, CancellationToken ct = default)
-        => bus.PublishAsync(domainEvent).AsTask();
+    {
+        ct.ThrowIfCancellationRequested();
+        return bus.PublishAsync(domainEvent).AsTask();
+    }
 }
