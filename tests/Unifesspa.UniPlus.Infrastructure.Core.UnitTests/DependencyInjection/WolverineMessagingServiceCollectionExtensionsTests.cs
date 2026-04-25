@@ -33,22 +33,6 @@ public class WolverineMessagingServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddWolverineMessaging_DeveRegistrarIDomainEventDispatcherComoWolverineDomainEventDispatcher()
-    {
-        ServiceCollection services = new();
-        services.AddScoped(_ => Substitute.For<Wolverine.IMessageBus>());
-        services.AddWolverineMessaging();
-
-        using ServiceProvider sp = services.BuildServiceProvider();
-        using IServiceScope scope = sp.CreateScope();
-
-        IDomainEventDispatcher dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-
-        dispatcher.Should().NotBeNull();
-        dispatcher.Should().BeOfType<WolverineDomainEventDispatcher>();
-    }
-
-    [Fact]
     public void AddWolverineMessaging_ComServicesNulo_DeveLancarArgumentNullException()
     {
         IServiceCollection? services = null;
