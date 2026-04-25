@@ -13,7 +13,7 @@
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
 - **Observabilidade:** OpenTelemetry
-- **Testes:** xUnit, FluentAssertions, NSubstitute, Bogus, Testcontainers, NetArchTest
+- **Testes:** xUnit, FluentAssertions, NSubstitute, Bogus, Testcontainers, ArchUnitNET (pacote `TngTech.ArchUnitNET`)
 
 ## Estrutura do projeto
 
