@@ -160,6 +160,23 @@ O PR será criado com o template padrão. Preencha todas as seções.
 
 ---
 
+## Regras de integração
+
+Este repositório adota políticas de proteção de branch para garantir histórico limpo e previsível:
+
+- Apenas **Rebase** é permitido
+- **Merge commits** são desabilitados
+- Histórico linear é obrigatório
+- PRs exigem:
+  - 1 aprovação
+  - Status check `Build, Test and Coverage` passando
+  - Branch atualizada com a `main`
+  - Review realizado após o último push do PR
+
+Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem permissão administrativa. Casos excepcionais podem ser tratados por admins do repositório.
+
+---
+
 ## Padrões de código
 
 ### Clean Architecture
