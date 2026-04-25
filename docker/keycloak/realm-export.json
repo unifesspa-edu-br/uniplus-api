@@ -2957,6 +2957,9 @@
           "value": "Changeme!123",
           "temporary": true
         }
+      ],
+      "requiredActions": [
+        "UPDATE_PASSWORD"
       ]
     },
     {
@@ -2989,6 +2992,9 @@
           "value": "Changeme!123",
           "temporary": true
         }
+      ],
+      "requiredActions": [
+        "UPDATE_PASSWORD"
       ]
     },
     {
@@ -3021,6 +3027,9 @@
           "value": "Changeme!123",
           "temporary": true
         }
+      ],
+      "requiredActions": [
+        "UPDATE_PASSWORD"
       ]
     },
     {
@@ -3052,6 +3061,9 @@
           "value": "Changeme!123",
           "temporary": true
         }
+      ],
+      "requiredActions": [
+        "UPDATE_PASSWORD"
       ]
     }
   ],
