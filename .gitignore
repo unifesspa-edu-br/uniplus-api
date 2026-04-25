@@ -7,6 +7,8 @@ obj/
 *.sln.docstates
 packages/
 *.nupkg
+# Exceção: feed local temporário com fix do JasperFx/wolverine#2586 (ver nuget.config).
+!vendors/nuget-local/*.nupkg
 project.lock.json
 .vs/
 TestResults/
