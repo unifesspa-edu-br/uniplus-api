@@ -7,19 +7,26 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Wolverine;
 
-using AppCommandBus = Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommandBus;
-using AppICommand = Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommand<string>;
-
 /// <summary>
-/// Backbone Wolverine vivo: <see cref="AppCommandBus.Send"/> percorre o pipeline
+/// Backbone Wolverine vivo: <see cref="ICommandBus.Send"/> percorre o pipeline
 /// Wolverine real e entrega no handler descoberto por convenção. Não testa
 /// outbox/atomicidade de domain events — esse invariante é responsabilidade
 /// de issue futura dedicada (ver spike branch spike/135-outbox-validation).
 /// </summary>
+/// <remarks>
+/// <para>
+/// Este teste sobe um <see cref="IHost"/> Wolverine real para exercitar o
+/// pipeline ponta-a-ponta — formalmente é mais largo que um unit test, mas
+/// permanece neste projeto por (a) não ter I/O externo (sem banco, sem rede),
+/// (b) startup &lt; 1 s e (c) ser o único caminho para validar que a convenção
+/// de descoberta de handler funciona com a wrapper <see cref="WolverineCommandBus"/>.
+/// </para>
+/// </remarks>
 public class WolverineCommandBusEndToEndTests
 {
     [Fact]
@@ -34,7 +41,9 @@ public class WolverineCommandBusEndToEndTests
         try
         {
             await using AsyncServiceScope scope = host.Services.CreateAsyncScope();
-            AppCommandBus bus = scope.ServiceProvider.GetRequiredService<AppCommandBus>();
+            // Fully-qualify para desambiguar do Wolverine.ICommandBus (do using Wolverine).
+            Application.Abstractions.Messaging.ICommandBus bus =
+                scope.ServiceProvider.GetRequiredService<Application.Abstractions.Messaging.ICommandBus>();
 
             string resposta = await bus.Send(new PingCommand("uniplus"));
 
@@ -45,14 +54,19 @@ public class WolverineCommandBusEndToEndTests
             await host.StopAsync();
         }
     }
+
 }
 
+// PingCommand e PingHandler são public top-level por exigência do code generator
+// do Wolverine: o pipeline gerado em runtime referencia esses tipos diretamente,
+// e tipos internal/nested levam a CS0122 ("inacessível devido ao seu nível de
+// proteção") na compilação dinâmica. Nada incomum — ver guia Golden Path.
 [SuppressMessage("Performance", "CA1515:Consider making public types internal",
-    Justification = "Wolverine convenção exige discovery por reflection.")]
-public sealed record PingCommand(string Quem) : AppICommand;
+    Justification = "Wolverine code generator exige tipo public para gerar o pipeline.")]
+public sealed record PingCommand(string Quem) : ICommand<string>;
 
 [SuppressMessage("Performance", "CA1515:Consider making public types internal",
-    Justification = "Wolverine convenção exige discovery por reflection.")]
+    Justification = "Wolverine code generator exige tipo public para gerar o pipeline.")]
 public static class PingHandler
 {
     [SuppressMessage("Design", "CA1062:Validate arguments of public methods", Justification = "Handler do teste.")]

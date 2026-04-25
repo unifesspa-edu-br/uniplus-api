@@ -54,6 +54,11 @@ builder.Services.AddIngressoInfrastructure(connectionString);
 //   - Atomicidade write+evento NÃO é garantida nesta fase.
 // A adoção de outbox transacional foi reprovada no spike de #135 (ver branch
 // spike/135-outbox-validation e a issue dedicada de outbox para os achados).
+//
+// UseEntityFrameworkCoreTransactions e AutoApplyTransactions são no-ops
+// efetivos nesta fase (sem outbox, envolvem apenas o SaveChanges em uma
+// transação Wolverine que não coordena nada extra). Mantidos intencionalmente
+// para reduzir o delta de configuração quando a Story #158 entregar o outbox.
 builder.Host.UseWolverine(opts =>
 {
     opts.UseEntityFrameworkCoreTransactions();
