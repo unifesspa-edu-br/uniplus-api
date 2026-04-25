@@ -1,0 +1,60 @@
+namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.DependencyInjection;
+
+using FluentAssertions;
+
+using Microsoft.Extensions.DependencyInjection;
+
+using NSubstitute;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
+
+public class WolverineMessagingServiceCollectionExtensionsTests
+{
+    [Fact]
+    public void AddWolverineMessaging_DeveRegistrarICommandBusComoWolverineCommandBus()
+    {
+        // Protege o contrato da extension: ICommandBus (canônico do projeto, ADR-022)
+        // resolve para WolverineCommandBus, que é o único caminho aprovado para
+        // delegar a Wolverine.IMessageBus. Se alguém remover a registração ou
+        // trocar por outra implementação, este teste quebra antes do startup.
+        ServiceCollection services = new();
+        services.AddScoped(_ => Substitute.For<Wolverine.IMessageBus>());
+        services.AddWolverineMessaging();
+
+        using ServiceProvider sp = services.BuildServiceProvider();
+        using IServiceScope scope = sp.CreateScope();
+
+        ICommandBus bus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
+
+        bus.Should().NotBeNull();
+        bus.Should().BeOfType<WolverineCommandBus>();
+    }
+
+    [Fact]
+    public void AddWolverineMessaging_DeveRegistrarIDomainEventDispatcherComoWolverineDomainEventDispatcher()
+    {
+        ServiceCollection services = new();
+        services.AddScoped(_ => Substitute.For<Wolverine.IMessageBus>());
+        services.AddWolverineMessaging();
+
+        using ServiceProvider sp = services.BuildServiceProvider();
+        using IServiceScope scope = sp.CreateScope();
+
+        IDomainEventDispatcher dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
+
+        dispatcher.Should().NotBeNull();
+        dispatcher.Should().BeOfType<WolverineDomainEventDispatcher>();
+    }
+
+    [Fact]
+    public void AddWolverineMessaging_ComServicesNulo_DeveLancarArgumentNullException()
+    {
+        IServiceCollection? services = null;
+
+        Action acao = () => services!.AddWolverineMessaging();
+
+        acao.Should().Throw<ArgumentNullException>();
+    }
+}
