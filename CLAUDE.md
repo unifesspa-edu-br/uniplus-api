@@ -9,7 +9,7 @@
 - **Cache:** Redis 8
 - **Storage:** MinIO (S3-compatible)
 - **Autenticação:** Keycloak 26.5 (Gov.br)
-- **CQRS:** MediatR 14
+- **CQRS/messaging:** Wolverine 5.x ([ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md)) — `ICommandBus` / `IDomainEventDispatcher` em `Application.Abstractions/Messaging`, outbox transacional via `WolverineFx.EntityFrameworkCore`. **MediatR foi descontinuado** no projeto (licenciamento comercial 07/2025).
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
 - **Observabilidade:** OpenTelemetry
@@ -61,7 +61,7 @@ Application NUNCA depende de Infrastructure ou API.
 - **Soft delete** em todas as entidades: `IsDeleted`, `DeletedAt`, `DeletedBy`
 - **PII masking** em logs: CPF `***.***.***-XX`, nunca logar dados sensíveis — aplicado automaticamente pelo `PiiMaskingEnricher` (registrado no pipeline Serilog via `ConfigurarSerilog`) a todas as propriedades estruturadas, inclusive aninhadas (`StructureValue`, `SequenceValue`, `DictionaryValue`)
 - **Result pattern** para retorno de operações: `Result<T>` com `DomainError`
-- **CQRS** via MediatR: Commands para escrita, Queries para leitura
+- **CQRS** via Wolverine: Commands para escrita (`ICommandBus.Send`), domain events (`AddDomainEvent` na entidade + outbox transacional), Queries via repositórios — ver `docs/guia-wolverine-golden-path.md` no repo `uniplus-docs`
 - **Value objects** para dados de domínio: `Cpf`, `Email`, `NomeSocial`, `NotaFinal`, `NumeroEdital`
 - **Factory methods** com construtores privados em todas as entidades
 - **Sealed classes** por padrão (exceto bases abstratas)
@@ -88,32 +88,33 @@ O source generator de `[LoggerMessage]` (.NET 6+) gera código que:
 Classe `partial`, método `private static partial void Log{Ação}` no fim da classe, `ILogger` como primeiro parâmetro:
 
 ```csharp
-namespace Unifesspa.UniPlus.Selecao.Application.Behaviors;
+namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 
-using MediatR;
 using Microsoft.Extensions.Logging;
 
-public sealed partial class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+public sealed partial class PublicarEditalCommandHandler
 {
-    private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
-
-    public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger) => _logger = logger;
-
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+    public async Task<Result<Unit>> Handle(
+        PublicarEditalCommand command,
+        SelecaoDbContext db,
+        ILogger<PublicarEditalCommandHandler> logger,
+        CancellationToken ct)
     {
-        string requestName = typeof(TRequest).Name;
-        LogProcessando(_logger, requestName);                       // chamada idiomática
-        TResponse response = await next(ct).ConfigureAwait(false);
-        LogConcluido(_logger, requestName, stopwatch.ElapsedMilliseconds);
-        return response;
+        LogProcessando(logger, command.EditalId);                   // chamada idiomática
+        Edital? edital = await db.Editais.FindAsync([command.EditalId], ct).ConfigureAwait(false);
+        if (edital is null)
+            return Result<Unit>.Failure(EditalErrors.NaoEncontrado);
+        edital.Publicar();
+        await db.SaveChangesAsync(ct).ConfigureAwait(false);
+        LogConcluido(logger, command.EditalId);
+        return Result<Unit>.Success(Unit.Value);
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Processando {RequestName}")]
-    private static partial void LogProcessando(ILogger logger, string requestName);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Publicando edital {EditalId}")]
+    private static partial void LogProcessando(ILogger logger, Guid editalId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Concluído {RequestName} em {ElapsedMs}ms")]
-    private static partial void LogConcluido(ILogger logger, string requestName, long elapsedMs);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Edital {EditalId} publicado")]
+    private static partial void LogConcluido(ILogger logger, Guid editalId);
 }
 ```
 
@@ -186,7 +187,8 @@ docker compose -f docker/docker-compose.yml up -d
 # APIs em modo desenvolvimento
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d
 
-# Migrations EF Core
+# Migrations EF Core — referência de comando (NÃO rodar para entidades de domínio até issue #155
+# definir naming convention e InitialCreate revisado; outbox do Wolverine usa AddResourceSetupOnStartup)
 dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --startup-project src/selecao/Unifesspa.UniPlus.Selecao.API
 ```
 
