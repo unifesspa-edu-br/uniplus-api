@@ -5,7 +5,16 @@ WORKDIR /src
 # Copiar arquivos de configuração da solution
 # .editorconfig é necessário porque políticas por glob (ex.: CA1812 em Controllers/)
 # vivem nele — sem ele o build dentro do container reverte às severidades default.
-COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig ./
+# nuget.config é necessário porque registra o feed local em vendors/nuget-local/
+# (fix temporário do JasperFx/wolverine#2586 — ver chore/wolverine-pr2586-local-feed
+# e ADR-024). Sem ele, `dotnet restore` tenta resolver 5.32.1-pr2586 no nuget.org
+# e falha.
+COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig nuget.config ./
+
+# Feed NuGet local com nupkgs do fix do Wolverine (ver nuget.config). Precisa
+# estar no FS antes do restore. Reverter este COPY junto com a remoção do feed
+# quando upstream publicar Wolverine 5.32.2+.
+COPY vendors/nuget-local/ vendors/nuget-local/
 
 # Copiar csproj para restore otimizado (cache de camadas)
 COPY src/shared/ src/shared/
