@@ -6,7 +6,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Unifesspa.UniPlus.Ingresso.Application\Unifesspa.UniPlus.Ingresso.Application.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Ingresso.Infrastructure\Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
   </ItemGroup>
 

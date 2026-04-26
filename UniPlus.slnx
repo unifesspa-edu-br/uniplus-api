@@ -2,7 +2,6 @@
   <Folder Name="/src/" />
   <Folder Name="/src/ingresso/">
     <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj" />
-    <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.Application/Unifesspa.UniPlus.Ingresso.Application.csproj" />
     <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
     <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
   </Folder>
@@ -20,7 +19,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Unifesspa.UniPlus.Application.Abstractions.UnitTests/Unifesspa.UniPlus.Application.Abstractions.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests.csproj" />
-    <Project Path="tests/Unifesspa.UniPlus.Ingresso.Application.UnitTests/Unifesspa.UniPlus.Ingresso.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.ArchTests/Unifesspa.UniPlus.Ingresso.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.IntegrationTests/Unifesspa.UniPlus.Ingresso.IntegrationTests.csproj" />

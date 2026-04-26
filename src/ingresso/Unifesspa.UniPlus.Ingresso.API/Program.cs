@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Ingresso.API.Middleware;
-using Unifesspa.UniPlus.Ingresso.Application.Mappings;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -37,7 +36,6 @@ string connectionString = builder.Configuration.GetConnectionString("IngressoDb"
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
-builder.Services.AddIngressoApplication();
 builder.Services.AddIngressoInfrastructure(connectionString);
 
 // Wolverine como backbone CQRS/messaging com outbox transacional —
