@@ -132,7 +132,7 @@ public sealed class CascadingScenariosTests
             "sem envelope no outbox, o listener não tem o que entregar — collector permanece vazio para esse numero");
     }
 
-    private static async Task<EditalPublicadoEvent?> EsperarEventoAsync(
+    internal static async Task<EditalPublicadoEvent?> EsperarEventoAsync(
         DomainEventCollector collector,
         NumeroEdital numeroEsperado,
         TimeSpan timeout)
