@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
+using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
@@ -76,6 +77,11 @@ builder.Host.UseWolverineOutboxCascading(
     connectionStringName: "SelecaoDb",
     configureRouting: opts =>
     {
+        // Wolverine escaneia o entry assembly (Selecao.API) por padrão; handlers
+        // produtivos vivem em Selecao.Application — incluir explicitamente para
+        // que PublicarEditalCommandHandler (e futuros) sejam descobertos.
+        opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
+
         opts.PublishMessage<EditalPublicadoEvent>().ToPostgresqlQueue("domain-events");
         opts.ListenToPostgresqlQueue("domain-events");
 

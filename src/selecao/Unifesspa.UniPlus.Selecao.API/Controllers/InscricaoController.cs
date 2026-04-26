@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
+using System.Diagnostics.CodeAnalysis;
+
 using MediatR;
 
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +13,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 [ApiController]
 [Route("api/v1/inscricoes")]
-internal sealed class InscricaoController : ControllerBase
+[SuppressMessage(
+    "Performance",
+    "CA1515:Consider making public types internal",
+    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
+public sealed class InscricaoController : ControllerBase
 {
     private readonly ISender _sender;
 
