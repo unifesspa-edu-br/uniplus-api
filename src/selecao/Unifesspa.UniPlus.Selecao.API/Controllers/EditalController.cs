@@ -2,15 +2,13 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
-using MediatR;
-
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Editais;
-using Unifesspa.UniPlus.Kernel.Results;
 
 [ApiController]
 [Route("api/v1/editais")]
@@ -20,13 +18,13 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class EditalController : ControllerBase
 {
-    private readonly ISender _sender;
     private readonly ICommandBus _commandBus;
+    private readonly IQueryBus _queryBus;
 
-    public EditalController(ISender sender, ICommandBus commandBus)
+    public EditalController(ICommandBus commandBus, IQueryBus queryBus)
     {
-        _sender = sender;
         _commandBus = commandBus;
+        _queryBus = queryBus;
     }
 
     [HttpPost]
@@ -34,7 +32,7 @@ public sealed class EditalController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Criar([FromBody] CriarEditalCommand command, CancellationToken cancellationToken)
     {
-        Result<Guid> resultado = await _sender.Send(command, cancellationToken);
+        Result<Guid> resultado = await _commandBus.Send(command, cancellationToken);
         return resultado.IsSuccess
             ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value)
             : BadRequest(resultado.Error);
@@ -45,10 +43,8 @@ public sealed class EditalController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        Result<EditalDto> resultado = await _sender.Send(new ObterEditalQuery(id), cancellationToken);
-        return resultado.IsSuccess
-            ? Ok(resultado.Value)
-            : NotFound(resultado.Error);
+        EditalDto? edital = await _queryBus.Send(new ObterEditalQuery(id), cancellationToken);
+        return edital is not null ? Ok(edital) : NotFound();
     }
 
     // Despacha PublicarEditalCommand pelo ICommandBus (Wolverine). O handler
