@@ -2,12 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.Application.Mappings;
 
 using FluentValidation;
 
-using MediatR;
-
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Application.Abstractions.Behaviors;
-
+/// <summary>
+/// Registra os recursos da camada Application do módulo Seleção. CQRS roda
+/// integralmente sobre Wolverine (<c>ICommandBus</c>/<c>IQueryBus</c>) — esta
+/// extensão registra apenas os validators FluentValidation, consumidos pelo
+/// <c>WolverineValidationMiddleware</c> em <c>Infrastructure.Core</c>.
+/// </summary>
 public static class SelecaoApplicationServiceRegistration
 {
     public static IServiceCollection AddSelecaoApplication(this IServiceCollection services)
@@ -16,11 +18,7 @@ public static class SelecaoApplicationServiceRegistration
 
         System.Reflection.Assembly assembly = typeof(SelecaoApplicationServiceRegistration).Assembly;
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly);
-
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         return services;
     }

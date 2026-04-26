@@ -1,30 +1,31 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Editais;
 
-using MediatR;
-
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
 
-public sealed class ObterEditalQueryHandler : IRequestHandler<ObterEditalQuery, Result<EditalDto>>
+/// <summary>
+/// Handler convention-based do <see cref="ObterEditalQuery"/>: leitura simples
+/// pelo repositório, projetada em <see cref="EditalDto"/>. Retorna
+/// <c>null</c> quando o edital não existe — o controller mapeia para 404.
+/// </summary>
+public static class ObterEditalQueryHandler
 {
-    private readonly IEditalRepository _editalRepository;
-
-    public ObterEditalQueryHandler(IEditalRepository editalRepository)
+    public static async Task<EditalDto?> Handle(
+        ObterEditalQuery query,
+        IEditalRepository editalRepository,
+        CancellationToken cancellationToken)
     {
-        _editalRepository = editalRepository;
-    }
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(editalRepository);
 
-    public async Task<Result<EditalDto>> Handle(ObterEditalQuery request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        Edital? edital = await _editalRepository.ObterPorIdAsync(request.Id, cancellationToken).ConfigureAwait(false);
+        Edital? edital = await editalRepository.ObterPorIdAsync(query.Id, cancellationToken).ConfigureAwait(false);
         if (edital is null)
-            return Result<EditalDto>.Failure(new DomainError("Edital.NaoEncontrado", "Edital não encontrado."));
+        {
+            return null;
+        }
 
-        EditalDto dto = new(
+        return new EditalDto(
             edital.Id,
             edital.NumeroEdital.ToString(),
             edital.Titulo,
@@ -33,7 +34,5 @@ public sealed class ObterEditalQueryHandler : IRequestHandler<ObterEditalQuery, 
             edital.MaximoOpcoesCurso,
             edital.BonusRegionalHabilitado,
             edital.CreatedAt);
-
-        return Result<EditalDto>.Success(dto);
     }
 }

@@ -1,36 +1,40 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 
-using MediatR;
-
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
 
-public sealed class CriarEditalCommandHandler : IRequestHandler<CriarEditalCommand, Result<Guid>>
+/// <summary>
+/// Handler convention-based do <see cref="CriarEditalCommand"/>: cria o
+/// agregado <see cref="Edital"/> a partir do <see cref="NumeroEdital"/>
+/// validado, persiste via repositório e retorna o id no <see cref="Result{T}"/>.
+/// Validação do request fica fora deste método — responsabilidade do
+/// <c>WolverineValidationMiddleware</c>.
+/// </summary>
+public static class CriarEditalCommandHandler
 {
-    private readonly IEditalRepository _editalRepository;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public CriarEditalCommandHandler(IEditalRepository editalRepository, IUnitOfWork unitOfWork)
+    public static async Task<Result<Guid>> Handle(
+        CriarEditalCommand command,
+        IEditalRepository editalRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
     {
-        _editalRepository = editalRepository;
-        _unitOfWork = unitOfWork;
-    }
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(editalRepository);
+        ArgumentNullException.ThrowIfNull(unitOfWork);
 
-    public async Task<Result<Guid>> Handle(CriarEditalCommand request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        Result<NumeroEdital> numeroResult = NumeroEdital.Criar(request.NumeroEdital, request.AnoEdital);
+        Result<NumeroEdital> numeroResult = NumeroEdital.Criar(command.NumeroEdital, command.AnoEdital);
         if (numeroResult.IsFailure)
+        {
             return Result<Guid>.Failure(numeroResult.Error!);
+        }
 
-        Edital edital = Edital.Criar(numeroResult.Value!, request.Titulo, request.TipoProcesso);
+        Edital edital = Edital.Criar(numeroResult.Value!, command.Titulo, command.TipoProcesso);
 
-        await _editalRepository.AdicionarAsync(edital, cancellationToken).ConfigureAwait(false);
-        await _unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        await editalRepository.AdicionarAsync(edital, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result<Guid>.Success(edital.Id);
     }
