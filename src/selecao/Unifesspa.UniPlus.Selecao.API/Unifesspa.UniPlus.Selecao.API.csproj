@@ -3,6 +3,8 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+    <PackageReference Include="WolverineFx.Kafka" />
   </ItemGroup>
 
   <ItemGroup>

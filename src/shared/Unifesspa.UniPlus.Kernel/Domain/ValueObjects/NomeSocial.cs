@@ -9,10 +9,15 @@ public sealed record NomeSocial
     public bool UsaNomeSocial => !string.IsNullOrWhiteSpace(Nome);
     public string NomeExibicao => UsaNomeSocial ? Nome! : NomeCivil;
 
-    private NomeSocial(string nomeCivil, string? nomeSocial)
+    // O parâmetro do construtor de cópia é renomeado para `nome` (em vez de
+    // `nomeSocial`) para evitar ambiguidade com o nome do método de fábrica
+    // no binding do EF Core: o materializador procura propriedades com o
+    // mesmo nome (case-insensitive) dos parâmetros e dois `nomeSocial` no
+    // contexto disparam "no suitable constructor" em EnsureCreatedAsync.
+    private NomeSocial(string nomeCivil, string? nome)
     {
         NomeCivil = nomeCivil;
-        Nome = nomeSocial;
+        Nome = nome;
     }
 
     public static Result<NomeSocial> Criar(string? nomeCivil, string? nomeSocial = null)

@@ -13,6 +13,8 @@
     <PackageReference Include="StackExchange.Redis" />
     <PackageReference Include="WolverineFx" />
     <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+    <PackageReference Include="WolverineFx.Kafka" />
   </ItemGroup>
 
   <ItemGroup>

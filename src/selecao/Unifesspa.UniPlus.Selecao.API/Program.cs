@@ -4,14 +4,16 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
+using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
+using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
 
-using Wolverine;
-using Wolverine.EntityFrameworkCore;
+using Wolverine.Kafka;
+using Wolverine.Postgresql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -40,30 +42,48 @@ builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environmen
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddSelecaoApplication();
+// AddSelecaoInfrastructure é configurado com a connection string lida
+// eagerly do builder.Configuration. Em testes integrados, o
+// CascadingApiFactory remove e re-registra o DbContext apontando para o
+// Postgres efêmero — esta leitura eager fica restrita ao registro do
+// DbContext do módulo, não atinge o backbone Wolverine (que lê via
+// SelecaoOutboxExtension no startup, com IConfiguration final).
 builder.Services.AddSelecaoInfrastructure(connectionString);
 
-// Wolverine como backbone CQRS/messaging — ver ADR-022.
+// Wolverine como backbone CQRS/messaging com outbox transacional —
+// ver ADR-022, ADR-025 e ADR-026.
 //
-// Esta configuração entrega APENAS o backbone do bus (ICommandBus → handler).
-// As policies abaixo preparam o pipeline transacional do Wolverine, mas NÃO
-// implementam outbox transacional de domain events. Em particular:
-//   - PersistMessagesWith* NÃO está configurado: domain events são entregues
-//     in-memory pelo bus, sem persistência durável de envelopes.
-//   - PublishDomainEventsFromEntityFrameworkCore NÃO está configurado:
-//     EntityBase.DomainEvents NÃO é drenado automaticamente em SaveChanges.
-//   - Atomicidade write+evento NÃO é garantida nesta fase.
-// A adoção de outbox transacional foi reprovada no spike de #135 (ver branch
-// spike/135-outbox-validation e a issue dedicada de outbox para os achados).
+// Configuração (ADR-025 + ADR-026):
+//   - PersistMessagesWithPostgresql: outbox durável no schema "wolverine"
+//     do mesmo banco do módulo (SelecaoDb).
+//   - UseEntityFrameworkCoreTransactions + AutoApplyTransactions:
+//     atomicidade write+evento — envelope persistido na MESMA transação
+//     do SaveChanges via IEnvelopeTransaction.
+//   - UseDurableOutboxOnAllSendingEndpoints: rota durável é invariante.
+//   - PublishDomainEventsFromEntityFrameworkCore NÃO é chamado (ADR-026):
+//     drenagem de EntityBase.DomainEvents via cascading messages no
+//     retorno do handler (IEnumerable<object>), não pelo scraper EF.
+//   - Routing de EditalPublicadoEvent: PG queue "domain-events" +
+//     tópico Kafka "edital_events" quando bootstrap configurado.
 //
-// UseEntityFrameworkCoreTransactions e AutoApplyTransactions são no-ops
-// efetivos nesta fase (sem outbox, envolvem apenas o SaveChanges em uma
-// transação Wolverine que não coordena nada extra). Mantidos intencionalmente
-// para reduzir o delta de configuração quando a Story #158 entregar o outbox.
-builder.Host.UseWolverine(opts =>
-{
-    opts.UseEntityFrameworkCoreTransactions();
-    opts.Policies.AutoApplyTransactions();
-});
+// A leitura de connection string e Kafka bootstrap acontece dentro do
+// callback de UseWolverine no startup do host. Em testes integrados,
+// os overrides chegam via env vars (ConnectionStrings__SelecaoDb,
+// Kafka__BootstrapServers) — overrides via ConfigureAppConfiguration
+// não propagam para WebApplicationBuilder.Configuration em minimal API.
+builder.Host.UseWolverineOutboxCascading(
+    builder.Configuration,
+    connectionStringName: "SelecaoDb",
+    configureRouting: opts =>
+    {
+        opts.PublishMessage<EditalPublicadoEvent>().ToPostgresqlQueue("domain-events");
+        opts.ListenToPostgresqlQueue("domain-events");
+
+        if (!string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]))
+        {
+            opts.PublishMessage<EditalPublicadoEvent>().ToKafkaTopic("edital_events");
+        }
+    });
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
