@@ -1,0 +1,75 @@
+namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.Middleware;
+
+using System.Diagnostics;
+
+using Microsoft.Extensions.Logging;
+
+using Wolverine;
+using Wolverine.Attributes;
+
+/// <summary>
+/// Middleware Wolverine que registra entrada e saída do handler com tempo de
+/// execução. Substitui o <c>LoggingBehavior&lt;TRequest,TResponse&gt;</c> do
+/// MediatR e roda no pipeline tanto de commands quanto de queries (registro
+/// filtrado por <see cref="MessagingMiddlewarePolicies"/>).
+/// </summary>
+/// <remarks>
+/// O <see cref="Stopwatch"/> retornado por <see cref="Before"/> é capturado pelo
+/// code-gen do Wolverine como variável local da chain e injetado novamente em
+/// <see cref="Finally"/> por correspondência de tipo — preservando o tempo
+/// inicial mesmo quando o handler lança exceção.
+///
+/// Métodos não declaram <c>object message</c> de propósito: o code-gen do
+/// Wolverine tenta resolver parâmetros não-message a partir do escopo da
+/// chain, e tipar a mensagem como <c>object</c> conflita com a variável da
+/// mensagem fortemente tipada já presente. Usar <see cref="Envelope.MessageType"/>
+/// dá acesso ao alias estável (string) que Wolverine usa para roteamento sem
+/// depender de <c>GetType()</c> em runtime.
+/// </remarks>
+public static partial class WolverineLoggingMiddleware
+{
+    [WolverineBefore]
+    public static Stopwatch Before(
+        Envelope envelope,
+        ILogger<WolverineLoggingMiddlewareLogger> logger)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        LogProcessando(logger, envelope.MessageType ?? envelope.Message?.GetType().Name ?? "(desconhecido)");
+        return Stopwatch.StartNew();
+    }
+
+    [WolverineFinally]
+    public static void Finally(
+        Envelope envelope,
+        Stopwatch stopwatch,
+        ILogger<WolverineLoggingMiddlewareLogger> logger)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        ArgumentNullException.ThrowIfNull(stopwatch);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        stopwatch.Stop();
+        LogConcluido(logger, envelope.MessageType ?? envelope.Message?.GetType().Name ?? "(desconhecido)", stopwatch.ElapsedMilliseconds);
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Processando {RequestName}")]
+    private static partial void LogProcessando(ILogger logger, string requestName);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Concluído {RequestName} em {ElapsedMs}ms")]
+    private static partial void LogConcluido(ILogger logger, string requestName, long elapsedMs);
+}
+
+/// <summary>
+/// Categoria de log estável para o middleware de logging Wolverine. Existe como
+/// classe não estática para permitir <see cref="ILogger{T}"/> — classes static
+/// não podem ser usadas como parâmetro de tipo. A categoria emitida no Serilog
+/// fica <c>Unifesspa.UniPlus.Infrastructure.Core.Messaging.Middleware.WolverineLoggingMiddlewareLogger</c>.
+/// </summary>
+public sealed class WolverineLoggingMiddlewareLogger
+{
+    private WolverineLoggingMiddlewareLogger()
+    {
+    }
+}

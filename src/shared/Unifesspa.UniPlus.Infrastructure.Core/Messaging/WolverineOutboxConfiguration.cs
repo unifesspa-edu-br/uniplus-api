@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Messaging.Middleware;
+
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Kafka;
@@ -93,6 +95,11 @@ public static class WolverineOutboxConfiguration
             opts.UseEntityFrameworkCoreTransactions();
             opts.Policies.AutoApplyTransactions();
             opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
+
+            // Middleware CQRS canônicos (logging + validação FluentValidation),
+            // restritos a chains de ICommand<>/IQuery<> — mensagens internas do
+            // Wolverine não atravessam esse pipeline.
+            opts.AddCommandQueryMiddleware();
 
             // Schema do Wolverine NÃO é auto-criado em runtime nesta camada
             // produtiva — provisioning é responsabilidade do deploy. Testes
