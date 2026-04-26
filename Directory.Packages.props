@@ -9,6 +9,8 @@
     <!-- CQRS & Messaging -->
     <PackageVersion Include="WolverineFx" Version="5.32.1" />
     <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="5.32.1" />
+    <PackageVersion Include="WolverineFx.Postgresql" Version="5.32.1" />
+    <PackageVersion Include="WolverineFx.Kafka" Version="5.32.1" />
     <PackageVersion Include="MediatR" Version="14.1.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
@@ -21,7 +23,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5" />
 
     <!-- Messaging -->
-    <PackageVersion Include="Confluent.Kafka" Version="2.13.2" />
+    <PackageVersion Include="Confluent.Kafka" Version="2.14.0" />
 
     <!-- Caching -->
     <PackageVersion Include="StackExchange.Redis" Version="2.12.8" />
@@ -31,7 +33,7 @@
 
     <!-- Health Checks -->
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.5" />
-    <PackageVersion Include="Npgsql" Version="9.0.3" />
+    <PackageVersion Include="Npgsql" Version="9.0.4" />
 
     <!-- Logging & Observability -->
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />

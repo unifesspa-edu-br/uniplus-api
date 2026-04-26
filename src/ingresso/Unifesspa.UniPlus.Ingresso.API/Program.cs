@@ -4,14 +4,12 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
+using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Ingresso.API.Middleware;
 using Unifesspa.UniPlus.Ingresso.Application.Mappings;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
-
-using Wolverine;
-using Wolverine.EntityFrameworkCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -42,28 +40,14 @@ builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddIngressoApplication();
 builder.Services.AddIngressoInfrastructure(connectionString);
 
-// Wolverine como backbone CQRS/messaging — ver ADR-022.
+// Wolverine como backbone CQRS/messaging com outbox transacional —
+// ver ADR-022, ADR-025 e ADR-026.
 //
-// Esta configuração entrega APENAS o backbone do bus (ICommandBus → handler).
-// As policies abaixo preparam o pipeline transacional do Wolverine, mas NÃO
-// implementam outbox transacional de domain events. Em particular:
-//   - PersistMessagesWith* NÃO está configurado: domain events são entregues
-//     in-memory pelo bus, sem persistência durável de envelopes.
-//   - PublishDomainEventsFromEntityFrameworkCore NÃO está configurado:
-//     EntityBase.DomainEvents NÃO é drenado automaticamente em SaveChanges.
-//   - Atomicidade write+evento NÃO é garantida nesta fase.
-// A adoção de outbox transacional foi reprovada no spike de #135 (ver branch
-// spike/135-outbox-validation e a issue dedicada de outbox para os achados).
-//
-// UseEntityFrameworkCoreTransactions e AutoApplyTransactions são no-ops
-// efetivos nesta fase (sem outbox, envolvem apenas o SaveChanges em uma
-// transação Wolverine que não coordena nada extra). Mantidos intencionalmente
-// para reduzir o delta de configuração quando a Story #158 entregar o outbox.
-builder.Host.UseWolverine(opts =>
-{
-    opts.UseEntityFrameworkCoreTransactions();
-    opts.Policies.AutoApplyTransactions();
-});
+// Mesma forma da Selecao.API (ver Selecao.API/Program.cs): outbox
+// durável Postgres + cascading + Kafka opcional. Sem roteamento
+// específico até CandidatoConvocadoEvent/MatriculaEfetivadaEvent
+// ganharem destino cross-módulo.
+builder.Host.UseWolverineOutboxCascading(builder.Configuration, connectionStringName: "IngressoDb");
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
