@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
-    <ProjectReference Include="..\Unifesspa.UniPlus.Ingresso.Application\Unifesspa.UniPlus.Ingresso.Application.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Ingresso.Domain\Unifesspa.UniPlus.Ingresso.Domain.csproj" />
   </ItemGroup>
 
 </Project>

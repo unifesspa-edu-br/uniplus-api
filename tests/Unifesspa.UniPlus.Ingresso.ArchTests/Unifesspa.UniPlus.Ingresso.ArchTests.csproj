@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
-    <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Application/Unifesspa.UniPlus.Ingresso.Application.csproj" />
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
   </ItemGroup>
 
