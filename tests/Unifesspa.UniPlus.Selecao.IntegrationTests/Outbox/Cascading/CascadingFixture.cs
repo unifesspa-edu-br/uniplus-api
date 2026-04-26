@@ -69,7 +69,13 @@ public sealed class CascadingFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable(ConnectionStringEnvVar, ConnectionString);
 
         _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
-        Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, string.Empty);
+        // Whitespace (espaço) em vez de string.Empty: em runtimes anteriores a
+        // .NET 9, Environment.SetEnvironmentVariable(name, string.Empty) apaga
+        // a variável (em vez de definir como vazia), o que faria o appsettings
+        // voltar a ser consultado e o Wolverine tentar conectar em
+        // localhost:9092. O helper produtivo desliga Kafka via IsNullOrWhiteSpace,
+        // então um espaço cobre os dois cenários sem regressão cross-runtime.
+        Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
 
         _factory = new CascadingApiFactory(ConnectionString);
     }
