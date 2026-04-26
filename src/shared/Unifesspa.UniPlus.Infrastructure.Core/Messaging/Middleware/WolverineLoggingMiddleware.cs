@@ -9,9 +9,9 @@ using Wolverine.Attributes;
 
 /// <summary>
 /// Middleware Wolverine que registra entrada e saída do handler com tempo de
-/// execução. Substitui o <c>LoggingBehavior&lt;TRequest,TResponse&gt;</c> do
-/// MediatR e roda no pipeline tanto de commands quanto de queries (registro
-/// filtrado por <see cref="MessagingMiddlewarePolicies"/>).
+/// execução. Roda no pipeline tanto de commands quanto de queries (registro
+/// filtrado por <see cref="MessagingMiddlewarePolicies"/>) e provê o canal
+/// canônico de logging estruturado para o backbone CQRS (ADR-022).
 /// </summary>
 /// <remarks>
 /// O <see cref="Stopwatch"/> retornado por <see cref="Before"/> é capturado pelo
