@@ -7,14 +7,8 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
 
     <!-- CQRS & Messaging -->
-    <!--
-      Versão custom 5.32.1-pr2586 incorpora fix do JasperFx/wolverine#2586
-      (DomainEventScraper materializa antes de publicar) sem aguardar release
-      oficial. nupkgs em vendors/nuget-local/ + nuget.config aponta o feed.
-      Reverter para versão oficial assim que upstream publicar 5.32.2+.
-    -->
-    <PackageVersion Include="WolverineFx" Version="5.32.1-pr2586" />
-    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="5.32.1-pr2586" />
+    <PackageVersion Include="WolverineFx" Version="5.32.1" />
+    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="5.32.1" />
     <PackageVersion Include="MediatR" Version="14.1.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
