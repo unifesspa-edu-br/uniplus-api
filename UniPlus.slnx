@@ -18,6 +18,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Unifesspa.UniPlus.Application.Abstractions.UnitTests/Unifesspa.UniPlus.Application.Abstractions.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.ArchTests/Unifesspa.UniPlus.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.ArchTests/Unifesspa.UniPlus.Ingresso.ArchTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests/Unifesspa.UniPlus.Ingresso.Domain.UnitTests.csproj" />
