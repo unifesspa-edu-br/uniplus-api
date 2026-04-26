@@ -1,5 +1,7 @@
 # Relatório do Spike S10 — Cascading messages × `PublishDomainEventsFromEntityFrameworkCore`
 
+> **Status pós-spike (2026-04-26):** a recomendação central deste relatório foi acolhida — a [ADR-026 — Cascading messages como drenagem canônica](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-026-cascading-messages-como-drenagem-canonica.md) já foi aprovada e mergeada em `uniplus-docs/main`. As referências ao longo deste documento a "ADR-026 proposta", "rascunho local" e "Status: proposto" ficam preservadas como snapshot histórico do momento da spike; não foram reescritas para honrar o histórico da decisão. A operacionalização da ADR-026 está sendo executada nos PRs/tasks #162 (este), #163, #164 e #136.
+>
 > Resposta empírica para a pergunta levantada no comentário do maintainer Wolverine
 > em [JasperFx/wolverine#2585](https://github.com/JasperFx/wolverine/issues/2585):
 > *"qual estilo de drenagem de domain events devemos adotar — `PublishDomainEventsFromEntityFrameworkCore` (EF scraping) ou cascading messages do handler?"*.
@@ -301,13 +303,15 @@ A nova ADR deixa a estratégia anterior (`PublishDomainEventsFromEntityFramework
 
 ## 7. Próximos passos (não-fazer-sem-aprovação)
 
-| Ação | Aprovação requerida |
-|---|---|
-| Promover `ADR-026` rascunho local em `repositories/uniplus-docs/docs/adrs/ADR-026-...md` | Humana — Tech Lead |
-| Remover `vendors/nuget-local/` + reverter `nuget.config` para apenas `nuget.org` | Humana (PR específico após ADR-026 aprovada) |
-| Remover `Directory.Packages.props` lock em `5.32.1-pr2586` → bump para `5.32.1` oficial | Humana (PR específico) |
-| Implementar handlers de produção com cascading na Story `#158` (saída do spike) | Humana — Story re-aberta com escopo do estilo cascading |
-| Refatorar `EntityBase.DomainEvents` para visibilidade reduzida (`internal` + `InternalsVisibleTo`) | Humana — fora do escopo deste spike |
+> **Estado atual (2026-04-26):** a coluna "Operacionalização" foi acrescentada após o merge desta consolidação para apontar onde cada item está sendo executado. As linhas originais ficam preservadas como snapshot do momento da spike.
+
+| Ação | Aprovação requerida | Operacionalização |
+|---|---|---|
+| Promover `ADR-026` rascunho local em `repositories/uniplus-docs/docs/adrs/ADR-026-...md` | Humana — Tech Lead | **Concluído** — ADR-026 mergeada em `uniplus-docs/main`. |
+| Remover `vendors/nuget-local/` + reverter `nuget.config` para apenas `nuget.org` | Humana (PR específico após ADR-026 aprovada) | Em execução em **#163**. |
+| Remover `Directory.Packages.props` lock em `5.32.1-pr2586` → bump para `5.32.1` oficial | Humana (PR específico) | Em execução em **#163**. |
+| Implementar handlers de produção com cascading na Story `#158` (saída do spike) | Humana — Story re-aberta com escopo do estilo cascading | Recalibrado em duas tasks: **#164** (configuração outbox produtivo) + **#136** (handler de referência `PublicarEditalCommand`). |
+| Refatorar `EntityBase.DomainEvents` para visibilidade reduzida (`internal` + `InternalsVisibleTo`) | Humana — fora do escopo deste spike | Pendente — não há issue aberta; permanece como recomendação futura. |
 
 ## 8. Anexos
 
