@@ -25,4 +25,17 @@ public abstract class EntityBase
         _domainEvents.Add(domainEvent);
 
     public void ClearDomainEvents() => _domainEvents.Clear();
+
+    // Snapshot atômico dos domain events seguido de limpeza da coleção
+    // interna. Uso canônico no caminho cascading messages do Wolverine
+    // (handlers que retornam IEnumerable<object>): drena os eventos da
+    // entidade no mesmo ponto em que o handler os entrega ao bus,
+    // evitando republicação acidental se o agregado sobreviver ao escopo
+    // do handler (cache, sagas, processadores long-lived).
+    public IReadOnlyCollection<IDomainEvent> DequeueDomainEvents()
+    {
+        IDomainEvent[] snapshot = [.. _domainEvents];
+        _domainEvents.Clear();
+        return snapshot;
+    }
 }
