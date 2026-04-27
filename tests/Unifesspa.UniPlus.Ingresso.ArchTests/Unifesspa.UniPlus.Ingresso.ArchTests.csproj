@@ -15,8 +15,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Application.Abstractions/Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj" />
+    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Domain/Unifesspa.UniPlus.Selecao.Domain.csproj" />
+    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Application/Unifesspa.UniPlus.Selecao.Application.csproj" />
+    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.API/Unifesspa.UniPlus.Selecao.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
