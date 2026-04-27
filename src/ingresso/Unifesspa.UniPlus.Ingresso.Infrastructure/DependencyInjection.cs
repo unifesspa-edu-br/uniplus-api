@@ -26,10 +26,15 @@ public static class IngressoInfrastructureRegistration
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
                 npgsqlOptions.MigrationsAssembly(typeof(IngressoDbContext).Assembly.FullName);
-                npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorCodesToAdd: null);
+
+                // EnableRetryOnFailure é deliberadamente NÃO configurado aqui:
+                // o NpgsqlRetryingExecutionStrategy é incompatível com as
+                // user-initiated transactions abertas pela política
+                // AutoApplyTransactions + EnrollDbContextInTransaction do
+                // Wolverine outbox (ver WolverineOutboxConfiguration).
+                // Resiliência a falhas transientes de conexão fica a cargo
+                // das policies de retry do Wolverine no nível do envelope,
+                // não do EF Core.
             });
 
             options.AddInterceptors(
