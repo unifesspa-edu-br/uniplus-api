@@ -12,12 +12,26 @@ using Wolverine.Attributes;
 /// execução. Roda no pipeline tanto de commands quanto de queries (registro
 /// filtrado por <see cref="MessagingMiddlewarePolicies"/>) e provê o canal
 /// canônico de logging estruturado para o backbone CQRS (ADR-022).
+///
+/// O caminho de saída é dividido em dois métodos para distinguir sucesso de
+/// falha sem suprimir a exceção do pipeline ASP.NET:
+/// <list type="bullet">
+///   <item><description><c>Concluido</c> com <see cref="WolverineAfterAttribute"/>
+///   roda <b>apenas em sucesso</b> e emite log <see cref="LogLevel.Information"/>;
+///   é responsável por parar o <see cref="Stopwatch"/>.</description></item>
+///   <item><description><c>Finally</c> com <see cref="WolverineFinallyAttribute"/>
+///   roda em sucesso e em falha. Detecta falha pela invariante
+///   <c>stopwatch.IsRunning == true</c> (sucesso já parou no <c>Concluido</c>) e
+///   emite log <see cref="LogLevel.Warning"/> com a duração até a falha. Em
+///   sucesso é no-op.</description></item>
+/// </list>
 /// </summary>
 /// <remarks>
 /// O <see cref="Stopwatch"/> retornado por <see cref="Before"/> é capturado pelo
-/// code-gen do Wolverine como variável local da chain e injetado novamente em
-/// <see cref="Finally"/> por correspondência de tipo — preservando o tempo
-/// inicial mesmo quando o handler lança exceção.
+/// code-gen do Wolverine como variável local da chain e injetado nos métodos
+/// subsequentes por correspondência de tipo. A exceção do handler é re-lançada
+/// pelo Wolverine após o <c>Finally</c> e flui normalmente até o
+/// <c>GlobalExceptionMiddleware</c> da API.
 ///
 /// Métodos não declaram <c>object message</c> de propósito: o code-gen do
 /// Wolverine tenta resolver parâmetros não-message a partir do escopo da
@@ -40,8 +54,8 @@ public static partial class WolverineLoggingMiddleware
         return Stopwatch.StartNew();
     }
 
-    [WolverineFinally]
-    public static void Finally(
+    [WolverineAfter]
+    public static void Concluido(
         Envelope envelope,
         Stopwatch stopwatch,
         ILogger<WolverineLoggingMiddlewareLogger> logger)
@@ -54,11 +68,36 @@ public static partial class WolverineLoggingMiddleware
         LogConcluido(logger, envelope.MessageType ?? envelope.Message?.GetType().Name ?? "(desconhecido)", stopwatch.ElapsedMilliseconds);
     }
 
+    [WolverineFinally]
+    public static void Finally(
+        Envelope envelope,
+        Stopwatch stopwatch,
+        ILogger<WolverineLoggingMiddlewareLogger> logger)
+    {
+        ArgumentNullException.ThrowIfNull(envelope);
+        ArgumentNullException.ThrowIfNull(stopwatch);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        // Em sucesso o Concluido já parou o stopwatch — Finally é no-op.
+        // Em falha o Concluido não rodou, então o stopwatch ainda está rodando
+        // e Finally cobre o cleanup + telemetria de falha.
+        if (!stopwatch.IsRunning)
+        {
+            return;
+        }
+
+        stopwatch.Stop();
+        LogFalhou(logger, envelope.MessageType ?? envelope.Message?.GetType().Name ?? "(desconhecido)", stopwatch.ElapsedMilliseconds);
+    }
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Processando {RequestName}")]
     private static partial void LogProcessando(ILogger logger, string requestName);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Concluído {RequestName} em {ElapsedMs}ms")]
     private static partial void LogConcluido(ILogger logger, string requestName, long elapsedMs);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Falhou {RequestName} em {ElapsedMs}ms")]
+    private static partial void LogFalhou(ILogger logger, string requestName, long elapsedMs);
 }
 
 /// <summary>
