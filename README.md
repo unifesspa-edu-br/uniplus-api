@@ -21,6 +21,7 @@ Sistema que gerencia o ciclo de vida completo dos processos seletivos e ingresso
 - **Mensageria:** Apache Kafka
 - **Cache:** Redis
 - **ORM:** Entity Framework Core
+- **CQRS/messaging:** Wolverine 5.x (`ICommandBus`, `IQueryBus`) + FluentValidation 12 — pipeline de validação e logging por middleware nativo do Wolverine
 - **Autenticação:** Keycloak (SSO UNIFESSPA) + Gov.br (Login Único)
 - **Observabilidade:** OpenTelemetry → Grafana
 
@@ -30,7 +31,7 @@ Cada módulo segue **Clean Architecture** com camadas:
 
 ```
 Domain        → Entidades, value objects, domain events
-Application   → Use cases, DTOs, validações (MediatR + FluentValidation)
+Application   → Use cases (commands/queries via Wolverine), DTOs, validações (FluentValidation)
 Infrastructure→ EF Core, Kafka, Redis, MinIO, Keycloak
 API           → Controllers, middleware, filtros
 ```

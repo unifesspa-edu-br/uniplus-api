@@ -80,9 +80,45 @@ git checkout -b feature/{issue-number}-{slug}
 Siga a ordem de implementação por camada — de dentro para fora:
 
 1. **Domain** — entidades, value objects, domain events
-2. **Application** — use cases (commands/queries via MediatR), DTOs, validações (FluentValidation)
+2. **Application** — use cases (commands via `ICommandBus`, queries via `IQueryBus`, ambos sobre Wolverine), DTOs, validações (FluentValidation)
 3. **Infrastructure** — EF Core configurations, repositórios, integrações externas
 4. **API** — controllers, middleware, filtros
+
+#### Padrão de handler (slice `Edital` como referência)
+
+Commands implementam `ICommand<TResponse>`, queries implementam `IQuery<TResponse>` — ambos definidos em `Application.Abstractions/Messaging`. Handlers seguem a convenção do Wolverine: classe `static`, método `Handle` (`Task<TResponse>` ou `(TResponse, IEnumerable<object>)` para cascading messages) e dependências resolvidas como parâmetros do método.
+
+```csharp
+// Command + handler — referência: src/selecao/.../Commands/Editais/CriarEditalCommand*.cs
+public sealed record CriarEditalCommand(...) : ICommand<Result<Guid>>;
+
+public static class CriarEditalCommandHandler
+{
+    public static async Task<Result<Guid>> Handle(
+        CriarEditalCommand command,
+        IEditalRepository editalRepository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        // ... lógica de domínio + persistência
+    }
+}
+
+// Query + handler — referência: src/selecao/.../Queries/Editais/ObterEditalQuery*.cs
+public sealed record ObterEditalQuery(Guid Id) : IQuery<EditalDto?>;
+
+public static class ObterEditalQueryHandler
+{
+    public static async Task<EditalDto?> Handle(
+        ObterEditalQuery query,
+        IEditalRepository editalRepository,
+        CancellationToken cancellationToken) => /* ... */;
+}
+```
+
+**Validação automática:** o `WolverineValidationMiddleware` (em `Infrastructure.Core/Messaging/Middleware`) descobre todos os `IValidator<T>` registrados via `AddValidatorsFromAssembly` e valida o command/query antes do handler. Não chame `validator.ValidateAsync(...)` no handler — falhas viram `FluentValidation.ValidationException` capturada pelo `GlobalExceptionMiddleware` como `ProblemDetails 400`.
+
+**Logging automático:** o `WolverineLoggingMiddleware` registra entrada/saída do handler com tempo de execução, removendo a necessidade de qualquer behavior de pipeline em código de aplicação. Logs específicos de domínio dentro do handler seguem o padrão `[LoggerMessage]` documentado no [`CLAUDE.md`](CLAUDE.md#logging-de-alta-performance--loggermessage-source-generator).
 
 ### 3. Testar
 
@@ -115,7 +151,7 @@ As regras de formato, tipos permitidos e convenções gerais de mensagem estão 
 | `shared` | Código compartilhado (`src/shared/**`) |
 | `sharedkernel` | SharedKernel especificamente (entidades base, value objects, Result pattern) |
 | `domain` | Camada Domain de qualquer módulo (entidades, regras de negócio, eventos) |
-| `application` | Camada Application (commands/queries MediatR, validações FluentValidation) |
+| `application` | Camada Application (commands/queries Wolverine, validações FluentValidation) |
 | `infra` | Camada Infrastructure genérica (Kafka, Redis, MinIO, OpenTelemetry) |
 | `api` | Camada API (controllers, middleware, filtros) |
 | `db` | Configurações de banco (EF Core, conexão, tuning) |
@@ -135,7 +171,7 @@ fix(ingresso): corrige cálculo de classificação por cota
 refactor(sharedkernel): extrai value object NotaFinal
 test(arch): adiciona testes de arquitetura para módulo Ingresso
 feat(migrations): adiciona tabela de inscrições
-chore(deps): atualiza MediatR para 14.0.1
+chore(deps): atualiza WolverineFx para 5.32.1
 ```
 
 Para uma bateria completa de exemplos (bons e ruins, com justificativas), consulte [Guia § 4](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/guia-commits-e-integracao.md).
