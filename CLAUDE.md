@@ -9,7 +9,7 @@
 - **Cache:** Redis 8
 - **Storage:** MinIO (S3-compatible)
 - **Autenticação:** Keycloak 26.5 (Gov.br)
-- **CQRS/messaging:** Wolverine 5.x ([ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md)) — abstração `ICommandBus` em `Application.Abstractions/Messaging`. Outbox transacional de domain events **ainda não adotado** — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md) e [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158).
+- **CQRS/messaging:** Wolverine 5.x ([ADR-022](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-022-backbone-cqrs-wolverine.md)) — abstrações `ICommandBus` e `IQueryBus` em `Application.Abstractions/Messaging`. Validação e logging do pipeline aplicados como middleware Wolverine (`WolverineValidationMiddleware`, `WolverineLoggingMiddleware` em `Infrastructure.Core/Messaging/Middleware`). Outbox transacional de domain events **ainda não adotado** — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md) e [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158).
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
 - **Observabilidade:** OpenTelemetry
@@ -61,7 +61,7 @@ Application NUNCA depende de Infrastructure ou API.
 - **Soft delete** em todas as entidades: `IsDeleted`, `DeletedAt`, `DeletedBy`
 - **PII masking** em logs: CPF `***.***.***-XX`, nunca logar dados sensíveis — aplicado automaticamente pelo `PiiMaskingEnricher` (registrado no pipeline Serilog via `ConfigurarSerilog`) a todas as propriedades estruturadas, inclusive aninhadas (`StructureValue`, `SequenceValue`, `DictionaryValue`)
 - **Result pattern** para retorno de operações: `Result<T>` com `DomainError`
-- **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, queries via repositórios. Domain events (`AddDomainEvent` em `EntityBase`) continuam acumulando na entidade — drenagem para outbox/bus ainda não está implementada (estratégia em definição na [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158), precedida por reprovação técnica em #135 — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md)). **Trava: não escrever código de aplicação que assuma despacho automático de domain events** — esse invariante não está garantido nesta fase. Padrões e exemplos em `docs/guia-wolverine-golden-path.md` (`uniplus-docs`)
+- **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, queries via `IQueryBus.Send` (handlers convention-based, classes static) ou diretamente via repositório quando a leitura for trivial. Validação e logging são aplicados pelo middleware Wolverine — handlers nunca invocam validator manualmente. Slice de referência: `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/Editais/` e `Queries/Editais/`. Domain events (`AddDomainEvent` em `EntityBase`) continuam acumulando na entidade — drenagem para outbox/bus ainda não está implementada (estratégia em definição na [issue #158](https://github.com/unifesspa-edu-br/uniplus-api/issues/158), precedida por reprovação técnica em #135 — ver [ADR-024](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-024-outbox-wolverine-ef-nao-adotado-em-135.md)). **Trava: não escrever código de aplicação que assuma despacho automático de domain events** — esse invariante não está garantido nesta fase. Padrões e exemplos em `docs/guia-wolverine-golden-path.md` (`uniplus-docs`)
 - **Value objects** para dados de domínio: `Cpf`, `Email`, `NomeSocial`, `NotaFinal`, `NumeroEdital`
 - **Factory methods** com construtores privados em todas as entidades
 - **Sealed classes** por padrão (exceto bases abstratas)
@@ -218,5 +218,5 @@ dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.
 ## Idioma
 
 - Documentação e strings user-facing em **português do Brasil**
-- Termos técnicos em inglês mantidos sem tradução (API, CQRS, MediatR, etc.)
+- Termos técnicos em inglês mantidos sem tradução (API, CQRS, Wolverine, etc.)
 - Nomes de código (classes, métodos, variáveis) em português para domínio, inglês para infra
