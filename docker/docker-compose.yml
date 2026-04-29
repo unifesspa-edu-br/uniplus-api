@@ -96,7 +96,13 @@ services:
       LDAP_TLS: "false"
       LDAP_REMOVE_CONFIG_AFTER_SETUP: "false"
     ports:
-      - "1389:389"
+      # Mapeamento limitado a 127.0.0.1 — porta NÃO exposta na LAN.
+      # Mitiga risco de bind anônimo/credencial fraca (admin/admin) em laptop
+      # compartilhado ou rede insegura. Para acesso de outra máquina, usar
+      # SSH tunnel (ssh -L 1389:localhost:1389 dev-host).
+      # Imagem osixia/openldap:1.5.0 não recebe updates desde 2021 — não é
+      # apropriada para PROD; o isolamento por loopback compensa.
+      - "127.0.0.1:1389:389"
     volumes:
       - ./ldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
       - openldap_data:/var/lib/ldap

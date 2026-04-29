@@ -126,6 +126,8 @@ O script é determinístico: rodar 2x produz output idêntico (CPFs canonicais s
 
 Senhas armazenadas em texto plano no LDIF (ambiente dev). Não usar nada similar em PROD.
 
+> 🔒 **Isolamento de rede:** o `docker-compose.yml` mapeia a porta como `127.0.0.1:1389:389` — só acessível pelo host local, NÃO exposto na LAN. Isto compensa o uso de credencial fraca (admin/admin) e o fato de a imagem `osixia/openldap:1.5.0` não receber updates desde 2021. Se precisar acessar de outra máquina (ex.: outro dev no time), preferir SSH tunnel (`ssh -L 1389:localhost:1389 dev-host`) em vez de expor a porta.
+
 ## Referências
 
 - [Issue uniplus-api#217](https://github.com/unifesspa-edu-br/uniplus-api/issues/217) — Story que originou este ambiente

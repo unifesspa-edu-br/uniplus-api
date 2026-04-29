@@ -194,34 +194,9 @@ Configurar via `.env` (use `docker/.env.example` como referência) — o `docker
 
 Idempotente: rodar 2x produz o mesmo estado, sem erros nem duplicação.
 
-### Como testar localmente
+### Como configurar contra HML institucional (caminho recomendado)
 
-O gov.br **não aceita `localhost`** como redirect URI registrado. Para validar o fluxo end-to-end localmente, use um túnel HTTPS público:
-
-```bash
-# Subir stack e configurar IdP
-docker compose -f docker/docker-compose.yml up -d
-scripts/setup-keycloak-dev.sh   # cria roles/usuários/clients (realm export)
-GOVBR_CLIENT_ID=... GOVBR_CLIENT_SECRET=... scripts/setup-govbr-idp.sh
-
-# Túnel para o Keycloak local (escolher uma)
-cloudflared tunnel --url http://localhost:8080
-# OU
-ngrok http 8080
-```
-
-Pegue a URL pública do túnel e registre no gov.br homologação como redirect:
-`https://<random>.trycloudflare.com/realms/unifesspa/broker/govbr/endpoint`
-
-Em seguida, abra `https://<random>.trycloudflare.com/realms/unifesspa/account/` (ou um client web do realm) e clique em "gov.br" no formulário de login.
-
-Para criar contas de teste no `https://sso.staging.acesso.gov.br/`, usar:
-- **Nome da mãe:** `MAMÃE`
-- **Data de nascimento:** `01/01/1980`
-
-### Como replicar em homologação institucional
-
-O Keycloak HML institucional (`keycloak-hom.unifesspa.edu.br`) tem outros clients/realms compartilhados (ex.: `ficha_facil`, `sisplad`) — **não** importar `realm-export.json` lá. O script só toca em IdP, mappers e role `candidato` (idempotente, defensivo):
+A validação end-to-end do fluxo gov.br é feita contra o Keycloak HML institucional (`keycloak-hom.unifesspa.edu.br`) — o redirect URI já está registrado no gov.br homologação (item da solicitação enviada em 23/04/2026 e validado em 29/04/2026).
 
 ```bash
 export KC_URL=https://keycloak-hom.unifesspa.edu.br
@@ -233,7 +208,36 @@ export GOVBR_ENV=staging
 scripts/setup-govbr-idp.sh
 ```
 
-Como o redirect `https://keycloak-hom.unifesspa.edu.br/realms/unifesspa/broker/govbr/endpoint` já está registrado no gov.br homologação (item da solicitação enviada em 23/04/2026), basta logar via algum client web do realm para testar.
+> ⚠️ O Keycloak HML institucional é **realm compartilhado** com outros sistemas (ex.: `ficha_facil`, `sisplad`) — **NÃO** importar `realm-export.json` lá. O script só toca em IdP gov.br, seus mappers e a role `candidato` (idempotente, defensivo).
+
+Para validar o login, abra `https://keycloak-hom.unifesspa.edu.br/realms/unifesspa/account/` → Sign In → "gov.br". Para criar conta de teste no `https://sso.staging.acesso.gov.br/`, usar:
+
+- **Nome da mãe:** `MAMÃE`
+- **Data de nascimento:** `01/01/1980`
+
+### Configuração local (estrutural)
+
+O `setup-govbr-idp.sh` pode ser rodado contra o Keycloak local para validar a configuração estrutural do IdP/mappers (útil ao iterar no script ou no SPI customizado). O **fluxo end-to-end gov.br não funciona contra `localhost`** — gov.br não aceita esse host como redirect URI registrado.
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+scripts/setup-keycloak-dev.sh   # roles, usuários de teste, clients, LDAP federation
+
+GOVBR_CLIENT_ID=... GOVBR_CLIENT_SECRET=... scripts/setup-govbr-idp.sh
+```
+
+Inspeção da configuração via Admin API:
+
+```bash
+TOKEN=$(curl -sf -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=password&client_id=admin-cli&username=admin&password=admin" \
+    | jq -r .access_token)
+
+curl -sf -H "Authorization: Bearer $TOKEN" \
+    "http://localhost:8080/admin/realms/unifesspa/identity-provider/instances/govbr" \
+    | jq '{alias, providerId, enabled, syncMode: .config.syncMode, defaultScope: .config.defaultScope}'
+```
 
 ### Como remover (rollback)
 
