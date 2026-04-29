@@ -157,18 +157,22 @@ Configurar via `.env` (use `docker/.env.example` como referência) — o `docker
 2. Obtém token de admin via ROPC contra `master`.
 3. Garante que a role realm `candidato` existe (cria se faltar — útil em HML que tem realm pré-existente).
 4. Cria/atualiza Identity Provider OIDC com:
-   - `clientAuthMethod: client_secret_basic` (única opção do gov.br)
+   - `clientAuthMethod: client_secret_basic` (única opção aceita pelo gov.br)
    - `pkceEnabled: true`, `pkceMethod: S256`
-   - `syncMode: FORCE`, `trustEmail: true`, `storeToken: false`
+   - `syncMode: IMPORT`, `trustEmail: true`, `storeToken: false`
    - `defaultScope: openid email profile govbr_confiabilidades govbr_confiabilidades_idtoken`
+   - `issuer` com barra final, `userInfoUrl` sem barra final — alinhado à discovery oficial do gov.br staging em `/.well-known/openid-configuration`
    - Endpoints conforme `GOVBR_ENV` (staging usa `sso.staging.acesso.gov.br`, production usa `sso.acesso.gov.br`)
-5. Cria/atualiza 6 mappers:
+5. Cria/atualiza 5 mappers:
    - `cpf` — claim `sub` → atributo `cpf`
    - `given-name` — claim `given_name` → `firstName`
    - `family-name` — claim `family_name` → `lastName`
    - `email` — claim `email` → `email`
    - `nivel-confiabilidade` — claim `reliability_info.level` → atributo `nivelConfiabilidade`
-   - `role-candidato` — hardcoded role realm `candidato`
+
+> **Nota sobre role `candidato`:** mapper hardcoded de role **não** é configurado por este script. Aplicar role realm via mapper a users existentes do LDAP (read-only) lança exceção e aborta o flow. Atribuição da role precisa ocorrer via fluxo customizado de first-broker-login (clone do flow padrão) ou na camada de aplicação. Decisão pendente — ver ADR-029.
+
+> **Nota sobre `syncMode: IMPORT`:** quando o realm tem User Federation LDAP em modo READ_ONLY (caso do realm HML institucional), `FORCE` causa exceção ao tentar sobrescrever atributos LDAP-managed (cpf, email, firstName). `IMPORT` só popula atributos quando o user é **criado** pelo broker (candidatos novos), preservando os dados do LDAP em users já federados. Trade-off: candidato com dados desatualizados no Keycloak não recebe refresh automático em logins subsequentes.
 
 Idempotente: rodar 2x produz o mesmo estado, sem erros nem duplicação.
 
