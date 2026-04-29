@@ -127,6 +127,24 @@ Resposta esperada de `/api/profile/me`:
 
 > ⚠️ Em produção, ROPC **não deve ser usado** — frontends Angular usam Authorization Code com PKCE (clients `selecao-web`, `ingresso-web`, `portal-web`). Os patches deste script são exclusivamente de ergonomia para desenvolvimento e CI local.
 
+## User Federation LDAP (sintético, dev local)
+
+Para testar Identity Brokering com matching de CPF contra users LDAP-federados, o ambiente local sobe um **OpenLDAP sintético** (`docker/ldap/`) e o `setup-keycloak-dev.sh` registra o User Federation no realm de forma idempotente.
+
+```bash
+# Sobe OpenLDAP local + Keycloak
+docker compose -f docker/docker-compose.yml up -d openldap keycloak
+
+# Registra User Federation no realm + sync inicial
+scripts/setup-keycloak-dev.sh
+```
+
+Resultado: 10 users sintéticos importados no realm, 7 com CPF de 11 dígitos + 3 com CPF de 10 dígitos (simulando bug do LDAP institucional).
+
+Detalhes em [`../ldap/README.md`](../ldap/README.md) — origem dos dados, como regenerar, atributo `employeeNumber` no lugar de `brPersonCPF`, credenciais.
+
+> Não confundir com o **LDAP institucional Unifesspa** — este OpenLDAP local existe **apenas** em `docker-compose` para dev local. Não é replicação do institucional, não tem dados reais, e não deve ser referenciado em config de HML/PROD.
+
 ## Identity Provider gov.br (ADR-029)
 
 O gov.br é registrado no realm `unifesspa` como Identity Provider externo OIDC, permitindo que candidatos façam login via Login Único com CPF, nome, e-mail e nível de confiabilidade (bronze/prata/ouro) sincronizados automaticamente. A decisão arquitetural está documentada na [ADR-029](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-029-identity-brokering-govbr-ldap-google.md).

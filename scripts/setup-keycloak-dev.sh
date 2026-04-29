@@ -105,6 +105,166 @@ for user in "${TEST_USERS[@]}"; do
     ok "$user — senha=$TEST_PASSWORD (não-temporária), required_actions limpos"
 done
 
+log "Configurando User Federation LDAP (openldap sintético) — se openldap estiver no ar"
+
+# Detecta se openldap está acessível (rede do compose)
+# Porta 389 interna (docker network); 1389 mapeada no host só pra ldapsearch externo.
+LDAP_HOST="${LDAP_HOST:-openldap}"
+LDAP_PORT="${LDAP_PORT:-389}"
+LDAP_REACHABLE=false
+
+# Tenta resolver via getent ou ping; em fallback, tenta pelo Keycloak
+if curl -s --max-time 2 "http://localhost:8080" >/dev/null && \
+   docker compose -f "$(dirname "$0")/../docker/docker-compose.yml" ps openldap 2>/dev/null | grep -q "healthy\|Up"; then
+    LDAP_REACHABLE=true
+fi
+
+if [ "$LDAP_REACHABLE" = "true" ]; then
+    LDAP_PROVIDER_NAME="ldap-local-sintetico"
+
+    EXISTING_LDAP_ID=$(auth "$API/components?type=org.keycloak.storage.UserStorageProvider&name=$LDAP_PROVIDER_NAME" \
+        | jq -r '.[0].id // empty')
+
+    LDAP_BODY=$(jq -nc \
+        --arg name "$LDAP_PROVIDER_NAME" \
+        --arg connectionUrl "ldap://$LDAP_HOST:$LDAP_PORT" \
+        '{
+            name: $name,
+            providerId: "ldap",
+            providerType: "org.keycloak.storage.UserStorageProvider",
+            config: {
+                enabled: ["true"],
+                priority: ["1"],
+                vendor: ["other"],
+                editMode: ["READ_ONLY"],
+                syncRegistrations: ["false"],
+                importEnabled: ["true"],
+                authType: ["simple"],
+                connectionUrl: [$connectionUrl],
+                bindDn: ["cn=admin,dc=unifesspa,dc=edu,dc=br"],
+                bindCredential: ["admin"],
+                usersDn: ["ou=Users,dc=unifesspa,dc=edu,dc=br"],
+                userObjectClasses: ["inetOrgPerson, organizationalPerson, person"],
+                rdnLDAPAttribute: ["uid"],
+                uuidLDAPAttribute: ["entryUUID"],
+                usernameLDAPAttribute: ["uid"],
+                searchScope: ["1"],
+                useTruststoreSpi: ["ldapsOnly"],
+                connectionPooling: ["true"],
+                pagination: ["true"],
+                changedSyncPeriod: ["-1"],
+                fullSyncPeriod: ["-1"],
+                cachePolicy: ["DEFAULT"],
+                batchSizeForSync: ["1000"]
+            }
+        }')
+
+    if [ -n "$EXISTING_LDAP_ID" ]; then
+        # PUT exige body com id e parentId — busca atual e mescla
+        CURRENT=$(auth "$API/components/$EXISTING_LDAP_ID")
+        MERGED=$(echo "$CURRENT" | jq --argjson new "$LDAP_BODY" '.config = $new.config')
+        auth_json -X PUT "$API/components/$EXISTING_LDAP_ID" -d "$MERGED" >/dev/null
+        ok "User Federation '$LDAP_PROVIDER_NAME' atualizado"
+        LDAP_ID="$EXISTING_LDAP_ID"
+    else
+        REALM_INFO=$(auth "$API/")
+        REALM_INTERNAL_ID=$(echo "$REALM_INFO" | jq -r '.id')
+        LDAP_BODY_WITH_PARENT=$(echo "$LDAP_BODY" | jq --arg pid "$REALM_INTERNAL_ID" '. + {parentId: $pid}')
+        LOCATION=$(curl -sf -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+            -X POST "$API/components" -d "$LDAP_BODY_WITH_PARENT" | grep -i '^location:' | tr -d '\r' | awk '{print $2}')
+        LDAP_ID="${LOCATION##*/}"
+        ok "User Federation '$LDAP_PROVIDER_NAME' criado (id=$LDAP_ID)"
+    fi
+
+    # Mappers do LDAP — todos read.only=true (reproduz cenário institucional)
+    upsert_ldap_mapper() {
+        local name="$1" provider_id="$2" config_json="$3"
+
+        local existing_id
+        existing_id=$(auth "$API/components?parent=$LDAP_ID&name=$name" \
+            | jq -r '.[0].id // empty')
+
+        local body
+        body=$(jq -nc \
+            --arg name "$name" \
+            --arg pid "$LDAP_ID" \
+            --arg providerId "$provider_id" \
+            --argjson config "$config_json" \
+            '{
+                name: $name,
+                providerId: $providerId,
+                providerType: "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+                parentId: $pid,
+                config: $config
+            }')
+
+        if [ -n "$existing_id" ]; then
+            local body_with_id
+            body_with_id=$(echo "$body" | jq --arg id "$existing_id" '. + {id: $id}')
+            auth_json -X PUT "$API/components/$existing_id" -d "$body_with_id" >/dev/null
+            ok "ldap mapper '$name' atualizado"
+        else
+            auth_json -X POST "$API/components" -d "$body" >/dev/null
+            ok "ldap mapper '$name' criado"
+        fi
+    }
+
+    # CPF — vem do employeeNumber do LDAP (no LDAP institucional seria brPersonCPF;
+    # documentado na issue uniplus-api#217 a equivalência conceitual)
+    upsert_ldap_mapper "cpf" "user-attribute-ldap-mapper" '{
+        "ldap.attribute": ["employeeNumber"],
+        "user.model.attribute": ["cpf"],
+        "read.only": ["true"],
+        "always.read.value.from.ldap": ["true"],
+        "is.mandatory.in.ldap": ["false"],
+        "is.binary.attribute": ["false"]
+    }'
+
+    upsert_ldap_mapper "username" "user-attribute-ldap-mapper" '{
+        "ldap.attribute": ["uid"],
+        "user.model.attribute": ["username"],
+        "read.only": ["true"],
+        "always.read.value.from.ldap": ["true"],
+        "is.mandatory.in.ldap": ["true"],
+        "is.binary.attribute": ["false"]
+    }'
+
+    upsert_ldap_mapper "email" "user-attribute-ldap-mapper" '{
+        "ldap.attribute": ["mail"],
+        "user.model.attribute": ["email"],
+        "read.only": ["true"],
+        "always.read.value.from.ldap": ["true"],
+        "is.mandatory.in.ldap": ["false"],
+        "is.binary.attribute": ["false"]
+    }'
+
+    upsert_ldap_mapper "first-name" "user-attribute-ldap-mapper" '{
+        "ldap.attribute": ["givenName"],
+        "user.model.attribute": ["firstName"],
+        "read.only": ["true"],
+        "always.read.value.from.ldap": ["true"],
+        "is.mandatory.in.ldap": ["false"],
+        "is.binary.attribute": ["false"]
+    }'
+
+    upsert_ldap_mapper "last-name" "user-attribute-ldap-mapper" '{
+        "ldap.attribute": ["sn"],
+        "user.model.attribute": ["lastName"],
+        "read.only": ["true"],
+        "always.read.value.from.ldap": ["true"],
+        "is.mandatory.in.ldap": ["false"],
+        "is.binary.attribute": ["false"]
+    }'
+
+    # Sync inicial (puxa os 10 users do LDAP para o realm)
+    SYNC_RESULT=$(curl -sf -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+        "$API/user-storage/$LDAP_ID/sync?action=triggerFullSync")
+    ok "sync inicial: $(echo "$SYNC_RESULT" | jq -c '.')"
+else
+    warn "openldap não está rodando — User Federation LDAP não foi configurado."
+    warn "Suba com: docker compose -f docker/docker-compose.yml up -d openldap"
+fi
+
 echo
 log "Setup concluído. Teste o fluxo:"
 cat <<EOF
@@ -115,5 +275,11 @@ cat <<EOF
     -d 'username=candidato' -d 'password=$TEST_PASSWORD' | jq -r .access_token)
 
   curl -s -H "Authorization: Bearer \$TOKEN" http://localhost:5202/api/profile/me | jq
+
+  # Listar users sintéticos do LDAP local:
+  ldapsearch -x -H ldap://localhost:1389 \\
+    -b ou=Users,dc=unifesspa,dc=edu,dc=br \\
+    -D 'cn=admin,dc=unifesspa,dc=edu,dc=br' -w admin \\
+    '(objectClass=inetOrgPerson)' uid cn employeeNumber
 
 EOF
