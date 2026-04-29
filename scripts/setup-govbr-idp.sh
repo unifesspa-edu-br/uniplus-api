@@ -39,13 +39,30 @@
 #   curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 #       "$KC_URL/admin/realms/$KC_REALM/identity-provider/instances/$GOVBR_ALIAS"
 #
-# LIMITAÇÃO CONHECIDA — flow de first-broker-login:
-#   A ADR-029 prevê auto-link por CPF (atributo) no primeiro login. Isso exige
-#   uma execution customizada no flow "First Broker Login" (clone do flow padrão
-#   substituindo o executor "Detect Existing Broker User" para casar por atributo
-#   `cpf` em vez de e-mail). Esse fluxo customizado NÃO é configurado por este
-#   script — usa-se o flow padrão do Keycloak (matching por e-mail).
-#   Acompanhar follow-up para implementar o flow customizado antes do GO-LIVE.
+# LIMITAÇÕES CONHECIDAS (validadas em campo, HML 29/04/2026):
+#
+# 1. Flow de first-broker-login não customizado:
+#    A ADR-029 prevê auto-link por CPF (atributo) no primeiro login. Isso exige
+#    uma execution customizada no flow "First Broker Login" (clone do flow padrão
+#    substituindo o executor "Detect Existing Broker User" para casar por atributo
+#    `cpf` em vez de e-mail). Esse fluxo customizado NÃO é configurado por este
+#    script — usa-se o flow padrão do Keycloak (matching por e-mail).
+#    Servidores que já existem no realm via LDAP terão a fricção de
+#    "User already exists. Add to existing account?" no primeiro login via gov.br.
+#
+# 2. syncMode = IMPORT (não FORCE):
+#    Quando o realm tem User Federation LDAP em modo READ_ONLY (caso do realm
+#    HML institucional), syncMode FORCE causa exceção ao tentar sobrescrever
+#    atributos LDAP-managed (cpf, email, firstName, etc.). IMPORT só popula
+#    atributos quando o user é CRIADO pelo broker (candidatos novos), e não
+#    força atualização em users já federados pelo LDAP. Trade-off: candidato
+#    que tiver dados desatualizados no Keycloak não recebe refresh automático
+#    do gov.br em logins subsequentes.
+#
+# 3. Role `candidato` não atribuída automaticamente:
+#    Aplicar role realm via mapper hardcoded a users LDAP read-only causa
+#    exceção. Atribuição da role precisa ocorrer via outro mecanismo —
+#    ver comentário inline próximo aos mappers.
 #
 # Pré-requisitos:
 #   - Keycloak no ar com realm `unifesspa` importado (rodar setup-keycloak-dev.sh
@@ -75,10 +92,12 @@ esac
 
 GOVBR_AUTHORIZATION_URL="https://${GOVBR_HOST}/authorize"
 GOVBR_TOKEN_URL="https://${GOVBR_HOST}/token"
-GOVBR_USERINFO_URL="https://${GOVBR_HOST}/userinfo/"
+GOVBR_USERINFO_URL="https://${GOVBR_HOST}/userinfo"
 GOVBR_JWKS_URL="https://${GOVBR_HOST}/jwk"
 GOVBR_LOGOUT_URL="https://${GOVBR_HOST}/logout"
-GOVBR_ISSUER="https://${GOVBR_HOST}"
+# Issuer com barra final é como o gov.br devolve no claim `iss` do id_token
+# (validado em 29/04/2026 contra https://sso.staging.acesso.gov.br/.well-known/openid-configuration)
+GOVBR_ISSUER="https://${GOVBR_HOST}/"
 
 # ---- Logging
 log()  { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
@@ -157,7 +176,7 @@ build_idp_body() {
                 defaultScope: "openid email profile govbr_confiabilidades govbr_confiabilidades_idtoken",
                 useJwksUrl: "true",
                 validateSignature: "true",
-                syncMode: "FORCE",
+                syncMode: "IMPORT",
                 pkceEnabled: "true",
                 pkceMethod: "S256",
                 backchannelSupported: "false"
@@ -250,27 +269,27 @@ log "Configurando mappers do IdP gov.br"
 
 # CPF — gov.br retorna o CPF no claim 'sub' (id_token e access_token)
 upsert_mapper "cpf" "oidc-user-attribute-idp-mapper" '{
-    "syncMode": "INHERIT",
+    "syncMode": "IMPORT",
     "claim": "sub",
     "user.attribute": "cpf"
 }'
 
 # Nome — given_name e family_name vêm via scope `profile`
 upsert_mapper "given-name" "oidc-user-attribute-idp-mapper" '{
-    "syncMode": "INHERIT",
+    "syncMode": "IMPORT",
     "claim": "given_name",
     "user.attribute": "firstName"
 }'
 
 upsert_mapper "family-name" "oidc-user-attribute-idp-mapper" '{
-    "syncMode": "INHERIT",
+    "syncMode": "IMPORT",
     "claim": "family_name",
     "user.attribute": "lastName"
 }'
 
 # Email
 upsert_mapper "email" "oidc-user-attribute-idp-mapper" '{
-    "syncMode": "INHERIT",
+    "syncMode": "IMPORT",
     "claim": "email",
     "user.attribute": "email"
 }'
@@ -278,16 +297,24 @@ upsert_mapper "email" "oidc-user-attribute-idp-mapper" '{
 # Nível de confiabilidade — vem em `reliability_info.level` no id_token
 # (requer scope govbr_confiabilidades_idtoken; valores: bronze, silver, gold)
 upsert_mapper "nivel-confiabilidade" "oidc-user-attribute-idp-mapper" '{
-    "syncMode": "INHERIT",
+    "syncMode": "IMPORT",
     "claim": "reliability_info.level",
     "user.attribute": "nivelConfiabilidade"
 }'
 
-# Role hardcoded — todo login via gov.br ganha a role `candidato`
-upsert_mapper "role-candidato" "oidc-hardcoded-role-idp-mapper" '{
-    "syncMode": "INHERIT",
-    "role": "candidato"
-}'
+# NOTA: Mapper hardcoded de role `candidato` foi REMOVIDO desta versão.
+#
+# Validação em HML (29/04/2026) revelou que aplicar role realm a users já
+# federados via LDAP (read-only) lança exceção e aborta o flow de login.
+# A role `candidato` permanece criada (ver ensure_realm_role acima) para uso
+# por outros mecanismos de autorização. Atribuição da role precisa ocorrer
+# em uma das opções abaixo (em deliberação na ADR-029):
+#
+#   1. Authentication Flow customizado de first-broker-login que aplica role
+#      apenas em users novos criados pelo broker (não em users LDAP existentes)
+#   2. Atribuição na camada de aplicação (Uni+ API) baseada na origem da
+#      identidade federada (federatedIdentityProvider == "govbr")
+#   3. Mapper condicional via SPI customizado
 
 # ---- Resumo
 echo
@@ -302,13 +329,15 @@ cat <<EOF
 
   Console admin: $KC_URL/admin/master/console/#/$KC_REALM/identity-providers/$GOVBR_ALIAS/settings
 
-  Mappers configurados:
+  Mappers configurados (5):
     - cpf                  (sub → atributo cpf)
     - given-name           (given_name → firstName)
     - family-name          (family_name → lastName)
     - email                (email → email)
     - nivel-confiabilidade (reliability_info.level → atributo nivelConfiabilidade)
-    - role-candidato       (hardcoded role 'candidato')
+
+  Role 'candidato' criada no realm mas NÃO atribuída automaticamente — ver
+  comentário no script. Decisão arquitetural pendente na ADR-029.
 
   ⚠️  gov.br NÃO aceita 'localhost' como redirect URI registrado.
      Para testar o fluxo end-to-end localmente, use cloudflared/ngrok:
