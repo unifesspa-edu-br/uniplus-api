@@ -127,6 +127,110 @@ Resposta esperada de `/api/profile/me`:
 
 > ⚠️ Em produção, ROPC **não deve ser usado** — frontends Angular usam Authorization Code com PKCE (clients `selecao-web`, `ingresso-web`, `portal-web`). Os patches deste script são exclusivamente de ergonomia para desenvolvimento e CI local.
 
+## Identity Provider gov.br (ADR-029)
+
+O gov.br é registrado no realm `unifesspa` como Identity Provider externo OIDC, permitindo que candidatos façam login via Login Único com CPF, nome, e-mail e nível de confiabilidade (bronze/prata/ouro) sincronizados automaticamente. A decisão arquitetural está documentada na [ADR-029](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/adrs/ADR-029-identity-brokering-govbr-ldap-google.md).
+
+A configuração é aplicada via Admin API por um script idempotente — **não** entra no `realm-export.json` (segredos versionados são proibidos):
+
+```bash
+scripts/setup-govbr-idp.sh
+```
+
+### Variáveis de ambiente
+
+| Variável | Obrigatória | Default | Observação |
+|---|---|---|---|
+| `GOVBR_CLIENT_ID` | sim | — | Hostname do RP (ex.: `keycloak-hom.unifesspa.edu.br` em HML) |
+| `GOVBR_CLIENT_SECRET` | sim | — | Fornecido pelo gov.br — **nunca commitar** |
+| `GOVBR_ENV` | não | `staging` | `staging` ou `production` |
+| `GOVBR_ALIAS` | não | `govbr` | Compõe o redirect URI |
+| `KC_URL` | não | `http://localhost:8080` | Apontar para HML quando configurar institucional |
+| `KC_REALM` | não | `unifesspa` | |
+| `KC_ADMIN_USER` / `KC_ADMIN_PASS` | não | `admin` / `admin` | |
+
+Configurar via `.env` (use `docker/.env.example` como referência) — o `docker compose` carrega automaticamente. **`.env` é gitignored** — confirmar antes de qualquer commit.
+
+### O que o script faz
+
+1. Aguarda Keycloak responder no realm.
+2. Obtém token de admin via ROPC contra `master`.
+3. Garante que a role realm `candidato` existe (cria se faltar — útil em HML que tem realm pré-existente).
+4. Cria/atualiza Identity Provider OIDC com:
+   - `clientAuthMethod: client_secret_basic` (única opção do gov.br)
+   - `pkceEnabled: true`, `pkceMethod: S256`
+   - `syncMode: FORCE`, `trustEmail: true`, `storeToken: false`
+   - `defaultScope: openid email profile govbr_confiabilidades govbr_confiabilidades_idtoken`
+   - Endpoints conforme `GOVBR_ENV` (staging usa `sso.staging.acesso.gov.br`, production usa `sso.acesso.gov.br`)
+5. Cria/atualiza 6 mappers:
+   - `cpf` — claim `sub` → atributo `cpf`
+   - `given-name` — claim `given_name` → `firstName`
+   - `family-name` — claim `family_name` → `lastName`
+   - `email` — claim `email` → `email`
+   - `nivel-confiabilidade` — claim `reliability_info.level` → atributo `nivelConfiabilidade`
+   - `role-candidato` — hardcoded role realm `candidato`
+
+Idempotente: rodar 2x produz o mesmo estado, sem erros nem duplicação.
+
+### Como testar localmente
+
+O gov.br **não aceita `localhost`** como redirect URI registrado. Para validar o fluxo end-to-end localmente, use um túnel HTTPS público:
+
+```bash
+# Subir stack e configurar IdP
+docker compose -f docker/docker-compose.yml up -d
+scripts/setup-keycloak-dev.sh   # cria roles/usuários/clients (realm export)
+GOVBR_CLIENT_ID=... GOVBR_CLIENT_SECRET=... scripts/setup-govbr-idp.sh
+
+# Túnel para o Keycloak local (escolher uma)
+cloudflared tunnel --url http://localhost:8080
+# OU
+ngrok http 8080
+```
+
+Pegue a URL pública do túnel e registre no gov.br homologação como redirect:
+`https://<random>.trycloudflare.com/realms/unifesspa/broker/govbr/endpoint`
+
+Em seguida, abra `https://<random>.trycloudflare.com/realms/unifesspa/account/` (ou um client web do realm) e clique em "gov.br" no formulário de login.
+
+Para criar contas de teste no `https://sso.staging.acesso.gov.br/`, usar:
+- **Nome da mãe:** `MAMÃE`
+- **Data de nascimento:** `01/01/1980`
+
+### Como replicar em homologação institucional
+
+O Keycloak HML institucional (`keycloak-hom.unifesspa.edu.br`) tem outros clients/realms compartilhados (ex.: `ficha_facil`, `sisplad`) — **não** importar `realm-export.json` lá. O script só toca em IdP, mappers e role `candidato` (idempotente, defensivo):
+
+```bash
+export KC_URL=https://keycloak-hom.unifesspa.edu.br
+export KC_ADMIN_USER=...                   # admin do realm unifesspa
+export KC_ADMIN_PASS=...
+export GOVBR_CLIENT_ID=keycloak-hom.unifesspa.edu.br
+export GOVBR_CLIENT_SECRET=...             # do canal formal gov.br
+export GOVBR_ENV=staging
+scripts/setup-govbr-idp.sh
+```
+
+Como o redirect `https://keycloak-hom.unifesspa.edu.br/realms/unifesspa/broker/govbr/endpoint` já está registrado no gov.br homologação (item da solicitação enviada em 23/04/2026), basta logar via algum client web do realm para testar.
+
+### Como remover (rollback)
+
+```bash
+ADMIN_TOKEN=$(curl -sf -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=password&client_id=admin-cli&username=$KC_ADMIN_USER&password=$KC_ADMIN_PASS" \
+    | jq -r .access_token)
+
+curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+    "$KC_URL/admin/realms/$KC_REALM/identity-provider/instances/govbr"
+```
+
+Os mappers do IdP são removidos em cascata pelo Keycloak. A role `candidato` permanece (não é removida pelo rollback).
+
+### Limitação conhecida — flow de first-broker-login
+
+A ADR-029 prevê **auto-link por CPF** no primeiro login (Opção A). Isso requer uma execution customizada no flow `First Broker Login` (clone do flow padrão substituindo o executor `Detect Existing Broker User` para casar por atributo `cpf` em vez de e-mail). Esse flow customizado **não é configurado** por este script — usa-se o flow padrão (matching por e-mail). Endereçar antes do GO-LIVE em produção.
+
 ## Política de senha
 
 O realm aplica a seguinte `passwordPolicy`:
