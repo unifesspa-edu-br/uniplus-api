@@ -17,19 +17,20 @@
 #   KC_ADMIN_USER         default: admin
 #   KC_ADMIN_PASS         default: admin
 #
-# Uso local:
-#   export GOVBR_CLIENT_ID=keycloak-hom.unifesspa.edu.br
-#   export GOVBR_CLIENT_SECRET=...   # do .env, NUNCA commitado
-#   export GOVBR_ENV=staging
-#   scripts/setup-govbr-idp.sh
-#
-# Uso em homologação institucional:
+# Uso em homologação institucional (caminho recomendado — validado em campo):
 #   export KC_URL=https://keycloak-hom.unifesspa.edu.br
 #   export KC_ADMIN_USER=...
 #   export KC_ADMIN_PASS=...
 #   export GOVBR_CLIENT_ID=keycloak-hom.unifesspa.edu.br
-#   export GOVBR_CLIENT_SECRET=...
+#   export GOVBR_CLIENT_SECRET=...   # do canal formal gov.br, NUNCA commitado
+#   export GOVBR_ENV=staging
 #   scripts/setup-govbr-idp.sh
+#
+# Uso local (configuração estrutural do realm — fluxo E2E gov.br não roda
+# contra localhost porque o gov.br não aceita esse host como redirect):
+#   export GOVBR_CLIENT_ID=...
+#   export GOVBR_CLIENT_SECRET=...
+#   scripts/setup-govbr-idp.sh   # KC_URL=http://localhost:8080 default
 #
 # Para REMOVER o IdP (rollback):
 #   ADMIN_TOKEN=$(curl -sf -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
@@ -336,14 +337,7 @@ cat <<EOF
     - email                (email → email)
     - nivel-confiabilidade (reliability_info.level → atributo nivelConfiabilidade)
 
-  Role 'candidato' criada no realm mas NÃO atribuída automaticamente — ver
-  comentário no script. Decisão arquitetural pendente na ADR-029.
-
-  ⚠️  gov.br NÃO aceita 'localhost' como redirect URI registrado.
-     Para testar o fluxo end-to-end localmente, use cloudflared/ngrok:
-       cloudflared tunnel --url $KC_URL
-     Registre a URL pública resultante no gov.br homologação como redirect.
-     Em alternativa, configure direto contra o Keycloak HML institucional
-     (KC_URL=https://keycloak-hom.unifesspa.edu.br).
+  Role 'candidato' criada no realm mas NÃO atribuída automaticamente — a
+  atribuição depende do Authenticator SPI customizado (uniplus-keycloak-providers).
 
 EOF

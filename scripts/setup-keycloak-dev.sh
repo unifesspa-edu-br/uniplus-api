@@ -107,20 +107,31 @@ done
 
 log "Configurando User Federation LDAP (openldap sintético) — se openldap estiver no ar"
 
-# Detecta se openldap está acessível (rede do compose)
-# Porta 389 interna (docker network); 1389 mapeada no host só pra ldapsearch externo.
+# Detecta se há LDAP local acessível para configurar User Federation.
+# A federation aqui criada (ldap-local-sintetico) é dev-only — em HML institucional
+# o LDAP é configurado de outra forma e este passo é skipado.
+#
+# Estratégia: probe TCP no host:porta via /dev/tcp do bash (não exige nc).
+# - Em dev local: KC_URL=http://localhost:* → testa contra o openldap mapeado em 127.0.0.1:1389
+# - Em HML/PROD: KC_URL=https://*.unifesspa.edu.br → skip explícito (LDAP institucional não é nosso openldap sintético)
 LDAP_HOST="${LDAP_HOST:-openldap}"
 LDAP_PORT="${LDAP_PORT:-389}"
+LDAP_PROBE_HOST="${LDAP_PROBE_HOST:-127.0.0.1}"
+LDAP_PROBE_PORT="${LDAP_PROBE_PORT:-1389}"
 LDAP_REACHABLE=false
 
-# Tenta resolver via getent ou ping; em fallback, tenta pelo Keycloak
-if curl -s --max-time 2 "http://localhost:8080" >/dev/null && \
-   docker compose -f "$(dirname "$0")/../docker/docker-compose.yml" ps openldap 2>/dev/null | grep -q "healthy\|Up"; then
-    LDAP_REACHABLE=true
+if [[ "$KC_URL" == http://localhost:* ]] || [[ "$KC_URL" == http://127.0.0.1:* ]]; then
+    if (timeout 2 bash -c "</dev/tcp/$LDAP_PROBE_HOST/$LDAP_PROBE_PORT") 2>/dev/null; then
+        LDAP_REACHABLE=true
+    fi
 fi
 
 if [ "$LDAP_REACHABLE" = "true" ]; then
     LDAP_PROVIDER_NAME="ldap-local-sintetico"
+    LDAP_BASE_DN="${LDAP_BASE_DN:-dc=unifesspa,dc=edu,dc=br}"
+    LDAP_BIND_DN="${LDAP_BIND_DN:-cn=admin,$LDAP_BASE_DN}"
+    LDAP_BIND_CREDENTIAL="${LDAP_BIND_CREDENTIAL:-admin}"
+    LDAP_USERS_DN="${LDAP_USERS_DN:-ou=Users,$LDAP_BASE_DN}"
 
     EXISTING_LDAP_ID=$(auth "$API/components?type=org.keycloak.storage.UserStorageProvider&name=$LDAP_PROVIDER_NAME" \
         | jq -r '.[0].id // empty')
@@ -128,6 +139,9 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
     LDAP_BODY=$(jq -nc \
         --arg name "$LDAP_PROVIDER_NAME" \
         --arg connectionUrl "ldap://$LDAP_HOST:$LDAP_PORT" \
+        --arg bindDn "$LDAP_BIND_DN" \
+        --arg bindCredential "$LDAP_BIND_CREDENTIAL" \
+        --arg usersDn "$LDAP_USERS_DN" \
         '{
             name: $name,
             providerId: "ldap",
@@ -141,9 +155,9 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
                 importEnabled: ["true"],
                 authType: ["simple"],
                 connectionUrl: [$connectionUrl],
-                bindDn: ["cn=admin,dc=unifesspa,dc=edu,dc=br"],
-                bindCredential: ["admin"],
-                usersDn: ["ou=Users,dc=unifesspa,dc=edu,dc=br"],
+                bindDn: [$bindDn],
+                bindCredential: [$bindCredential],
+                usersDn: [$usersDn],
                 userObjectClasses: ["inetOrgPerson, organizationalPerson, person"],
                 rdnLDAPAttribute: ["uid"],
                 uuidLDAPAttribute: ["entryUUID"],

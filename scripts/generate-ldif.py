@@ -29,6 +29,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+import unicodedata
 from pathlib import Path
 
 # Caminhos relativos ao repo root
@@ -66,11 +67,13 @@ def generate_cpf_with_leading_zero(seed: str) -> str:
     mas estão truncados no LDAP. Determinismo via hash do seed.
     """
     h = hashlib.sha256(seed.encode()).hexdigest()
-    # Pega 8 dígitos do hash (após o '0' inicial garantido) para formar 9 dígitos base
+    # Extrai 8 dígitos numéricos do hash; combinados com '0' à esquerda
+    # (linha abaixo) formam os 9 primeiros dígitos do CPF sintético —
+    # DVs calculados a seguir garantem validade pela Receita Federal.
     digits_from_hash = "".join(c for c in h if c.isdigit())[:8]
     if len(digits_from_hash) < 8:
         digits_from_hash = digits_from_hash.ljust(8, "1")
-    base9 = "0" + digits_from_hash  # 9 dígitos começando com 0
+    base9 = "0" + digits_from_hash
     return base9 + cpf_dvs(base9)
 
 
@@ -85,8 +88,6 @@ def last_word(name: str) -> str:
 
 def slug_uid(name: str, cpf: str) -> str:
     """uid = primeiroNome.ultimoSobrenome em lowercase, sem acentos. Fallback: cpf."""
-    import unicodedata
-
     base = f"{first_word(name)}.{last_word(name)}".lower()
     nfkd = unicodedata.normalize("NFKD", base)
     ascii_only = "".join(c for c in nfkd if not unicodedata.combining(c) and (c.isalnum() or c == "."))
@@ -162,11 +163,13 @@ def main() -> int:
         if is_malformed:
             cpf_canonical = generate_cpf_with_leading_zero(seed=person["nome"])
             cpf_in_ldap = cpf_canonical[1:]  # remove zero à esquerda — simula truncamento
-            assert len(cpf_in_ldap) == 10, f"CPF truncado deveria ter 10 dígitos: {cpf_in_ldap}"
+            if len(cpf_in_ldap) != 10:
+                raise ValueError(f"CPF truncado deveria ter 10 dígitos: {cpf_in_ldap}")
         else:
             cpf_canonical = person["cpf"]
             cpf_in_ldap = cpf_canonical
-            assert len(cpf_in_ldap) == 11, f"CPF normal deveria ter 11 dígitos: {cpf_in_ldap}"
+            if len(cpf_in_ldap) != 11:
+                raise ValueError(f"CPF normal deveria ter 11 dígitos: {cpf_in_ldap}")
 
         entries.append(render_entry(idx, person, cpf_in_ldap, cpf_canonical, is_malformed))
         entries.append("\n")  # linha em branco entre entries
