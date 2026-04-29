@@ -11,6 +11,14 @@
 # Os ajustes feitos aqui não sobrevivem a `docker compose down -v` — re-rode
 # o script após recriar o volume do Postgres.
 #
+# Etapas (cada uma idempotente, encapsulada em função):
+#   1. wait_for_keycloak
+#   2. obtain_admin_token
+#   3. configure_admin_cli_for_ropc
+#   4. reset_test_user_passwords
+#   5. configure_ldap_federation_if_available     (skip em HML institucional)
+#   6. print_smoke_test_hint
+#
 # Pré-requisitos:
 #   - Stack docker no ar: docker compose -f docker/docker-compose.yml up -d
 #   - jq, curl
@@ -19,124 +27,159 @@
 #   scripts/setup-keycloak-dev.sh
 #
 # Variáveis de ambiente opcionais:
-#   KC_URL          (default: http://localhost:8080)
-#   KC_REALM        (default: unifesspa)
-#   KC_ADMIN_USER   (default: admin)
-#   KC_ADMIN_PASS   (default: admin)
-#   TEST_PASSWORD   (default: Changeme!123)
+#   KC_URL                  (default: http://localhost:8080)
+#   KC_REALM                (default: unifesspa)
+#   KC_ADMIN_USER           (default: admin)
+#   KC_ADMIN_PASS           (default: admin)
+#   TEST_PASSWORD           (default: Changeme!123)
+#
+#   LDAP_HOST               (default: openldap)        — usado pelo Keycloak (rede docker)
+#   LDAP_PORT               (default: 389)             — porta interna do container
+#   LDAP_PROBE_HOST         (default: 127.0.0.1)       — usado pelo probe TCP do host
+#   LDAP_PROBE_PORT         (default: 1389)            — porta mapeada no host
+#   LDAP_BASE_DN            (default: dc=unifesspa,dc=edu,dc=br)
+#   LDAP_BIND_DN            (default: cn=admin,$LDAP_BASE_DN)
+#   LDAP_BIND_CREDENTIAL    (default: admin)
+#   LDAP_USERS_DN           (default: ou=Users,$LDAP_BASE_DN)
 
 set -euo pipefail
+
+# ---- Constantes e variáveis globais ----------------------------------------
 
 KC_URL="${KC_URL:-http://localhost:8080}"
 KC_REALM="${KC_REALM:-unifesspa}"
 KC_ADMIN_USER="${KC_ADMIN_USER:-admin}"
 KC_ADMIN_PASS="${KC_ADMIN_PASS:-admin}"
 TEST_PASSWORD="${TEST_PASSWORD:-Changeme!123}"
-TEST_USERS=("admin" "gestor" "avaliador" "candidato")
 
-log()  { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
-ok()   { printf '\033[1;32m    OK %s\033[0m\n' "$*"; }
+readonly TEST_USERS=("admin" "gestor" "avaliador" "candidato")
+
+LDAP_HOST="${LDAP_HOST:-openldap}"
+LDAP_PORT="${LDAP_PORT:-389}"
+LDAP_PROBE_HOST="${LDAP_PROBE_HOST:-127.0.0.1}"
+LDAP_PROBE_PORT="${LDAP_PROBE_PORT:-1389}"
+LDAP_BASE_DN="${LDAP_BASE_DN:-dc=unifesspa,dc=edu,dc=br}"
+LDAP_BIND_DN="${LDAP_BIND_DN:-cn=admin,$LDAP_BASE_DN}"
+LDAP_BIND_CREDENTIAL="${LDAP_BIND_CREDENTIAL:-admin}"
+LDAP_USERS_DN="${LDAP_USERS_DN:-ou=Users,$LDAP_BASE_DN}"
+
+readonly LDAP_PROVIDER_NAME="ldap-local-sintetico"
+
+# Definidos durante a execução
+ADMIN_TOKEN=""
+API=""
+
+# ---- Logging ---------------------------------------------------------------
+
+log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
+ok()   { printf '\033[1;32m    OK %s\033[0m\n' "$*" >&2; }
 warn() { printf '\033[1;33m!! %s\033[0m\n' "$*" >&2; }
 
 require() {
     command -v "$1" >/dev/null 2>&1 || { warn "Comando ausente: $1"; exit 1; }
 }
-require jq
-require curl
 
-log "Aguardando Keycloak responder em $KC_URL/realms/$KC_REALM"
-RETRIES=30
-while ! curl -sf "$KC_URL/realms/$KC_REALM/.well-known/openid-configuration" >/dev/null 2>&1; do
-    RETRIES=$((RETRIES - 1))
-    if [ "$RETRIES" -le 0 ]; then
-        warn "Timeout aguardando Keycloak. A stack está no ar?"
-        exit 1
-    fi
-    printf '.'
-    sleep 2
-done
-echo
-ok "Keycloak responde"
-
-log "Obtendo token de admin no master realm"
-ADMIN_TOKEN=$(curl -sf -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
-    -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "grant_type=password" \
-    -d "client_id=admin-cli" \
-    -d "username=$KC_ADMIN_USER" \
-    -d "password=$KC_ADMIN_PASS" \
-    | jq -r '.access_token // empty')
-[ -n "$ADMIN_TOKEN" ] || { warn "Falha ao obter admin token. Credenciais corretas?"; exit 1; }
-ok "Admin token obtido"
-
-API="$KC_URL/admin/realms/$KC_REALM"
-auth() { curl -sf -H "Authorization: Bearer $ADMIN_TOKEN" "$@"; }
+# Helpers de chamada autenticada — assumem ADMIN_TOKEN e API setados.
+auth()      { curl -sf -H "Authorization: Bearer $ADMIN_TOKEN" "$@"; }
 auth_json() { auth -H "Content-Type: application/json" "$@"; }
 
-log "Configurando admin-cli para emitir tokens ROPC com claims completos"
-ADMIN_CLI_ID=$(auth "$API/clients?clientId=admin-cli" | jq -r '.[0].id // empty')
-[ -n "$ADMIN_CLI_ID" ] || { warn "Client admin-cli não encontrado no realm $KC_REALM"; exit 1; }
+# ---- Etapa 1 — Aguarda Keycloak responder ----------------------------------
 
-# Adicionar uniplus-profile aos default scopes (idempotente — Keycloak retorna 204 se já existe)
-UP_SCOPE_ID=$(auth "$API/client-scopes" | jq -r '.[] | select(.name=="uniplus-profile") | .id')
-if [ -n "$UP_SCOPE_ID" ] && [ "$UP_SCOPE_ID" != "null" ]; then
-    auth_json -X PUT "$API/clients/$ADMIN_CLI_ID/default-client-scopes/$UP_SCOPE_ID" >/dev/null
-    ok "scope 'uniplus-profile' presente nos default scopes do admin-cli (cpf, nomeSocial, aud=uniplus)"
-else
-    warn "Scope uniplus-profile não existe no realm — verifique a importação"
-fi
+wait_for_keycloak() {
+    log "Aguardando Keycloak responder em $KC_URL/realms/$KC_REALM"
+    local retries=30
+    while ! curl -sf "$KC_URL/realms/$KC_REALM/.well-known/openid-configuration" >/dev/null 2>&1; do
+        retries=$((retries - 1))
+        if [ "$retries" -le 0 ]; then
+            warn "Timeout aguardando Keycloak. A stack está no ar?"
+            exit 1
+        fi
+        printf '.'
+        sleep 2
+    done
+    echo
+    ok "Keycloak responde"
+}
 
-# Desligar lightweight access tokens (admin-cli em Keycloak 26+ vem com true e isso retira sub/email/etc do token)
-CURRENT=$(auth "$API/clients/$ADMIN_CLI_ID")
-PATCHED=$(echo "$CURRENT" | jq '.attributes["client.use.lightweight.access.token.enabled"] = "false"')
-auth_json -X PUT "$API/clients/$ADMIN_CLI_ID" -d "$PATCHED" >/dev/null
-ok "lightweight access token desligado em admin-cli"
+# ---- Etapa 2 — Token de admin no master realm ------------------------------
 
-log "Resetando senha dos usuários de teste como não-temporária (libera ROPC)"
-for user in "${TEST_USERS[@]}"; do
-    USER_ID=$(auth "$API/users?username=$user&exact=true" | jq -r '.[0].id // empty')
-    if [ -z "$USER_ID" ]; then
-        warn "Usuário '$user' não encontrado — pulando"
-        continue
+obtain_admin_token() {
+    log "Obtendo token de admin no master realm"
+    ADMIN_TOKEN=$(curl -sf -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "grant_type=password" \
+        -d "client_id=admin-cli" \
+        -d "username=$KC_ADMIN_USER" \
+        -d "password=$KC_ADMIN_PASS" \
+        | jq -r '.access_token // empty')
+    [ -n "$ADMIN_TOKEN" ] || { warn "Falha ao obter admin token. Credenciais corretas?"; exit 1; }
+
+    API="$KC_URL/admin/realms/$KC_REALM"
+    ok "Admin token obtido"
+}
+
+# ---- Etapa 3 — admin-cli configurado para ROPC com claims completos --------
+
+configure_admin_cli_for_ropc() {
+    log "Configurando admin-cli para emitir tokens ROPC com claims completos"
+
+    local admin_cli_id
+    admin_cli_id=$(auth "$API/clients?clientId=admin-cli" | jq -r '.[0].id // empty')
+    [ -n "$admin_cli_id" ] || { warn "Client admin-cli não encontrado no realm $KC_REALM"; exit 1; }
+
+    # Adiciona uniplus-profile aos default scopes (Keycloak retorna 204 se já existe)
+    local up_scope_id
+    up_scope_id=$(auth "$API/client-scopes" | jq -r '.[] | select(.name=="uniplus-profile") | .id')
+    if [ -n "$up_scope_id" ] && [ "$up_scope_id" != "null" ]; then
+        auth_json -X PUT "$API/clients/$admin_cli_id/default-client-scopes/$up_scope_id" >/dev/null
+        ok "scope 'uniplus-profile' presente nos default scopes do admin-cli (cpf, nomeSocial, aud=uniplus)"
+    else
+        warn "Scope uniplus-profile não existe no realm — verifique a importação"
     fi
-    auth_json -X PUT "$API/users/$USER_ID/reset-password" \
-        -d "{\"type\":\"password\",\"value\":\"$TEST_PASSWORD\",\"temporary\":false}" >/dev/null
-    auth_json -X PUT "$API/users/$USER_ID" -d '{"requiredActions":[]}' >/dev/null
-    ok "$user — senha=$TEST_PASSWORD (não-temporária), required_actions limpos"
-done
 
-log "Configurando User Federation LDAP (openldap sintético) — se openldap estiver no ar"
+    # Desliga lightweight access tokens (admin-cli em Keycloak 26+ vem com true,
+    # o que retira sub/email/atributos do access token e quebra o pipeline JWT)
+    local current patched
+    current=$(auth "$API/clients/$admin_cli_id")
+    patched=$(echo "$current" | jq '.attributes["client.use.lightweight.access.token.enabled"] = "false"')
+    auth_json -X PUT "$API/clients/$admin_cli_id" -d "$patched" >/dev/null
+    ok "lightweight access token desligado em admin-cli"
+}
 
-# Detecta se há LDAP local acessível para configurar User Federation.
-# A federation aqui criada (ldap-local-sintetico) é dev-only — em HML institucional
-# o LDAP é configurado de outra forma e este passo é skipado.
+# ---- Etapa 4 — Senhas dos usuários de teste --------------------------------
+
+reset_test_user_passwords() {
+    log "Resetando senha dos usuários de teste como não-temporária (libera ROPC)"
+    local user user_id
+    for user in "${TEST_USERS[@]}"; do
+        user_id=$(auth "$API/users?username=$user&exact=true" | jq -r '.[0].id // empty')
+        if [ -z "$user_id" ]; then
+            warn "Usuário '$user' não encontrado — pulando"
+            continue
+        fi
+        auth_json -X PUT "$API/users/$user_id/reset-password" \
+            -d "{\"type\":\"password\",\"value\":\"$TEST_PASSWORD\",\"temporary\":false}" >/dev/null
+        auth_json -X PUT "$API/users/$user_id" -d '{"requiredActions":[]}' >/dev/null
+        ok "$user — senha=$TEST_PASSWORD (não-temporária), required_actions limpos"
+    done
+}
+
+# ---- Etapa 5 — User Federation LDAP (dev local somente) --------------------
 #
-# Estratégia: probe TCP no host:porta via /dev/tcp do bash (não exige nc).
-# - Em dev local: KC_URL=http://localhost:* → testa contra o openldap mapeado em 127.0.0.1:1389
-# - Em HML/PROD: KC_URL=https://*.unifesspa.edu.br → skip explícito (LDAP institucional não é nosso openldap sintético)
-LDAP_HOST="${LDAP_HOST:-openldap}"
-LDAP_PORT="${LDAP_PORT:-389}"
-LDAP_PROBE_HOST="${LDAP_PROBE_HOST:-127.0.0.1}"
-LDAP_PROBE_PORT="${LDAP_PROBE_PORT:-1389}"
-LDAP_REACHABLE=false
+# A federation 'ldap-local-sintetico' é dev-only — em HML institucional o
+# LDAP é configurado de outra forma e este passo é skipado.
 
-if [[ "$KC_URL" == http://localhost:* ]] || [[ "$KC_URL" == http://127.0.0.1:* ]]; then
-    if (timeout 2 bash -c "</dev/tcp/$LDAP_PROBE_HOST/$LDAP_PROBE_PORT") 2>/dev/null; then
-        LDAP_REACHABLE=true
-    fi
-fi
+is_local_ldap_reachable() {
+    # Só faz sentido em dev local; em HML, o LDAP institucional não é o
+    # nosso openldap sintético.
+    [[ "$KC_URL" == http://localhost:* ]] || [[ "$KC_URL" == http://127.0.0.1:* ]] || return 1
 
-if [ "$LDAP_REACHABLE" = "true" ]; then
-    LDAP_PROVIDER_NAME="ldap-local-sintetico"
-    LDAP_BASE_DN="${LDAP_BASE_DN:-dc=unifesspa,dc=edu,dc=br}"
-    LDAP_BIND_DN="${LDAP_BIND_DN:-cn=admin,$LDAP_BASE_DN}"
-    LDAP_BIND_CREDENTIAL="${LDAP_BIND_CREDENTIAL:-admin}"
-    LDAP_USERS_DN="${LDAP_USERS_DN:-ou=Users,$LDAP_BASE_DN}"
+    # Probe TCP via /dev/tcp do bash (não exige nc).
+    (timeout 2 bash -c "</dev/tcp/$LDAP_PROBE_HOST/$LDAP_PROBE_PORT") 2>/dev/null
+}
 
-    EXISTING_LDAP_ID=$(auth "$API/components?type=org.keycloak.storage.UserStorageProvider&name=$LDAP_PROVIDER_NAME" \
-        | jq -r '.[0].id // empty')
-
-    LDAP_BODY=$(jq -nc \
+build_ldap_provider_body() {
+    jq -nc \
         --arg name "$LDAP_PROVIDER_NAME" \
         --arg connectionUrl "ldap://$LDAP_HOST:$LDAP_PORT" \
         --arg bindDn "$LDAP_BIND_DN" \
@@ -171,61 +214,77 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
                 cachePolicy: ["DEFAULT"],
                 batchSizeForSync: ["1000"]
             }
-        }')
+        }'
+}
 
-    if [ -n "$EXISTING_LDAP_ID" ]; then
-        # PUT exige body com id e parentId — busca atual e mescla
-        CURRENT=$(auth "$API/components/$EXISTING_LDAP_ID")
-        MERGED=$(echo "$CURRENT" | jq --argjson new "$LDAP_BODY" '.config = $new.config')
-        auth_json -X PUT "$API/components/$EXISTING_LDAP_ID" -d "$MERGED" >/dev/null
+upsert_ldap_provider() {
+    local body existing_id current merged location ldap_id realm_internal_id body_with_parent
+    body=$(build_ldap_provider_body)
+
+    existing_id=$(auth "$API/components?type=org.keycloak.storage.UserStorageProvider&name=$LDAP_PROVIDER_NAME" \
+        | jq -r '.[0].id // empty')
+
+    if [ -n "$existing_id" ]; then
+        current=$(auth "$API/components/$existing_id")
+        merged=$(echo "$current" | jq --argjson new "$body" '.config = $new.config')
+        auth_json -X PUT "$API/components/$existing_id" -d "$merged" >/dev/null
         ok "User Federation '$LDAP_PROVIDER_NAME' atualizado"
-        LDAP_ID="$EXISTING_LDAP_ID"
-    else
-        REALM_INFO=$(auth "$API/")
-        REALM_INTERNAL_ID=$(echo "$REALM_INFO" | jq -r '.id')
-        LDAP_BODY_WITH_PARENT=$(echo "$LDAP_BODY" | jq --arg pid "$REALM_INTERNAL_ID" '. + {parentId: $pid}')
-        LOCATION=$(curl -sf -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-            -X POST "$API/components" -d "$LDAP_BODY_WITH_PARENT" | grep -i '^location:' | tr -d '\r' | awk '{print $2}')
-        LDAP_ID="${LOCATION##*/}"
-        ok "User Federation '$LDAP_PROVIDER_NAME' criado (id=$LDAP_ID)"
+        printf '%s' "$existing_id"
+        return
     fi
 
-    # Mappers do LDAP — todos read.only=true (reproduz cenário institucional)
-    upsert_ldap_mapper() {
-        local name="$1" provider_id="$2" config_json="$3"
+    realm_internal_id=$(auth "$API/" | jq -r '.id')
+    body_with_parent=$(echo "$body" | jq --arg pid "$realm_internal_id" '. + {parentId: $pid}')
+    location=$(curl -sf -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H "Content-Type: application/json" \
+        -X POST "$API/components" -d "$body_with_parent" \
+        | grep -i '^location:' | tr -d '\r' | awk '{print $2}')
+    ldap_id="${location##*/}"
+    ok "User Federation '$LDAP_PROVIDER_NAME' criado (id=$ldap_id)"
+    printf '%s' "$ldap_id"
+}
 
-        local existing_id
-        existing_id=$(auth "$API/components?parent=$LDAP_ID&name=$name" \
-            | jq -r '.[0].id // empty')
+# upsert_ldap_mapper <ldap_provider_id> <name> <provider_id> <config_json>
+upsert_ldap_mapper() {
+    local ldap_id="$1" name="$2" provider_id="$3" config_json="$4"
 
-        local body
-        body=$(jq -nc \
-            --arg name "$name" \
-            --arg pid "$LDAP_ID" \
-            --arg providerId "$provider_id" \
-            --argjson config "$config_json" \
-            '{
-                name: $name,
-                providerId: $providerId,
-                providerType: "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
-                parentId: $pid,
-                config: $config
-            }')
+    local existing_id body
+    existing_id=$(auth "$API/components?parent=$ldap_id&name=$name" \
+        | jq -r '.[0].id // empty')
 
-        if [ -n "$existing_id" ]; then
-            local body_with_id
-            body_with_id=$(echo "$body" | jq --arg id "$existing_id" '. + {id: $id}')
-            auth_json -X PUT "$API/components/$existing_id" -d "$body_with_id" >/dev/null
-            ok "ldap mapper '$name' atualizado"
-        else
-            auth_json -X POST "$API/components" -d "$body" >/dev/null
-            ok "ldap mapper '$name' criado"
-        fi
-    }
+    body=$(jq -nc \
+        --arg name "$name" \
+        --arg pid "$ldap_id" \
+        --arg providerId "$provider_id" \
+        --argjson config "$config_json" \
+        '{
+            name: $name,
+            providerId: $providerId,
+            providerType: "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+            parentId: $pid,
+            config: $config
+        }')
 
-    # CPF — vem do employeeNumber do LDAP (no LDAP institucional seria brPersonCPF;
-    # documentado na issue uniplus-api#217 a equivalência conceitual)
-    upsert_ldap_mapper "cpf" "user-attribute-ldap-mapper" '{
+    if [ -n "$existing_id" ]; then
+        local body_with_id
+        body_with_id=$(echo "$body" | jq --arg id "$existing_id" '. + {id: $id}')
+        auth_json -X PUT "$API/components/$existing_id" -d "$body_with_id" >/dev/null
+        ok "ldap mapper '$name' atualizado"
+    else
+        auth_json -X POST "$API/components" -d "$body" >/dev/null
+        ok "ldap mapper '$name' criado"
+    fi
+}
+
+# Configura todos os 5 mappers padrão. Todos com read.only=true para reproduzir
+# o cenário do LDAP institucional (editMode READ_ONLY).
+#
+# CPF vem do `employeeNumber` do LDAP — equivalente conceitual a `brPersonCPF`
+# do LDAP institucional (ver docker/ldap/README.md e issue uniplus-api#217).
+configure_ldap_mappers() {
+    local ldap_id="$1"
+
+    upsert_ldap_mapper "$ldap_id" "cpf" "user-attribute-ldap-mapper" '{
         "ldap.attribute": ["employeeNumber"],
         "user.model.attribute": ["cpf"],
         "read.only": ["true"],
@@ -234,7 +293,7 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
         "is.binary.attribute": ["false"]
     }'
 
-    upsert_ldap_mapper "username" "user-attribute-ldap-mapper" '{
+    upsert_ldap_mapper "$ldap_id" "username" "user-attribute-ldap-mapper" '{
         "ldap.attribute": ["uid"],
         "user.model.attribute": ["username"],
         "read.only": ["true"],
@@ -243,7 +302,7 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
         "is.binary.attribute": ["false"]
     }'
 
-    upsert_ldap_mapper "email" "user-attribute-ldap-mapper" '{
+    upsert_ldap_mapper "$ldap_id" "email" "user-attribute-ldap-mapper" '{
         "ldap.attribute": ["mail"],
         "user.model.attribute": ["email"],
         "read.only": ["true"],
@@ -252,7 +311,7 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
         "is.binary.attribute": ["false"]
     }'
 
-    upsert_ldap_mapper "first-name" "user-attribute-ldap-mapper" '{
+    upsert_ldap_mapper "$ldap_id" "first-name" "user-attribute-ldap-mapper" '{
         "ldap.attribute": ["givenName"],
         "user.model.attribute": ["firstName"],
         "read.only": ["true"],
@@ -261,7 +320,7 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
         "is.binary.attribute": ["false"]
     }'
 
-    upsert_ldap_mapper "last-name" "user-attribute-ldap-mapper" '{
+    upsert_ldap_mapper "$ldap_id" "last-name" "user-attribute-ldap-mapper" '{
         "ldap.attribute": ["sn"],
         "user.model.attribute": ["lastName"],
         "read.only": ["true"],
@@ -269,19 +328,38 @@ if [ "$LDAP_REACHABLE" = "true" ]; then
         "is.mandatory.in.ldap": ["false"],
         "is.binary.attribute": ["false"]
     }'
+}
 
-    # Sync inicial (puxa os 10 users do LDAP para o realm)
-    SYNC_RESULT=$(curl -sf -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-        "$API/user-storage/$LDAP_ID/sync?action=triggerFullSync")
-    ok "sync inicial: $(echo "$SYNC_RESULT" | jq -c '.')"
-else
-    warn "openldap não está rodando — User Federation LDAP não foi configurado."
-    warn "Suba com: docker compose -f docker/docker-compose.yml up -d openldap"
-fi
+trigger_initial_sync() {
+    local ldap_id="$1"
+    local result
+    result=$(curl -sf -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+        "$API/user-storage/$ldap_id/sync?action=triggerFullSync")
+    ok "sync inicial: $(echo "$result" | jq -c '.')"
+}
 
-echo
-log "Setup concluído. Teste o fluxo:"
-cat <<EOF
+configure_ldap_federation_if_available() {
+    log "Configurando User Federation LDAP (openldap sintético) — se openldap estiver no ar"
+
+    if ! is_local_ldap_reachable; then
+        warn "openldap local não acessível — User Federation LDAP não foi configurado."
+        warn "Em dev: docker compose -f docker/docker-compose.yml up -d openldap"
+        warn "Em HML/PROD: este passo é intencionalmente skipado."
+        return
+    fi
+
+    local ldap_id
+    ldap_id=$(upsert_ldap_provider)
+    configure_ldap_mappers "$ldap_id"
+    trigger_initial_sync "$ldap_id"
+}
+
+# ---- Etapa 6 — Hint de smoke test ------------------------------------------
+
+print_smoke_test_hint() {
+    echo
+    log "Setup concluído. Teste o fluxo:"
+    cat <<EOF
 
   TOKEN=\$(curl -s -X POST '$KC_URL/realms/$KC_REALM/protocol/openid-connect/token' \\
     -H 'Content-Type: application/x-www-form-urlencoded' \\
@@ -291,9 +369,26 @@ cat <<EOF
   curl -s -H "Authorization: Bearer \$TOKEN" http://localhost:5202/api/profile/me | jq
 
   # Listar users sintéticos do LDAP local:
-  ldapsearch -x -H ldap://localhost:1389 \\
-    -b ou=Users,dc=unifesspa,dc=edu,dc=br \\
-    -D 'cn=admin,dc=unifesspa,dc=edu,dc=br' -w admin \\
+  ldapsearch -x -H ldap://$LDAP_PROBE_HOST:$LDAP_PROBE_PORT \\
+    -b $LDAP_USERS_DN \\
+    -D '$LDAP_BIND_DN' -w '$LDAP_BIND_CREDENTIAL' \\
     '(objectClass=inetOrgPerson)' uid cn employeeNumber
 
 EOF
+}
+
+# ---- Entry point -----------------------------------------------------------
+
+main() {
+    require jq
+    require curl
+
+    wait_for_keycloak
+    obtain_admin_token
+    configure_admin_cli_for_ropc
+    reset_test_user_passwords
+    configure_ldap_federation_if_available
+    print_smoke_test_hint
+}
+
+main "$@"
