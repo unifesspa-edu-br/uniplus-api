@@ -74,6 +74,40 @@ services:
       retries: 5
       start_period: 10s
 
+  openldap:
+    # OpenLDAP local com dados sintéticos (4devs) para reproduzir o cenário
+    # do LDAP institucional Unifesspa em ambiente de desenvolvimento.
+    # Usado para testar Identity Brokering com gov.br + matching de CPF
+    # contra users LDAP-federados (incluindo casos de CPF com zero à esquerda
+    # truncado, bug histórico do brPersonCPF institucional).
+    # Ver issue uniplus-api#217 e ADR-029.
+    #
+    # Imagem: osixia/openldap (não recebe updates desde 2021 mas é estável e
+    # amplamente usada em dev. Bitnami descontinuou bitnami/openldap em 2025).
+    # Para dev local com dados sintéticos é suficiente — não usar em PROD.
+    image: osixia/openldap:1.5.0
+    restart: unless-stopped
+    command: ["--copy-service", "--loglevel", "info"]
+    environment:
+      LDAP_ORGANISATION: "Unifesspa Local Sintetico"
+      LDAP_DOMAIN: "unifesspa.edu.br"
+      LDAP_BASE_DN: "dc=unifesspa,dc=edu,dc=br"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_TLS: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "false"
+    ports:
+      - "1389:389"
+    volumes:
+      - ./ldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
+      - openldap_data:/var/lib/ldap
+      - openldap_config:/etc/ldap/slapd.d
+    healthcheck:
+      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost:389 -b dc=unifesspa,dc=edu,dc=br -D 'cn=admin,dc=unifesspa,dc=edu,dc=br' -w admin -s base 'objectClass=*' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.5
     restart: unless-stopped
@@ -110,3 +144,5 @@ services:
 volumes:
   postgres_data:
   minio_data:
+  openldap_data:
+  openldap_config:

@@ -1,0 +1,154 @@
+# OpenLDAP local — Uni+ (dc=unifesspa,dc=edu,dc=br)
+# Gerado por scripts/generate-ldif.py a partir de docker/ldap/data/seed-4devs.json.
+# Dados SINTÉTICOS (4devs) — não pertencem a pessoas reais.
+# Distribuição: 7 entries com CPF de 11 dígitos (caso feliz) +
+#               3 entries com CPF de 10 dígitos (zero truncado — bug LDAP).
+# Issue de referência: uniplus-api#217 / ADR-029.
+#
+# Senha sintética padrão de todos: Changeme!123
+
+dn: ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: organizationalUnit
+objectClass: top
+ou: Users
+
+# CPF malformado (truncado): canonical=07094871422 | armazenado=7094871422
+dn: uid=kevin.peixoto,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: kevin.peixoto
+cn: Kevin Rafael Pietro Peixoto
+givenName: Kevin
+sn: Peixoto
+mail: kevin-peixoto89@outlock.com
+employeeNumber: 7094871422
+userPassword: Changeme!123
+
+# CPF malformado (truncado): canonical=03776203781 | armazenado=3776203781
+dn: uid=emanuelly.fernandes,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: emanuelly.fernandes
+cn: Emanuelly Stella Eduarda Fernandes
+givenName: Emanuelly
+sn: Fernandes
+mail: emanuelly_stella_fernandes@riquefroes.com
+employeeNumber: 3776203781
+userPassword: Changeme!123
+
+# CPF malformado (truncado): canonical=03425754904 | armazenado=3425754904
+dn: uid=fernando.melo,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: fernando.melo
+cn: Fernando Nicolas Melo
+givenName: Fernando
+sn: Melo
+mail: fernandonicolasmelo@gruppoitalia.com.br
+employeeNumber: 3425754904
+userPassword: Changeme!123
+
+# CPF normal (11 dígitos): 76323164930
+dn: uid=lara.almeida,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: lara.almeida
+cn: Lara Mariane Almeida
+givenName: Lara
+sn: Almeida
+mail: laramarianealmeida@leanclean.com.br
+employeeNumber: 76323164930
+userPassword: Changeme!123
+
+# CPF normal (11 dígitos): 43291779274
+dn: uid=aurora.bernardes,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: aurora.bernardes
+cn: Aurora Bárbara Sarah Bernardes
+givenName: Aurora
+sn: Bernardes
+mail: aurora_barbara_bernardes@eptv.com.br
+employeeNumber: 43291779274
+userPassword: Changeme!123
+
+# CPF normal (11 dígitos): 88863402493
+dn: uid=antonio.jesus,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: antonio.jesus
+cn: Antonio Augusto Henry Jesus
+givenName: Antonio
+sn: Jesus
+mail: antonio_jesus@imoveisvillani.com.br
+employeeNumber: 88863402493
+userPassword: Changeme!123
+
+# CPF normal (11 dígitos): 89859446903
+dn: uid=jennifer.sales,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: jennifer.sales
+cn: Jennifer Jéssica Sales
+givenName: Jennifer
+sn: Sales
+mail: jenniferjessicasales@cbsaperfeicoamento.com.br
+employeeNumber: 89859446903
+userPassword: Changeme!123
+
+# CPF normal (11 dígitos): 79278381489
+dn: uid=emilly.cruz,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: emilly.cruz
+cn: Emilly Eloá da Cruz
+givenName: Emilly
+sn: Cruz
+mail: emilly-dacruz73@graficajardim.com.br
+employeeNumber: 79278381489
+userPassword: Changeme!123
+
+# CPF normal (11 dígitos): 72804354245
+dn: uid=breno.araujo,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: breno.araujo
+cn: Breno Luiz Murilo Araújo
+givenName: Breno
+sn: Araújo
+mail: breno.luiz.araujo@eguia.com.br
+employeeNumber: 72804354245
+userPassword: Changeme!123
+
+# CPF normal (11 dígitos): 64587561606
+dn: uid=kevin.barbosa,ou=Users,dc=unifesspa,dc=edu,dc=br
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: kevin.barbosa
+cn: Kevin Sérgio Barbosa
+givenName: Kevin
+sn: Barbosa
+mail: kevin_barbosa@live.dk
+employeeNumber: 64587561606
+userPassword: Changeme!123
+
