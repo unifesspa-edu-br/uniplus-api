@@ -1,0 +1,28 @@
+name: PR author is org member
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-author:
+    name: PR author is org member
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate author association
+        env:
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          ASSOCIATION: ${{ github.event.pull_request.author_association }}
+        run: |
+          case "$ASSOCIATION" in
+            MEMBER|OWNER)
+              echo "PR author $AUTHOR is associated as $ASSOCIATION."
+              ;;
+            *)
+              echo "::error::PR author $AUTHOR is not a member of unifesspa-edu-br (author_association=$ASSOCIATION)."
+              exit 1
+              ;;
+          esac
