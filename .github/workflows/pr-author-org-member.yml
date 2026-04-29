@@ -12,7 +12,7 @@ jobs:
     name: PR author is org member
     runs-on: ubuntu-latest
     steps:
-      - name: Validate author has write access to the repo
+      - name: Validate author is org member with write access
         env:
           AUTHOR: ${{ github.event.pull_request.user.login }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -20,19 +20,33 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Consulta a permissão efetiva do autor no repo. Esse endpoint
-          # considera membership privada da org (diferente de
-          # author_association no payload, que só reflete relações públicas),
-          # então Owners e Members da org com write access aparecem aqui
-          # mesmo quando a membership está oculta no perfil.
+          # 1) Permissão efetiva no repo. Esse endpoint considera membership
+          #    privada da org — Owners e Members aparecem aqui com a permissão
+          #    herdada (admin/write) mesmo quando a relação está oculta no
+          #    perfil, ao contrário de github.event.pull_request.author_association
+          #    que só reflete relações públicas.
           permission=$(gh api "repos/$REPO/collaborators/$AUTHOR/permission" --jq .permission)
 
           case "$permission" in
-            admin|maintain|write)
-              echo "PR author $AUTHOR autorizado (permission=$permission)."
-              ;;
+            admin|maintain|write) ;;
             *)
-              echo "::error::PR author $AUTHOR não tem permissão de escrita no repo (permission=$permission)."
+              echo "::error::PR author $AUTHOR não tem permissão de escrita no repo $REPO (permission=$permission). Solicite acesso a um Owner da org unifesspa-edu-br."
               exit 1
               ;;
           esac
+
+          # 2) Rejeita outside collaborators. Quem aparece em ?affiliation=outside
+          #    foi adicionado direto ao repo (Settings > Collaborators) sem
+          #    entrar na org — tem write efetivo, mas o gate promete validar
+          #    membership *na org*. Sem essa cláusula, contractors externos
+          #    com write passariam pela cláusula 1 e desbloqueariam o status
+          #    check obrigatório.
+          is_outside=$(gh api "repos/$REPO/collaborators?affiliation=outside&per_page=100" \
+            --jq "[.[].login] | index(\"$AUTHOR\") != null")
+
+          if [ "$is_outside" = "true" ]; then
+            echo "::error::PR author $AUTHOR é outside collaborator e não é membro da org unifesspa-edu-br. O gate exige membership na org."
+            exit 1
+          fi
+
+          echo "PR author $AUTHOR autorizado (permission=$permission, membro da org)."
