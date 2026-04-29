@@ -12,17 +12,27 @@ jobs:
     name: PR author is org member
     runs-on: ubuntu-latest
     steps:
-      - name: Validate author association
+      - name: Validate author has write access to the repo
         env:
           AUTHOR: ${{ github.event.pull_request.user.login }}
-          ASSOCIATION: ${{ github.event.pull_request.author_association }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          case "$ASSOCIATION" in
-            MEMBER|OWNER)
-              echo "PR author $AUTHOR is associated as $ASSOCIATION."
+          set -euo pipefail
+
+          # Consulta a permissão efetiva do autor no repo. Esse endpoint
+          # considera membership privada da org (diferente de
+          # author_association no payload, que só reflete relações públicas),
+          # então Owners e Members da org com write access aparecem aqui
+          # mesmo quando a membership está oculta no perfil.
+          permission=$(gh api "repos/$REPO/collaborators/$AUTHOR/permission" --jq .permission)
+
+          case "$permission" in
+            admin|maintain|write)
+              echo "PR author $AUTHOR autorizado (permission=$permission)."
               ;;
             *)
-              echo "::error::PR author $AUTHOR is not a member of unifesspa-edu-br (author_association=$ASSOCIATION)."
+              echo "::error::PR author $AUTHOR não tem permissão de escrita no repo (permission=$permission)."
               exit 1
               ;;
           esac
