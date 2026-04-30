@@ -100,9 +100,10 @@ GOVBR_LOGOUT_URL="https://${GOVBR_HOST}/logout"
 # (validado em 29/04/2026 contra https://sso.staging.acesso.gov.br/.well-known/openid-configuration)
 GOVBR_ISSUER="https://${GOVBR_HOST}/"
 
-# ---- Logging
-log()  { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
-ok()   { printf '\033[1;32m    OK %s\033[0m\n' "$*"; }
+# ---- Logging (mensagens humanas em stderr — Unix-style; consistente com
+# setup-keycloak-dev.sh e seguro contra captura via $(...))
+log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
+ok()   { printf '\033[1;32m    OK %s\033[0m\n' "$*" >&2; }
 warn() { printf '\033[1;33m!! %s\033[0m\n' "$*" >&2; }
 
 require() {

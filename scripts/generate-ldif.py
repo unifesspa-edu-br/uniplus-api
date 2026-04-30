@@ -39,7 +39,14 @@ LDIF_OUT = REPO_ROOT / "docker" / "ldap" / "bootstrap" / "01-users.ldif"
 
 LDAP_BASE_DN = "dc=unifesspa,dc=edu,dc=br"
 USERS_OU = f"ou=Users,{LDAP_BASE_DN}"
-DEFAULT_PASSWORD = "Changeme!123"  # senha sintética para todos — só dev local
+DEFAULT_PASSWORD = "Changeme!123"  # senha sintética em plaintext — dev local; facilita debug
+
+# Domínio reservado para emails sintéticos (RFC 2606 / TLD .local).
+# A 4devs gera emails com domínios reais misturados (eptv.com.br, live.dk, etc.);
+# trocar por domínio reservado evita que mensagens sintéticas cheguem em
+# catch-all de empresas reais durante testes E2E ou verificação de email
+# do Keycloak.
+SAFE_EMAIL_DOMAIN = "uniplus-test.local"
 
 # Quantidade de entries com CPF malformado (10 dígitos no LDAP)
 MALFORMED_COUNT = 3
@@ -88,16 +95,30 @@ def last_word(name: str) -> str:
 
 def slug_uid(name: str, cpf: str) -> str:
     """uid = primeiroNome.ultimoSobrenome em lowercase, sem acentos. Fallback: cpf."""
-    base = f"{first_word(name)}.{last_word(name)}".lower()
+    first = first_word(name)
+    last = last_word(name)
+    base = f"{first}.{last}".lower() if last else first.lower()
     nfkd = unicodedata.normalize("NFKD", base)
     ascii_only = "".join(c for c in nfkd if not unicodedata.combining(c) and (c.isalnum() or c == "."))
     return ascii_only or cpf
 
 
+def safe_email(raw_email: str) -> str:
+    """Substitui o domínio do email sintético por domínio reservado de teste.
+
+    A 4devs gera emails com domínios reais (eptv.com.br, live.dk, etc.) que
+    podem chegar em catch-all de empresas reais se o sistema disparar email
+    durante testes. Preserva o local-part do email original para manter a
+    legibilidade dos dados sintéticos.
+    """
+    local = raw_email.split("@", 1)[0]
+    return f"{local}@{SAFE_EMAIL_DOMAIN}"
+
+
 def render_entry(idx: int, person: dict, cpf_in_ldap: str, cpf_canonical: str, malformed: bool) -> str:
     """Renderiza uma entry LDIF (inetOrgPerson + organizationalPerson + person)."""
     nome = person["nome"]
-    email = person["email"]
+    email = safe_email(person["email"])
     given = first_word(nome)
     family = last_word(nome) or given
     uid = slug_uid(nome, cpf_canonical)

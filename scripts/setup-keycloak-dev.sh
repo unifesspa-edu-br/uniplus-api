@@ -1,23 +1,20 @@
 #!/usr/bin/env bash
-# Setup pós-import do realm `unifesspa` para habilitar testes via Direct Access
-# Grants (ROPC) sem subir o frontend Angular.
+# Setup pós-import do realm `unifesspa` para dev local. Aplica via Admin API
+# os patches que o realm-export.json versionado deliberadamente não traz por
+# refletir configuração próxima de produção.
 #
-# O realm-export.json versionado reflete configuração próxima de produção:
-# senhas temporárias, admin-cli com lightweight tokens e sem o scope
-# uniplus-profile. Em produção isso é correto — mas trava smoke tests rápidos
-# de fluxo OIDC via curl. Este script aplica os patches via Admin API; nada
-# é persistido no realm-export.
+# Etapas (cada uma idempotente, encapsulada em função):
+#   1. wait_for_keycloak                    — probe do realm endpoint
+#   2. obtain_admin_token                   — ROPC contra master realm
+#   3. configure_admin_cli_for_ropc         — uniplus-profile + lightweight off
+#                                             (libera smoke tests via curl)
+#   4. reset_test_user_passwords            — 4 users de teste, senha não-temporária
+#   5. configure_ldap_federation_if_available — User Federation contra openldap
+#                                             sintético (skip em HML/PROD)
+#   6. print_smoke_test_hint                — exemplo de uso pós-setup
 #
 # Os ajustes feitos aqui não sobrevivem a `docker compose down -v` — re-rode
 # o script após recriar o volume do Postgres.
-#
-# Etapas (cada uma idempotente, encapsulada em função):
-#   1. wait_for_keycloak
-#   2. obtain_admin_token
-#   3. configure_admin_cli_for_ropc
-#   4. reset_test_user_passwords
-#   5. configure_ldap_federation_if_available     (skip em HML institucional)
-#   6. print_smoke_test_hint
 #
 # Pré-requisitos:
 #   - Stack docker no ar: docker compose -f docker/docker-compose.yml up -d
