@@ -118,7 +118,7 @@ public static class ObterEditalQueryHandler
 
 **Validação automática:** o `WolverineValidationMiddleware` (em `Infrastructure.Core/Messaging/Middleware`) descobre todos os `IValidator<T>` registrados via `AddValidatorsFromAssembly` e valida o command/query antes do handler. Não chame `validator.ValidateAsync(...)` no handler — falhas viram `FluentValidation.ValidationException` capturada pelo `GlobalExceptionMiddleware` como `ProblemDetails 400`.
 
-**Logging automático:** o `WolverineLoggingMiddleware` registra entrada/saída do handler com tempo de execução, removendo a necessidade de qualquer behavior de pipeline em código de aplicação. Logs específicos de domínio dentro do handler seguem o padrão `[LoggerMessage]` documentado no [`CLAUDE.md`](CLAUDE.md#logging-de-alta-performance--loggermessage-source-generator).
+**Logging automático:** o `WolverineLoggingMiddleware` registra entrada/saída do handler com tempo de execução, removendo a necessidade de qualquer behavior de pipeline em código de aplicação. Logs específicos de domínio dentro do handler seguem o padrão `[LoggerMessage]` source generator (.NET 6+): a classe é `partial`, o método é `private static partial void Log{Acao}` decorado com `[LoggerMessage(Level = ..., Message = "...")]`, e o `ILogger` entra como primeiro parâmetro do método. Chamadas diretas a `logger.LogInformation(...)` etc. são bloqueadas pelo analisador `CA1848` (com `TreatWarningsAsErrors`) — o source generator evita avaliação de argumentos quando o log level está desativado, elimina boxing de value types e parseia o template uma única vez na compilação. Exemplo no projeto: `EditalPublicadoEventHandler` (`src/selecao/.../Events/Editais/`).
 
 ### 3. Testar
 
