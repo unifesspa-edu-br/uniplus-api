@@ -394,7 +394,10 @@ configure_govbr_mock_idp() {
         log "Pulando setup do mock IdP (SKIP_GOVBR_MOCK=true)"
         return
     fi
-    KC_URL="$KC_URL" \
+    # TARGET_REALM precisa espelhar KC_REALM, senão o mock cria o IdP no
+    # default 'unifesspa' enquanto as etapas anteriores configuraram outro
+    # realm — desincronia silenciosa em runs com KC_REALM customizado.
+    KC_URL="$KC_URL" TARGET_REALM="$KC_REALM" \
     KC_ADMIN_USER="$KC_ADMIN_USER" KC_ADMIN_PASS="$KC_ADMIN_PASS" \
         "$SCRIPT_DIR/setup-govbr-mock.sh"
 }
