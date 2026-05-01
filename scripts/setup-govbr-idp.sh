@@ -231,15 +231,24 @@ case "$EXISTS_HTTP" in
         # setup-cpf-matcher-flow.sh) e o operador rodar este script sem
         # GOVBR_FIRST_BROKER_LOGIN_FLOW, o PUT abaixo voltaria o flow para o
         # built-in — desfazendo o matching por CPF sem nenhum aviso.
+        #
+        # O guard só dispara em downgrade (custom → built-in) ou troca lateral
+        # (custom A → custom B). Upgrade explícito do built-in para um flow
+        # custom é o caminho documentado de rollout em HML/PRD e não exige opt-in.
+        BUILTIN_FLOW="first broker login"
         CURRENT_FLOW=$(auth "$API/identity-provider/instances/$GOVBR_ALIAS" \
             | jq -r '.firstBrokerLoginFlowAlias // empty')
         if [ -n "$CURRENT_FLOW" ] && [ "$CURRENT_FLOW" != "$GOVBR_FIRST_BROKER_LOGIN_FLOW" ]; then
-            warn "IdP '$GOVBR_ALIAS' atualmente usa o flow '$CURRENT_FLOW',"
-            warn "mas este script vai sobrescrevê-lo para '$GOVBR_FIRST_BROKER_LOGIN_FLOW'."
-            warn "Para preservar o flow atual, exporte:"
-            warn "  GOVBR_FIRST_BROKER_LOGIN_FLOW='$CURRENT_FLOW'"
-            warn "Para forçar a substituição: ALLOW_FLOW_DOWNGRADE=true"
-            [ "${ALLOW_FLOW_DOWNGRADE:-false}" = "true" ] || exit 1
+            if [ "$CURRENT_FLOW" = "$BUILTIN_FLOW" ] && [ "$GOVBR_FIRST_BROKER_LOGIN_FLOW" != "$BUILTIN_FLOW" ]; then
+                log "Upgrade de flow: '$CURRENT_FLOW' → '$GOVBR_FIRST_BROKER_LOGIN_FLOW'"
+            else
+                warn "IdP '$GOVBR_ALIAS' atualmente usa o flow '$CURRENT_FLOW',"
+                warn "mas este script vai sobrescrevê-lo para '$GOVBR_FIRST_BROKER_LOGIN_FLOW'."
+                warn "Para preservar o flow atual, exporte:"
+                warn "  GOVBR_FIRST_BROKER_LOGIN_FLOW='$CURRENT_FLOW'"
+                warn "Para forçar a substituição: ALLOW_FLOW_OVERRIDE=true"
+                [ "${ALLOW_FLOW_OVERRIDE:-${ALLOW_FLOW_DOWNGRADE:-false}}" = "true" ] || exit 1
+            fi
         fi
         auth_json -X PUT "$API/identity-provider/instances/$GOVBR_ALIAS" -d "$IDP_BODY" >/dev/null
         ok "IdP '$GOVBR_ALIAS' atualizado"
