@@ -49,15 +49,19 @@ public interface ICommandBus
         CancellationToken ct = default);
 }
 
-public interface IDomainEventDispatcher
+public interface IQueryBus
 {
-    Task Publish(
-        IDomainEvent domainEvent,
+    Task<TResponse> Send<TResponse>(
+        IQuery<TResponse> query,
         CancellationToken ct = default);
 }
 ```
 
+A separação semântica entre `ICommandBus` e `IQueryBus` impede, na própria assinatura, que um `ICommand<TResponse>` seja despachado pelo bus de leitura ou um `IQuery<TResponse>` pelo bus de escrita.
+
 Implementações ficam em `Infrastructure.Core/Messaging/` e encapsulam o `IMessageBus` do Wolverine. Código de aplicação e domínio **não importam `Wolverine.*` diretamente**.
+
+A drenagem de domain events não passa por dispatcher injetado: handlers que mutam agregado devolvem os eventos no próprio retorno (`IEnumerable<object>` direto ou em tupla com a resposta), e o Wolverine despacha via cascading messages — caminho idiomático definido em ADR-0005.
 
 Capacidades avançadas (sagas, process managers, scheduled messages, event sourcing) ficam **deliberadamente fora** desta decisão e só entram no projeto quando um caso de uso concreto exigir, com emenda a esta ADR.
 
@@ -78,14 +82,14 @@ Capacidades avançadas (sagas, process managers, scheduled messages, event sourc
 
 ### Riscos
 
-- **Bus factor da JasperFx.** Mitigado pelo encapsulamento via `ICommandBus`/`IDomainEventDispatcher` — migração para Brighter custa 2–6 semanas conforme uso de features avançadas. Brighter fica nomeado como escape-hatch.
+- **Bus factor da JasperFx.** Mitigado pelo encapsulamento via `ICommandBus`/`IQueryBus` (e drenagem cascading definida em ADR-0005) — migração para Brighter custa 2–6 semanas conforme uso de features avançadas. Brighter fica nomeado como escape-hatch.
 - **Features avançadas vazando para handlers.** Mitigado pela regra arquitetural enforçada por ArchUnitNET (ver ADR-0012) que proíbe imports de `Wolverine.*` fora de `Infrastructure.Core`.
 - **Drift do CritterWatch como dependência implícita.** Observabilidade fica em OpenTelemetry (ver ADR-0018); `CritterWatch` é proibido como dependência load-bearing.
 
 ## Confirmação
 
-- Fitness test ArchUnitNET `ApplicationLayer_DoesNotDependOnWolverine` falha o build se houver import fora de `Infrastructure.Core` (ver ADR-0012).
-- Fitness test `SolutionDoesNotReferenceMediatR` falha o build se houver qualquer import de `MediatR.*`.
+- Fitness test ArchUnitNET `Stage1ArchitectureRulesTests.ApplicationEDomain_NaoDependemDeWolverine` (presente nos projetos `Unifesspa.UniPlus.Selecao.ArchTests` e `Unifesspa.UniPlus.Ingresso.ArchTests`) falha o build se `Application.Abstractions`, `Selecao.Application`/`Ingresso.Application` ou `Selecao.Domain`/`Ingresso.Domain` importarem `Wolverine.*` (ver ADR-0012).
+- Fitness test `SolutionNaoTemMediatRTests.NenhumTipoDoProdutoDependeDeMediatR` (no projeto solution-wide `Unifesspa.UniPlus.ArchTests`) falha o build se qualquer assembly do produto importar `MediatR.*`.
 
 ## Prós e contras das opções
 
