@@ -47,6 +47,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0016](0016-keycloak-como-identity-provider.md) | Keycloak como identity provider OIDC do `uniplus-api` | accepted | 2026-04-28 |
 | [0017](0017-kubernetes-com-helm-para-orquestracao.md) | Kubernetes com Helm para orquestração do `uniplus-api` | accepted | 2026-04-28 |
 | [0018](0018-opentelemetry-para-instrumentacao-do-backend.md) | OpenTelemetry para instrumentação do `uniplus-api` | accepted | 2026-04-28 |
+| [0019](0019-proibir-pii-em-path-segments-de-url.md) | Proibir PII em path segments de URL | accepted | 2026-05-01 |
 
 ## Como adicionar um novo ADR
 
