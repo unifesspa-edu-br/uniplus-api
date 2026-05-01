@@ -137,6 +137,12 @@ services:
       - "8080:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      # SPI customizado uniplus-cpf-matcher (Authenticator de first-broker-login).
+      # O JAR é gerado pelo repositório irmão uniplus-keycloak-providers via
+      # scripts/build-keycloak-providers.sh — pré-requisito para subir o Keycloak.
+      # Em start-dev, o Keycloak detecta mudanças em providers/ e roda kc.sh build
+      # automaticamente; não precisa alterar o command.
+      - ../../uniplus-keycloak-providers/cpf-matcher/target/cpf-matcher-1.0.0-SNAPSHOT.jar:/opt/keycloak/providers/cpf-matcher.jar:ro
     depends_on:
       postgres:
         condition: service_healthy

@@ -10,12 +10,18 @@
 #   GOVBR_CLIENT_SECRET   Segredo fornecido pelo gov.br — NUNCA commitar
 #
 # Variáveis OPCIONAIS:
-#   GOVBR_ENV             staging (default) | production
-#   GOVBR_ALIAS           default: govbr  (compõe o redirect URI)
-#   KC_URL                default: http://localhost:8080
-#   KC_REALM              default: unifesspa
-#   KC_ADMIN_USER         default: admin
-#   KC_ADMIN_PASS         default: admin
+#   GOVBR_ENV                       staging (default) | production
+#   GOVBR_ALIAS                     default: govbr  (compõe o redirect URI)
+#   GOVBR_FIRST_BROKER_LOGIN_FLOW   default: "first broker login" (built-in).
+#                                   Para usar o flow customizado com matching
+#                                   por CPF, definir como "first broker login
+#                                   com cpf" — esse flow é criado pelo
+#                                   setup-keycloak-dev.sh (uniplus-cpf-matcher
+#                                   SPI). Ver Story uniplus-api#218.
+#   KC_URL                          default: http://localhost:8080
+#   KC_REALM                        default: unifesspa
+#   KC_ADMIN_USER                   default: admin
+#   KC_ADMIN_PASS                   default: admin
 #
 # Uso em homologação institucional (caminho recomendado — validado em campo):
 #   export KC_URL=https://keycloak-hom.unifesspa.edu.br
@@ -42,14 +48,13 @@
 #
 # LIMITAÇÕES CONHECIDAS (validadas em campo, HML 29/04/2026):
 #
-# 1. Flow de first-broker-login não customizado:
-#    A ADR-029 prevê auto-link por CPF (atributo) no primeiro login. Isso exige
-#    uma execution customizada no flow "First Broker Login" (clone do flow padrão
-#    substituindo o executor "Detect Existing Broker User" para casar por atributo
-#    `cpf` em vez de e-mail). Esse fluxo customizado NÃO é configurado por este
-#    script — usa-se o flow padrão do Keycloak (matching por e-mail).
-#    Servidores que já existem no realm via LDAP terão a fricção de
-#    "User already exists. Add to existing account?" no primeiro login via gov.br.
+# 1. Flow de first-broker-login (resolvido em uniplus-api#218):
+#    Auto-link por CPF é provido pelo SPI uniplus-cpf-matcher (repositório
+#    uniplus-keycloak-providers) e configurado pelo setup-keycloak-dev.sh em
+#    um clone do flow built-in chamado "first broker login com cpf". Para
+#    usar esse flow neste script, exportar
+#    GOVBR_FIRST_BROKER_LOGIN_FLOW="first broker login com cpf" antes de rodar.
+#    Default segue sendo o flow built-in para preservar comportamento histórico.
 #
 # 2. syncMode = IMPORT (não FORCE):
 #    Quando o realm tem User Federation LDAP em modo READ_ONLY (caso do realm
@@ -79,6 +84,7 @@ set -euo pipefail
 # ---- Defaults
 GOVBR_ENV="${GOVBR_ENV:-staging}"
 GOVBR_ALIAS="${GOVBR_ALIAS:-govbr}"
+GOVBR_FIRST_BROKER_LOGIN_FLOW="${GOVBR_FIRST_BROKER_LOGIN_FLOW:-first broker login}"
 KC_URL="${KC_URL:-http://localhost:8080}"
 KC_REALM="${KC_REALM:-unifesspa}"
 KC_ADMIN_USER="${KC_ADMIN_USER:-admin}"
@@ -105,9 +111,10 @@ GOVBR_ISSUER="https://${GOVBR_HOST}/"
 log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
 ok()   { printf '\033[1;32m    OK %s\033[0m\n' "$*" >&2; }
 warn() { printf '\033[1;33m!! %s\033[0m\n' "$*" >&2; }
+fail() { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
 require() {
-    command -v "$1" >/dev/null 2>&1 || { warn "Comando ausente: $1"; exit 1; }
+    command -v "$1" >/dev/null 2>&1 || fail "Comando ausente: $1"
 }
 require jq
 require curl
@@ -155,16 +162,17 @@ build_idp_body() {
         --arg issuer "$GOVBR_ISSUER" \
         --arg clientId "$GOVBR_CLIENT_ID" \
         --arg clientSecret "$GOVBR_CLIENT_SECRET" \
+        --arg firstBrokerLoginFlow "$GOVBR_FIRST_BROKER_LOGIN_FLOW" \
         '{
             alias: $alias,
-            displayName: "gov.br",
+            displayName: "Entrar com gov.br",
             providerId: "oidc",
             enabled: true,
             trustEmail: true,
             storeToken: false,
             addReadTokenRoleOnCreate: false,
             linkOnly: false,
-            firstBrokerLoginFlowAlias: "first broker login",
+            firstBrokerLoginFlowAlias: $firstBrokerLoginFlow,
             config: {
                 authorizationUrl: $authUrl,
                 tokenUrl: $tokenUrl,
@@ -218,6 +226,21 @@ IDP_BODY=$(build_idp_body)
 
 case "$EXISTS_HTTP" in
     200)
+        # Guard contra downgrade silencioso: se o IdP já aponta para um flow
+        # custom (e.g., "first broker login com cpf" criado via
+        # setup-cpf-matcher-flow.sh) e o operador rodar este script sem
+        # GOVBR_FIRST_BROKER_LOGIN_FLOW, o PUT abaixo voltaria o flow para o
+        # built-in — desfazendo o matching por CPF sem nenhum aviso.
+        CURRENT_FLOW=$(auth "$API/identity-provider/instances/$GOVBR_ALIAS" \
+            | jq -r '.firstBrokerLoginFlowAlias // empty')
+        if [ -n "$CURRENT_FLOW" ] && [ "$CURRENT_FLOW" != "$GOVBR_FIRST_BROKER_LOGIN_FLOW" ]; then
+            warn "IdP '$GOVBR_ALIAS' atualmente usa o flow '$CURRENT_FLOW',"
+            warn "mas este script vai sobrescrevê-lo para '$GOVBR_FIRST_BROKER_LOGIN_FLOW'."
+            warn "Para preservar o flow atual, exporte:"
+            warn "  GOVBR_FIRST_BROKER_LOGIN_FLOW='$CURRENT_FLOW'"
+            warn "Para forçar a substituição: ALLOW_FLOW_DOWNGRADE=true"
+            [ "${ALLOW_FLOW_DOWNGRADE:-false}" = "true" ] || exit 1
+        fi
         auth_json -X PUT "$API/identity-provider/instances/$GOVBR_ALIAS" -d "$IDP_BODY" >/dev/null
         ok "IdP '$GOVBR_ALIAS' atualizado"
         ;;

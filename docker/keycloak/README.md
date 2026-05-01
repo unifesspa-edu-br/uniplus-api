@@ -210,7 +210,7 @@ scripts/setup-govbr-idp.sh
 
 > ⚠️ O Keycloak HML institucional é **realm compartilhado** com outros sistemas (ex.: `ficha_facil`, `sisplad`) — **NÃO** importar `realm-export.json` lá. O script só toca em IdP gov.br, seus mappers e a role `candidato` (idempotente, defensivo).
 
-Para validar o login, abra `https://keycloak-hom.unifesspa.edu.br/realms/unifesspa/account/` → Sign In → "gov.br". Para criar conta de teste no `https://sso.staging.acesso.gov.br/`, usar:
+Para validar o login, abra `https://keycloak-hom.unifesspa.edu.br/realms/unifesspa/account/` → Sign In → "Entrar com gov.br". Para criar conta de teste no `https://sso.staging.acesso.gov.br/`, usar:
 
 - **Nome da mãe:** `MAMÃE`
 - **Data de nascimento:** `01/01/1980`
@@ -253,9 +253,176 @@ curl -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 Os mappers do IdP são removidos em cascata pelo Keycloak. A role `candidato` permanece (não é removida pelo rollback).
 
-### Limitação conhecida — flow de first-broker-login
+### Flow customizado de first-broker-login com matching por CPF
 
-A ADR-029 prevê **auto-link por CPF** no primeiro login (Opção A). Isso requer uma execution customizada no flow `First Broker Login` (clone do flow padrão substituindo o executor `Detect Existing Broker User` para casar por atributo `cpf` em vez de e-mail). Esse flow customizado **não é configurado** por este script — usa-se o flow padrão (matching por e-mail). Endereçar antes do GO-LIVE em produção.
+A ADR-029 prevê **auto-link por CPF** no primeiro login. A execução é provida pelo SPI `uniplus-cpf-matcher` do repositório [uniplus-keycloak-providers](https://github.com/unifesspa-edu-br/uniplus-keycloak-providers).
+
+O flow `first broker login com cpf` é um clone do flow built-in `first broker login` com o execution `uniplus-cpf-matcher` adicionado no subflow `User creation or linking` como `ALTERNATIVE`, posicionado **antes** de `idp-create-user-if-unique`. Quando o matcher encontra um user existente por CPF, registra `EXISTING_USER_INFO` e o flow segue para `Handle Existing Account`. Quando não encontra, cai em `idp-create-user-if-unique` (criação de user novo).
+
+A configuração desse flow é idempotente e vive em `scripts/setup-cpf-matcher-flow.sh` — script **standalone** que pode rodar em qualquer ambiente (DEV, HML, PRD). O `setup-keycloak-dev.sh` o chama automaticamente em DEV; em HML/PRD, o operador chama direto.
+
+#### Estrutura dos scripts
+
+| Script | DEV | HML/PRD | O que faz |
+|---|---|---|---|
+| `build-keycloak-providers.sh` | ✅ | — | Builda o JAR `cpf-matcher` via Maven em container. Em HML/PRD o JAR vem por Helm/CI |
+| `setup-cpf-matcher-flow.sh` | ✅ (via dev) | ✅ | Cria o flow `first broker login com cpf` e aponta IdPs para ele. Idempotente, agnóstico de ambiente |
+| `setup-keycloak-dev.sh` | ✅ | ❌ | Orquestrador DEV: LDAP sintético, admin-cli ROPC, flow custom, mock IdP. **Não rodar em HML/PRD** |
+| `setup-govbr-idp.sh` | (estrutural) | ✅ | Configura IdP gov.br staging/produção real. Em DEV é apenas estrutural — gov.br não aceita localhost |
+| `setup-govbr-mock.sh` | ✅ | ❌ (bloqueado) | Cria realm fake `govbr-mock` que simula gov.br localmente. Falha se KC_URL não for localhost |
+| `smoke-test-cpf-matcher.sh` | ✅ | ❌ (bloqueado) | Roda o flow ponta a ponta via curl, valida auto-heal |
+
+### Fluxo DEV — gov.br MOCK como Login gov.br do dev
+
+O ambiente de desenvolvimento usa um **segundo realm no mesmo Keycloak** (`govbr-mock`) como simulador do gov.br. Isso permite exercitar todo o flow do cpf-matcher localmente, sem depender do gov.br staging (que não aceita `localhost` como redirect URI).
+
+```bash
+# 1. (uma vez) Clonar o repositório irmão dos SPIs
+cd repositories
+git clone https://github.com/unifesspa-edu-br/uniplus-keycloak-providers.git
+
+# 2. Build do JAR cpf-matcher
+cd uniplus-api
+scripts/build-keycloak-providers.sh cpf-matcher
+
+# 3. Sobe a stack (compose já monta o JAR no Keycloak)
+docker compose -f docker/docker-compose.yml up -d
+
+# 4. Setup completo do realm DEV — flow custom + LDAP sintético + mock IdP
+scripts/setup-keycloak-dev.sh
+```
+
+Após isso, o realm `unifesspa` tem dois IdPs apontando para o flow custom:
+- `govbr` (gov.br staging real — só fica funcional se `setup-govbr-idp.sh` for rodado com credenciais reais)
+- `govbr-mock` (realm fake local — pronto para uso imediato)
+
+**Login E2E pelo browser:**
+1. Abrir incognito em <http://localhost:8080/realms/unifesspa/account>
+2. Sign In → escolher `Entrar com gov.br (MOCK)`
+3. No realm fake: `username=09876543210`, `senha=Mock!1234`
+4. Voltar ao Account Console — atributo `cpf` agora canônico (11 dígitos)
+
+**Smoke programático** (curl simulando o browser):
+
+```bash
+scripts/smoke-test-cpf-matcher.sh
+```
+
+Cobre dois cenários:
+- **AUTOHEAL** — user manual `autoheal-test` no realm (cpf truncado `9876543210`). Após login mock com `sub=09876543210`, o auto-heal persiste e o `userinfo` retorna `cpf=09876543210`.
+- **LDAP_READONLY** — user `kevin.peixoto` federado de LDAP read-only (`employeeNumber=7094871422`). O matcher acha o user via fallback, mas o auto-heal falha com `ReadOnlyException` (limitação documentada). Em produção, a correção é institucional: migrar o `brPersonCPF` no LDAP da DIRSI.
+
+#### Mock users disponíveis no realm `govbr-mock`
+
+| Username (CPF) | Caso |
+|---|---|
+| `07094871422` | Match com fallback contra `kevin.peixoto` (LDAP read-only — auto-heal falha) |
+| `03776203781` | Match com fallback contra `emanuelly.fernandes` (LDAP read-only) |
+| `03425754904` | Match com fallback contra `fernando.melo` (LDAP read-only) |
+| `76323164930` | Match canônico contra `lara.almeida` (LDAP — sem fallback) |
+| `12345678901` | Sem match — exercita criação de user novo |
+| `09876543210` | Match com fallback contra user **manual** `autoheal-test` — auto-heal **persiste** |
+
+Senha de todos: `Mock!1234`.
+
+### Fluxo HML — gov.br staging real
+
+A validação E2E contra o gov.br staging acontece no Keycloak HML institucional (`keycloak-hom.unifesspa.edu.br`), onde o redirect URI já está registrado no gov.br homologação.
+
+> ⚠️ O Keycloak HML é **realm compartilhado** com outros sistemas (`ficha_facil`, `sisplad`). Os scripts abaixo só tocam recursos especificamente vinculados ao gov.br + cpf-matcher. **Nunca rodar `setup-keycloak-dev.sh` ou `setup-govbr-mock.sh` em HML.**
+
+Pré-requisito: o JAR do `cpf-matcher` precisa estar em `/opt/keycloak/providers/` na imagem do Keycloak HML (responsabilidade do pipeline Helm/CI — issue separada).
+
+```bash
+# Variáveis de ambiente HML
+export KC_URL=https://keycloak-hom.unifesspa.edu.br
+export KC_ADMIN_USER=...                      # admin do realm unifesspa
+export KC_ADMIN_PASS=...
+export GOVBR_CLIENT_ID=keycloak-hom.unifesspa.edu.br
+export GOVBR_CLIENT_SECRET=...                # canal formal gov.br — nunca commitar
+export GOVBR_ENV=staging
+
+# 1. Cria/garante o flow custom no realm unifesspa
+scripts/setup-cpf-matcher-flow.sh
+
+# 2. Configura IdP gov.br staging apontando para o flow custom
+GOVBR_FIRST_BROKER_LOGIN_FLOW="first broker login com cpf" \
+    scripts/setup-govbr-idp.sh
+```
+
+A validação:
+1. Abrir <https://keycloak-hom.unifesspa.edu.br/realms/unifesspa/account>
+2. Sign In → `gov.br`
+3. Conta de teste no <https://sso.staging.acesso.gov.br/>:
+   - **Nome da mãe:** `MAMÃE`
+   - **Data de nascimento:** `01/01/1980`
+
+### Fluxo PRD — gov.br produção
+
+Idêntico ao HML, com `GOVBR_ENV=production` e endpoints/credentials de produção.
+
+```bash
+export KC_URL=https://keycloak.unifesspa.edu.br
+export KC_ADMIN_USER=...
+export KC_ADMIN_PASS=...
+export GOVBR_CLIENT_ID=keycloak.unifesspa.edu.br
+export GOVBR_CLIENT_SECRET=...                # canal formal gov.br — produção
+export GOVBR_ENV=production
+
+scripts/setup-cpf-matcher-flow.sh
+GOVBR_FIRST_BROKER_LOGIN_FLOW="first broker login com cpf" \
+    scripts/setup-govbr-idp.sh
+```
+
+> Pré-requisitos institucionais para PRD: domínio `.edu.br` autorizado pelo gov.br (Portaria SGD/MGI 7.076/2024), client_id = hostname do Keycloak, client_secret obtido pelo canal formal gov.br produção.
+
+### Inspeção rápida do estado do flow
+
+```bash
+TOKEN=$(curl -sf -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=password&client_id=admin-cli&username=$KC_ADMIN_USER&password=$KC_ADMIN_PASS" \
+    | jq -r .access_token)
+
+# Ordem dos executions no subflow alvo
+curl -sf -H "Authorization: Bearer $TOKEN" \
+    "$KC_URL/admin/realms/unifesspa/authentication/flows/first%20broker%20login%20com%20cpf%20User%20creation%20or%20linking/executions" \
+    | jq '[.[] | {providerId, requirement, priority}]'
+
+# IdP aponta para o flow custom
+curl -sf -H "Authorization: Bearer $TOKEN" \
+    "$KC_URL/admin/realms/unifesspa/identity-provider/instances/govbr" \
+    | jq '{alias, firstBrokerLoginFlowAlias}'
+```
+
+Em DEV, adicionalmente:
+
+```bash
+docker logs docker-keycloak-1 2>&1 | grep uniplus-cpf-matcher
+```
+
+### Rollback — voltar ao flow built-in
+
+```bash
+TOKEN=$(curl -sf -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "grant_type=password&client_id=admin-cli&username=$KC_ADMIN_USER&password=$KC_ADMIN_PASS" \
+    | jq -r .access_token)
+
+# 1. IdP gov.br volta para o flow built-in
+CURRENT=$(curl -sf -H "Authorization: Bearer $TOKEN" \
+    "$KC_URL/admin/realms/unifesspa/identity-provider/instances/govbr")
+echo "$CURRENT" | jq '.firstBrokerLoginFlowAlias = "first broker login"' \
+    | curl -sf -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+        -d @- "$KC_URL/admin/realms/unifesspa/identity-provider/instances/govbr"
+
+# 2. Remover o flow customizado
+FLOW_ID=$(curl -sf -H "Authorization: Bearer $TOKEN" \
+    "$KC_URL/admin/realms/unifesspa/authentication/flows" \
+    | jq -r '.[] | select(.alias=="first broker login com cpf") | .id')
+curl -sf -X DELETE -H "Authorization: Bearer $TOKEN" \
+    "$KC_URL/admin/realms/unifesspa/authentication/flows/$FLOW_ID"
+```
 
 ## Política de senha
 
