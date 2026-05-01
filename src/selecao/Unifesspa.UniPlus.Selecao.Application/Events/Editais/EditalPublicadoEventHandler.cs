@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Events;
 
 /// <summary>
 /// Handler exemplar do <see cref="EditalPublicadoEvent"/> — registra o evento
-/// drenado via cascading messages (ADR-026). Demonstra o padrão para
+/// drenado via cascading messages (ADR-0005). Demonstra o padrão para
 /// subscritores de domain events do UniPlus: handler convention-based, método
 /// <c>Handle</c> público, dependências por parâmetro do método. Logging via
 /// <c>[LoggerMessage]</c> source generator (regra obrigatória — ver CLAUDE.md

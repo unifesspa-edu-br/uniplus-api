@@ -8,8 +8,8 @@ namespace Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// concreto. A separação em relação a <see cref="ICommand{TResponse}"/> é
 /// puramente semântica: protege a leitura de ser despachada por <see cref="ICommandBus"/>
 /// (e vice-versa) e permite que middleware aplique políticas distintas a cada
-/// lado do CQRS. Ver ADR-022 (uniplus-docs/docs/adrs/).
+/// lado do CQRS. Ver ADR-0003.
 /// </summary>
-#pragma warning disable CA1040 // Avoid empty interfaces — este é marker interface intencional do contrato CQRS (ADR-022).
+#pragma warning disable CA1040 // Avoid empty interfaces — este é marker interface intencional do contrato CQRS (ADR-0003).
 public interface IQuery<TResponse>;
 #pragma warning restore CA1040

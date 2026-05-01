@@ -39,7 +39,7 @@ builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddIngressoInfrastructure(connectionString);
 
 // Wolverine como backbone CQRS/messaging com outbox transacional —
-// ver ADR-022, ADR-025 e ADR-026.
+// ver ADR-0003, ADR-0004 e ADR-0005.
 //
 // Mesma forma da Selecao.API (ver Selecao.API/Program.cs): outbox
 // durável Postgres + cascading + Kafka opcional. Sem roteamento

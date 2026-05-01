@@ -12,7 +12,7 @@ using Wolverine.Postgresql;
 
 /// <summary>
 /// Configuração canônica do backbone Wolverine produtivo do UniPlus, conforme
-/// ADR-025 (outbox transacional) e ADR-026 (cascading messages como drenagem
+/// ADR-0004 (outbox transacional) e ADR-0005 (cascading messages como drenagem
 /// canônica de domain events). Aplicada por <see cref="UseWolverineOutboxCascading"/>
 /// nos hosts de cada módulo (Selecao.API, Ingresso.API).
 /// </summary>
@@ -37,7 +37,7 @@ public static class WolverineOutboxConfiguration
     /// Configura o host com Wolverine + outbox transacional Postgres + (opcional)
     /// transporte Kafka. A drenagem de domain events é feita por cascading
     /// messages (handlers retornam <c>IEnumerable&lt;object&gt;</c>) — sem
-    /// <c>PublishDomainEventsFromEntityFrameworkCore</c>, conforme ADR-026.
+    /// <c>PublishDomainEventsFromEntityFrameworkCore</c>, conforme ADR-0005.
     /// </summary>
     /// <param name="host">Host do <see cref="WebApplicationBuilder"/>.</param>
     /// <param name="configuration"><see cref="IConfiguration"/> live do

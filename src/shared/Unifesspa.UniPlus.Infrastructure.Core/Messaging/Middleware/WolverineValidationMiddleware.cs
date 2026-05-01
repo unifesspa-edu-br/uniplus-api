@@ -12,7 +12,7 @@ using Wolverine.Attributes;
 /// Middleware Wolverine que executa validação FluentValidation antes do handler
 /// despachar a mensagem. Roda no pipeline tanto de commands quanto de queries
 /// (registro filtrado por <see cref="MessagingMiddlewarePolicies"/>) e é o
-/// ponto único de validação dos contratos CQRS (ADR-022) — handlers nunca
+/// ponto único de validação dos contratos CQRS (ADR-0003) — handlers nunca
 /// invocam validators manualmente.
 /// </summary>
 /// <remarks>

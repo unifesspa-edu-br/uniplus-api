@@ -11,7 +11,7 @@ using Wolverine.Attributes;
 /// Middleware Wolverine que registra entrada e saída do handler com tempo de
 /// execução. Roda no pipeline tanto de commands quanto de queries (registro
 /// filtrado por <see cref="MessagingMiddlewarePolicies"/>) e provê o canal
-/// canônico de logging estruturado para o backbone CQRS (ADR-022).
+/// canônico de logging estruturado para o backbone CQRS (ADR-0003).
 ///
 /// O caminho de saída é dividido em dois métodos para distinguir sucesso de
 /// falha sem suprimir a exceção do pipeline ASP.NET:

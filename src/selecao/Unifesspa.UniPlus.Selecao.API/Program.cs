@@ -52,16 +52,16 @@ builder.Services.AddSelecaoApplication();
 builder.Services.AddSelecaoInfrastructure(connectionString);
 
 // Wolverine como backbone CQRS/messaging com outbox transacional —
-// ver ADR-022, ADR-025 e ADR-026.
+// ver ADR-0003, ADR-0004 e ADR-0005.
 //
-// Configuração (ADR-025 + ADR-026):
+// Configuração (ADR-0004 + ADR-0005):
 //   - PersistMessagesWithPostgresql: outbox durável no schema "wolverine"
 //     do mesmo banco do módulo (SelecaoDb).
 //   - UseEntityFrameworkCoreTransactions + AutoApplyTransactions:
 //     atomicidade write+evento — envelope persistido na MESMA transação
 //     do SaveChanges via IEnvelopeTransaction.
 //   - UseDurableOutboxOnAllSendingEndpoints: rota durável é invariante.
-//   - PublishDomainEventsFromEntityFrameworkCore NÃO é chamado (ADR-026):
+//   - PublishDomainEventsFromEntityFrameworkCore NÃO é chamado (ADR-0005):
 //     drenagem de EntityBase.DomainEvents via cascading messages no
 //     retorno do handler (IEnumerable<object>), não pelo scraper EF.
 //   - Routing de EditalPublicadoEvent: PG queue "domain-events" +

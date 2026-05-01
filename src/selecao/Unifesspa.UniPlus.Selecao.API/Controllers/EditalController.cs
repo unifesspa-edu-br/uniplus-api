@@ -50,7 +50,7 @@ public sealed class EditalController : ControllerBase
     // Despacha PublicarEditalCommand pelo ICommandBus (Wolverine). O handler
     // convention-based atualiza o agregado e drena EditalPublicadoEvent por
     // cascading messages — atomicidade write+evento garantida pela
-    // IEnvelopeTransaction da configuração produtiva (ADR-026).
+    // IEnvelopeTransaction da configuração produtiva (ADR-0005).
     [HttpPost("{id:guid}/publicar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

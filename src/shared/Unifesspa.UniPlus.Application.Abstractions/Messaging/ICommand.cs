@@ -4,8 +4,8 @@ namespace Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// Marker interface para commands CQRS do UniPlus. Identifica intenções de mudança de estado
 /// que retornam uma resposta tipada (tipicamente <c>Result&lt;T&gt;</c>). Handlers nunca recebem
 /// <see cref="ICommand{TResponse}"/> como tipo genérico — recebem sempre o tipo concreto.
-/// Ver ADR-022 (uniplus-docs/docs/adrs/).
+/// Ver ADR-0003.
 /// </summary>
-#pragma warning disable CA1040 // Avoid empty interfaces — este é marker interface intencional do contrato CQRS (ADR-022).
+#pragma warning disable CA1040 // Avoid empty interfaces — este é marker interface intencional do contrato CQRS (ADR-0003).
 public interface ICommand<TResponse>;
 #pragma warning restore CA1040
