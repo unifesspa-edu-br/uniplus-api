@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 // sem Wolverine, sem fixture, sem container. Asserta o contrato cascading
 // (retorno como <c>IEnumerable&lt;object&gt;</c> contendo o
 // <c>EditalPublicadoEvent</c> emitido pelo agregado) e o invariante
-// canônico da ADR-026: <c>DequeueDomainEvents</c> esvazia a coleção do
+// canônico da ADR-0005: <c>DequeueDomainEvents</c> esvazia a coleção do
 // agregado no mesmo ponto da drenagem.
 //
 // Trait dedicado <c>OutboxCascadingUnit</c> separa este do conjunto de
@@ -60,6 +60,6 @@ public sealed class CascadingHandlerUnitTests
         persistido.Should().NotBeNull(
             "SaveChangesAsync foi chamado dentro do handler — entidade deve estar materializada no contexto InMemory");
         persistido!.DomainEvents.Should().BeEmpty(
-            "padrão canônico do ADR-026: handler usa DequeueDomainEvents() para esvaziar a coleção do agregado no mesmo ponto da drenagem");
+            "padrão canônico do ADR-0005: handler usa DequeueDomainEvents() para esvaziar a coleção do agregado no mesmo ponto da drenagem");
     }
 }

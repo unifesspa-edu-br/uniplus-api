@@ -15,7 +15,7 @@ public class WolverineMessagingServiceCollectionExtensionsTests
     [Fact]
     public void AddWolverineMessaging_DeveRegistrarICommandBusComoWolverineCommandBus()
     {
-        // Protege o contrato da extension: ICommandBus (canônico do projeto, ADR-022)
+        // Protege o contrato da extension: ICommandBus (canônico do projeto, ADR-0003)
         // resolve para WolverineCommandBus, que é o único caminho aprovado para
         // delegar a Wolverine.IMessageBus. Se alguém remover a registração ou
         // trocar por outra implementação, este teste quebra antes do startup.

@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
-// Cenário fim-a-fim do fluxo de referência ADR-026: HTTP request →
+// Cenário fim-a-fim do fluxo de referência ADR-0005: HTTP request →
 // PublicarEditalCommand → handler convention-based produtivo → Edital.Publicar()
 // emite EditalPublicadoEvent via AddDomainEvent → handler retorna
 // (Result, IEnumerable<object>) com o evento drenado por

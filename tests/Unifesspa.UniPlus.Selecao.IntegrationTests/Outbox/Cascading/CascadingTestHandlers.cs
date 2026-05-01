@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 // MessageContext.EnqueueCascadingAsync. Como a chain está dentro de
 // EnrollDbContextInTransaction, Transaction != null e os envelopes são
 // gravados em wolverine_outgoing_envelopes na MESMA transação EF —
-// atomicidade write+evento (ADR-026).
+// atomicidade write+evento (ADR-0005).
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
