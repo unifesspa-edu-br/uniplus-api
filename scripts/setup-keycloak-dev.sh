@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Setup pós-import do realm `unifesspa` para dev local. Aplica via Admin API
-# os patches que o realm-export.json versionado deliberadamente não traz por
-# refletir configuração próxima de produção.
+# Setup completo do ambiente DEV do Keycloak. Para HML/PRD use os scripts
+# standalone (setup-cpf-matcher-flow.sh + setup-govbr-idp.sh) — este script
+# é DEV-only e contém ajustes que NÃO devem rodar em HML/PRD (LDAP sintético,
+# admin-cli configurado para ROPC, mock IdP gov.br).
 #
 # Etapas (cada uma idempotente, encapsulada em função):
 #   1. wait_for_keycloak                    — probe do realm endpoint
@@ -10,18 +11,31 @@
 #                                             (libera smoke tests via curl)
 #   4. reset_test_user_passwords            — 4 users de teste, senha não-temporária
 #   5. configure_ldap_federation_if_available — User Federation contra openldap
-#                                             sintético (skip em HML/PROD)
-#   6. print_smoke_test_hint                — exemplo de uso pós-setup
+#                                             sintético
+#   6. setup-cpf-matcher-flow.sh            — clona flow built-in,
+#                                             insere uniplus-cpf-matcher,
+#                                             aponta IdPs gov.br + govbr-mock
+#                                             [delegado para script standalone]
+#   7. setup-govbr-mock.sh                  — IdP mock para validar gov.br E2E
+#                                             em ambiente local (sub=cpf)
+#                                             [SKIP_GOVBR_MOCK=true desabilita]
+#   8. print_smoke_test_hint                — exemplo de uso pós-setup
 #
-# Os ajustes feitos aqui não sobrevivem a `docker compose down -v` — re-rode
-# o script após recriar o volume do Postgres.
+# Em DEV o "Login gov.br" efetivo é o realm fake `govbr-mock` no mesmo
+# Keycloak. Em HML/PRD o IdP `govbr` aponta para o gov.br staging/produção
+# real, configurado via setup-govbr-idp.sh.
+#
+# Os ajustes deste script não sobrevivem a `docker compose down -v` — re-rode
+# após recriar o volume do Postgres.
 #
 # Pré-requisitos:
 #   - Stack docker no ar: docker compose -f docker/docker-compose.yml up -d
+#   - JAR cpf-matcher buildado: scripts/build-keycloak-providers.sh cpf-matcher
 #   - jq, curl
 #
 # Uso:
-#   scripts/setup-keycloak-dev.sh
+#   scripts/setup-keycloak-dev.sh                     # DEV completo (default)
+#   SKIP_GOVBR_MOCK=true scripts/setup-keycloak-dev.sh  # sem mock IdP
 #
 # Variáveis de ambiente opcionais:
 #   KC_URL                  (default: http://localhost:8080)
@@ -62,6 +76,9 @@ LDAP_USERS_DN="${LDAP_USERS_DN:-ou=Users,$LDAP_BASE_DN}"
 
 readonly LDAP_PROVIDER_NAME="ldap-local-sintetico"
 
+# Diretório onde vivem os scripts auxiliares chamados como subprocesso
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Definidos durante a execução
 ADMIN_TOKEN=""
 API=""
@@ -71,9 +88,10 @@ API=""
 log()  { printf '\033[1;36m==> %s\033[0m\n' "$*" >&2; }
 ok()   { printf '\033[1;32m    OK %s\033[0m\n' "$*" >&2; }
 warn() { printf '\033[1;33m!! %s\033[0m\n' "$*" >&2; }
+fail() { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
 require() {
-    command -v "$1" >/dev/null 2>&1 || { warn "Comando ausente: $1"; exit 1; }
+    command -v "$1" >/dev/null 2>&1 || fail "Comando ausente: $1"
 }
 
 # Helpers de chamada autenticada — assumem ADMIN_TOKEN e API setados.
@@ -351,13 +369,44 @@ configure_ldap_federation_if_available() {
     trigger_initial_sync "$ldap_id"
 }
 
-# ---- Etapa 6 — Hint de smoke test ------------------------------------------
+# ---- Etapa 6 — Flow first-broker-login com matching por CPF ----------------
+#
+# Delegado para scripts/setup-cpf-matcher-flow.sh — script standalone
+# reutilizável em DEV/HML/PRD. Repassamos as credenciais e o realm via env.
+
+configure_first_broker_login_with_cpf() {
+    KC_URL="$KC_URL" KC_REALM="$KC_REALM" \
+    KC_ADMIN_USER="$KC_ADMIN_USER" KC_ADMIN_PASS="$KC_ADMIN_PASS" \
+        "$SCRIPT_DIR/setup-cpf-matcher-flow.sh"
+}
+
+# ---- Etapa 7 — IdP mock gov.br (DEV only) ----------------------------------
+#
+# Em DEV o "Login gov.br" efetivo é o realm fake `govbr-mock`, criado pelo
+# script setup-govbr-mock.sh — passa as mesmas credenciais admin via env. O
+# script é safe-guarded contra execução fora de localhost.
+#
+# SKIP_GOVBR_MOCK=true desativa esta etapa (útil quando o dev está integrando
+# contra um IdP gov.br staging diretamente).
+
+configure_govbr_mock_idp() {
+    if [ "${SKIP_GOVBR_MOCK:-false}" = "true" ]; then
+        log "Pulando setup do mock IdP (SKIP_GOVBR_MOCK=true)"
+        return
+    fi
+    KC_URL="$KC_URL" \
+    KC_ADMIN_USER="$KC_ADMIN_USER" KC_ADMIN_PASS="$KC_ADMIN_PASS" \
+        "$SCRIPT_DIR/setup-govbr-mock.sh"
+}
+
+# ---- Etapa 8 — Hint de smoke test ------------------------------------------
 
 print_smoke_test_hint() {
     echo
-    log "Setup concluído. Teste o fluxo:"
-    cat <<EOF
+    log "Setup DEV concluído. Caminhos de validação:"
+    cat <<EOF >&2
 
+  ── Login direto via ROPC (sem broker) ──
   TOKEN=\$(curl -s -X POST '$KC_URL/realms/$KC_REALM/protocol/openid-connect/token' \\
     -H 'Content-Type: application/x-www-form-urlencoded' \\
     -d 'grant_type=password' -d 'client_id=admin-cli' \\
@@ -365,7 +414,12 @@ print_smoke_test_hint() {
 
   curl -s -H "Authorization: Bearer \$TOKEN" http://localhost:5202/api/profile/me | jq
 
-  # Listar users sintéticos do LDAP local:
+  ── Login via gov.br MOCK (E2E do cpf-matcher) ──
+  Browser:   http://localhost:8080/realms/$KC_REALM/account → "Entrar com gov.br (MOCK)"
+             user: 09876543210  senha: Mock!1234
+  Smoke:     scripts/smoke-test-cpf-matcher.sh
+
+  ── Inspeções rápidas ──
   ldapsearch -x -H ldap://$LDAP_PROBE_HOST:$LDAP_PROBE_PORT \\
     -b $LDAP_USERS_DN \\
     -D '$LDAP_BIND_DN' -w '$LDAP_BIND_CREDENTIAL' \\
@@ -380,11 +434,28 @@ main() {
     require jq
     require curl
 
+    # SAFETY: este script é DEV ONLY. Aplica patches que NÃO devem rodar em
+    # HML/PRD: reescreve `defaultClientScopes` e `lightweight access token` do
+    # admin-cli (compartilhado com ficha_facil/sisplad em HML), sobrescreve
+    # senhas dos 4 users de teste, configura LDAP federation contra OpenLDAP
+    # sintético. Para HML/PRD use setup-cpf-matcher-flow.sh + setup-govbr-idp.sh.
+    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]]; then
+        warn "setup-keycloak-dev.sh é DEV ONLY — KC_URL='$KC_URL' não é localhost."
+        warn "Patches deste script (admin-cli, senhas de teste, LDAP) afetam realms"
+        warn "compartilhados em HML/PRD. Para HML/PRD use:"
+        warn "  scripts/setup-cpf-matcher-flow.sh"
+        warn "  scripts/setup-govbr-idp.sh"
+        warn "Defina ALLOW_NON_LOCALHOST_DEV=true para forçar (ciente do risco)."
+        [ "${ALLOW_NON_LOCALHOST_DEV:-false}" = "true" ] || exit 1
+    fi
+
     wait_for_keycloak
     obtain_admin_token
     configure_admin_cli_for_ropc
     reset_test_user_passwords
     configure_ldap_federation_if_available
+    configure_first_broker_login_with_cpf
+    configure_govbr_mock_idp
     print_smoke_test_hint
 }
 
