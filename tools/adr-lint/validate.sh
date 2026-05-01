@@ -20,9 +20,17 @@ fi
 
 shopt -s nullglob
 
-for FILE in "$DIR"/[0-9][0-9][0-9][0-9]-*.md; do
-  COUNT=$((COUNT + 1))
+# Itera todo arquivo .md do diretório e exclui apenas README.md e arquivos
+# começando com "_" (ex.: _template.md). Isso garante que ADRs com nomes
+# fora do padrão NNNN-slug.md (ex.: foo.md, adr-001.md) sejam reportados
+# como falha em vez de silenciosamente ignorados.
+for FILE in "$DIR"/*.md; do
   BASE=$(basename "$FILE")
+  case "$BASE" in
+    README.md|_*.md) continue ;;
+  esac
+
+  COUNT=$((COUNT + 1))
   NUM_FILE="${BASE%%-*}"
   ERR=()
 
@@ -32,6 +40,8 @@ for FILE in "$DIR"/[0-9][0-9][0-9][0-9]-*.md; do
 
   if ! head -1 "$FILE" | grep -q '^---$'; then
     ERR+=("frontmatter YAML ausente (esperado --- na linha 1)")
+  elif ! tail -n +2 "$FILE" | head -n 50 | grep -q '^---$'; then
+    ERR+=("frontmatter YAML sem delimitador de fechamento (esperado --- após bloco YAML)")
   fi
 
   FM=$(awk 'BEGIN{c=0} /^---$/{c++; if (c==2) exit; next} c==1' "$FILE" 2>/dev/null || echo "")
