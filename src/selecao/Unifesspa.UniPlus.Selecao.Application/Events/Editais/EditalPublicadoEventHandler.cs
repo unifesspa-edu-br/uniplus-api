@@ -11,8 +11,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Events;
 /// drenado via cascading messages (ADR-0005). Demonstra o padrão para
 /// subscritores de domain events do UniPlus: handler convention-based, método
 /// <c>Handle</c> público, dependências por parâmetro do método. Logging via
-/// <c>[LoggerMessage]</c> source generator (regra obrigatória — ver CLAUDE.md
-/// do uniplus-api).
+/// <c>[LoggerMessage]</c> source generator (regra obrigatória do projeto —
+/// chamadas diretas a <c>logger.LogX(...)</c> são bloqueadas pelo analisador
+/// CA1848 com <c>TreatWarningsAsErrors</c>).
 /// </summary>
 [SuppressMessage(
     "Naming",
