@@ -115,7 +115,7 @@ services:
       start_period: 30s
 
   keycloak:
-    image: ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.0
+    image: ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.2
     restart: unless-stopped
     command: start-dev --import-realm
     environment:
