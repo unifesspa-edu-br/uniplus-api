@@ -29,6 +29,28 @@ env:
   COVERAGE_THRESHOLD: 0
 
 jobs:
+  adr-lint:
+    name: ADR lint (MADR 4.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Validar ADRs (MADR 4.0)
+        run: bash tools/adr-lint/validate.sh
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Markdown lint (markdownlint-cli2)
+        run: npx --yes markdownlint-cli2 'docs/adrs/**/*.md'
+
   build:
     name: Build, Test and Coverage
     runs-on: ubuntu-latest
