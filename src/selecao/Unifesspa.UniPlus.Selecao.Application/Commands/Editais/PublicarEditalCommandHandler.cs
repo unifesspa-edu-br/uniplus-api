@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based do <see cref="PublicarEditalCommand"/> — primeiro
-/// fluxo de referência cascading messages do UniPlus, conforme ADR-026.
+/// fluxo de referência cascading messages do UniPlus, conforme ADR-0005.
 ///
 /// <para>O retorno em tupla <c>(Result, IEnumerable&lt;object&gt;)</c> entrega
 /// duas coisas no mesmo caminho:
@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 ///   O <c>CaptureCascadingMessages</c> do Wolverine percorre cada elemento e
 ///   instala o envelope no <c>wolverine_outgoing_envelopes</c> dentro da
 ///   <c>IEnvelopeTransaction</c> ativa — atomicidade write+evento conforme
-///   ADR-026.</description></item>
+///   ADR-0005.</description></item>
 /// </list>
 /// </para>
 ///
@@ -64,7 +64,7 @@ public sealed class PublicarEditalCommandHandler
         editalRepository.Atualizar(edital);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        // Padrão canônico ADR-026: drenagem por cascading messages.
+        // Padrão canônico ADR-0005: drenagem por cascading messages.
         // Cast<object> garante o switch case `IEnumerable<object>` em
         // MessageContext.EnqueueCascadingAsync sem depender de covariância
         // implícita do IDomainEvent (interface) para object.

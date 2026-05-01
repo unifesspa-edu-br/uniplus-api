@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 // Inline-qualified Wolverine.IMessageBus para evitar colisão com tipos do
 // framework. Wolverine não distingue command de query no nível do bus —
-// a separação em IQueryBus/ICommandBus é semântica do projeto (ADR-022) e
+// a separação em IQueryBus/ICommandBus é semântica do projeto (ADR-0003) e
 // permite que middleware aplique políticas distintas a cada lado do CQRS.
 internal sealed class WolverineQueryBus(Wolverine.IMessageBus bus) : IQueryBus
 {

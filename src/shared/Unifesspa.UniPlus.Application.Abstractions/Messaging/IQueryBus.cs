@@ -6,8 +6,7 @@ namespace Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// diretamente fora de <c>Infrastructure.Core/Messaging/</c>. A separação em
 /// relação a <see cref="ICommandBus"/> é semântica: bloqueia, na assinatura, que
 /// um <see cref="ICommand{TResponse}"/> seja despachado pelo <c>QueryBus</c> ou
-/// um <see cref="IQuery{TResponse}"/> pelo <c>CommandBus</c>. Ver ADR-022
-/// (uniplus-docs/docs/adrs/).
+/// um <see cref="IQuery{TResponse}"/> pelo <c>CommandBus</c>. Ver ADR-0003.
 /// </summary>
 public interface IQueryBus
 {

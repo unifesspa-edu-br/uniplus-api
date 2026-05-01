@@ -11,7 +11,7 @@ public static class WolverineMessagingServiceCollectionExtensions
     /// Registra os wrappers <see cref="ICommandBus"/> e <see cref="IQueryBus"/>
     /// que delegam para o <c>Wolverine.IMessageBus</c>. Pré-requisito:
     /// <c>UseWolverine(...)</c> configurado no host (responsável por registrar
-    /// <c>IMessageBus</c> em DI). Ver ADR-022 (uniplus-docs/docs/adrs/).
+    /// <c>IMessageBus</c> em DI). Ver ADR-0003.
     /// </summary>
     public static IServiceCollection AddWolverineMessaging(this IServiceCollection services)
     {
