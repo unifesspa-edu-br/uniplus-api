@@ -14,7 +14,7 @@ using ReflectionAssembly = System.Reflection.Assembly;
 /// <summary>
 /// Fitness function R4 da Story #138 — sentinela contra reintrodução do
 /// MediatR no <c>uniplus-api</c>. Pareada à Story #207 que removeu o pacote
-/// e migrou todos os slices para Wolverine puro (ADR-022). Falha no
+/// e migrou todos os slices para Wolverine puro (ADR-0003). Falha no
 /// momento em que qualquer assembly do produto introduzir uma dependência
 /// IL-level em <c>MediatR.*</c>, antes que a regressão chegue ao deploy.
 /// </summary>
@@ -43,7 +43,7 @@ public sealed class SolutionNaoTemMediatRTests
             .AndShould()
             .NotDependOnAnyTypesThat()
             .ResideInNamespace("MediatR")
-            .Because("MediatR foi removido do uniplus-api (Story #207, ADR-022) — toda mensageria CQRS roda sobre Wolverine via ICommandBus/IQueryBus.");
+            .Because("MediatR foi removido do uniplus-api (Story #207, ADR-0003) — toda mensageria CQRS roda sobre Wolverine via ICommandBus/IQueryBus.");
 
         rule.Check(ProductArchitecture);
     }

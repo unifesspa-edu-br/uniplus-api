@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
-// Cenários produtivos do outbox cascading (ADR-026). Equivalentes de
+// Cenários produtivos do outbox cascading (ADR-0005). Equivalentes de
 // produção dos cenários V8/V9 do Spike S10 (ver docs/spikes/158-s10-relatorio.md).
 //
 // Os dois testes têm dupla marcação `Category=OutboxCapability` +

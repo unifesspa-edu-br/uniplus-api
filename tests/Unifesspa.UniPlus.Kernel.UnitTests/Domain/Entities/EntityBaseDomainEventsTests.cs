@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Events;
 
 // Cobre o contrato de drenagem de domain events do EntityBase. Foco nos
 // invariantes do método DequeueDomainEvents — padrão canônico para
-// handlers cascading do Wolverine (ADR-026).
+// handlers cascading do Wolverine (ADR-0005).
 public sealed class EntityBaseDomainEventsTests
 {
     [Fact(DisplayName = "DequeueDomainEvents retorna snapshot e esvazia a coleção do agregado")]

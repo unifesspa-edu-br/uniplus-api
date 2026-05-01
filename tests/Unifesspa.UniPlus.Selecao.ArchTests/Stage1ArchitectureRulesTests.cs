@@ -12,7 +12,7 @@ using ReflectionAssembly = System.Reflection.Assembly;
 /// <summary>
 /// Fitness tests stage 1 do modulo Selecao, conforme ADR-023.
 /// R1 protege a comunicacao assincrona entre modulos definida pela ADR-004,
-/// R2 protege o encapsulamento Wolverine da ADR-022 e R3 protege a direcao
+/// R2 protege o encapsulamento Wolverine da ADR-0003 e R3 protege a direcao
 /// Clean Architecture definida pela ADR-002.
 /// </summary>
 public sealed class Stage1ArchitectureRulesTests
@@ -41,7 +41,7 @@ public sealed class Stage1ArchitectureRulesTests
             .Should()
             .NotDependOnAnyTypesThat()
             .ResideInNamespaceMatching(@"^Wolverine(\.|$)")
-            .Because("ADR-022 limita Wolverine a Infrastructure.Core; Application e Domain dependem apenas das abstracoes do projeto.");
+            .Because("ADR-0003 limita Wolverine a Infrastructure.Core; Application e Domain dependem apenas das abstracoes do projeto.");
 
         rule.Check(WolverineGuardArchitecture);
     }
