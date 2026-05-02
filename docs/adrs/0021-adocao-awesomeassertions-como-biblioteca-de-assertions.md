@@ -17,7 +17,7 @@ informed:
 
 A suíte de testes do `uniplus-api` adotou inicialmente `FluentAssertions 8.9.0` (`Directory.Packages.props`) como biblioteca de assertions, com 11 projetos `.csproj` de teste e 32 arquivos `.cs` referenciando `using FluentAssertions;`.
 
-A partir da versão 8, a Fluent Assertions passou a ser distribuída pela Xceed sob modelo de **licença comercial paga** para uso fora de cenários estritamente não comerciais. O `uniplus-api` é mantido por uma autarquia federal (Unifesspa) e o uso continuado da v8 sem aquisição formal de licença configura uma exposição regulatória e contratual evitável, especialmente em vista da política institucional de preferência por software open source com licenças permissivas.
+A partir da versão 8, a Fluent Assertions passou a ser distribuída pela Xceed sob modelo de **licença comercial paga**. A documentação oficial do produto exige "an active and valid license subscription [...] for all developers using the product, including those working on any application or project that integrates our components" — sem exemption explícita para projetos open source ou uso institucional. O `uniplus-api` é mantido por uma autarquia federal (Unifesspa) e o uso continuado da v8 sem aquisição formal de licença configura uma exposição regulatória e contratual evitável, agravada pela política institucional de preferência por software open source com licenças permissivas.
 
 Adicionalmente, o projeto prevê uma suíte de testes robusta para regras de negócio sensíveis (classificação de candidatos, aplicação de cotas, desempate, recursos), além de testes contratuais sobre DTOs, responses HTTP, eventos de domínio, comandos Wolverine e grafos de objetos transferidos entre módulos. A biblioteca de assertions adotada precisa suportar bem **equivalência estrutural configurável**, não apenas assertions diretas.
 
@@ -33,7 +33,7 @@ A Story `unifesspa-edu-br/uniplus-api#169` formaliza a remediação e decompõe 
 
 ## Opções consideradas
 
-- **AwesomeAssertions** (Apache-2.0) — fork comunitário do Fluent Assertions v7, mantido por `AwesomeAssertions/meenzen` no GitHub.
+- **AwesomeAssertions** (Apache-2.0) — fork comunitário do Fluent Assertions v7, mantido pela organização [`AwesomeAssertions/AwesomeAssertions`](https://github.com/AwesomeAssertions/AwesomeAssertions) ("a fork of FluentAssertions controlled by the community").
 - **Shouldly** (BSD-3-Clause) — biblioteca de assertions independente, sintaxe `Should*` direta, foco em legibilidade.
 - **`Assert` puro do xUnit** — sem biblioteca de assertions adicional.
 
@@ -72,11 +72,11 @@ Mecanismos para confirmar a decisão ao longo do tempo:
 1. **Grep no monorepo** (executável em CI ou localmente):
 
    ```bash
-   grep -rn "FluentAssertions" --include='*.cs' --include='*.csproj' --include='*.props' . \
-     | grep -v 'docs/adrs/0021'
+   grep -rn "FluentAssertions" --include='*.cs' --include='*.csproj' --include='*.props' \
+        --exclude-dir=docs --exclude-dir=.git .
    ```
 
-   Resultado esperado pós-PR-2: zero ocorrências. O PR-2 (`#171`) deve incluir a atualização das docs (`CLAUDE.md` seção *Stack e versões*, `CONTRIBUTING.md` tabela *Padrões de Código*) para evitar que o grep retorne ocorrências espúrias em arquivos de documentação que ainda listem `FluentAssertions`.
+   Resultado esperado pós-PR-2: zero ocorrências. O filtro `--exclude-dir=docs` evita falso positivo do próprio ADR-0021 e de documentação histórica. O PR-2 (`#171`) deve, ainda assim, atualizar `CLAUDE.md` (seção *Stack e versões*) e `CONTRIBUTING.md` (tabela *Padrões de Código*) para que nenhum guia ativo passe a divergir da decisão.
 
 2. **Lint rule futura** (issue de follow-up): adicionar um analisador Roslyn ou check de CI dedicado que falhe quando `using FluentAssertions;` for introduzido. Tracking em issue separada.
 
@@ -111,7 +111,8 @@ Mecanismos para confirmar a decisão ao longo do tempo:
 
 - [Repositório AwesomeAssertions](https://github.com/AwesomeAssertions/AwesomeAssertions) (fork comunitário Apache-2.0)
 - [Pacote NuGet AwesomeAssertions](https://www.nuget.org/packages/AwesomeAssertions)
-- [Documentação de equivalência estrutural (Fluent/AwesomeAssertions)](https://fluentassertions.com/objectgraphs/)
+- [Documentação oficial AwesomeAssertions](https://awesomeassertions.org) — site canônico do fork
+- [Documentação de equivalência estrutural (Fluent Assertions, API compatível)](https://fluentassertions.com/objectgraphs/) — referência histórica preservada por compatibilidade de API
 - [Política de licenciamento da Fluent Assertions / Xceed](https://xceed.com/documentation/xceed-fluent-assertions-for-net/)
 - [Documentação Shouldly](https://docs.shouldly.org/)
 - [Issue Shouldly sobre customização de `ShouldBeEquivalentTo`](https://github.com/shouldly/shouldly/issues/1116)
