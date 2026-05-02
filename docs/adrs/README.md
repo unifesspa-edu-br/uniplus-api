@@ -49,6 +49,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0018](0018-opentelemetry-para-instrumentacao-do-backend.md) | OpenTelemetry para instrumentação do `uniplus-api` | accepted | 2026-04-28 |
 | [0019](0019-proibir-pii-em-path-segments-de-url.md) | Proibir PII em path segments de URL | accepted | 2026-05-01 |
 | [0020](0020-identity-brokering-govbr.md) | Identity brokering gov.br via Keycloak | accepted | 2026-05-01 |
+| [0021](0021-adocao-awesomeassertions-como-biblioteca-de-assertions.md) | Adoção de AwesomeAssertions como biblioteca de assertions de testes | accepted | 2026-05-02 |
 
 ## Como adicionar um novo ADR
 
