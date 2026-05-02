@@ -10,6 +10,48 @@ Isso mantém a configuração de autenticação e autorização do projeto padro
 
 > ⚠️ **Apenas para ambiente local.** Este realm contém credenciais de teste e configurações voltadas para desenvolvimento. Nunca importar este arquivo em homologação ou produção.
 
+## Imagem do Keycloak
+
+O Uni+ **não** usa a imagem oficial Keycloak vanilla. A imagem consumida em todos os ambientes (dev, CI, HML, PROD) é a composta publicada pelo repo [`unifesspa-edu-br/uniplus-keycloak-providers`](https://github.com/unifesspa-edu-br/uniplus-keycloak-providers):
+
+```text
+ghcr.io/unifesspa-edu-br/uniplus-keycloak
+```
+
+Componentes:
+
+- **Base:** `quay.io/keycloak/keycloak:26.5.7`
+- **JAR `cpf-matcher-*.jar`** embutido em `/opt/keycloak/providers/` — Authenticator Java SPI custom que resolve auto-link por CPF no first-broker-login do gov.br (ver [ADR-0020](../../docs/adrs/0020-identity-brokering-govbr.md))
+
+### Tags publicadas
+
+| Tag | Quando usar |
+|---|---|
+| `1.0.2` | Pinning patch fixo — usado pelo `docker-compose.yml` deste repo |
+| `1.0` | Float dentro do minor `1.0.x` |
+| `1.x` | Float dentro do major `1.x.y` — recomendado para CI/Testcontainers (pega patches automaticamente) |
+| `latest` | Disponível, mas evitar em ambientes reproduzíveis (compose, CI) |
+
+A imagem é **pública** — pull sem credenciais.
+
+### Política de pinning recomendada
+
+| Cenário | Tag recomendada | Por quê |
+|---|---|---|
+| `docker-compose.yml` (dev local) | Patch fixo (`1.0.2`) | Reproducibilidade entre devs do time; mudança de versão é commit explícito e revisável |
+| CI / Testcontainers | Float minor (`1.x`) | Patches absorvidos automaticamente; cold start de pull em PR vale o trade-off |
+| HML / PROD (Helm) | Patch fixo | Atualização controlada via PR de chart |
+
+### Ciclo de release
+
+Push de tag `v*.*.*` no repo `unifesspa-edu-br/uniplus-keycloak-providers` dispara o workflow `release.yml`, que:
+
+1. Builda o JAR via Maven 3.9 / Eclipse Temurin 21
+2. Publica o JAR no GitHub Release (artefato auditável)
+3. Builda e publica a imagem composta no GHCR com tags semver (`1.0.2`, `1.0`, `1.x`, `latest`)
+
+Para devs do `uniplus-api` consumirem uma versão nova, basta atualizar a tag em `docker-compose.yml` (e Helm em HML/PROD). **Não há build manual de JAR para devs/operadores** — o consumo padrão é puxar a imagem pronta. O JAR continua publicado no Release apenas como artefato de auditoria.
+
 ## Como subir
 
 ```bash
@@ -265,7 +307,7 @@ A configuração desse flow é idempotente e vive em `scripts/setup-cpf-matcher-
 
 | Script | DEV | HML/PRD | O que faz |
 |---|---|---|---|
-| `build-keycloak-providers.sh` | ✅ | — | Builda o JAR `cpf-matcher` via Maven em container. Em HML/PRD o JAR vem por Helm/CI |
+| `build-keycloak-providers.sh` | opcional | — | Builda o JAR `cpf-matcher` via Maven em container. **Não é mais necessário no fluxo padrão** — a imagem composta `ghcr.io/.../uniplus-keycloak` já traz o JAR embutido. Útil apenas para iterar localmente no SPI quando se contribui no repo `uniplus-keycloak-providers`. Em HML/PRD o JAR vem na imagem |
 | `setup-cpf-matcher-flow.sh` | ✅ (via dev) | ✅ | Cria o flow `first broker login com cpf` e aponta IdPs para ele. Idempotente, agnóstico de ambiente |
 | `setup-keycloak-dev.sh` | ✅ | ❌ | Orquestrador DEV: LDAP sintético, admin-cli ROPC, flow custom, mock IdP. **Não rodar em HML/PRD** |
 | `setup-govbr-idp.sh` | (estrutural) | ✅ | Configura IdP gov.br staging/produção real. Em DEV é apenas estrutural — gov.br não aceita localhost |
@@ -277,20 +319,14 @@ A configuração desse flow é idempotente e vive em `scripts/setup-cpf-matcher-
 O ambiente de desenvolvimento usa um **segundo realm no mesmo Keycloak** (`govbr-mock`) como simulador do gov.br. Isso permite exercitar todo o flow do cpf-matcher localmente, sem depender do gov.br staging (que não aceita `localhost` como redirect URI).
 
 ```bash
-# 1. (uma vez) Clonar o repositório irmão dos SPIs
-cd repositories
-git clone https://github.com/unifesspa-edu-br/uniplus-keycloak-providers.git
-
-# 2. Build do JAR cpf-matcher
-cd uniplus-api
-scripts/build-keycloak-providers.sh cpf-matcher
-
-# 3. Sobe a stack (compose já monta o JAR no Keycloak)
+# 1. Sobe a stack (a imagem ghcr.io/.../uniplus-keycloak:1.0.2 já traz o JAR embutido)
 docker compose -f docker/docker-compose.yml up -d
 
-# 4. Setup completo do realm DEV — flow custom + LDAP sintético + mock IdP
+# 2. Setup completo do realm DEV — flow custom + LDAP sintético + mock IdP
 scripts/setup-keycloak-dev.sh
 ```
+
+> Não é mais necessário clonar `uniplus-keycloak-providers` lado a lado nem rodar `build-keycloak-providers.sh` — o JAR `cpf-matcher` está embutido na imagem composta consumida pelo `docker-compose.yml`. Ver bloco "Imagem do Keycloak" no início deste README. O script `build-keycloak-providers.sh` continua existindo para iterar localmente no SPI quando você for contribuir no repo de providers — fora desse caso, ignorar.
 
 Após isso, o realm `unifesspa` tem dois IdPs apontando para o flow custom:
 - `govbr` (gov.br staging real — só fica funcional se `setup-govbr-idp.sh` for rodado com credenciais reais)
@@ -331,7 +367,7 @@ A validação E2E contra o gov.br staging acontece no Keycloak HML institucional
 
 > ⚠️ O Keycloak HML é **realm compartilhado** com outros sistemas (`ficha_facil`, `sisplad`). Os scripts abaixo só tocam recursos especificamente vinculados ao gov.br + cpf-matcher. **Nunca rodar `setup-keycloak-dev.sh` ou `setup-govbr-mock.sh` em HML.**
 
-Pré-requisito: o JAR do `cpf-matcher` precisa estar em `/opt/keycloak/providers/` na imagem do Keycloak HML (responsabilidade do pipeline Helm/CI — issue separada).
+Pré-requisito: o Keycloak HML precisa estar rodando a imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.x` (que já traz o JAR `cpf-matcher` embutido em `/opt/keycloak/providers/`). O pipeline Helm/CI institucional cuida do deploy da imagem — issue separada.
 
 ```bash
 # Variáveis de ambiente HML

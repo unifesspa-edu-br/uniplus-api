@@ -11,7 +11,7 @@ decision-makers:
 
 A plataforma Uni+ é o sistema institucional de identificação digital e controle de acesso aos serviços digitais da Unifesspa. O Keycloak (ADR-0016) atua como provedor central de identidade do `uniplus-api`, mas o lado de federação externa não estava detalhado: a ADR-0016 menciona "federação com Gov.br via padrão OIDC" sem especificar a estratégia de brokering, deixando configuração de realm, mappers e flows sujeita a re-decisão a cada implementação.
 
-A Story `uniplus-api#218` (cpf-matcher SPI) foi entregue em 01/05/2026 (PR #228 mergeado): SPI publicada na v1.0.0, smoke E2E ok, integração funcional do Keycloak com gov.br via Identity Provider OIDC e flow customizado de first-broker-login. Esta ADR formaliza a decisão arquitetural por trás da entrega.
+A Story `uniplus-api#218` (cpf-matcher SPI) foi entregue em 01/05/2026 (PR #228 mergeado): SPI publicada na v1.0.2, smoke E2E ok, integração funcional do Keycloak com gov.br via Identity Provider OIDC e flow customizado de first-broker-login. O artefato canônico de consumo é a **imagem Docker composta** `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.x` (base `quay.io/keycloak/keycloak:26.5.7` + JAR `cpf-matcher` embutido em `/opt/keycloak/providers/`), publicada pelo repo `unifesspa-edu-br/uniplus-keycloak-providers` a cada tag `v*.*.*`. O fluxo antigo (clonar o repo de providers lado a lado, buildar o JAR via Maven e fazer mount como volume) está obsoleto — devs e operadores apenas consomem a imagem pronta. O JAR continua sendo publicado no GitHub Release como artefato auditável. Esta ADR formaliza a decisão arquitetural por trás da entrega.
 
 A integração precisa atender:
 
@@ -100,7 +100,7 @@ Ao primeiro login via gov.br, executa-se um flow customizado clonado de `First B
 3. Se encontrar, **vincula automaticamente** a conta do gov.br ao usuário existente, sem confirmação por e-mail.
 4. Se não encontrar, **cria automaticamente** novo usuário no realm, com `cpf`, `email`, `firstName`, `lastName` e role `candidato`.
 
-A SPI `cpf-matcher` foi publicada na v1.0.0 e validada por smoke E2E na entrega da Story #218. Fluxo padrão do Keycloak usa **e-mail** como chave de matching, o que falha quando o candidato muda de e-mail entre processos seletivos — CPF é estável e já garantido único pela RN01.
+A SPI `cpf-matcher` foi publicada na v1.0.2 e validada por smoke E2E na entrega da Story #218. Fluxo padrão do Keycloak usa **e-mail** como chave de matching, o que falha quando o candidato muda de e-mail entre processos seletivos — CPF é estável e já garantido único pela RN01.
 
 ### Configurações operacionais
 
@@ -139,7 +139,7 @@ A SPI `cpf-matcher` foi publicada na v1.0.0 e validada por smoke E2E na entrega 
 
 ## Confirmação
 
-- SPI `cpf-matcher` v1.0.0 publicada e validada por smoke E2E na entrega da Story #218.
+- SPI `cpf-matcher` v1.0.2 publicada (como JAR no GitHub Release e embutido na imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.2`) e validada por smoke E2E na entrega da Story #218.
 - Suíte de smoke executa fluxo completo (autorize → callback → first-broker-login → token no `uniplus-api`) contra realm de homologação, sem PII real.
 - Health check `/health/auth` valida que a chave pública do realm é acessível e que validação de token simulado passa.
 - ADR-0016 referencia esta ADR na seção `Mais informações` como ponteiro acionável.
@@ -181,4 +181,5 @@ A SPI `cpf-matcher` foi publicada na v1.0.0 e validada por smoke E2E na entrega 
 - Documentação Identidade Digital para Gestores Públicos: [gov.br/governodigital — identidade digital](https://www.gov.br/governodigital/pt-br/identidade/identidade-digital-para-gestores-publico).
 - Story de implementação: #218 (cpf-matcher SPI integrado, mergeada via PR #228).
 - Issue espelho deste repositório: #231.
+- Repositório que builda e publica a imagem composta + JAR: [`unifesspa-edu-br/uniplus-keycloak-providers`](https://github.com/unifesspa-edu-br/uniplus-keycloak-providers) — workflow `release.yml` dispara em tag `v*.*.*` e publica em GHCR (`ghcr.io/unifesspa-edu-br/uniplus-keycloak`) com tags semver `1.0.2`, `1.0`, `1.x`, `latest`. Política de pinning recomendada documentada em [`docker/keycloak/README.md`](../../docker/keycloak/README.md#imagem-do-keycloak).
 - **Origem:** revisão da ADR interna Uni+ ADR-029 (não publicada). Esta promoção mantém o escopo gov.br; a federação institucional via LDAP/AD para servidores fica fora desta ADR e deverá ser tratada em ADR própria quando entrar no backlog.

@@ -8,7 +8,7 @@
 - **Mensageria:** Apache Kafka 4.2 (KRaft)
 - **Cache:** Redis 8
 - **Storage:** MinIO (S3-compatible)
-- **Autenticação:** Keycloak 26.5 (Gov.br)
+- **Autenticação:** Keycloak 26.5 (Gov.br) — imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.x` (base `26.5.7` + JAR `cpf-matcher` embutido). Não é Keycloak vanilla. Detalhes em [`docker/keycloak/README.md`](docker/keycloak/README.md#imagem-do-keycloak)
 - **CQRS/messaging:** Wolverine 5.x ([ADR-0003](docs/adrs/0003-wolverine-como-backbone-cqrs.md)) — abstrações `ICommandBus` e `IQueryBus` em `Application.Abstractions/Messaging`. Validação e logging do pipeline aplicados como middleware Wolverine (`WolverineValidationMiddleware`, `WolverineLoggingMiddleware` em `Infrastructure.Core/Messaging/Middleware`). Outbox transacional sobre EF Core / PostgreSQL ([ADR-0004](docs/adrs/0004-outbox-transacional-via-wolverine.md)); drenagem de domain events via cascading messages ([ADR-0005](docs/adrs/0005-cascading-messages-para-drenagem-de-domain-events.md)).
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
