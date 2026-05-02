@@ -28,6 +28,21 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     private const string CandidatoUsername = "candidato";
     private const string SharedPassword = "Changeme!123";
 
+    /// <summary>
+    /// <see cref="AuthOptions.ClockSkew"/> default consumido pelo <c>JwtBearer</c> em produção (30s).
+    /// O cenário de expiração precisa esperar além dessa janela para que o pipeline real reconheça
+    /// o token como expirado.
+    /// </summary>
+    private static readonly TimeSpan ExpectedClockSkew = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Margem adicional para absorver drift de relógio entre o host onde o teste roda e o container
+    /// do Keycloak (timestamps do <c>exp</c> claim são gerados pelo container, mas a comparação no
+    /// pipeline acontece no host). 5 segundos cobrem cenários reais de CI sem inflar a duração da
+    /// suíte.
+    /// </summary>
+    private static readonly TimeSpan ClockDriftBuffer = TimeSpan.FromSeconds(5);
+
     private readonly KeycloakContainerFixture _keycloak;
     private readonly OidcRealApiFactory _factory;
 
@@ -77,11 +92,19 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     [Fact]
     public async Task GetAuthMe_ShouldReturnUnauthorized_WhenTokenIsExpired()
     {
-        // O client e2e-tests é configurado com access.token.lifespan=5s no realm-export.json.
-        // Aguarda além do ClockSkew (30s default) + lifespan para garantir que o token efetivamente
-        // expirou na visão do JwtBearer, e não apenas na visão nominal do exp claim.
+        // Solicita um token com vida curta (access.token.lifespan=5s no realm) e aguarda até passar
+        // do exp do PRÓPRIO token + ClockSkew configurado + buffer de drift. Calcular a partir do exp
+        // emitido pelo container — em vez de um delay fixo — torna o teste resiliente a (a) drift de
+        // relógio entre host e container e (b) eventuais bumps futuros do lifespan ou do ClockSkew
+        // sem precisar atualizar este caso.
         string accessToken = await _keycloak.RequestAccessTokenAsync(AdminUsername, SharedPassword);
-        await Task.Delay(TimeSpan.FromSeconds(36));
+
+        DateTimeOffset waitUntil = ReadExpirationFromToken(accessToken) + ExpectedClockSkew + ClockDriftBuffer;
+        TimeSpan remaining = waitUntil - DateTimeOffset.UtcNow;
+        if (remaining > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining);
+        }
 
         using HttpClient client = CreateClientWithToken(accessToken);
 
@@ -134,6 +157,12 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         HttpClient client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return client;
+    }
+
+    private static DateTimeOffset ReadExpirationFromToken(string accessToken)
+    {
+        JsonWebToken jwt = new JsonWebTokenHandler().ReadJsonWebToken(accessToken);
+        return new DateTimeOffset(jwt.ValidTo, TimeSpan.Zero);
     }
 
     private static string ForgeTokenSignedByExternalKey(string issuer)
