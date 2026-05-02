@@ -2,7 +2,7 @@
 
 Este documento descreve como contribuir com o backend da plataforma Uni+. Leia-o por completo antes de abrir sua primeira contribuição.
 
-> **Regras transversais de commits e integração:** este repositório segue o **[Guia de Commits e Integração](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/guia-commits-e-integracao.md)** — referência oficial para todos os repositórios do projeto (`uniplus-api`, `uniplus-web`, `uniplus-docs`), mantido em `uniplus-docs`. Este documento complementa o guia com regras específicas do backend.
+> **Regras de commits e integração:** este repositório segue o **[Guia de Commits e Integração](docs/guia-commits-e-integracao.md)** local — fonte de verdade para mensagens de commit e política de integração no `uniplus-api`. Este `CONTRIBUTING.md` complementa o guia com instruções operacionais de setup, build, testes e revisão.
 
 ---
 
@@ -140,7 +140,7 @@ Todos os comandos acima devem passar antes de abrir o PR.
 
 ### 4. Commit
 
-As regras de formato, tipos permitidos e convenções gerais de mensagem estão definidas no **[Guia de Commits e Integração § 1–4](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/guia-commits-e-integracao.md)**. Siga-o na íntegra.
+As regras de formato, tipos permitidos e convenções gerais de mensagem estão definidas no **[Guia de Commits e Integração § 1–4](docs/guia-commits-e-integracao.md)**. Siga-o na íntegra.
 
 **Escopos válidos neste repositório:**
 
@@ -174,11 +174,11 @@ feat(migrations): adiciona tabela de inscrições
 chore(deps): atualiza WolverineFx para 5.32.1
 ```
 
-Para uma bateria completa de exemplos (bons e ruins, com justificativas), consulte [Guia § 4](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/guia-commits-e-integracao.md).
+Para uma bateria completa de exemplos (bons e ruins, com justificativas), consulte [Guia § 4](docs/guia-commits-e-integracao.md#4-exemplos-bons-e-ruins).
 
 ### 5. Rebase sobre `main`
 
-Integração via **rebase** — sem merge commits poluindo o histórico. Procedimento completo e regras de ouro em **[Guia de Commits e Integração § 5–6](https://github.com/unifesspa-edu-br/uniplus-docs/blob/main/docs/guia-commits-e-integracao.md)**.
+Integração via **rebase** — sem merge commits poluindo o histórico. Procedimento completo e regras de ouro em **[Guia de Commits e Integração § 5–6](docs/guia-commits-e-integracao.md#5-política-de-integração-rebase-sobre-a-main)**.
 
 Resumo aplicado ao `uniplus-api`: mantenha a branch rebaseada sobre `origin/main`, organize os commits com `rebase -i` (squash/reword/drop) antes do PR e use `git push --force-with-lease` ao reescrever história — nunca `--force` puro.
 
