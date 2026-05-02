@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <!--
+      Library project consumido por outros assemblies de teste (define ApiFactoryBase, TestAuthHandler,
+      KeycloakContainerFixture). Referencia xunit para expor IAsyncLifetime e atributos de fixture, mas
+      não contém [Fact] próprios. IsTestProject=false impede o test runner do CI de tentar carregar
+      este assembly como executável de teste — isso falharia ao resolver dependências transitivas
+      (p.ex. BouncyCastle vinda de SSH.NET via Testcontainers) num runner sem cache.
+    -->
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
