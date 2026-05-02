@@ -327,6 +327,25 @@ O PR será bloqueado se qualquer gate falhar:
 - [ ] SonarQube: zero issues críticos ou bloqueadores
 - [ ] Nenhuma vulnerabilidade crítica em dependências
 - [ ] Formatação correta (`dotnet format`)
+- [ ] Pacotes proibidos ausentes (`bash tools/forbidden-deps/check.sh`) — ver [§ Pacotes proibidos](#pacotes-proibidos)
+
+### Pacotes proibidos
+
+Algumas dependências foram banidas por ADR (licença incompatível, segurança, manutenção interrompida etc.). O job **`Forbidden dependencies`** do CI executa [`tools/forbidden-deps/check.sh`](tools/forbidden-deps/check.sh) e bloqueia o merge se encontrar reintrodução. Veja [`tools/forbidden-deps/README.md`](tools/forbidden-deps/README.md) para o detalhamento do mecanismo.
+
+Para checar localmente antes do push:
+
+```bash
+bash tools/forbidden-deps/check.sh
+```
+
+Banidos atualmente:
+
+| Pacote | Substituto | ADR |
+|--------|-----------|-----|
+| `FluentAssertions` (v8+) | [`AwesomeAssertions`](https://www.nuget.org/packages/AwesomeAssertions) | [ADR-0021](docs/adrs/0021-adocao-awesomeassertions-como-biblioteca-de-assertions.md) |
+
+Para banir uma nova dependência: criar/atualizar a ADR correspondente, adicionar entrada em [`tools/forbidden-deps/check.sh`](tools/forbidden-deps/check.sh) e atualizar a tabela em [`tools/forbidden-deps/README.md`](tools/forbidden-deps/README.md).
 
 ---
 
