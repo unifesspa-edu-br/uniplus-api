@@ -48,7 +48,7 @@ TokenValidationParameters
 - **Refresh token rotation** ativo no realm.
 - **Atributos customizados** (nome social, CPF) gerenciados como claims do realm.
 
-A integração federada com Gov.br é configurada no Keycloak via Identity Provider externo (OIDC) — esta ADR cobre apenas o lado do `uniplus-api` como resource server.
+A integração federada com Gov.br é configurada no Keycloak via Identity Provider externo (OIDC) — esta ADR cobre apenas o lado do `uniplus-api` como resource server. A configuração do brokering gov.br (alias, mappers, flow customizado de first-broker-login com SPI `cpf-matcher`, `client_id` por hostname, `client_secret_basic`) é detalhada na ADR-0020.
 
 ## Consequências
 
@@ -102,4 +102,5 @@ A integração federada com Gov.br é configurada no Keycloak via Identity Provi
 
 - ADR-0010 define a audience única `uniplus`.
 - ADR-0017 define K8s + Helm para o deploy do `uniplus-api` (e do Keycloak via charts próprios).
+- ADR-0020 detalha o identity brokering gov.br via Keycloak (configuração de IdP externo, mappers, first-broker-login).
 - **Origem:** revisão da ADR interna Uni+ ADR-008 (não publicada). Esta ADR cobre apenas a parte server-side; o consumo OIDC pelo frontend é decisão própria do `uniplus-web`.
