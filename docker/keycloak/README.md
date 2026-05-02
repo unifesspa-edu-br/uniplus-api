@@ -367,7 +367,7 @@ A validação E2E contra o gov.br staging acontece no Keycloak HML institucional
 
 > ⚠️ O Keycloak HML é **realm compartilhado** com outros sistemas (`ficha_facil`, `sisplad`). Os scripts abaixo só tocam recursos especificamente vinculados ao gov.br + cpf-matcher. **Nunca rodar `setup-keycloak-dev.sh` ou `setup-govbr-mock.sh` em HML.**
 
-Pré-requisito: o Keycloak HML precisa estar rodando a imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.x` (que já traz o JAR `cpf-matcher` embutido em `/opt/keycloak/providers/`). O pipeline Helm/CI institucional cuida do deploy da imagem — issue separada.
+Pré-requisito: o Keycloak HML precisa estar rodando a imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak` em **patch pinado** (ex.: `1.0.2`), conforme a política descrita no bloco "Imagem do Keycloak" deste README — HML/PROD nunca usam float (`1.x`/`latest`), para garantir reprodutibilidade e atualização controlada via PR de chart. A imagem já traz o JAR `cpf-matcher` embutido em `/opt/keycloak/providers/`. O pipeline Helm/CI institucional cuida do deploy da imagem — issue separada.
 
 ```bash
 # Variáveis de ambiente HML
