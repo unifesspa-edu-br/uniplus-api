@@ -24,7 +24,7 @@ Exit code != 0 quando houver pelo menos uma ocorrência ativa.
 
 ## Como adicionar nova proibição
 
-1. Acrescente uma entrada ao array `FORBIDDEN` em [`check.sh`](check.sh) no formato `'nome~regex_para_cs~regex_para_csproj_e_props~motivo~ADR'`. O separador é `~` (escolhido por não colidir com sintaxe de regex de alternation `|` nem com nomes de pacote .NET).
+1. Acrescente uma entrada ao array `FORBIDDEN` em [`check.sh`](check.sh) no formato `'nome~regex_para_cs~regex_para_csproj_e_props~motivo~ADR'`. O separador é `~` (escolhido por não colidir com sintaxe de regex de alternation `|` nem com nomes de pacote .NET). **Nenhum campo pode conter `~`** — o script falha alto (exit 2) se detectar entrada malformada.
 2. Atualize a tabela acima com o novo pacote.
 3. Escreva (ou referencie) uma ADR registrando a decisão de banir o pacote — toda proibição precisa ter uma ADR vinculada para rastreabilidade.
 
@@ -40,3 +40,7 @@ Esse recorte é intencional: o objetivo é impedir o uso de produção/teste do 
 ## Integração com CI
 
 O check roda como job dedicado em [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) sob o nome **`Forbidden dependencies`**. Falha no CI bloqueia o merge.
+
+## Relação com a *Confirmação* do ADR-0021
+
+A seção *Confirmação* do [ADR-0021](../../docs/adrs/0021-adocao-awesomeassertions-como-biblioteca-de-assertions.md) documenta um grep amplo (`grep -rn "FluentAssertions" ...`) como mecanismo de verificação manual. Esta lint rule é a **implementação automatizada** desse mecanismo, com uma diferença deliberada: usa regex restritos (`using` efetivo, `Include="..."`) em vez do match genérico do nome. Isso elimina falsos positivos em comentários de código e strings literais, sem perder cobertura dos vetores reais de reintrodução. Os dois mecanismos são complementares — o grep amplo serve para auditoria humana exploratória, a lint rule serve como guarda contínua no CI.

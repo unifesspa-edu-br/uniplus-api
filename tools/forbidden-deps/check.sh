@@ -32,7 +32,18 @@ EXIT_CODE=0
 TOTAL_HITS=0
 
 for ENTRY in "${FORBIDDEN[@]}"; do
-  IFS='~' read -r NAME CS_PATTERN PROJ_PATTERN REASON ADR <<< "$ENTRY"
+  IFS='~' read -r NAME CS_PATTERN PROJ_PATTERN REASON ADR EXTRA <<< "$ENTRY"
+
+  # Defesa em profundidade: o separador '~' é literal; se uma entrada futura
+  # introduzir '~' em qualquer campo (motivo ou ADR são os candidatos mais
+  # prováveis), o split distribui o conteúdo errado entre as variáveis.
+  # Falhar alto evita mensagens de erro confusas em CI.
+  if [[ -z "$NAME" || -z "$CS_PATTERN" || -z "$PROJ_PATTERN" || -z "$REASON" || -z "$ADR" || -n "$EXTRA" ]]; then
+    echo "ERRO: entrada FORBIDDEN malformada (esperados 5 campos separados por '~'):" >&2
+    echo "  $ENTRY" >&2
+    echo "  Verifique se nenhum campo contém o caractere '~'." >&2
+    exit 2
+  fi
 
   # Busca em duas frentes:
   #   - .cs                : `using` (incluindo `using static`) que importe o namespace.
