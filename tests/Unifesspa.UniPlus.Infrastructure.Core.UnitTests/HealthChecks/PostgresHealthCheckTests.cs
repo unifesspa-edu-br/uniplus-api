@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.HealthChecks;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 

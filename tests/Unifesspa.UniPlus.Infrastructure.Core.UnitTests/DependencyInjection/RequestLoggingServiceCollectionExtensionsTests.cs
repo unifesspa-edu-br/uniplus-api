@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.DependencyInjection;
 
 using System.Collections.Generic;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;

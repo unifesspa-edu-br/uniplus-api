@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Authentication;
 using System.Security.Claims;
 using System.Text.Json;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;

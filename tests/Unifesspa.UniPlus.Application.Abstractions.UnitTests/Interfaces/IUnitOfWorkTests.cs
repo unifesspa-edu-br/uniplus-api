@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Application.Abstractions.UnitTests.Interfaces;
 
 using System.Reflection;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 

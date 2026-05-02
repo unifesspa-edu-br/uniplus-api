@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;

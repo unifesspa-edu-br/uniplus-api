@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Middleware;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
