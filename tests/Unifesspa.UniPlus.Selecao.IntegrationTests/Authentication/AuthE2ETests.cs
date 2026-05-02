@@ -24,9 +24,6 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     private static readonly Uri AuthMeUri = new("/api/auth/me", UriKind.Relative);
     private static readonly Uri ProfileMeUri = new("/api/profile/me", UriKind.Relative);
     private static readonly Uri HealthUri = new("/health", UriKind.Relative);
-    private const string AdminUsername = "admin";
-    private const string CandidatoUsername = "candidato";
-    private const string SharedPassword = "Changeme!123";
 
     /// <summary>
     /// <see cref="AuthOptions.ClockSkew"/> default consumido pelo <c>JwtBearer</c> em produção (30s).
@@ -57,7 +54,8 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     [Fact]
     public async Task GetAuthMe_ShouldReturnAuthenticatedUser_WhenTokenIsValid()
     {
-        string accessToken = await _keycloak.RequestAccessTokenAsync(AdminUsername, SharedPassword);
+        KeycloakTestUser user = KeycloakTestUsers.Admin;
+        string accessToken = await _keycloak.RequestAccessTokenAsync(user.Username, KeycloakTestUsers.SharedPassword);
         using HttpClient client = CreateClientWithToken(accessToken);
 
         using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
@@ -66,15 +64,16 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
 
         using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         payload.RootElement.GetProperty("userId").GetString().Should().NotBeNullOrWhiteSpace();
-        payload.RootElement.GetProperty("email").GetString().Should().Be("admin@e2e.uniplus.local");
+        payload.RootElement.GetProperty("email").GetString().Should().Be(user.Email);
         payload.RootElement.GetProperty("roles").EnumerateArray().Select(static r => r.GetString())
-            .Should().Contain("admin");
+            .Should().Contain(user.Role);
     }
 
     [Fact]
     public async Task GetProfileMe_ShouldReturnCpfAndNomeSocial_WhenTokenCarriesUniPlusProfileScope()
     {
-        string accessToken = await _keycloak.RequestAccessTokenAsync(CandidatoUsername, SharedPassword);
+        KeycloakTestUser user = KeycloakTestUsers.Candidato;
+        string accessToken = await _keycloak.RequestAccessTokenAsync(user.Username, KeycloakTestUsers.SharedPassword);
         using HttpClient client = CreateClientWithToken(accessToken);
 
         using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
@@ -82,11 +81,11 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-        payload.RootElement.GetProperty("cpf").GetString().Should().Be("24843803480");
-        payload.RootElement.GetProperty("nomeSocial").GetString().Should().Be("Candidato Teste");
-        payload.RootElement.GetProperty("email").GetString().Should().Be("candidato@e2e.uniplus.local");
+        payload.RootElement.GetProperty("cpf").GetString().Should().Be(user.Cpf);
+        payload.RootElement.GetProperty("nomeSocial").GetString().Should().Be(user.NomeSocial);
+        payload.RootElement.GetProperty("email").GetString().Should().Be(user.Email);
         payload.RootElement.GetProperty("roles").EnumerateArray().Select(static r => r.GetString())
-            .Should().Contain("candidato");
+            .Should().Contain(user.Role);
     }
 
     [Fact]
@@ -97,7 +96,9 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         // emitido pelo container — em vez de um delay fixo — torna o teste resiliente a (a) drift de
         // relógio entre host e container e (b) eventuais bumps futuros do lifespan ou do ClockSkew
         // sem precisar atualizar este caso.
-        string accessToken = await _keycloak.RequestAccessTokenAsync(AdminUsername, SharedPassword);
+        string accessToken = await _keycloak.RequestAccessTokenAsync(
+            KeycloakTestUsers.Admin.Username,
+            KeycloakTestUsers.SharedPassword);
 
         DateTimeOffset waitUntil = ReadExpirationFromToken(accessToken) + ExpectedClockSkew + ClockDriftBuffer;
         TimeSpan remaining = waitUntil - DateTimeOffset.UtcNow;
@@ -119,8 +120,8 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         // O client e2e-tests-bad-aud não inclui o scope uniplus-profile (que carrega o audience mapper),
         // portanto o token emitido não traz aud=uniplus.
         string accessToken = await _keycloak.RequestAccessTokenAsync(
-            AdminUsername,
-            SharedPassword,
+            KeycloakTestUsers.Admin.Username,
+            KeycloakTestUsers.SharedPassword,
             KeycloakContainerFixture.BadAudienceClientId);
         using HttpClient client = CreateClientWithToken(accessToken);
 
