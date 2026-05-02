@@ -43,10 +43,7 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
 
         builder.ConfigureTestServices(services =>
         {
-            services.AddAuthentication(TestAuthHandler.SchemeName)
-                .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                    TestAuthHandler.SchemeName,
-                    _ => { });
+            ConfigureTestAuthentication(services);
 
             if (DisableWolverineRuntimeForTests)
             {
@@ -68,6 +65,27 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
                 }
             }
         });
+    }
+
+    /// <summary>
+    /// Substitui o esquema de autenticação produtivo pelo <see cref="TestAuthHandler"/>, permitindo
+    /// que testes injetem identidades via headers HTTP sem emitir JWTs reais — esta é a configuração
+    /// padrão da maioria das suítes de integração, que não precisam exercitar a validação criptográfica
+    /// do JWT em si.
+    ///
+    /// Subclasses que exercitam o pipeline real <c>JwtBearer</c> (validação de issuer/audience/lifetime/
+    /// signing key) contra um IdP real — p.ex. Keycloak via Testcontainers — sobrescrevem este método
+    /// como no-op para PRESERVAR o esquema produtivo registrado pela API.
+    /// </summary>
+    /// <param name="services">A coleção de serviços do host de teste.</param>
+    protected virtual void ConfigureTestAuthentication(IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddAuthentication(TestAuthHandler.SchemeName)
+            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                TestAuthHandler.SchemeName,
+                _ => { });
     }
 
     /// <summary>
