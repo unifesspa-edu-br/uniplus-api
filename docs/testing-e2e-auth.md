@@ -11,7 +11,8 @@ Esta suíte exercita o pipeline real `JwtBearer` da API Uni+ contra um Keycloak 
 | 3 | Token expirado → `/api/auth/me` | `ValidateLifetime` rejeita após `ClockSkew` |
 | 4 | Token sem `aud=uniplus` → `/api/auth/me` | `ValidateAudience` rejeita |
 | 5 | Token assinado por chave externa → `/api/auth/me` | `ValidateIssuerSigningKey` rejeita kid não publicada no JWKS do realm |
-| 6 | `/health` da API | `OidcDiscoveryHealthCheck` reporta `Healthy` quando o discovery do Keycloak responde |
+| 6 | Token com issuer diferente da Authority → `/api/auth/me` | `ValidateIssuer` rejeita tokens emitidos por IdP arbitrário |
+| 7 | `/health` da API | `OidcDiscoveryHealthCheck` reporta `Healthy` quando o discovery do Keycloak responde |
 
 ## Stack
 

@@ -142,6 +142,23 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     }
 
     [Fact]
+    public async Task GetAuthMe_ShouldReturnUnauthorized_WhenTokenIssuerDoesNotMatchAuthority()
+    {
+        // Forja um token com issuer arbitrário diferente da Authority configurada na API.
+        // O signing key é local (não temos acesso à chave privada do realm para isolar
+        // estritamente o issuer), portanto a falha é capturada por ValidateIssuer e/ou
+        // ValidateIssuerSigningKey — o cenário garante que um token claim de outro IdP
+        // jamais é aceito pelo pipeline JwtBearer, somando defesa em profundidade ao
+        // cenário 5 (que isola signing key com issuer correto).
+        string forgedToken = ForgeTokenSignedByExternalKey("https://impostor.example.com/realms/wrong");
+        using HttpClient client = CreateClientWithToken(forgedToken);
+
+        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task GetHealth_ShouldReportHealthy_WhenKeycloakDiscoveryEndpointResponds()
     {
         using HttpClient client = _factory.CreateClient();
