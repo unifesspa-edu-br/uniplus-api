@@ -50,6 +50,8 @@ TokenValidationParameters
 
 A integração federada com Gov.br é configurada no Keycloak via Identity Provider externo (OIDC) — esta ADR cobre apenas o lado do `uniplus-api` como resource server. A configuração do brokering gov.br (alias, mappers, flow customizado de first-broker-login com SPI `cpf-matcher`, `client_id` por hostname, `client_secret_basic`) é detalhada na ADR-0020.
 
+> **Imagem do Keycloak.** Em todos os ambientes (dev, CI, HML, PROD) o Uni+ usa a imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.x` — base `quay.io/keycloak/keycloak:26.5.7` + JAR `cpf-matcher` embutido. Não é Keycloak vanilla. O artefato e o ciclo de release vivem no repo `unifesspa-edu-br/uniplus-keycloak-providers` e a documentação de consumo está em [`docker/keycloak/README.md`](../../docker/keycloak/README.md#imagem-do-keycloak).
+
 ## Consequências
 
 ### Positivas
