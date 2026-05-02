@@ -13,7 +13,7 @@
 - **Validação:** FluentValidation 12
 - **Logging:** Serilog 10
 - **Observabilidade:** OpenTelemetry
-- **Testes:** xUnit, FluentAssertions, NSubstitute, Bogus, Testcontainers, ArchUnitNET (pacote `TngTech.ArchUnitNET`)
+- **Testes:** xUnit, AwesomeAssertions, NSubstitute, Bogus, Testcontainers, ArchUnitNET (pacote `TngTech.ArchUnitNET`) — fork comunitário Apache-2.0 do Fluent Assertions ([ADR-0021](docs/adrs/0021-adocao-awesomeassertions-como-biblioteca-de-assertions.md))
 
 ## Estrutura do projeto
 

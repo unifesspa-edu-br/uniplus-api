@@ -282,7 +282,7 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 
 | Tipo | Onde | Framework | Quando |
 |---|---|---|---|
-| Unitário | Domain, Application | xUnit + FluentAssertions + NSubstitute | Toda lógica de negócio |
+| Unitário | Domain, Application | xUnit + AwesomeAssertions + NSubstitute | Toda lógica de negócio (ver [ADR-0021](docs/adrs/0021-adocao-awesomeassertions-como-biblioteca-de-assertions.md) para a escolha da biblioteca de assertions) |
 | Integração | Infrastructure, API | Testcontainers + WebApplicationFactory | Endpoints e repositórios |
 
 ### Recomendado

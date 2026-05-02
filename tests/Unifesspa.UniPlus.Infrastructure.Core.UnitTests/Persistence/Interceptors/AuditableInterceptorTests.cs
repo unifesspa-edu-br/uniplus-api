@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Persistence.Interceptors;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 

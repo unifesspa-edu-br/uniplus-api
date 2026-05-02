@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Logging;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using NSubstitute;
 

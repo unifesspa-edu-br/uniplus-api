@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.ValueObjects;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;

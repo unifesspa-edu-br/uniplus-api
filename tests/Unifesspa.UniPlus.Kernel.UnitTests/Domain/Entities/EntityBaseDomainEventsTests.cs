@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.Entities;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Events;

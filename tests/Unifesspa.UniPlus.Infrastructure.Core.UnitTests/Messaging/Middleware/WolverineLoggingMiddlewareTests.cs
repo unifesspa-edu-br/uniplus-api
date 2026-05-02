@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Messaging.Middleware;
 
 using System.Diagnostics;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Microsoft.Extensions.Logging;
 

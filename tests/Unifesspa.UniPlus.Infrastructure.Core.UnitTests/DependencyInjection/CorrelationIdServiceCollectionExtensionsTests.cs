@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.DependencyInjection;
 
-using FluentAssertions;
+using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
