@@ -60,7 +60,7 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         string accessToken = await _keycloak.RequestAccessTokenAsync(AdminUsername, SharedPassword);
         using HttpClient client = CreateClientWithToken(accessToken);
 
-        HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -77,7 +77,7 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         string accessToken = await _keycloak.RequestAccessTokenAsync(CandidatoUsername, SharedPassword);
         using HttpClient client = CreateClientWithToken(accessToken);
 
-        HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
+        using HttpResponseMessage response = await client.GetAsync(ProfileMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -108,7 +108,7 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
 
         using HttpClient client = CreateClientWithToken(accessToken);
 
-        HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -124,7 +124,7 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
             KeycloakContainerFixture.BadAudienceClientId);
         using HttpClient client = CreateClientWithToken(accessToken);
 
-        HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -135,7 +135,7 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         string forgedToken = ForgeTokenSignedByExternalKey(_keycloak.Authority);
         using HttpClient client = CreateClientWithToken(forgedToken);
 
-        HttpResponseMessage response = await client.GetAsync(AuthMeUri);
+        using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -145,7 +145,7 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     {
         using HttpClient client = _factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(HealthUri);
+        using HttpResponseMessage response = await client.GetAsync(HealthUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         string body = await response.Content.ReadAsStringAsync();
