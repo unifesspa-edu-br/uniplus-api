@@ -1,0 +1,303 @@
+{
+  "realm": "unifesspa-e2e",
+  "displayName": "Uni+ — Realm E2E (apenas testes)",
+  "enabled": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "registrationAllowed": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "internationalizationEnabled": false,
+  "supportedLocales": ["pt-BR"],
+  "defaultLocale": "pt-BR",
+  "identityProviders": [],
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "Administrador do sistema" },
+      { "name": "gestor", "description": "Gestor institucional" },
+      { "name": "avaliador", "description": "Avaliador de processos" },
+      { "name": "candidato", "description": "Candidato em processo seletivo" }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "uniplus-profile",
+      "description": "Scope autocontido APENAS para testes E2E (sub, email, name, preferred_username, realm_access.roles, cpf, nomeSocial, aud=uniplus).",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false",
+        "include.in.openid.provider.metadata": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "sub",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "preferred_username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "foo",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "nomeSocial",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "nomeSocial",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "nomeSocial",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "cpf",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "cpf",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "cpf",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "aud-uniplus",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "uniplus",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "e2e-tests",
+      "name": "e2e-tests",
+      "description": "Cliente confidencial APENAS de testes E2E. Direct Access Grant habilitado, secret em texto claro INTENCIONAL — só existe neste realm sintético, nunca em homologação ou produção.",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "e2e-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.lifespan": "5"
+      },
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "uniplus-profile",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "e2e-tests-bad-aud",
+      "name": "e2e-tests-bad-aud",
+      "description": "Cliente confidencial APENAS de testes E2E — emite token SEM o scope uniplus-profile e portanto sem audience 'uniplus'. Usado exclusivamente para validar a rejeição por audience errada.",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "e2e-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {},
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": []
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Usuário",
+      "lastName": "Admin",
+      "email": "admin@e2e.uniplus.local",
+      "attributes": {
+        "cpf": ["52998224725"],
+        "nomeSocial": ["Admin Teste"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Changeme!123",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "gestor",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Usuário",
+      "lastName": "Gestor",
+      "email": "gestor@e2e.uniplus.local",
+      "attributes": {
+        "cpf": ["11144477735"],
+        "nomeSocial": ["Gestor Teste"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Changeme!123",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": ["gestor"]
+    },
+    {
+      "username": "avaliador",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Usuário",
+      "lastName": "Avaliador",
+      "email": "avaliador@e2e.uniplus.local",
+      "attributes": {
+        "cpf": ["39053344705"],
+        "nomeSocial": ["Avaliador Teste"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Changeme!123",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": ["avaliador"]
+    },
+    {
+      "username": "candidato",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Usuário",
+      "lastName": "Candidato",
+      "email": "candidato@e2e.uniplus.local",
+      "attributes": {
+        "cpf": ["24843803480"],
+        "nomeSocial": ["Candidato Teste"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Changeme!123",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": ["candidato"]
+    }
+  ]
+}
