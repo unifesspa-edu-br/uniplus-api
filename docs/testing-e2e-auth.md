@@ -11,8 +11,10 @@ Esta suíte exercita o pipeline real `JwtBearer` da API Uni+ contra um Keycloak 
 | 3 | Token expirado → `/api/auth/me` | `ValidateLifetime` rejeita após `ClockSkew` |
 | 4 | Token sem `aud=uniplus` → `/api/auth/me` | `ValidateAudience` rejeita |
 | 5 | Token assinado por chave externa → `/api/auth/me` | `ValidateIssuerSigningKey` rejeita kid não publicada no JWKS do realm |
-| 6 | Token com issuer diferente da Authority → `/api/auth/me` | `ValidateIssuer` rejeita tokens emitidos por IdP arbitrário |
+| 6 | Token com issuer diferente da Authority (assinado por chave conhecida pelo realm) → `/api/auth/me` | `ValidateIssuer` rejeita tokens emitidos por IdP arbitrário — isolamento estrito |
 | 7 | `/health` da API | `OidcDiscoveryHealthCheck` reporta `Healthy` quando o discovery do Keycloak responde |
+
+> **Sobre o cenário 6 (isolamento de `ValidateIssuer`):** o realm sintético embute um `KeyProvider` adicional cuja chave privada é também conhecida pelo código de teste (`KeycloakKnownTestKey`). O Keycloak publica essa chave pública no JWKS do realm, então o pipeline JwtBearer aceita assinaturas feitas com a privada correspondente. O cenário 6 forja um token assinado por essa chave conhecida, com audience e lifetime corretos, mas com `iss` arbitrário — assim a ÚNICA dimensão inválida é o issuer. Sem esse `KeyProvider` embutido, o cenário cairia em `ValidateIssuerSigningKey` (a falha do cenário 5), dando falsa cobertura de issuer. A chave privada está em `realm-e2e-tests.json` e em `KeycloakKnownTestKey.cs`; ambos jamais alcançam ambientes superiores.
 
 ## Stack
 

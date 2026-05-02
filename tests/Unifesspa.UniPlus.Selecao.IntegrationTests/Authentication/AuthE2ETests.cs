@@ -144,13 +144,15 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
     [Fact]
     public async Task GetAuthMe_ShouldReturnUnauthorized_WhenTokenIssuerDoesNotMatchAuthority()
     {
-        // Forja um token com issuer arbitrário diferente da Authority configurada na API.
-        // O signing key é local (não temos acesso à chave privada do realm para isolar
-        // estritamente o issuer), portanto a falha é capturada por ValidateIssuer e/ou
-        // ValidateIssuerSigningKey — o cenário garante que um token claim de outro IdP
-        // jamais é aceito pelo pipeline JwtBearer, somando defesa em profundidade ao
-        // cenário 5 (que isola signing key com issuer correto).
-        string forgedToken = ForgeTokenSignedByExternalKey("https://impostor.example.com/realms/wrong");
+        // Isola estritamente ValidateIssuer: o token é assinado pela chave conhecida que o realm
+        // sintético publica no JWKS (KeycloakKnownTestKey, embutida via components.KeyProvider em
+        // realm-e2e-tests.json), portanto ValidateIssuerSigningKey passa. Audience e lifetime
+        // também são corretos. A ÚNICA dimensão inválida é o iss claim — uma regressão futura que
+        // desligue ValidateIssuer (ex.: ValidateIssuer = false) faria este caso passar a aceitar
+        // o token, capturando a regressão. Complementa o cenário 5 (que isola signing key).
+        string forgedToken = ForgeTokenWithKnownKey(
+            issuer: "https://impostor.example.com/realms/wrong",
+            audience: KeycloakContainerFixture.Audience);
         using HttpClient client = CreateClientWithToken(forgedToken);
 
         using HttpResponseMessage response = await client.GetAsync(AuthMeUri);
@@ -191,12 +193,26 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
             KeyId = "external-test-key",
         };
 
+        return ForgeToken(
+            signingKey,
+            issuer,
+            audience: KeycloakContainerFixture.Audience);
+    }
+
+    private static string ForgeTokenWithKnownKey(string issuer, string audience)
+    {
+        RsaSecurityKey signingKey = KeycloakKnownTestKey.CreateSigningKey();
+        return ForgeToken(signingKey, issuer, audience);
+    }
+
+    private static string ForgeToken(RsaSecurityKey signingKey, string issuer, string audience)
+    {
         SigningCredentials credentials = new(signingKey, SecurityAlgorithms.RsaSha256);
         DateTime now = DateTime.UtcNow;
         SecurityTokenDescriptor descriptor = new()
         {
             Issuer = issuer,
-            Audience = KeycloakContainerFixture.Audience,
+            Audience = audience,
             NotBefore = now,
             Expires = now.AddMinutes(5),
             SigningCredentials = credentials,
