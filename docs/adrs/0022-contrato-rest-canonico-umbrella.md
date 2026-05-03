@@ -2,15 +2,7 @@
 status: "accepted"
 date: "2026-05-03"
 decision-makers:
-  - "Tech Lead"
-consulted:
-  - "Backend (CTIC)"
-  - "FullStack (CTIC)"
-  - "Q.A (CTIC)"
-informed:
-  - "Time Uni+"
-  - "Direção CTIC"
-  - "PROEG / PROEX / CEPS / CRCA (clientes institucionais)"
+  - "Tech Lead (CTIC)"
 ---
 
 # ADR-0022: Contrato REST canônico V1 — frame transversal e índice das ADRs filhas
