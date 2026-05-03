@@ -11,9 +11,9 @@ decision-makers:
 
 O `uniplus-api` está no início do ciclo: existe um único controller (`EditalController`, três endpoints) no módulo Seleção, o módulo Ingresso ainda não tem controllers e o pipeline OpenAPI previsto em [ADR-0015](0015-rest-contract-first-com-openapi.md) não foi cabeado. No frontend `uniplus-web`, um `ApiErrorHandlerService` parcial já consome RFC 7807 — versão antecessora do padrão atual (RFC 9457). A janela para padronizar o contrato antes de existirem versões em produção é agora.
 
-A direção do projeto definiu o mandato: **a `uniplus-api` é uma API pública institucional desde o dia um**, mantida pelo CTIC como único *owner* da documentação, com PROEG/PROEX/CEPS/CRCA como clientes institucionais que fornecem input normativo sem authority de aprovação. A integração `gov.br ↔ Uni+` é unilateral — o Uni+ consome gov.br via OIDC e assinatura digital, mas o gov.br nunca consome endpoints da `uniplus-api`. Isso elimina o argumento histórico de "compatibilidade com Conecta" como driver para padrões de URL ou versionamento.
+A direção do projeto definiu o mandato: **a `uniplus-api` é uma API pública institucional desde o dia um**, mantida pelo CTIC como único *owner* da documentação, com PROEG/PROEX/CEPS/CRCA como clientes institucionais que fornecem input normativo. A integração `gov.br ↔ Uni+` é unilateral — o Uni+ consome gov.br via OIDC e assinatura digital, mas o gov.br nunca consome endpoints da `uniplus-api`. Isso elimina o argumento histórico de "compatibilidade com Conecta" como driver para padrões de URL ou versionamento.
 
-A escolha do frame transversal precede e binda as decisões pontuais. Padronizar o wire format de erro sem antes fixar princípios como *no-PII em response body*, *contract-first como método* e *Clean Architecture mantendo `Domain` e `Application` HTTP-agnósticos* produziria ADRs filhas conflitantes. Esta ADR existe para registrar esse frame e indexar as dez decisões pontuais que dele decorrem.
+A escolha do frame transversal precede e vincula as decisões pontuais. Padronizar o wire format de erro sem antes fixar princípios como *no-PII em response body*, *contract-first como método* e *Clean Architecture mantendo `Domain` e `Application` HTTP-agnósticos* produziria ADRs filhas conflitantes. Esta ADR existe para registrar esse frame e indexar as dez decisões pontuais que dele decorrem.
 
 A regra MADR "1 ADR = 1 decisão" foi preservada: este documento **não decide** wire format, mapping, paginação, idempotency, versioning, HATEOAS ou portal — cada uma dessas é decidida em sua ADR filha. A decisão registrada aqui é **estruturar o contrato canônico V1 como frame transversal + dez ADRs filhas** em vez de uma única ADR monolítica.
 
@@ -34,9 +34,9 @@ A regra MADR "1 ADR = 1 decisão" foi preservada: este documento **não decide**
 
 ## Resultado da decisão
 
-**Escolhida:** "C — Umbrella + dez ADRs filhas binding", porque é a única opção que respeita a regra MADR "1 ADR = 1 decisão" e simultaneamente registra os princípios cross-cutting que bindam todas as filhas. A opção A viola MADR e produz documento ingerenciável; a opção B perde a coerência transversal e abre brecha para decisões filhas conflitantes.
+**Escolhida:** "C — Umbrella + dez ADRs filhas binding", porque é a única opção que respeita a regra MADR "1 ADR = 1 decisão" e simultaneamente registra os princípios cross-cutting que vinculam todas as filhas. A opção A viola MADR e produz documento ingerenciável; a opção B perde a coerência transversal e abre brecha para decisões filhas conflitantes.
 
-### Princípios transversais binding (frame)
+### Princípios transversais vinculantes (frame)
 
 Todos os ADRs filhos desta umbrella herdam e respeitam:
 
@@ -64,7 +64,7 @@ Todos os ADRs filhos desta umbrella herdam e respeitam:
 
 ### Escopo V1 e bloqueio de slices novos
 
-V1 é declarada quando todas as dez decisões filhas estão `accepted` **e** suas tasks de implementação (Build Order do TechSpec, 55 passos consolidados em 34 PRs) estão merged. Durante a construção da V1, novos slices de domínio (Inscrição, Chamada, Recurso, Matrícula) ficam bloqueados — Sprint 2-3 são dedicadas ao contrato. O pilot da migração é o `EditalController` ([ADR-0024](0024-mapeamento-domain-error-http.md)).
+V1 é declarada quando todas as dez decisões filhas estão `accepted` **e** suas tasks de implementação (consolidadas em 34 PRs distribuídos pelas três Features de implementação — Backend, Frontend e Portal) estão merged. Durante a construção da V1, novos slices de domínio (Inscrição, Chamada, Recurso, Matrícula) ficam bloqueados — as sprints da fundação são dedicadas ao contrato. O pilot da migração é o `EditalController` ([ADR-0024](0024-mapeamento-domain-error-http.md)).
 
 ## Consequências
 
