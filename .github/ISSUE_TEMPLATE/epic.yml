@@ -1,7 +1,9 @@
 name: Epic
 description: Tema estratégico que agrupa várias Features
 title: "Epic: "
+type: Epic
 labels: ["epic"]
+projects: ["unifesspa-edu-br/1"]
 body:
   - type: textarea
     id: tema_estrategico

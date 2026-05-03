@@ -1,7 +1,9 @@
 name: Feature
 description: Capacidade entregável dentro de um Epic (sub-issue)
 title: "Feature: "
+type: Feature
 labels: ["feature"]
+projects: ["unifesspa-edu-br/1"]
 body:
   - type: input
     id: epic_pai

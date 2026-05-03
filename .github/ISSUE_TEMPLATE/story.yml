@@ -1,7 +1,9 @@
 name: User Story
 description: Incremento implementável com critérios de aceite testáveis (sub-issue de uma Feature)
 title: "US-FX-NN: "
+type: Story
 labels: ["story"]
+projects: ["unifesspa-edu-br/1"]
 body:
   - type: input
     id: feature_pai

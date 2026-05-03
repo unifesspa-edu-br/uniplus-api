@@ -1,7 +1,9 @@
 name: Task
 description: Unidade técnica de trabalho — 1 Task = 1 Pull Request (sub-issue de uma Story)
 title: "task(escopo): "
+type: Task
 labels: ["task"]
+projects: ["unifesspa-edu-br/1"]
 body:
   - type: input
     id: story_pai

@@ -1,6 +1,8 @@
 name: Bug
 description: Reportar um comportamento incorreto
+type: Bug
 labels: ["bug"]
+projects: ["unifesspa-edu-br/1"]
 body:
   - type: textarea
     id: descricao
