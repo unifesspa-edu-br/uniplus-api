@@ -49,7 +49,7 @@ A semântica obrigatória de status code em 2xx:
 ### Forma do body
 
 - **Recurso único** — o body é o JSON do recurso. Ex.: `GET /editais/{id}` retorna `{ "id": "...", "numero": "...", "status": "..." }`.
-- **Coleção** — o body é um array JSON do recurso. Ex.: `GET /editais` retorna `[{ "id": "...", ... }, ...]`. Cursor + paginação são propagados via `Link` header e fields auxiliares ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)) — não envolvem o array em wrapper.
+- **Coleção** — o body é um array JSON do recurso. Ex.: `GET /editais` retorna `[{ "id": "...", ... }, ...]`. Cursor + paginação são propagados **exclusivamente via headers HTTP** (`Link` por RFC 5988/8288 + headers auxiliares definidos pela [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)) — JSON array não admite sibling fields no root, então qualquer metadado que precise ser carregado fora do array vai por header, nunca por wrapper de objeto.
 - **Operação que produz dado derivado** — o body é o JSON do dado derivado, sem wrapper. Ex.: `POST /editais/{id}/classificar` retorna o resultado da classificação como JSON direto.
 
 ### Erros usam wire próprio (não esta ADR)
@@ -85,7 +85,7 @@ Toda response 4xx/5xx vai como `Content-Type: application/problem+json` com sche
 
 ### Neutras
 
-- A escolha não impede que collections retornem metadados auxiliares (ex.: `total`, `cursor_next`) — mas esses vão fora do array, em fields irmãos ou headers HTTP, não envolvendo o array.
+- A escolha não impede que collections carreguem metadados auxiliares (ex.: `total`, `cursor_next`) — mas esses vão **apenas em headers HTTP** (`Link`, `X-Total-Count` ou similares definidos pela [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)). Sibling fields no root de um array JSON é sintaxe inválida; envolver o array em objeto wrapper para acomodar metadado violaria a decisão desta ADR.
 
 ## Confirmação
 
