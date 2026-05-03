@@ -7,34 +7,63 @@ body:
     id: story_pai
     attributes:
       label: Story pai
-      description: Número da Story à qual esta Task pertence (ex.= #56)
+      description: "Número da Story à qual esta Task pertence (ex.: `#56`). Pode ser cross-repo: `unifesspa-edu-br/uniplus-api#56`."
       placeholder: "#56"
     validations:
       required: true
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo de trabalho
+      options:
+        - backend
+        - frontend
+        - api-contract
+        - migration
+        - test
+        - infra
+        - docs
+        - refactor
+        - chore
+        - bugfix
+    validations:
+      required: true
+
   - type: textarea
     id: objetivo
     attributes:
       label: O que precisa ser feito
-      description: Descrição objetiva e acionável
+      description: Descrição objetiva e acionável (1-3 frases)
     validations:
       required: true
+
   - type: textarea
-    id: dod
+    id: bdd_tecnico
     attributes:
-      label: Definition of Done
-      description: Checklist do que caracteriza a Task como concluída
-      placeholder: |
-        - [ ] Código implementado
-        - [ ] Testes unitários cobrindo o novo comportamento
-        - [ ] Build passando
-        - [ ] PR aberto e vinculado (Closes #N)
+      label: Cenários de aceite técnico (BDD)
+      description: |
+        Cenários focados na unidade que a Task entrega — comportamento observável (chamadas, retornos, side-effects).
+        Para Tasks puramente documentais (ex.: criar ADR, atualizar README), descreva cenários de "estado esperado pós-merge" ou marque "N/A — Task documental" no campo.
       value: |
-        - [ ] Código implementado
-        - [ ] Testes unitários cobrindo o novo comportamento
-        - [ ] Build passando
-        - [ ] PR aberto e vinculado (Closes #N)
+        ```gherkin
+        # language: pt
+
+        Funcionalidade: [Comportamento técnico entregue]
+
+          Cenário: [Caminho feliz — o que a unidade faz quando tudo funciona]
+            Dado [pré-condição técnica — fixture, estado, configuração]
+            Quando [ação ou chamada]
+            Então [resultado, retorno ou efeito observável]
+
+          Cenário: [Caminho de erro/borda]
+            Dado [contexto inválido ou edge case]
+            Quando [ação]
+            Então [erro tratado / falha controlada]
+        ```
     validations:
-      required: true
+      required: false
+
   - type: dropdown
     id: esforco
     attributes:
@@ -45,10 +74,24 @@ body:
         - G (grande — até 3 dias; considerar dividir)
     validations:
       required: true
+
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done (Task)
+      value: |
+        - [ ] Código/documentação implementada
+        - [ ] Testes unitários e/ou de integração adicionados (≥80% cobertura quando aplicável)
+        - [ ] Build verde local e em CI
+        - [ ] Cenários BDD desta Task validados (ou marcado N/A com justificativa)
+        - [ ] PR aberto, revisado por outro membro CTIC e mergeado (`Closes #N`)
+    validations:
+      required: true
+
   - type: textarea
     id: notas
     attributes:
       label: Notas técnicas
-      description: Pontos de atenção, arquivos envolvidos, referências a ADRs
+      description: Pontos de atenção, arquivos envolvidos, referências a ADRs/RFCs
     validations:
       required: false

@@ -4,23 +4,60 @@ title: "Epic: "
 labels: ["epic"]
 body:
   - type: textarea
-    id: descricao
+    id: tema_estrategico
     attributes:
-      label: Descrição
-      description: Qual o tema estratégico que este Epic representa?
-      placeholder: Visão geral do tema, problema de negócio ou capacidade técnica que justifica o Epic
+      label: Tema estratégico
+      description: Qual capacidade ou problema de negócio este Epic endereça? Visão geral em 2-3 parágrafos do "porquê" estratégico.
+      placeholder: O Epic existe para...
     validations:
       required: true
+
   - type: textarea
     id: objetivos
     attributes:
-      label: Objetivos
-      description: O que se espera entregar ao final do Epic
-      placeholder: |
-        - Objetivo 1
-        - Objetivo 2
+      label: Objetivos (outcomes esperados)
+      description: O que se espera entregar ao final do Epic — em termos de outcome mensurável, não apenas output
+      value: |
+        - **O1:** [outcome mensurável 1]
+        - **O2:** [outcome mensurável 2]
     validations:
       required: true
+
+  - type: textarea
+    id: bdd_outcome
+    attributes:
+      label: Cenários de sucesso (BDD nível Epic)
+      description: Cenários de outcome de alto nível — jornadas estratégicas que o Epic habilita ou observáveis em produção. Opcional, mas recomendado para Epics com KPIs claros.
+      value: |
+        ```gherkin
+        # language: pt
+
+        Funcionalidade: [Capacidade estratégica entregue pelo Epic]
+
+          Cenário: [Jornada principal habilitada pelo Epic]
+            Dado [pré-condição estratégica — ex: usuário institucional ativo]
+            Quando [interação macro com a capacidade]
+            Então [outcome esperado, observável e mensurável]
+
+          Cenário: [Jornada secundária ou de validação institucional]
+            Dado [pré-condição]
+            Quando [ação]
+            Então [resultado verificável]
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: metricas
+    attributes:
+      label: Métricas de sucesso (KPIs)
+      description: Métricas observáveis em produção que validam o Epic
+      placeholder: |
+        - [ ] Métrica 1: [valor-alvo, fonte, cadência]
+        - [ ] Métrica 2: [...]
+    validations:
+      required: false
+
   - type: textarea
     id: features
     attributes:
@@ -31,16 +68,20 @@ body:
         - [ ] Feature B
     validations:
       required: false
+
   - type: textarea
-    id: criterios
+    id: dod_epic
     attributes:
-      label: Critérios de sucesso
-      description: Como validar que o Epic foi concluído
-      placeholder: |
-        - [ ] Todas as Features entregues em produção
-        - [ ] Métrica X atingida
+      label: Definition of Done (Epic)
+      description: Critérios para considerar o Epic concluído
+      value: |
+        - [ ] Todas as Features sub-issues mergeadas em `main`
+        - [ ] Métricas de sucesso atingidas em produção (rolling 30 dias)
+        - [ ] Documentação publicada (ADRs, guias técnicos, changelog)
+        - [ ] Comunicação de release feita aos stakeholders institucionais
     validations:
       required: false
+
   - type: textarea
     id: referencias
     attributes:

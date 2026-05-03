@@ -7,8 +7,27 @@ body:
     id: feature_pai
     attributes:
       label: Feature pai
-      description: "Número da Feature à qual esta Story pertence (use # para referenciar, ex.: #42)"
+      description: "Número da Feature à qual esta Story pertence (use `#` para referenciar, ex.: `#42`). Pode ser cross-repo: `unifesspa-edu-br/uniplus-api#42`."
       placeholder: "#42"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo
+      description: Categoria de trabalho dominante da Story
+      options:
+        - frontend
+        - backend
+        - api-contract
+        - migration
+        - test
+        - infra
+        - docs
+        - refactor
+        - chore
+        - bugfix
     validations:
       required: true
 

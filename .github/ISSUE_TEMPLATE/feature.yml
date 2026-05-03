@@ -1,28 +1,85 @@
-name: Nova funcionalidade
-description: Propor uma nova funcionalidade ou melhoria
-labels: ["feat"]
+name: Feature
+description: Capacidade entregável dentro de um Epic (sub-issue)
+title: "Feature: "
+labels: ["feature"]
 body:
+  - type: input
+    id: epic_pai
+    attributes:
+      label: Epic pai
+      description: "Número do Epic ao qual esta Feature pertence (use `#` para referenciar; pode ser cross-repo, ex.: `unifesspa-edu-br/uniplus-api#42`)"
+      placeholder: "#42"
+    validations:
+      required: true
+
   - type: textarea
     id: descricao
     attributes:
       label: Descrição
-      description: Descreva a funcionalidade desejada
-      placeholder: Como [persona], quero [ação], para [benefício]
+      description: Capacidade entregável que esta Feature representa
+      placeholder: O que a Feature entrega como capacidade observável pelo usuário ou operador
     validations:
       required: true
+
   - type: textarea
-    id: criterios
+    id: bdd_workflow
     attributes:
-      label: Critérios de aceite
-      description: Como validar que a funcionalidade está completa
+      label: Cenários BDD (workflow nível Feature)
+      description: Jornadas de ponta-a-ponta que a Feature habilita. Foco em happy paths principais; cenários detalhados ficam nas Stories filhas.
+      value: |
+        ```gherkin
+        # language: pt
+
+        Funcionalidade: [Nome da capacidade entregável]
+
+          Cenário: [Jornada principal happy path — workflow completo]
+            Dado [contexto institucional/usuário]
+            Quando [sequência de ações que atravessa a capacidade]
+            Então [resultado de negócio observável]
+
+          Cenário: [Jornada alternativa relevante]
+            Dado [contexto]
+            Quando [ação]
+            Então [resultado]
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: stories
+    attributes:
+      label: Stories previstas
+      description: Stories que decompõem a Feature (serão criadas como sub-issues)
       placeholder: |
-        - [ ] Dado ..., quando ..., então ...
+        - [ ] Story A
+        - [ ] Story B
     validations:
       required: false
+
   - type: textarea
-    id: contexto
+    id: dod_feature
     attributes:
-      label: Contexto adicional
-      description: Referências a requisitos (RF/RN), legislação ou documentação
+      label: Definition of Done (Feature)
+      value: |
+        - [ ] Todas as Stories sub-issues mergeadas em `main`
+        - [ ] Cenários BDD da Feature validados em ambiente de staging
+        - [ ] Documentação técnica atualizada (ADRs, guias)
+        - [ ] Conformidade LGPD e WCAG 2.1 AA verificada onde aplicável
+    validations:
+      required: false
+
+  - type: textarea
+    id: dependencias
+    attributes:
+      label: Dependências
+      description: Outras Features, Epics ou decisões que esta Feature exige
+    validations:
+      required: false
+
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Referências
+      description: ADRs, requisitos (RF/RN), normas, documentos
     validations:
       required: false
