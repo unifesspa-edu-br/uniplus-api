@@ -4,6 +4,7 @@ title: "task(escopo): "
 type: Task
 labels: ["task"]
 projects: ["unifesspa-edu-br/1"]
+milestone: "Sprint 2 — Reestruturação modular + Classificação"
 body:
   - type: input
     id: story_pai

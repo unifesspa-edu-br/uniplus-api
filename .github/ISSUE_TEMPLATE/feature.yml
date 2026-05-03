@@ -4,6 +4,7 @@ title: "Feature: "
 type: Feature
 labels: ["feature"]
 projects: ["unifesspa-edu-br/1"]
+milestone: "Sprint 2 — Reestruturação modular + Classificação"
 body:
   - type: input
     id: epic_pai

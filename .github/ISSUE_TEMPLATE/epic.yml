@@ -4,6 +4,7 @@ title: "Epic: "
 type: Epic
 labels: ["epic"]
 projects: ["unifesspa-edu-br/1"]
+milestone: "Sprint 2 — Reestruturação modular + Classificação"
 body:
   - type: textarea
     id: tema_estrategico

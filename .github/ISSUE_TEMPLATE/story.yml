@@ -4,6 +4,7 @@ title: "US-FX-NN: "
 type: Story
 labels: ["story"]
 projects: ["unifesspa-edu-br/1"]
+milestone: "Sprint 2 — Reestruturação modular + Classificação"
 body:
   - type: input
     id: feature_pai
