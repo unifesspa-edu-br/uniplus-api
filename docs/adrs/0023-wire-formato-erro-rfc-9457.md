@@ -11,7 +11,7 @@ decision-makers:
 
 Toda resposta de erro (4xx/5xx) da `uniplus-api` precisa carregar informação útil para o consumidor: causa, contexto suficiente para acionar suporte ou autocorreção, identificadores para rastreamento. Sem padronização, o frontend lida com formatos heterogêneos (alguns endpoints retornam string, outros JSON ad-hoc, outros nada além do status code), integradores externos têm que escrever um parser por endpoint e auditores não conseguem mapear códigos retornados a normas vigentes.
 
-O `uniplus-web` já consome `RFC 7807 Problem Details` parcialmente via `ApiErrorHandlerService` — formato antecessor. A IETF publicou RFC 9457 em 2023 substituindo a 7807 com pequenas correções (notavelmente sobre extensions JSON e content-type). O `Microsoft.AspNetCore` emite ProblemDetails nativamente desde .NET 7.
+O `uniplus-web` já consome **RFC 7807 (Problem Details for HTTP APIs, predecessora)** parcialmente via `ApiErrorHandlerService`. A IETF publicou RFC 9457 em 2023 substituindo a 7807 com pequenas correções (notavelmente sobre extensions JSON e content-type). O `Microsoft.AspNetCore` emite ProblemDetails nativamente desde .NET 7.
 
 A umbrella [ADR-0022](0022-contrato-rest-canonico-umbrella.md) define como princípio cross-cutting que respostas de erro não podem carregar PII e que o contrato segue padrões abertos. Esta ADR materializa esses princípios na escolha do wire format e na lista de extensions adotadas.
 
@@ -43,7 +43,7 @@ Toda resposta 4xx ou 5xx é emitida com `Content-Type: application/problem+json`
 - **`title`** — frase curta em pt-BR, estável por `code` (não muda entre instâncias do mesmo erro).
 - **`status`** — código HTTP, redundante com a linha de status mas exigido pela RFC para clientes que só leem o body.
 - **`detail`** — frase em pt-BR explicando a instância específica do erro. **Não pode** ecoar valores rejeitados, refletir nomes de classes/exceptions internas nem expor caminhos de arquivo. Quando não há informação adicional além do `title`, omitir o campo.
-- **`instance`** — correlation ID opaco da request (ULID ou similar), nunca CPF, número de inscrição ou identificador externo (princípio LGPD da umbrella + [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md)).
+- **`instance`** — identificador opaco gerado por request, nunca CPF, número de inscrição ou identificador externo (princípio LGPD da umbrella + [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md)). A escolha do esquema de geração (ULID, GUID v7, snowflake) cabe à camada de implementação.
 
 ### Extensions adotadas
 
