@@ -11,14 +11,14 @@ decision-makers:
 
 A [ADR-0023](0023-wire-formato-erro-rfc-9457.md) decidiu o wire format de erro (RFC 9457 ProblemDetails) e a [ADR-0024](0024-mapeamento-domain-error-http.md) decidiu o mapeador `DomainError → HTTP`. Falta decidir o **wire format de sucesso**: como o body de respostas 2xx é estruturado.
 
-Há um debate clássico nessa decisão. A opção **envelope** (`{ success: true, data: {...}, error: null }`) é frequentemente proposta como conveniência para o frontend (parser único, discriminator boolean), e foi inicialmente preferida em discussões internas no projeto. A opção **body direto** (recurso é o JSON, sem wrapper) é o padrão de toda API pública de referência do mercado (Stripe, GitHub, AWS, Microsoft Graph, Google Cloud) e é o que `Microsoft.AspNetCore` emite nativamente.
+Há um debate clássico nessa decisão. A opção **envelope** (`{ success: true, data: {...}, error: null }`) é frequentemente proposta como conveniência para o frontend (parser único, discriminator boolean). A opção **body direto** (recurso é o JSON, sem wrapper) é o padrão de toda API pública de referência do mercado (Stripe, GitHub, AWS, Microsoft Graph, Google Cloud) e é o que `Microsoft.AspNetCore` emite nativamente.
 
 A decisão importa para o contrato V1 porque é o ponto onde a `uniplus-api` se posiciona como API pública alinhada com convenções REST + HTTP semantics ou como API com wire format proprietário. A umbrella ([ADR-0022](0022-contrato-rest-canonico-umbrella.md), princípio 6) já estabeleceu que a conformidade com padrões abertos é binding.
 
 ## Drivers da decisão
 
 - **Conformidade com REST + HTTP semantics ([RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html)).** Status code é a fonte de verdade primária do resultado da operação; body é a representação do recurso. Envelope com `success: bool` no body duplica esse sinal e historicamente diverge do status code real.
-- **Convergência com APIs de referência.** Toda API pública institucional/comercial relevante usa status code + body direto. Auditores externos e integradores institucionais (PROEG, jurídico, parceiros) reconhecem o padrão imediatamente; envelope custom exige documentação adicional.
+- **Convergência com APIs de referência.** Toda API pública institucional/comercial relevante usa status code + body direto. Auditores externos e integradores institucionais reconhecem o padrão imediatamente; envelope custom exige documentação adicional.
 - **Wire format não curva para consumidor.** Ergonomia de TypeScript/Angular é responsabilidade do consumer adapter `ApiResult<T>` (ADR-0011 do `uniplus-web`), não do wire. Curvar o wire para conveniência de uma stack consumidora compromete os demais (Postman, integradores externos, análise via cURL).
 - **Suporte nativo do framework.** `Microsoft.AspNetCore.Mvc` emite body direto sem adapter custom; `Microsoft.AspNetCore.OpenApi` ([ADR-0030](0030-openapi-3-1-contract-first.md)) gera schemas alinhados sem transformer extra.
 - **Content negotiation funciona naturalmente.** O `Content-Type: application/vnd.uniplus.<resource>.v<N>+json` ([ADR-0028](0028-versionamento-per-resource-content-negotiation.md)) representa o recurso em si; um envelope envolveria o recurso e exigiria nome de media type composto.
@@ -41,7 +41,7 @@ A semântica obrigatória de status code em 2xx:
 
 - **200 OK** — leitura de recurso existente, ou operação síncrona que retorna resultado no body.
 - **201 Created** — criação de recurso. Header `Location` aponta para o recurso criado; body opcional contém a representação inicial (recomendado para evitar round-trip).
-- **202 Accepted** — operação assíncrona aceita; body contém referência ao job/processo (id, status URL ou similar). Usado em comandos de longa duração que serão drenados via outbox/Wolverine.
+- **202 Accepted** — operação assíncrona aceita; body contém referência ao job/processo (ex.: id do job + endpoint para polling de status, ou URL de webhook). Padrão usado em comandos de longa duração; o mecanismo interno de drenagem (outbox transacional + Wolverine, [ADR-0004](0004-outbox-transacional-via-wolverine.md) e [ADR-0005](0005-cascading-messages-para-drenagem-de-domain-events.md)) é independente do contrato 202.
 - **204 No Content** — operação que naturalmente não retorna body (ex.: idempotent update sem campos derivados).
 
 200 é o default para leituras e operações síncronas com resultado tipado. 204 é restrito a operações sem payload de retorno — não é o caminho default para `PATCH`/`PUT`.
