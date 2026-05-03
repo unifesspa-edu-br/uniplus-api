@@ -61,7 +61,7 @@ Controllers consomem o mapper apenas via essa extension. Nenhum controller chama
 
 Três fitness tests ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md), pacote `TngTech.ArchUnitNET`):
 
-1. **Cobertura do registry.** Todo literal de `DomainError(code, ...)` ou `Result.Failure(code, ...)` no código-fonte de `Domain` e `Application` referencia um `code` registrado no `DomainErrorMappingRegistry`. Falha do teste lista os codes órfãos.
+1. **Cobertura do registry.** Verificação estática no CI (Roslyn analyzer dedicado ou equivalente — escolha de implementação) garante que todo `code` construído em `DomainError(...)` ou `Result.Failure(...)` no código-fonte de `Domain` e `Application` está registrado no `DomainErrorMappingRegistry`. Falha lista os codes órfãos. ArchUnitNET cobre os testes 2 e 3 abaixo, que são puramente estruturais.
 2. **Direção de dependência.** Tipos em `Unifesspa.UniPlus.*.Domain` e `Unifesspa.UniPlus.*.Application` não dependem de qualquer tipo em `Microsoft.AspNetCore.*` ou em `Unifesspa.UniPlus.*.API`.
 3. **Controllers sem acesso direto a `DomainError`.** Controllers retornam apenas `IActionResult` produzido por `result.ToActionResult(mapper)` ou `ObjectResult` tipado para o sucesso — nunca `BadRequest(domainError)`, `NotFound(domainError.Message)` ou similar.
 
@@ -88,7 +88,7 @@ Esta ADR **não muda** a forma como `Result<T>` e `DomainError` são construído
 
 - **Burocracia em cada novo `code`.** Cada erro novo no `Domain` exige uma linha no arquivo de registro do módulo + uma entrada no catálogo do portal. O ArchUnit garante que a linha do registry existe; a entrada do portal vira critério de revisão de PR.
 - **Risco de over-mapping.** Tentação de criar codes muito granulares ("um por exception"). Mitigação: revisão de PR; o `code` deve representar uma causa estável e referenciável publicamente, não um ponto de implementação.
-- **Migração de codes existentes.** Os 14 codes já em uso na slice Edital precisam ser migrados para a taxonomia `uniplus.<modulo>.<razao>` e registrados — entra no escopo do PR pilot do `EditalController`.
+- **Migração de codes existentes.** Os 14 codes em uso no `Domain` do módulo Seleção (espalhados por `Edital.*`, `Inscricao.*`, `Cpf.*`, `Email.*`, `NomeSocial.*`, `NumeroEdital.*`, `FormulaCalculo.*`, `PeriodoInscricao.*`, `NotaFinal.*`) precisam ser migrados para a taxonomia `uniplus.<modulo>.<razao>` e registrados — entra no escopo do PR pilot que migra o `EditalController` e os value objects relacionados.
 
 ### Neutras
 
@@ -96,7 +96,7 @@ Esta ADR **não muda** a forma como `Result<T>` e `DomainError` são construído
 
 ## Confirmação
 
-1. **Fitness tests ArchUnit** — três testes nomeados na seção "Boundary enforçado por ArchUnit" rodam em `tests/Unifesspa.UniPlus.*.ArchTests` no CI ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)).
+1. **Verificações estáticas no CI** — três checks nomeados na seção "Boundary enforçado por ArchUnit". O check 1 (cobertura) roda como Roslyn analyzer ou equivalente; os checks 2 e 3 (direção de dependência e ausência de `DomainError` em controllers) rodam em `tests/Unifesspa.UniPlus.*.ArchTests` via ArchUnitNET ([ADR-0012](0012-archunitnet-como-fitness-tests-arquiteturais.md)).
 2. **Cobertura do mapper.** Suite de testes de unidade verifica que `DomainErrorMappingRegistry.Resolve` cobre 100% dos codes coletados pelo ArchUnit. Falha indica registry desincronizado com o código real.
 3. **Smoke E2E (Postman/Newman).** Cenários conhecidos de erro batem `code` retornado contra valor esperado e contra entrada do catálogo `/erros/{code}` quando o portal estiver no ar ([ADR-0023](0023-wire-formato-erro-rfc-9457.md), Confirmação 3).
 4. **Revisão arquitetural de PR.** Qualquer PR que adicione `code` novo no `Domain` ou `Application` deve incluir a entrada no registry e a entrada-rascunho no catálogo do portal. Critério explícito no checklist do PR template.
