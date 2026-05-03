@@ -50,6 +50,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0019](0019-proibir-pii-em-path-segments-de-url.md) | Proibir PII em path segments de URL | accepted | 2026-05-01 |
 | [0020](0020-identity-brokering-govbr.md) | Identity brokering gov.br via Keycloak | accepted | 2026-05-01 |
 | [0021](0021-adocao-awesomeassertions-como-biblioteca-de-assertions.md) | Adoção de AwesomeAssertions como biblioteca de assertions de testes | accepted | 2026-05-02 |
+| [0022](0022-contrato-rest-canonico-umbrella.md) | Contrato REST canônico V1 — frame transversal e índice das ADRs filhas | accepted | 2026-05-03 |
 
 ## Como adicionar um novo ADR
 
