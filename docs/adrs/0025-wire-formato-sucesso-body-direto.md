@@ -66,7 +66,7 @@ Toda response 4xx/5xx vai como `Content-Type: application/problem+json` com sche
 
 - Como o consumidor frontend transforma o body em `Result<T> | Error<ProblemDetails>` — decisão na ADR-0011 do `uniplus-web` (`ApiResult<T>` discriminated union, opção A da hierarquia umbrella).
 - Como `_links` HATEOAS são embutidos no body — decisão na [ADR-0029](0029-hateoas-level-1-links.md). Esta ADR estabelece que o body é o recurso direto; HATEOAS adiciona um campo `_links` ao recurso, não envelopa.
-- Como cursor de paginação é serializado — decisão na [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md). Coleção continua sendo array no body; cursor vai por `Link` header + fields auxiliares fora do array.
+- Como cursor de paginação é serializado — decisão na [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md). Coleção continua sendo array no body; cursor e demais metadados de paginação vão exclusivamente por headers HTTP (`Link` + headers auxiliares definidos pela ADR-0026), nunca em sibling fields no root do array.
 - Como a versão do recurso é negociada — decisão na [ADR-0028](0028-versionamento-per-resource-content-negotiation.md).
 
 ## Consequências
