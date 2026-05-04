@@ -152,6 +152,21 @@ public sealed class VendorMediaTypeAttributeTests
     }
 
     [Fact]
+    public void OnActionExecuting_MultiplasVersoesComQDiferente_AceitaMaiorQ()
+    {
+        // RFC 9110 §12.5.1: maior q-value vence sobre ordem do header.
+        // Cliente lista v1 antes de v2 mas atribui q maior a v2 — deve aceitar v2.
+        VendorMediaTypeAttribute attr = new() { Resource = "edital", Versions = [1, 2] };
+        ActionExecutingContext context = CreateContext(
+            "application/vnd.uniplus.edital.v1+json;q=0.5, application/vnd.uniplus.edital.v2+json;q=0.9");
+
+        attr.OnActionExecuting(context);
+
+        context.Result.Should().BeNull();
+        context.HttpContext.Items["__UniPlusVendorMediaTypeAccepted"].Should().Be(2);
+    }
+
+    [Fact]
     public void OnActionExecuting_QZeroEmV1ComWildcard_QuandoV1ELatest_Retorna406()
     {
         // Cliente exclui v1 explicitamente e aceita */* — como v1 é a única

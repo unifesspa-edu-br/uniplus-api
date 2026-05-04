@@ -65,13 +65,19 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
             return;
         }
 
+        // RFC 9110 §12.5.1: maior q-value vence quando há múltiplos aceitáveis.
+        // OrderByDescending estável preserva ordem do header como tie-breaker.
+        // Quality ausente == 1.0 (default RFC).
+        List<MediaTypeHeaderValue> ordered = [.. parsed
+            .OrderByDescending(static m => m.Quality ?? 1.0)];
+
         // RFC 9110 §12.5.1: q=0 não é apenas "ignorar" — é "excluir do match".
         // Construir primeiro a lista de exclusões para que matches por wildcard
         // ou por vendor explícito subsequentes respeitem essas exclusões.
         HashSet<int> excludedVersions = [];
         bool excludeAllViaWildcard = false;
 
-        foreach (MediaTypeHeaderValue media in parsed)
+        foreach (MediaTypeHeaderValue media in ordered)
         {
             if (media.Quality is not 0)
                 continue;
@@ -87,7 +93,7 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
             }
         }
 
-        foreach (MediaTypeHeaderValue media in parsed)
+        foreach (MediaTypeHeaderValue media in ordered)
         {
             if (media.Quality is 0)
                 continue;

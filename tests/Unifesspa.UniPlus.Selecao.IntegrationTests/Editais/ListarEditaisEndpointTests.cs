@@ -95,6 +95,28 @@ public sealed class ListarEditaisEndpointTests
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.cursor_limit_invalido");
     }
 
+    [Fact(DisplayName = "GET /api/editais ?limit do query string vence sobre limit do cursor")]
+    public async Task Listar_LimitDoQueryStringVencePrecedencia()
+    {
+        await SemearEditaisAsync(_fixture.Factory, quantidade: 6);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // Primeira página com limit=2 — emite cursor com Limit=2 embutido.
+        HttpResponseMessage paginaUm = await client.GetAsync(new Uri("/api/editais?limit=2", UriKind.Relative));
+        paginaUm.StatusCode.Should().Be(HttpStatusCode.OK);
+        string nextCursor = ExtrairCursorNext(paginaUm);
+
+        // Reutiliza o cursor mas pede explicitamente limit=4 — query string deve vencer.
+        HttpResponseMessage paginaDois = await client.GetAsync(
+            new Uri($"/api/editais?cursor={Uri.EscapeDataString(nextCursor)}&limit=4", UriKind.Relative));
+        paginaDois.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        IReadOnlyList<Guid> ids = await ExtrairIdsAsync(paginaDois);
+        ids.Count.Should().BeLessThanOrEqualTo(4);
+        ids.Count.Should().BeGreaterThan(2,
+            "limit=4 do query string venceu sobre Limit=2 herdado do cursor");
+    }
+
     [Fact(DisplayName = "GET /api/editais navega cursor sem duplicar nem omitir itens")]
     public async Task Listar_CursorNavegacao_PreservaJanela()
     {
