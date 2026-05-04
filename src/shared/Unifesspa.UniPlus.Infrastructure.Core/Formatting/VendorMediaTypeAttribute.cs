@@ -69,9 +69,16 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
 
         foreach (MediaTypeHeaderValue media in parsed)
         {
+            // RFC 9110 §12.5.1: q=0 marca o media range como inaceitável.
+            // Pular sem registrar como suporte / sem disparar 406 — o cliente
+            // pode listar outras opções aceitáveis na mesma sequência.
+            if (media.Quality is 0)
+                continue;
+
             string mediaType = media.MediaType.Value ?? string.Empty;
 
-            if (mediaType is "*/*" or "application/*" or "application/json")
+            // RFC 9110 §8.3.1: media type tokens são case-insensitive.
+            if (IsWildcardOrJson(mediaType))
             {
                 StoreAcceptedVersion(context.HttpContext, latest);
                 return;
@@ -110,12 +117,18 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
         }
     }
 
+    private static bool IsWildcardOrJson(string mediaType) =>
+        string.Equals(mediaType, "*/*", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(mediaType, "application/*", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase);
+
     private bool TryMatchVendor(string mediaType, out int version)
     {
         version = 0;
 
-        if (!mediaType.StartsWith(VendorPrefix, StringComparison.Ordinal)
-            || !mediaType.EndsWith(JsonSuffix, StringComparison.Ordinal))
+        // RFC 9110 §8.3.1: type/subtype são case-insensitive.
+        if (!mediaType.StartsWith(VendorPrefix, StringComparison.OrdinalIgnoreCase)
+            || !mediaType.EndsWith(JsonSuffix, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -127,7 +140,7 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
             return false;
         }
 
-        if (!string.Equals(match.Groups["resource"].Value, Resource, StringComparison.Ordinal))
+        if (!string.Equals(match.Groups["resource"].Value, Resource, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -165,6 +178,6 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
         };
     }
 
-    [GeneratedRegex(@"^(?<resource>[a-z][a-z0-9_-]*)\.v(?<version>\d+)$")]
+    [GeneratedRegex(@"^(?<resource>[a-z][a-z0-9_-]*)\.v(?<version>\d+)$", RegexOptions.IgnoreCase)]
     private static partial Regex VendorMimeRegex();
 }
