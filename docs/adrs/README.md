@@ -55,6 +55,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0024](0024-mapeamento-domain-error-http.md) | Mapeamento `DomainError → HTTP` via `IDomainErrorMapper` registry | accepted | 2026-05-03 |
 | [0025](0025-wire-formato-sucesso-body-direto.md) | Wire format de sucesso — body é a representação direta do recurso | accepted | 2026-05-03 |
 | [0026](0026-paginacao-cursor-opaco-cifrado.md) | Paginação via cursor opaco cifrado e propagação por `Link` header | accepted | 2026-05-03 |
+| [0027](0027-idempotency-key-store-postgresql.md) | `Idempotency-Key` opt-in com store em PostgreSQL adjacente ao outbox | accepted | 2026-05-03 |
 | [0029](0029-hateoas-level-1-links.md) | HATEOAS Level 1 — `_links` mínimo embutido no recurso | accepted | 2026-05-03 |
 
 ## Como adicionar um novo ADR
