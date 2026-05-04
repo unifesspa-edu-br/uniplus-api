@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Messaging.Middleware;
+using Middleware;
 
 using Wolverine;
 using Wolverine.EntityFrameworkCore;

@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-using Unifesspa.UniPlus.Kernel.Domain.Events;
+using Events;
 
 public abstract class EntityBase
 {

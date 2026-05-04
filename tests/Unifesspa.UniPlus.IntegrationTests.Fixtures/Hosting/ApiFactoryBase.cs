@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Authentication;
 
 /// <summary>
 /// Base <see cref="WebApplicationFactory{TEntryPoint}"/> that wires up shared integration test

@@ -11,10 +11,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.API.Configuration;
-using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Queries.Editais;
+using Configuration;
+using Application.Commands.Editais;
+using Application.DTOs;
+using Application.Queries.Editais;
 
 [ApiController]
 [Route("api/editais")]

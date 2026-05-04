@@ -77,9 +77,9 @@ public sealed class Stage1ArchitectureRulesTests
     {
         ReflectionAssembly[] assemblies =
         [
-            typeof(Ingresso.Domain.Entities.Chamada).Assembly,
-            typeof(Ingresso.Infrastructure.Persistence.IngressoDbContext).Assembly,
-            typeof(Ingresso.API.IngressoApiAssemblyMarker).Assembly,
+            typeof(Domain.Entities.Chamada).Assembly,
+            typeof(Infrastructure.Persistence.IngressoDbContext).Assembly,
+            typeof(API.IngressoApiAssemblyMarker).Assembly,
             typeof(Selecao.Domain.Entities.Edital).Assembly,
             typeof(Selecao.Application.Commands.Editais.CriarEditalCommand).Assembly,
             typeof(Selecao.Infrastructure.Persistence.SelecaoDbContext).Assembly,
@@ -93,8 +93,8 @@ public sealed class Stage1ArchitectureRulesTests
     {
         ReflectionAssembly[] assemblies =
         [
-            typeof(global::Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommandBus).Assembly,
-            typeof(Ingresso.Domain.Entities.Chamada).Assembly,
+            typeof(Application.Abstractions.Messaging.ICommandBus).Assembly,
+            typeof(Domain.Entities.Chamada).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(assemblies).Build();

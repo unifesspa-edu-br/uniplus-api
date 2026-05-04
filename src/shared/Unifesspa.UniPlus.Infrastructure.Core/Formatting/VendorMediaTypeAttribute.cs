@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Net.Http.Headers;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Errors;
 
 /// <summary>
 /// Action filter que negocia <c>application/vnd.uniplus.&lt;resource&gt;.v&lt;N&gt;+json</c>

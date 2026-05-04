@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Domain.Entities;
+using Domain.Interfaces;
 
 public sealed class EditalRepository : IEditalRepository
 {

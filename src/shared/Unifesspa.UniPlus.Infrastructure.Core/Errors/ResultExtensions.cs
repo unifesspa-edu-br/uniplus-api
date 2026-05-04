@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-using Unifesspa.UniPlus.Kernel.Results;
+using Kernel.Results;
 
 [SuppressMessage(
     "Performance",

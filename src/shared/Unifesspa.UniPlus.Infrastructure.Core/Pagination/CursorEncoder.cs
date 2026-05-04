@@ -4,7 +4,7 @@ using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Cryptography;
 
 /// <summary>
 /// Codifica e decodifica cursores opacos AES-GCM (ADR-0026): JSON do

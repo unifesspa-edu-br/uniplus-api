@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
-using Unifesspa.UniPlus.Selecao.Domain.Events;
+using Domain.Events;
 
 /// <summary>
 /// Coletor in-memory de domain events usado pelos testes de outbox cascading

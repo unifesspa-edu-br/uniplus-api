@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using System.Text.RegularExpressions;
 
-using Unifesspa.UniPlus.Kernel.Results;
+using Results;
 
 public sealed partial record Email
 {

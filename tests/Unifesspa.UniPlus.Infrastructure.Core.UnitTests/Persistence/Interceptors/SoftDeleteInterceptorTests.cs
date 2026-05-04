@@ -5,7 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Kernel.Domain.Entities;
 
 public sealed class SoftDeleteInterceptorTests
 {

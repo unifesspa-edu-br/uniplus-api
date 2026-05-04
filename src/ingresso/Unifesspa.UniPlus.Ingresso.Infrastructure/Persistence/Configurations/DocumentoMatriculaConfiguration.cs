@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using Unifesspa.UniPlus.Ingresso.Domain.Entities;
+using Domain.Entities;
 
 public sealed class DocumentoMatriculaConfiguration : IEntityTypeConfiguration<DocumentoMatricula>
 {

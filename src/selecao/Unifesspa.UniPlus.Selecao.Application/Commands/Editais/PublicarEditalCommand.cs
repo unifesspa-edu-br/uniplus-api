@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Kernel.Results;
+using Kernel.Results;
 
 /// <summary>
 /// Comando para publicar um edital existente. Após a publicação,

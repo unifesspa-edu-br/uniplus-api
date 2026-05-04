@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Domain.Enums;
+using Domain.ValueObjects;
 
 [SuppressMessage(
     "Performance",

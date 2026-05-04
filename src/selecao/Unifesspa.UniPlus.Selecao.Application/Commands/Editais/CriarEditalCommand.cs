@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Kernel.Results;
+using Domain.Enums;
 
 /// <summary>
 /// Comando para criação de um novo edital. Validado automaticamente pelo

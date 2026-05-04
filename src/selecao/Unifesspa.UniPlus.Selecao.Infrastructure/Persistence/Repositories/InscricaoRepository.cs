@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Interfaces;
 
 public sealed class InscricaoRepository : IInscricaoRepository
 {

@@ -11,10 +11,10 @@ using Npgsql;
 
 using Wolverine;
 
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Events;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Kernel.Results;
+using Domain.Enums;
+using Domain.Events;
+using Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Cenários produtivos do outbox cascading (ADR-0005). Equivalentes de

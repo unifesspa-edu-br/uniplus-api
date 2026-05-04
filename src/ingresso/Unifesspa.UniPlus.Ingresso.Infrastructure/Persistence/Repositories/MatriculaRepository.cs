@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Ingresso.Domain.Entities;
-using Unifesspa.UniPlus.Ingresso.Domain.Interfaces;
+using Domain.Entities;
+using Domain.Interfaces;
 
 public sealed class MatriculaRepository : IMatriculaRepository
 {

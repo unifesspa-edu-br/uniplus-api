@@ -9,11 +9,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Events;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Kernel.Results;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Events;
+using Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Cenário fim-a-fim do fluxo de referência ADR-0005: HTTP request →

@@ -9,12 +9,12 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Kernel.Results;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
+using Outbox.Cascading;
 
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]

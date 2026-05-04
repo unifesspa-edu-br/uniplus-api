@@ -91,7 +91,7 @@ public class RequestLoggingMiddlewareTests
         elapsed.Should().BeGreaterThanOrEqualTo(0d);
         // Tipo preservado como ScalarValue de double: testar o tipo subjacente
         // evita regressão que reintroduza truncamento para long.
-        ((Serilog.Events.ScalarValue)log.Properties["ElapsedMs"]).Value.Should().BeOfType<double>();
+        ((ScalarValue)log.Properties["ElapsedMs"]).Value.Should().BeOfType<double>();
     }
 
     [Fact]

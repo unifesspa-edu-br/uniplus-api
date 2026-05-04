@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Validators;
 
 using FluentValidation;
 
-using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
+using Commands.Editais;
 
 public sealed class CriarEditalCommandValidator : AbstractValidator<CriarEditalCommand>
 {

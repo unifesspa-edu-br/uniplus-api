@@ -5,10 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Domain.Interfaces;
+using ExternalServices;
+using Persistence;
+using Persistence.Repositories;
 
 public static class SelecaoInfrastructureRegistration
 {
