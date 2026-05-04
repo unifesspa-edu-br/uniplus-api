@@ -57,9 +57,15 @@ public static class PaginationControllerExtensions
             ? parsed
             : null;
 
+        // Self espelha o request original (cursor + limit como vieram).
+        // Next NÃO inclui limit: o cursor já carrega o tamanho de janela
+        // (clampado server-side no decode). Incluir ?limit=N na URL faria
+        // o validator do binder rodar primeiro e rejeitar com 422 caso a
+        // config tenha apertado LimitMax após a emissão do cursor —
+        // quebrando navegação de cursores stale que ainda estariam OK.
         PageLinks links = new(
             Self: BuildLink(request, originalCursor, originalLimitParsed),
-            Next: nextCursor is null ? null : BuildLink(request, nextCursor, page.Limit),
+            Next: nextCursor is null ? null : BuildLink(request, nextCursor, limit: null),
             Prev: null);
 
         controller.Response.Headers["Link"] = LinkHeaderBuilder.Build(links);
@@ -70,7 +76,11 @@ public static class PaginationControllerExtensions
 
     private static string BuildLink(HttpRequest request, string? cursor, int? limit)
     {
-        string baseUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+        // Inclui PathBase para honrar deploys atrás de reverse proxy
+        // (Traefik, nginx, ingress) ou hosts com app.UsePathBase("/foo").
+        // Sem isso, links de navegação apontam para /api/editais em vez
+        // de /foo/api/editais e clientes recebem 404 ao seguir Link header.
+        string baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}{request.Path}";
         List<string> parts = [];
         if (!string.IsNullOrEmpty(cursor))
             parts.Add($"cursor={Uri.EscapeDataString(cursor)}");
