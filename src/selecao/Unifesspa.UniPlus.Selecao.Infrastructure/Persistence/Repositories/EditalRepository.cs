@@ -54,4 +54,24 @@ public sealed class EditalRepository : IEditalRepository
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public async Task<IReadOnlyList<Edital>> ListarPaginadoAsync(
+        Guid? afterId,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        IQueryable<Edital> query = _context.Editais
+            .AsNoTracking()
+            .OrderBy(e => e.Id);
+
+        if (afterId is { } cursor)
+        {
+            query = query.Where(e => e.Id.CompareTo(cursor) > 0);
+        }
+
+        return await query
+            .Take(take)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
 }
