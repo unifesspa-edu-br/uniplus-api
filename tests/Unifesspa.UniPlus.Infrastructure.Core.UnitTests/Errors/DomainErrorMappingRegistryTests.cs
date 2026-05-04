@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
-public class DomainErrorMappingRegistryTests
+public sealed class DomainErrorMappingRegistryTests
 {
     // ─── TryGetMapping — código existente ──────────────────────────────────
 

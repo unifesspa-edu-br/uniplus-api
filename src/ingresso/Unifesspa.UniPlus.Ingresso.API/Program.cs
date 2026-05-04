@@ -3,10 +3,12 @@ using Serilog;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
+using Unifesspa.UniPlus.Ingresso.API.Errors;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -31,6 +33,9 @@ builder.Services.AddEndpointsApiExplorer();
 
 string connectionString = builder.Configuration.GetConnectionString("IngressoDb")
     ?? throw new InvalidOperationException("Connection string 'IngressoDb' não configurada.");
+
+builder.Services.AddSingleton<IDomainErrorRegistration, IngressoDomainErrorRegistration>();
+builder.Services.AddDomainErrorMapper();
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();

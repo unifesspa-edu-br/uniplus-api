@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -82,13 +83,14 @@ public sealed class PublicarEditalEndpointTests
         HttpResponseMessage response = await client.PostAsync(new Uri($"/api/v1/editais/{inexistente}/publicar", UriKind.Relative), content: null);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        DomainError? erro = await response.Content.ReadFromJsonAsync<DomainError>();
-        erro!.Code.Should().Be("Edital.NaoEncontrado");
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.selecao.edital.nao_encontrado");
     }
 
     [Fact(DisplayName =
-        "POST /editais/{id}/publicar é idempotente — segunda chamada retorna 400 com Edital.JaPublicado")]
-    public async Task PublicarEdital_QuandoJaPublicado_Retorna400()
+        "POST /editais/{id}/publicar é idempotente — segunda chamada retorna 422 com Edital.JaPublicado")]
+    public async Task PublicarEdital_QuandoJaPublicado_Retorna422()
     {
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
@@ -99,9 +101,10 @@ public sealed class PublicarEditalEndpointTests
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         HttpResponseMessage segunda = await client.PostAsync(new Uri($"/api/v1/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
-        segunda.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        DomainError? erro = await segunda.Content.ReadFromJsonAsync<DomainError>();
-        erro!.Code.Should().Be("Edital.JaPublicado");
+        segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.selecao.edital.ja_publicado");
     }
 
     private static async Task<Edital> SemearEditalAsync(CascadingApiFactory api)
