@@ -25,7 +25,10 @@ public static class ListarEditaisQueryHandler
             .ListarPaginadoAsync(query.AfterId, query.Limit + 1, cancellationToken)
             .ConfigureAwait(false);
 
-        if (page.Count > query.Limit)
+        // Defesa contra Limit <= 0 (config inconsistente que escapou aos
+        // validators): Take(0) devolveria array vazio e limited[^1] lançaria
+        // IndexOutOfRangeException, virando 500 numa listagem normal.
+        if (page.Count > query.Limit && query.Limit > 0)
         {
             EditalDto[] limited = [.. page.Take(query.Limit).Select(Project)];
             Guid proximo = limited[^1].Id;

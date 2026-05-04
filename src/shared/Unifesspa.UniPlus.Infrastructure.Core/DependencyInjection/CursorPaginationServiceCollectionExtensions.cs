@@ -24,6 +24,14 @@ public static class CursorPaginationServiceCollectionExtensions
         services
             .AddOptions<CursorPaginationOptions>()
             .Bind(configuration.GetSection(CursorPaginationOptions.SectionName))
+            // Validators explícitos: ValidateOnStart sem regras é no-op e config
+            // inconsistente (LimitMin > LimitMax, etc.) só falharia em runtime
+            // dentro do Math.Clamp do binder, devolvendo 500.
+            .Validate(static o => o.LimitMin >= 1, "CursorPaginationOptions.LimitMin deve ser >= 1.")
+            .Validate(static o => o.LimitMax >= o.LimitMin, "CursorPaginationOptions.LimitMax deve ser >= LimitMin.")
+            .Validate(static o => o.LimitDefault >= o.LimitMin && o.LimitDefault <= o.LimitMax,
+                "CursorPaginationOptions.LimitDefault deve estar entre LimitMin e LimitMax.")
+            .Validate(static o => o.CursorTtl > TimeSpan.Zero, "CursorPaginationOptions.CursorTtl deve ser positivo.")
             .ValidateOnStart();
 
         services.AddSingleton<CursorEncoder>();

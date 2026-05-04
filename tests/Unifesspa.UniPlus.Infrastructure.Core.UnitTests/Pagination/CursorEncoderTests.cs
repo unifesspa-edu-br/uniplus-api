@@ -19,7 +19,7 @@ public sealed class CursorEncoderTests
         LocalAesEncryptionService encryption = new(
             Options.Create(new EncryptionOptions { Provider = "local", LocalKey = ValidKeyBase64 }),
             NullLogger<LocalAesEncryptionService>.Instance);
-        return (new CursorEncoder(encryption, CursorEncoder.DefaultKeyName, time), time);
+        return (new CursorEncoder(encryption, time), time);
     }
 
     private sealed class MutableTimeProvider : TimeProvider
