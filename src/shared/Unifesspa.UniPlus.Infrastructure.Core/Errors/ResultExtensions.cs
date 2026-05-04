@@ -37,7 +37,7 @@ public static class ResultExtensions
         bool found = mapper.TryGetMapping(error.Code, out DomainErrorMapping? mapping);
 
         int status = found ? mapping!.Status : StatusCodes.Status400BadRequest;
-        string code = found ? mapping!.Type : "uniplus.erro_nao_mapeado";
+        string code = found ? mapping!.Code : "uniplus.erro_nao_mapeado";
         string title = found ? mapping!.Title : "Erro de domínio";
 
         ProblemDetails problem = new()

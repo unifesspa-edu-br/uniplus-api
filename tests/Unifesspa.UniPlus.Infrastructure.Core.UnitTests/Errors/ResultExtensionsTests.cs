@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
-public class ResultExtensionsTests
+public sealed class ResultExtensionsTests
 {
     private static readonly DomainErrorMapping MappingNaoEncontrado =
         new(StatusCodes.Status404NotFound, "uniplus.selecao.edital.nao_encontrado", "Edital não encontrado");

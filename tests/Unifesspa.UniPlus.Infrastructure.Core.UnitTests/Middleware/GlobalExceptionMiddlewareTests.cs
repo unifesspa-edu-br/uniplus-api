@@ -15,7 +15,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
-public class GlobalExceptionMiddlewareTests
+public sealed class GlobalExceptionMiddlewareTests
 {
     // ─── Fluxo sem exceção ─────────────────────────────────────────────────
 
