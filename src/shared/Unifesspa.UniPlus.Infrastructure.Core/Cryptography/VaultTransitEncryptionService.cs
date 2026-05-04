@@ -108,9 +108,11 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
 
     private VaultClient CreateVaultClient()
     {
-        IAuthMethodInfo authMethod = string.IsNullOrWhiteSpace(_vaultToken)
+        // K8s auth tem precedência quando o arquivo JWT existe — garante que um VaultToken
+        // acidentalmente injetado em produção não substitua a identidade de workload.
+        IAuthMethodInfo authMethod = !string.IsNullOrWhiteSpace(_jwtPath) && File.Exists(_jwtPath)
             ? new KubernetesAuthMethodInfo(_role, File.ReadAllText(_jwtPath))
-            : new TokenAuthMethodInfo(_vaultToken);
+            : new TokenAuthMethodInfo(_vaultToken!);
 
         return new VaultClient(new VaultClientSettings(_vaultAddress, authMethod));
     }
