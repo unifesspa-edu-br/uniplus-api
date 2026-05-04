@@ -8,7 +8,8 @@ public static partial class HttpResponsePiiAssertions
     private static readonly (string Name, Regex Pattern)[] PiiPatterns =
     [
         ("nome + CPF combinados", NomeCpfRegex()),
-        ("CPF não mascarado", CpfRegex()),
+        ("CPF não mascarado (formatado)", CpfRegex()),
+        ("CPF não mascarado (sem formatação)", CpfCruRegex()),
         ("e-mail completo", EmailRegex()),
     ];
 
@@ -88,6 +89,10 @@ public static partial class HttpResponsePiiAssertions
 
     [GeneratedRegex(@"\d{3}\.\d{3}\.\d{3}-\d{2}")]
     private static partial Regex CpfRegex();
+
+    // CPF cru: exatamente 11 dígitos não adjacentes a outros dígitos.
+    [GeneratedRegex(@"(?<!\d)\d{11}(?!\d)")]
+    private static partial Regex CpfCruRegex();
 
     [GeneratedRegex(@"\S+@\S+\.\S+")]
     private static partial Regex EmailRegex();
