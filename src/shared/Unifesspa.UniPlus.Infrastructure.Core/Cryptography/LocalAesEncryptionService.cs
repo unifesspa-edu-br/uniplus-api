@@ -63,7 +63,8 @@ internal sealed partial class LocalAesEncryptionService : IUniPlusEncryptionServ
             byte[] tag = new byte[TagSizeBytes];
 
             using AesGcm aes = new(_key, TagSizeBytes);
-            aes.Encrypt(nonce, plaintext, ciphertext, tag);
+            aes.Encrypt(nonce, plaintext, ciphertext, tag,
+                associatedData: System.Text.Encoding.UTF8.GetBytes(keyName));
 
             byte[] result = new byte[NonceSizeBytes + TagSizeBytes + ciphertext.Length];
             nonce.CopyTo(result, 0);
@@ -100,7 +101,8 @@ internal sealed partial class LocalAesEncryptionService : IUniPlusEncryptionServ
             byte[] plaintext = new byte[encrypted.Length];
 
             using AesGcm aes = new(_key, TagSizeBytes);
-            aes.Decrypt(nonce, encrypted, tag, plaintext);
+            aes.Decrypt(nonce, encrypted, tag, plaintext,
+                associatedData: System.Text.Encoding.UTF8.GetBytes(keyName));
 
             LogDecrypt(_logger, keyName);
             return Task.FromResult(plaintext);
