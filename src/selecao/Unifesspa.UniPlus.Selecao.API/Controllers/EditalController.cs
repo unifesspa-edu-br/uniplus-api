@@ -6,13 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Editais;
 
 [ApiController]
-[Route("api/v1/editais")]
+[Route("api/editais")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -42,8 +43,10 @@ public sealed class EditalController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [VendorMediaType(Resource = "edital", Versions = [1])]
     [ProducesResponseType(typeof(EditalDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
         EditalDto? edital = await _queryBus.Send(new ObterEditalQuery(id), cancellationToken);
