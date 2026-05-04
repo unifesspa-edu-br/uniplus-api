@@ -6,6 +6,13 @@
     <!-- Authentication -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
 
+    <!-- OpenAPI -->
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.OpenApi.Kiota" Version="1.31.1" />
+
+    <!-- Encryption -->
+    <PackageVersion Include="VaultSharp" Version="1.17.5.1" />
+
     <!-- CQRS & Messaging -->
     <PackageVersion Include="WolverineFx" Version="5.32.1" />
     <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="5.32.1" />
