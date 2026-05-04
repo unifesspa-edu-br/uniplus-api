@@ -59,6 +59,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0028](0028-versionamento-per-resource-content-negotiation.md) | Versionamento per-resource via content negotiation | accepted | 2026-05-03 |
 | [0029](0029-hateoas-level-1-links.md) | HATEOAS Level 1 — `_links` mínimo embutido no recurso | accepted | 2026-05-03 |
 | [0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md) | Geração de OpenAPI 3.1 via `Microsoft.AspNetCore.OpenApi` com pipeline de pós-processamento | accepted | 2026-05-03 |
+| [0031](0031-decoding-de-cursor-opaco-no-boundary-http.md) | Decoding de cursor opaco no boundary HTTP, não em handlers de Application | proposed | 2026-05-04 |
 
 ## Como adicionar um novo ADR
 
