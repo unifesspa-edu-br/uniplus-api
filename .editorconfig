@@ -28,7 +28,34 @@ dotnet_diagnostic.CS8602.severity = error
 dotnet_diagnostic.CS8603.severity = error
 dotnet_diagnostic.CS8604.severity = error
 
-# Naming conventions
+# Naming conventions — ordem importa: Roslyn aplica a primeira regra que casa,
+# então constantes e static readonly precisam vir ANTES da regra geral de
+# private_fields, senão IDE1006 marca `const Foo` como violação por não ter
+# prefixo `_`. Convenção .NET (BCL, runtime, MS guidelines):
+#   - const                → PascalCase
+#   - static readonly      → PascalCase
+#   - private field        → _camelCase
+#   - private static field → _camelCase (regra geral; sem distinção especial)
+
+# Constantes em qualquer accessibility → PascalCase
+dotnet_naming_rule.constants_should_be_pascal_case.severity = warning
+dotnet_naming_rule.constants_should_be_pascal_case.symbols = constants
+dotnet_naming_rule.constants_should_be_pascal_case.style = pascal_case
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+
+# Static readonly em qualquer accessibility → PascalCase
+dotnet_naming_rule.static_readonly_should_be_pascal_case.severity = warning
+dotnet_naming_rule.static_readonly_should_be_pascal_case.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_should_be_pascal_case.style = pascal_case
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.applicable_accessibilities = *
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+# Private fields (instance): _camelCase
 dotnet_naming_rule.private_fields_should_be_camel_case.severity = warning
 dotnet_naming_rule.private_fields_should_be_camel_case.symbols = private_fields
 dotnet_naming_rule.private_fields_should_be_camel_case.style = camel_case_underscore_prefix
