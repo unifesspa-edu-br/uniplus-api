@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
+using Unifesspa.UniPlus.Selecao.API.Configuration;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
@@ -51,6 +52,10 @@ builder.Services.AddDomainErrorMapper();
 builder.Services.AddUniPlusEncryption(builder.Configuration);
 builder.Services.AddSingleton<CursorEncoder>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services
+    .AddOptions<EditalPaginationOptions>()
+    .Bind(builder.Configuration.GetSection(EditalPaginationOptions.SectionName))
+    .ValidateOnStart();
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
