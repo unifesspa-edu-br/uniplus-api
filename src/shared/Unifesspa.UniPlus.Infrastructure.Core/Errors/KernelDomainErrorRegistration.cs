@@ -1,7 +1,11 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.AspNetCore.Http;
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
+    Justification = "Instanciada via IServiceProvider.AddSingleton<IDomainErrorRegistration, KernelDomainErrorRegistration>() em AddDomainErrorMapper().")]
 internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
