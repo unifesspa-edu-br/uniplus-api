@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -20,22 +21,24 @@ public sealed class EditalController : ControllerBase
 {
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
+    private readonly IDomainErrorMapper _mapper;
 
-    public EditalController(ICommandBus commandBus, IQueryBus queryBus)
+    public EditalController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
     {
         _commandBus = commandBus;
         _queryBus = queryBus;
+        _mapper = mapper;
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Criar([FromBody] CriarEditalCommand command, CancellationToken cancellationToken)
     {
         Result<Guid> resultado = await _commandBus.Send(command, cancellationToken);
-        return resultado.IsSuccess
-            ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value)
-            : BadRequest(resultado.Error);
+        if (resultado.IsSuccess)
+            return CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value);
+        return resultado.ToActionResult(_mapper);
     }
 
     [HttpGet("{id:guid}")]
@@ -53,18 +56,13 @@ public sealed class EditalController : ControllerBase
     // IEnvelopeTransaction da configuração produtiva (ADR-0005).
     [HttpPost("{id:guid}/publicar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(Guid id, CancellationToken cancellationToken)
     {
         Result resultado = await _commandBus.Send(new PublicarEditalCommand(id), cancellationToken);
         if (resultado.IsSuccess)
-        {
             return NoContent();
-        }
-
-        return resultado.Error!.Code == "Edital.NaoEncontrado"
-            ? NotFound(resultado.Error)
-            : BadRequest(resultado.Error);
+        return resultado.ToActionResult(_mapper);
     }
 }
