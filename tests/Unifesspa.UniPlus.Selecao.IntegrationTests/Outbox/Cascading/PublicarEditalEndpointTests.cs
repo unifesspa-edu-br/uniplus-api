@@ -49,7 +49,7 @@ public sealed class PublicarEditalEndpointTests
 
         Edital edital = await SemearEditalAsync(api);
 
-        HttpResponseMessage response = await client.PostAsync(new Uri($"/api/v1/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage response = await client.PostAsync(new Uri($"/api/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -80,7 +80,7 @@ public sealed class PublicarEditalEndpointTests
 
         var inexistente = Guid.NewGuid();
 
-        HttpResponseMessage response = await client.PostAsync(new Uri($"/api/v1/editais/{inexistente}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage response = await client.PostAsync(new Uri($"/api/editais/{inexistente}/publicar", UriKind.Relative), content: null);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -97,10 +97,10 @@ public sealed class PublicarEditalEndpointTests
 
         Edital edital = await SemearEditalAsync(api);
 
-        HttpResponseMessage primeira = await client.PostAsync(new Uri($"/api/v1/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage primeira = await client.PostAsync(new Uri($"/api/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage segunda = await client.PostAsync(new Uri($"/api/v1/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage segunda = await client.PostAsync(new Uri($"/api/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
         segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString()
