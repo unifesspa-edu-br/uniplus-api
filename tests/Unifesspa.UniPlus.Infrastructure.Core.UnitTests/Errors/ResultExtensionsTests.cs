@@ -63,7 +63,7 @@ public class ResultExtensionsTests
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        problem.Type.Should().Be("https://errors.uniplus.unifesspa.edu.br/uniplus.selecao.edital.nao_encontrado");
+        problem.Type.Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.selecao.edital.nao_encontrado");
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class ResultExtensionsTests
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        problem.Type.Should().Be("https://errors.uniplus.unifesspa.edu.br/uniplus.erro_nao_mapeado");
+        problem.Type.Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.erro_nao_mapeado");
     }
 
     // ─── Extensão "code" ──────────────────────────────────────────────────
