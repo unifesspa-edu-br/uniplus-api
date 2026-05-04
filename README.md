@@ -38,6 +38,22 @@ API           → Controllers, middleware, filtros
 
 Os módulos são **independentes** — cada um compila e faz deploy como serviço separado no Kubernetes. Comunicação exclusivamente via eventos Kafka.
 
+## Gerenciamento de Dependências
+
+O projeto utiliza **Central Package Management (CPM)** via `Directory.Packages.props` para centralizar versões e **NuGet Lockfiles** para garantir builds reprodutíveis.
+
+### Fluxo de Atualização de Pacotes
+
+Sempre que uma dependência for adicionada ou atualizada, o arquivo `packages.lock.json` de cada projeto afetado deve ser atualizado. O CI utiliza o modo `--locked-mode`, o que significa que o build falhará se houver divergência entre o código e o lockfile.
+
+Para atualizar as dependências localmente:
+
+1. Altere a versão no arquivo `Directory.Packages.props`.
+2. Execute o comando para forçar a reavaliação do grafo de dependências:
+   ```bash
+   dotnet restore --force-evaluate
+3. Commit os arquivos `packages.lock.json` modificados junto com a alteração do pacote.
+
 ## Pré-requisitos
 
 - .NET 10 SDK (10.0.100+)
