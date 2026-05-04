@@ -9,9 +9,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+
 public sealed partial class GlobalExceptionMiddleware
 {
-    private const string ErrorsBaseUri = "https://errors.uniplus.unifesspa.edu.br/";
     private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly RequestDelegate _next;
@@ -52,32 +53,34 @@ public sealed partial class GlobalExceptionMiddleware
     private static async Task EscreverRespostaValidacao(HttpContext context, ValidationException exception)
     {
         context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
-        context.Response.ContentType = "application/problem+json";
 
-        var body = new Dictionary<string, object?>
+        Dictionary<string, object?> body = new()
         {
-            ["type"] = ErrorsBaseUri + "uniplus.validacao",
+            ["type"] = ProblemDetailsConstants.ErrorsBaseUri + "uniplus.validacao",
             ["title"] = "Erro de validação",
             ["status"] = StatusCodes.Status422UnprocessableEntity,
             ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
             ["code"] = "uniplus.validacao",
             ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
+            // Invariante: e.ErrorMessage não deve conter PII nem o valor rejeitado.
+            // Usar {PropertyValue} em templates FluentValidation viola essa restrição.
             ["errors"] = exception.Errors
                 .Select(static e => new { field = e.PropertyName, code = e.ErrorCode, message = e.ErrorMessage })
                 .ToArray(),
         };
 
-        await context.Response.WriteAsJsonAsync(body, WebJsonOptions).ConfigureAwait(false);
+        await context.Response
+            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
+            .ConfigureAwait(false);
     }
 
     private static async Task EscreverRespostaErro(HttpContext context)
     {
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/problem+json";
 
-        var body = new Dictionary<string, object?>
+        Dictionary<string, object?> body = new()
         {
-            ["type"] = ErrorsBaseUri + "uniplus.internal.unexpected",
+            ["type"] = ProblemDetailsConstants.ErrorsBaseUri + "uniplus.internal.unexpected",
             ["title"] = "Erro interno do servidor",
             ["status"] = StatusCodes.Status500InternalServerError,
             ["detail"] = "Ocorreu um erro inesperado. Tente novamente mais tarde.",
@@ -86,7 +89,9 @@ public sealed partial class GlobalExceptionMiddleware
             ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
         };
 
-        await context.Response.WriteAsJsonAsync(body, WebJsonOptions).ConfigureAwait(false);
+        await context.Response
+            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
+            .ConfigureAwait(false);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Erro de validação no request {Path}")]
