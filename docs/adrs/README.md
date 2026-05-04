@@ -54,6 +54,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0023](0023-wire-formato-erro-rfc-9457.md) | Wire format de erro — RFC 9457 ProblemDetails como único formato | accepted | 2026-05-03 |
 | [0024](0024-mapeamento-domain-error-http.md) | Mapeamento `DomainError → HTTP` via `IDomainErrorMapper` registry | accepted | 2026-05-03 |
 | [0025](0025-wire-formato-sucesso-body-direto.md) | Wire format de sucesso — body é a representação direta do recurso | accepted | 2026-05-03 |
+| [0026](0026-paginacao-cursor-opaco-cifrado.md) | Paginação via cursor opaco cifrado e propagação por `Link` header | accepted | 2026-05-03 |
 
 ## Como adicionar um novo ADR
 
