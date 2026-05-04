@@ -27,4 +27,11 @@ public sealed class EncryptionOptions
 
     /// <summary>Role do Vault para autenticação K8s.</summary>
     public string? KubernetesRole { get; set; }
+
+    /// <summary>
+    /// Token Vault estático para autenticação por token (testes de integração / dev sem K8s).
+    /// Quando definido, substitui o fluxo de autenticação Kubernetes.
+    /// <b>Nunca usar em produção</b> — produção sempre usa KubernetesJwtPath.
+    /// </summary>
+    public string? VaultToken { get; set; }
 }

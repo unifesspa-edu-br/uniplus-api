@@ -5,7 +5,9 @@ using Microsoft.Extensions.Options;
 
 using VaultSharp;
 using VaultSharp.Core;
+using VaultSharp.V1.AuthMethods;
 using VaultSharp.V1.AuthMethods.Kubernetes;
+using VaultSharp.V1.AuthMethods.Token;
 using VaultSharp.V1.Commons;
 using VaultSharp.V1.SecretsEngines.Transit;
 
@@ -20,6 +22,7 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
     private readonly string _jwtPath;
     private readonly string _role;
     private readonly string _transitMount;
+    private readonly string? _vaultToken;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private readonly ILogger<VaultTransitEncryptionService> _logger;
 
@@ -42,6 +45,7 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
         _jwtPath = opts.KubernetesJwtPath;
         _role = opts.KubernetesRole ?? "uniplus-api";
         _transitMount = opts.VaultTransitMount;
+        _vaultToken = opts.VaultToken;
 
         _vault = CreateVaultClient();
     }
@@ -104,8 +108,10 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
 
     private VaultClient CreateVaultClient()
     {
-        string jwt = File.ReadAllText(_jwtPath);
-        KubernetesAuthMethodInfo authMethod = new(_role, jwt);
+        IAuthMethodInfo authMethod = string.IsNullOrWhiteSpace(_vaultToken)
+            ? new KubernetesAuthMethodInfo(_role, File.ReadAllText(_jwtPath))
+            : new TokenAuthMethodInfo(_vaultToken);
+
         return new VaultClient(new VaultClientSettings(_vaultAddress, authMethod));
     }
 
