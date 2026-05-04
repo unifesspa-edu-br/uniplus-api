@@ -48,9 +48,10 @@ trim_trailing_whitespace = false
 [src/**/*.API/**.cs]
 dotnet_diagnostic.CA2007.severity = none
 
-# Controllers e Middleware internos são instanciados via reflexão pelo framework
-# (routing MVC, app.UseMiddleware<T>). CA1812 não detecta essa instanciação.
-[src/**/*.API/{Controllers,Middleware}/**.cs]
+# Controllers, Middleware e registrations de DI são instanciados via reflexão
+# pelo framework (routing MVC, app.UseMiddleware<T>, IServiceProvider).
+# CA1812 não detecta essa instanciação.
+[src/**/*.API/{Controllers,Middleware,Errors}/**.cs]
 dotnet_diagnostic.CA1812.severity = none
 
 # Projetos de teste — convenções xUnit:

@@ -3,10 +3,12 @@ using Serilog;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
+using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.API.Middleware;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
@@ -38,6 +40,9 @@ builder.Services.AddEndpointsApiExplorer();
 
 string connectionString = builder.Configuration.GetConnectionString("SelecaoDb")
     ?? throw new InvalidOperationException("Connection string 'SelecaoDb' não configurada.");
+
+builder.Services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
+builder.Services.AddDomainErrorMapper();
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
