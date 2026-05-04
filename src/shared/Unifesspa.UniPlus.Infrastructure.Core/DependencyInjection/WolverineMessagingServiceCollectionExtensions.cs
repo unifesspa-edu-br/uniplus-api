@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
+using Messaging;
 
 public static class WolverineMessagingServiceCollectionExtensions
 {

@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Kernel.Results;
+using Domain.Entities;
+using Domain.Interfaces;
+using Domain.ValueObjects;
 
 /// <summary>
 /// Handler convention-based do <see cref="CriarEditalCommand"/>: cria o

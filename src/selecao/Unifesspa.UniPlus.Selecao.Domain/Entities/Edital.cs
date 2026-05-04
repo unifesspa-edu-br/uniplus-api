@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Events;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Enums;
+using Events;
+using ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Edital : EntityBase

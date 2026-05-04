@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Events;
+using Domain.Entities;
+using Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Handler do caminho feliz: cria/publica um Edital, faz SaveChanges e

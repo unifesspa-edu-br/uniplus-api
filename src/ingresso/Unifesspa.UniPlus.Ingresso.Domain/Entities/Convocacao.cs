@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Ingresso.Domain.Entities;
 
-using Unifesspa.UniPlus.Ingresso.Domain.Enums;
-using Unifesspa.UniPlus.Ingresso.Domain.Events;
-using Unifesspa.UniPlus.Ingresso.Domain.ValueObjects;
+using Enums;
+using Events;
+using ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Convocacao : EntityBase

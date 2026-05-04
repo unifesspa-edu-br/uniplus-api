@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Kernel.Results;
+using Results;
 
 public sealed record NomeSocial
 {

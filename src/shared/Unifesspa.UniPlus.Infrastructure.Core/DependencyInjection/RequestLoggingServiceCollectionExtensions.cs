@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
+using Middleware;
 
 public static class RequestLoggingServiceCollectionExtensions
 {

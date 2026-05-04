@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Domain.Entities;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 

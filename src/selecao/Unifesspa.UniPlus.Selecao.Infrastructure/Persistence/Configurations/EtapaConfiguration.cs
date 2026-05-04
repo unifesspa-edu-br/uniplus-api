@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Domain.Entities;
 
 public sealed class EtapaConfiguration : IEntityTypeConfiguration<Etapa>
 {

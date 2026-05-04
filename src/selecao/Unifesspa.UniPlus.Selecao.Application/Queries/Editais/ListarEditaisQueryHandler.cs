@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Editais;
 
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using DTOs;
+using Domain.Entities;
+using Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based de <see cref="ListarEditaisQuery"/>: paginação

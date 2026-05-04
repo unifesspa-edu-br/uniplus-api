@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Ingresso.Domain.Entities;
 
-using Unifesspa.UniPlus.Ingresso.Domain.Enums;
-using Unifesspa.UniPlus.Ingresso.Domain.Events;
+using Enums;
+using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Matricula : EntityBase

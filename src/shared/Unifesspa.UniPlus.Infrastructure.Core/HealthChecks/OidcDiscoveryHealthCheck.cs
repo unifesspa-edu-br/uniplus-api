@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+using Authentication;
 
 /// <summary>
 /// Probes the OIDC discovery endpoint (<c>/.well-known/openid-configuration</c>, RFC 8414).

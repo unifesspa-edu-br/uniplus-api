@@ -5,7 +5,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
-using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using DependencyInjection;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 [Collection(VaultContainerFixture.CollectionName)]

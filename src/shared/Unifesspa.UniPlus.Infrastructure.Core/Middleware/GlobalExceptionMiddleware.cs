@@ -9,7 +9,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Errors;
 
 public sealed partial class GlobalExceptionMiddleware
 {

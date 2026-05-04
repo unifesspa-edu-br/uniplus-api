@@ -218,7 +218,7 @@ public sealed class WolverineLoggingMiddlewareTests
             Func<TState, Exception?, string> formatter)
         {
             ArgumentNullException.ThrowIfNull(formatter);
-            this.Entradas.Add((logLevel, formatter(state, exception)));
+            Entradas.Add((logLevel, formatter(state, exception)));
         }
     }
 }

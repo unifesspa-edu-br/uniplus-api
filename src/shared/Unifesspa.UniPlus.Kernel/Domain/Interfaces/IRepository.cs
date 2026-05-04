@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
-using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Entities;
 
 public interface IRepository<T> where T : EntityBase
 {

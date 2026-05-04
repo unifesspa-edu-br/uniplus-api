@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
+using HealthChecks;
 
 /// <summary>
 /// Extension methods for configuring OIDC/JWT Bearer authentication.

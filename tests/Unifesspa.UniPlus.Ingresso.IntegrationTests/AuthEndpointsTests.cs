@@ -7,7 +7,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Ingresso.IntegrationTests.Infrastructure;
+using Infrastructure;
 
 public sealed class AuthEndpointsTests : IClassFixture<IngressoApiFactory>
 {

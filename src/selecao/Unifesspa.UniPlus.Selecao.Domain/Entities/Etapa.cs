@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Etapa : EntityBase

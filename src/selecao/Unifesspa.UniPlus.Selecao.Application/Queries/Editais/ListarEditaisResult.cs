@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Editais;
 
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using DTOs;
 
 /// <summary>
 /// Resultado da <see cref="ListarEditaisQuery"/>: lote de editais já projetados

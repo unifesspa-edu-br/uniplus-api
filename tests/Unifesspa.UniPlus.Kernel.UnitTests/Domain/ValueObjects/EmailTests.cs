@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.ValueObjects;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Results;
+using Results;
 
 public sealed class EmailTests
 {

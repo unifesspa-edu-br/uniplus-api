@@ -4,11 +4,11 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Events;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Kernel.Results;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Events;
+using Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Unit test puro do handler cascading: exercita

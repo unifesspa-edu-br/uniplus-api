@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Errors;
 
 public static class DomainErrorMappingServiceCollectionExtensions
 {

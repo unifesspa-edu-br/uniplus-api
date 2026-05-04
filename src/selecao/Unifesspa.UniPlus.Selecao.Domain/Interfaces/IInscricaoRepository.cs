@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
-using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 public interface IInscricaoRepository : IRepository<Inscricao>

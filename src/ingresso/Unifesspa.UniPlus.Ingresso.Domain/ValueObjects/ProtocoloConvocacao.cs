@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Ingresso.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Kernel.Results;
+using Kernel.Results;
 
 public sealed record ProtocoloConvocacao
 {

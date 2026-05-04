@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Kernel.Domain.Entities;
 
 public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
 {
