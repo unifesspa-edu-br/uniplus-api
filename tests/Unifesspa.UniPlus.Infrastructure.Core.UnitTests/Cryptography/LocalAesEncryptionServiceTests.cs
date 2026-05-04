@@ -59,6 +59,21 @@ public sealed class LocalAesEncryptionServiceTests
         ct1.Should().NotEqual(ct2);
     }
 
+    // ─── KeyName como AAD ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DecryptAsync_KeyNameDiferente_DeveLancarEncryptionFailureException()
+    {
+        LocalAesEncryptionService sut = CriarServico();
+        byte[] plaintext = "dado sensível"u8.ToArray();
+        byte[] ciphertext = await sut.EncryptAsync("cursor-cpf", plaintext);
+
+        Func<Task> ato = () => sut.DecryptAsync("cursor-nome", ciphertext);
+
+        await ato.Should().ThrowAsync<EncryptionFailureException>()
+            .Where(e => e.KeyName == "cursor-nome");
+    }
+
     // ─── Tamper detection ────────────────────────────────────────────────────
 
     [Fact]
