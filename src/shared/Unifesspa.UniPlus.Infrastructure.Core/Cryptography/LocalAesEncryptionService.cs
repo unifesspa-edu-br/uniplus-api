@@ -84,7 +84,7 @@ internal sealed partial class LocalAesEncryptionService : IUniPlusEncryptionServ
         ArgumentException.ThrowIfNullOrEmpty(keyName);
         ArgumentNullException.ThrowIfNull(ciphertext);
 
-        int minLength = NonceSizeBytes + TagSizeBytes + 1;
+        int minLength = NonceSizeBytes + TagSizeBytes;
         if (ciphertext.Length < minLength)
         {
             throw new EncryptionFailureException(keyName,

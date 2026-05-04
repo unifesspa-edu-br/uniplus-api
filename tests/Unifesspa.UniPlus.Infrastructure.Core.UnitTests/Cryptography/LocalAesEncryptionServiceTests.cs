@@ -31,6 +31,20 @@ public sealed class LocalAesEncryptionServiceTests
         resultado.Should().Equal(plaintext);
     }
 
+    // ─── Plaintext vazio ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task EncryptAsync_PlaintextVazio_DeveRoundTripCorretamente()
+    {
+        LocalAesEncryptionService sut = CriarServico();
+        byte[] plaintext = [];
+
+        byte[] ciphertext = await sut.EncryptAsync("cursor", plaintext);
+        byte[] resultado = await sut.DecryptAsync("cursor", ciphertext);
+
+        resultado.Should().BeEmpty();
+    }
+
     // ─── IV aleatório ────────────────────────────────────────────────────────
 
     [Fact]
