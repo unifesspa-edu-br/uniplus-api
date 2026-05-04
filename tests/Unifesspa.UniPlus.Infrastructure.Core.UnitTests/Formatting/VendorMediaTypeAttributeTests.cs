@@ -152,6 +152,60 @@ public sealed class VendorMediaTypeAttributeTests
     }
 
     [Fact]
+    public void OnActionExecuting_QZeroEmV1ComWildcard_QuandoV1ELatest_Retorna406()
+    {
+        // Cliente exclui v1 explicitamente e aceita */* — como v1 é a única
+        // versão suportada, o wildcard deveria resolver para v1, mas v1 está
+        // excluída. Resultado correto: 406 (RFC 9110 §12.5.1).
+        ActionExecutingContext context = CreateContext(
+            "application/vnd.uniplus.edital.v1+json;q=0, */*;q=1");
+
+        Attribute.OnActionExecuting(context);
+
+        ObjectResult result = context.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.StatusCode.Should().Be(StatusCodes.Status406NotAcceptable);
+    }
+
+    [Fact]
+    public void OnActionExecuting_QZeroEmV1ComWildcard_QuandoExisteV2_AceitaV2()
+    {
+        // Mesma exclusão de v1, mas com v2 disponível: wildcard resolve
+        // para latest=v2, que não está excluída.
+        VendorMediaTypeAttribute attr = new() { Resource = "edital", Versions = [1, 2] };
+        ActionExecutingContext context = CreateContext(
+            "application/vnd.uniplus.edital.v1+json;q=0, */*;q=1");
+
+        attr.OnActionExecuting(context);
+
+        context.Result.Should().BeNull();
+    }
+
+    [Fact]
+    public void OnResultExecuting_RespostaProblemDetails_NaoSobrescreveContentType()
+    {
+        // RFC 9457: erros mantêm application/problem+json mesmo após
+        // negociação bem-sucedida (ex.: cursor inválido em endpoint paginado).
+        ActionExecutingContext executing = CreateContext("application/vnd.uniplus.edital.v1+json");
+        Attribute.OnActionExecuting(executing);
+
+        ObjectResult problemResult = new(new ProblemDetails { Status = StatusCodes.Status400BadRequest })
+        {
+            StatusCode = StatusCodes.Status400BadRequest,
+            ContentTypes = { "application/problem+json" },
+        };
+
+        ResultExecutingContext resultCtx = new(
+            executing,
+            [],
+            problemResult,
+            controller: new object());
+
+        Attribute.OnResultExecuting(resultCtx);
+
+        resultCtx.HttpContext.Response.ContentType.Should().BeNull();
+    }
+
+    [Fact]
     public void ProblemDetails_NaoConteimPiiNoCorpo()
     {
         ActionExecutingContext context = CreateContext("application/vnd.uniplus.edital.v9+json");
