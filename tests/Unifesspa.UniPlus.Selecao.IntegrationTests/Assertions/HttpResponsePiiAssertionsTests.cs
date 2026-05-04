@@ -16,7 +16,7 @@ public sealed class HttpResponsePiiAssertionsTests
     {
         const string body = """
             {
-              "type": "https://errors.uniplus.unifesspa.edu.br/uniplus.selecao.edital.nao_encontrado",
+              "type": "https://uniplus.unifesspa.edu.br/errors/uniplus.selecao.edital.nao_encontrado",
               "title": "Edital não encontrado",
               "status": 404,
               "detail": "Edital não encontrado.",
