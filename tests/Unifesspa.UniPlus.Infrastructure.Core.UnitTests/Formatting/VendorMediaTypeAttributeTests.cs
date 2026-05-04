@@ -109,6 +109,49 @@ public sealed class VendorMediaTypeAttributeTests
     }
 
     [Fact]
+    public void OnActionExecuting_AcceptComQZeroEmJson_RetornaProblemDetails406()
+    {
+        // RFC 9110 §12.5.1: q=0 explicitamente marca o media range como
+        // inaceitável. Não pode cair no fallback application/json mesmo
+        // quando ele aparece na lista.
+        ActionExecutingContext context = CreateContext(
+            "application/vnd.uniplus.edital.v9+json;q=1, application/json;q=0");
+
+        Attribute.OnActionExecuting(context);
+
+        ObjectResult result = context.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.StatusCode.Should().Be(StatusCodes.Status406NotAcceptable);
+        ProblemDetails problem = result.Value.Should().BeOfType<ProblemDetails>().Subject;
+        problem.Extensions["available_versions"].Should().BeEquivalentTo(new[] { 1 });
+    }
+
+    [Fact]
+    public void OnActionExecuting_AcceptComQZeroEmJsonComV1NaLista_AceitaV1()
+    {
+        // q=0 em json é respeitado; a versão suportada na mesma lista vence.
+        ActionExecutingContext context = CreateContext(
+            "application/vnd.uniplus.edital.v1+json, application/json;q=0");
+
+        Attribute.OnActionExecuting(context);
+
+        context.Result.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("Application/Vnd.Uniplus.Edital.V1+Json")]
+    [InlineData("APPLICATION/VND.UNIPLUS.EDITAL.V1+JSON")]
+    [InlineData("Application/JSON")]
+    public void OnActionExecuting_AcceptComCasingDiferente_AceitaCaseInsensitive(string accept)
+    {
+        // RFC 9110 §8.3.1: media type tokens são case-insensitive.
+        ActionExecutingContext context = CreateContext(accept);
+
+        Attribute.OnActionExecuting(context);
+
+        context.Result.Should().BeNull();
+    }
+
+    [Fact]
     public void ProblemDetails_NaoConteimPiiNoCorpo()
     {
         ActionExecutingContext context = CreateContext("application/vnd.uniplus.edital.v9+json");
