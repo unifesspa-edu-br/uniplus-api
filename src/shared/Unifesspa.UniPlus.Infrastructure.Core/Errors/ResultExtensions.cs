@@ -14,8 +14,6 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "Extension method class precisa ser public para ser acessível nos projetos API que referenciam Infrastructure.Core.")]
 public static class ResultExtensions
 {
-    private const string ErrorsBaseUri = "https://errors.uniplus.unifesspa.edu.br/";
-
     public static IActionResult ToActionResult<T>(this Result<T> result, IDomainErrorMapper mapper)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -45,8 +43,10 @@ public static class ResultExtensions
         ProblemDetails problem = new()
         {
             Status = status,
-            Type = ErrorsBaseUri + code,
+            Type = ProblemDetailsConstants.ErrorsBaseUri + code,
             Title = title,
+            // Invariante: error.Message não deve conter PII (CPF, e-mail, nome).
+            // O linter AssertNoPiiAsync detecta violações nos testes de integração.
             Detail = error.Message,
             Instance = $"urn:uuid:{Guid.CreateVersion7()}",
         };
