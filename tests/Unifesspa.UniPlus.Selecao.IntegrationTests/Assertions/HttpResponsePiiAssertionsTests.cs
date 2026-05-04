@@ -53,6 +53,20 @@ public sealed class HttpResponsePiiAssertionsTests
         excecao!.Message.Should().Contain("CPF não mascarado");
     }
 
+    // ─── CA-02: detecta CPF sem formatação ─────────────────────────────────
+
+    [Fact]
+    public void AssertBodyNoPii_DadoCpfCruNoDetail_DeveFalhar()
+    {
+        const string body = """{"detail": "CPF 52998224725 já cadastrado."}""";
+
+        Exception? excecao = Record.Exception(
+            () => HttpResponsePiiAssertions.AssertBodyNoPii(body));
+
+        excecao.Should().NotBeNull();
+        excecao!.Message.Should().Contain("CPF não mascarado (sem formatação)");
+    }
+
     // ─── CA-02: detecta e-mail ──────────────────────────────────────────────
 
     [Fact]

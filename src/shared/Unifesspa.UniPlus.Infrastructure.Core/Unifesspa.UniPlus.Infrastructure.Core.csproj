@@ -10,7 +10,6 @@
     <PackageReference Include="VaultSharp" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="Minio" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
