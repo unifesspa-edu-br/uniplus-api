@@ -65,13 +65,30 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
             return;
         }
 
-        bool sawWrongVendorVersion = false;
+        // RFC 9110 §12.5.1: q=0 não é apenas "ignorar" — é "excluir do match".
+        // Construir primeiro a lista de exclusões para que matches por wildcard
+        // ou por vendor explícito subsequentes respeitem essas exclusões.
+        HashSet<int> excludedVersions = [];
+        bool excludeAllViaWildcard = false;
 
         foreach (MediaTypeHeaderValue media in parsed)
         {
-            // RFC 9110 §12.5.1: q=0 marca o media range como inaceitável.
-            // Pular sem registrar como suporte / sem disparar 406 — o cliente
-            // pode listar outras opções aceitáveis na mesma sequência.
+            if (media.Quality is not 0)
+                continue;
+
+            string excluded = media.MediaType.Value ?? string.Empty;
+            if (IsWildcardOrJson(excluded))
+            {
+                excludeAllViaWildcard = true;
+            }
+            else if (TryMatchVendor(excluded, out int excludedVersion))
+            {
+                excludedVersions.Add(excludedVersion);
+            }
+        }
+
+        foreach (MediaTypeHeaderValue media in parsed)
+        {
             if (media.Quality is 0)
                 continue;
 
@@ -80,26 +97,20 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
             // RFC 9110 §8.3.1: media type tokens são case-insensitive.
             if (IsWildcardOrJson(mediaType))
             {
+                if (excludeAllViaWildcard || excludedVersions.Contains(latest))
+                    continue;
+
                 StoreAcceptedVersion(context.HttpContext, latest);
                 return;
             }
 
-            if (TryMatchVendor(mediaType, out int requestedVersion))
+            if (TryMatchVendor(mediaType, out int requestedVersion)
+                && Array.IndexOf(Versions, requestedVersion) >= 0
+                && !excludedVersions.Contains(requestedVersion))
             {
-                if (Array.IndexOf(Versions, requestedVersion) >= 0)
-                {
-                    StoreAcceptedVersion(context.HttpContext, requestedVersion);
-                    return;
-                }
-
-                sawWrongVendorVersion = true;
+                StoreAcceptedVersion(context.HttpContext, requestedVersion);
+                return;
             }
-        }
-
-        if (sawWrongVendorVersion)
-        {
-            WriteNotAcceptable(context);
-            return;
         }
 
         WriteNotAcceptable(context);
@@ -109,13 +120,34 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (context.HttpContext.Items.TryGetValue(ResponseContextKey, out object? value)
-            && value is int version)
+        if (!context.HttpContext.Items.TryGetValue(ResponseContextKey, out object? value)
+            || value is not int version)
         {
-            string vendorMime = BuildVendorMime(Resource, version);
-            context.HttpContext.Response.ContentType = vendorMime;
+            return;
         }
+
+        // RFC 9457 §3: respostas de erro mantêm Content-Type
+        // application/problem+json. O wire format do erro não muda com o
+        // versionamento por vendor MIME — sobrescrever quebraria clientes
+        // que dispatcham por content-type para tratar ProblemDetails.
+        if (IsProblemDetailsResult(context.Result))
+        {
+            return;
+        }
+
+        string vendorMime = BuildVendorMime(Resource, version);
+        context.HttpContext.Response.ContentType = vendorMime;
     }
+
+    private static bool IsProblemDetailsResult(IActionResult result) =>
+        result switch
+        {
+            ObjectResult { Value: ProblemDetails } => true,
+            ObjectResult objectResult when objectResult.ContentTypes.Any(static ct =>
+                string.Equals(ct, "application/problem+json", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(ct, "application/problem+xml", StringComparison.OrdinalIgnoreCase)) => true,
+            _ => false,
+        };
 
     private static bool IsWildcardOrJson(string mediaType) =>
         string.Equals(mediaType, "*/*", StringComparison.OrdinalIgnoreCase)
