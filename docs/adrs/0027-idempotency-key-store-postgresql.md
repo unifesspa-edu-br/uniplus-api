@@ -11,7 +11,7 @@ decision-makers:
 
 Comandos `POST` e `PATCH` da `uniplus-api` precisam tolerar retry de cliente sem produzir efeito colateral duplicado. Cenários reais que motivam essa decisão:
 
-- Candidato envia `POST /inscricoes` no portal; rede cai antes da resposta chegar; cliente retry — sem idempotency, duas inscrições seriam criadas, violando [RN01](../../docs/visao-do-projeto.md) ("um CPF, uma inscrição ativa por processo seletivo") apenas no banco, mas com side effects (email de confirmação, evento Kafka, gravação outbox) já em curso.
+- Candidato envia `POST /inscricoes` no portal; rede cai antes da resposta chegar; cliente retry — sem idempotency, duas inscrições seriam criadas, violando RN01 ("um CPF, uma inscrição ativa por processo seletivo") apenas no banco, mas com side effects (email de confirmação, evento Kafka, gravação outbox) já em curso.
 - Operador administrativo dispara `POST /editais/{id}/publicar`; timeout de proxy retorna 504 ao cliente; operador retry — sem idempotency, evento `EditalPublicado` é despachado duas vezes, drenando notificações duplicadas.
 - Aplicação cliente integrada (ex.: integração futura com SIGAA) replays mensagens em janela de recovery — qualquer comando crítico (recurso, matrícula, recálculo) pode ser entregue múltiplas vezes.
 
@@ -21,7 +21,7 @@ A IETF tem um draft em fase final (`draft-ietf-httpapi-idempotency-key-header`) 
 
 ## Drivers da decisão
 
-- **Conformidade com regras de negócio críticas.** [RN01](../../docs/visao-do-projeto.md) exige unicidade real, e processos como recurso administrativo, publicação de edital e matrícula não toleram duplicação silenciosa. Idempotency é a primeira linha de defesa antes de constraints no domínio.
+- **Conformidade com regras de negócio críticas.** RN01 exige unicidade real, e processos como recurso administrativo, publicação de edital e matrícula não toleram duplicação silenciosa. Idempotency é a primeira linha de defesa antes de constraints no domínio.
 - **Side effects fora do banco.** Outbox (ADR-0004) garante eventos no `IEnvelopeTransaction`, mas não impede que duas execuções do mesmo handler enfileirem dois eventos. Idempotency em camada anterior elimina isso.
 - **Conformidade com padrão emergente.** `draft-ietf-httpapi-idempotency-key-header-07` é o caminho que clientes e bibliotecas vão consumir nos próximos anos; alinhamento agora evita migração depois.
 - **Atomicidade entre commit do agregado e gravação do cache.** Cache em Redis cria janela onde o agregado foi commitado mas o cache não chegou (ou vice-versa). Cache no mesmo PostgreSQL onde o outbox vive permite gravação na mesma `IEnvelopeTransaction` ([ADR-0004](0004-outbox-transacional-via-wolverine.md)).
@@ -93,7 +93,7 @@ O payload do cache (request body + response body) pode conter PII (CPF, nome soc
 ### Positivas
 
 - **Retry seguro.** Clientes (frontend, integradores externos) podem retry com confiança em qualquer cenário de timeout/network/proxy 5xx, sem risco de duplicação semântica.
-- **Conformidade com [RN01](../../docs/visao-do-projeto.md).** Inscrição duplicada por retry deixa de ser vetor; constraint de unicidade no domínio passa a ser última linha de defesa, não primeira.
+- **Conformidade com RN01.** Inscrição duplicada por retry deixa de ser vetor; constraint de unicidade no domínio passa a ser última linha de defesa, não primeira.
 - **Atomicidade real.** Commit do agregado + gravação do cache acontecem na mesma transação Postgres. Não existe estado intermediário onde o agregado foi gravado mas o cache não, ou vice-versa.
 - **Auditabilidade.** Cache em Postgres é inspecionável via SQL para suporte e auditoria sem tooling extra.
 - **Convergência com mercado.** Comportamento idêntico a Stripe/Square/PayPal facilita integração de clientes que já implementam o padrão.
