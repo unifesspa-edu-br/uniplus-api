@@ -116,7 +116,7 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
       - name: Restore .NET tools
         run: dotnet tool restore
