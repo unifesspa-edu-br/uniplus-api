@@ -90,8 +90,9 @@ public static partial class HttpResponsePiiAssertions
     [GeneratedRegex(@"\d{3}\.\d{3}\.\d{3}-\d{2}")]
     private static partial Regex CpfRegex();
 
-    // CPF cru: exatamente 11 dígitos não adjacentes a outros dígitos.
-    [GeneratedRegex(@"(?<!\d)\d{11}(?!\d)")]
+    // CPF cru: 11 dígitos não adjacentes a qualquer char hex (0-9 a-f A-F),
+    // evitando falsos positivos em traceId e segmentos de UUID.
+    [GeneratedRegex(@"(?<![0-9a-fA-F])\d{11}(?![0-9a-fA-F])")]
     private static partial Regex CpfCruRegex();
 
     [GeneratedRegex(@"\S+@\S+\.\S+")]

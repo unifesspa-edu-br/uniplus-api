@@ -53,6 +53,31 @@ public sealed class HttpResponsePiiAssertionsTests
         excecao!.Message.Should().Contain("CPF não mascarado");
     }
 
+    // ─── Regressão P1: traceId/UUID com dígitos adjacentes a letra hex não disparam
+    //     o padrão CPF cru (falso positivo reportado pelo Codex) ──────────────────
+
+    [Fact]
+    public void AssertBodyNoPii_DadoTraceIdComSequenciaDigitosAdjacenteALetraHex_NaoDeveGerarFalha()
+    {
+        // "a12345678901b" — 11 dígitos adjacentes a letras hex: padrão antigo
+        // (?<!\d)\d{11}(?!\d) produzia falso positivo; padrão novo bloqueia.
+        const string body = """
+            {
+              "type": "https://uniplus.unifesspa.edu.br/errors/uniplus.selecao.edital.nao_encontrado",
+              "title": "Edital não encontrado",
+              "status": 404,
+              "detail": "Edital não encontrado.",
+              "instance": "urn:uuid:01960000-0000-7000-0000-0000000000a1",
+              "code": "uniplus.selecao.edital.nao_encontrado",
+              "traceId": "a12345678901bcdef0123456789abcde"
+            }
+            """;
+
+        Action acao = () => HttpResponsePiiAssertions.AssertBodyNoPii(body);
+
+        acao.Should().NotThrow();
+    }
+
     // ─── CA-02: detecta CPF sem formatação ─────────────────────────────────
 
     [Fact]
