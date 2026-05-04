@@ -97,6 +97,7 @@ public sealed class VaultTransitEncryptionServiceTests(VaultContainerFixture vau
 
         Func<Task> ato = () => sut.EncryptAsync(KeyName, "payload"u8.ToArray());
 
-        await ato.Should().ThrowAsync<EncryptionFailureException>();
+        await ato.Should().ThrowAsync<EncryptionFailureException>()
+            .Where(e => e.KeyName == KeyName);
     }
 }
