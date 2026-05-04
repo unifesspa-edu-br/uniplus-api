@@ -7,9 +7,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
-using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
-using Unifesspa.UniPlus.Selecao.API.Configuration;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
@@ -45,17 +43,14 @@ string connectionString = builder.Configuration.GetConnectionString("SelecaoDb")
 builder.Services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
 
-// Criptografia + cursor encoder usados pelo EditalController para paginação
-// opaca cifrada (ADR-0026). Em dev/CI o provider 'local' usa AES-GCM 256
-// com a chave de UniPlus:Encryption:LocalKey; em produção, troca-se para
-// 'vault' via configuração sem alteração de código.
+// Criptografia + cursor pagination usados pelos endpoints de listagem
+// (ADR-0026 + ADR-0031). AddUniPlusEncryption: provider 'local' AES-GCM 256
+// em dev/CI; troca para 'vault' em produção via configuração, sem code change.
+// AddCursorPagination: registra CursorEncoder, TimeProvider.System,
+// CursorPaginationOptions e o hook InvalidModelStateResponseFactory que
+// traduz falhas do PageRequestModelBinder para 400/410/422.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
-builder.Services.AddSingleton<CursorEncoder>();
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services
-    .AddOptions<EditalPaginationOptions>()
-    .Bind(builder.Configuration.GetSection(EditalPaginationOptions.SectionName))
-    .ValidateOnStart();
+builder.Services.AddCursorPagination(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
