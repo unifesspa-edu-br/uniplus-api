@@ -303,15 +303,15 @@ A nova ADR deixa a estratégia anterior (`PublishDomainEventsFromEntityFramework
 
 ## 7. Próximos passos (não-fazer-sem-aprovação)
 
-> **Estado atual (2026-04-26):** a coluna "Operacionalização" foi acrescentada após o merge desta consolidação para apontar onde cada item está sendo executado. As linhas originais ficam preservadas como snapshot do momento da spike.
+> **Estado atual (2026-05-05):** a coluna "Operacionalização" foi atualizada após a sequência de PRs #166/#167/#168/#172/#173 mergear em `main`. As linhas originais ficam preservadas como snapshot do momento da spike.
 
 | Ação | Aprovação requerida | Operacionalização |
 |---|---|---|
 | Promover `ADR-026` rascunho local em `repositories/uniplus-docs/docs/adrs/ADR-026-...md` | Humana — Tech Lead | **Concluído** — ADR-026 mergeada em `uniplus-docs/main`. |
-| Remover `vendors/nuget-local/` + reverter `nuget.config` para apenas `nuget.org` | Humana (PR específico após ADR-026 aprovada) | Em execução em **#163**. |
-| Remover `Directory.Packages.props` lock em `5.32.1-pr2586` → bump para `5.32.1` oficial | Humana (PR específico) | Em execução em **#163**. |
-| Implementar handlers de produção com cascading na Story `#158` (saída do spike) | Humana — Story re-aberta com escopo do estilo cascading | Recalibrado em duas tasks: **#164** (configuração outbox produtivo) + **#136** (handler de referência `PublicarEditalCommand`). |
-| Refatorar `EntityBase.DomainEvents` para visibilidade reduzida (`internal` + `InternalsVisibleTo`) | Humana — fora do escopo deste spike | Pendente — não há issue aberta; permanece como recomendação futura. |
+| Remover `vendors/nuget-local/` + reverter `nuget.config` para apenas `nuget.org` | Humana (PR específico após ADR-026 aprovada) | **Concluído** — issue #163 fechada via PR #168. |
+| Remover `Directory.Packages.props` lock em `5.32.1-pr2586` → bump para `5.32.1` oficial | Humana (PR específico) | **Concluído** — issue #163 / PR #168. |
+| Implementar handlers de produção com cascading na Story `#158` (saída do spike) | Humana — Story re-aberta com escopo do estilo cascading | **Concluído** — issue #158 fechada (Story do produtivo); #164 fechada via PR #172 (configuração outbox produtivo); #136 fechada via PR #173 (handler de referência `PublicarEditalCommand`). |
+| Refatorar `EntityBase.DomainEvents` para visibilidade reduzida (`internal` + `InternalsVisibleTo`) | Humana — fora do escopo deste spike | Pendente — não há issue aberta; permanece como recomendação futura. PR #166 (`DequeueDomainEvents`) cobre apenas o caminho de drenagem explícita, não a redução de visibilidade. |
 
 ## 8. Anexos
 

@@ -62,6 +62,18 @@ public static class WolverineOutboxConfiguration
     /// .ToPostgresqlQueue("domain-events")</c>). Executado depois das policies
     /// transacionais; pode adicionar publishers, listeners, dead letters etc.
     /// Pode ser nulo se o módulo ainda não tem eventos a rotear.</param>
+    /// <remarks>
+    /// <para><strong>Nota sobre <c>Discovery.IncludeAssembly</c> (issue #198):</strong>
+    /// hoje o consumidor único (<c>Selecao.API/Program.cs</c>) chama
+    /// <c>opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly)</c>
+    /// inline dentro do <paramref name="configureRouting"/>. Quando Ingresso
+    /// ganhar o primeiro handler real do tipo cascading, refatorar este
+    /// helper para receber um parâmetro adicional
+    /// <c>params Type[] applicationMarkers</c> (ou
+    /// <c>IEnumerable&lt;Assembly&gt;</c>) que faça o
+    /// <c>opts.Discovery.IncludeAssembly</c> internamente. Não antecipar a
+    /// abstração agora — YAGNI até existir o segundo consumidor.</para>
+    /// </remarks>
     public static IHostBuilder UseWolverineOutboxCascading(
         this IHostBuilder host,
         IConfiguration configuration,
