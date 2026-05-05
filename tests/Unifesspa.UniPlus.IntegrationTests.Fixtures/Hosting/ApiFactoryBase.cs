@@ -23,11 +23,37 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
     /// Quando <c>true</c> (default), o factory remove o
     /// <see cref="WolverineRuntime"/> da lista de <see cref="IHostedService"/>
     /// — o host inicializa sem startar o Wolverine, evitando que testes que
-    /// só exercitam o pipeline HTTP precisem de Postgres ou Kafka. Subclasses
-    /// que exercitam a infra produtiva de outbox (PG queue, durable envelopes)
-    /// sobrescrevem para <c>false</c> e provisionam o Postgres efêmero por
-    /// fixture (ver <c>CascadingFixture</c>).
+    /// só exercitam o pipeline HTTP precisem de Postgres ou Kafka.
     /// </summary>
+    /// <remarks>
+    /// <para><strong>Por que remover por default?</strong> A maioria das suítes
+    /// de integração testa o pipeline HTTP (auth, routing, controllers,
+    /// middleware) sem exercitar mensageria. Iniciar o Wolverine dispararia
+    /// <c>MigrateAsync</c> contra o Postgres configurado em
+    /// <c>PersistMessagesWithPostgresql</c> — em ambiente de teste sem PG
+    /// real, isso vira timeout de 30+ segundos por suite, mascarando o erro
+    /// real (não há PG) atrás de mensagens genéricas de connection.</para>
+    ///
+    /// <para><strong>Quando sobrescrever para <c>false</c>?</strong> Suites
+    /// que exercitam a infra produtiva de outbox (PG queue durável,
+    /// envelopes persistidos, cascading messages) precisam do Wolverine
+    /// rodando. Essas suites provisionam um Postgres efêmero por fixture
+    /// (ver <c>CascadingFixture</c> em <c>Selecao.IntegrationTests/Outbox/Cascading/</c>)
+    /// e setam <c>DisableWolverineRuntimeForTests = false</c> na sua
+    /// <see cref="ApiFactoryBase{T}"/>-derivada. <c>CascadingApiFactory</c>
+    /// é o exemplo canônico.</para>
+    ///
+    /// <para><strong>Heurística de remoção e sentinela:</strong> a query no
+    /// método <see cref="ConfigureWebHost"/> usa
+    /// <c>d.ImplementationFactory.Method.DeclaringType?.Assembly.GetName().Name == "Wolverine"</c>
+    /// para identificar o <see cref="IHostedService"/> que o Wolverine registra
+    /// via factory delegate. Refactors internos do JasperFx.Wolverine (renomear
+    /// assembly, migrar para <c>ImplementationType</c>) silenciosamente quebrariam
+    /// este filtro, fazendo o runtime iniciar e timeoutar contra Postgres fake.
+    /// O sentinela <c>WolverineRuntimeRemovalSentinelTests</c> em
+    /// <c>Selecao.IntegrationTests/Hosting/</c> (issue #194) replica EXATAMENTE
+    /// esta query e falha cedo se a heurística regredir.</para>
+    /// </remarks>
     protected virtual bool DisableWolverineRuntimeForTests => true;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
