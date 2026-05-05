@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Pagination;
 
@@ -35,7 +36,10 @@ public static class CursorPaginationServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddSingleton<CursorEncoder>();
-        services.AddSingleton(TimeProvider.System);
+        // TryAdd: respeita TimeProvider já registrado pelo host (testes
+        // determinísticos, hosts com clock controlado, replay). AddSingleton
+        // direto sobrescreveria silenciosamente esse override.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<Errors.IDomainErrorRegistration, PaginationDomainErrorRegistration>();
 
         services.PostConfigure<ApiBehaviorOptions>(options =>
