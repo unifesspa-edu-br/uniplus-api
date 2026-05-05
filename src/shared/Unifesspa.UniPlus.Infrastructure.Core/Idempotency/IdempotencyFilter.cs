@@ -97,6 +97,16 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
             return;
         }
 
+        // Múltiplos valores no header é ambíguo — não há regra que diga qual
+        // vence (proxy duplicou? cliente bugado?). Rejeitar 400 alinhado com
+        // draft IETF que define o header como Item (sf-string), não List.
+        if (headerValues.Count > 1)
+        {
+            ShortCircuit(context, IdempotencyDomainErrorCodes.KeyMalformada,
+                "Header Idempotency-Key recebido múltiplas vezes; envie um único valor por request.");
+            return;
+        }
+
         string idempotencyKey = headerValues[0]!;
         if (!IsKeyValid(idempotencyKey))
         {
@@ -398,10 +408,18 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         // `/api/editais/def/publicar` PRECISAM ser keys distintas no cache;
         // o template colapsaria ambos em "POST /api/editais/{id}/publicar"
         // e duas requests com mesma Idempotency-Key sobre RECURSOS DIFERENTES
-        // colidiriam (vazamento cross-resource). RFC 7230 §2.7.3 trata path
-        // como case-sensitive — sem normalização para preservar a semântica.
+        // colidiriam (vazamento cross-resource).
+        //
+        // Casing canonicalizado: ASP.NET Core route matching é case-insensitive
+        // por default, então `/api/Editais/abc/Publicar` e
+        // `/api/editais/abc/publicar` matcham a mesma action. Sem normalizar,
+        // cliente que alterne casing acidentalmente (frontend com URL diferente)
+        // teria caches separados — replay quebrado. Lowercase é prática
+        // canônica de URL normalization (RFC 3986 §6.2.2.1).
         string method = context.HttpContext.Request.Method;
-        string path = context.HttpContext.Request.Path.ToString();
+#pragma warning disable CA1308 // ToLowerInvariant em URL é canônico — ToUpperInvariant deixaria a key ilegível em queries SQL diagnósticas.
+        string path = context.HttpContext.Request.Path.ToString().ToLowerInvariant();
+#pragma warning restore CA1308
         return $"{method} {path}";
     }
 
