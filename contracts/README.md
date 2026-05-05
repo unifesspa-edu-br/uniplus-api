@@ -40,7 +40,7 @@ Os arquivos `contracts/openapi.{selecao,ingresso}.json` são reescritos. **Revis
 
 Itens originalmente listados em #290 que ficam para próximos PRs (mantém este reviewable):
 
-- `contracts/shared.openapi.json` declarando ProblemDetails, Cursor, `_links`, paginação envelopes via `$ref`.
+- ~~`contracts/shared.openapi.json` declarando ProblemDetails, Cursor, `_links`, paginação envelopes via `$ref`.~~ Resolvido por [ADR-0035](../docs/adrs/0035-shared-schemas-cross-module-fitness-test.md): Microsoft.AspNetCore.OpenApi 10 não suporta `$ref` cross-document, e Redocly post-process é desproporcional para 3 schemas duplicados. Em vez disso, `OpenApiSharedSchemasInSyncTests` (`tests/Unifesspa.UniPlus.ArchTests/SolutionRules/`) faz fitness check byte-a-byte dos schemas com mesmo nome em baselines diferentes. Reavaliar quando ≥10 schemas compartilhados, terceiro módulo, ou portal `uniplus-developers` demandar multi-file.
 - `contracts/postman/uniplus-api.postman_collection.json` com cenários smoke (criar edital com Idempotency-Key, listar com cursor, 406 vendor MIME inexistente, 422 validation).
 - Newman em CI rodando contra a API em container — exige docker-compose com Postgres/Kafka/MinIO/Keycloak.
 

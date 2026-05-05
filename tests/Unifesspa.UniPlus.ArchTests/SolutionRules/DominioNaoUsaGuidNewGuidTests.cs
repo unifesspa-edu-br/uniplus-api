@@ -5,6 +5,8 @@ using System.Text.RegularExpressions;
 
 using AwesomeAssertions;
 
+using TestSupport;
+
 /// <summary>
 /// Fitness function da ADR-0032: identidade de entidades de domínio é gerada
 /// via <see cref="System.Guid.CreateVersion7()"/> (UUID v7), nunca
@@ -28,7 +30,7 @@ public sealed partial class DominioNaoUsaGuidNewGuidTests
     [Fact(DisplayName = "ADR-0032: nenhum arquivo .cs em *.Domain chama Guid.NewGuid()")]
     public void Dominio_NaoChama_GuidNewGuid()
     {
-        string solutionRoot = LocateSolutionRoot();
+        string solutionRoot = SolutionRootLocator.Locate();
         string[] domainSourceRoots =
         [
             Path.Combine(solutionRoot, "src", "shared", "Unifesspa.UniPlus.Kernel"),
@@ -108,19 +110,4 @@ public sealed partial class DominioNaoUsaGuidNewGuidTests
             $"Violações encontradas:\n  - {string.Join("\n  - ", violations)}");
     }
 
-    private static string LocateSolutionRoot()
-    {
-        // Sobe a partir do AppContext.BaseDirectory até encontrar UniPlus.slnx.
-        // Resiliente a mudanças de target framework e path do bin.
-        string current = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(current))
-        {
-            if (File.Exists(Path.Combine(current, "UniPlus.slnx")))
-                return current;
-            current = Directory.GetParent(current)?.FullName ?? string.Empty;
-        }
-
-        throw new DirectoryNotFoundException(
-            "UniPlus.slnx não encontrado a partir de AppContext.BaseDirectory; estrutura do repositório alterada?");
-    }
 }

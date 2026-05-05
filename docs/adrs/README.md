@@ -63,6 +63,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0032](0032-guid-v7-para-identidade-de-entidades.md) | Guid v7 (RFC 9562) como identidade de entidades de domínio | accepted | 2026-05-05 |
 | [0033](0033-icurrentuser-abstraction-via-iusercontext.md) | `IUserContext` como abstração canônica para acesso ao principal autenticado | accepted | 2026-05-05 |
 | [0034](0034-problemdetails-em-401-403-via-jwtbearer-events.md) | ProblemDetails RFC 9457 em 401/403 via `JwtBearerEvents.OnChallenge`/`OnForbidden` | accepted | 2026-05-05 |
+| [0035](0035-shared-schemas-cross-module-fitness-test.md) | Schemas duplicados entre baselines OpenAPI — fitness test cross-module no lugar de `$ref` multi-arquivo | accepted | 2026-05-05 |
 
 ## Como adicionar um novo ADR
 
