@@ -196,6 +196,51 @@ public sealed class VendorMediaTypeAttributeTests
     }
 
     [Fact]
+    public void OnResultExecuting_AposNegociacao_AdicionaVaryAcceptHeader()
+    {
+        // RFC 9110 §12.5.5: caches compartilhados precisam de Vary: Accept
+        // para não servir uma versão a cliente que pediu outra.
+        ActionExecutingContext executing = CreateContext("application/vnd.uniplus.edital.v1+json");
+        Attribute.OnActionExecuting(executing);
+
+        ResultExecutingContext resultCtx = new(
+            executing,
+            [],
+            new OkObjectResult("payload"),
+            controller: new object());
+
+        Attribute.OnResultExecuting(resultCtx);
+
+        Microsoft.Extensions.Primitives.StringValues vary = resultCtx.HttpContext.Response.Headers.Vary;
+        vary.Any(static v => v is not null && v.Contains("Accept", StringComparison.OrdinalIgnoreCase))
+            .Should().BeTrue("Vary: Accept é obrigatório para caches compartilhados respeitarem content negotiation.");
+    }
+
+    [Fact]
+    public void OnResultExecuting_VaryJaContemAccept_NaoDuplicaToken()
+    {
+        // Idempotência: chamadas duplicadas (filter pipeline composto) não devem
+        // emitir múltiplas entradas "Accept" no Vary.
+        ActionExecutingContext executing = CreateContext("application/vnd.uniplus.edital.v1+json");
+        Attribute.OnActionExecuting(executing);
+        executing.HttpContext.Response.Headers.Vary = "Accept-Encoding, Accept";
+
+        ResultExecutingContext resultCtx = new(
+            executing,
+            [],
+            new OkObjectResult("payload"),
+            controller: new object());
+
+        Attribute.OnResultExecuting(resultCtx);
+
+        Microsoft.Extensions.Primitives.StringValues vary = resultCtx.HttpContext.Response.Headers.Vary;
+        int acceptOccurrences = vary
+            .SelectMany(static v => v?.Split(',') ?? [])
+            .Count(static token => token.Trim().Equals("Accept", StringComparison.OrdinalIgnoreCase));
+        acceptOccurrences.Should().Be(1, "token Accept deve aparecer exatamente uma vez no Vary header");
+    }
+
+    [Fact]
     public void OnResultExecuting_RespostaProblemDetails_NaoSobrescreveContentType()
     {
         // RFC 9457: erros mantêm application/problem+json mesmo após
