@@ -49,10 +49,22 @@ public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
         if (entry is null)
             return new IdempotencyLookupResult(IdempotencyOutcome.Miss, null);
 
-        // Entry expirada conta como miss — handler roda novamente. Cleanup
-        // físico fica para job dedicado (fora do escopo desta story).
-        if (entry.ExpiresAt <= _timeProvider.GetUtcNow())
+        // Entry expirada conta como miss, mas precisa ser DELETADA antes de
+        // retornar — caso contrário a UNIQUE em (scope, endpoint, key) bloqueia
+        // o próximo TryReserve do cliente (UNIQUE violation), resultando em 409
+        // espúrio para uma request que deveria ser tratada como nova.
+        // ExecuteDelete com filtro Id+ExpiresAt é seguro contra concorrência:
+        // outra request que detecte o mesmo expirado vence o DELETE, a perdedora
+        // vê 0 rows e segue normal.
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        if (entry.ExpiresAt <= now)
+        {
+            await _db.Set<IdempotencyEntry>()
+                .Where(e => e.Id == entry.Id && e.ExpiresAt <= now)
+                .ExecuteDeleteAsync(cancellationToken)
+                .ConfigureAwait(false);
             return new IdempotencyLookupResult(IdempotencyOutcome.Miss, null);
+        }
 
         if (entry.Status == IdempotencyStatus.Processing)
             return new IdempotencyLookupResult(IdempotencyOutcome.Processing, entry);
