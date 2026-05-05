@@ -65,19 +65,37 @@ public sealed class CascadingFixture : IAsyncLifetime
         await using SelecaoDbContext db = new(options);
         await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
 
+        // Captura todos os valores prévios ANTES de mutar o environment —
+        // garantia de restore-em-falha dos dois sets atômicos. Sem isto,
+        // uma exceção entre os dois SetEnvironmentVariable abaixo deixaria
+        // a primeira variável setada para o resto do test run (issue #195).
         _connectionStringEnvVarPrevio = Environment.GetEnvironmentVariable(ConnectionStringEnvVar);
-        Environment.SetEnvironmentVariable(ConnectionStringEnvVar, ConnectionString);
-
         _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
-        // Whitespace (espaço) em vez de string.Empty: em runtimes anteriores a
-        // .NET 9, Environment.SetEnvironmentVariable(name, string.Empty) apaga
-        // a variável (em vez de definir como vazia), o que faria o appsettings
-        // voltar a ser consultado e o Wolverine tentar conectar em
-        // localhost:9092. O helper produtivo desliga Kafka via IsNullOrWhiteSpace,
-        // então um espaço cobre os dois cenários sem regressão cross-runtime.
-        Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
 
-        _factory = new CascadingApiFactory(ConnectionString);
+        try
+        {
+            Environment.SetEnvironmentVariable(ConnectionStringEnvVar, ConnectionString);
+
+            // Whitespace (espaço) em vez de string.Empty: em runtimes anteriores a
+            // .NET 9, Environment.SetEnvironmentVariable(name, string.Empty) apaga
+            // a variável (em vez de definir como vazia), o que faria o appsettings
+            // voltar a ser consultado e o Wolverine tentar conectar em
+            // localhost:9092. O helper produtivo desliga Kafka via IsNullOrWhiteSpace,
+            // então um espaço cobre os dois cenários sem regressão cross-runtime.
+            Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
+
+            _factory = new CascadingApiFactory(ConnectionString);
+        }
+        catch
+        {
+            // Restore inline antes de relançar — DisposeAsync é chamado por xUnit
+            // mesmo após InitializeAsync falhar, mas só se a fixture chegou a
+            // ser construída. Restaurar aqui torna a fixture resiliente mesmo
+            // em cenários onde xUnit pula o dispose por outro motivo.
+            Environment.SetEnvironmentVariable(ConnectionStringEnvVar, _connectionStringEnvVarPrevio);
+            Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, _kafkaEnvVarPrevio);
+            throw;
+        }
     }
 
     public async Task DisposeAsync()

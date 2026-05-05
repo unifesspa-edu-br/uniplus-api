@@ -134,6 +134,53 @@ jobs:
             --settings coverlet.runsettings \
             --results-directory ${{ env.COVERAGE_DIR }}
 
+      # Sentinela do filtro AC (issue #205): a suite cascading da Selecao
+      # marca cada teste com [Trait("Category", "OutboxCapability")] +
+      # [Trait("Category", "OutboxCascading")]. Rodar explicitamente cada
+      # filtro garante que (a) ambos os traits permanecem na fonte, e
+      # (b) a suite tem pelo menos a quantidade mínima esperada de testes
+      # — protege contra remoção acidental de uma das marcações.
+      # Equivalente local:
+      #   dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
+      #     --filter "Category=OutboxCapability" --no-build
+      - name: Sanity check — Category=OutboxCapability filter has expected coverage
+        run: |
+          set -euo pipefail
+          MIN_TESTS=15
+          out=$(dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
+            --configuration ${{ env.BUILD_CONFIG }} \
+            --no-build \
+            --filter "Category=OutboxCapability" \
+            --logger "console;verbosity=minimal")
+          echo "$out"
+          passed=$(echo "$out" | grep -oP 'Aprovado:\s*\K[0-9]+' | head -1 || true)
+          if [ -z "${passed:-}" ]; then
+            passed=$(echo "$out" | grep -oP 'Passed:\s*\K[0-9]+' | head -1 || echo 0)
+          fi
+          if [ "${passed:-0}" -lt "$MIN_TESTS" ]; then
+            echo "::error::Filtro Category=OutboxCapability cobriu $passed testes, mínimo esperado $MIN_TESTS — alguma marcação foi perdida?"
+            exit 1
+          fi
+
+      - name: Sanity check — Category=OutboxCascading filter has expected coverage
+        run: |
+          set -euo pipefail
+          MIN_TESTS=8
+          out=$(dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
+            --configuration ${{ env.BUILD_CONFIG }} \
+            --no-build \
+            --filter "Category=OutboxCascading" \
+            --logger "console;verbosity=minimal")
+          echo "$out"
+          passed=$(echo "$out" | grep -oP 'Aprovado:\s*\K[0-9]+' | head -1 || true)
+          if [ -z "${passed:-}" ]; then
+            passed=$(echo "$out" | grep -oP 'Passed:\s*\K[0-9]+' | head -1 || echo 0)
+          fi
+          if [ "${passed:-0}" -lt "$MIN_TESTS" ]; then
+            echo "::error::Filtro Category=OutboxCascading cobriu $passed testes, mínimo esperado $MIN_TESTS — alguma marcação foi perdida?"
+            exit 1
+          fi
+
       - name: Merge coverage reports
         if: always()
         run: |
