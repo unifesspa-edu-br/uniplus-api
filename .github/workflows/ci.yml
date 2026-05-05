@@ -49,7 +49,10 @@ jobs:
           node-version: '20'
 
       - name: Markdown lint (markdownlint-cli2)
-        run: npx --yes markdownlint-cli2 'docs/adrs/**/*.md'
+        # Versão pinada em sincronia com tools/adr-lint/validate.sh:
+        # bump exige edição coordenada dos dois para preservar paridade
+        # dev↔CI (script local invoca o mesmo binary).
+        run: npx --yes markdownlint-cli2@0.22.1 'docs/adrs/**/*.md'
 
   spectral:
     name: Spectral lint (OpenAPI baselines)
