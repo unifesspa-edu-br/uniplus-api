@@ -34,10 +34,13 @@ public static class SelecaoInfrastructureRegistration
         services.AddDbContext<SelecaoDbContext>((serviceProvider, options) =>
         {
             IConfiguration configuration = serviceProvider.GetRequiredService<IConfiguration>();
-            string connectionString = configuration.GetConnectionString(ConnectionStringName)
-                ?? throw new InvalidOperationException(
+            string? connectionString = configuration.GetConnectionString(ConnectionStringName);
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException(
                     $"ConnectionStrings:{ConnectionStringName} não configurada — defina via appsettings ou env var "
-                    + $"`ConnectionStrings__{ConnectionStringName}`.");
+                    + $"`ConnectionStrings__{ConnectionStringName}`. Valores vazios/whitespace também são rejeitados.");
+            }
 
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
