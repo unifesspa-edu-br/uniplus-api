@@ -38,7 +38,7 @@ public static class ProfileEndpointsExtensions
             .WithSummary("Retorna o perfil do usuário autenticado")
             .WithDescription("Retorna atributos de identidade e institucionais (CPF, NomeSocial) extraídos do access token. Requer autenticação.")
             .Produces<UserProfileResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         return endpoints;
     }

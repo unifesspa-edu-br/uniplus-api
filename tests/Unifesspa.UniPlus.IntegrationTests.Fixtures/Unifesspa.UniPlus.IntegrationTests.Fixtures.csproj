@@ -24,4 +24,12 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      TestAuthHandler reutiliza AuthenticationProblemDetailsWriter do código produtivo
+      para emitir o mesmo body problem+json (RFC 9457) em 401/403 dentro do test host.
+    -->
+    <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
+  </ItemGroup>
+
 </Project>

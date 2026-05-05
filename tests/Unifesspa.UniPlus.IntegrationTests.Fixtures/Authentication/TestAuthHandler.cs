@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+
 /// <summary>
 /// Authentication handler for integration tests. Accepts a fixed bearer token
 /// and builds a <see cref="ClaimsPrincipal"/> from request headers so tests can
@@ -77,6 +79,22 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
 
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
+
+    /// <summary>
+    /// Espelha o body problem+json emitido pelo JwtBearer em produção (ver
+    /// <see cref="AuthenticationProblemDetailsWriter"/>). Sem este override o
+    /// handler base só seta status 401 com body vazio, divergindo do contrato
+    /// real e mascarando regressões em testes de integração.
+    /// </summary>
+    protected override Task HandleChallengeAsync(AuthenticationProperties properties) =>
+        AuthenticationProblemDetailsWriter.WriteUnauthorizedAsync(Context);
+
+    /// <summary>
+    /// Espelha o body problem+json emitido pelo JwtBearer em produção quando a
+    /// AuthorizationMiddleware nega acesso a um principal autenticado.
+    /// </summary>
+    protected override Task HandleForbiddenAsync(AuthenticationProperties properties) =>
+        AuthenticationProblemDetailsWriter.WriteForbiddenAsync(Context);
 
     private string GetHeaderValue(string headerName, string fallbackValue)
     {

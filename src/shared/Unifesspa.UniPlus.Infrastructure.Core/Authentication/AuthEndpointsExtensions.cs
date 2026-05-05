@@ -35,7 +35,7 @@ public static class AuthEndpointsExtensions
             .WithSummary("Retorna o usuário autenticado")
             .WithDescription("Retorna informações do usuário extraídas do access token. Requer autenticação.")
             .Produces<AuthenticatedUserResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
 
         return endpoints;
     }

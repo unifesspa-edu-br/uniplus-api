@@ -70,9 +70,17 @@ public static class OidcAuthenticationConfiguration
                     ClockSkew = auth.ClockSkew,
                 };
 
-                jwtOptions.Events.WithStructuredLogging(
-                    loggerFactory.CreateLogger("Unifesspa.UniPlus.Authentication.JwtBearer"));
+                jwtOptions.Events
+                    .WithStructuredLogging(
+                        loggerFactory.CreateLogger("Unifesspa.UniPlus.Authentication.JwtBearer"))
+                    .WithProblemDetails();
             });
+
+        // IProblemDetailsService disponibiliza `CustomizeProblemDetails` e o
+        // writer único usado pelos hooks de JwtBearer (challenge/forbidden).
+        // Sem este registro, JwtBearerProblemDetailsEvents cai no fallback
+        // manual — funcional, mas sem enriquecimento global.
+        services.AddProblemDetails();
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpUserContext>();
