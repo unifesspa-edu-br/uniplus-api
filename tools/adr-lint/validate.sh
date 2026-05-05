@@ -119,13 +119,39 @@ MARKDOWNLINT_VERSION="0.22.1"
 if command -v npx >/dev/null 2>&1; then
   echo
   echo "Rodando markdownlint-cli2@${MARKDOWNLINT_VERSION} em $DIR/**/*.md ..."
-  if ! npx --yes "markdownlint-cli2@${MARKDOWNLINT_VERSION}" "$DIR/**/*.md"; then
-    echo
-    echo "ERRO: markdownlint-cli2 reportou violações." >&2
+
+  # Captura combinada de stdout+stderr para diagnosticar a natureza do
+  # exit code != 0 abaixo: violação de lint vs falha de fetch (registry,
+  # auth, network). O `tee` espelha a saída no terminal para o operador
+  # ver progresso enquanto o script processa o resultado.
+  MD_OUTPUT_FILE=$(mktemp)
+  trap 'rm -f "$MD_OUTPUT_FILE"' EXIT
+
+  set +e
+  npx --yes "markdownlint-cli2@${MARKDOWNLINT_VERSION}" "$DIR/**/*.md" 2>&1 \
+    | tee "$MD_OUTPUT_FILE"
+  MD_EXIT="${PIPESTATUS[0]}"
+  set -e
+
+  if [[ "$MD_EXIT" -eq 0 ]]; then
+    echo "markdownlint-cli2: 0 erros."
+  elif grep -qE 'markdownlint-cli2 v[0-9]' "$MD_OUTPUT_FILE"; then
+    # Banner do binary apareceu → ferramenta rodou; exit != 0 = lint real.
+    echo >&2
+    echo "ERRO: markdownlint-cli2 reportou violações de formatação." >&2
     echo "Config: $DIR/.markdownlint-cli2.jsonc" >&2
     exit 1
+  else
+    # Banner ausente → npx falhou ANTES de invocar o binary
+    # (registry HTTP error, auth, network, integrity). Não é violação de
+    # contrato local; emitir aviso para o operador, sem falhar — o gate de
+    # CI ainda protege a main.
+    echo >&2
+    echo "AVISO: npx não conseguiu rodar markdownlint-cli2@${MARKDOWNLINT_VERSION} (exit $MD_EXIT)." >&2
+    echo "       Provável falha de fetch (registry/auth/network), não violação de lint." >&2
+    echo "       O gate de CI ainda valida; tente novamente quando a rede normalizar:" >&2
+    echo "         npx --yes markdownlint-cli2@${MARKDOWNLINT_VERSION} '$DIR/**/*.md'" >&2
   fi
-  echo "markdownlint-cli2: 0 erros."
 else
   echo
   echo "AVISO: npx não encontrado — pulando markdownlint-cli2 local." >&2
