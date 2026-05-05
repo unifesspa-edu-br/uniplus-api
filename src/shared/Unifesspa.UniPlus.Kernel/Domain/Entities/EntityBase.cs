@@ -42,10 +42,15 @@ public abstract class EntityBase
     // entidade no mesmo ponto em que o handler os entrega ao bus,
     // evitando republicação acidental se o agregado sobreviver ao escopo
     // do handler (cache, sagas, processadores long-lived).
+    //
+    // Retorno é wrap imutável (Array.AsReadOnly) — simetria com `DomainEvents`,
+    // que também expõe `_domainEvents.AsReadOnly()`. Sem este wrap o caller
+    // poderia castar para `IDomainEvent[]` e mutar o array snapshot, vazando
+    // mutação onde o contrato promete read-only.
     public IReadOnlyCollection<IDomainEvent> DequeueDomainEvents()
     {
         IDomainEvent[] snapshot = [.. _domainEvents];
         _domainEvents.Clear();
-        return snapshot;
+        return Array.AsReadOnly(snapshot);
     }
 }

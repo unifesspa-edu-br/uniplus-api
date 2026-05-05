@@ -56,6 +56,24 @@ public sealed class EntityBaseDomainEventsTests
         entidade.DomainEvents.Should().ContainSingle().Which.Should().Be(posterior);
     }
 
+    [Fact(DisplayName = "DequeueDomainEvents retorna ReadOnlyCollection — caller não consegue mutar via cast")]
+    public void DequeueDomainEvents_RetornoEhImutavel_NaoPermiteCastParaArray()
+    {
+        var entidade = new EntidadeDeTeste();
+        entidade.AdicionarEvento(new EventoDeTeste("e1"));
+
+        IReadOnlyCollection<IDomainEvent> drenados = entidade.DequeueDomainEvents();
+
+        // Simetria com `DomainEvents` (que é `_domainEvents.AsReadOnly()`):
+        // o snapshot é wrap imutável, não array mutável tipado como
+        // IReadOnlyCollection. Tentar castar para IDomainEvent[] deve
+        // retornar null — wrap ReadOnlyCollection<T> não é a mesma
+        // referência do array interno.
+        (drenados is IDomainEvent[]).Should().BeFalse(
+            "Array.AsReadOnly produz ReadOnlyCollection<T>, não o array — caller não consegue mutar via cast");
+        (drenados is List<IDomainEvent>).Should().BeFalse();
+    }
+
     [Fact(DisplayName = "ClearDomainEvents continua zerando a coleção sem retornar snapshot")]
     public void ClearDomainEvents_ZeraColecaoSemRetorno()
     {

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Ingresso.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Application.Abstractions.Interfaces;
@@ -11,18 +12,32 @@ using Persistence.Repositories;
 
 public static class IngressoInfrastructureRegistration
 {
-    public static IServiceCollection AddIngressoInfrastructure(
-        this IServiceCollection services,
-        string connectionString)
+    private const string ConnectionStringName = "IngressoDb";
+
+    /// <summary>
+    /// Registra a infraestrutura do módulo Ingresso (DbContext + interceptors +
+    /// repositórios). A connection string é lida do <see cref="IConfiguration"/>
+    /// injetado no factory do <c>AddDbContext</c> — alinhado com o padrão lazy
+    /// do <c>UseWolverineOutboxCascading</c> (issue #204). Test hosts que
+    /// sobrescrevem <c>ConnectionStrings:IngressoDb</c> via env var ou
+    /// <c>InMemoryCollection</c> ganham o override automaticamente, sem
+    /// precisar re-registrar o DbContext.
+    /// </summary>
+    public static IServiceCollection AddIngressoInfrastructure(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
         services.AddSingleton<SoftDeleteInterceptor>();
         services.AddSingleton<AuditableInterceptor>();
 
         services.AddDbContext<IngressoDbContext>((serviceProvider, options) =>
         {
+            IConfiguration configuration = serviceProvider.GetRequiredService<IConfiguration>();
+            string connectionString = configuration.GetConnectionString(ConnectionStringName)
+                ?? throw new InvalidOperationException(
+                    $"ConnectionStrings:{ConnectionStringName} não configurada — defina via appsettings ou env var "
+                    + $"`ConnectionStrings__{ConnectionStringName}`.");
+
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
                 npgsqlOptions.MigrationsAssembly(typeof(IngressoDbContext).Assembly.FullName);
