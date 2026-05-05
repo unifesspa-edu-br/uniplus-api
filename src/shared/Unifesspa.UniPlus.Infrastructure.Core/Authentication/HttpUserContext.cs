@@ -37,6 +37,8 @@ public sealed partial class HttpUserContext : IUserContext
         _roles = new Lazy<IReadOnlyList<string>>(ResolveRoles);
     }
 
+    public bool IsAuthenticated => _user?.Identity?.IsAuthenticated == true;
+
     public string? UserId => GetFirstClaimValue(UserIdClaimCandidates);
 
     public string? Name => GetFirstClaimValue(NameClaimCandidates);

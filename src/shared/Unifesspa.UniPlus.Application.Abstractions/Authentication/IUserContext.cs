@@ -6,6 +6,15 @@ namespace Unifesspa.UniPlus.Application.Abstractions.Authentication;
 public interface IUserContext
 {
     /// <summary>
+    /// Gets a value indicating whether the current request carries an
+    /// authenticated principal (JWT validated, ClaimsIdentity.IsAuthenticated).
+    /// Anonymous requests (no <c>Authorization</c> header, or auth failure)
+    /// return <see langword="false"/> and all other properties default to
+    /// <see langword="null"/>/empty.
+    /// </summary>
+    bool IsAuthenticated { get; }
+
+    /// <summary>
     /// Gets the authenticated user's identifier.
     /// </summary>
     string? UserId { get; }
