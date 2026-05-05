@@ -124,6 +124,8 @@ public sealed partial class ContractV1FitnessTestsTests
     private static HashSet<string> ScanSourceForDomainErrorCodes(params string[] roots)
     {
         Regex pattern = DomainErrorCallRegex();
+        Regex blockComment = BlockCommentRegex();
+        Regex lineComment = LineCommentRegex();
         HashSet<string> codes = new(StringComparer.Ordinal);
 
         foreach (string root in roots)
@@ -134,7 +136,17 @@ public sealed partial class ContractV1FitnessTestsTests
                     || file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
                     continue;
 
+                // Striping comments antes do match evita falsos positivos quando
+                // alguém menciona `new DomainError("X", ...)` em XML doc, comentário
+                // de exemplo ou linha `//`. AST-correto exigiria Roslyn — strip
+                // simples cobre os casos reais (block + line comments). String
+                // literais que contenham o padrão exato escapariam inner quotes
+                // como `\"`, fazendo o pattern de F1 capturar `\X\` em vez de `X`,
+                // o que não polui o set de orphans.
                 string content = File.ReadAllText(file);
+                content = blockComment.Replace(content, string.Empty);
+                content = lineComment.Replace(content, string.Empty);
+
                 foreach (Match match in pattern.Matches(content))
                     codes.Add(match.Groups[1].Value);
             }
@@ -213,6 +225,12 @@ public sealed partial class ContractV1FitnessTestsTests
     /// </remarks>
     [GeneratedRegex(@"new\s+DomainError\(\s*""([^""]+)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DomainErrorCallRegex();
+
+    [GeneratedRegex(@"/\*[\s\S]*?\*/", RegexOptions.Compiled, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex BlockCommentRegex();
+
+    [GeneratedRegex(@"//[^\n]*", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex LineCommentRegex();
 
     // Whitelist alinhado com a DI graph que Selecao serve em produção.
     // Inclui Selecao + cross-cutting (Kernel, Application.Abstractions,
