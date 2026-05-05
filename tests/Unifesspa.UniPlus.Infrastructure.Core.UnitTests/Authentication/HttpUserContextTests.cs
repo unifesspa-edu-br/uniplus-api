@@ -177,6 +177,39 @@ public sealed class HttpUserContextTests
         context.GetResourceRoles("uniplus").Should().BeEmpty();
     }
 
+    [Fact]
+    public void IsAuthenticated_Should_ReturnTrue_WhenClaimsIdentityHasAuthenticationType()
+    {
+        // ClaimsIdentity construída com authentication type não-null/não-empty
+        // tem IsAuthenticated == true (.NET BCL).
+        HttpUserContext context = CreateContext(new Claim("sub", "user-1"));
+
+        context.IsAuthenticated.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsAuthenticated_Should_ReturnFalse_WhenPrincipalIsAnonymous()
+    {
+        ClaimsIdentity anonymous = new();
+        ClaimsPrincipal principal = new(anonymous);
+        DefaultHttpContext httpContext = new() { User = principal };
+        IHttpContextAccessor accessor = Substitute.For<IHttpContextAccessor>();
+        accessor.HttpContext.Returns(httpContext);
+        HttpUserContext context = new(accessor, NullLogger<HttpUserContext>.Instance);
+
+        context.IsAuthenticated.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsAuthenticated_Should_ReturnFalse_WhenHttpContextIsNull()
+    {
+        IHttpContextAccessor accessor = Substitute.For<IHttpContextAccessor>();
+        accessor.HttpContext.Returns((HttpContext?)null);
+        HttpUserContext context = new(accessor, NullLogger<HttpUserContext>.Instance);
+
+        context.IsAuthenticated.Should().BeFalse();
+    }
+
     private static HttpUserContext CreateContext(params Claim[] claims)
     {
         ClaimsIdentity identity = new(claims, "Test");

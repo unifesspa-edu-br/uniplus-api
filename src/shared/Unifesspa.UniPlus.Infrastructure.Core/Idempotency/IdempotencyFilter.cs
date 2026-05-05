@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using Cryptography;
 using Errors;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Kernel.Results;
 
 /// <summary>
@@ -56,6 +57,7 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
     private readonly IUniPlusEncryptionService _encryption;
     private readonly IDomainErrorMapper _errorMapper;
     private readonly TimeProvider _time;
+    private readonly IUserContext _userContext;
     private readonly IdempotencyOptions _options;
 
     public IdempotencyFilter(
@@ -63,14 +65,21 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         IUniPlusEncryptionService encryption,
         IDomainErrorMapper errorMapper,
         TimeProvider time,
+        IUserContext userContext,
         IOptions<IdempotencyOptions> options)
     {
+        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(encryption);
+        ArgumentNullException.ThrowIfNull(errorMapper);
+        ArgumentNullException.ThrowIfNull(time);
+        ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(options);
 
         _store = store;
         _encryption = encryption;
         _errorMapper = errorMapper;
         _time = time;
+        _userContext = userContext;
         _options = options.Value;
     }
 
@@ -115,11 +124,11 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
             return;
         }
 
-        // Resolve principal autenticado ANTES de gastar AES no decode/hash —
-        // endpoint marcado com [RequiresIdempotencyKey] em request anonymous
-        // é inconsistência de configuração: caches anonymous compartilhados
-        // permitem ataques de poisoning entre clientes.
-        string? scope = ResolveScope(httpContext);
+        // Resolve principal via IUserContext (lê claims em UM ÚNICO lugar —
+        // ADR-0033). Endpoint marcado com [RequiresIdempotencyKey] em request
+        // anonymous é inconsistência de configuração: caches anonymous
+        // compartilhados permitem ataques de poisoning entre clientes.
+        string? scope = ResolveScope(_userContext);
         if (scope is null)
         {
             ShortCircuit(context, IdempotencyDomainErrorCodes.PrincipalRequerido,
@@ -388,18 +397,18 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
     }
 
     /// <summary>
-    /// Resolve o scope da chave de cache via sub claim do JWT.
-    /// Retorna <c>null</c> quando não há principal autenticado — sinal para
-    /// rejeitar o request com 401, evitando que clientes anonymous
-    /// compartilhem o mesmo bucket "anonymous" e poluam/colidam keys uns dos
-    /// outros (cache poisoning entre anônimos).
+    /// Resolve o scope da chave de cache via <see cref="IUserContext"/>
+    /// (single source of truth pra claims, ADR-0033). Retorna <c>null</c>
+    /// quando não há principal autenticado — sinal para rejeitar o request
+    /// com 401, evitando que clientes anonymous compartilhem o mesmo bucket
+    /// e poluam/colidam keys uns dos outros (cache poisoning).
     /// </summary>
-    private static string? ResolveScope(HttpContext httpContext)
+    private static string? ResolveScope(IUserContext userContext)
     {
-        string? sub = httpContext.User?.FindFirst("sub")?.Value
-            ?? httpContext.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!userContext.IsAuthenticated || string.IsNullOrEmpty(userContext.UserId))
+            return null;
 
-        return string.IsNullOrEmpty(sub) ? null : $"user:{sub}";
+        return $"user:{userContext.UserId}";
     }
 
     private static string ResolveEndpoint(ResourceExecutingContext context)

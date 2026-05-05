@@ -76,6 +76,11 @@ public static class OidcAuthenticationConfiguration
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpUserContext>();
+        // Variante required: lê do mesmo IUserContext mas falha-rápido em
+        // request anônima. Use em handlers/controllers protegidos por
+        // [Authorize] onde anônimo é estado impossível.
+        services.AddScoped<IRequiredUserContext>(sp =>
+            new RequiredUserContext(sp.GetRequiredService<IUserContext>()));
 
         services.AddHttpClient(nameof(OidcDiscoveryHealthCheck));
         services.AddHealthChecks()
