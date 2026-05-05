@@ -51,7 +51,8 @@ Para atualizar as dependências localmente:
 1. Altere a versão no arquivo `Directory.Packages.props`.
 2. Execute o comando para forçar a reavaliação do grafo de dependências:
    ```bash
-   dotnet restore --force-evaluate
+   dotnet restore UniPlus.slnx --force-evaluate
+   ```
 3. Commit os arquivos `packages.lock.json` modificados junto com a alteração do pacote.
 
 ## Pré-requisitos
