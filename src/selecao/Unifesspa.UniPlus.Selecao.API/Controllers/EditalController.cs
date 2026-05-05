@@ -66,7 +66,8 @@ public sealed class EditalController : ControllerBase
             new ListarEditaisQuery(page.AfterId, page.Limit), cancellationToken);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.ProximoAfterId, page, ResourceTag, cancellationToken);
+            resultado.Items, resultado.ProximoAfterId, page, ResourceTag,
+            cancellationToken: cancellationToken);
     }
 
     [HttpGet("{id:guid}")]

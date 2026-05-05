@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+
 /// <summary>
 /// Extensões de <see cref="ControllerBase"/> para responder coleções
 /// paginadas com cursor (ADR-0026): encoda o cursor da próxima página,
@@ -27,6 +29,7 @@ public static class PaginationControllerExtensions
         Guid? nextAfterId,
         PageRequest page,
         string resource,
+        bool requireUserBinding = false,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(controller);
@@ -39,14 +42,34 @@ public static class PaginationControllerExtensions
         CursorPaginationOptions options = services.GetRequiredService<IOptions<CursorPaginationOptions>>().Value;
         TimeProvider timeProvider = services.GetRequiredService<TimeProvider>();
 
+        // User-binding (ADR-0026 §"User-binding em cursores user-scoped"):
+        // recurso user-scoped popula UserId no payload com o sub do principal
+        // corrente — emissão e decode validam o mesmo binding. Resolução de
+        // IUserContext só acontece quando há próxima página A SER EMITIDA;
+        // last-page (sem cursor) não toca o DI evitando friction em testes
+        // slice-level que registram só CursorEncoder/TimeProvider.
         string? nextCursor = null;
         if (nextAfterId is { } proximo)
         {
+            string? userId = null;
+            if (requireUserBinding)
+            {
+                IUserContext userContext = services.GetRequiredService<IUserContext>();
+                if (!userContext.IsAuthenticated || string.IsNullOrEmpty(userContext.UserId))
+                {
+                    throw new InvalidOperationException(
+                        "OkPaginatedAsync com requireUserBinding=true exige principal autenticado. " +
+                        "Verifique se o endpoint tem [Authorize] e se o middleware de auth está antes do MVC.");
+                }
+                userId = userContext.UserId;
+            }
+
             CursorPayload payload = new(
                 After: proximo.ToString(),
                 Limit: page.Limit,
                 ResourceTag: resource,
-                ExpiresAt: timeProvider.GetUtcNow().Add(options.CursorTtl));
+                ExpiresAt: timeProvider.GetUtcNow().Add(options.CursorTtl),
+                UserId: userId);
             nextCursor = await encoder.EncodeAsync(payload, cancellationToken).ConfigureAwait(false);
         }
 

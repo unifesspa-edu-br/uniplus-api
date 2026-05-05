@@ -4,6 +4,8 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
+using NSubstitute;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -204,6 +206,132 @@ public sealed class PageRequestModelBinderTests
         page.Limit.Should().Be(50, "limit do query string vence sobre o do cursor");
     }
 
+    // ─── User-binding (story #312, ADR-0026) ─────────────────────────────────
+
+    [Fact]
+    public async Task BindModelAsync_RequireUserBinding_CursorComUserIdQueBate_RetornaSuccess()
+    {
+        Guid afterId = Guid.CreateVersion7();
+        ServiceProvider services = BuildServicesWithUser("user-alice");
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: afterId.ToString(),
+            Limit: 10,
+            ResourceTag: "inscricoes",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            UserId: "user-alice"));
+
+        DefaultModelBindingContext context = CreateContext(
+            "inscricoes", $"?cursor={Uri.EscapeDataString(cursor)}",
+            servicesOverride: services, methodName: nameof(TestActions.UserScopedAction));
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeTrue();
+        ((PageRequest)context.Result.Model!).AfterId.Should().Be(afterId);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_RequireUserBinding_CursorComUserIdDeOutroUser_RetornaInvalido()
+    {
+        Guid afterId = Guid.CreateVersion7();
+        ServiceProvider services = BuildServicesWithUser("user-bob");
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        // Cursor emitido para Alice — Bob tenta usar.
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: afterId.ToString(),
+            Limit: 10,
+            ResourceTag: "inscricoes",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            UserId: "user-alice"));
+
+        DefaultModelBindingContext context = CreateContext(
+            "inscricoes", $"?cursor={Uri.EscapeDataString(cursor)}",
+            servicesOverride: services, methodName: nameof(TestActions.UserScopedAction));
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeFalse();
+        // Mismatch retorna Invalido (não Forbidden) — não vaza status de
+        // "cursor existe mas é de outro user".
+        context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
+            .Should().Be(CursorBindingErrorCodes.Invalido);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_RequireUserBinding_CursorSemUserIdLegacy_RetornaInvalido()
+    {
+        Guid afterId = Guid.CreateVersion7();
+        ServiceProvider services = BuildServicesWithUser("user-alice");
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        // Cursor sem UserId (era público quando emitido) — endpoint user-scoped
+        // não aceita.
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: afterId.ToString(),
+            Limit: 10,
+            ResourceTag: "inscricoes",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            UserId: null));
+
+        DefaultModelBindingContext context = CreateContext(
+            "inscricoes", $"?cursor={Uri.EscapeDataString(cursor)}",
+            servicesOverride: services, methodName: nameof(TestActions.UserScopedAction));
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeFalse();
+        context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
+            .Should().Be(CursorBindingErrorCodes.Invalido);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_RequireUserBinding_Anonymous_RetornaInvalido()
+    {
+        Guid afterId = Guid.CreateVersion7();
+        ServiceProvider services = BuildServicesWithUser(userId: null);
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: afterId.ToString(),
+            Limit: 10,
+            ResourceTag: "inscricoes",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            UserId: "user-alice"));
+
+        DefaultModelBindingContext context = CreateContext(
+            "inscricoes", $"?cursor={Uri.EscapeDataString(cursor)}",
+            servicesOverride: services, methodName: nameof(TestActions.UserScopedAction));
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeFalse();
+        context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
+            .Should().Be(CursorBindingErrorCodes.Invalido);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_RequireUserBindingFalse_CursorComUserId_IgnoraBinding()
+    {
+        // Endpoint público (RequireUserBinding=false) não valida UserId mesmo
+        // se vier preenchido. Mantém compat com cursores antigos e legacy.
+        Guid afterId = Guid.CreateVersion7();
+        ServiceProvider services = BuildServicesWithUser("user-anyone");
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: afterId.ToString(),
+            Limit: 10,
+            ResourceTag: "editais",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            UserId: "user-someoneelse"));
+
+        DefaultModelBindingContext context = CreateContext(
+            "editais", $"?cursor={Uri.EscapeDataString(cursor)}",
+            servicesOverride: services, methodName: nameof(TestActions.PaginatedAction));
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeTrue();
+    }
+
     [Fact]
     public async Task BindModelAsync_CursorExpirado_RetornaCursorExpirado()
     {
@@ -242,18 +370,38 @@ public sealed class PageRequestModelBinderTests
         return services.BuildServiceProvider();
     }
 
+    private static ServiceProvider BuildServicesWithUser(string? userId)
+    {
+        ServiceCollection services = new();
+        services.AddSingleton<IUniPlusEncryptionService>(_ => new LocalAesEncryptionService(
+            Options.Create(new EncryptionOptions { Provider = "local", LocalKey = Convert.ToBase64String(Key) }),
+            NullLogger<LocalAesEncryptionService>.Instance));
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<CursorEncoder>();
+        services.AddSingleton(Options.Create(new CursorPaginationOptions()));
+
+        Unifesspa.UniPlus.Application.Abstractions.Authentication.IUserContext userCtx =
+            NSubstitute.Substitute.For<Unifesspa.UniPlus.Application.Abstractions.Authentication.IUserContext>();
+        userCtx.IsAuthenticated.Returns(!string.IsNullOrEmpty(userId));
+        userCtx.UserId.Returns(userId);
+        services.AddSingleton(userCtx);
+
+        return services.BuildServiceProvider();
+    }
+
     private static DefaultModelBindingContext CreateContext(
         string resource,
         string queryString,
-        ServiceProvider? servicesOverride = null)
+        ServiceProvider? servicesOverride = null,
+        string methodName = nameof(TestActions.PaginatedAction))
     {
         ServiceProvider services = servicesOverride ?? BuildServices();
 
-        // Atributo [FromCursor("editais")] vem de uma assinatura real construída
+        // Atributo [FromCursor(...)] vem de uma assinatura real construída
         // por reflection — caminho que o binder também usa em produção, garantindo
         // que o teste exercita exatamente o ResolveAttribute.
         ParameterInfo parameterInfo = typeof(TestActions)
-            .GetMethod(nameof(TestActions.PaginatedAction), BindingFlags.Static | BindingFlags.NonPublic)!
+            .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)!
             .GetParameters()[0];
 
         ControllerParameterDescriptor parameterDescriptor = new()
@@ -266,7 +414,7 @@ public sealed class PageRequestModelBinderTests
         ControllerActionDescriptor actionDescriptor = new()
         {
             Parameters = new List<ParameterDescriptor> { parameterDescriptor },
-            ActionName = nameof(TestActions.PaginatedAction),
+            ActionName = methodName,
         };
 
         DefaultHttpContext httpContext = new() { RequestServices = services };
@@ -292,6 +440,12 @@ public sealed class PageRequestModelBinderTests
     private static class TestActions
     {
         internal static void PaginatedAction([FromCursor("editais")] PageRequest page)
+        {
+            _ = page;
+        }
+
+        internal static void UserScopedAction(
+            [FromCursor("inscricoes", RequireUserBinding = true)] PageRequest page)
         {
             _ = page;
         }
