@@ -49,7 +49,7 @@ public sealed class PublicarEditalEndpointTests
 
         Edital edital = await SemearEditalAsync(api);
 
-        HttpResponseMessage response = await client.PostAsync(new Uri($"/api/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage response = await PostPublicarAsync(client, edital.Id, MakeIdempotencyKey());
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
@@ -78,9 +78,9 @@ public sealed class PublicarEditalEndpointTests
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
 
-        var inexistente = Guid.NewGuid();
+        Guid inexistente = Guid.CreateVersion7();
 
-        HttpResponseMessage response = await client.PostAsync(new Uri($"/api/editais/{inexistente}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage response = await PostPublicarAsync(client, inexistente, MakeIdempotencyKey());
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -89,23 +89,137 @@ public sealed class PublicarEditalEndpointTests
     }
 
     [Fact(DisplayName =
-        "POST /editais/{id}/publicar é idempotente — segunda chamada retorna 422 com Edital.JaPublicado")]
+        "POST /editais/{id}/publicar com keys diferentes — segunda chamada retorna 422 Edital.JaPublicado")]
     public async Task PublicarEdital_QuandoJaPublicado_Retorna422()
     {
+        // Cliente com keys distintas força handler a executar duas vezes;
+        // segunda execução vê edital já publicado e retorna 422 (idempotência
+        // semântica do domínio, não do middleware Idempotency-Key).
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
 
         Edital edital = await SemearEditalAsync(api);
 
-        HttpResponseMessage primeira = await client.PostAsync(new Uri($"/api/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage primeira = await PostPublicarAsync(client, edital.Id, MakeIdempotencyKey());
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        HttpResponseMessage segunda = await client.PostAsync(new Uri($"/api/editais/{edital.Id}/publicar", UriKind.Relative), content: null);
+        HttpResponseMessage segunda = await PostPublicarAsync(client, edital.Id, MakeIdempotencyKey());
         segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString()
             .Should().Be("uniplus.selecao.edital.ja_publicado");
     }
+
+    [Fact(DisplayName =
+        "POST /editais/{id}/publicar com mesma Idempotency-Key — replay verbatim com Idempotency-Replayed: true")]
+    public async Task PublicarEdital_MesmaKey_ReplayVerbatim()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        Edital edital = await SemearEditalAsync(api);
+        string key = MakeIdempotencyKey();
+
+        HttpResponseMessage primeira = await PostPublicarAsync(client, edital.Id, key);
+        primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        primeira.Headers.Contains("Idempotency-Replayed").Should().BeFalse();
+
+        HttpResponseMessage segunda = await PostPublicarAsync(client, edital.Id, key);
+        segunda.StatusCode.Should().Be(HttpStatusCode.NoContent,
+            "mesma key + body vazio idêntico → handler NÃO roda; cache replay verbatim");
+        segunda.Headers.Contains("Idempotency-Replayed").Should().BeTrue();
+    }
+
+    [Fact(DisplayName =
+        "POST /editais/{id}/publicar sem Idempotency-Key retorna 400 uniplus.idempotency.key_ausente")]
+    public async Task PublicarEdital_SemKey_Retorna400()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        HttpResponseMessage response = await client.PostAsync(
+            new Uri($"/api/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative), content: null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.idempotency.key_ausente");
+    }
+
+    [Fact(DisplayName =
+        "POST /editais/{id}/publicar com Idempotency-Key malformada retorna 400 uniplus.idempotency.key_malformada")]
+    public async Task PublicarEdital_KeyMalformada_Retorna400()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        using HttpRequestMessage request = new(HttpMethod.Post,
+            new Uri($"/api/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", "invalid key with spaces");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.idempotency.key_malformada");
+    }
+
+    [Fact(DisplayName =
+        "POST /editais com mesma Idempotency-Key e body diferente retorna 422 uniplus.idempotency.body_mismatch")]
+    public async Task CriarEdital_MesmaKeyBodyDiferente_Retorna422BodyMismatch()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        string key = MakeIdempotencyKey();
+        int numero1 = Math.Abs((Guid.NewGuid().GetHashCode() % 4500) + 1);
+        int numero2 = numero1 + 1; // body diferente garantido
+
+        // Primeira request: cria edital normalmente.
+        using HttpRequestMessage primeiraReq = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new
+            {
+                numeroEdital = numero1,
+                anoEdital = 2026,
+                titulo = "Body-mismatch test",
+                tipoProcesso = 1, // SiSU — enum serializado como número (System.Text.Json default)
+            }),
+        };
+        primeiraReq.Headers.TryAddWithoutValidation("Idempotency-Key", key);
+        HttpResponseMessage primeira = await client.SendAsync(primeiraReq);
+        primeira.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Segunda request: mesma key, body diferente (numero2).
+        using HttpRequestMessage segundaReq = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new
+            {
+                numeroEdital = numero2,
+                anoEdital = 2026,
+                titulo = "Body-mismatch test",
+                tipoProcesso = 1, // SiSU — enum serializado como número (System.Text.Json default)
+            }),
+        };
+        segundaReq.Headers.TryAddWithoutValidation("Idempotency-Key", key);
+        HttpResponseMessage segunda = await client.SendAsync(segundaReq);
+
+        segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.idempotency.body_mismatch");
+    }
+
+    private static async Task<HttpResponseMessage> PostPublicarAsync(HttpClient client, Guid editalId, string idempotencyKey)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post,
+            new Uri($"/api/editais/{editalId}/publicar", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+        return await client.SendAsync(request).ConfigureAwait(false);
+    }
+
+    private static string MakeIdempotencyKey() => Guid.CreateVersion7().ToString("N");
 
     private static async Task<Edital> SemearEditalAsync(CascadingApiFactory api)
     {

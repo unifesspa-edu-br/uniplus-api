@@ -51,6 +51,9 @@ builder.Services.AddDomainErrorMapper();
 // traduz falhas do PageRequestModelBinder para 400/410/422.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
 builder.Services.AddCursorPagination(builder.Configuration);
+// Idempotency-Key (ADR-0027) — store EF adjacente ao SelecaoDbContext, filter
+// global que se ativa apenas em endpoints com [RequiresIdempotencyKey].
+builder.Services.AddIdempotency<Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.SelecaoDbContext>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
