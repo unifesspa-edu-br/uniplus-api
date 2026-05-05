@@ -12,10 +12,13 @@ using Idempotency;
 /// <list type="bullet">
 ///   <item><description>Header <c>Idempotency-Key</c> declarado como required quando a action tem <c>[RequiresIdempotencyKey]</c>.</description></item>
 ///   <item><description>Extension <c>x-uniplus-idempotent: true</c> em endpoints com idempotência opt-in.</description></item>
+///   <item><description>Content type de respostas 4xx/5xx coagido para <c>application/problem+json</c> — espelha o que o middleware de fato emite via <c>result.ToActionResult(mapper)</c> (ADR-0023, RFC 9457). Sem isso o spec declararia <c>application/json</c> (default do MVC) e clientes gerados rejeitariam o response real.</description></item>
 /// </list>
 /// </summary>
 public sealed class UniPlusOperationTransformer : IOpenApiOperationTransformer
 {
+    private const string ProblemJsonMediaType = "application/problem+json";
+
     public Task TransformAsync(
         OpenApiOperation operation,
         OpenApiOperationTransformerContext context,
@@ -23,6 +26,8 @@ public sealed class UniPlusOperationTransformer : IOpenApiOperationTransformer
     {
         ArgumentNullException.ThrowIfNull(operation);
         ArgumentNullException.ThrowIfNull(context);
+
+        CoerceErrorResponsesToProblemJson(operation);
 
         IList<object> metadata = context.Description.ActionDescriptor.EndpointMetadata;
 
@@ -57,5 +62,55 @@ public sealed class UniPlusOperationTransformer : IOpenApiOperationTransformer
         }
 
         return Task.CompletedTask;
+    }
+
+    private static void CoerceErrorResponsesToProblemJson(OpenApiOperation operation)
+    {
+        if (operation.Responses is null)
+            return;
+
+        foreach (KeyValuePair<string, IOpenApiResponse> kvp in operation.Responses)
+        {
+            if (!IsErrorStatusKey(kvp.Key))
+                continue;
+
+            if (kvp.Value is not OpenApiResponse response)
+                continue;
+
+            if (response.Content is null || response.Content.Count == 0)
+            {
+                response.Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
+                {
+                    [ProblemJsonMediaType] = new OpenApiMediaType(),
+                };
+                continue;
+            }
+
+            if (response.Content.ContainsKey(ProblemJsonMediaType))
+                continue;
+
+            // Espelha o conteúdo declarado (ex.: "application/json" com schema
+            // ProblemDetails) para a media type RFC 9457. Mantém o schema
+            // declarado e descarta os outros media types — endpoints de erro
+            // só falam problem+json no contrato canônico. Prefere
+            // application/json explicitamente; sem ele, cai para o primeiro
+            // média type (Dictionary não garante ordem de enumeração).
+            OpenApiMediaType source = response.Content.TryGetValue("application/json", out OpenApiMediaType? jsonMediaType)
+                ? jsonMediaType
+                : response.Content.Values.First();
+            response.Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
+            {
+                [ProblemJsonMediaType] = source,
+            };
+        }
+    }
+
+    private static bool IsErrorStatusKey(string key)
+    {
+        if (key.Length != 3)
+            return false;
+
+        char first = key[0];
+        return first == '4' || first == '5';
     }
 }
