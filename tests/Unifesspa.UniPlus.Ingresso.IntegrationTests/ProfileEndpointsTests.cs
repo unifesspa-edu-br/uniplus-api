@@ -17,13 +17,22 @@ public sealed class ProfileEndpointsTests : IClassFixture<IngressoApiFactory>
     public ProfileEndpointsTests(IngressoApiFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task GetMe_ShouldReturnUnauthorized_WhenRequestDoesNotHaveToken()
+    public async Task GetMe_ShouldReturnProblemDetails_WhenRequestDoesNotHaveToken()
     {
         using HttpClient client = _factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(GetMeUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+
+        using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        JsonElement root = payload.RootElement;
+
+        root.GetProperty("status").GetInt32().Should().Be(401);
+        root.GetProperty("type").GetString()
+            .Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.auth.unauthorized");
+        root.GetProperty("code").GetString().Should().Be("uniplus.auth.unauthorized");
     }
 
     [Fact]
