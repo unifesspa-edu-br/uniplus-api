@@ -29,5 +29,11 @@ internal sealed class IdempotencyDomainErrorRegistration : IDomainErrorRegistrat
         new(IdempotencyDomainErrorCodes.ProcessingConflict,
             new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.idempotency.processing_conflict",
                 "Request com a mesma Idempotency-Key ainda em processamento; tentar novamente em alguns segundos")),
+        new(IdempotencyDomainErrorCodes.PrincipalRequerido,
+            new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.idempotency.principal_requerido",
+                "Endpoint com Idempotency-Key requer principal autenticado")),
+        new(IdempotencyDomainErrorCodes.BodyMuitoGrande,
+            new DomainErrorMapping(StatusCodes.Status413PayloadTooLarge, "uniplus.idempotency.body_muito_grande",
+                "Request body excede o limite aceito por endpoints idempotentes")),
     ];
 }
