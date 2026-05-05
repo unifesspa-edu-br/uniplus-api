@@ -264,9 +264,17 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         }
     }
 
-    private static bool HasRequiresIdempotencyKey(ResourceExecutingContext context) =>
-        context.ActionDescriptor is ControllerActionDescriptor descriptor
-        && descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null;
+    private static bool HasRequiresIdempotencyKey(ResourceExecutingContext context)
+    {
+        if (context.ActionDescriptor is not ControllerActionDescriptor descriptor)
+            return false;
+
+        // Atributo aceita AttributeTargets.Method | Class. Method-level vence
+        // (controlle granularidade fina); class-level cobre o caso "todos os
+        // POSTs deste controller exigem Idempotency-Key" sem repetir o atributo.
+        return descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null
+            || descriptor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null;
+    }
 
     private static bool IsKeyValid(string key)
     {
@@ -348,10 +356,15 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
 
     private static string ResolveEndpoint(ResourceExecutingContext context)
     {
+        // Path concreto (não template) — `/api/editais/abc/publicar` e
+        // `/api/editais/def/publicar` PRECISAM ser keys distintas no cache;
+        // o template colapsaria ambos em "POST /api/editais/{id}/publicar"
+        // e duas requests com mesma Idempotency-Key sobre RECURSOS DIFERENTES
+        // colidiriam (vazamento cross-resource). RFC 7230 §2.7.3 trata path
+        // como case-sensitive — sem normalização para preservar a semântica.
         string method = context.HttpContext.Request.Method;
-        string template = context.ActionDescriptor.AttributeRouteInfo?.Template
-            ?? context.HttpContext.Request.Path.ToString();
-        return $"{method} /{template.TrimStart('/')}";
+        string path = context.HttpContext.Request.Path.ToString();
+        return $"{method} {path}";
     }
 
     private void ShortCircuit(ResourceExecutingContext context, string domainCode, string detail)
