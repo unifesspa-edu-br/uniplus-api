@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Net.Http.Headers;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
@@ -35,10 +36,24 @@ public static class AuthenticationProblemDetailsWriter
 
     /// <summary>
     /// Escreve um body 401 problem+json no <paramref name="httpContext"/>.
+    /// Adiciona <c>WWW-Authenticate: Bearer</c> se ausente — RFC 7235 §4.1 e
+    /// RFC 9110 §11.6.1 exigem o header em toda resposta 401.
     /// </summary>
-    public static Task WriteUnauthorizedAsync(HttpContext httpContext) =>
-        WriteAsync(httpContext, StatusCodes.Status401Unauthorized,
+    public static Task WriteUnauthorizedAsync(HttpContext httpContext)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+
+        // Sem realm/error/error_description — política Uni+ não expõe motivo
+        // de falha JWT no canal de resposta (LGPD + ADR-0034).
+        if (!httpContext.Response.HasStarted
+            && !httpContext.Response.Headers.ContainsKey(HeaderNames.WWWAuthenticate))
+        {
+            httpContext.Response.Headers.Append(HeaderNames.WWWAuthenticate, "Bearer");
+        }
+
+        return WriteAsync(httpContext, StatusCodes.Status401Unauthorized,
             UnauthorizedCode, UnauthorizedTitle, UnauthorizedDetail);
+    }
 
     /// <summary>
     /// Escreve um body 403 problem+json no <paramref name="httpContext"/>.

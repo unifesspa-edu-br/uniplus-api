@@ -37,6 +37,10 @@ internal static class JwtBearerProblemDetailsEvents
             if (context.Handled || context.Response.HasStarted)
                 return;
 
+            // HandleResponse desliga o caminho default do JwtBearerHandler,
+            // que normalmente popula WWW-Authenticate. AuthenticationProblemDetailsWriter
+            // re-emite o header (RFC 7235 §4.1 / RFC 9110 §11.6.1 exigem em 401),
+            // alinhado com ADR-0034.
             context.HandleResponse();
             await AuthenticationProblemDetailsWriter
                 .WriteUnauthorizedAsync(context.HttpContext)
