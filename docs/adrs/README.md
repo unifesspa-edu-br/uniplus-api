@@ -61,7 +61,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0030](0030-openapi-3-1-contract-first-microsoft-aspnetcore-openapi.md) | Geração de OpenAPI 3.1 via `Microsoft.AspNetCore.OpenApi` com pipeline de pós-processamento | accepted | 2026-05-03 |
 | [0031](0031-decoding-de-cursor-opaco-no-boundary-http.md) | Decoding de cursor opaco no boundary HTTP, não em handlers de Application | proposed | 2026-05-04 |
 | [0032](0032-guid-v7-para-identidade-de-entidades.md) | Guid v7 (RFC 9562) como identidade de entidades de domínio | accepted | 2026-05-05 |
-| [0033](0033-icurrentuser-abstraction-via-iusercontext.md) | `IUserContext` como abstração canônica para acesso ao principal autenticado | proposed | 2026-05-05 |
+| [0033](0033-icurrentuser-abstraction-via-iusercontext.md) | `IUserContext` como abstração canônica para acesso ao principal autenticado | accepted | 2026-05-05 |
 
 ## Como adicionar um novo ADR
 
