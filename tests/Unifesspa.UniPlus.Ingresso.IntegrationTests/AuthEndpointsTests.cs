@@ -43,6 +43,8 @@ public sealed class AuthEndpointsTests : IClassFixture<IngressoApiFactory>
     {
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
+        response.Headers.WwwAuthenticate.Should().NotBeEmpty();
+        response.Headers.WwwAuthenticate.First().Scheme.Should().Be("Bearer");
 
         using JsonDocument payload = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         JsonElement root = payload.RootElement;

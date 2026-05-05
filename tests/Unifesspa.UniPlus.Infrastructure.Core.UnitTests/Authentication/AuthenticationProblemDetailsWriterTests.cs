@@ -52,6 +52,37 @@ public sealed class AuthenticationProblemDetailsWriterTests
     }
 
     [Fact]
+    public async Task WriteUnauthorizedAsync_Should_Append_WwwAuthenticate_Bearer()
+    {
+        DefaultHttpContext context = CreateHttpContext(includeProblemDetailsService: true);
+
+        await AuthenticationProblemDetailsWriter.WriteUnauthorizedAsync(context);
+
+        context.Response.Headers.WWWAuthenticate.ToString().Should().Be("Bearer");
+    }
+
+    [Fact]
+    public async Task WriteUnauthorizedAsync_Should_Not_Duplicate_WwwAuthenticate_When_Already_Set()
+    {
+        DefaultHttpContext context = CreateHttpContext(includeProblemDetailsService: true);
+        context.Response.Headers.Append("WWW-Authenticate", "Bearer realm=\"uniplus\"");
+
+        await AuthenticationProblemDetailsWriter.WriteUnauthorizedAsync(context);
+
+        context.Response.Headers.WWWAuthenticate.ToString().Should().Be("Bearer realm=\"uniplus\"");
+    }
+
+    [Fact]
+    public async Task WriteForbiddenAsync_Should_Not_Append_WwwAuthenticate()
+    {
+        DefaultHttpContext context = CreateHttpContext(includeProblemDetailsService: true);
+
+        await AuthenticationProblemDetailsWriter.WriteForbiddenAsync(context);
+
+        context.Response.Headers.WWWAuthenticate.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task WriteUnauthorizedAsync_Should_Be_NoOp_When_Response_Has_Started()
     {
         DefaultHttpContext context = CreateHttpContext(includeProblemDetailsService: true);

@@ -48,6 +48,10 @@ A implementação compõe o evento já existente (`JwtBearerLoggingEvents.WithSt
 
 Extensions: `code`, `traceId` (extraído do `Activity.Current` ou GUID v7 fallback), `instance` no formato `urn:uuid:<v7>`. Nenhum detalhe da falha de validação JWT é exposto no body.
 
+### Header `WWW-Authenticate` em 401
+
+`HandleResponse()` desliga o caminho default do `JwtBearerHandler`, que normalmente popula `WWW-Authenticate` (RFC 7235 §4.1 e RFC 9110 §11.6.1 exigem o header em toda 401). O `AuthenticationProblemDetailsWriter.WriteUnauthorizedAsync` re-emite `WWW-Authenticate: Bearer` (sem `realm`/`error`/`error_description`) — só o desafio mínimo necessário para conformidade RFC, alinhado com a política de não expor motivo de falha. 403 não recebe o header (não é challenge).
+
 ## Consequências
 
 ### Positivas
