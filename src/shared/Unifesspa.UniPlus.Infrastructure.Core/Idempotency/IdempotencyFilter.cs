@@ -117,36 +117,37 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         IdempotencyLookupResult lookup = await _store.LookupAsync(
             scope, endpoint, idempotencyKey, bodyHash, httpContext.RequestAborted).ConfigureAwait(false);
 
-        switch (lookup.Outcome)
+        if (TryShortCircuitFromLookup(context, lookup, httpContext.RequestAborted, out Task? earlyReturn))
         {
-            case IdempotencyOutcome.HitMatch:
-                await ReplayAsync(context, lookup.Entry!, httpContext.RequestAborted).ConfigureAwait(false);
-                return;
-
-            case IdempotencyOutcome.HitMismatch:
-                ShortCircuit(context, IdempotencyDomainErrorCodes.BodyMismatch,
-                    "Mesma Idempotency-Key reusada com body diferente.");
-                return;
-
-            case IdempotencyOutcome.Processing:
-                ShortCircuit(context, IdempotencyDomainErrorCodes.ProcessingConflict,
-                    "Request com a mesma Idempotency-Key ainda em processamento; tentar novamente.");
-                return;
-
-            case IdempotencyOutcome.Miss:
-            default:
-                break;
+            await earlyReturn!.ConfigureAwait(false);
+            return;
         }
 
-        // Tenta reservar. Concorrente que ganhou a corrida → re-lookup.
+        // Tenta reservar. Se UNIQUE vencer, re-lookup: o vencedor da corrida
+        // pode já ter completado (retornar HitMatch para replay), ainda estar
+        // em Processing (409), ou ter Hit com body diferente (422). Sem o
+        // re-lookup, perdedor receberia 409 mesmo se o vencedor já estivesse
+        // pronto para replay — quebra de contrato draft IETF §3.
         DateTimeOffset expiresAt = _time.GetUtcNow().Add(_options.Ttl);
         bool reserved = await _store.TryReserveAsync(
             scope, endpoint, idempotencyKey, bodyHash, expiresAt, httpContext.RequestAborted).ConfigureAwait(false);
 
         if (!reserved)
         {
+            IdempotencyLookupResult relookup = await _store.LookupAsync(
+                scope, endpoint, idempotencyKey, bodyHash, httpContext.RequestAborted).ConfigureAwait(false);
+
+            if (TryShortCircuitFromLookup(context, relookup, httpContext.RequestAborted, out Task? raceReturn))
+            {
+                await raceReturn!.ConfigureAwait(false);
+                return;
+            }
+
+            // Miss aqui só ocorre se a entry foi DELETADA entre TryReserve e
+            // re-lookup (5xx do vencedor) — situação rara, devolver 409 e
+            // sugerir retry imediato é o caminho seguro.
             ShortCircuit(context, IdempotencyDomainErrorCodes.ProcessingConflict,
-                "Request concorrente com mesma Idempotency-Key ainda em processamento.");
+                "Request concorrente com mesma Idempotency-Key resolvida; tentar novamente.");
             return;
         }
 
@@ -223,6 +224,43 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         {
             httpContext.Response.Body = originalBody;
             await captureStream.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Traduz <see cref="IdempotencyLookupResult"/> em short-circuit do filter.
+    /// Retorna <c>true</c> + Task a aguardar quando o resultado é terminal
+    /// (HitMatch/HitMismatch/Processing); <c>false</c> + Task null quando é
+    /// Miss (caller continua para TryReserve).
+    /// </summary>
+    private bool TryShortCircuitFromLookup(
+        ResourceExecutingContext context,
+        IdempotencyLookupResult lookup,
+        CancellationToken cancellationToken,
+        out Task? earlyReturn)
+    {
+        switch (lookup.Outcome)
+        {
+            case IdempotencyOutcome.HitMatch:
+                earlyReturn = ReplayAsync(context, lookup.Entry!, cancellationToken);
+                return true;
+
+            case IdempotencyOutcome.HitMismatch:
+                ShortCircuit(context, IdempotencyDomainErrorCodes.BodyMismatch,
+                    "Mesma Idempotency-Key reusada com body diferente.");
+                earlyReturn = Task.CompletedTask;
+                return true;
+
+            case IdempotencyOutcome.Processing:
+                ShortCircuit(context, IdempotencyDomainErrorCodes.ProcessingConflict,
+                    "Request com a mesma Idempotency-Key ainda em processamento; tentar novamente.");
+                earlyReturn = Task.CompletedTask;
+                return true;
+
+            case IdempotencyOutcome.Miss:
+            default:
+                earlyReturn = null;
+                return false;
         }
     }
 
