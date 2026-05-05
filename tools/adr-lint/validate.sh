@@ -104,4 +104,30 @@ if [[ "$ERRORS" -gt 0 ]]; then
   exit 1
 fi
 
-echo "$COUNT ADR(s) validados sem erros."
+echo "$COUNT ADR(s) validados sem erros (frontmatter MADR 4.0)."
+
+# Markdownlint-cli2 — formatação do markdown (MD032 listas, MD024 siblings,
+# MD041 H1 etc.) regida pelo .markdownlint-cli2.jsonc do diretório de ADRs.
+# CI roda esta mesma versão; rodar localmente garante paridade dev↔CI.
+#
+# Pinar via @VERSION evita drift entre ambientes — bump exige edição
+# coordenada deste script + .github/workflows/ci.yml. Sem npx no PATH,
+# emite aviso em vez de falhar (devs sem Node ainda obtêm validação MADR 4.0
+# via primeira parte deste script; o gate completo fica para o CI).
+MARKDOWNLINT_VERSION="0.22.1"
+
+if command -v npx >/dev/null 2>&1; then
+  echo
+  echo "Rodando markdownlint-cli2@${MARKDOWNLINT_VERSION} em $DIR/**/*.md ..."
+  if ! npx --yes "markdownlint-cli2@${MARKDOWNLINT_VERSION}" "$DIR/**/*.md"; then
+    echo
+    echo "ERRO: markdownlint-cli2 reportou violações." >&2
+    echo "Config: $DIR/.markdownlint-cli2.jsonc" >&2
+    exit 1
+  fi
+  echo "markdownlint-cli2: 0 erros."
+else
+  echo
+  echo "AVISO: npx não encontrado — pulando markdownlint-cli2 local." >&2
+  echo "       O CI ainda roda este gate; instale Node.js para validação dev↔CI paritária." >&2
+fi
