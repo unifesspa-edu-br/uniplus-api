@@ -182,10 +182,12 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         MemoryStream captureStream = new();
         httpContext.Response.Body = captureStream;
         bool reservationStillValid = true;
+        bool handlerCompleted = false;
 
         try
         {
             ResourceExecutedContext executed = await next().ConfigureAwait(false);
+            handlerCompleted = true;
 
             int status = httpContext.Response.StatusCode;
 
@@ -225,10 +227,18 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         }
         catch
         {
-            // Exceção do handler ou do pipeline → libera a key para retry
-            // legítimo do cliente. Sem isso, próxima request com mesma key
-            // ficaria em 409 ProcessingConflict por 24h.
-            if (reservationStillValid)
+            // Discrimina entre falha PRÉ-handler (rollback semanticamente seguro
+            // — handler nem completou, retry pode rodar de novo) e falha
+            // PÓS-handler (Encrypt/Complete falharam DEPOIS do handler já ter
+            // commitado o agregado — deletar reservation aqui permitiria que
+            // retry do cliente recriasse o agregado, causando duplicação
+            // semântica como dois EditalPublicado para o mesmo edital).
+            //
+            // Política conservadora: só limpa reservation se handler não
+            // completou. Se handler já rodou, reservation fica em Processing
+            // até TTL → cliente recebe 409 nesse intervalo (ADR-0027 §
+            // "Atomicidade parcial" reconhece essa janela).
+            if (reservationStillValid && !handlerCompleted)
             {
                 try
                 {
@@ -412,16 +422,29 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
             ? null
             : JsonSerializer.Deserialize<Dictionary<string, string>>(entry.ResponseHeadersJson);
 
-        // FileContentResult devolve bytes verbatim (sem decoding UTF-8) — funciona
-        // para JSON (caso atual) e para qualquer Content-Type binário futuro
-        // (PDF, octet-stream, imagem) sem corromper o body.
-        FileContentResult result = new(body, headers?.GetValueOrDefault("Content-Type") ?? "application/json")
-        {
-            FileDownloadName = null,
-        };
+        string? cachedContentType = headers?.GetValueOrDefault("Content-Type");
+        int statusCode = entry.ResponseStatus ?? StatusCodes.Status200OK;
 
-        context.Result = result;
-        context.HttpContext.Response.StatusCode = entry.ResponseStatus ?? StatusCodes.Status200OK;
+        // 204 NoContent / response sem body+content-type cacheado: replay com
+        // StatusCodeResult preserva semântica HTTP (sem Content-Type, sem body).
+        // Forçar FileContentResult com "application/json" default em 204
+        // violaria RFC 9110 §6.4.5 (NoContent não pode ter Content-Type).
+        if (body.Length == 0 && cachedContentType is null)
+        {
+            context.Result = new StatusCodeResult(statusCode);
+        }
+        else
+        {
+            // FileContentResult devolve bytes verbatim (sem decoding UTF-8) —
+            // funciona para JSON e para qualquer Content-Type binário futuro
+            // (PDF, octet-stream) sem corromper o body.
+            FileContentResult result = new(body, cachedContentType ?? "application/json")
+            {
+                FileDownloadName = null,
+            };
+            context.Result = result;
+            context.HttpContext.Response.StatusCode = statusCode;
+        }
 
         // Replay header — não normativo (draft IETF não exige) mas útil para
         // clientes diagnosticarem retry vs. primeira execução.
