@@ -77,14 +77,13 @@ public sealed class UniPlusOperationTransformer : IOpenApiOperationTransformer
             if (kvp.Value is not OpenApiResponse response)
                 continue;
 
+            // Sem content declarado (ex.: JWT challenge 401 que retorna body
+            // vazio), nada para coagir — inventar `application/problem+json`
+            // aqui criaria contrato falso já que o runtime não emite payload.
+            // Endpoints que QUEREM ProblemDetails em 401 precisam de
+            // services.AddProblemDetails() na pipeline (follow-up).
             if (response.Content is null || response.Content.Count == 0)
-            {
-                response.Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
-                {
-                    [ProblemJsonMediaType] = new OpenApiMediaType(),
-                };
                 continue;
-            }
 
             if (response.Content.ContainsKey(ProblemJsonMediaType))
                 continue;

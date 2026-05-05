@@ -45,13 +45,15 @@ rules:
         notMatch: "\\b(the|and|with|for|this|that|will|please|must)\\b"
 
   # --- 2. ProblemDetails RFC 9457 (ADR-0023) -------------------------------
-  # Targeting the response object (não .content) é proposital: se a resposta
-  # omitir `content` por completo o JSONPath ainda dispara e a validação
-  # de schema falha — caso contrário o `then` só executaria quando .content
-  # já existisse, mascarando o pior cenário.
+  # Quando o response tem `content`, o único media type aceitável é
+  # application/problem+json. Responses sem `content` (ex.: JWT challenge
+  # 401 com body vazio, definidos via .Produces(401) sem tipo) são
+  # tolerados — inventar payload no contrato seria mentir sobre o runtime.
+  # Quando services.AddProblemDetails() entrar na pipeline (follow-up),
+  # esse caso deixa de existir e a invariante volta a ser absoluta.
   uniplus-error-response-uses-problem-details:
-    description: Respostas 4xx/5xx devem usar application/problem+json
-    message: "Resposta {{property}} não declara application/problem+json — RFC 9457 (ADR-0023)"
+    description: Respostas 4xx/5xx com body devem usar application/problem+json
+    message: "Resposta {{property}} declara content mas não inclui application/problem+json — RFC 9457 (ADR-0023)"
     severity: error
     # OpenAPI permite tanto códigos exatos (400, 500) quanto ranges (4XX, 5XX);
     # a regex precisa cobrir os dois para não deixar buracos.
@@ -61,7 +63,6 @@ rules:
       functionOptions:
         schema:
           type: object
-          required: [content]
           properties:
             content:
               type: object
