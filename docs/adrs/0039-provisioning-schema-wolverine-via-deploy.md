@@ -12,6 +12,7 @@ decision-makers:
 Wolverine 5.32.1 com `PersistMessagesWithPostgresql` cria as tabelas `wolverine.outbox`, `wolverine.envelopes`, `wolverine.dead_letters` etc. Por default, `WolverineOptions.AutoBuildMessageStorageOnStartup` está ligado — o framework cria o schema na primeira inicialização do host.
 
 Em produção, runtime auto-create traz problemas:
+
 - Risco de race quando dois pods iniciam simultaneamente.
 - DDL sem revisão prévia em PR.
 - Ausência de auditoria de migrations da messageria.
