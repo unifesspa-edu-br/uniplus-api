@@ -12,6 +12,7 @@ decision-makers:
 `EditalPublicadoEvent` é drenado do agregado via cascading messages (ADR-0041) e cai no outbox. A pergunta seguinte: para onde o Wolverine entrega esses eventos?
 
 Possibilidades:
+
 - **Listener interno PG queue** (`ToPostgresqlQueue`) — entrega in-process via mesma instância Wolverine; baixíssimo overhead; ideal para subscribers do mesmo módulo (auditoria, logging, projection).
 - **Tópico Kafka** (`ToKafkaTopic`) — entrega cross-process, durável, persistente; necessário para integração cross-módulo ou consumidores externos.
 - **Sem rota** — evento fica no outbox sem subscriber, criando lixo.
