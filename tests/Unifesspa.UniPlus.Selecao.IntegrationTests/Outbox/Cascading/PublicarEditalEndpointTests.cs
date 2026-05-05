@@ -33,6 +33,16 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 [Trait("Category", "OutboxCascading")]
 public sealed class PublicarEditalEndpointTests
 {
+    // Contador atômico para numeroSeed: garante unicidade dentro do test run
+    // (CascadingFixture é singleton da collection com PG efêmero, então o
+    // contador zera junto com o banco). Substituiu Math.Abs(Guid.NewGuid().GetHashCode() % 9000)
+    // que tinha ~0,01% de chance de colidir com valores hard-coded em outros testes.
+    // Range 1..9999 (NumeroEdital aceita 1..9999); módulo 9999 + 1 evita zero.
+    private static int _numeroSeedCounter;
+
+    private static int NextNumeroSeed() =>
+        (Interlocked.Increment(ref _numeroSeedCounter) % 9999) + 1;
+
     private readonly CascadingFixture _fixture;
 
     public PublicarEditalEndpointTests(CascadingFixture fixture)
@@ -198,8 +208,8 @@ public sealed class PublicarEditalEndpointTests
         using HttpClient client = api.CreateClient();
 
         string key = MakeIdempotencyKey();
-        int numero1 = Math.Abs((Guid.NewGuid().GetHashCode() % 4500) + 1);
-        int numero2 = numero1 + 1; // body diferente garantido
+        int numero1 = NextNumeroSeed();
+        int numero2 = NextNumeroSeed(); // body diferente garantido (incrementos sequenciais)
 
         // Primeira request: cria edital normalmente.
         using HttpRequestMessage primeiraReq = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
@@ -266,10 +276,10 @@ public sealed class PublicarEditalEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
 
-        // Numero estável derivado de NewGuid — Edital.Numero é int (1..9999),
+        // Numero estável via contador atômico — Edital.Numero é int (1..9999),
         // colisão com testes paralelos é evitada pelo CollectionFixture (1
         // fixture por collection, fixture é singleton dentro do test run).
-        int numeroSeed = Math.Abs(Guid.NewGuid().GetHashCode() % 9000) + 1;
+        int numeroSeed = NextNumeroSeed();
         Result<NumeroEdital> numeroResult = NumeroEdital.Criar(numero: numeroSeed, ano: 2026);
         numeroResult.IsSuccess.Should().BeTrue();
         Edital edital = Edital.Criar(numeroResult.Value!, "PublicarEditalEndpointTests seed", TipoProcesso.SiSU);
