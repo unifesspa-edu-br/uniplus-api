@@ -58,13 +58,19 @@ public sealed partial class ContractV1FitnessTestsTests
     [Fact(DisplayName = "F2: Selecao.Domain e Selecao.Application não dependem de Microsoft.AspNetCore.* nem de Selecao.API")]
     public void DomainAplication_NaoDependemDeAspNetCore()
     {
+        // Stage1 R3 já banne dependência transitiva Domain/Application → API
+        // dentro do mesmo módulo, mas duplicar aqui torna F2 self-contained
+        // e o display name fiel ao escopo do teste.
         IArchRule domainRule = Types()
             .That()
             .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Selecao\.Domain(\.|$)")
             .Should()
             .NotDependOnAnyTypesThat()
             .ResideInNamespaceMatching(@"^Microsoft\.AspNetCore(\.|$)")
-            .Because("Domain é puro, sem dependência de framework web (ADR-002).");
+            .AndShould()
+            .NotDependOnAnyTypesThat()
+            .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Selecao\.API(\.|$)")
+            .Because("Domain é puro, sem dependência de framework web nem da camada de transporte (ADR-002).");
 
         IArchRule applicationRule = Types()
             .That()
@@ -72,7 +78,10 @@ public sealed partial class ContractV1FitnessTestsTests
             .Should()
             .NotDependOnAnyTypesThat()
             .ResideInNamespaceMatching(@"^Microsoft\.AspNetCore(\.|$)")
-            .Because("Application orquestra casos de uso e fala com IBus/IRepo — sem ASP.NET Core.");
+            .AndShould()
+            .NotDependOnAnyTypesThat()
+            .ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Selecao\.API(\.|$)")
+            .Because("Application orquestra casos de uso via IBus/IRepo — sem ASP.NET Core nem tipos da API.");
 
         domainRule.Check(ModuleArchitecture);
         applicationRule.Check(ModuleArchitecture);
