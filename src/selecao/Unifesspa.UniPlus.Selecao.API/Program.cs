@@ -36,6 +36,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
+// OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers Uni+
+// (info, operation, schema). Spec exposto em /openapi/selecao.json.
+builder.Services.AddUniPlusOpenApi("selecao", builder.Configuration);
 
 string connectionString = builder.Configuration.GetConnectionString("SelecaoDb")
     ?? throw new InvalidOperationException("Connection string 'SelecaoDb' não configurada.");
@@ -121,6 +124,7 @@ app.UseAuthorization();
 app.MapSharedAuthEndpoints();
 app.MapSharedProfileEndpoints();
 app.MapControllers();
+app.MapOpenApi("/openapi/{documentName}.json");
 app.MapHealthChecks("/health");
 
 await app.RunAsync();

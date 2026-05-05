@@ -1,0 +1,101 @@
+# Spectral ruleset Uni+ — house style do contrato REST canônico V1.
+#
+# Fundamentos:
+# - ADR-0022 (umbrella V1): pt-BR em strings user-facing, ProblemDetails RFC 9457,
+#   paginação cursor opaco, vendor MIME versioning, idempotência opt-in.
+# - ADR-0023: code regex `^uniplus\.<modulo>\.<codigo>$`.
+# - ADR-0025: body de coleção é array JSON puro.
+# - ADR-0026: cursor com TTL e Link header.
+# - ADR-0028: vendor MIME `application/vnd.uniplus.<resource>.v<N>+json`.
+# - ADR-0030: OpenAPI 3.1 contract-first.
+#
+# Uso:
+#   npx @stoplight/spectral-cli lint --ruleset tools/spectral/.spectral.yaml \
+#     contracts/openapi.selecao.json contracts/openapi.ingresso.json
+#
+# Severidades: error (bloqueia CI), warn (visibilidade), info (informativo).
+
+# `recommended` ativa o conjunto curado pela Stoplight (sem regras pedantes
+# como oas3-valid-media-example que costumam dar falso positivo). Promover
+# para `all` é decisão local de auditoria depois do baseline da Milestone A.
+extends: [[spectral:oas, recommended]]
+formats: [oas3_1]
+documentationUrl: https://developers.uniplus.unifesspa.edu.br/style-guide
+
+rules:
+  # --- 1. pt-BR em descrições user-facing ----------------------------------
+  uniplus-pt-br-info-description:
+    description: info.description deve estar em pt-BR (heurística — ausência de palavras inglesas comuns)
+    message: "info.description parece estar em inglês — toda string user-facing é pt-BR (ADR-0022)"
+    severity: error
+    given: $.info.description
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "\\b(the|and|with|for|this|that|will|please|must)\\b"
+
+  uniplus-pt-br-operation-summary:
+    description: operations.summary em pt-BR
+    message: "summary parece estar em inglês — usar pt-BR (ADR-0022)"
+    severity: warn
+    given: $.paths[*][get,post,put,patch,delete].summary
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "\\b(the|and|with|for|this|that|will|please|must)\\b"
+
+  # --- 2. ProblemDetails RFC 9457 (ADR-0023) -------------------------------
+  uniplus-error-response-uses-problem-details:
+    description: Respostas 4xx/5xx devem usar application/problem+json
+    message: "Resposta {{property}} não declara application/problem+json — RFC 9457 (ADR-0023)"
+    severity: error
+    given: $.paths[*][*].responses[?(@property.match(/^[45]\d\d$/))].content
+    then:
+      field: "application/problem+json"
+      function: truthy
+
+  # --- 3. Code regex (ADR-0023) --------------------------------------------
+  # Aplicada quando ProblemDetails carrega exemplo do code.
+  uniplus-error-code-format:
+    description: code segue taxonomia ^[a-z]+(\.[a-z_]+)+$
+    message: "code '{{value}}' fora da taxonomia uniplus.<modulo>.<codigo> (ADR-0023)"
+    severity: error
+    given: $..responses[?(@property.match(/^[45]/))].content["application/problem+json"].schema..properties.code.example
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z]+(\\.[a-z_]+)+$"
+
+  # --- 4. Deprecated requer Sunset (RFC 8594) ------------------------------
+  uniplus-deprecated-requires-sunset:
+    description: Operação deprecated declara x-sunset com data ISO-8601
+    message: "Operação deprecated sem x-sunset — RFC 8594 exige header Sunset (ADR-0028)"
+    severity: error
+    given: $.paths[*][?(@.deprecated == true)]
+    then:
+      field: x-sunset
+      function: pattern
+      functionOptions:
+        match: "^\\d{4}-\\d{2}-\\d{2}$"
+
+  # --- 5. Idempotency-Key required em POSTs marcados ------------------------
+  uniplus-idempotent-post-declares-header:
+    description: POST com x-uniplus-idempotent declara header Idempotency-Key obrigatório
+    message: "POST com x-uniplus-idempotent precisa declarar header Idempotency-Key required (ADR-0027)"
+    severity: error
+    given: $.paths[*].post[?(@['x-uniplus-idempotent'] == true)].parameters
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          contains:
+            type: object
+            properties:
+              name:
+                const: Idempotency-Key
+              in:
+                const: header
+              required:
+                const: true
+            required: [name, in, required]
