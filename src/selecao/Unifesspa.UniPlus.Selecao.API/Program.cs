@@ -40,9 +40,6 @@ builder.Services.AddEndpointsApiExplorer();
 // (info, operation, schema). Spec exposto em /openapi/selecao.json.
 builder.Services.AddUniPlusOpenApi("selecao", builder.Configuration);
 
-string connectionString = builder.Configuration.GetConnectionString("SelecaoDb")
-    ?? throw new InvalidOperationException("Connection string 'SelecaoDb' não configurada.");
-
 builder.Services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
 
@@ -62,13 +59,12 @@ builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environmen
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AddSelecaoApplication();
-// AddSelecaoInfrastructure é configurado com a connection string lida
-// eagerly do builder.Configuration. Em testes integrados, o
-// CascadingApiFactory remove e re-registra o DbContext apontando para o
-// Postgres efêmero — esta leitura eager fica restrita ao registro do
-// DbContext do módulo, não atinge o backbone Wolverine (que lê via
-// SelecaoOutboxExtension no startup, com IConfiguration final).
-builder.Services.AddSelecaoInfrastructure(connectionString);
+// AddSelecaoInfrastructure agora resolve a connection string via
+// IConfiguration injetada no factory do AddDbContext (issue #204) —
+// simetria com UseWolverineOutboxCascading que já fazia leitura lazy.
+// Test hosts (CascadingApiFactory) podem sobrescrever via env var ou
+// InMemoryCollection sem precisar re-registrar o DbContext.
+builder.Services.AddSelecaoInfrastructure();
 
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005.

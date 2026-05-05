@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
@@ -12,18 +13,32 @@ using Persistence.Repositories;
 
 public static class SelecaoInfrastructureRegistration
 {
-    public static IServiceCollection AddSelecaoInfrastructure(
-        this IServiceCollection services,
-        string connectionString)
+    private const string ConnectionStringName = "SelecaoDb";
+
+    /// <summary>
+    /// Registra a infraestrutura do módulo Seleção (DbContext + interceptors +
+    /// repositórios + serviços externos). A connection string é lida do
+    /// <see cref="IConfiguration"/> injetado no factory do <c>AddDbContext</c>
+    /// — alinhado com o padrão lazy do <c>UseWolverineOutboxCascading</c>
+    /// (issue #204). Test hosts que sobrescrevem <c>ConnectionStrings:SelecaoDb</c>
+    /// via env var ou <c>InMemoryCollection</c> ganham o override automaticamente,
+    /// sem precisar re-registrar o DbContext.
+    /// </summary>
+    public static IServiceCollection AddSelecaoInfrastructure(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
         services.AddSingleton<SoftDeleteInterceptor>();
         services.AddSingleton<AuditableInterceptor>();
 
         services.AddDbContext<SelecaoDbContext>((serviceProvider, options) =>
         {
+            IConfiguration configuration = serviceProvider.GetRequiredService<IConfiguration>();
+            string connectionString = configuration.GetConnectionString(ConnectionStringName)
+                ?? throw new InvalidOperationException(
+                    $"ConnectionStrings:{ConnectionStringName} não configurada — defina via appsettings ou env var "
+                    + $"`ConnectionStrings__{ConnectionStringName}`.");
+
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
                 npgsqlOptions.MigrationsAssembly(typeof(SelecaoDbContext).Assembly.FullName);

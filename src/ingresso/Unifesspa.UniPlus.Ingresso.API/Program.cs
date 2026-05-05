@@ -34,16 +34,16 @@ builder.Services.AddEndpointsApiExplorer();
 // (info, operation, schema). Spec exposto em /openapi/ingresso.json.
 builder.Services.AddUniPlusOpenApi("ingresso", builder.Configuration);
 
-string connectionString = builder.Configuration.GetConnectionString("IngressoDb")
-    ?? throw new InvalidOperationException("Connection string 'IngressoDb' não configurada.");
-
 builder.Services.AddSingleton<IDomainErrorRegistration, IngressoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
-builder.Services.AddIngressoInfrastructure(connectionString);
+// AddIngressoInfrastructure agora resolve a connection string via
+// IConfiguration injetada no factory do AddDbContext (issue #204) —
+// simetria com UseWolverineOutboxCascading e com Selecao.
+builder.Services.AddIngressoInfrastructure();
 
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005.

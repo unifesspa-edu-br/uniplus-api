@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -61,8 +62,18 @@ public sealed class CascadingApiFactory : ApiFactoryBase<Program>
             services.RemoveAll<IDbContextOptionsConfiguration<SelecaoDbContext>>();
             RemoveAllOptionsConfigurations<DbContextOptions<SelecaoDbContext>>(services);
 
-            services.AddDbContext<SelecaoDbContext>(opts =>
-                opts.UseNpgsql(_connectionString));
+            // Re-registro do DbContext mantém SoftDeleteInterceptor + AuditableInterceptor
+            // simétrico à produção (`SelecaoInfrastructureRegistration.AddSelecaoInfrastructure`).
+            // Sem isto a fixture cascading silenciosamente deixaria os interceptors
+            // de fora — as colunas IsDeleted/DeletedAt/UpdatedAt não seriam preenchidas
+            // automaticamente, mascarando regressões em testes que dependam disso.
+            services.AddDbContext<SelecaoDbContext>((sp, opts) =>
+            {
+                opts.UseNpgsql(_connectionString);
+                opts.AddInterceptors(
+                    sp.GetRequiredService<SoftDeleteInterceptor>(),
+                    sp.GetRequiredService<AuditableInterceptor>());
+            });
 
             services.AddSingleton<DomainEventCollector>();
         });
