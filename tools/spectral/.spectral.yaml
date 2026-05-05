@@ -45,14 +45,25 @@ rules:
         notMatch: "\\b(the|and|with|for|this|that|will|please|must)\\b"
 
   # --- 2. ProblemDetails RFC 9457 (ADR-0023) -------------------------------
+  # Targeting the response object (não .content) é proposital: se a resposta
+  # omitir `content` por completo o JSONPath ainda dispara e a validação
+  # de schema falha — caso contrário o `then` só executaria quando .content
+  # já existisse, mascarando o pior cenário.
   uniplus-error-response-uses-problem-details:
     description: Respostas 4xx/5xx devem usar application/problem+json
     message: "Resposta {{property}} não declara application/problem+json — RFC 9457 (ADR-0023)"
     severity: error
-    given: $.paths[*][*].responses[?(@property.match(/^[45]\d\d$/))].content
+    given: $.paths[*][*].responses[?(@property.match(/^[45]\d\d$/))]
     then:
-      field: "application/problem+json"
-      function: truthy
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [content]
+          properties:
+            content:
+              type: object
+              required: ["application/problem+json"]
 
   # --- 3. Code regex (ADR-0023) --------------------------------------------
   # Aplicada quando ProblemDetails carrega exemplo do code.
@@ -79,23 +90,39 @@ rules:
         match: "^\\d{4}-\\d{2}-\\d{2}$"
 
   # --- 5. Idempotency-Key required em POSTs marcados ------------------------
+  # JSONPath do Spectral não filtra confiavelmente por extensions x-* no
+  # `given` (jsonpath-plus desserializa keys com hyphen de forma inconsistente).
+  # Solução: aplicar a regra a TODA operação POST e usar JSON Schema
+  # condicional (if/then) — só valida parameters quando a operação tem
+  # x-uniplus-idempotent: true.
   uniplus-idempotent-post-declares-header:
     description: POST com x-uniplus-idempotent declara header Idempotency-Key obrigatório
     message: "POST com x-uniplus-idempotent precisa declarar header Idempotency-Key required (ADR-0027)"
     severity: error
-    given: $.paths[*].post[?(@['x-uniplus-idempotent'] == true)].parameters
+    given: $.paths[*].post
     then:
       function: schema
       functionOptions:
         schema:
-          type: array
-          contains:
+          if:
             type: object
+            required: ["x-uniplus-idempotent"]
             properties:
-              name:
-                const: Idempotency-Key
-              in:
-                const: header
-              required:
+              x-uniplus-idempotent:
                 const: true
-            required: [name, in, required]
+          then:
+            type: object
+            required: [parameters]
+            properties:
+              parameters:
+                type: array
+                contains:
+                  type: object
+                  required: [name, in, required]
+                  properties:
+                    name:
+                      const: Idempotency-Key
+                    in:
+                      const: header
+                    required:
+                      const: true
