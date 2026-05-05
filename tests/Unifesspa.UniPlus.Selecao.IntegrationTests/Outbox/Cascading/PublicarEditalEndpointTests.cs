@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
+using System.Net.Http.Headers;
+
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +16,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Events;
 using Domain.ValueObjects;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Cenário fim-a-fim do fluxo de referência ADR-0005: HTTP request →
@@ -166,6 +169,28 @@ public sealed class PublicarEditalEndpointTests
     }
 
     [Fact(DisplayName =
+        "POST /editais/{id}/publicar anonymous com Idempotency-Key retorna 401 uniplus.idempotency.principal_requerido")]
+    public async Task PublicarEdital_Anonymous_Retorna401()
+    {
+        // Endpoint marcado com [RequiresIdempotencyKey] exige principal —
+        // sem auth, filter rejeita para evitar cache poisoning entre clientes.
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        using HttpRequestMessage request = new(HttpMethod.Post,
+            new Uri($"/api/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative));
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+        // Sem AppendTestAuth — request anonymous deliberada.
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.idempotency.principal_requerido");
+    }
+
+    [Fact(DisplayName =
         "POST /editais com mesma Idempotency-Key e body diferente retorna 422 uniplus.idempotency.body_mismatch")]
     public async Task CriarEdital_MesmaKeyBodyDiferente_Retorna422BodyMismatch()
     {
@@ -187,6 +212,7 @@ public sealed class PublicarEditalEndpointTests
                 tipoProcesso = 1, // SiSU — enum serializado como número (System.Text.Json default)
             }),
         };
+        AppendTestAuth(primeiraReq);
         primeiraReq.Headers.TryAddWithoutValidation("Idempotency-Key", key);
         HttpResponseMessage primeira = await client.SendAsync(primeiraReq);
         primeira.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -202,6 +228,7 @@ public sealed class PublicarEditalEndpointTests
                 tipoProcesso = 1, // SiSU — enum serializado como número (System.Text.Json default)
             }),
         };
+        AppendTestAuth(segundaReq);
         segundaReq.Headers.TryAddWithoutValidation("Idempotency-Key", key);
         HttpResponseMessage segunda = await client.SendAsync(segundaReq);
 
@@ -215,11 +242,24 @@ public sealed class PublicarEditalEndpointTests
     {
         using HttpRequestMessage request = new(HttpMethod.Post,
             new Uri($"/api/editais/{editalId}/publicar", UriKind.Relative));
+        AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
         return await client.SendAsync(request).ConfigureAwait(false);
     }
 
     private static string MakeIdempotencyKey() => Guid.CreateVersion7().ToString("N");
+
+    /// <summary>
+    /// Adiciona Authorization Bearer + X-Test-User-Id ao request. Necessário
+    /// porque [RequiresIdempotencyKey] exige principal autenticado (filter
+    /// rejeita anonymous para evitar cache poisoning entre clientes).
+    /// </summary>
+    private static void AppendTestAuth(HttpRequestMessage request, string userId = "test-publicar-user")
+    {
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, userId);
+    }
 
     private static async Task<Edital> SemearEditalAsync(CascadingApiFactory api)
     {

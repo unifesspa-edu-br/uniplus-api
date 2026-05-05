@@ -11,4 +11,6 @@ public static class IdempotencyDomainErrorCodes
     public const string KeyMalformada = "Idempotency.KeyMalformada";
     public const string BodyMismatch = "Idempotency.BodyMismatch";
     public const string ProcessingConflict = "Idempotency.ProcessingConflict";
+    public const string PrincipalRequerido = "Idempotency.PrincipalRequerido";
+    public const string BodyMuitoGrande = "Idempotency.BodyMuitoGrande";
 }

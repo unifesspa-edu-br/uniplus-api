@@ -105,12 +105,36 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
             return;
         }
 
+        // Resolve principal autenticado ANTES de gastar AES no decode/hash —
+        // endpoint marcado com [RequiresIdempotencyKey] em request anonymous
+        // é inconsistência de configuração: caches anonymous compartilhados
+        // permitem ataques de poisoning entre clientes.
+        string? scope = ResolveScope(httpContext);
+        if (scope is null)
+        {
+            ShortCircuit(context, IdempotencyDomainErrorCodes.PrincipalRequerido,
+                "Endpoint com [RequiresIdempotencyKey] exige principal autenticado.");
+            return;
+        }
+
         // Lê body bytes (sem consumir o stream para o model binder).
-        byte[] bodyBytes = await ReadAndRewindBodyAsync(httpContext.Request, _options.MaxBodyBytes,
-            httpContext.RequestAborted).ConfigureAwait(false);
+        byte[] bodyBytes;
+        try
+        {
+            bodyBytes = await ReadAndRewindBodyAsync(httpContext.Request, _options.MaxBodyBytes,
+                httpContext.RequestAborted).ConfigureAwait(false);
+        }
+        catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
+        {
+            // GlobalExceptionMiddleware do projeto trata Exception genérica como
+            // 500. Capturar aqui e devolver 413 ProblemDetails canônico evita
+            // que o cliente veja "internal error" para um problema de tamanho.
+            ShortCircuit(context, IdempotencyDomainErrorCodes.BodyMuitoGrande,
+                $"Request body excede o limite de {_options.MaxBodyBytes} bytes para endpoints idempotentes.");
+            return;
+        }
 
         string bodyHash = ComputeSha256Hex(bodyBytes);
-        string scope = ResolveScope(httpContext);
         string endpoint = ResolveEndpoint(context);
 
         // Lookup inicial.
@@ -343,15 +367,19 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         return Convert.ToHexStringLower(hash);
     }
 
-    private static string ResolveScope(HttpContext httpContext)
+    /// <summary>
+    /// Resolve o scope da chave de cache via sub claim do JWT.
+    /// Retorna <c>null</c> quando não há principal autenticado — sinal para
+    /// rejeitar o request com 401, evitando que clientes anonymous
+    /// compartilhem o mesmo bucket "anonymous" e poluam/colidam keys uns dos
+    /// outros (cache poisoning entre anônimos).
+    /// </summary>
+    private static string? ResolveScope(HttpContext httpContext)
     {
-        // Sub claim do JWT identifica o principal autenticado. Anônimo cai
-        // em escopo "anonymous" — keys ainda funcionam mas isoladas por
-        // anônimo (caso raro: endpoints públicos com idempotency).
         string? sub = httpContext.User?.FindFirst("sub")?.Value
             ?? httpContext.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-        return string.IsNullOrEmpty(sub) ? "anonymous" : $"user:{sub}";
+        return string.IsNullOrEmpty(sub) ? null : $"user:{sub}";
     }
 
     private static string ResolveEndpoint(ResourceExecutingContext context)
