@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Confluent.Kafka" />
     <PackageReference Include="VaultSharp" />
     <PackageReference Include="FluentValidation" />
