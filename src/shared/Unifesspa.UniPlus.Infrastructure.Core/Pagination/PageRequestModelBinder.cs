@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+
 /// <summary>
 /// Binder de <see cref="PageRequest"/>: lê <c>cursor</c> e <c>limit</c> do
 /// query string, valida limit contra <see cref="CursorPaginationOptions"/>,
@@ -76,6 +78,43 @@ public sealed class PageRequestModelBinder : IModelBinder
                     {
                         FailWith(bindingContext, CursorBindingErrorCodes.Invalido, "O cursor informado é inválido.");
                         return;
+                    }
+
+                    // User-binding (ADR-0026 §"User-binding em cursores
+                    // user-scoped"): tres invariantes distintas, mesmo
+                    // outcome (Cursor.Invalido — nao vazar status: "cursor
+                    // existe mas e de outro user" daria info ao atacante).
+                    // Split em tres ifs torna a intencao explicita e evita
+                    // que mudancas futuras no guard de auth escondam a
+                    // checagem de "cursor sem binding em endpoint user-scoped".
+                    if (attribute.RequireUserBinding)
+                    {
+                        IUserContext userContext = services.GetRequiredService<IUserContext>();
+
+                        // (a) Anonymous em endpoint user-scoped.
+                        if (!userContext.IsAuthenticated || string.IsNullOrEmpty(userContext.UserId))
+                        {
+                            FailWith(bindingContext, CursorBindingErrorCodes.Invalido,
+                                "O cursor informado é inválido.");
+                            return;
+                        }
+
+                        // (b) Cursor legacy (emitido como público, sem user_id)
+                        // não pode ser navegado em endpoint user-scoped.
+                        if (string.IsNullOrEmpty(decoded.Payload.UserId))
+                        {
+                            FailWith(bindingContext, CursorBindingErrorCodes.Invalido,
+                                "O cursor informado é inválido.");
+                            return;
+                        }
+
+                        // (c) Cross-user replay — payload de Alice em sessão de Bob.
+                        if (!string.Equals(decoded.Payload.UserId, userContext.UserId, StringComparison.Ordinal))
+                        {
+                            FailWith(bindingContext, CursorBindingErrorCodes.Invalido,
+                                "O cursor informado é inválido.");
+                            return;
+                        }
                     }
 
                     afterId = parsedAfter;

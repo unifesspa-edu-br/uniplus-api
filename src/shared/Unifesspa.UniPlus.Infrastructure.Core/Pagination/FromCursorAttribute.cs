@@ -23,4 +23,13 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
 
     /// <summary>Identificador do recurso embutido no payload do cursor (ex.: <c>"editais"</c>).</summary>
     public string Resource { get; }
+
+    /// <summary>
+    /// Quando <c>true</c>, o binder popula <see cref="CursorPayload.UserId"/>
+    /// com o sub claim do principal autenticado na emissão do cursor e valida
+    /// igualdade no decode — cursor de Alice não é navegável por Bob mesmo
+    /// que decoda corretamente (gap LGPD em metadata de recursos user-scoped,
+    /// ADR-0026). Default <c>false</c> (recurso público).
+    /// </summary>
+    public bool RequireUserBinding { get; init; }
 }

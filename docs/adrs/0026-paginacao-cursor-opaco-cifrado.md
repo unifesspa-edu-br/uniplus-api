@@ -44,6 +44,20 @@ O cursor recebido pelo cliente é uma string base64-url-safe sem padding. Seu co
 - **`sort_key`** — coluna ou expressão de ordenação aplicada (ex.: `created_at_desc`, `numero_edital_asc`). Endpoint declara qual valor é válido; cliente não escolhe.
 - **`expiry`** — timestamp absoluto após o qual o cursor não é mais aceito.
 - **`scope`** — escopo de tenant/contexto quando aplicável (multi-tenancy futuro). Garante que cursor emitido em um contexto não é replicável noutro.
+- **`user_id`** (opcional) — sub claim do principal autenticado quando o recurso é user-scoped (ver "User-binding em cursores user-scoped" abaixo). `null` em recursos públicos (`/api/editais`).
+
+### User-binding em cursores user-scoped
+
+**Acrescentado pós-implementação (story #312, 2026-05-05).** Cursor sem binding de usuário em recurso user-scoped vaza metadata cross-cliente: cliente A recebe cursor com `last_id = inscA.Id`; se o cursor sair do client (logs, support ticket, browser cache compartilhado), cliente B autenticado pode replay no mesmo endpoint e descobrir existência/timestamp/posição ordinal de itens de A — ainda que o filtro server-side aplique `WHERE userId = B.Id` e ele não veja os dados em si.
+
+A mitigação:
+
+- Endpoint user-scoped declara `[FromCursor(resource, RequireUserBinding = true)]`. Default `false` (recurso público).
+- Binder popula `user_id` no payload com o sub do principal corrente quando `RequireUserBinding == true`.
+- No decode, valida `payload.user_id == currentUser.UserId`. Mismatch → 400 com `code: uniplus.cursor.invalido` (não `uniplus.cursor.proibido` para não vazar status: cursor de outro user é tratado como cursor adulterado).
+- Anonymous request em endpoint marcado → 400 `uniplus.cursor.invalido` (consistente com a política do filter de Idempotency-Key — endpoints user-scoped exigem auth).
+
+Recursos públicos (`/api/editais`) **não** populam `user_id` mesmo se o request for autenticado — `user_id` aplicado a recurso público fragmentaria o cache por usuário sem benefício. O default `RequireUserBinding = false` preserva comportamento legacy.
 
 A cifragem usa **AES-GCM** com chave gerenciada por infraestrutura externa de gerenciamento de chaves (em produção: HashiCorp Vault transit engine; em desenvolvimento e CI: fixture local equivalente). A chave nunca sai do gerenciador; cifragem e decifragem ocorrem via API. Rotação periódica é responsabilidade do gerenciador — cursors emitidos com chave anterior continuam válidos até expirarem por TTL, sem revogação retroativa.
 
