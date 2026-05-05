@@ -94,12 +94,13 @@ O payload do cache (request body + response body) pode conter PII (CPF, nome soc
 
 - **Retry seguro.** Clientes (frontend, integradores externos) podem retry com confiança em qualquer cenário de timeout/network/proxy 5xx, sem risco de duplicação semântica.
 - **Conformidade com RN01.** Inscrição duplicada por retry deixa de ser vetor; constraint de unicidade no domínio passa a ser última linha de defesa, não primeira.
-- **Atomicidade real.** Commit do agregado + gravação do cache acontecem na mesma transação Postgres. Não existe estado intermediário onde o agregado foi gravado mas o cache não, ou vice-versa.
+- **Atomicidade alcançada parcialmente** (revisado pós-implementação — ver "Negativas"). A intenção original de uma transação única foi reduzida a três transações separadas; o ganho efetivo é eliminação de janela de inconsistência ao 5xx (reservation deletada) e proteção contra duplicação concorrente via UNIQUE index. Caminho de retry permanece seguro embora não atomic-ideal.
 - **Auditabilidade.** Cache em Postgres é inspecionável via SQL para suporte e auditoria sem tooling extra.
 - **Convergência com mercado.** Comportamento idêntico a Stripe/Square/PayPal facilita integração de clientes que já implementam o padrão.
 
 ### Negativas
 
+- **Atomicidade parcial (ajuste pós-implementação, story #286).** A promessa original "commit do agregado + cache na mesma `IEnvelopeTransaction`" não foi alcançada. A implementação usa três transações separadas: `TryReserve` (insert da reservation), o handler do agregado (commit via `IEnvelopeTransaction` do Wolverine), e `Complete` (update da reservation com response cifrada). Integrar `ResourceFilter` ao pipeline da `IEnvelopeTransaction` exige extensão fora do escopo da story que entregou o middleware. Janela de inconsistência: se `Complete` falhar após o handler commitar (network blip, deploy, exceção tardia), a entry permanece em status `Processing` até o TTL (24h) — clientes que retry com a mesma key recebem 409 nesse intervalo. Mitigação parcial: 5xx/Canceled deleta a reservation imediatamente (DELETE atômico próprio) para liberar o cliente a retry após falha do handler. ADR será revisada quando a integração com `IEnvelopeTransaction` for implementada.
 - **Carga adicional no Postgres.** Cada request idempotente faz uma leitura + uma escrita extra na mesma transação. Mitigação: índice em `(scope, endpoint, key)` e TTL agressivo (24h); volume do cache fica limitado por janela.
 - **Complexidade de cleanup.** Entradas expiradas precisam de job periódico ou estratégia de particionamento. Sem cleanup, tabela cresce indefinidamente.
 - **Cifragem adiciona latência.** Cifragem/decifragem por request idempotente acrescenta ~ms por chamada à infraestrutura de chave. Aceitável dado o ganho de segurança.
