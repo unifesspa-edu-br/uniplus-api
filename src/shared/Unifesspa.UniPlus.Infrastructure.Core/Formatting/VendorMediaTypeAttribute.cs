@@ -143,6 +143,25 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
 
         string vendorMime = BuildVendorMime(Resource, version);
         context.HttpContext.Response.ContentType = vendorMime;
+
+        // RFC 9110 §12.5.5: respostas que variam por content negotiation devem
+        // declarar Vary: Accept para que caches compartilhados (CDN, Traefik,
+        // reverse proxy) não sirvam representação de uma versão para um cliente
+        // que pediu outra. Sem isso, /api/editais cacheado como v1 seria
+        // replayado a um cliente que pediu v2.
+        AppendAcceptToVaryIfMissing(context.HttpContext.Response);
+    }
+
+    private static void AppendAcceptToVaryIfMissing(HttpResponse response)
+    {
+        Microsoft.Extensions.Primitives.StringValues vary = response.Headers.Vary;
+        bool alreadyVariesByAccept = vary.Any(static value =>
+            value is not null
+            && value.Split(',').Any(static token =>
+                token.Trim().Equals("Accept", StringComparison.OrdinalIgnoreCase)));
+
+        if (!alreadyVariesByAccept)
+            response.Headers.Append(HeaderNames.Vary, "Accept");
     }
 
     private static bool IsProblemDetailsResult(IActionResult result) =>
