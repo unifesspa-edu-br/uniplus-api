@@ -66,16 +66,18 @@ rules:
               required: ["application/problem+json"]
 
   # --- 3. Code regex (ADR-0023) --------------------------------------------
-  # Aplicada quando ProblemDetails carrega exemplo do code.
+  # Aplicada quando ProblemDetails carrega exemplo do code. Pattern obriga
+  # o prefixo `uniplus.` — taxonomia canônica `uniplus.<modulo>.<codigo>`.
+  # Sem o prefixo a regex genérica permitiria qualquer dotted lowercase.
   uniplus-error-code-format:
-    description: code segue taxonomia ^[a-z]+(\.[a-z_]+)+$
+    description: code segue taxonomia ^uniplus(\.[a-z_]+){2,}$
     message: "code '{{value}}' fora da taxonomia uniplus.<modulo>.<codigo> (ADR-0023)"
     severity: error
     given: $..responses[?(@property.match(/^[45]/))].content["application/problem+json"].schema..properties.code.example
     then:
       function: pattern
       functionOptions:
-        match: "^[a-z]+(\\.[a-z_]+)+$"
+        match: "^uniplus(\\.[a-z_]+){2,}$"
 
   # --- 4. Deprecated requer Sunset (RFC 8594) ------------------------------
   uniplus-deprecated-requires-sunset:
