@@ -64,6 +64,19 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0033](0033-icurrentuser-abstraction-via-iusercontext.md) | `IUserContext` como abstração canônica para acesso ao principal autenticado | accepted | 2026-05-05 |
 | [0034](0034-problemdetails-em-401-403-via-jwtbearer-events.md) | ProblemDetails RFC 9457 em 401/403 via `JwtBearerEvents.OnChallenge`/`OnForbidden` | accepted | 2026-05-05 |
 | [0035](0035-shared-schemas-cross-module-fitness-test.md) | Schemas duplicados entre baselines OpenAPI — fitness test cross-module no lugar de `$ref` multi-arquivo | accepted | 2026-05-05 |
+| [0036](0036-controllers-mvc-para-negocio-minimal-api-para-shared.md) | Controllers MVC `[ApiController]` para endpoints de negócio + Minimal API restrita a shared/técnicos | accepted | 2026-05-05 |
+| [0037](0037-hosting-minimal-api-vs-startup.md) | Hosting via `WebApplication.CreateBuilder` mantido vs migração para Generic Host + `Startup.cs` | accepted | 2026-05-05 |
+| [0038](0038-override-configuracao-em-testes-via-env-vars.md) | Override de configuração em testes via env vars + `DisableParallelization` na collection | accepted | 2026-05-05 |
+| [0039](0039-provisioning-schema-wolverine-via-deploy.md) | Provisioning do schema Wolverine como responsabilidade do deploy, não auto-create em runtime | accepted | 2026-05-05 |
+| [0040](0040-helper-wolverine-outbox-cascading-canonico.md) | `WolverineOutboxConfiguration.UseWolverineOutboxCascading` como ponto canônico de configuração | accepted | 2026-05-05 |
+| [0041](0041-padrao-retorno-handlers-wolverine-cascading.md) | Padrão de retorno `(Result, IEnumerable<object>)` em handlers Wolverine que mutam agregados | accepted | 2026-05-05 |
+| [0042](0042-application-nao-depende-diretamente-de-dbcontext.md) | Application layer não depende de DbContext — sempre via repository + Unit of Work | accepted | 2026-05-05 |
+| [0043](0043-discovery-explicito-application-via-includeassembly.md) | Discovery explícito da Application layer no Wolverine via `Discovery.IncludeAssembly` | accepted | 2026-05-05 |
+| [0044](0044-roteamento-domain-events-pg-queue-kafka-opcional.md) | Roteamento de domain events: queue PG interna + tópico Kafka opcional | accepted | 2026-05-05 |
+| [0045](0045-test-factory-remove-wolverine-runtime.md) | Test factory remove `WolverineRuntime` de `IHostedService` para suítes não-outbox | accepted | 2026-05-05 |
+| [0046](0046-validacao-de-regras-sem-excecao-result-failure.md) | Validação de regras de negócio sem exceção — `Result.Failure(DomainError)` para fluxo esperado | accepted | 2026-05-05 |
+| [0047](0047-confluent-kafka-npgsql-pisos-transitivos-wolverine.md) | `Confluent.Kafka 2.14.0` + `Npgsql 9.0.4` como pisos transitivos do Wolverine 5.32.1 | accepted | 2026-05-05 |
+| [0048](0048-controllers-mvc-public-com-ca1515-suprimido.md) | Controllers MVC em `*.API` devem ser `public`, com CA1515 suprimido por justificativa | accepted | 2026-05-05 |
 
 ## Como adicionar um novo ADR
 
