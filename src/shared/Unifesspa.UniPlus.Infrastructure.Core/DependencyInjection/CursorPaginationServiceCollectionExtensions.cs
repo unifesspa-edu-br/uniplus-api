@@ -36,6 +36,7 @@ public static class CursorPaginationServiceCollectionExtensions
 
         services.AddSingleton<CursorEncoder>();
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<Errors.IDomainErrorRegistration, PaginationDomainErrorRegistration>();
 
         services.PostConfigure<ApiBehaviorOptions>(options =>
         {

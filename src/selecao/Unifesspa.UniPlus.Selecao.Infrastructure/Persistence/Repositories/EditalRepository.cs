@@ -66,6 +66,11 @@ public sealed class EditalRepository : IEditalRepository
 
         if (afterId is { } cursor)
         {
+            // Keyset coerente server-side (ADR-0026): Npgsql traduz Guid.CompareTo
+            // para o operador uuid > nativo do PG — mesmo comparador que o OrderBy(Id)
+            // acima. Estabilidade da janela independe da versão do Guid (v4 hoje;
+            // quando #311 promover EntityBase.Id para Guid v7, ordering passa a
+            // refletir criação temporal sem alteração nesta consulta).
             query = query.Where(e => e.Id.CompareTo(cursor) > 0);
         }
 
