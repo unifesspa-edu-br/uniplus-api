@@ -53,7 +53,9 @@ rules:
     description: Respostas 4xx/5xx devem usar application/problem+json
     message: "Resposta {{property}} não declara application/problem+json — RFC 9457 (ADR-0023)"
     severity: error
-    given: $.paths[*][*].responses[?(@property.match(/^[45]\d\d$/))]
+    # OpenAPI permite tanto códigos exatos (400, 500) quanto ranges (4XX, 5XX);
+    # a regex precisa cobrir os dois para não deixar buracos.
+    given: $.paths[*][*].responses[?(@property.match(/^[45](\d\d|XX)$/i))]
     then:
       function: schema
       functionOptions:
@@ -98,10 +100,13 @@ rules:
   # condicional (if/then) — só valida parameters quando a operação tem
   # x-uniplus-idempotent: true.
   uniplus-idempotent-post-declares-header:
-    description: POST com x-uniplus-idempotent declara header Idempotency-Key obrigatório
-    message: "POST com x-uniplus-idempotent precisa declarar header Idempotency-Key required (ADR-0027)"
+    description: Operação com x-uniplus-idempotent declara header Idempotency-Key obrigatório
+    message: "Operação com x-uniplus-idempotent precisa declarar header Idempotency-Key required (ADR-0027)"
     severity: error
-    given: $.paths[*].post
+    # [RequiresIdempotencyKey] é aplicável a qualquer verb com side-effects
+    # (POST, PUT, PATCH, DELETE). Limitar a `post` deixaria PATCH/DELETE
+    # idempotentes sem cobertura de lint.
+    given: $.paths[*][post,put,patch,delete]
     then:
       function: schema
       functionOptions:
