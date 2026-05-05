@@ -145,17 +145,23 @@ public sealed partial class ContractV1FitnessTestsTests
 
     private static HashSet<string> LoadRegisteredCodes()
     {
-        // Varre TODOS os assemblies carregados no AppDomain — uma registration
-        // pode acabar em Application, Application.Abstractions, Kernel ou
-        // qualquer assembly futuro. Hardcodar dois assemblies geraria falsos
-        // orphans quando alguém migrar uma registration para outro lugar.
-        // Toca-os primeiro via typeof().Assembly para garantir carga.
-        _ = typeof(IDomainErrorRegistration).Assembly;
-        _ = typeof(API.Controllers.EditalController).Assembly;
+        // Toca os assemblies de produção primeiro para garantir a carga. Sem
+        // estes "touches" a JIT pode não materializar os assemblies no AppDomain
+        // antes do scan.
+        _ = typeof(IDomainErrorRegistration).Assembly; // Infrastructure.Core: kernel + pagination + idempotency
+        _ = typeof(API.Controllers.EditalController).Assembly; // Selecao.API: SelecaoDomainErrorRegistration
+
+        // Whitelist explícito de assemblies de produção. Filtrar por convenção
+        // de nome em vez de scan amplo evita que stubs de testes (tipo
+        // DomainErrorMappingRegistrationStub das unit tests) sejam contados
+        // como cobertura — garante que F1 valida APENAS registrations que o
+        // host Selecao realmente serve em produção.
+        Regex productionAssembly = ProductionAssemblyRegex();
 
         HashSet<string> codes = new(StringComparer.Ordinal);
         IEnumerable<ReflectionType> registrationTypes = AppDomain.CurrentDomain
             .GetAssemblies()
+            .Where(a => a.GetName().Name is { } name && productionAssembly.IsMatch(name))
             .SelectMany(a =>
             {
                 try { return a.GetTypes(); }
@@ -166,13 +172,17 @@ public sealed partial class ContractV1FitnessTestsTests
 
         foreach (ReflectionType type in registrationTypes)
         {
+            // Suporta ctors internal/private (registrations são `internal sealed`).
+            // Se não há ctor default, falha alto: registrations com dependências
+            // requerem DI activation real — atualizar F1 antes de adicionar.
             ConstructorInfo? ctor = type.GetConstructor(
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                 types: []);
-            if (ctor is null)
-                continue;
+            ctor.Should().NotBeNull(
+                $"registration {type.FullName} precisa de constructor sem parâmetros para ser carregada por F1; "
+                    + "se a classe ganhou dependências de DI, atualizar este teste para usar IServiceProvider real.");
 
-            IDomainErrorRegistration instance = (IDomainErrorRegistration)ctor.Invoke(null);
+            IDomainErrorRegistration instance = (IDomainErrorRegistration)ctor!.Invoke(null);
             foreach (KeyValuePair<string, DomainErrorMapping> mapping in instance.GetMappings())
                 codes.Add(mapping.Key);
         }
@@ -203,4 +213,12 @@ public sealed partial class ContractV1FitnessTestsTests
     /// </remarks>
     [GeneratedRegex(@"new\s+DomainError\(\s*""([^""]+)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DomainErrorCallRegex();
+
+    // Whitelist de assemblies de produção que podem hospedar IDomainErrorRegistration.
+    // Mantém a regex restrita: stubs em Unifesspa.UniPlus.*.UnitTests/IntegrationTests/ArchTests
+    // não casam (terminam em ".Tests" ou similar) e ficam fora do scan.
+    [GeneratedRegex(
+        @"^Unifesspa\.UniPlus\.(Kernel|Application\.Abstractions|Infrastructure\.Core|(Selecao|Ingresso)\.(Domain|Application|Infrastructure|API))$",
+        RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ProductionAssemblyRegex();
 }
