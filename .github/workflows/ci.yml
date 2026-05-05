@@ -51,6 +51,32 @@ jobs:
       - name: Markdown lint (markdownlint-cli2)
         run: npx --yes markdownlint-cli2 'docs/adrs/**/*.md'
 
+  spectral:
+    name: Spectral lint (OpenAPI baselines)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lint OpenAPI baselines
+        # Pin de versão evita regressões surpresa: novas regras `recommended`
+        # ou mudanças de severity em releases minor podem bloquear PRs sem
+        # mudança de código. Atualizar manualmente após validação local.
+        run: |
+          npx --yes @stoplight/spectral-cli@6.15.0 lint \
+            --ruleset tools/spectral/.spectral.yaml \
+            --fail-severity=error \
+            contracts/openapi.selecao.json contracts/openapi.ingresso.json
+
   forbidden-deps:
     name: Forbidden dependencies
     runs-on: ubuntu-latest

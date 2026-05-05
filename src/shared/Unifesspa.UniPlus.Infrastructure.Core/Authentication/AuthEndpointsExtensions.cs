@@ -32,8 +32,8 @@ public static class AuthEndpointsExtensions
                     userContext.Roles,
                     clock.GetUtcNow())))
             .WithName("GetAuthenticatedUser")
-            .WithSummary("Returns the authenticated user")
-            .WithDescription("Returns user information extracted from the access token. Requires authentication.")
+            .WithSummary("Retorna o usuário autenticado")
+            .WithDescription("Retorna informações do usuário extraídas do access token. Requer autenticação.")
             .Produces<AuthenticatedUserResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized);
 
