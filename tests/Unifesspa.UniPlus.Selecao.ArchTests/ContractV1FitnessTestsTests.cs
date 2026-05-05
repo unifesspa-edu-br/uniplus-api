@@ -214,11 +214,16 @@ public sealed partial class ContractV1FitnessTestsTests
     [GeneratedRegex(@"new\s+DomainError\(\s*""([^""]+)""", RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DomainErrorCallRegex();
 
-    // Whitelist de assemblies de produção que podem hospedar IDomainErrorRegistration.
-    // Mantém a regex restrita: stubs em Unifesspa.UniPlus.*.UnitTests/IntegrationTests/ArchTests
-    // não casam (terminam em ".Tests" ou similar) e ficam fora do scan.
+    // Whitelist alinhado com a DI graph que Selecao serve em produção.
+    // Inclui Selecao + cross-cutting (Kernel, Application.Abstractions,
+    // Infrastructure.Core), mas NÃO inclui Ingresso — Selecao.API não
+    // registra IngressoDomainErrorRegistration. Sem essa exclusão, em
+    // execução conjunta com Stage1 (que carrega Ingresso para R1), uma
+    // mesma key registrada apenas em Ingresso mascararia gap de Selecao.
+    // Stubs de testes terminam em ".Tests"/".UnitTests"/"ArchTests" e não
+    // casam com a regex.
     [GeneratedRegex(
-        @"^Unifesspa\.UniPlus\.(Kernel|Application\.Abstractions|Infrastructure\.Core|(Selecao|Ingresso)\.(Domain|Application|Infrastructure|API))$",
+        @"^Unifesspa\.UniPlus\.(Kernel|Application\.Abstractions|Infrastructure\.Core|Selecao\.(Domain|Application|Infrastructure|API))$",
         RegexOptions.Compiled, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ProductionAssemblyRegex();
 }
