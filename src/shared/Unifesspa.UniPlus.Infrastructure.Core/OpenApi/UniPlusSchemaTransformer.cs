@@ -24,7 +24,10 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         ArgumentNullException.ThrowIfNull(schema);
         ArgumentNullException.ThrowIfNull(context);
 
-        if (schema.Type != JsonSchemaType.String)
+        // JsonSchemaType é [Flags] — propriedades nullable saem como
+        // String | Null, então comparação por igualdade exata pula schemas
+        // legítimos. HasFlag pega ambos os casos (String puro e String|Null).
+        if (!schema.Type.HasValue || !schema.Type.Value.HasFlag(JsonSchemaType.String))
             return Task.CompletedTask;
 
         string? propertyName = context.JsonPropertyInfo?.Name;
