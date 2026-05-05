@@ -42,6 +42,13 @@ public sealed class UniPlusOperationTransformer : IOpenApiOperationTransformer
                     Type = JsonSchemaType.String,
                     MinLength = 1,
                     MaxLength = 255,
+                    // ECMA-262 (JSON Schema) — espelha IdempotencyFilter.IsKeyValid:
+                    // ASCII printable (0x21-0x7E) menos ',' (0x2C) e ';' (0x3B),
+                    // que são separadores em sf-list (draft-ietf-httpapi-idempotency-key).
+                    // Mantém o contrato consistente com a validação de runtime — clientes
+                    // gerados a partir do spec recebem 400 imediato em chave inválida em vez
+                    // de aceitar a chamada e ser rejeitado pelo filter.
+                    Pattern = @"^[\x21-\x2B\x2D-\x3A\x3C-\x7E]+$",
                 },
             });
 
