@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Security.Cryptography;
+
 using Enums;
 using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -53,6 +55,11 @@ public sealed class Inscricao : EntityBase
 
     public void OptarPorListaEspera() => ListaEspera = true;
 
+    // Sufixo de 8 hex chars (32 bits aleatórios) compõe o número humano-legível.
+    // Usa RandomNumberGenerator em vez de Guid v4 porque (a) Guid.NewGuid é
+    // proibido em domínio (ADR-0032 / fitness test) e (b) Guid v7 não serve
+    // aqui — seus primeiros 8 chars são timestamp ms, não random; quem quer
+    // entropia em string curta usa RNG direto.
     private static string GerarNumeroInscricao() =>
-        $"{DateTimeOffset.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpperInvariant()}";
+        $"{DateTimeOffset.UtcNow:yyyyMMdd}-{RandomNumberGenerator.GetHexString(stringLength: 8, lowercase: false)}";
 }
