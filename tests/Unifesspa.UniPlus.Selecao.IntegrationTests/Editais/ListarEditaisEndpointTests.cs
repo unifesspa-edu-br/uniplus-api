@@ -59,7 +59,7 @@ public sealed class ListarEditaisEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.cursor_invalido");
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.cursor.invalido");
 
         await response.AssertNoPiiAsync();
     }
@@ -92,7 +92,7 @@ public sealed class ListarEditaisEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.cursor_limit_invalido");
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.cursor.limit_invalido");
     }
 
     [Fact(DisplayName = "GET /api/editais ?limit do query string vence sobre limit do cursor")]

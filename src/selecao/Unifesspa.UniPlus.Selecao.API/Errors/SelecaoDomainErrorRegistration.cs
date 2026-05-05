@@ -20,8 +20,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FormulaCalculo.FatorInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formula_calculo.fator_invalido", "Fator de divisão inválido")),
         new("FormulaCalculo.BonusInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formula_calculo.bonus_invalido", "Bônus regional inválido")),
         new("Inscricao.StatusInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.status_invalido", "Status de inscrição inválido")),
-        new("Cursor.Invalido", new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.cursor_invalido", "Cursor de paginação inválido")),
-        new("Cursor.Expirado", new DomainErrorMapping(StatusCodes.Status410Gone, "uniplus.selecao.cursor_expirado", "Cursor de paginação expirado")),
-        new("Cursor.LimitInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cursor_limit_invalido", "Tamanho de página inválido")),
+        // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
+        // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];
 }
