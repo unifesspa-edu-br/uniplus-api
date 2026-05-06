@@ -4,11 +4,13 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Selecao.API.Errors;
+using Unifesspa.UniPlus.Selecao.API.Hateoas;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
@@ -42,6 +44,10 @@ builder.Services.AddUniPlusOpenApi("selecao", builder.Configuration);
 
 builder.Services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
+
+// HATEOAS Level 1 (ADR-0029) — builder de _links por recurso. Singleton
+// porque encapsula apenas um LinkGenerator (também singleton); função pura.
+builder.Services.AddSingleton<IResourceLinksBuilder<Unifesspa.UniPlus.Selecao.Application.DTOs.EditalDto>, EditalLinksBuilder>();
 
 // Criptografia + cursor pagination usados pelos endpoints de listagem
 // (ADR-0026 + ADR-0031). AddUniPlusEncryption: provider 'local' AES-GCM 256
