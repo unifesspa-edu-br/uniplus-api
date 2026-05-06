@@ -112,6 +112,37 @@ public sealed class EditalEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact(DisplayName = "GET /api/editais retorna Link e X-Page-Size headers (RFC 5988/8288, ADR-0026)")]
+    public async Task ListarEditais_DeveExporLinkEXPageSizeHeaders()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        // Garante 2 editais no DB para forçar próxima página com limit=1.
+        await SemearEditalAsync(api);
+        await SemearEditalAsync(api);
+
+        using HttpRequestMessage request = new(HttpMethod.Get,
+            new Uri("/api/editais?limit=1", UriKind.Relative));
+        AppendTestAuth(request);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.uniplus.edital.v1+json"));
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        response.Headers.TryGetValues("X-Page-Size", out IEnumerable<string>? pageSizeValues).Should().BeTrue(
+            "OkPaginatedAsync popula X-Page-Size com a contagem de itens da página atual (ADR-0026)");
+        pageSizeValues!.Single().Should().Be("1", "limit=1 + ao menos 2 editais semeados garantem 1 item na página");
+
+        response.Headers.TryGetValues("Link", out IEnumerable<string>? linkValues).Should().BeTrue(
+            "OkPaginatedAsync popula Link header (RFC 5988/8288) com rel=\"self\" e — quando há próxima — rel=\"next\"");
+        string linkHeader = linkValues!.Single();
+        linkHeader.Should().Contain("rel=\"self\"");
+        linkHeader.Should().Contain("rel=\"next\"",
+            "ao menos 2 editais existem e limit=1 deve emitir cursor para a próxima página");
+    }
+
     private static string MakeIdempotencyKey() => Guid.CreateVersion7().ToString("N");
 
     private static void AppendTestAuth(HttpRequestMessage request)
