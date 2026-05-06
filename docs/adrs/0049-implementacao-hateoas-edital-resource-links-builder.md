@@ -63,25 +63,30 @@ public interface IResourceLinksBuilder<in TDto> where TDto : class
 internal sealed class EditalLinksBuilder : IResourceLinksBuilder<EditalDto>
 {
     private readonly LinkGenerator _linkGenerator;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public EditalLinksBuilder(LinkGenerator linkGenerator)
+    public EditalLinksBuilder(LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor)
     {
-        ArgumentNullException.ThrowIfNull(linkGenerator);
+        // ... null guards
         _linkGenerator = linkGenerator;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public IReadOnlyDictionary<string, string> Build(EditalDto dto)
     {
-        // GetPathByAction emite path-only (sem scheme/host) — alinhado com
-        // a invariante "URIs relativas à raiz da API" (ADR-0029 §"URIs relativas").
-        string self = _linkGenerator.GetPathByAction(
-            action: nameof(EditalController.ObterPorId),
-            controller: "Edital",
-            values: new { id = dto.Id })!;
+        // GetPathByAction com HttpContext respeita ambient PathBase (proxy
+        // reverso, app.UsePathBase("/foo")). Sem HttpContext (jobs/webhooks
+        // futuros invocando o builder fora de request scope), cai num path
+        // sem PathBase. Em ambos os casos, path é relativo (sem scheme/host)
+        // — invariante "URIs relativas à raiz da API" (ADR-0029).
+        HttpContext? httpContext = _httpContextAccessor.HttpContext;
 
-        string collection = _linkGenerator.GetPathByAction(
-            action: nameof(EditalController.Listar),
-            controller: "Edital")!;
+        string self = httpContext is not null
+            ? _linkGenerator.GetPathByAction(httpContext, action: nameof(EditalController.ObterPorId),
+                controller: "Edital", values: new { id = dto.Id })!
+            : _linkGenerator.GetPathByAction(action: nameof(EditalController.ObterPorId),
+                controller: "Edital", values: new { id = dto.Id })!;
+        // ... idem para collection
 
         return new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -91,6 +96,16 @@ internal sealed class EditalLinksBuilder : IResourceLinksBuilder<EditalDto>
     }
 }
 ```
+
+### Por que `IHttpContextAccessor` e não passar `HttpContext` explicitamente?
+
+A interface `IResourceLinksBuilder<TDto>.Build(TDto)` só recebe o DTO — não o `HttpContext`. Isso preserva:
+
+- **Testabilidade isolada** — unit tests do builder podem mockar `IHttpContextAccessor` sem precisar fabricar um `HttpContext` válido.
+- **Reuso fora de request scope** — jobs/webhooks futuros podem invocar o builder; quando `HttpContext` é `null`, builder cai no path-without-PathBase (correto para esses contextos).
+- **Singleton lifetime preservado** — `IHttpContextAccessor` é seguro como singleton (acessa o contexto do request via `AsyncLocal`).
+
+Alternativa rejeitada: `Build(TDto, HttpContext)` força todo caller a passar contexto, quebra a interface genérica e impede reuso fora de request.
 
 ### Localização das classes
 
