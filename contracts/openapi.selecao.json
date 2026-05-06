@@ -561,6 +561,15 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          },
+          "_links": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
