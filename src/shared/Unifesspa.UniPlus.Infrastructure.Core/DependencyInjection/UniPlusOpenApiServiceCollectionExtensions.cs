@@ -36,12 +36,14 @@ public static class UniPlusOpenApiServiceCollectionExtensions
 
         services.TryAddSingleton<UniPlusInfoTransformer>();
         services.TryAddSingleton<UniPlusOperationTransformer>();
+        services.TryAddSingleton<CursorPaginationOperationTransformer>();
         services.TryAddSingleton<UniPlusSchemaTransformer>();
 
         services.AddOpenApi(documentName, options =>
         {
             options.AddDocumentTransformer<UniPlusInfoTransformer>();
             options.AddOperationTransformer<UniPlusOperationTransformer>();
+            options.AddOperationTransformer<CursorPaginationOperationTransformer>();
             options.AddSchemaTransformer<UniPlusSchemaTransformer>();
         });
 

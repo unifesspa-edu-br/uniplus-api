@@ -191,22 +191,19 @@
         ],
         "parameters": [
           {
-            "name": "AfterId",
+            "name": "cursor",
             "in": "query",
+            "description": "Cursor opaco AES-GCM emitido pelo servidor no header Link da p\u00E1gina anterior. Ausente na primeira p\u00E1gina. Cliente trata como string opaca \u2014 n\u00E3o decodificar (ADR-0026, ADR-0031).",
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           {
-            "name": "Limit",
+            "name": "limit",
             "in": "query",
+            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -214,6 +211,21 @@
         "responses": {
           "200": {
             "description": "OK",
+            "headers": {
+              "Link": {
+                "description": "Links de navega\u00E7\u00E3o da pagina\u00E7\u00E3o (RFC 5988/8288). rel=\u0022self\u0022 sempre presente; rel=\u0022next\u0022 s\u00F3 quando h\u00E1 pr\u00F3xima p\u00E1gina. Cada link carrega o cursor opaco no par\u00E2metro \u0060cursor\u0060 (ADR-0026).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Page-Size": {
+                "description": "Quantidade de itens retornados na p\u00E1gina atual (sempre menor ou igual ao limit efetivo).",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -281,7 +293,8 @@
               }
             }
           }
-        }
+        },
+        "x-uniplus-paginated": true
       }
     },
     "/api/editais/{id}": {
