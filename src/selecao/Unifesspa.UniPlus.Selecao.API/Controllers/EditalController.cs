@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
+using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -27,12 +28,18 @@ public sealed class EditalController : ControllerBase
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
+    private readonly IResourceLinksBuilder<EditalDto> _linksBuilder;
 
-    public EditalController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
+    public EditalController(
+        ICommandBus commandBus,
+        IQueryBus queryBus,
+        IDomainErrorMapper mapper,
+        IResourceLinksBuilder<EditalDto> linksBuilder)
     {
         _commandBus = commandBus;
         _queryBus = queryBus;
         _mapper = mapper;
+        _linksBuilder = linksBuilder;
     }
 
     [HttpPost]
@@ -78,7 +85,17 @@ public sealed class EditalController : ControllerBase
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
         EditalDto? edital = await _queryBus.Send(new ObterEditalQuery(id), cancellationToken);
-        return edital is not null ? Ok(edital) : NotFound();
+        if (edital is null)
+        {
+            return NotFound();
+        }
+
+        // HATEOAS Level 1 (ADR-0029) — anexa _links.self/_links.collection
+        // ao DTO. O builder não toca em domínio; opera sobre URIs relativas
+        // via LinkGenerator. Action links (publicar etc.) NÃO entram aqui —
+        // descobertos via OpenAPI (ADR-0030 + ADR-0029 §"Esta ADR não decide").
+        EditalDto editalComLinks = edital with { Links = _linksBuilder.Build(edital) };
+        return Ok(editalComLinks);
     }
 
     // Despacha PublicarEditalCommand pelo ICommandBus (Wolverine). O handler
