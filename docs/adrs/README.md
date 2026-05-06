@@ -77,7 +77,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0046](0046-validacao-de-regras-sem-excecao-result-failure.md) | Validação de regras de negócio sem exceção — `Result.Failure(DomainError)` para fluxo esperado | accepted | 2026-05-05 |
 | [0047](0047-confluent-kafka-npgsql-pisos-transitivos-wolverine.md) | `Confluent.Kafka 2.14.0` + `Npgsql 9.0.4` como pisos transitivos do Wolverine 5.32.1 | accepted | 2026-05-05 |
 | [0048](0048-controllers-mvc-public-com-ca1515-suprimido.md) | Controllers MVC em `*.API` devem ser `public`, com CA1515 suprimido por justificativa | accepted | 2026-05-05 |
-| [0049](0049-implementacao-hateoas-edital-resource-links-builder.md) | Implementação de HATEOAS Level 1 em `EditalDto` via `IResourceLinksBuilder<TDto>` na camada API | proposed | 2026-05-06 |
+| [0049](0049-implementacao-hateoas-edital-resource-links-builder.md) | Implementação de HATEOAS Level 1 em `EditalDto` via `IResourceLinksBuilder<TDto>` na camada API | accepted | 2026-05-06 |
 
 ## Como adicionar um novo ADR
 
