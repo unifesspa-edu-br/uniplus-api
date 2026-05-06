@@ -43,42 +43,50 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 internal sealed class EditalLinksBuilder : IResourceLinksBuilder<EditalDto>
 {
     private readonly LinkGenerator _linkGenerator;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public EditalLinksBuilder(LinkGenerator linkGenerator)
+    public EditalLinksBuilder(LinkGenerator linkGenerator, IHttpContextAccessor httpContextAccessor)
     {
         ArgumentNullException.ThrowIfNull(linkGenerator);
+        ArgumentNullException.ThrowIfNull(httpContextAccessor);
         _linkGenerator = linkGenerator;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public IReadOnlyDictionary<string, string> Build(EditalDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
 
-        // GetPathByAction emite somente o path (sem scheme/host) — alinhado
+        // GetPathByAction com HttpContext respeita o ambient PathBase
+        // (deployments atrás de reverse proxy ou app.UsePathBase("/foo")
+        // emitem links começando em /foo/api/editais...). Sem HttpContext
+        // (cenário futuro: jobs/webhooks invocando o builder fora de request
+        // scope), cai num path sem PathBase — correto para esses contextos.
+        // Em ambos os casos, o path é relativo (sem scheme/host) — alinhado
         // com a invariante "URIs relativas à raiz da API" da ADR-0029.
-        // Sem HttpContext (builder pode ser invocado fora de request scope no
-        // futuro, ex.: jobs de envio de webhooks); aceitamos que sem ambient
-        // pathBase o path começa em /api/editais.
-        string self = _linkGenerator.GetPathByAction(
-            action: nameof(EditalController.ObterPorId),
-            controller: ControllerNameWithoutSuffix(),
-            values: new { id = dto.Id })
-            ?? throw new InvalidOperationException(
-                $"LinkGenerator não conseguiu resolver a rota para {nameof(EditalController.ObterPorId)}. " +
-                "Verifique o registro do controller e o template de rota.");
+        HttpContext? httpContext = _httpContextAccessor.HttpContext;
+        string controllerName = ControllerNameWithoutSuffix();
 
-        string collection = _linkGenerator.GetPathByAction(
-            action: nameof(EditalController.Listar),
-            controller: ControllerNameWithoutSuffix())
-            ?? throw new InvalidOperationException(
-                $"LinkGenerator não conseguiu resolver a rota para {nameof(EditalController.Listar)}. " +
-                "Verifique o registro do controller e o template de rota.");
+        string self = ResolverPath(httpContext, nameof(EditalController.ObterPorId), controllerName, new { id = dto.Id });
+        string collection = ResolverPath(httpContext, nameof(EditalController.Listar), controllerName, values: null);
 
         return new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["self"] = self,
             ["collection"] = collection,
         };
+    }
+
+    private string ResolverPath(HttpContext? httpContext, string action, string controller, object? values)
+    {
+        string? path = httpContext is not null
+            ? _linkGenerator.GetPathByAction(httpContext, action: action, controller: controller, values: values)
+            : _linkGenerator.GetPathByAction(action: action, controller: controller, values: values);
+
+        return path
+            ?? throw new InvalidOperationException(
+                $"LinkGenerator não conseguiu resolver a rota para {action}. " +
+                "Verifique o registro do controller e o template de rota.");
     }
 
     /// <summary>
