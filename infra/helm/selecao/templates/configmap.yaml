@@ -9,3 +9,6 @@ metadata:
 data:
   ASPNETCORE_ENVIRONMENT: {{ .Values.env.ASPNETCORE_ENVIRONMENT }}
   ASPNETCORE_URLS: {{ .Values.env.ASPNETCORE_URLS }}
+  {{- range $index, $origin := .Values.cors.allowedOrigins }}
+  Cors__AllowedOrigins__{{ $index }}: {{ $origin | quote }}
+  {{- end }}

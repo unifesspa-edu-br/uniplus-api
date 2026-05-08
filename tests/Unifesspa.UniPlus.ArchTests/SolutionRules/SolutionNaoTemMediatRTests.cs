@@ -67,6 +67,9 @@ public sealed class SolutionNaoTemMediatRTests
             typeof(Ingresso.Domain.Entities.Chamada).Assembly,
             typeof(Ingresso.Infrastructure.Persistence.IngressoDbContext).Assembly,
             typeof(Ingresso.API.IngressoApiAssemblyMarker).Assembly,
+            typeof(Portal.Domain.PortalDomainAssemblyMarker).Assembly,
+            typeof(Portal.Infrastructure.Persistence.PortalDbContext).Assembly,
+            typeof(Portal.API.PortalApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();
