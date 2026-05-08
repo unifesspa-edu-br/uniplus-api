@@ -2,9 +2,18 @@ name: Publish Images
 
 # Publica imagens das APIs no GitHub Container Registry conforme ADR-0050.
 #
-# Triggers:
-#   - push em main          → tags: sha-<7>, main, latest
-#   - push em tag v*        → tags: sha-<7>, v<major>.<minor>.<patch>, v<major>.<minor>, v<major>
+# Trigger único: push em tag v* (ex.: v0.1.0). Push em main NÃO publica —
+# disciplina de release explícito, sem rolling tag mutável. Tags devem
+# apontar para commits em main (operacional, não enforçado pelo workflow).
+#
+# Tags publicadas para cada release v<X>.<Y>.<Z>:
+#   - sha-<7>             identidade imutável do commit
+#   - v<X>.<Y>.<Z>        release exata (imutável)
+#   - v<X>.<Y>            pin de minor (rola com patches)
+#   - v<X>                pin de major (rola com minors+patches)
+#
+# Sem `latest`, sem `main` — ArgoCD pina semver, devs usam compose local
+# com build-by-context.
 #
 # Imagens publicadas:
 #   - ghcr.io/<owner>/uniplus-api-selecao
@@ -13,8 +22,6 @@ name: Publish Images
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
 
@@ -24,8 +31,8 @@ permissions:
   id-token: write
 
 concurrency:
-  # Não cancela publishes em curso — perda de tag mutável (main/latest) nunca é
-  # aceitável. Concurrency só serializa builds da mesma ref.
+  # Tags semver são imutáveis; o concurrency aqui só protege contra dois
+  # workflows tentando publicar a MESMA tag por race condition (force-push).
   group: publish-images-${{ github.ref }}
   cancel-in-progress: false
 
@@ -63,17 +70,18 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/uniplus-api-${{ matrix.module }}
           # Política de tagging: ver ADR-0050.
-          # - sha-<7>      : sempre (tag imutável para pinar em ArgoCD)
-          # - main         : apenas em push em main (canal de DEV)
-          # - v<semver>    : apenas em git tag v* (release imutável)
-          # - latest       : apenas em main (nunca em tags v*)
+          # - sha-<7>          : identidade imutável do commit (sempre)
+          # - v<X>.<Y>.<Z>     : release exata (imutável)
+          # - v<X>.<Y>         : pin de minor (rola com patches)
+          # - v<X>             : pin de major (rola com minors+patches)
+          # Sem `latest` e sem `main` — disciplina semver explícita.
+          flavor: |
+            latest=false
           tags: |
             type=sha,format=short,prefix=sha-
-            type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=uniplus-api-${{ matrix.module }}
             org.opencontainers.image.description=Módulo ${{ matrix.module }} da API do Uni+ (Sistema Unificado Unifesspa)
