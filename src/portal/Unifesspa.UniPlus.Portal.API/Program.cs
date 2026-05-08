@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 using Serilog;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
@@ -28,6 +30,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
+
+// TimeProvider — registrado explicitamente porque Selecao/Ingresso o ganham
+// indiretamente via AddCursorPagination/AddIdempotency, mas o Portal (esqueleto)
+// não invoca nenhum dos dois. Sem este TryAdd, PingController e o handler de
+// /api/profile/me (TimeProvider clock) falham na ativação. TryAddSingleton
+// preserva overrides de teste (ex.: FakeTimeProvider) — alinhado com o
+// padrão usado em CursorPaginationServiceCollectionExtensions e
+// IdempotencyServiceCollectionExtensions.
+builder.Services.TryAddSingleton(TimeProvider.System);
 
 builder.Services.AddEndpointsApiExplorer();
 // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers Uni+
