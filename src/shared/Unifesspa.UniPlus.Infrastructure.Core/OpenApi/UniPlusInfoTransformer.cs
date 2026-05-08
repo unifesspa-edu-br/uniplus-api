@@ -32,6 +32,7 @@ public sealed class UniPlusInfoTransformer : IOpenApiDocumentTransformer
         {
             "selecao" => "Uni+ — Módulo Seleção",
             "ingresso" => "Uni+ — Módulo Ingresso",
+            "portal" => "Uni+ — Módulo Portal",
             _ => $"Uni+ — {context.DocumentName}",
         };
 

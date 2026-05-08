@@ -15,6 +15,7 @@ public sealed class UniPlusInfoTransformerTests
     [Theory]
     [InlineData("selecao", "Uni+ — Módulo Seleção")]
     [InlineData("ingresso", "Uni+ — Módulo Ingresso")]
+    [InlineData("portal", "Uni+ — Módulo Portal")]
     [InlineData("custom", "Uni+ — custom")]
     public async Task TransformAsync_Should_AssignTitlePerDocumentName(string documentName, string expectedTitle)
     {
