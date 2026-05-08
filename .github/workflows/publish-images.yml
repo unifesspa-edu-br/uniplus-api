@@ -77,27 +77,41 @@ jobs:
           # Sem `latest` e sem `main` — disciplina semver explícita.
           flavor: |
             latest=false
+          # Patterns prefixadas com `v` literal — `{{version}}` em
+          # docker/metadata-action remove o `v` da tag git, então
+          # `pattern={{version}}` em refs/tags/v1.2.3 produz `1.2.3`. Usar
+          # `pattern=v{{version}}` mantém o `v` exigido pela ADR-0050.
           tags: |
             type=sha,format=short,prefix=sha-
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}}.{{minor}}
+            type=semver,pattern=v{{major}}
           labels: |
             org.opencontainers.image.title=uniplus-api-${{ matrix.module }}
             org.opencontainers.image.description=Módulo ${{ matrix.module }} da API do Uni+ (Sistema Unificado Unifesspa)
             org.opencontainers.image.vendor=Universidade Federal do Sul e Sudeste do Pará (Unifesspa)
             org.opencontainers.image.licenses=AGPL-3.0-or-later
 
-      - name: Build e push da imagem
-        id: build
+      # Build em duas fases para validar ANTES de tornar a tag pública:
+      # 1. Build com push=false e load=true → imagem fica no daemon Docker local
+      # 2. Smoke test contra a imagem local (liveness probe)
+      # 3. Build com push=true → reusa cache, publica no GHCR após smoke verde
+      #
+      # O cache GHA torna o segundo build praticamente instantâneo (ele só
+      # exporta o manifest para o registry; layers já estão no GHA cache).
+      # Sem isso, uma imagem que falhe no smoke já estaria publicada como
+      # v<X>.<Y>.<Z> imutável no GHCR.
+
+      - name: Build local (sem push) para smoke
+        id: build_local
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
           platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: false
+          load: true
+          tags: smoke/uniplus-api-${{ matrix.module }}:ci
           # Cache scoped por módulo: builds independentes não invalidam cache uns
           # dos outros (cada Dockerfile copia src/<module>/ separadamente).
           cache-from: type=gha,scope=${{ matrix.module }}
@@ -107,9 +121,10 @@ jobs:
         # Liveness (/health/live) só verifica que o processo está vivo — não
         # depende de Postgres/Kafka/Redis, válido em CI sem infra. /health
         # agregado é responsabilidade do gate de Helm/Kubernetes.
+        # Roda contra a imagem local (smoke/...:ci), antes do push para GHCR.
         run: |
           set -euo pipefail
-          IMAGE_REF=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          IMAGE_REF="smoke/uniplus-api-${{ matrix.module }}:ci"
           echo "Smoke testing: $IMAGE_REF"
           docker run -d \
             --name "smoke-${{ matrix.module }}" \
@@ -132,6 +147,20 @@ jobs:
           docker logs "smoke-${{ matrix.module }}" || true
           docker stop "smoke-${{ matrix.module }}" > /dev/null || true
           exit 1
+
+      - name: Push para GHCR (após smoke verde)
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.${{ matrix.module }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Reusa o cache do build_local — segundo build é praticamente
+          # instantâneo (apenas resolve manifest e push das layers já em cache).
+          cache-from: type=gha,scope=${{ matrix.module }}
 
       - name: Resumo
         if: always()

@@ -53,9 +53,15 @@ Apenas `linux/amd64`. ARM (`linux/arm64`) está deferido até existir cluster AR
 
 Build cache via `type=gha` (GitHub Actions cache backend) com `scope=<module>` por matriz. Cada módulo tem cache isolado — alterar `Directory.Packages.props` invalida os 3 caches; alterar só `src/portal/` invalida apenas o cache do portal.
 
-## Smoke test
+## Smoke test (gate antes do push)
 
-Após o push, cada imagem é instanciada via `docker run` com `ASPNETCORE_URLS=http://+:8080` e `ASPNETCORE_ENVIRONMENT=Production`. O step espera até 30s para `/health/live` responder 200.
+O workflow constrói cada imagem em duas fases para evitar publicar tags imutáveis de uma imagem que falha no smoke:
+
+1. **Build local** com `push: false` + `load: true` — imagem fica no daemon Docker do runner como `smoke/uniplus-api-<module>:ci`.
+2. **Smoke test** contra a imagem local: `docker run` com `ASPNETCORE_URLS=http://+:8080` + `ASPNETCORE_ENVIRONMENT=Production`, espera até 30s por `/health/live` responder 200.
+3. **Push para GHCR** com as tags semver — só roda se o smoke passou. Reusa o cache GHA do build local, então o segundo build é praticamente instantâneo.
+
+Se o smoke falhar, **nenhuma tag chega ao GHCR**. Sem republish 5min depois, sem `v<X>.<Y>.<Z>` imutável apontando para uma imagem quebrada.
 
 `/health/live` é a sonda de **liveness**: só verifica que o processo .NET está vivo e o Kestrel está respondendo. **Não** depende de Postgres, Kafka ou Redis — por isso é seguro rodar em CI sem infra.
 
