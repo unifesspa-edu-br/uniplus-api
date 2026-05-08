@@ -39,7 +39,13 @@ secrets:
   authAuthority: ""
 
 healthcheck:
-  path: /health
+  # Liveness usa endpoint dependency-free (sem checks externos) para evitar
+  # restart loops quando OIDC/DB/Kafka oscilam — apenas confirma que o
+  # processo .NET continua respondendo. Readiness usa o /health agregado
+  # com todos os checks (OIDC, Postgres, Kafka, Redis), removendo o pod
+  # do Service quando dependência transitória cai sem reiniciá-lo.
+  livenessPath: /health/live
+  readinessPath: /health
   initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 5

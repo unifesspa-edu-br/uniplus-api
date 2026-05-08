@@ -50,7 +50,8 @@ Pre-requisito obrigatório 2 — configuração de CORS:
       compose já injeta as variáveis correspondentes (porta 5302).
 
 Endpoints expostos pela API após o pod ficar Ready:
-  GET /health                    -> health check agregado
+  GET /health/live               -> liveness (dependency-free, sempre 200 enquanto vivo)
+  GET /health                    -> readiness (agregado: OIDC, Postgres, Kafka, Redis)
   GET /api/portal/ping           -> endpoint dummy para validar OpenAPI
   GET /openapi/portal.json       -> documento OpenAPI 3.1
   GET /api/auth/me               -> claims do token (autenticado)
