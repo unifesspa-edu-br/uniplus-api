@@ -58,14 +58,20 @@ Build cache via `type=gha` (GitHub Actions cache backend) com `scope=<module>` p
 O workflow constrói cada imagem em duas fases para evitar publicar tags imutáveis de uma imagem que falha no smoke:
 
 1. **Build local** com `push: false` + `load: true` — imagem fica no daemon Docker do runner como `smoke/uniplus-api-<module>:ci`.
-2. **Smoke test** contra a imagem local: `docker run` com `ASPNETCORE_URLS=http://+:8080` + `ASPNETCORE_ENVIRONMENT=Production`, espera até 30s por `/health/live` responder 200.
-3. **Push para GHCR** com as tags semver — só roda se o smoke passou. Reusa o cache GHA do build local, então o segundo build é praticamente instantâneo.
+2. **Validação estrutural** (sem rodar o app):
+   - `docker create` — manifest + layers íntegros
+   - `docker inspect` confirma `Config.User` ≠ vazio e ≠ `root`
+   - `docker inspect` confirma `Config.Entrypoint` referencia uma DLL `Unifesspa.UniPlus.*`
+   - `dotnet --info` no runtime da imagem (override do entrypoint) — confirma que o runtime .NET 10 está presente e funcional
+3. **Push para GHCR** com as tags semver — só roda se a validação passou. Reusa o cache GHA do build local, então o segundo build é praticamente instantâneo.
 
-Se o smoke falhar, **nenhuma tag chega ao GHCR**. Sem republish 5min depois, sem `v<X>.<Y>.<Z>` imutável apontando para uma imagem quebrada.
+Se a validação falhar, **nenhuma tag chega ao GHCR**.
 
-`/health/live` é a sonda de **liveness**: só verifica que o processo .NET está vivo e o Kestrel está respondendo. **Não** depende de Postgres, Kafka ou Redis — por isso é seguro rodar em CI sem infra.
+### Por que não rodamos `/health/live` em runtime aqui
 
-A sonda de readiness completa (`/health` agregado, com checagem de Postgres/Kafka/Redis/MinIO) é exercida no cluster Kubernetes via Helm — fora do escopo deste workflow.
+A primeira versão do gate tentou `docker run` + curl em `/health/live` e falhou: `Wolverine` valida `ConnectionStrings:*Db` ao construir o host (em `UseWolverineOutboxCascading`), então o app crasha em startup sem um Postgres real ao lado. Para rodar liveness no workflow, seria necessário subir sidecars Postgres + Kafka + Redis em cada entrada da matriz — overhead alto que duplica trabalho que o `docker compose` pós-publish e o Helm em cluster já fazem com infra completa.
+
+A sonda de readiness completa (`/health` agregado, com checagem de Postgres/Kafka/Redis/MinIO) é exercida em compose pós-publish (manualmente ou via deploy de HML) e no cluster Kubernetes via Helm — fora do escopo deste workflow.
 
 ## Como consumir
 
