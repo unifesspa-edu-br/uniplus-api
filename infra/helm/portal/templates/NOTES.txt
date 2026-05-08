@@ -4,7 +4,7 @@ Release: {{ .Release.Name }}
 Namespace: {{ .Release.Namespace }}
 Service: {{ .Release.Name }}-portal-api ({{ .Values.service.type }} :{{ .Values.service.port }} -> :{{ .Values.service.targetPort }})
 
-Pre-requisito obrigatório (provisionamento externo de segredo):
+Pre-requisito obrigatório 1 — provisionamento externo de Secret:
   Este chart espera que um Kubernetes Secret com o nome
     {{ .Release.Name }}-portal-secrets
   já exista no namespace {{ .Release.Namespace }} antes do `helm install`.
@@ -22,6 +22,21 @@ Pre-requisito obrigatório (provisionamento externo de segredo):
     Storage__AccessKey
     Storage__SecretKey
     Auth__Authority                 # https://<keycloak>/realms/unifesspa
+
+Pre-requisito obrigatório 2 — configuração de CORS:
+  Em produção (ASPNETCORE_ENVIRONMENT=Production, default deste chart),
+  Program.cs invoca AddCorsConfiguration(...).ValidateOnStart() — o app
+  recusa subir com Cors:AllowedOrigins vazio. O operador deve injetar
+  pelo menos uma origem confiável via env var em formato indexado:
+
+    Cors__AllowedOrigins__0         # https://portal.unifesspa.edu.br
+    Cors__AllowedOrigins__1         # https://outra-origem (opcional)
+
+  Recomendação: colocar essas chaves no ConfigMap (não são segredo —
+  são URLs públicas), seja extendendo o ConfigMap deste chart via
+  overlay/kustomize, seja referenciando outro ConfigMap externo no
+  Deployment. Sem isso, os pods crashloopam no startup com
+  OptionsValidationException.
 
   Estratégia recomendada de provisionamento:
     - PROD/HML: External Secrets Operator (ESO) sincronizando do HashiCorp
