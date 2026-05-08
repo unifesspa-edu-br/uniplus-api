@@ -155,11 +155,15 @@ jobs:
           docker create --name "smoke-${{ matrix.module }}" "$IMAGE_REF" >/dev/null
 
           USER_FIELD=$(docker inspect -f '{{.Config.User}}' "smoke-${{ matrix.module }}")
-          if [ -z "$USER_FIELD" ] || [ "$USER_FIELD" = "root" ]; then
-            echo "::error::Imagem roda como root ou USER vazio (got: '$USER_FIELD')"
-            docker rm "smoke-${{ matrix.module }}" >/dev/null
-            exit 1
-          fi
+          # USER pode ser: '' (default root), 'root', 'root:gid', '0' (uid root),
+          # '0:0' / '0:N' (uid root + qualquer gid). Todos significam root.
+          case "$USER_FIELD" in
+            ""|"root"|"root:"*|"0"|"0:"*)
+              echo "::error::Imagem roda como root ou USER não definido (got: '$USER_FIELD')"
+              docker rm "smoke-${{ matrix.module }}" >/dev/null
+              exit 1
+              ;;
+          esac
           echo "✓ Non-root user: $USER_FIELD"
 
           ENTRYPOINT=$(docker inspect -f '{{.Config.Entrypoint}}' "smoke-${{ matrix.module }}")
