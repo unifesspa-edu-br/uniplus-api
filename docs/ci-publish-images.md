@@ -1,6 +1,6 @@
 # CI — Publicação de imagens Docker
 
-Documento operacional sobre o workflow `.github/workflows/publish-images.yml`. As decisões binding (registry, naming, tagging, retention) vivem em [ADR-0050](adrs/0050-registry-ghcr-e-tagging.md) — este guia explica **como o workflow opera** e **como consumir** as imagens publicadas.
+Documento operacional sobre o workflow `.github/workflows/publish-images.yml`. As decisões binding (registry, naming, tagging, retention) vivem em [ADR-0050](adrs/0050-registry-ghcr-e-tagging.md) — este guia explica **como o workflow opera**, **como publicar** uma nova versão e **como consumir** as imagens publicadas.
 
 ## Imagens publicadas
 
@@ -12,14 +12,38 @@ Documento operacional sobre o workflow `.github/workflows/publish-images.yml`. A
 
 Visibilidade: pública (espelha o repositório).
 
-## Triggers e tags publicadas
+## Trigger único — push de tag `v*`
+
+O workflow **só dispara** em `push` de tag que case com `v*` (ex.: `v0.1.0`, `v1.2.3`). **Push em `main` não publica imagem.** Disciplina de release explícito — sem rolling tag mutável, sem ambiguidade sobre "qual é o estado atual de DEV".
 
 | Evento | Tags geradas |
 |---|---|
-| `push` em `main` | `sha-<7>`, `main`, `latest` |
-| `push` em tag `v<semver>` (ex.: `v1.2.3`) | `sha-<7>`, `v1.2.3`, `v1.2`, `v1` |
+| `push` em tag `v<X>.<Y>.<Z>` | `sha-<7>`, `v<X>.<Y>.<Z>`, `v<X>.<Y>`, `v<X>` |
 
-A tag `sha-<7>` é **sempre imutável** e é a recomendada para ArgoCD pinar em ambientes promovidos. `main` e `latest` são canais mutáveis para DEV. Tags `v*` representam releases e nunca devem ser sobrescritas — release branch protection é responsabilidade do operador (não force-push em tags publicadas).
+Sem `latest`, sem `main` — `v<X>` já fornece soft-pinning automático que rola com patches/minors do mesmo major. ArgoCD em ambiente promovido pina `v<X>.<Y>.<Z>` ou `sha-<7>` explicitamente.
+
+## Como publicar uma nova versão
+
+Pré-requisito: o commit alvo já está em `main` (mergeado via PR).
+
+```bash
+# 1. Atualiza local
+git checkout main && git pull origin main
+
+# 2. Cria a tag anotada (signed se chave configurada)
+git tag -a v0.1.0 -m "Release v0.1.0 — primeiro publish dos 3 módulos"
+
+# 3. Publica a tag
+git push origin v0.1.0
+```
+
+O workflow inicia automaticamente. Em ~5–10 minutos, as 3 imagens estão em GHCR com 4 tags cada (`sha-<7>`, `v0.1.0`, `v0.1`, `v0`).
+
+**Reverter:** tags são imutáveis no GHCR uma vez publicadas. Para revogar uma release, publique uma versão imediatamente posterior (`v0.1.1`) com o conteúdo correto. Não fazer `git push --force` em tag publicada.
+
+## Como devs/ambientes locais usam
+
+Para DEV local não há imagem publicada — devs constroem via `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up`, que faz build com contexto local e roda em rede com Postgres/Redis/Kafka/Keycloak.
 
 ## Plataformas
 
@@ -42,10 +66,10 @@ A sonda de readiness completa (`/health` agregado, com checagem de Postgres/Kafk
 ### Pull anônimo (visibilidade pública)
 
 ```bash
-docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:main
+docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:v0.1.0
 ```
 
-### Pin por SHA (recomendado em produção)
+### Pin por SHA (auditoria SHA-perfeita)
 
 ```bash
 docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:sha-1a2b3c4
@@ -58,11 +82,11 @@ Configurar em `values.yaml`:
 ```yaml
 image:
   repository: ghcr.io/unifesspa-edu-br/uniplus-api-selecao
-  tag: sha-1a2b3c4   # imutável para promoção entre ambientes
+  tag: v0.1.0          # release explícita; alternativa: sha-1a2b3c4 para SHA pin
   pullPolicy: IfNotPresent
 ```
 
-ArgoCD ApplicationSet atualiza `image.tag` por sync — não usar `latest` em ambiente promovido.
+ArgoCD ApplicationSet atualiza `image.tag` por sync — sempre semver explícito ou SHA, nunca canal mutável.
 
 ### Listar tags disponíveis
 
@@ -74,8 +98,8 @@ gh api /orgs/unifesspa-edu-br/packages/container/uniplus-api-selecao/versions \
 ## Observações operacionais
 
 - **Permissões do `GITHUB_TOKEN`:** `contents: read`, `packages: write`, `id-token: write` (este último prepara o terreno para attestation OIDC futura).
-- **Concurrency:** publishes da mesma `ref` são serializados (`cancel-in-progress: false`) — perda de tag mutável (`main`/`latest`) nunca é aceitável.
-- **Cleanup:** GHCR retention manual é responsabilidade futura. Política planejada: `v*` indefinido, `sha-*` 30 dias, `<branch>` purga ao deletar branch — ver [ADR-0050 § Consequências](adrs/0050-registry-ghcr-e-tagging.md#negativas).
+- **Concurrency:** `cancel-in-progress: false` — protege contra dois workflows tentando publicar a mesma tag por race (force-push). Tags semver são imutáveis após publicadas; force-push em tag é uma operação que ninguém deve fazer.
+- **Cleanup:** GHCR retention manual é responsabilidade futura. Política planejada: `v*` indefinido, `sha-*` 30 dias — ver [ADR-0050 § Consequências](adrs/0050-registry-ghcr-e-tagging.md#negativas).
 
 ## Próximos passos (deferidos)
 

@@ -39,7 +39,18 @@ A organização já valida o GHCR como registry institucional via imagem compost
 
 **Escolhida:** "GHCR (`ghcr.io/unifesspa-edu-br/uniplus-api-<modulo>`)", porque é o único registry já em produção na organização (imagem composta do Keycloak), tem custo zero para repositórios públicos, autentica via `GITHUB_TOKEN` sem credencial extra e elimina latência de decisão para destravar a Fase 5.
 
-A convenção de naming dedicada por módulo `uniplus-api-<modulo>` evita o anti-padrão de uma única imagem multipropósito e permite Helm chart per-app sem ramificação. As tags publicadas combinam **uma tag imutável** (`sha-<7-curto>`) que ArgoCD pode pinar, **uma tag de canal** (`main` em push para `main`, `<branch-sanitizado>` em PRs internos opt-in) para promoção contínua em DEV, e **uma tag de release** (`v<major>.<minor>.<patch>`) gerada apenas quando o repositório recebe `git tag v*`. A tag `latest` é publicada apenas em push para `main`, **não** em PRs nem em tags `v*` — evita ambiguidade de "qual versão é latest".
+A convenção de naming dedicada por módulo `uniplus-api-<modulo>` evita o anti-padrão de uma única imagem multipropósito e permite Helm chart per-app sem ramificação.
+
+**Trigger de publish:** o workflow só dispara em `push` de tag `v*` (ex.: `v0.1.0`). Push em `main` **não** publica imagem. Disciplina de release explícito — sem rolling tag mutável, sem ambiguidade sobre "qual é o estado atual de DEV". Devs que precisam de imagem de DEV constroem localmente via `docker compose` com build context. ArgoCD e Helm em qualquer ambiente sempre pinam um semver ou um sha — nunca um canal mutável.
+
+**Tags publicadas para cada release `v<X>.<Y>.<Z>`:**
+
+- `sha-<7-curto>` — identidade imutável do commit (sempre publicada)
+- `v<X>.<Y>.<Z>` — release exata (imutável)
+- `v<X>.<Y>` — pin de minor (rola com patches subsequentes)
+- `v<X>` — pin de major (rola com minors+patches subsequentes)
+
+Sem `latest` — convenção é dispensável quando `v<X>` já fornece soft-pinning automático e ArgoCD pina sempre `v<X>.<Y>.<Z>` (ou `sha-*`) explicitamente. Sem `main` — nenhum consumidor produtivo deve apontar para um canal de branch que muda em cada merge.
 
 Multi-arch fica restrito a `linux/amd64` neste momento; `linux/arm64` é deferido até existir cluster ARM ou demanda concreta de Apple Silicon em CI. SBOM e attestation (cosign keyless via OIDC do GitHub) ficam parqueados como follow-up — registrados em backlog mas fora do escopo de unblock.
 
@@ -68,11 +79,12 @@ Multi-arch fica restrito a `linux/amd64` neste momento; `linux/arm64` é deferid
 
 Verificável por:
 
-- Workflow `.github/workflows/publish-images.yml` presente e verde em push para `main`
-- `gh api /orgs/unifesspa-edu-br/packages?package_type=container --jq '.[].name'` lista `uniplus-api-selecao` e `uniplus-api-ingresso`
-- `docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:main` funciona sem auth (visibilidade pública)
-- Tag de release `v0.1.0` aplicada via `git tag` produz imagem `ghcr.io/unifesspa-edu-br/uniplus-api-selecao:v0.1.0`
-- Helm chart consome tag por `Values.image.tag` sem hardcode
+- Workflow `.github/workflows/publish-images.yml` presente, sem trigger em `push: branches`, apenas em `push: tags v*`
+- `gh api /orgs/unifesspa-edu-br/packages?package_type=container --jq '.[].name'` lista `uniplus-api-{selecao,ingresso,portal}` após o primeiro `git tag v* && git push --tags`
+- `docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:v0.1.0` funciona sem auth (visibilidade pública)
+- `docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:main` falha com 404 — `main` **não** é tag publicada
+- Tag de release `v0.1.0` produz simultaneamente `:v0.1.0`, `:v0.1`, `:v0` e `:sha-<7>`
+- Helm chart consome tag por `Values.image.tag` (semver explícito), sem hardcode e sem `latest`
 
 ## Prós e contras das opções
 
