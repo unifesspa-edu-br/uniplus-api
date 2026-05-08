@@ -43,6 +43,8 @@ A convenção de naming dedicada por módulo `uniplus-api-<modulo>` evita o anti
 
 **Trigger de publish:** o workflow só dispara em `push` de tag `v*` (ex.: `v0.1.0`). Push em `main` **não** publica imagem. Disciplina de release explícito — sem rolling tag mutável, sem ambiguidade sobre "qual é o estado atual de DEV". Devs que precisam de imagem de DEV constroem localmente via `docker compose` com build context. ArgoCD e Helm em qualquer ambiente sempre pinam um semver ou um sha — nunca um canal mutável.
 
+**Tag deve apontar para commit em `main` (enforçado pelo workflow):** o primeiro step da matriz roda `git merge-base --is-ancestor "$GITHUB_SHA" origin/main` e falha o job antes de qualquer build se a tag for aplicada a commit que não está em `main`. Isso evita que um operador tagee acidentalmente um commit de feature branch e publique imagem silenciosamente. Tags `v*` são imutáveis no GHCR após o primeiro push, então o gate precisa ser do lado do CI — não confiar no operador.
+
 **Tags publicadas para cada release `v<X>.<Y>.<Z>`:**
 
 - `sha-<7-curto>` — identidade imutável do commit (sempre publicada)
@@ -84,6 +86,7 @@ Verificável por:
 - `docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:v0.1.0` funciona sem auth (visibilidade pública)
 - `docker pull ghcr.io/unifesspa-edu-br/uniplus-api-selecao:main` falha com 404 — `main` **não** é tag publicada
 - Tag de release `v0.1.0` produz simultaneamente `:v0.1.0`, `:v0.1`, `:v0` e `:sha-<7>`
+- Tag aplicada em commit fora de `main` (ex.: feature branch) faz o workflow falhar no step "Validar que a tag aponta para commit em main" — nada é publicado
 - Helm chart consome tag por `Values.image.tag` (semver explícito), sem hardcode e sem `latest`
 
 ## Prós e contras das opções
