@@ -172,7 +172,12 @@ jobs:
 
           docker rm "smoke-${{ matrix.module }}" >/dev/null
 
-          docker run --rm --entrypoint /usr/bin/dotnet "$IMAGE_REF" --info | head -3
+          # Não pipear `head -N` aqui: com set -euo pipefail, head fechando o
+          # pipe cedo gera SIGPIPE no docker run (exit 141), que pipefail
+          # propaga como falha do step — bloqueia publish mesmo com runtime
+          # saudável. Saída de `dotnet --info` é verbose (~30 linhas) e o
+          # exit code já é o sinal que precisamos. Descartamos stdout.
+          docker run --rm --entrypoint /usr/bin/dotnet "$IMAGE_REF" --info >/dev/null
           echo "✓ Runtime .NET responde"
 
       - name: Push para GHCR (após smoke verde)
