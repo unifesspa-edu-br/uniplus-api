@@ -69,6 +69,15 @@ app.MapSharedAuthEndpoints();
 app.MapSharedProfileEndpoints();
 app.MapControllers();
 app.MapOpenApi("/openapi/{documentName}.json");
+// Liveness dependency-free: 200 enquanto o processo está respondendo, sem
+// avaliar checks externos (OIDC, Postgres, Kafka, Redis). Predicate => false
+// resulta em healthy quando nenhum check passa pelo filtro — exatamente o
+// comportamento que queremos para evitar restart loops do Kubernetes
+// quando uma dependência transient cai. Readiness mantém o /health agregado.
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false,
+});
 app.MapHealthChecks("/health");
 
 await app.RunAsync();

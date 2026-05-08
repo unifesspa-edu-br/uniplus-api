@@ -34,7 +34,7 @@ spec:
                 name: {{ .Release.Name }}-selecao-secrets
           livenessProbe:
             httpGet:
-              path: {{ .Values.healthcheck.path }}
+              path: {{ .Values.healthcheck.livenessPath }}
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.healthcheck.initialDelaySeconds }}
             periodSeconds: {{ .Values.healthcheck.periodSeconds }}
@@ -42,7 +42,7 @@ spec:
             failureThreshold: {{ .Values.healthcheck.failureThreshold }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.healthcheck.path }}
+              path: {{ .Values.healthcheck.readinessPath }}
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 5
             periodSeconds: 5
