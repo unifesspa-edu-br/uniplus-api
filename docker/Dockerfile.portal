@@ -1,0 +1,40 @@
+# ---- Restore + Build ----
+FROM mcr.microsoft.com/dotnet/sdk:10.0.100 AS build
+WORKDIR /src
+
+# Copiar arquivos de configuração da solution
+# .editorconfig é necessário porque políticas por glob (ex.: CA1812 em Controllers/)
+# vivem nele — sem ele o build dentro do container reverte às severidades default.
+COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig ./
+
+# Copiar csproj para restore otimizado (cache de camadas)
+COPY src/shared/ src/shared/
+COPY src/portal/ src/portal/
+
+# Restaurar dependências
+RUN dotnet restore src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj
+
+# Copiar código-fonte e compilar
+COPY src/shared/ src/shared/
+COPY src/portal/ src/portal/
+RUN dotnet publish src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj \
+    -c Release \
+    -o /app/publish
+
+# ---- Runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# Instalar curl para health checks e criar usuário não-root
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
+
+COPY --from=build /app/publish .
+
+# Configurar usuário não-root
+USER appuser
+
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "Unifesspa.UniPlus.Portal.API.dll"]

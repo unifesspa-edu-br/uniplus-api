@@ -1,0 +1,6 @@
+apiVersion: v2
+name: uniplus-portal
+description: API do módulo Portal do Sistema Unificado UniPlus
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

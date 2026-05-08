@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-portal-config
+  labels:
+    app: {{ .Release.Name }}-portal-api
+    app.kubernetes.io/name: uniplus-portal
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.env.ASPNETCORE_ENVIRONMENT }}
+  ASPNETCORE_URLS: {{ .Values.env.ASPNETCORE_URLS }}
