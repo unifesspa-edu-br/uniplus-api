@@ -26,17 +26,18 @@ Pre-requisito obrigatório 1 — provisionamento externo de Secret:
 Pre-requisito obrigatório 2 — configuração de CORS:
   Em produção (ASPNETCORE_ENVIRONMENT=Production, default deste chart),
   Program.cs invoca AddCorsConfiguration(...).ValidateOnStart() — o app
-  recusa subir com Cors:AllowedOrigins vazio. O operador deve injetar
-  pelo menos uma origem confiável via env var em formato indexado:
+  recusa subir com Cors:AllowedOrigins vazio. Defina pelo menos uma
+  origem confiável em values.yaml (`cors.allowedOrigins`) — o ConfigMap
+  renderiza cada entrada como Cors__AllowedOrigins__<i>. Exemplo:
 
-    Cors__AllowedOrigins__0         # https://portal.unifesspa.edu.br
-    Cors__AllowedOrigins__1         # https://outra-origem (opcional)
+    cors:
+      allowedOrigins:
+        - https://portal.unifesspa.edu.br
+        - https://uniplus.unifesspa.edu.br
 
-  Recomendação: colocar essas chaves no ConfigMap (não são segredo —
-  são URLs públicas), seja extendendo o ConfigMap deste chart via
-  overlay/kustomize, seja referenciando outro ConfigMap externo no
-  Deployment. Sem isso, os pods crashloopam no startup com
-  OptionsValidationException.
+  Sem essa configuração, os pods crashloopam no startup com
+  OptionsValidationException. Os charts uniplus-selecao e uniplus-ingresso
+  seguem o mesmo contrato (`cors.allowedOrigins`).
 
   Estratégia recomendada de provisionamento:
     - PROD/HML: External Secrets Operator (ESO) sincronizando do HashiCorp

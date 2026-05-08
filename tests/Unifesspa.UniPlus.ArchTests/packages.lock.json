@@ -1136,6 +1136,31 @@
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },
+      "unifesspa.uniplus.portal.api": {
+        "type": "Project",
+        "dependencies": {
+          "FluentValidation": "[12.1.1, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
+          "Serilog.AspNetCore": "[10.0.0, )",
+          "Unifesspa.UniPlus.Portal.Infrastructure": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.portal.domain": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.portal.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.5, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "Unifesspa.UniPlus.Portal.Domain": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.selecao.api": {
         "type": "Project",
         "dependencies": {

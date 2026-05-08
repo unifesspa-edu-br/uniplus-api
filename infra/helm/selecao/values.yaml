@@ -22,6 +22,13 @@ env:
   ASPNETCORE_ENVIRONMENT: Production
   ASPNETCORE_URLS: http://+:8080
 
+# Origens confiáveis para a política de CORS. Em ASPNETCORE_ENVIRONMENT
+# diferente de Development, AddCorsConfiguration().ValidateOnStart() rejeita
+# lista vazia — sem ao menos uma entrada o pod crashloopa no startup.
+# Cada item vira a env var Cors__AllowedOrigins__<i> via ConfigMap.
+cors:
+  allowedOrigins: []
+
 secrets:
   connectionString: ""
   redisConnection: ""

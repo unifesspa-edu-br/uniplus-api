@@ -36,6 +36,7 @@ public sealed partial class DominioNaoUsaGuidNewGuidTests
             Path.Combine(solutionRoot, "src", "shared", "Unifesspa.UniPlus.Kernel"),
             Path.Combine(solutionRoot, "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain"),
             Path.Combine(solutionRoot, "src", "ingresso", "Unifesspa.UniPlus.Ingresso.Domain"),
+            Path.Combine(solutionRoot, "src", "portal", "Unifesspa.UniPlus.Portal.Domain"),
         ];
 
         List<string> violations = [];
