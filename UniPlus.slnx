@@ -11,6 +11,11 @@
     <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Domain/Unifesspa.UniPlus.Selecao.Domain.csproj" />
     <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/portal/">
+    <Project Path="src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj" />
+    <Project Path="src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
+    <Project Path="src/portal/Unifesspa.UniPlus.Portal.Infrastructure/Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/shared/">
     <Project Path="src/shared/Unifesspa.UniPlus.Application.Abstractions/Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <Project Path="src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
