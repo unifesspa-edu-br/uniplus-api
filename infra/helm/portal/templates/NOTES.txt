@@ -1,0 +1,46 @@
+Uni+ Portal API — chart {{ .Chart.Version }} (app {{ .Chart.AppVersion }})
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Service: {{ .Release.Name }}-portal-api ({{ .Values.service.type }} :{{ .Values.service.port }} -> :{{ .Values.service.targetPort }})
+
+Pre-requisito obrigatório (provisionamento externo de segredo):
+  Este chart espera que um Kubernetes Secret com o nome
+    {{ .Release.Name }}-portal-secrets
+  já exista no namespace {{ .Release.Namespace }} antes do `helm install`.
+  O Deployment monta o Secret via envFrom (templates/deployment.yaml:33-34) —
+  sem o Secret pré-existente, os pods do Portal falham com
+  "secret not found" e nunca atingem o estado Ready.
+
+  O Secret deve conter as seguintes chaves (.NET ConfigurationProvider
+  resolve cada uma como variável de ambiente equivalente):
+
+    ConnectionStrings__PortalDb     # Host=...;Database=uniplus_portal;Username=...;Password=...
+    Redis__ConnectionString         # host:port
+    Kafka__BootstrapServers         # host1:9092,host2:9092
+    Storage__Endpoint               # MinIO/S3 endpoint
+    Storage__AccessKey
+    Storage__SecretKey
+    Auth__Authority                 # https://<keycloak>/realms/unifesspa
+
+  Estratégia recomendada de provisionamento:
+    - PROD/HML: External Secrets Operator (ESO) sincronizando do HashiCorp
+      Vault. A integração ESO/Vault é responsabilidade da Story de stand-up
+      do Vault (cross-charts). Até lá, criar o Secret manualmente com
+      `kubectl create secret generic {{ .Release.Name }}-portal-secrets
+      --from-literal=...`.
+    - Dev local: usar `docker compose -f docker/docker-compose.yml
+      -f docker/docker-compose.override.yml` em vez do chart Helm — o
+      compose já injeta as variáveis correspondentes (porta 5302).
+
+Endpoints expostos pela API após o pod ficar Ready:
+  GET /health                    -> health check agregado
+  GET /api/portal/ping           -> endpoint dummy para validar OpenAPI
+  GET /openapi/portal.json       -> documento OpenAPI 3.1
+  GET /api/auth/me               -> claims do token (autenticado)
+  GET /api/profile/me            -> perfil consolidado (autenticado)
+
+Para verificar se os pods subiram corretamente:
+  kubectl --namespace {{ .Release.Namespace }} get pods -l app={{ .Release.Name }}-portal-api
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-portal-api {{ .Values.service.port }}:{{ .Values.service.port }}
+  curl http://localhost:{{ .Values.service.port }}/health
