@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Portal.API.Errors;
 using Unifesspa.UniPlus.Portal.Infrastructure;
+using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -87,6 +88,12 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
     Predicate = _ => false,
 });
 app.MapHealthChecks("/health");
+
+// Aplica migrations EF Core do módulo Portal antes de aceitar tráfego — pareado com
+// AutoBuildMessageStorageOnStartup do Wolverine (issue #344). Idempotente; banco já
+// migrado é no-op. Coordenação entre réplicas concorrentes é responsabilidade do
+// EF Core / provider Npgsql via __EFMigrationsHistory.
+await app.Services.ApplyMigrationsAsync<PortalDbContext>();
 
 await app.RunAsync();
 

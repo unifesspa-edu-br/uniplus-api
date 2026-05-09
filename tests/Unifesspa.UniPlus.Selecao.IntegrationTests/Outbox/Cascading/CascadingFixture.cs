@@ -55,9 +55,10 @@ public sealed class CascadingFixture : IAsyncLifetime
         // Cria o schema do domínio Selecao no Postgres efêmero ANTES do host
         // Wolverine inicializar — sem isso há disputa de timing com o
         // PostgresqlTransport e o handler reporta `relation "editais" does not exist`.
-        // O schema do Wolverine ("wolverine.*") é criado pelo próprio framework
-        // no primeiro despacho; auto-build de produção fica off-by-default
-        // conforme documentado em WolverineOutboxConfiguration.
+        // O schema do Wolverine (`wolverine.*`) agora é provisionado no startup pelo
+        // próprio framework via `AutoBuildMessageStorageOnStartup = CreateOrUpdate`
+        // (issue #344) — antes ficava off-by-default e era criado lazy no primeiro
+        // despacho, o que era origem de timing flakiness em testes outbox.
         DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
             .UseNpgsql(ConnectionString)
             .Options;

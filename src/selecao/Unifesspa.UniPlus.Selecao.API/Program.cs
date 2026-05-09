@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine.Kafka;
 using Wolverine.Postgresql;
@@ -138,6 +139,11 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
     Predicate = _ => false,
 });
 app.MapHealthChecks("/health");
+
+// Aplica migrations EF Core do módulo Selecao antes de aceitar tráfego (issue #344).
+// Idempotente; banco já migrado é no-op. Coordenação entre réplicas concorrentes é
+// responsabilidade do EF Core / provider Npgsql via __EFMigrationsHistory.
+await app.Services.ApplyMigrationsAsync<SelecaoDbContext>();
 
 await app.RunAsync();
 
