@@ -141,10 +141,17 @@ public static class WolverineOutboxConfiguration
             // Wolverine não atravessam esse pipeline.
             opts.AddCommandQueryMiddleware();
 
-            // Schema do Wolverine NÃO é auto-criado em runtime nesta camada
-            // produtiva — provisioning é responsabilidade do deploy. Testes
-            // integrados controlam o schema via fixture explícita; ver
-            // CascadingFixture no projeto de testes.
+            // Schema do Wolverine (tabelas wolverine_outgoing_envelopes, wolverine_incoming_envelopes,
+            // wolverine_node_assignments etc.) é auto-criado/atualizado no startup — issue #344.
+            // Idempotente: Wolverine inspeciona o schema atual e aplica apenas o delta. Múltiplas
+            // réplicas startando simultaneamente são coordenadas pelo lock interno do framework.
+            //
+            // Decisão (#344): em ambientes Uni+ não há orquestração de schema externa ao host
+            // (sem step de "dotnet ef database update" no Helm chart), então delegar a criação
+            // ao próprio host é o caminho mais simples e racional para destravar bring-up de
+            // pods com banco vazio (standalone/lab). EF Core migrations dos módulos são
+            // aplicadas em paralelo por ApplyMigrationsAsync<TContext> no Program.cs.
+            opts.AutoBuildMessageStorageOnStartup = JasperFx.AutoCreate.CreateOrUpdate;
 
             // Lê a seção uma única vez aqui — ValidateOnStart no DI não atinge este callback
             // (UseWolverine roda no Build, antes de StartAsync). Validação inline replica

@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Ingresso.API.Errors;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
+using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -80,6 +81,11 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
     Predicate = _ => false,
 });
 app.MapHealthChecks("/health");
+
+// Aplica migrations EF Core do módulo Ingresso antes de aceitar tráfego (issue #344).
+// Idempotente; banco já migrado é no-op. Coordenação entre réplicas concorrentes é
+// responsabilidade do EF Core / provider Npgsql via __EFMigrationsHistory.
+await app.Services.ApplyMigrationsAsync<IngressoDbContext>();
 
 await app.RunAsync();
 
