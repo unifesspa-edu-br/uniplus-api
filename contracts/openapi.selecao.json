@@ -89,6 +89,70 @@
         }
       }
     },
+    "/api/_smoke/storage/upload": {
+      "post": {
+        "tags": [
+          "_smoke"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/_smoke/cache/{key}": {
+      "get": {
+        "tags": [
+          "_smoke"
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/_smoke/messaging/publish": {
+      "post": {
+        "tags": [
+          "_smoke"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/editais": {
       "post": {
         "tags": [
@@ -573,6 +637,10 @@
           }
         }
       },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -678,6 +746,9 @@
     },
     {
       "name": "Profile"
+    },
+    {
+      "name": "_smoke"
     },
     {
       "name": "Edital"
