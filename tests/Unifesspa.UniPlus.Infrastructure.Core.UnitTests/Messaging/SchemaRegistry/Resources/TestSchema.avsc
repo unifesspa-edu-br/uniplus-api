@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "namespace": "test.unit.schema",
+  "name": "TestSchema",
+  "fields": [
+    {"name": "Id", "type": "string"}
+  ]
+}

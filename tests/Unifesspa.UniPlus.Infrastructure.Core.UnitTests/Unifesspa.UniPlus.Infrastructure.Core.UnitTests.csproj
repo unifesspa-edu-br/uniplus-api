@@ -22,6 +22,11 @@
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
   </ItemGroup>
 
+  <!-- Schemas Avro embedded usados por SchemaRegistrationHostedServiceTests (#362) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Messaging\SchemaRegistry\Resources\*.avsc" />
+  </ItemGroup>
+
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
