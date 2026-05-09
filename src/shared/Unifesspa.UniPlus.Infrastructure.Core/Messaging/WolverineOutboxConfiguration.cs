@@ -88,13 +88,17 @@ public static class WolverineOutboxConfiguration
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringName);
         ArgumentException.ThrowIfNullOrWhiteSpace(kafkaConfigSection);
 
-        // Guarda contra a forma legada deste parâmetro (até o #343 era a chave inteira do
-        // bootstrap, p.ex. "Kafka:BootstrapServers"). Bind silencioso de uma chave completa
-        // como seção devolveria um KafkaSettings vazio e desligaria o transporte sem aviso.
-        if (kafkaConfigSection.Contains(':', StringComparison.Ordinal))
+        // Guarda contra a forma legada exata deste parâmetro (até o #343 era a chave inteira do
+        // bootstrap — `"Kafka:BootstrapServers"` — definida na const `DefaultKafkaConfigKey`).
+        // Bind silencioso dessa chave terminal como se fosse o nome de uma seção devolveria um
+        // `KafkaSettings` vazio e desligaria o transporte sem aviso. Restringimos a guarda ao
+        // sufixo `:BootstrapServers` para preservar paths legítimos de seção aninhada
+        // (ex.: `"Messaging:Kafka"`), que `IConfiguration.GetSection` suporta nativamente.
+        if (kafkaConfigSection.EndsWith(":BootstrapServers", StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException(
-                $"kafkaConfigSection '{kafkaConfigSection}' parece um caminho de chave. Passe o nome da seção (ex.: 'Kafka').",
+                $"kafkaConfigSection '{kafkaConfigSection}' parece a forma legada do parâmetro (chave terminal `Kafka:BootstrapServers`). "
+                + "Passe o nome da seção (ex.: 'Kafka' ou 'Messaging:Kafka').",
                 nameof(kafkaConfigSection));
         }
 

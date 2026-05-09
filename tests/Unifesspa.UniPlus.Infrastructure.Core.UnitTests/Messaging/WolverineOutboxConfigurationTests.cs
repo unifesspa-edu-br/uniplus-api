@@ -55,21 +55,52 @@ public sealed class WolverineOutboxConfigurationTests
         WolverineOutboxConfiguration.RequiresClientConfig(settings).Should().BeTrue();
     }
 
-    [Fact]
-    public void UseWolverineOutboxCascading_KafkaConfigSectionComPath_DeveLancarArgumentException()
+    [Theory]
+    [InlineData("Kafka:BootstrapServers")]
+    [InlineData("Messaging:Kafka:BootstrapServers")]
+    [InlineData("kafka:bootstrapservers")]
+    public void UseWolverineOutboxCascading_KafkaConfigSectionComFormaLegada_DeveLancarArgumentException(string legado)
     {
-        // Guarda contra regressão da assinatura legada (kafkaConfigKey="Kafka:BootstrapServers").
-        // Bind silencioso de chave completa como seção devolveria KafkaSettings vazio e
-        // desligaria Kafka sem aviso — preferimos failure clara.
+        // Guarda contra regressão da assinatura legada (`Kafka:BootstrapServers` era o valor da
+        // const `DefaultKafkaConfigKey` antes do #343). Bind silencioso dessa chave terminal como
+        // seção devolveria `KafkaSettings` vazio e desligaria Kafka sem aviso — preferimos failure
+        // clara que orienta a migração.
         IHostBuilder host = Host.CreateDefaultBuilder();
         IConfiguration cfg = new ConfigurationBuilder().Build();
 
         Action acao = () => host.UseWolverineOutboxCascading(
             cfg,
             connectionStringName: "PortalDb",
-            kafkaConfigSection: "Kafka:BootstrapServers");
+            kafkaConfigSection: legado);
 
         acao.Should().Throw<ArgumentException>()
-            .WithMessage("*kafkaConfigSection*caminho de chave*");
+            .WithMessage("*forma legada*");
+    }
+
+    [Theory]
+    [InlineData("Kafka")]
+    [InlineData("Messaging:Kafka")]
+    [InlineData("Modules:Selecao:Kafka")]
+    public void UseWolverineOutboxCascading_KafkaConfigSectionAninhada_DeveAceitarPath(string sectionPath)
+    {
+        // Paths aninhados (`Messaging:Kafka`, `Modules:Selecao:Kafka`) são endereços válidos de
+        // seção em `IConfiguration.GetSection` e devem passar pela guarda. O método pode falhar
+        // depois por falta de connection string, mas NÃO no guard de seção.
+        IHostBuilder host = Host.CreateDefaultBuilder();
+        IConfiguration cfg = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:PortalDb"] = "Host=localhost;Port=5432;Database=x;Username=u;Password=p",
+            })
+            .Build();
+
+        Action acao = () => host.UseWolverineOutboxCascading(
+            cfg,
+            connectionStringName: "PortalDb",
+            kafkaConfigSection: sectionPath);
+
+        // Não levanta a `ArgumentException` da guarda. Pode levantar outras exceções do Wolverine
+        // ao build, fora do escopo deste teste — só verificamos que o guard NÃO disparou.
+        acao.Should().NotThrow<ArgumentException>(because: $"path aninhado '{sectionPath}' é válido para IConfiguration.GetSection");
     }
 }
