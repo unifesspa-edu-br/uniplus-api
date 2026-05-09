@@ -114,6 +114,11 @@ builder.Host.UseWolverineOutboxCascading(
     });
 builder.Services.AddWolverineMessaging();
 
+// Migrations EF Core do módulo Selecao aplicadas no host StartAsync via IHostedService
+// (issue #344). Como hosted service, o registro é filtrável por test factories que sobem
+// o pipeline HTTP sem Postgres real (ver ApiFactoryBase). Idempotente.
+builder.Services.AddDbContextMigrationsOnStartup<SelecaoDbContext>();
+
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 
@@ -139,11 +144,6 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
     Predicate = _ => false,
 });
 app.MapHealthChecks("/health");
-
-// Aplica migrations EF Core do módulo Selecao antes de aceitar tráfego (issue #344).
-// Idempotente; banco já migrado é no-op. Coordenação entre réplicas concorrentes é
-// responsabilidade do EF Core / provider Npgsql via __EFMigrationsHistory.
-await app.Services.ApplyMigrationsAsync<SelecaoDbContext>();
 
 await app.RunAsync();
 
