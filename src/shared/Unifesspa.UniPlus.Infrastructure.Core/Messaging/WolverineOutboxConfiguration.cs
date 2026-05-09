@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 using Middleware;
 
@@ -26,12 +28,12 @@ public static class WolverineOutboxConfiguration
     public const string PersistenceSchema = "wolverine";
 
     /// <summary>
-    /// Chave em <see cref="IConfiguration"/> de onde o bootstrap servers Kafka é
-    /// lido por padrão. Quando o valor é nulo, vazio ou whitespace, o transporte
-    /// Kafka não é registrado — útil para ambientes locais e testes que só
-    /// exercitam a queue PG.
+    /// Seção em <see cref="IConfiguration"/> de onde <see cref="KafkaSettings"/> é lida
+    /// por padrão. Quando <see cref="KafkaSettings.BootstrapServers"/> é vazio, o transporte
+    /// Kafka não é registrado — útil para ambientes locais e testes que só exercitam a queue PG.
     /// </summary>
-    public const string DefaultKafkaConfigKey = "Kafka:BootstrapServers";
+    public const string DefaultKafkaConfigSection = KafkaSettings.SectionName;
+
 
     /// <summary>
     /// Configura o host com Wolverine + outbox transacional Postgres + (opcional)
@@ -53,10 +55,10 @@ public static class WolverineOutboxConfiguration
     /// <param name="connectionStringName">Nome da connection string em
     /// <see cref="IConfiguration.GetConnectionString"/> (ex.: <c>"SelecaoDb"</c>,
     /// <c>"IngressoDb"</c>).</param>
-    /// <param name="kafkaConfigKey">Chave em <see cref="IConfiguration"/> onde o
-    /// bootstrap servers Kafka é lido. Se ausente/whitespace, o transporte Kafka
-    /// é desligado mantendo a queue PG ativa. Padrão:
-    /// <see cref="DefaultKafkaConfigKey"/>.</param>
+    /// <param name="kafkaConfigSection">Seção em <see cref="IConfiguration"/> ligada a
+    /// <see cref="KafkaSettings"/>. Se <see cref="KafkaSettings.BootstrapServers"/> for vazio,
+    /// o transporte Kafka é desligado mantendo a queue PG ativa. Padrão:
+    /// <see cref="DefaultKafkaConfigSection"/>.</param>
     /// <param name="configureRouting">Callback para roteamento específico do
     /// módulo (ex.: <c>opts.PublishMessage&lt;EditalPublicadoEvent&gt;()
     /// .ToPostgresqlQueue("domain-events")</c>). Executado depois das policies
@@ -78,13 +80,35 @@ public static class WolverineOutboxConfiguration
         this IHostBuilder host,
         IConfiguration configuration,
         string connectionStringName,
-        string kafkaConfigKey = DefaultKafkaConfigKey,
+        string kafkaConfigSection = DefaultKafkaConfigSection,
         Action<WolverineOptions>? configureRouting = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(kafkaConfigKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(kafkaConfigSection);
+
+        // Guarda contra a forma legada deste parâmetro (até o #343 era a chave inteira do
+        // bootstrap, p.ex. "Kafka:BootstrapServers"). Bind silencioso de uma chave completa
+        // como seção devolveria um KafkaSettings vazio e desligaria o transporte sem aviso.
+        if (kafkaConfigSection.Contains(':', StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                $"kafkaConfigSection '{kafkaConfigSection}' parece um caminho de chave. Passe o nome da seção (ex.: 'Kafka').",
+                nameof(kafkaConfigSection));
+        }
+
+        // Bind + valida KafkaSettings via DI/IOptions. ValidateOnStart roda no host start,
+        // antes de qualquer hosted service consumir o Kafka. Mensagens de validação reportadas
+        // no formato canônico do .NET (OptionsValidationException com lista de campos faltantes).
+        host.ConfigureServices(services =>
+        {
+            services.AddOptions<KafkaSettings>()
+                .Bind(configuration.GetSection(kafkaConfigSection))
+                .ValidateOnStart();
+
+            services.AddSingleton<IValidateOptions<KafkaSettings>, KafkaSettingsValidator>();
+        });
 
         return host.UseWolverine(opts =>
         {
@@ -118,13 +142,47 @@ public static class WolverineOutboxConfiguration
             // integrados controlam o schema via fixture explícita; ver
             // CascadingFixture no projeto de testes.
 
-            string? kafkaBootstrapServers = configuration[kafkaConfigKey];
-            if (!string.IsNullOrWhiteSpace(kafkaBootstrapServers))
+            // Lê a seção uma única vez aqui — ValidateOnStart no DI não atinge este callback
+            // (UseWolverine roda no Build, antes de StartAsync). Validação inline replica
+            // as regras essenciais para falhar antes do AutoProvision tentar conectar com
+            // config inválida; o IValidateOptions registrado acima garante o mesmo erro
+            // padronizado se outro consumidor resolver IOptions<KafkaSettings>.
+            KafkaSettings kafkaSettings = configuration.GetSection(kafkaConfigSection).Get<KafkaSettings>()
+                ?? new KafkaSettings();
+
+            if (string.IsNullOrWhiteSpace(kafkaSettings.BootstrapServers))
             {
-                opts.UseKafka(kafkaBootstrapServers).AutoProvision();
+                configureRouting?.Invoke(opts);
+                return;
             }
+
+            ValidateOptionsResult validation = new KafkaSettingsValidator().Validate(name: null, kafkaSettings);
+            if (validation.Failed)
+            {
+                throw new InvalidOperationException(
+                    $"Configuração Kafka inválida: {string.Join(" | ", validation.Failures ?? [])}");
+            }
+
+            KafkaTransportExpression kafka = opts.UseKafka(kafkaSettings.BootstrapServers);
+
+            // ConfigureClient só quando há sobrescritas a aplicar — evita registrar callback
+            // que mexe em propriedades default do Confluent.Kafka.ClientConfig.
+            if (RequiresClientConfig(kafkaSettings))
+            {
+                kafka = kafka.ConfigureClient(config => KafkaSecurity.Apply(config, kafkaSettings));
+            }
+
+            kafka.AutoProvision();
 
             configureRouting?.Invoke(opts);
         });
     }
+
+    internal static bool RequiresClientConfig(KafkaSettings settings) =>
+        !string.IsNullOrWhiteSpace(settings.SecurityProtocol)
+        || !string.IsNullOrWhiteSpace(settings.SaslMechanism)
+        || !string.IsNullOrWhiteSpace(settings.SaslUsername)
+        || !string.IsNullOrWhiteSpace(settings.SaslPassword)
+        || !string.IsNullOrWhiteSpace(settings.SslCaLocation)
+        || !string.IsNullOrWhiteSpace(settings.SslCaPem);
 }
