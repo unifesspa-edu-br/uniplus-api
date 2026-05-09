@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Messaging.SchemaRegist
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AwesomeAssertions;
@@ -36,10 +38,40 @@ public sealed class OAuthBearerAuthProviderDisposeHostedServiceTests
             logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance);
     }
 
-    [Fact(DisplayName = "StartAsync é no-op — retorna Task.CompletedTask sem tocar o provider")]
+    /// <summary>Cria provider com stub HTTP que responde 200 OK — útil para
+    /// verificar que o provider continua funcional (não disposed) executando
+    /// o caminho real que toca o SemaphoreSlim interno.</summary>
+    [SuppressMessage(
+        "Reliability",
+        "CA2000:Dispose objects before losing scope",
+        Justification = "Factory: ownership do provider passa ao caller (using); HttpClient é owned pelo provider.")]
+    private static OAuthBearerAuthenticationHeaderValueProvider CreateProviderWithStub(StubHttpMessageHandler handler)
+    {
+        string okResponse = JsonSerializer.Serialize(new
+        {
+            access_token = "jwt-test",
+            expires_in = 300,
+            token_type = "Bearer",
+        });
+        handler.EnqueueResponse(HttpStatusCode.OK, okResponse);
+
+        return new OAuthBearerAuthenticationHeaderValueProvider(
+            httpClient: new HttpClient(handler),
+            ownsHttpClient: true,
+            settings: new OAuthBearerSettings
+            {
+                ClientId = "test",
+                ClientSecret = "test",
+                TokenEndpoint = "https://kc.test/token",
+            },
+            logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance);
+    }
+
+    [Fact(DisplayName = "StartAsync é no-op — retorna Task concluída e provider continua funcional")]
     public async Task StartAsync_DeveSerNoOp()
     {
-        using OAuthBearerAuthenticationHeaderValueProvider provider = CreateProviderOwningHttpClient();
+        using StubHttpMessageHandler handler = new();
+        using OAuthBearerAuthenticationHeaderValueProvider provider = CreateProviderWithStub(handler);
         OAuthBearerAuthProviderDisposeHostedService sut = new(provider);
 
         Task task = sut.StartAsync(CancellationToken.None);
@@ -49,11 +81,16 @@ public sealed class OAuthBearerAuthProviderDisposeHostedServiceTests
         // runtimes, então BeSameAs flake-aria. Validar o que importa: já
         // completou síncrono e com sucesso.
         task.IsCompletedSuccessfully.Should().BeTrue(
-            because: "StartAsync é no-op síncrono — deve retornar Task já concluída sem efeito sobre o provider.");
+            because: "StartAsync é no-op síncrono — deve retornar Task já concluída.");
 
-        // Provider continua utilizável após StartAsync — não foi disposto.
-        Action probe = () => _ = provider.GetType();
-        probe.Should().NotThrow();
+        // Operação real que depende do estado não-disposto: GetAuthenticationHeader
+        // entra no caminho de refresh (cache cold), bate no SemaphoreSlim e dispara
+        // o request HTTP. Se StartAsync regredir e chamar Dispose(), esta linha
+        // lança ObjectDisposedException — falha observável (vs GetType() que
+        // sempre passa, mesmo após dispose).
+        Action realCall = () => _ = provider.GetAuthenticationHeader();
+        realCall.Should().NotThrow<ObjectDisposedException>(
+            because: "StartAsync deve ser no-op; provider precisa continuar funcional após StartAsync.");
 
         await Task.CompletedTask;
     }
