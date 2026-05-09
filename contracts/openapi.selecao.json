@@ -94,6 +94,9 @@
         "tags": [
           "_smoke"
         ],
+        "summary": "Smoke E2E \u2014 Storage upload",
+        "description": "Faz upload de um arquivo no bucket configurado para validar conectividade \u002B credentials do MinIO. Restrito a usu\u00E1rios com role admin.",
+        "operationId": "smokeStorageUpload",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -124,6 +127,9 @@
         "tags": [
           "_smoke"
         ],
+        "summary": "Smoke E2E \u2014 Cache probe",
+        "description": "Faz SET/GET de uma chave tempor\u00E1ria no Redis com TTL 5min para validar conectividade. Restrito a usu\u00E1rios com role admin.",
+        "operationId": "smokeCacheProbe",
         "parameters": [
           {
             "name": "key",
@@ -146,6 +152,9 @@
         "tags": [
           "_smoke"
         ],
+        "summary": "Smoke E2E \u2014 Messaging publish",
+        "description": "Publica um SmokePingMessage via Wolverine outbox para validar persist\u00EAncia \u002B transport (PG queue ou Kafka). O handler em Infrastructure.Core registra log do round-trip. Restrito a usu\u00E1rios com role admin.",
+        "operationId": "smokeMessagingPublish",
         "responses": {
           "200": {
             "description": "OK"

@@ -3,12 +3,10 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using StackExchange.Redis;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Caching;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 
@@ -17,7 +15,7 @@ using Wolverine;
 /// <summary>
 /// Endpoints smoke E2E para validação ponta-a-ponta de Storage (MinIO), Cache (Redis) e
 /// Messaging (Wolverine outbox + transport). Mapeados sob <c>/api/_smoke</c> e protegidos
-/// por papel <c>admin</c> via filter de endpoint que consulta <see cref="IUserContext"/>.
+/// por papel <c>admin</c> via policy <c>RequireRole</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,10 +23,12 @@ using Wolverine;
 /// validação pós-deploy). Considerar feature flag para desabilitar em hardening posterior.
 /// </para>
 /// <para>
-/// Authorization: <c>RequireAuthorization()</c> + filter de admin. O filter usa
-/// <see cref="IUserContext.HasRole"/> que parseia o claim Keycloak <c>realm_access.roles</c>,
-/// já implementado em <c>HttpUserContext</c>. Anônimos recebem 401 do middleware padrão;
-/// autenticados sem role admin recebem 403 do filter.
+/// Authorization: <c>RequireAuthorization(policy =&gt; policy.RequireRole("admin"))</c>. O
+/// claim role é populado pela <c>KeycloakRolesClaimsTransformation</c> (registrada por
+/// <c>AddOidcAuthentication</c>) que mapeia o claim Keycloak <c>realm_access.roles</c> para
+/// <c>ClaimTypes.Role</c>. A policy roda na pipeline de AuthZ middleware ANTES do model
+/// binding — anônimos recebem 401, autenticados sem role admin recebem 403, sem hidratar
+/// IFormFile/etc.
 /// </para>
 /// </remarks>
 public static class SmokeEndpointsExtensions
@@ -48,8 +48,7 @@ public static class SmokeEndpointsExtensions
 
         RouteGroupBuilder group = app
             .MapGroup("/api/_smoke")
-            .RequireAuthorization()
-            .AddEndpointFilter(EnsureAdminAsync)
+            .RequireAuthorization(policy => policy.RequireRole(AdminRole))
             .WithTags("_smoke");
 
         // Storage: PUT em bucket configurado, retorna location.
@@ -73,19 +72,6 @@ public static class SmokeEndpointsExtensions
             .WithDescription("Publica um SmokePingMessage via Wolverine outbox para validar persistência + transport (PG queue ou Kafka). O handler em Infrastructure.Core registra log do round-trip. Restrito a usuários com role admin.");
 
         return app;
-    }
-
-    private static async ValueTask<object?> EnsureAdminAsync(
-        EndpointFilterInvocationContext context,
-        EndpointFilterDelegate next)
-    {
-        IUserContext user = context.HttpContext.RequestServices.GetRequiredService<IUserContext>();
-        if (!user.HasRole(AdminRole))
-        {
-            return Results.Forbid();
-        }
-
-        return await next(context).ConfigureAwait(false);
     }
 
     private static async Task<IResult> UploadSmokeStorageAsync(
