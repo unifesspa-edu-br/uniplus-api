@@ -141,6 +141,14 @@ public static class WolverineOutboxConfiguration
             // Wolverine não atravessam esse pipeline.
             opts.AddCommandQueryMiddleware();
 
+            // Discovery do assembly Infrastructure.Core — handlers compartilhados (ex.:
+            // SmokePingHandler que processa SmokePingMessage publicada pelo endpoint
+            // /api/_smoke/messaging/publish do #346) ficam descobertos sem que cada
+            // Program.cs precise repetir o IncludeAssembly. Idempotente — assembly do
+            // entry já é scaneado por default; este registro é defensivo para handlers
+            // do Core.
+            opts.Discovery.IncludeAssembly(typeof(WolverineOutboxConfiguration).Assembly);
+
             // Schema do Wolverine (tabelas wolverine_outgoing_envelopes, wolverine_incoming_envelopes,
             // wolverine_node_assignments etc.) é auto-criado/atualizado no startup — issue #344.
             // Idempotente: Wolverine inspeciona o schema atual e aplica apenas o delta. Múltiplas
