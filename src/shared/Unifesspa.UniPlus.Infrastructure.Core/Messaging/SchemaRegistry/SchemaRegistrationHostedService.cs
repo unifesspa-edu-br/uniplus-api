@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.SchemaRegistry;
@@ -14,12 +16,17 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Comportamento fail-graceful:</b> se o Schema Registry estiver offline ou retornar
-/// erro de auth no boot, o serviço loga warning/error e <b>retorna</b> — o host segue
-/// subindo. O producer Wolverine vai tentar registrar o schema novamente em runtime na
-/// primeira mensagem (Confluent serdes faz isso transparentemente). Sem isso, o host
-/// trava em <c>StartAsync</c> sempre que o Apicurio reinicia, o que é inaceitável em
-/// produção.
+/// <b>Fail-graceful seletivo:</b> apenas falhas <i>transientes</i> (Apicurio offline,
+/// DNS lookup falhou, timeout do HttpClient — capturadas como
+/// <see cref="HttpRequestException"/>, <see cref="SocketException"/> ou
+/// <see cref="TaskCanceledException"/>) são silenciadas — o host segue subindo e o
+/// producer Wolverine retenta em runtime via Confluent serdes. Falhas
+/// <b>determinísticas</b> (<c>SchemaRegistryException</c> = auth 401/403,
+/// conflict 409, malformed 422; <see cref="InvalidOperationException"/> de embedded
+/// resource ausente; <c>AvroException</c> de schema inválido) <b>propagam e travam
+/// StartAsync</b> — release ruim não pode rodar em modo "degraded but accepting
+/// traffic". Sem o filtro, schemas com bug real entram em loop runtime de "fail to
+/// publish" e mensagens durables se acumulam silenciosamente no outbox.
 /// </para>
 /// <para>
 /// <b>Idempotência:</b> Apicurio aceita registrar o mesmo schema (byte-equal) múltiplas
@@ -84,12 +91,25 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
 
                 LogSchemaRegistered(logger, registration.Subject, schemaId);
             }
-#pragma warning disable CA1031 // Do not catch general exception types — fail-graceful por design (ver doc da classe).
-            catch (Exception ex)
+            // Fail-graceful **apenas** para falhas transientes — Apicurio offline,
+            // DNS lookup falhou, timeout do HttpClient. Confluent serdes faz retry
+            // em runtime quando o Registry voltar.
+            catch (HttpRequestException ex)
             {
-                LogSchemaRegistrationFailed(logger, registration.Subject, ex);
+                LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
             }
-#pragma warning restore CA1031
+            catch (SocketException ex)
+            {
+                LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException || ex.CancellationToken == default)
+            {
+                LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
+            }
+            // Falhas determinísticas (SchemaRegistryException = auth/conflict/malformed,
+            // InvalidOperationException = embedded resource ausente, AvroException =
+            // schema sintaticamente inválido) propagam e travam StartAsync — release
+            // ruim não pode rodar em modo "degraded but accepting traffic".
         }
     }
 
@@ -112,6 +132,6 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Falha ao registrar schema Avro no startup (continuando com host degradado — registro tentará novamente em runtime). Subject={Subject}")]
-    private static partial void LogSchemaRegistrationFailed(ILogger logger, string subject, Exception exception);
+        Message = "Falha transiente ao registrar schema Avro no startup (continuando com host degradado — registro tentará novamente em runtime via Confluent serdes). Subject={Subject}")]
+    private static partial void LogSchemaRegistrationTransientFailure(ILogger logger, string subject, Exception exception);
 }
