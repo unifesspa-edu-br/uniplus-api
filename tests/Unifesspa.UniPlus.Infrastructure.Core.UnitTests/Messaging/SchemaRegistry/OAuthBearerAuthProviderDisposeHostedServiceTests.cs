@@ -44,7 +44,13 @@ public sealed class OAuthBearerAuthProviderDisposeHostedServiceTests
 
         Task task = sut.StartAsync(CancellationToken.None);
 
-        task.Should().BeSameAs(Task.CompletedTask);
+        // Asserção de comportamento (não de identidade) — Task.CompletedTask
+        // não garante que cada acesso retorna a mesma instância em todos os
+        // runtimes, então BeSameAs flake-aria. Validar o que importa: já
+        // completou síncrono e com sucesso.
+        task.IsCompletedSuccessfully.Should().BeTrue(
+            because: "StartAsync é no-op síncrono — deve retornar Task já concluída sem efeito sobre o provider.");
+
         // Provider continua utilizável após StartAsync — não foi disposto.
         Action probe = () => _ = provider.GetType();
         probe.Should().NotThrow();
