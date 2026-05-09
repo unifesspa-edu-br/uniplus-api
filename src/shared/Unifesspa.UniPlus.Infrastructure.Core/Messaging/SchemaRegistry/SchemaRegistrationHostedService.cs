@@ -16,16 +16,26 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Fail-graceful seletivo:</b> apenas falhas <i>transientes</i> (Apicurio offline,
-/// DNS lookup falhou, timeout do HttpClient — capturadas como
-/// <see cref="HttpRequestException"/>, <see cref="SocketException"/> ou
-/// <see cref="TaskCanceledException"/>) são silenciadas — o host segue subindo e o
-/// producer Wolverine retenta em runtime via Confluent serdes. Falhas
-/// <b>determinísticas</b> (<c>SchemaRegistryException</c> = auth 401/403,
-/// conflict 409, malformed 422; <see cref="InvalidOperationException"/> de embedded
-/// resource ausente; <c>AvroException</c> de schema inválido) <b>propagam e travam
-/// StartAsync</b> — release ruim não pode rodar em modo "degraded but accepting
-/// traffic". Sem o filtro, schemas com bug real entram em loop runtime de "fail to
+/// <b>Fail-graceful seletivo:</b> apenas falhas transientes inspecionadas via
+/// <see cref="HttpRequestException.HttpRequestError"/> (<c>ConnectionError</c> =
+/// Apicurio offline / connection refused; <c>NameResolutionError</c> = DNS
+/// resolução falhou) + <see cref="SocketException"/> + timeout
+/// (<see cref="TaskCanceledException"/> com <see cref="TimeoutException"/> inner)
+/// são silenciadas — host segue subindo, Confluent serdes retenta em runtime
+/// quando o Registry voltar.
+/// </para>
+/// <para>
+/// <b>Falhas determinísticas propagam e travam <c>StartAsync</c>:</b>
+/// </para>
+/// <list type="bullet">
+/// <item><description><c>SchemaRegistryException</c> — auth 401/403, conflict 409, malformed 422</description></item>
+/// <item><description><see cref="HttpRequestException"/> com <c>SecureConnectionError</c> (TLS chain inválida), <c>HttpProtocolError</c>, <c>UserAuthenticationError</c> (cliente cert), <c>InvalidResponse</c>, <c>ProxyTunnelError</c></description></item>
+/// <item><description><see cref="InvalidOperationException"/> — embedded resource ausente, OAuth 4xx (config inválida)</description></item>
+/// <item><description><c>AvroException</c> — schema sintaticamente inválido</description></item>
+/// </list>
+/// <para>
+/// Release com config ruim não pode rodar em modo "degraded but accepting traffic" —
+/// sem o filtro, schemas/auth com bug real entram em loop runtime de "fail to
 /// publish" e mensagens durables se acumulam silenciosamente no outbox.
 /// </para>
 /// <para>
@@ -91,10 +101,19 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
 
                 LogSchemaRegistered(logger, registration.Subject, schemaId);
             }
-            // Fail-graceful **apenas** para falhas transientes — Apicurio offline,
-            // DNS lookup falhou, timeout do HttpClient. Confluent serdes faz retry
-            // em runtime quando o Registry voltar.
-            catch (HttpRequestException ex)
+            // Fail-graceful **apenas** para falhas transientes via inspeção do
+            // HttpRequestError — Apicurio offline (ConnectionError) ou DNS não
+            // resolveu (NameResolutionError). Confluent serdes faz retry em runtime
+            // quando o Registry voltar.
+            //
+            // Demais variantes (SecureConnectionError de TLS chain inválida,
+            // HttpProtocolError, UserAuthenticationError de cliente cert ausente,
+            // InvalidResponse, ProxyTunnelError) são determinísticas — propagam e
+            // travam StartAsync. Release com config TLS/proxy/cert ruim não pode
+            // rodar silenciosamente em modo "degraded but accepting traffic".
+            catch (HttpRequestException ex) when (
+                ex.HttpRequestError == HttpRequestError.ConnectionError
+                || ex.HttpRequestError == HttpRequestError.NameResolutionError)
             {
                 LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
             }
@@ -107,9 +126,9 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
                 LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
             }
             // Falhas determinísticas (SchemaRegistryException = auth/conflict/malformed,
-            // InvalidOperationException = embedded resource ausente, AvroException =
-            // schema sintaticamente inválido) propagam e travam StartAsync — release
-            // ruim não pode rodar em modo "degraded but accepting traffic".
+            // HttpRequestException com error codes não-recuperáveis, InvalidOperationException
+            // = embedded resource ausente, AvroException = schema sintaticamente inválido)
+            // propagam e travam StartAsync.
         }
     }
 
