@@ -73,18 +73,27 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
 
             if (DisableWolverineRuntimeForTests)
             {
-                // Wolverine registra o WolverineRuntime como IHostedService via
-                // factory (ImplementationFactory != null, ImplementationType == null),
-                // o que torna a inspeção por tipo concreto inviável. A heurística
-                // estável é casar pelo assembly da fábrica: factories registradas
-                // pelo próprio assembly Wolverine são removidas — o host inicializa
-                // sem startar o runtime e, portanto, sem disparar MigrateAsync,
-                // que tentaria conectar no Postgres configurado em
-                // PersistMessagesWithPostgresql.
+                // Dois IHostedService produtivos precisam ser removidos juntos quando o
+                // Postgres não está disponível no test host (default da maioria das suites
+                // de integração que só exercitam o pipeline HTTP):
+                //
+                // 1. Wolverine registra o WolverineRuntime como IHostedService via factory
+                //    (ImplementationFactory != null, ImplementationType == null). A heurística
+                //    estável é casar pelo assembly da fábrica.
+                // 2. MigrationHostedService<TContext> (issue #344) é registrado por
+                //    AddDbContextMigrationsOnStartup<T>() e dispara MigrateAsync no StartAsync.
+                //    Sem PG real, falha com "Connection refused" e derruba o factory antes do
+                //    primeiro teste. Reconhecemos pelo ImplementationType genérico.
+                //
+                // Suites que exercitam outbox real (CascadingFixture) sobrescrevem
+                // DisableWolverineRuntimeForTests=false e provisionam o PG efêmero — nesse
+                // caso AMBOS os hosted services rodam contra o banco da fixture.
                 ServiceDescriptor[] hostedToRemove = [.. services
                     .Where(d => d.ServiceType == typeof(IHostedService)
-                        && d.ImplementationFactory is not null
-                        && d.ImplementationFactory.Method.DeclaringType?.Assembly.GetName().Name == "Wolverine")];
+                        && (
+                            (d.ImplementationFactory is not null
+                                && d.ImplementationFactory.Method.DeclaringType?.Assembly.GetName().Name == "Wolverine")
+                            || IsMigrationHostedService(d.ImplementationType)))];
                 foreach (ServiceDescriptor svc in hostedToRemove)
                 {
                     services.Remove(svc);
@@ -92,6 +101,13 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
             }
         });
     }
+
+    private static bool IsMigrationHostedService(Type? implementationType) =>
+        implementationType is { IsGenericType: true }
+        && string.Equals(
+            implementationType.GetGenericTypeDefinition().FullName,
+            "Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection.MigrationHostedService`1",
+            StringComparison.Ordinal);
 
     /// <summary>
     /// Substitui o esquema de autenticação produtivo pelo <see cref="TestAuthHandler"/>, permitindo

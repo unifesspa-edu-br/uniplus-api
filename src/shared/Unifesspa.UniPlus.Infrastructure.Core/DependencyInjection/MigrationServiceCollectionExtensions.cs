@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
@@ -66,6 +68,31 @@ public static partial class MigrationServiceCollectionExtensions
 
             LogMigrationsApplied(logger, contextName);
         }
+    }
+
+    /// <summary>
+    /// Registra um <see cref="IHostedService"/> que aplica as migrations EF Core do
+    /// <typeparamref name="TContext"/> no <c>StartAsync</c> do host. Substitui o pattern de
+    /// chamar <see cref="ApplyMigrationsAsync{TContext}"/> diretamente em <c>Program.cs</c> —
+    /// como hosted service, o registro pode ser removido por test factories que sobem o
+    /// pipeline sem Postgres real (alinhado com a filtragem do <c>WolverineRuntime</c> em
+    /// <c>ApiFactoryBase</c>).
+    /// </summary>
+    /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, SelecaoDbContext, IngressoDbContext).</typeparam>
+    /// <param name="services">A coleção de serviços do host.</param>
+    /// <returns>A própria <paramref name="services"/> para encadeamento fluente.</returns>
+    public static IServiceCollection AddDbContextMigrationsOnStartup<TContext>(
+        this IServiceCollection services)
+        where TContext : DbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        // Singleton com TryAddEnumerable previne dupla-registração se Program.cs chamar duas
+        // vezes com o mesmo TContext (defesa em profundidade — Program.cs deve chamar uma só).
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IHostedService, MigrationHostedService<TContext>>());
+
+        return services;
     }
 
     [LoggerMessage(EventId = 3001, Level = LogLevel.Information, Message = "Nenhuma migration EF Core pendente para {Context}.")]
