@@ -92,14 +92,39 @@ SchemaRegistrySettings selecaoSrSettings = builder.Configuration
 // ADR-0051 estabelece que mensagens em tópicos cross-módulo do Uni+ vão sempre
 // como Avro com schema-id no envelope. Sem SR, o publishing seria silenciosamente
 // desligado — consumers cross-módulo parariam de receber sem qualquer erro no
-// boot. Falha imediata orientando o operador é o correto.
+// boot. Falha imediata orientando o operador é o correto em ambientes produtivos.
+//
+// Test factories (CascadingFixture e similares) sobem Wolverine com Kafka real
+// mas sem SR para testar cascading puro — em ASPNETCORE_ENVIRONMENT=Test/Development
+// degradamos para warning ao invés de exceção, mantendo o fail-fast para
+// Production/Staging/Standalone onde a config real do operador rege.
 bool kafkaEnabledForBuilder = !string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]);
-if (kafkaEnabledForBuilder && string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
+bool srMissing = string.IsNullOrWhiteSpace(selecaoSrSettings.Url);
+if (kafkaEnabledForBuilder && srMissing)
 {
-    throw new InvalidOperationException(
-        "Configuração inválida: Kafka:BootstrapServers populado mas SchemaRegistry:Url vazio. "
-        + "ADR-0051 exige Schema Registry para todo publishing cross-módulo. "
-        + "Configure SchemaRegistry:Url (ou desligue Kafka apagando Kafka:BootstrapServers).");
+    bool isProductiveEnvironment =
+        !builder.Environment.IsDevelopment()
+        && !string.Equals(builder.Environment.EnvironmentName, "Test", StringComparison.OrdinalIgnoreCase);
+
+    if (isProductiveEnvironment)
+    {
+        throw new InvalidOperationException(
+            "Configuração inválida: Kafka:BootstrapServers populado mas SchemaRegistry:Url vazio em "
+            + $"ASPNETCORE_ENVIRONMENT={builder.Environment.EnvironmentName}. "
+            + "ADR-0051 exige Schema Registry para todo publishing cross-módulo em ambientes produtivos. "
+            + "Configure SchemaRegistry:Url (ou desligue Kafka apagando Kafka:BootstrapServers).");
+    }
+
+    using ILoggerFactory missingSrLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
+    Microsoft.Extensions.Logging.ILogger missingSrLogger = missingSrLoggerFactory.CreateLogger("Selecao.API.Bootstrap");
+#pragma warning disable CA1848 // Bootstrap logging — fora do hot path; LoggerMessage source generator overkill aqui.
+#pragma warning disable CA2254 // Mensagem fixa após format de string interpolada — sem placeholders dinâmicos.
+    missingSrLogger.LogWarning(
+        "Kafka habilitado sem Schema Registry em ambiente {Env} — publishing Avro cross-módulo desligado. "
+        + "Esperado em test factory que isola cascading puro; sinal de bug em ambiente produtivo (ADR-0051).",
+        builder.Environment.EnvironmentName);
+#pragma warning restore CA2254
+#pragma warning restore CA1848
 }
 
 ISchemaRegistryClient? selecaoSrClient = null;

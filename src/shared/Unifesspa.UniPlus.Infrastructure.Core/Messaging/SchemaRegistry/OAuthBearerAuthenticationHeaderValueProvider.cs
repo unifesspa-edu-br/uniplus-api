@@ -147,9 +147,27 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
         if (!response.IsSuccessStatusCode)
         {
             string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            LogTokenRequestFailed(logger, settings.ClientId, (int)response.StatusCode, body);
+            int status = (int)response.StatusCode;
+            LogTokenRequestFailed(logger, settings.ClientId, status, body);
+
+            // 4xx = falha determinística (client_id/client_secret incorretos, scope inválido,
+            // realm errado, client desabilitado). Propagar como InvalidOperationException
+            // para que o consumidor (e.g. SchemaRegistrationHostedService) NÃO trate
+            // como transiente — release com config ruim deve travar StartAsync.
+            //
+            // 5xx = falha possivelmente transiente (Keycloak sob carga, restart em curso) —
+            // mantém HttpRequestException para fallback fail-graceful no caminho startup.
+            if (status >= 400 && status < 500)
+            {
+                throw new InvalidOperationException(
+                    $"OAuth client_credentials para Schema Registry recebeu status determinístico {status} "
+                    + "(config inválida — verifique ClientId/ClientSecret/TokenEndpoint/Scope no realm). "
+                    + $"ClientId={settings.ClientId}.");
+            }
+
             throw new HttpRequestException(
-                $"OAuth client_credentials para Schema Registry falhou. ClientId={settings.ClientId} Status={(int)response.StatusCode}.");
+                $"OAuth client_credentials para Schema Registry falhou com status transiente {status}. "
+                + $"ClientId={settings.ClientId}.");
         }
 
         TokenEndpointResponse? parsed = await response.Content
