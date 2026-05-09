@@ -79,6 +79,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0048](0048-controllers-mvc-public-com-ca1515-suprimido.md) | Controllers MVC em `*.API` devem ser `public`, com CA1515 suprimido por justificativa | accepted | 2026-05-05 |
 | [0049](0049-implementacao-hateoas-edital-resource-links-builder.md) | Implementação de HATEOAS Level 1 em `EditalDto` via `IResourceLinksBuilder<TDto>` na camada API | accepted | 2026-05-06 |
 | [0050](0050-registry-ghcr-e-tagging.md) | GitHub Container Registry e estratégia de tagging das imagens da `uniplus-api` | accepted | 2026-05-08 |
+| [0051](0051-apicurio-schema-registry-avro-wolverine.md) | Apicurio Schema Registry com Avro e Wolverine — schemas no Domain, registro idempotente, OAuth client_credentials | accepted | 2026-05-09 |
 
 ## Como adicionar um novo ADR
 

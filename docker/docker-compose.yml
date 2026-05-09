@@ -147,6 +147,31 @@ services:
       retries: 10
       start_period: 60s
 
+  apicurio:
+    # Apicurio Schema Registry — modo Confluent-compat para os clients .NET
+    # (Confluent.SchemaRegistry + Wolverine.Kafka.Serialization). Storage em
+    # memória para dev local — não é durável entre restarts; em standalone/HML/PROD
+    # o Postgres data-host é usado (apps/apicurio-registry chart no uniplus-infra).
+    # Endpoint Confluent-compat: http://localhost:8081/apis/ccompat/v7
+    # Auth desligada em dev (APICURIO_AUTH_ENABLED=false) — APIs locais usam
+    # SchemaRegistry__AuthType=None. ADR-0051.
+    image: apicurio/apicurio-registry:3.2.4
+    restart: unless-stopped
+    environment:
+      QUARKUS_HTTP_PORT: "8081"
+      APICURIO_STORAGE_KIND: "sql"
+      APICURIO_STORAGE_SQL_KIND: "h2"
+      APICURIO_AUTH_ENABLED: "false"
+      QUARKUS_OIDC_ENABLED: "false"
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8081 && echo -e 'GET /q/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && timeout 1 cat <&3 | grep -q '\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
 volumes:
   postgres_data:
   minio_data:
