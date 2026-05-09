@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -84,6 +85,11 @@ public static class OidcAuthenticationConfiguration
 
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpUserContext>();
+
+        // Mapeia realm_access.roles (formato Keycloak) → ClaimTypes.Role para que
+        // RequireRole("...") em policies funcione nativamente. Detalhes em
+        // KeycloakRolesClaimsTransformation. Idempotente.
+        services.AddTransient<IClaimsTransformation, KeycloakRolesClaimsTransformation>();
         // Variante required: lê do mesmo IUserContext mas falha-rápido em
         // request anônima. Use em handlers/controllers protegidos por
         // [Authorize] onde anônimo é estado impossível.
