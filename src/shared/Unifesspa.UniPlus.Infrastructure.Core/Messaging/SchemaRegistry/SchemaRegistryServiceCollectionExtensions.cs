@@ -73,13 +73,16 @@ public static class SchemaRegistryServiceCollectionExtensions
                 $"Configuração SchemaRegistry inválida: {string.Join(" | ", validation.Failures ?? [])}");
         }
 
-        // OAuth provider precisa de HttpClient próprio com timeout configurável —
-        // resolvido via IHttpClientFactory para cooperar com Polly/handlers globais.
+        // OAuth provider — registro defensivo via IHttpClientFactory cobre o caso em que
+        // o caller usa apenas AddSchemaRegistry sem chamar CreateClient antes (e.g.
+        // futuro módulo só com hosted service de registro). Quando CreateClient é
+        // invocado primeiro (path canônico em Selecao.API), ele já registrou a
+        // instância concreta do auth provider — TryAdd respeita.
         bool useOAuthBearer = string.Equals(settings.AuthType, "OAuthBearer", StringComparison.OrdinalIgnoreCase);
         if (useOAuthBearer)
         {
             services.AddHttpClient<OAuthBearerAuthenticationHeaderValueProvider>();
-            services.AddSingleton<IAuthenticationHeaderValueProvider>(static sp =>
+            services.TryAddSingleton<IAuthenticationHeaderValueProvider>(static sp =>
             {
                 IOptions<SchemaRegistrySettings> opts = sp.GetRequiredService<IOptions<SchemaRegistrySettings>>();
                 IHttpClientFactory factory = sp.GetRequiredService<IHttpClientFactory>();
@@ -134,18 +137,31 @@ public static class SchemaRegistryServiceCollectionExtensions
     /// ter sido construído).
     /// </summary>
     /// <remarks>
-    /// O caller é responsável pelo lifetime do cliente retornado. O recomendado é
-    /// registrá-lo como singleton no DI via <c>services.AddSingleton(client)</c>
-    /// antes de <see cref="AddSchemaRegistry"/> — o <c>TryAddSingleton</c> interno
-    /// respeita o registro prévio, evitando duplicação de cache. O hosted service
-    /// e o Wolverine routing usam então a mesma instância.
+    /// <para>
+    /// O caller registra o cliente retornado como singleton no DI; <see cref="AddSchemaRegistry"/>
+    /// usa <c>TryAddSingleton</c> e respeita o registro prévio, evitando duplicação de cache.
+    /// Hosted service e Wolverine routing usam então a mesma instância.
+    /// </para>
+    /// <para>
+    /// <b>Lifecycle de dependências standalone (#360):</b> quando <c>AuthType=OAuthBearer</c>,
+    /// o método cria internamente um <see cref="OAuthBearerAuthenticationHeaderValueProvider"/>
+    /// (que possui um <see cref="HttpClient"/> próprio com <c>ownsHttpClient: true</c>).
+    /// O <see cref="CachedSchemaRegistryClient"/> da Confluent <b>não dispõe</b> custom auth
+    /// providers em seu próprio <c>Dispose</c>. Para evitar leak de socket/handler em
+    /// processos que sobem/derrubam hosts repetidamente (e.g. <c>WebApplicationFactory</c> em
+    /// IntegrationTests com Apicurio Testcontainer), o auth provider é registrado em
+    /// <paramref name="services"/> como singleton — Microsoft.Extensions.DependencyInjection
+    /// dispõe singletons <see cref="IDisposable"/> automaticamente no shutdown do host.
+    /// </para>
     /// </remarks>
     public static ISchemaRegistryClient CreateClient(
         SchemaRegistrySettings settings,
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory,
+        IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(loggerFactory);
+        ArgumentNullException.ThrowIfNull(services);
 
         if (string.IsNullOrWhiteSpace(settings.Url))
         {
@@ -170,19 +186,23 @@ public static class SchemaRegistryServiceCollectionExtensions
 
         if (string.Equals(settings.AuthType, "OAuthBearer", StringComparison.OrdinalIgnoreCase))
         {
-            // HttpClient standalone — cliente é singleton (lifetime = host),
-            // ownership transferido para o auth provider (que dispõe via ownsHttpClient).
-            // O auth provider, por sua vez, vive enquanto o CachedSchemaRegistryClient
-            // vive (referência forte). Caller registra o cliente como singleton no DI;
-            // shutdown do host descarta toda a cadeia.
+            // HttpClient standalone — ownership transferido para o auth provider via
+            // ownsHttpClient: true. O provider, por sua vez, é registrado no DI
+            // abaixo para que o IHost dispõe via lifecycle de singleton IDisposable
+            // — necessário porque CachedSchemaRegistryClient.Dispose não dispõe
+            // custom auth providers (Codex P2 na review do PR #359, issue #360).
             HttpClient httpClient = new();
-#pragma warning disable CA2000 // analisador não rastreia ownership pelo flag ownsHttpClient nem a posse pelo CachedSchemaRegistryClient.
+#pragma warning disable CA2000 // ownership transferido para authProvider; authProvider vai pro DI logo abaixo.
             OAuthBearerAuthenticationHeaderValueProvider authProvider = new(
                 httpClient,
                 ownsHttpClient: true,
                 settings.OAuth,
                 loggerFactory.CreateLogger<OAuthBearerAuthenticationHeaderValueProvider>());
 #pragma warning restore CA2000
+
+            services.AddSingleton(authProvider);
+            services.AddSingleton<IAuthenticationHeaderValueProvider>(authProvider);
+
             return new CachedSchemaRegistryClient(config, authProvider);
         }
 
