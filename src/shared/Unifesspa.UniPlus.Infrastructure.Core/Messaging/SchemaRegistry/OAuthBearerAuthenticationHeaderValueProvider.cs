@@ -165,7 +165,14 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
                     + $"ClientId={settings.ClientId}.");
             }
 
+            // 5xx do token endpoint é transitivo — Keycloak sob carga, restart em curso.
+            // Marca explicitamente HttpRequestError.ConnectionError para que o
+            // SchemaRegistrationHostedService trate via fail-graceful (ConnectionError/
+            // NameResolutionError são os casos transientes filtrados). Sem o enum value
+            // explícito, HttpRequestError fica Unknown e o catch propaga, travando
+            // startup em incidente transitivo do Keycloak (boot avoidable failure).
             throw new HttpRequestException(
+                HttpRequestError.ConnectionError,
                 $"OAuth client_credentials para Schema Registry falhou com status transiente {status}. "
                 + $"ClientId={settings.ClientId}.");
         }
