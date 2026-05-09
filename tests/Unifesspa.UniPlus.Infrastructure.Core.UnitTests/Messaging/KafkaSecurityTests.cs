@@ -29,6 +29,12 @@ public sealed class KafkaSecurityTests
     [InlineData("   ")]
     [InlineData("MTLS")]
     [InlineData("SASL")]
+    // Strings numéricas: Enum.TryParse aceita por default, mas IsDefined garante que só
+    // nomes legítimos do enum passem. Sem isso, "999" parseia para SecurityProtocol)999 e
+    // vaza para ClientConfig, gerando falha tardia em runtime.
+    [InlineData("999")]
+    [InlineData("-1")]
+    [InlineData("100")]
     public void TryParseSecurityProtocol_RejeitaInvalido(string? raw)
     {
         bool ok = KafkaSecurity.TryParseSecurityProtocol(raw, out _);
@@ -56,6 +62,11 @@ public sealed class KafkaSecurityTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("DIGEST-MD5")]
+    // Strings numéricas fora do range nominal são rejeitadas pelo IsDefined (mesmo motivo
+    // documentado em TryParseSecurityProtocol_RejeitaInvalido).
+    [InlineData("999")]
+    [InlineData("-1")]
+    [InlineData("42")]
     public void TryParseSaslMechanism_RejeitaInvalido(string? raw)
     {
         bool ok = KafkaSecurity.TryParseSaslMechanism(raw, out _);
