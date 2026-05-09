@@ -158,7 +158,7 @@ public static class SchemaRegistryServiceCollectionExtensions
     [SuppressMessage(
         "Reliability",
         "CA2000:Dispose objects before losing scope",
-        Justification = "HttpClient e OAuthBearerAuthenticationHeaderValueProvider são ambos registrados como singletons no IServiceCollection passado — Microsoft.Extensions.DependencyInjection assume ownership e dispõe no shutdown do IHost. O analisador CA2000 não rastreia ownership via services.AddSingleton (roslyn-analyzers#5447). Factory delegate (idiomático) não é viável: o cliente é capturado eager no closure do callback de Wolverine UseWolverine, que roda antes de builder.Build() — IServiceProvider ainda não existe.")]
+        Justification = "HttpClient é owned pelo OAuthBearerAuthenticationHeaderValueProvider (ownsHttpClient: true). O auth provider é instanciado eager para captura no closure do callback Wolverine UseWolverine (que roda antes de builder.Build() — IServiceProvider não disponível) e seu lifecycle é gerenciado por OAuthBearerAuthProviderDisposeHostedService registrado em IServiceCollection: o container instancia o hosted service (e o dispõe no shutdown), e o hosted service dispõe explicitamente o auth provider em StopAsync. AddSingleton(instance) não dispõe — apenas registrations via tipo/factory dispõem (Microsoft DI guidelines, roslyn-analyzers#5447).")]
     public static ISchemaRegistryClient CreateClient(
         SchemaRegistrySettings settings,
         ILoggerFactory loggerFactory,
@@ -203,8 +203,16 @@ public static class SchemaRegistryServiceCollectionExtensions
                 settings.OAuth,
                 loggerFactory.CreateLogger<OAuthBearerAuthenticationHeaderValueProvider>());
 
+            // Registrations:
+            // - Singleton(instance) torna o auth provider resolvable via DI (mesma
+            //   instância usada eager no Wolverine routing). NÃO leva a dispose
+            //   automático (container não dispõe instâncias pré-criadas).
+            // - AddHostedService garante dispose: container instancia o hosted service
+            //   e o dispõe no shutdown; o hosted service chama Dispose() no provider.
+            //   IServiceCollection injeta authProvider via DI no construtor.
             services.AddSingleton(authProvider);
             services.AddSingleton<IAuthenticationHeaderValueProvider>(authProvider);
+            services.AddHostedService<OAuthBearerAuthProviderDisposeHostedService>();
 
             return new CachedSchemaRegistryClient(config, authProvider);
         }
