@@ -56,6 +56,18 @@ Sem `latest` — convenção é dispensável quando `v<X>` já fornece soft-pinn
 
 Multi-arch fica restrito a `linux/amd64` neste momento; `linux/arm64` é deferido até existir cluster ARM ou demanda concreta de Apple Silicon em CI. SBOM e attestation (cosign keyless via OIDC do GitHub) ficam parqueados como follow-up — registrados em backlog mas fora do escopo de unblock.
 
+**Estratégia de release: lockstep.** Uma tag `v<X>.<Y>.<Z>` dispara o build/publish das 3 imagens da matriz (`selecao`, `ingresso`, `portal`) simultaneamente, independentemente de qual módulo recebeu mudança no commit alvo. Todas as 3 imagens recebem o mesmo número de versão. A motivação:
+
+- *Auditoria simples*: um único número (`v0.1.2`) descreve o estado completo do produto em um momento. ArgoCD pina uma única tag e promove conjunto coerente entre ambientes.
+- *Sem drift*: per-app (ex.: `uniplus-api-portal:v0.1.2` + `uniplus-api-selecao:v0.1.5`) acumula tags em ritmos diferentes; o consumer perde a noção de "qual combinação de versões compõe a release X" e a auditoria precisa cruzar 3 streams de tags.
+- *Custo controlado*: o cache GHA `mode=max` com `scope=<module>` torna o rebuild de módulo não-tocado quase noop (~30–90s para resolver manifest e republicar layers já em cache). Em matriz de 3 módulos, ~3min adicionais na pior hipótese — uma vez por release.
+
+Paths-filter (skip de módulos não-tocados na matriz) foi rejeitado porque quebra a invariante "para toda tag `v<X>.<Y>.<Z>` publicada, existem 3 imagens com essa tag". Skip introduziria 404 em GHCR para módulos não-rebuilt — ArgoCD tentando `pull` em ambiente que pinou `v0.1.2` falharia e quebraria o sync de Helm.
+
+Cada release publica 3 manifestos com **digests diferentes** do release anterior, mesmo quando o conteúdo executável de um módulo não-tocado é byte-idêntico. Isso vem das labels OCI (`org.opencontainers.image.version`, `org.opencontainers.image.revision`, `created`) que mudam por release. Essa diferença é **intencional**: dá ao ArgoCD um sinal não-ambíguo de "uma nova versão chegou" mesmo sem mudança de código, e mantém auditoria de release coerente.
+
+Per-app versioning não está vetado, apenas deferido. Se a equipe um dia tiver releases muito assimétricas (ex.: portal evolui 10× mais rápido que ingresso) e o custo de ~3min por release lockstep se tornar limitante, esta ADR pode ser revista em ADR sucessora.
+
 ## Consequências
 
 ### Positivas
