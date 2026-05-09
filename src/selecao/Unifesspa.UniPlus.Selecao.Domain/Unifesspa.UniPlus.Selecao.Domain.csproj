@@ -4,4 +4,18 @@
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
   </ItemGroup>
 
+  <!--
+    Schemas Avro de eventos de domínio (ADR-0051).
+    Embedded resource consumido em runtime por:
+    - SchemaRegistrationHostedService (registra subjects no Apicurio no startup)
+    - Classes ISpecificRecord em Selecao.Infrastructure (Schema.Parse via manifest)
+
+    Domain não depende de Apache.Avro nem de qualquer cliente Schema Registry —
+    o .avsc é apenas texto carregado por consumidores externos via reflection
+    no assembly. Mantém a regra "Domain → SharedKernel apenas".
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Events\Schemas\*.avsc" />
+  </ItemGroup>
+
 </Project>

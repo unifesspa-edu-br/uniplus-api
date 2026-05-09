@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "namespace": "unifesspa.uniplus.selecao.events",
+  "name": "EditalPublicado",
+  "doc": "Evento Avro emitido quando um Edital atinge o estado Publicado. Subject Confluent SR: edital_events-value. Compatibilidade default: BACKWARD.",
+  "fields": [
+    {
+      "name": "EventId",
+      "type": "string",
+      "doc": "UUID v7 do evento (rastreabilidade fim-a-fim, idempotência cross-consumer)."
+    },
+    {
+      "name": "OccurredOn",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Instante de emissão UTC em milissegundos desde a epoch Unix."
+    },
+    {
+      "name": "EditalId",
+      "type": "string",
+      "doc": "UUID v7 do agregado Edital (chave estável cross-módulo)."
+    },
+    {
+      "name": "NumeroEdital",
+      "type": "string",
+      "doc": "Identificador humano do edital, e.g. \"001/2026\"."
+    }
+  ]
+}

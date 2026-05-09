@@ -1,5 +1,7 @@
 using Serilog;
 
+using Confluent.SchemaRegistry;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
@@ -7,6 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
+using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
@@ -16,9 +19,11 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine.Kafka;
+using Wolverine.Kafka.Serialization;
 using Wolverine.Postgresql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -74,6 +79,33 @@ builder.Services.AddSelecaoApplication();
 // InMemoryCollection sem precisar re-registrar o DbContext.
 builder.Services.AddSelecaoInfrastructure();
 
+// Schema Registry (ADR-0051) — feature off quando SchemaRegistry:Url está vazio.
+// Cliente único reutilizado pelo hosted service (registro idempotente no startup)
+// e pelo Wolverine routing (SchemaRegistryAvroSerializer no producer Kafka).
+// Singleton registrado ANTES do AddSchemaRegistry para que o TryAddSingleton
+// interno respeite a instância pré-criada e não duplique cache.
+SchemaRegistrySettings selecaoSrSettings = builder.Configuration
+    .GetSection(SchemaRegistrySettings.SectionName)
+    .Get<SchemaRegistrySettings>() ?? new SchemaRegistrySettings();
+
+ISchemaRegistryClient? selecaoSrClient = null;
+if (!string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
+{
+    using ILoggerFactory bootstrapLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
+#pragma warning disable CA2000 // Singleton no DI — IHost dispõe na shutdown.
+    selecaoSrClient = SchemaRegistryServiceCollectionExtensions.CreateClient(
+        selecaoSrSettings,
+        bootstrapLoggerFactory);
+#pragma warning restore CA2000
+    builder.Services.AddSingleton(selecaoSrClient);
+}
+
+builder.Services.AddSchemaRegistry(builder.Configuration)
+    .AddSchema(
+        subject: "edital_events-value",
+        schemaResourceName: unifesspa.uniplus.selecao.events.EditalPublicado.SchemaResourceName,
+        resourceAssembly: typeof(EditalPublicadoEvent).Assembly);
+
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005.
 //
@@ -87,8 +119,10 @@ builder.Services.AddSelecaoInfrastructure();
 //   - PublishDomainEventsFromEntityFrameworkCore NÃO é chamado (ADR-0005):
 //     drenagem de EntityBase.DomainEvents via cascading messages no
 //     retorno do handler (IEnumerable<object>), não pelo scraper EF.
-//   - Routing de EditalPublicadoEvent: PG queue "domain-events" +
-//     tópico Kafka "edital_events" quando bootstrap configurado.
+//   - Routing de EditalPublicadoEvent: PG queue "domain-events" intra-módulo;
+//     o cascading handler EditalPublicadoToKafkaCascadeHandler (Selecao.Infrastructure)
+//     projeta para EditalPublicadoAvro, que é roteado ao tópico Kafka
+//     "edital_events" com Confluent SR Avro serializer (ADR-0051).
 //
 // A leitura de connection string e Kafka bootstrap acontece dentro do
 // callback de UseWolverine no startup do host. Em testes integrados,
@@ -101,16 +135,24 @@ builder.Host.UseWolverineOutboxCascading(
     configureRouting: opts =>
     {
         // Wolverine escaneia o entry assembly (Selecao.API) por padrão; handlers
-        // produtivos vivem em Selecao.Application — incluir explicitamente para
-        // que PublicarEditalCommandHandler (e futuros) sejam descobertos.
+        // produtivos vivem em Selecao.Application e Selecao.Infrastructure —
+        // incluir explicitamente para que PublicarEditalCommandHandler e o
+        // cascading EditalPublicadoToKafkaCascadeHandler sejam descobertos.
         opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
+        opts.Discovery.IncludeAssembly(typeof(EditalPublicadoToKafkaCascadeHandler).Assembly);
 
         opts.PublishMessage<EditalPublicadoEvent>().ToPostgresqlQueue("domain-events");
         opts.ListenToPostgresqlQueue("domain-events");
 
-        if (!string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]))
+        bool kafkaConfigured = !string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]);
+        if (kafkaConfigured && selecaoSrClient is not null)
         {
-            opts.PublishMessage<EditalPublicadoEvent>().ToKafkaTopic("edital_events");
+            // Kafka habilitado + Schema Registry disponível: produz Avro com schema-id
+            // no envelope (Confluent wire format). Consumers cross-módulo recuperam o
+            // schema do Apicurio via schema-id, sem dependência do assembly Selecao.Domain.
+            opts.PublishMessage<unifesspa.uniplus.selecao.events.EditalPublicado>()
+                .ToKafkaTopic("edital_events")
+                .DefaultSerializer(new SchemaRegistryAvroSerializer(selecaoSrClient));
         }
     });
 builder.Services.AddWolverineMessaging();
