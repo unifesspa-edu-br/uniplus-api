@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using Confluent.SchemaRegistry;
 using Microsoft.Extensions.Configuration;
@@ -154,6 +155,10 @@ public static class SchemaRegistryServiceCollectionExtensions
     /// dispõe singletons <see cref="IDisposable"/> automaticamente no shutdown do host.
     /// </para>
     /// </remarks>
+    [SuppressMessage(
+        "Reliability",
+        "CA2000:Dispose objects before losing scope",
+        Justification = "HttpClient e OAuthBearerAuthenticationHeaderValueProvider são ambos registrados como singletons no IServiceCollection passado — Microsoft.Extensions.DependencyInjection assume ownership e dispõe no shutdown do IHost. O analisador CA2000 não rastreia ownership via services.AddSingleton (roslyn-analyzers#5447). Factory delegate (idiomático) não é viável: o cliente é capturado eager no closure do callback de Wolverine UseWolverine, que roda antes de builder.Build() — IServiceProvider ainda não existe.")]
     public static ISchemaRegistryClient CreateClient(
         SchemaRegistrySettings settings,
         ILoggerFactory loggerFactory,
@@ -192,13 +197,11 @@ public static class SchemaRegistryServiceCollectionExtensions
             // — necessário porque CachedSchemaRegistryClient.Dispose não dispõe
             // custom auth providers (Codex P2 na review do PR #359, issue #360).
             HttpClient httpClient = new();
-#pragma warning disable CA2000 // ownership transferido para authProvider; authProvider vai pro DI logo abaixo.
             OAuthBearerAuthenticationHeaderValueProvider authProvider = new(
                 httpClient,
                 ownsHttpClient: true,
                 settings.OAuth,
                 loggerFactory.CreateLogger<OAuthBearerAuthenticationHeaderValueProvider>());
-#pragma warning restore CA2000
 
             services.AddSingleton(authProvider);
             services.AddSingleton<IAuthenticationHeaderValueProvider>(authProvider);
