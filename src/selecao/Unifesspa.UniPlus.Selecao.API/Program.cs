@@ -131,7 +131,13 @@ ISchemaRegistryClient? selecaoSrClient = null;
 if (!string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
 {
     using ILoggerFactory bootstrapLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
-#pragma warning disable CA2000 // Singleton no DI — IHost dispõe na shutdown.
+    // CA2000 supprimido: o cliente retornado é registrado como singleton no DI
+    // logo abaixo (AddSingleton) — Microsoft.Extensions.DependencyInjection
+    // assume ownership e dispõe no shutdown do IHost. Top-level statements em
+    // Program.cs não suportam [SuppressMessage] por símbolo, daí pragma inline
+    // (alinhado com pattern já usado no AwaitWolverineDuringDispose etc.).
+    // roslyn-analyzers#5447 — analisador não rastreia ownership via DI.
+#pragma warning disable CA2000
     selecaoSrClient = SchemaRegistryServiceCollectionExtensions.CreateClient(
         selecaoSrSettings,
         bootstrapLoggerFactory,
