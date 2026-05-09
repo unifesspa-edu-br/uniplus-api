@@ -88,6 +88,20 @@ SchemaRegistrySettings selecaoSrSettings = builder.Configuration
     .GetSection(SchemaRegistrySettings.SectionName)
     .Get<SchemaRegistrySettings>() ?? new SchemaRegistrySettings();
 
+// Invariante operacional: Kafka habilitado exige Schema Registry configurado.
+// ADR-0051 estabelece que mensagens em tópicos cross-módulo do Uni+ vão sempre
+// como Avro com schema-id no envelope. Sem SR, o publishing seria silenciosamente
+// desligado — consumers cross-módulo parariam de receber sem qualquer erro no
+// boot. Falha imediata orientando o operador é o correto.
+bool kafkaEnabledForBuilder = !string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]);
+if (kafkaEnabledForBuilder && string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
+{
+    throw new InvalidOperationException(
+        "Configuração inválida: Kafka:BootstrapServers populado mas SchemaRegistry:Url vazio. "
+        + "ADR-0051 exige Schema Registry para todo publishing cross-módulo. "
+        + "Configure SchemaRegistry:Url (ou desligue Kafka apagando Kafka:BootstrapServers).");
+}
+
 ISchemaRegistryClient? selecaoSrClient = null;
 if (!string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
 {
