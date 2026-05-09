@@ -78,7 +78,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0047](0047-confluent-kafka-npgsql-pisos-transitivos-wolverine.md) | `Confluent.Kafka 2.14.0` + `Npgsql 9.0.4` como pisos transitivos do Wolverine 5.32.1 | accepted | 2026-05-05 |
 | [0048](0048-controllers-mvc-public-com-ca1515-suprimido.md) | Controllers MVC em `*.API` devem ser `public`, com CA1515 suprimido por justificativa | accepted | 2026-05-05 |
 | [0049](0049-implementacao-hateoas-edital-resource-links-builder.md) | Implementação de HATEOAS Level 1 em `EditalDto` via `IResourceLinksBuilder<TDto>` na camada API | accepted | 2026-05-06 |
-| [0050](0050-registry-ghcr-e-tagging.md) | GitHub Container Registry e estratégia de tagging das imagens da `uniplus-api` | proposed | 2026-05-08 |
+| [0050](0050-registry-ghcr-e-tagging.md) | GitHub Container Registry e estratégia de tagging das imagens da `uniplus-api` | accepted | 2026-05-08 |
 
 ## Como adicionar um novo ADR
 
