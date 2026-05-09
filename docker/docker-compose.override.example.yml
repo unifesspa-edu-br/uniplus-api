@@ -10,6 +10,9 @@ services:
       ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus_selecao;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
+      # Schema Registry (Apicurio em modo Confluent-compat) — sufixo /apis/ccompat/v7
+      # é mandatório (Apicurio 3.x). Auth desligada em dev (AuthType=None default).
+      SchemaRegistry__Url: "http://apicurio:8081/apis/ccompat/v7"
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
@@ -22,6 +25,8 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      apicurio:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
@@ -41,6 +46,9 @@ services:
       ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus_ingresso;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
+      # Schema Registry — Ingresso é consumer cross-módulo de eventos Selecao;
+      # SR Url permite recuperar schemas dos eventos publicados.
+      SchemaRegistry__Url: "http://apicurio:8081/apis/ccompat/v7"
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
@@ -53,6 +61,8 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      apicurio:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
