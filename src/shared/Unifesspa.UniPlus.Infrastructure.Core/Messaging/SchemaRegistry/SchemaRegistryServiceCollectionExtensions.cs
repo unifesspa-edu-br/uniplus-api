@@ -7,6 +7,7 @@ using Confluent.SchemaRegistry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SchemaRegistryConfig = Confluent.SchemaRegistry.SchemaRegistryConfig;
@@ -207,12 +208,18 @@ public static class SchemaRegistryServiceCollectionExtensions
             // - Singleton(instance) torna o auth provider resolvable via DI (mesma
             //   instância usada eager no Wolverine routing). NÃO leva a dispose
             //   automático (container não dispõe instâncias pré-criadas).
-            // - AddHostedService garante dispose: container instancia o hosted service
-            //   e o dispõe no shutdown; o hosted service chama Dispose() no provider.
-            //   IServiceCollection injeta authProvider via DI no construtor.
+            // - Hosted service registrado via factory delegate que CAPTURA authProvider
+            //   no closure — evita resolver o tipo concreto via DI. Necessário porque
+            //   AddSchemaRegistry chama services.AddHttpClient<OAuthBearerAuthenticationHeaderValueProvider>()
+            //   (typed client transient last-wins), o que sobrescreveria o
+            //   AddSingleton(instance) acima e o hosted service receberia uma
+            //   instância transient desejando OAuthBearerSettings direto via DI
+            //   (não registrado). Closure ancora a instância correta.
+            //   Container instancia o hosted service via factory, dispõe ele no
+            //   shutdown, e o hosted service dispõe o auth provider em StopAsync.
             services.AddSingleton(authProvider);
             services.AddSingleton<IAuthenticationHeaderValueProvider>(authProvider);
-            services.AddHostedService<OAuthBearerAuthProviderDisposeHostedService>();
+            services.AddSingleton<IHostedService>(_ => new OAuthBearerAuthProviderDisposeHostedService(authProvider));
 
             return new CachedSchemaRegistryClient(config, authProvider);
         }
