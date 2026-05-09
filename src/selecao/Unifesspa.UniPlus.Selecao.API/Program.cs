@@ -114,6 +114,7 @@ builder.Host.UseWolverineOutboxCascading(
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
+builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 
 WebApplication app = builder.Build();
 
