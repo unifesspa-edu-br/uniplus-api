@@ -134,7 +134,8 @@ if (!string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
 #pragma warning disable CA2000 // Singleton no DI — IHost dispõe na shutdown.
     selecaoSrClient = SchemaRegistryServiceCollectionExtensions.CreateClient(
         selecaoSrSettings,
-        bootstrapLoggerFactory);
+        bootstrapLoggerFactory,
+        builder.Services);
 #pragma warning restore CA2000
     builder.Services.AddSingleton(selecaoSrClient);
 }
