@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 
 using Authentication;
@@ -56,6 +57,22 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
     /// </remarks>
     protected virtual bool DisableWolverineRuntimeForTests => true;
 
+    /// <summary>
+    /// Nomes dos health checks de infra externa registrados por
+    /// <c>AddUniPlusHealthChecks</c> que são removidos por default em testes — o pipeline
+    /// HTTP típico não tem Postgres/Redis/MinIO/Kafka rodando, e mantê-los gera Unhealthy
+    /// permanente em <c>/health</c>/<c>/health/ready</c>, mascarando o estado real do
+    /// pipeline de auth/routing/controllers que a suite quer validar.
+    /// </summary>
+    /// <remarks>
+    /// Suites que provisionam essas dependências (ex.: <c>CascadingFixture</c> com Postgres
+    /// via Testcontainers) sobrescrevem este conjunto para preservar os checks que sua
+    /// fixture sustenta — tipicamente retornando o conjunto vazio para deixar todos os checks
+    /// ativos.
+    /// </remarks>
+    protected virtual ISet<string> InfraHealthCheckNamesToRemoveForTests { get; } =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "postgres", "redis", "minio", "kafka" };
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -98,6 +115,26 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
                 {
                     services.Remove(svc);
                 }
+            }
+
+            // Filtro de health checks de infra externa — removidos por default porque a maioria
+            // das suites HTTP-only não tem PG/Redis/MinIO/Kafka rodando. Override
+            // InfraHealthCheckNamesToRemoveForTests => emptyset em fixtures que provisionam
+            // todas as deps. Aplicado via Configure<HealthCheckServiceOptions> que roda na
+            // pipeline de IServiceCollection — a remoção acontece antes do host materializar
+            // o IHealthCheckService.
+            ISet<string> namesToRemove = InfraHealthCheckNamesToRemoveForTests;
+            if (namesToRemove.Count > 0)
+            {
+                services.PostConfigure<HealthCheckServiceOptions>(opts =>
+                {
+                    HealthCheckRegistration[] toRemove = [.. opts.Registrations
+                        .Where(r => namesToRemove.Contains(r.Name))];
+                    foreach (HealthCheckRegistration reg in toRemove)
+                    {
+                        opts.Registrations.Remove(reg);
+                    }
+                });
             }
         });
     }

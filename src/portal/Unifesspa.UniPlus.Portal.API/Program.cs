@@ -71,6 +71,12 @@ builder.Services.AddDbContextMigrationsOnStartup<PortalDbContext>();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
+builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
+
+// Health checks agregados: Postgres + Redis + MinIO + Kafka + OIDC (já registrado por
+// AddOidcAuthentication acima). Endpoints separados em /health/live (deps-free), /health/ready
+// (todos com tag "ready") e /health (alias retrocompat).
+builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "PortalDb");
 
 WebApplication app = builder.Build();
 
@@ -93,6 +99,14 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
 {
     Predicate = _ => false,
 });
+// Readiness: agrega checks tagueados "ready" (Postgres, Redis, MinIO, Kafka, OIDC).
+// Reflete o estado real das deps externas — Kubernetes deve apontar readinessProbe aqui.
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = h => h.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag),
+});
+// Alias retrocompat: continua expondo /health (sem filtro = todos os checks). Pode ser removido
+// quando todos os clients consumirem /health/live ou /health/ready.
 app.MapHealthChecks("/health");
 
 await app.RunAsync();

@@ -5,14 +5,18 @@ using System.Diagnostics.CodeAnalysis;
 using Confluent.Kafka;
 
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 
 public sealed class KafkaHealthCheck : IHealthCheck
 {
-    private readonly string _bootstrapServers;
+    private readonly KafkaSettings _settings;
 
-    public KafkaHealthCheck(string bootstrapServers)
+    public KafkaHealthCheck(IOptions<KafkaSettings> options)
     {
-        _bootstrapServers = bootstrapServers;
+        ArgumentNullException.ThrowIfNull(options);
+        _settings = options.Value;
     }
 
     [SuppressMessage(
@@ -23,7 +27,14 @@ public sealed class KafkaHealthCheck : IHealthCheck
     {
         try
         {
-            AdminClientConfig config = new() { BootstrapServers = _bootstrapServers };
+            AdminClientConfig config = new() { BootstrapServers = _settings.BootstrapServers };
+
+            // Aplica SecurityProtocol/SaslMechanism/SaslUsername/SaslPassword/SslCa* quando
+            // configurados — necessário em standalone (SASL_SSL + SCRAM-SHA-512). Sem isto, o
+            // health check em standalone tentaria PLAINTEXT contra um broker SASL e reportaria
+            // Unhealthy permanente, mascarando o estado real.
+            KafkaSecurity.Apply(config, _settings);
+
             using IAdminClient adminClient = new AdminClientBuilder(config).Build();
             Metadata metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(5));
             return Task.FromResult(metadata.Brokers.Count > 0
