@@ -63,6 +63,11 @@ builder.Services.AddDbContextMigrationsOnStartup<IngressoDbContext>();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
+builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
+
+// Health checks agregados: Postgres + Redis + MinIO + Kafka + OIDC. Ver Portal.API/Program.cs
+// para a explicação completa do split /health/live vs /health/ready.
+builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "IngressoDb");
 
 WebApplication app = builder.Build();
 
@@ -84,6 +89,10 @@ app.MapOpenApi("/openapi/{documentName}.json");
 app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = _ => false,
+});
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = h => h.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag),
 });
 app.MapHealthChecks("/health");
 
