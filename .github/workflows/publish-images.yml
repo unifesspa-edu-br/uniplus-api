@@ -23,7 +23,9 @@ name: Publish Images
 on:
   push:
     tags:
-      - 'v*'
+      # Glob: aceita prefix `v` seguido de 3 partes ponto-separadas.
+      # Filtro fino (somente dígitos) é validado no step `Validar formato`.
+      - 'v*.*.*'
 
 permissions:
   contents: read
@@ -58,20 +60,50 @@ jobs:
           # `git merge-base --is-ancestor` no step de validação abaixo.
           fetch-depth: 0
 
+      - name: Validar formato semver da tag
+        # ADR-0050 exige tags `v<X>.<Y>.<Z>` com X/Y/Z numéricos. O glob no
+        # trigger filtra por estrutura (3 partes ponto-separadas), mas aceita
+        # `v1.2.x`, `v1.0.0-rc1`, `vfoo.bar.baz`, etc. Esta regex restringe
+        # a SemVer puro. Roda antes do `git fetch` por ser muito mais barato
+        # — falha cedo em tags malformadas sem custo de rede.
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Tag '$TAG' não segue o padrão v<X>.<Y>.<Z> exigido pela ADR-0050."
+            echo "::error::Tags pré-release (v1.0.0-rc1) ou genéricas (vtest) não publicam imagem."
+            exit 1
+          fi
+          echo "✓ Tag em formato semver: $TAG"
+
       - name: Validar que a tag aponta para commit em main
         # ADR-0050 exige que toda imagem publicada venha de commit já
         # mergeado em main. Sem este gate, um operador poderia tagear um
         # commit de feature branch e publicar silenciosamente. Falha cedo
         # antes de qualquer build.
+        #
+        # `${GITHUB_REF}^{commit}` peel o tag object para o commit subjacente.
+        # Em tags anotadas (`git tag -a`) o ref aponta para um tag object
+        # cuja SHA difere do commit alvo; o `^{commit}` resolve para o commit.
+        # Em tags lightweight (`git tag`) o ref já aponta para o commit e o
+        # peel é noop. `$GITHUB_SHA` funciona para os dois mas é menos
+        # explícito sobre intenção.
+        #
+        # `git fetch origin main` sem `--depth` preserva o histórico completo
+        # já trazido pelo `actions/checkout fetch-depth: 0` acima. Adicionar
+        # `--depth=1` reverteria origin/main para shallow e quebraria
+        # `merge-base --is-ancestor` em tags pointing para commits antigos
+        # legítimos de main (false negative).
         run: |
           set -euo pipefail
-          git fetch origin main --depth=1
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-            echo "::error::Tag ${GITHUB_REF#refs/tags/} aponta para commit $GITHUB_SHA fora de origin/main."
+          git fetch origin main
+          TAG_COMMIT=$(git rev-parse "${GITHUB_REF}^{commit}")
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "::error::Tag ${GITHUB_REF#refs/tags/} aponta para commit $TAG_COMMIT fora de origin/main."
             echo "::error::Tags v* só podem ser aplicadas a commits já mergeados em main (ADR-0050)."
             exit 1
           fi
-          echo "✓ Tag aponta para commit em main: $GITHUB_SHA"
+          echo "✓ Tag aponta para commit em main: $TAG_COMMIT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
