@@ -22,6 +22,8 @@ O workflow **só dispara** em `push` de tag que case com `v*` (ex.: `v0.1.0`, `v
 
 Sem `latest`, sem `main` — `v<X>` já fornece soft-pinning automático que rola com patches/minors do mesmo major. ArgoCD em ambiente promovido pina `v<X>.<Y>.<Z>` ou `sha-<7>` explicitamente.
 
+Tags pré-release (`v1.0.0-rc1`), tags com sufixos (`v1.0.0+meta`) ou genéricas (`vtest`) **não disparam** o workflow — o glob `'v*.*.*'` filtra estrutura, e o step "Validar formato semver da tag" rejeita qualquer coisa fora de `^v[0-9]+\.[0-9]+\.[0-9]+$`.
+
 ## Como publicar uma nova versão
 
 Pré-requisito: o commit alvo já está em `main` (mergeado via PR).
