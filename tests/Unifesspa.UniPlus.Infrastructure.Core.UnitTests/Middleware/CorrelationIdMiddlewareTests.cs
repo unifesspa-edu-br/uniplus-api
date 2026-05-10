@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Middleware;
 
+using System.Diagnostics;
+
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
@@ -219,6 +221,61 @@ public class CorrelationIdMiddlewareTests
         capturados[0].Properties.Should().ContainKey(CorrelationIdMiddleware.LogContextProperty);
         capturados[0].Properties[CorrelationIdMiddleware.LogContextProperty]
             .ToString().Trim('"').Should().Be(id);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ComActivityAtiva_DeveSetarCorrelationIdComoTagDoSpan()
+    {
+        // ActivityListener é necessário para que ActivitySource.StartActivity
+        // retorne instância: sem listener, Activity.Current ficaria null e o
+        // teste seria vacuoso. Sample = AllData garante que o span não é
+        // dropado pelo sampler default.
+        using ActivitySource source = new(nameof(InvokeAsync_ComActivityAtiva_DeveSetarCorrelationIdComoTagDoSpan));
+        using ActivityListener listener = new()
+        {
+            ShouldListenTo = _ => true,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        const string id = "activity-tag-test";
+        (DefaultHttpContext context, _) = CriarContexto();
+        context.Request.Headers[CorrelationIdMiddleware.HeaderName] = id;
+        Activity? activityCapturadaNoPipeline = null;
+
+        using (Activity? activity = source.StartActivity("test-span"))
+        {
+            CorrelationIdMiddleware middleware = new(_ =>
+            {
+                activityCapturadaNoPipeline = Activity.Current;
+                return Task.CompletedTask;
+            });
+
+            await middleware.InvokeAsync(context, new CorrelationIdAccessor());
+        }
+
+        activityCapturadaNoPipeline.Should().NotBeNull();
+        activityCapturadaNoPipeline!.GetTagItem(CorrelationIdMiddleware.ActivityTagName)
+            .Should().Be(id);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_SemActivityAtiva_NaoDeveFalhar()
+    {
+        // Sem ActivityListener registrado para esta classe, ActivitySource não
+        // emite spans e Activity.Current permanece null durante o pipeline.
+        // O middleware deve ser null-safe via Activity.Current?.SetTag(...).
+        Activity.Current.Should().BeNull();
+
+        const string id = "sem-activity";
+        (DefaultHttpContext context, _) = CriarContexto();
+        context.Request.Headers[CorrelationIdMiddleware.HeaderName] = id;
+        ICorrelationIdWriter accessor = Substitute.For<ICorrelationIdWriter>();
+        CorrelationIdMiddleware middleware = new(_ => Task.CompletedTask);
+
+        Func<Task> acao = async () => await middleware.InvokeAsync(context, accessor);
+
+        await acao.Should().NotThrowAsync();
     }
 
     // Cria um DefaultHttpContext com IHttpResponseFeature customizado que
