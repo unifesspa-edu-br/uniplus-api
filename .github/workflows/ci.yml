@@ -94,10 +94,23 @@ jobs:
       - name: Verificar pacotes proibidos
         run: bash tools/forbidden-deps/check.sh
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # Pipeline build → (test-unit ∥ test-integration) → coverage-summary
+  #
+  # Refatoração da issue #88: o job monolítico anterior ("Build, Test and
+  # Coverage") gerava status check único e pagava setup de Testcontainers
+  # mesmo quando só os unit tests rodavam. A nova divisão entrega:
+  #
+  # - Status checks separados por etapa — falhas mais informativas e
+  #   políticas de branch protection mais granulares
+  # - test-unit e test-integration paralelos — wall-time reduzido
+  # - bin/+obj/ compartilhados via artifact — sem rebuild redundante
+  # ─────────────────────────────────────────────────────────────────────────
+
   build:
-    name: Build, Test and Coverage
+    name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       contents: read
 
@@ -127,11 +140,128 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIG }} --no-restore
 
-      - name: Run tests with coverage
+      # bin/ + obj/ contêm tudo o que dotnet test --no-build precisa.
+      # Excluir TestResults/ evita acumular nada de runs anteriores
+      # (não deve existir aqui, mas guarda-corpo barato).
+      - name: Upload build output (bin/ + obj/)
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-output
+          path: |
+            **/bin/${{ env.BUILD_CONFIG }}/**
+            **/obj/**
+            !**/TestResults/**
+          if-no-files-found: error
+          retention-days: 1
+
+  test-unit:
+    name: Unit + arch tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props', '**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies (lockfile mode)
+        # NuGet packages cache acelera; --locked-mode garante reprodutibilidade
+        # idêntica ao build job (mesmas versões resolvidas).
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
+
+      - name: Download build output
+        uses: actions/download-artifact@v5
+        with:
+          name: build-output
+
+      - name: Run unit + arch tests with coverage
+        # Filtra fora qualquer FullyQualifiedName contendo "IntegrationTests"
+        # — assemblies *.IntegrationTests.dll são carregados mas dotnet test
+        # não executa nenhum método, terminando rapidamente sem custo de Docker.
         run: |
           dotnet test ${{ env.SOLUTION_PATH }} \
             --configuration ${{ env.BUILD_CONFIG }} \
             --no-build \
+            --no-restore \
+            --filter "FullyQualifiedName!~IntegrationTests" \
+            --logger "trx" \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --results-directory ${{ env.COVERAGE_DIR }}
+
+      - name: Upload unit coverage
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-unit
+          path: ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-unit
+          path: ${{ env.COVERAGE_DIR }}/**/*.trx
+          if-no-files-found: warn
+          retention-days: 30
+
+  test-integration:
+    name: Integration tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props', '**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies (lockfile mode)
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
+
+      - name: Download build output
+        uses: actions/download-artifact@v5
+        with:
+          name: build-output
+
+      - name: Run integration tests with coverage
+        run: |
+          dotnet test ${{ env.SOLUTION_PATH }} \
+            --configuration ${{ env.BUILD_CONFIG }} \
+            --no-build \
+            --no-restore \
+            --filter "FullyQualifiedName~IntegrationTests" \
             --logger "trx" \
             --collect:"XPlat Code Coverage" \
             --settings coverlet.runsettings \
@@ -153,6 +283,7 @@ jobs:
           out=$(dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
             --configuration ${{ env.BUILD_CONFIG }} \
             --no-build \
+            --no-restore \
             --filter "Category=OutboxCapability" \
             --logger "console;verbosity=minimal")
           echo "$out"
@@ -172,6 +303,7 @@ jobs:
           out=$(dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
             --configuration ${{ env.BUILD_CONFIG }} \
             --no-build \
+            --no-restore \
             --filter "Category=OutboxCascading" \
             --logger "console;verbosity=minimal")
           echo "$out"
@@ -184,8 +316,63 @@ jobs:
             exit 1
           fi
 
-      - name: Merge coverage reports
+      - name: Upload integration coverage
         if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-integration
+          path: ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-integration
+          path: ${{ env.COVERAGE_DIR }}/**/*.trx
+          if-no-files-found: warn
+          retention-days: 30
+
+  coverage-summary:
+    name: Coverage summary
+    needs: [test-unit, test-integration]
+    # if: always() — quer rodar mesmo se test-* falhar para que o relatório
+    # parcial fique disponível como evidência. Threshold step ainda enforca
+    # falhas reais — esta fase não mascara nada, só agrega.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore .NET tools (reportgenerator)
+        run: dotnet tool restore
+
+      - name: Download unit coverage
+        uses: actions/download-artifact@v5
+        with:
+          name: coverage-unit
+          path: ${{ env.COVERAGE_DIR }}/unit
+        continue-on-error: true
+
+      - name: Download integration coverage
+        uses: actions/download-artifact@v5
+        with:
+          name: coverage-integration
+          path: ${{ env.COVERAGE_DIR }}/integration
+        continue-on-error: true
+
+      - name: Merge coverage reports
         run: |
           dotnet reportgenerator \
             "-reports:${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml" \
@@ -215,29 +402,18 @@ jobs:
 
           pct=$(awk "BEGIN{printf \"%.2f\", $line_rate * 100}")
           threshold=${{ env.COVERAGE_THRESHOLD }}
-          echo "Cobertura (Domain + Application): ${pct}% (mínimo: ${threshold}%)"
+          echo "Cobertura agregada (Domain + Application): ${pct}% (mínimo: ${threshold}%)"
 
           if awk "BEGIN{exit !($line_rate * 100 < $threshold)}"; then
             echo "::error::Cobertura ${pct}% abaixo do mínimo exigido (${threshold}%)"
             exit 1
           fi
 
-      - name: Upload coverage reports
+      - name: Upload merged coverage report
         if: always()
         uses: actions/upload-artifact@v5
         with:
           name: coverage-report
-          path: |
-            ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
-            ${{ env.COVERAGE_DIR }}/report/**
+          path: ${{ env.COVERAGE_DIR }}/report/**
           if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: test-results
-          path: ${{ env.COVERAGE_DIR }}/**/*.trx
-          if-no-files-found: warn
           retention-days: 30
