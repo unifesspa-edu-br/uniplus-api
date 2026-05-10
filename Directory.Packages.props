@@ -45,7 +45,7 @@
     <PackageVersion Include="Npgsql" Version="9.0.4" />
 
     <!-- Logging & Observability -->
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <!-- 1.15.3 obrigatório no Exporter — 1.15.2 carrega GHSA-4625-4j76-fww9 + GHSA-mr8r-92fq-pj8p (NU1902 como erro). -->
