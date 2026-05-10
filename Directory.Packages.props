@@ -47,8 +47,15 @@
     <!-- Logging & Observability -->
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+    <!-- 1.15.3 obrigatório — 1.15.2 carrega GHSA-4625-4j76-fww9 + GHSA-mr8r-92fq-pj8p (NU1902 como erro). -->
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+    <!-- EntityFrameworkCore instrumentation só publica como beta — alinhado com prática do ecossistema OTel .NET. -->
+    <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.1-beta.1" />
 
     <!-- Testing -->
     <PackageVersion Include="xunit" Version="2.9.3" />
