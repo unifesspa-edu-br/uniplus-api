@@ -90,3 +90,12 @@ updates:
       github-actions-all:
         patterns:
           - "*"
+    ignore:
+      # Major bumps de Actions (checkout v5→v6, setup-node v4→v6, etc.) com
+      # frequência exigem migração de runtime (Node.js version, sintaxe
+      # de inputs deprecada). Tratar como manual evita PRs Dependabot que
+      # quebram silenciosamente todos os workflows num único bump em massa.
+      # Lição aprendida no PR #370 (fechado pelo bot por conflito justamente
+      # quando tentou trazer 7 majors de uma vez).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
