@@ -81,6 +81,16 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
 
         builder.ConfigureAppConfiguration((_, configurationBuilder) =>
         {
+            // Default off para a maioria das suites HTTP-only — sem Collector OTel
+            // provisionado, o sink OTLP do Serilog e o OtlpExporter do OTel SDK ficam
+            // tentando conectar em localhost:4317 e geram ruído (drop batches, retry
+            // logs). Suites que exercitam observabilidade real (ex.:
+            // OpenTelemetryWiringTests com OtelCollectorContainerFixture) sobrescrevem
+            // via GetConfigurationOverrides retornando "Observability:Enabled" = "true".
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Observability:Enabled"] = "false",
+            });
             configurationBuilder.AddInMemoryCollection(GetConfigurationOverrides());
         });
 

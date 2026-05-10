@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
+using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Portal.API.Errors;
@@ -17,8 +18,11 @@ using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// service.name canônico — ver explicação em Selecao.API/Program.cs.
+const string nomeServicoPortal = "uniplus-portal";
+
 builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig.ConfigurarSerilog(context.Configuration));
+    loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoPortal));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -53,6 +57,10 @@ builder.Services.AddDomainErrorMapper();
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
+
+// Observabilidade (ADR-0018) — ver explicação em Selecao.API/Program.cs.
+builder.Services.AdicionarObservabilidade(nomeServicoPortal, builder.Configuration, builder.Environment);
+
 // AddPortalInfrastructure resolve a connection string via IConfiguration
 // injetada no factory do AddDbContext — simetria com Selecao/Ingresso (#204).
 builder.Services.AddPortalInfrastructure();
