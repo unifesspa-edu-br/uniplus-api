@@ -10,6 +10,7 @@
     <PackageReference Include="Confluent.Kafka" />
     <PackageReference Include="Confluent.SchemaRegistry" />
     <PackageReference Include="Apache.Avro" />
+  <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" VersionOverride="10.0.7" />
     <PackageReference Include="VaultSharp" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
