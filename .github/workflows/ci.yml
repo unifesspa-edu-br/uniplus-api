@@ -38,13 +38,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Validar ADRs (MADR 4.0)
         run: bash tools/adr-lint/validate.sh
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -63,10 +63,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -89,7 +89,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Verificar pacotes proibidos
         run: bash tools/forbidden-deps/check.sh
@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -155,7 +155,7 @@ jobs:
           ls -lh build-output.tar
 
       - name: Upload build output
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: build-output
           path: build-output.tar
@@ -172,7 +172,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -193,7 +193,7 @@ jobs:
         run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
       - name: Download build output
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: build-output
 
@@ -217,7 +217,7 @@ jobs:
 
       - name: Upload unit coverage
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-unit
           path: ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
@@ -226,7 +226,7 @@ jobs:
 
       - name: Upload unit test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-unit
           path: ${{ env.COVERAGE_DIR }}/**/*.trx
@@ -243,7 +243,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -262,7 +262,7 @@ jobs:
         run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
       - name: Download build output
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: build-output
 
@@ -332,7 +332,7 @@ jobs:
 
       - name: Upload integration coverage
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-integration
           path: ${{ env.COVERAGE_DIR }}/**/coverage.cobertura.xml
@@ -341,7 +341,7 @@ jobs:
 
       - name: Upload integration test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-integration
           path: ${{ env.COVERAGE_DIR }}/**/*.trx
@@ -362,7 +362,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -373,14 +373,14 @@ jobs:
         run: dotnet tool restore
 
       - name: Download unit coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: coverage-unit
           path: ${{ env.COVERAGE_DIR }}/unit
         continue-on-error: true
 
       - name: Download integration coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: coverage-integration
           path: ${{ env.COVERAGE_DIR }}/integration
@@ -425,7 +425,7 @@ jobs:
 
       - name: Upload merged coverage report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: ${{ env.COVERAGE_DIR }}/report/**

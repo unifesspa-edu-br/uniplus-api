@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # fetch-depth=0 traz o histórico completo necessário para
           # `git merge-base --is-ancestor` no step de validação abaixo.
@@ -106,10 +106,10 @@ jobs:
           echo "✓ Tag aponta para commit em main: $TAG_COMMIT"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login no GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -117,7 +117,7 @@ jobs:
 
       - name: Extrair metadados (tags + labels)
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/uniplus-api-${{ matrix.module }}
           # Política de tagging: ver ADR-0050.
@@ -155,7 +155,7 @@ jobs:
 
       - name: Build local (sem push) para smoke
         id: build_local
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
@@ -218,7 +218,7 @@ jobs:
 
       - name: Push para GHCR (após smoke verde)
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
