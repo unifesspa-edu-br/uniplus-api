@@ -18,6 +18,8 @@
       explicitamente para clareza do contrato de produção/consumo Avro.
     -->
     <PackageReference Include="Confluent.SchemaRegistry.Serdes.Avro" />
+  <PackageReference Include="WolverineFx.Kafka" />
+  <PackageReference Include="WolverineFx.Postgresql" />
   </ItemGroup>
 
   <ItemGroup>
