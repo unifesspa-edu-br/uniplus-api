@@ -144,4 +144,26 @@ public sealed class SoftDeleteInterceptorTests
 
         entidade.DeletedBy.Should().Be(SystemUser);
     }
+
+    // Cenário real quando o token validado não traz nem `sub` nem `nameidentifier`
+    // (HttpUserContext.UserId resolve null), mas Identity.IsAuthenticated continua true.
+    // O pattern matching de ResolveDeletedBy depende do null check ocorrer antes do
+    // teste de Length — este caso fixa o contrato.
+    [Fact]
+    public void SavingChanges_DadoUsuarioAutenticadoComUserIdNulo_EntaoDeletedByDeveSerSystem()
+    {
+        IUserContext userContext = Substitute.For<IUserContext>();
+        userContext.IsAuthenticated.Returns(true);
+        userContext.UserId.Returns((string?)null);
+
+        using ContextoTeste contexto = CriarContexto(userContext);
+        EntidadeTeste entidade = new() { Nome = "para excluir" };
+        contexto.Entidades.Add(entidade);
+        contexto.SaveChanges();
+
+        contexto.Entidades.Remove(entidade);
+        contexto.SaveChanges();
+
+        entidade.DeletedBy.Should().Be(SystemUser);
+    }
 }
