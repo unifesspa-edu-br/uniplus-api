@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Authentication -->
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
 
     <!-- OpenAPI -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
@@ -35,7 +35,7 @@
     <PackageVersion Include="Apache.Avro" Version="1.12.1" />
 
     <!-- Caching -->
-    <PackageVersion Include="StackExchange.Redis" Version="2.12.8" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.12.14" />
 
     <!-- Storage -->
     <PackageVersion Include="Minio" Version="7.0.0" />
@@ -45,7 +45,7 @@
     <PackageVersion Include="Npgsql" Version="10.0.2" />
 
     <!-- Logging & Observability -->
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <!-- 1.15.3 obrigatório no Exporter — 1.15.2 carrega GHSA-4625-4j76-fww9 + GHSA-mr8r-92fq-pj8p (NU1902 como erro). -->
