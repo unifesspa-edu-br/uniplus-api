@@ -151,6 +151,41 @@ public sealed class ValueObjectConvertersIntegrationTests : IAsyncLifetime
         lida.NotaFinal.Should().Be(nota);
     }
 
+    [Fact(DisplayName = "Materialização — dado corrompido no banco (CPF inválido) lança InvalidOperationException com contexto")]
+    public async Task Materializacao_CpfCorrompido_LancaComContexto()
+    {
+        // Simula corrupção: insere bytes válidos para o schema (varchar(11))
+        // mas inválidos para o VO (dígitos verificadores errados). A leitura
+        // via converter deve falhar alto com InvalidOperationException
+        // citando o VO e o código do erro do Result — não NRE silenciosa.
+
+        await using TestDbContext context = CriarContext();
+        await context.Database.EnsureCreatedAsync();
+
+        // Inserção legítima primeiro para garantir que existe um registro.
+        EntidadeComVOs entidade = EntidadeComVOs.Criar(
+            cpf: Cpf.Criar("52998224725").Value!,
+            email: Email.Criar("a@b.com").Value!,
+            nomeSocial: NomeSocial.Criar("Teste").Value!,
+            nota: NotaFinal.Criar(0m).Value!);
+        context.Entidades.Add(entidade);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        // Corrompe a coluna CPF via SQL direto — bypass do converter.
+        await using Npgsql.NpgsqlConnection conexao = new(_postgres.GetConnectionString());
+        await conexao.OpenAsync();
+        await using Npgsql.NpgsqlCommand corromper = new(
+            "UPDATE entidades_com_vos SET cpf = '00000000000'", conexao);
+        await corromper.ExecuteNonQueryAsync();
+
+        Func<Task> leitura = async () => await context.Entidades.AsNoTracking().SingleAsync();
+
+        await leitura.Should().ThrowAsync<InvalidOperationException>()
+            .Where(e => e.Message.Contains(nameof(Cpf), StringComparison.Ordinal)
+                     && e.Message.Contains("Cpf.Invalido", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "Schema gerado — Cpf é varchar(11), Email max=254, NomeSocial é jsonb, NotaFinal é numeric(9,4)")]
     public async Task Schema_RespeitaConvencoes()
     {

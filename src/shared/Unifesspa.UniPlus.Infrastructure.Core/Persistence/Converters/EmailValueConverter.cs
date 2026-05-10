@@ -12,7 +12,7 @@ public sealed class EmailValueConverter : ValueConverter<Email, string>
     public EmailValueConverter()
         : base(
             email => email.Valor,
-            valor => Email.Criar(valor).Value!)
+            valor => ValueObjectMaterialization.Reidratar(Email.Criar(valor), nameof(Email)))
     {
     }
 }

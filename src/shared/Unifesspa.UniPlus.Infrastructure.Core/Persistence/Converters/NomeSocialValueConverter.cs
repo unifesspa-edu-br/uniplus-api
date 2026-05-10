@@ -44,7 +44,9 @@ public sealed class NomeSocialValueConverter : ValueConverter<NomeSocial, string
                 "Valor JSON nulo ao desserializar NomeSocial — dado corrompido no banco.");
         }
 
-        return NomeSocial.Criar(payload.NomeCivil, payload.Nome).Value!;
+        return ValueObjectMaterialization.Reidratar(
+            NomeSocial.Criar(payload.NomeCivil, payload.Nome),
+            nameof(NomeSocial));
     }
 
     private sealed record NomeSocialPayload(string NomeCivil, string? Nome);
