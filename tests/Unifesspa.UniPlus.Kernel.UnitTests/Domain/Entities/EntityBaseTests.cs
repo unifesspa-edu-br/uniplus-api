@@ -109,8 +109,8 @@ public sealed class EntityBaseTests
 
         a.Equals(b).Should().BeFalse("instâncias distintas — igualdade por referência");
         a.Equals(a).Should().BeTrue();
-        a.GetHashCode().Should().NotBe(b.GetHashCode(),
-            "Object.GetHashCode default usa o identity hash do objeto — referências distintas produzem hashes distintos");
+        ReferenceEquals(a, b).Should().BeFalse(
+            "duas instâncias têm referências distintas; assertiva direta evita risco teórico de colisão em GetHashCode");
     }
 
     // RFC 9562 §5.7 — versão fica nos 4 bits altos do byte 6 (offset 7 em string little-endian).
