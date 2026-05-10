@@ -25,7 +25,11 @@ public static class PortalInfrastructureRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddSingleton<SoftDeleteInterceptor>();
+        // SoftDeleteInterceptor consome IUserContext scoped (HttpUserContext)
+        // para preencher DeletedBy com o usuário autenticado (issue #127).
+        // Scoped acompanha o ciclo de vida do request — Singleton aqui causaria
+        // captive dependency com IUserContext.
+        services.AddScoped<SoftDeleteInterceptor>();
         services.AddSingleton<AuditableInterceptor>();
 
         services.AddDbContext<PortalDbContext>((serviceProvider, options) =>
