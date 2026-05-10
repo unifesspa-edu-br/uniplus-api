@@ -35,7 +35,7 @@
     <PackageVersion Include="Apache.Avro" Version="1.12.1" />
 
     <!-- Caching -->
-    <PackageVersion Include="StackExchange.Redis" Version="2.12.8" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.12.14" />
 
     <!-- Storage -->
     <PackageVersion Include="Minio" Version="7.0.0" />
