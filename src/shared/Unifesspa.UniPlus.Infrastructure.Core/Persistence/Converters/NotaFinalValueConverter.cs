@@ -12,7 +12,7 @@ public sealed class NotaFinalValueConverter : ValueConverter<NotaFinal, decimal>
     public NotaFinalValueConverter()
         : base(
             nota => nota.Valor,
-            valor => NotaFinal.Criar(valor).Value!)
+            valor => ValueObjectMaterialization.Reidratar(NotaFinal.Criar(valor), nameof(NotaFinal)))
     {
     }
 }
