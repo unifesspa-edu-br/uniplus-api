@@ -1,0 +1,92 @@
+# Dependabot — auto-update de dependências NuGet + GitHub Actions
+#
+# Decisão (issue #366): Dependabot escolhido em vez de Renovate por ser nativo
+# do GitHub (zero setup de App na org) e ter suporte ao `Directory.Packages.props`
+# central usado pelo repo. Schedule semanal segunda 06:00 BRT — antes do daily.
+# Major bumps sempre manuais (sem PR automático) para evitar surpresas em
+# atualizações que exigem migração (Wolverine, EF Core, .NET runtime).
+#
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # NuGet — central management via Directory.Packages.props na raiz
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Belem"
+    open-pull-requests-limit: 5
+    labels:
+      - "chore"
+      - "deps"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      # Trem único do OpenTelemetry — quando uma versão sobe, todas sobem juntas
+      # (alinhamento de SDK + instrumentations + exporter evita incompatibilidade
+      # binária). Inclui o sink Serilog que segue o mesmo wire OTLP.
+      opentelemetry:
+        patterns:
+          - "OpenTelemetry.*"
+          - "Serilog.Sinks.OpenTelemetry"
+      wolverine:
+        patterns:
+          - "WolverineFx*"
+      ef-core:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+          - "Npgsql*"
+      serilog:
+        patterns:
+          - "Serilog*"
+        # Excluir o sink OTel que já vai no group opentelemetry (evita
+        # ambiguidade — se aparecer aqui também, Dependabot agrupa onde matchou
+        # primeiro, gerando comportamento dependente de ordem).
+        exclude-patterns:
+          - "Serilog.Sinks.OpenTelemetry"
+      kafka:
+        patterns:
+          - "Confluent.*"
+          - "Apache.Avro"
+      testing:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "Microsoft.AspNetCore.Mvc.Testing"
+          - "AwesomeAssertions"
+          - "NSubstitute"
+          - "Bogus"
+          - "Testcontainers*"
+          - "TngTech.ArchUnitNET*"
+          - "coverlet.collector"
+    ignore:
+      # Major bumps sempre manuais — Wolverine 5→6, EF Core 10→11, .NET 10→11
+      # exigem revisão arquitetural (breaking changes documentados nos release
+      # notes) que não cabe em PR automático.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions — actions/* usadas em ci.yml/publish-images.yml/etc.
+  # Mais raro de mudar; agrupar tudo em PR único reduz ruído.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Belem"
+    open-pull-requests-limit: 2
+    labels:
+      - "chore"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+    groups:
+      github-actions-all:
+        patterns:
+          - "*"
