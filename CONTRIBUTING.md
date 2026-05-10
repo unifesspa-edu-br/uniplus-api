@@ -349,6 +349,29 @@ Para banir uma nova dependência: criar/atualizar a ADR correspondente, adiciona
 
 ---
 
+## Auto-update de dependências (Dependabot)
+
+O repositório usa **Dependabot** para detectar updates de pacotes NuGet (`Directory.Packages.props` central) e GitHub Actions, configurado em [`.github/dependabot.yml`](.github/dependabot.yml).
+
+### Como funciona
+
+- **Schedule semanal:** segunda 06:00 BRT — antes do daily.
+- **Grouping:** PRs agrupam pacotes do mesmo trem para reduzir ruído (todos `OpenTelemetry.*` num PR só, todos `WolverineFx*` em outro, e assim por diante).
+- **Major bumps são ignorados** pelo bot — versões `X.0.0` exigem revisão arquitetural manual (release notes, breaking changes, ADR se necessário). Quando precisar, o dev abre o PR explicitamente.
+- **Patch e minor** entram automaticamente como PRs com label `chore` + `deps` (ou `chore` + `ci` para Actions).
+
+### Tratamento dos PRs do bot
+
+1. **CI verde primeiro.** Mesmas 5 checagens dos PRs humanos (build/test/coverage, ADR lint, Spectral, forbidden-deps, PR author org member). Se o `NU1902` (vulnerabilidade) aparecer no restore, o bump já está corrigindo — PR é ainda mais prioritário.
+2. **Auto-merge condicional.** Patches sem CVE conhecida podem ser mergeados sem review humano profundo (CI verde basta). Minors merecem leitura rápida do diff de comportamento. Majors **nunca** chegam aqui (ignorados pelo bot).
+3. **Validação local opcional.** Para mudanças sensíveis (Wolverine, EF Core, Npgsql, Serilog), rodar `dotnet test UniPlus.slnx` localmente antes de aprovar.
+
+### Como adicionar um novo grupo
+
+Editar `.github/dependabot.yml` adicionando entrada em `updates[0].groups`. Padrão glob (`*` por sufixo) já cobre famílias inteiras.
+
+---
+
 ## Checklist antes de pedir merge
 
 Complementa os Quality gates acima (verificações de CI automáticas) com higiene de commits e branch — essas são verificações humanas:
