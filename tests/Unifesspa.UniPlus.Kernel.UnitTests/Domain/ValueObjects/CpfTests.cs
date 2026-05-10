@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.ValueObjects;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CpfTests
 {

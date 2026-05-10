@@ -12,7 +12,7 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <Include>[Unifesspa.UniPlus.*.Domain]*,[Unifesspa.UniPlus.*.Application]*</Include>
+          <Include>[Unifesspa.UniPlus.*.Domain]*,[Unifesspa.UniPlus.*.Application]*,[Unifesspa.UniPlus.Kernel]*</Include>
           <Exclude>[*.Tests]*,[*.ArchTests]*,[*.Integration.Tests]*</Exclude>
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
           <ExcludeByFile>**/Migrations/*.cs,**/*.g.cs,**/*.Designer.cs</ExcludeByFile>
