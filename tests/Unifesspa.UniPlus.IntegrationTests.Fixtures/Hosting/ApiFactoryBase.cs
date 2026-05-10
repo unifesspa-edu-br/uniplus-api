@@ -21,6 +21,37 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
     where TEntryPoint : class
 {
     /// <summary>
+    /// Static initializer que silencia o pipeline OpenTelemetry para todas as suites
+    /// HTTP-only que usam <see cref="ApiFactoryBase{T}"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para><strong>Por que env var em vez de <c>ConfigureAppConfiguration</c>?</strong>
+    /// Em minimal hosting (<c>WebApplication.CreateBuilder(args)</c>), o
+    /// <c>Program.cs</c> lê <c>builder.Configuration</c> e chama
+    /// <c>AdicionarObservabilidade</c>/<c>ConfigurarSerilog</c> ANTES de
+    /// <c>builder.Build()</c> rodar — momento em que o
+    /// <c>ConfigureAppConfiguration</c> do <see cref="WebApplicationFactory{T}"/>
+    /// é aplicado. Override via <c>AddInMemoryCollection</c> chega tarde demais
+    /// e o exporter OTLP fica tentando <c>localhost:4317</c> em loop.</para>
+    /// <para>Env var (<c>Observability__Enabled=false</c>) é lida pelo
+    /// <c>EnvironmentVariablesConfigurationProvider</c> default do
+    /// <c>CreateBuilder</c> — chega A TEMPO da leitura no <c>Program.cs</c>.</para>
+    /// <para><strong>Process-wide:</strong> setar env var afeta o processo inteiro.
+    /// Aceitável aqui porque (a) é idempotente, (b) o único test no projeto que
+    /// exercita observabilidade real
+    /// (<c>OpenTelemetryWiringTests</c>) constrói <see cref="IServiceCollection"/>
+    /// manualmente sem <c>CreateBuilder</c>, então não é afetado pela env var, e
+    /// (c) o <c>OpenTelemetryWiringTests</c> também sobrescreve
+    /// <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> via <c>try/finally</c>, demonstrando o
+    /// padrão para testes que queiram OTel ligado.</para>
+    /// </remarks>
+    static ApiFactoryBase()
+    {
+        Environment.SetEnvironmentVariable("Observability__Enabled", "false");
+    }
+
+
+    /// <summary>
     /// Quando <c>true</c> (default), o factory remove o
     /// <see cref="WolverineRuntime"/> da lista de <see cref="IHostedService"/>
     /// — o host inicializa sem startar o Wolverine, evitando que testes que
@@ -81,16 +112,10 @@ public abstract class ApiFactoryBase<TEntryPoint> : WebApplicationFactory<TEntry
 
         builder.ConfigureAppConfiguration((_, configurationBuilder) =>
         {
-            // Default off para a maioria das suites HTTP-only — sem Collector OTel
-            // provisionado, o sink OTLP do Serilog e o OtlpExporter do OTel SDK ficam
-            // tentando conectar em localhost:4317 e geram ruído (drop batches, retry
-            // logs). Suites que exercitam observabilidade real (ex.:
-            // OpenTelemetryWiringTests com OtelCollectorContainerFixture) sobrescrevem
-            // via GetConfigurationOverrides retornando "Observability:Enabled" = "true".
-            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Observability:Enabled"] = "false",
-            });
+            // Observability:Enabled=false é injetado via env var no static ctor
+            // desta classe (ver explicação no XML doc) — ConfigureAppConfiguration
+            // roda em builder.Build() e seria tarde demais para o Program.cs ler
+            // antes de chamar AdicionarObservabilidade.
             configurationBuilder.AddInMemoryCollection(GetConfigurationOverrides());
         });
 
