@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
+using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Ingresso.API.Errors;
@@ -15,8 +16,11 @@ using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// service.name canônico — ver explicação em Selecao.API/Program.cs.
+const string nomeServicoIngresso = "uniplus-ingresso";
+
 builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig.ConfigurarSerilog(context.Configuration));
+    loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoIngresso));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -42,6 +46,10 @@ builder.Services.AddDomainErrorMapper();
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
+
+// Observabilidade (ADR-0018) — ver explicação em Selecao.API/Program.cs.
+builder.Services.AdicionarObservabilidade(nomeServicoIngresso, builder.Configuration, builder.Environment);
+
 // AddIngressoInfrastructure agora resolve a connection string via
 // IConfiguration injetada no factory do AddDbContext (issue #204) —
 // simetria com UseWolverineOutboxCascading e com Selecao.

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
+using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Selecao.API.Errors;
@@ -28,8 +29,14 @@ using Wolverine.Postgresql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// service.name canônico para Resource OTel (tracing/metrics) e ResourceAttributes
+// do sink OTLP do Serilog (logs). Mantido em const local para garantir igualdade
+// estrita entre os 2 pipelines — drift de naming entre logs e traces seria a
+// 1ª coisa a quebrar drill-down Loki↔Tempo no Grafana.
+const string nomeServicoSelecao = "uniplus-selecao";
+
 builder.Host.UseSerilog((context, loggerConfig) =>
-    loggerConfig.ConfigurarSerilog(context.Configuration));
+    loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoSelecao));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -71,6 +78,13 @@ builder.Services.AddIdempotency<Unifesspa.UniPlus.Selecao.Infrastructure.Persist
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
+
+// Observabilidade (ADR-0018) — tracing + metrics via OpenTelemetry SDK para o Collector
+// institucional. Logs já fluem via Serilog OTLP sink configurado em UseSerilog acima.
+// Toggle Observability:Enabled em appsettings; default true. Em test factories sem
+// Collector provisionado, sobrescrever para false em InMemoryCollection.
+builder.Services.AdicionarObservabilidade(nomeServicoSelecao, builder.Configuration, builder.Environment);
+
 builder.Services.AddSelecaoApplication();
 // AddSelecaoInfrastructure agora resolve a connection string via
 // IConfiguration injetada no factory do AddDbContext (issue #204) —
