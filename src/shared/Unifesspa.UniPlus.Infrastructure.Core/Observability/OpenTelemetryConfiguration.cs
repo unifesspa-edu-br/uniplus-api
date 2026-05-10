@@ -17,6 +17,15 @@ using OpenTelemetry.Trace;
 public static class OpenTelemetryConfiguration
 {
     /// <summary>
+    /// Nome canônico do <see cref="System.Diagnostics.ActivitySource"/> emitido
+    /// pelo Wolverine. Registrado tanto em <c>WithTracing.AddSource</c> quanto em
+    /// <c>WithMetrics.AddMeter</c> para que command/handler/outbox executions
+    /// apareçam em Tempo (traces) e Prometheus (métricas) — ADR-0018.
+    /// </summary>
+    public const string WolverineActivityAndMeterName = "Wolverine";
+
+
+    /// <summary>
     /// Toggle de configuração para observabilidade. Default <c>true</c>; quando
     /// <c>false</c>, nenhum <see cref="TracerProvider"/> ou <see cref="MeterProvider"/>
     /// é registrado. Cenário de uso: suites de teste HTTP-only sem Collector
@@ -86,9 +95,7 @@ public static class OpenTelemetryConfiguration
             return services;
         }
 
-        Sampler sampler = environment.IsDevelopment()
-            ? new AlwaysOnSampler()
-            : new ParentBasedSampler(new TraceIdRatioBasedSampler(ProductionSamplingRatio));
+        Sampler sampler = SelecionarSampler(environment);
 
         IEnumerable<KeyValuePair<string, object>> resourceAttributes = new[]
         {
@@ -104,18 +111,42 @@ public static class OpenTelemetryConfiguration
             .WithTracing(tracing => tracing
                 .SetSampler(sampler)
                 .AddSource(nomeServico)
+                .AddSource(WolverineActivityAndMeterName)
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation()
                 .AddOtlpExporter())
             .WithMetrics(metrics => metrics
                 .AddMeter(nomeServico)
-                .AddMeter("Wolverine")
+                .AddMeter(WolverineActivityAndMeterName)
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
                 .AddOtlpExporter());
 
         return services;
+    }
+
+    /// <summary>
+    /// Seleciona o sampler conforme ambiente: <see cref="AlwaysOnSampler"/>
+    /// em <c>Development</c> (debugging local — todos os spans), e
+    /// <see cref="ParentBasedSampler"/> com <see cref="TraceIdRatioBasedSampler"/>
+    /// em <see cref="ProductionSamplingRatio"/> (10%) nos demais ambientes —
+    /// ADR-0018 head-based sampling. Tail-based 100% para erro/latência alta
+    /// é responsabilidade do <c>tail_sampling_processor</c> no Collector.
+    /// </summary>
+    /// <remarks>
+    /// Extraído como <c>internal static</c> exatamente para tornar a regra de
+    /// seleção testável sem precisar inspecionar o <c>TracerProvider</c> via
+    /// reflection — <c>InternalsVisibleTo</c> em <c>Infrastructure.Core.csproj</c>
+    /// expõe esta API para <c>Unifesspa.UniPlus.Infrastructure.Core.UnitTests</c>.
+    /// </remarks>
+    internal static Sampler SelecionarSampler(IHostEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+
+        return environment.IsDevelopment()
+            ? new AlwaysOnSampler()
+            : new ParentBasedSampler(new TraceIdRatioBasedSampler(ProductionSamplingRatio));
     }
 }

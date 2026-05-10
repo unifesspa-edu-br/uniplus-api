@@ -111,6 +111,45 @@ public class OpenTelemetryConfigurationTests
         acao.Should().Throw<ArgumentNullException>();
     }
 
+    [Fact]
+    public void SelecionarSampler_EmDevelopment_DeveRetornarAlwaysOnSampler()
+    {
+        IHostEnvironment environment = NovoAmbiente("Development");
+
+        Sampler sampler = OpenTelemetryConfiguration.SelecionarSampler(environment);
+
+        sampler.Should().BeOfType<AlwaysOnSampler>();
+    }
+
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Staging")]
+    [InlineData("HML")]
+    [InlineData("Test")]
+    public void SelecionarSampler_ForaDeDevelopment_DeveRetornarParentBasedComTraceIdRatio10Pct(string environmentName)
+    {
+        IHostEnvironment environment = NovoAmbiente(environmentName);
+
+        Sampler sampler = OpenTelemetryConfiguration.SelecionarSampler(environment);
+
+        // ParentBasedSampler.Description segue o formato canônico OTel:
+        // "ParentBased{root=TraceIdRatioBased{0.100000},...}". Validar pela
+        // descrição evita reflection no campo privado _rootSampler e quebra de
+        // teste em upgrades minor da SDK que reorganizem internals.
+        sampler.Should().BeOfType<ParentBasedSampler>();
+        sampler.Description.Should().Contain("TraceIdRatioBased").And.Contain("0.1");
+    }
+
+    [Fact]
+    public void SelecionarSampler_EnvironmentNulo_DeveLancarArgumentNullException()
+    {
+        IHostEnvironment? environment = null;
+
+        Action acao = () => OpenTelemetryConfiguration.SelecionarSampler(environment!);
+
+        acao.Should().Throw<ArgumentNullException>();
+    }
+
     private static IConfiguration NovaConfiguracao(IEnumerable<KeyValuePair<string, string?>>? values = null)
     {
         ConfigurationBuilder builder = new();
