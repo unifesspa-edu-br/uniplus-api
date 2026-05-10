@@ -1096,7 +1096,7 @@
           "Minio": "[7.0.0, )",
           "Npgsql": "[9.0.4, )",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.15.3, )",
-          "OpenTelemetry.Extensions.Hosting": "[1.15.2, )",
+          "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "OpenTelemetry.Instrumentation.AspNetCore": "[1.15.2, )",
           "OpenTelemetry.Instrumentation.EntityFrameworkCore": "[1.15.1-beta.1, )",
           "OpenTelemetry.Instrumentation.Http": "[1.15.1, )",
@@ -1134,6 +1134,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.5, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
+          "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.Ingresso.Domain": "[1.0.0, )"
         }
@@ -1353,12 +1354,12 @@
       },
       "OpenTelemetry.Extensions.Hosting": {
         "type": "CentralTransitive",
-        "requested": "[1.15.2, )",
-        "resolved": "1.15.2",
-        "contentHash": "T2nEP/lABOab8w8espx5biYGghw8errNlhhMLYmoXEhGT6EGB4CNhZInJPC+tOvlGUGFe54NM3TdSATxebwJ8g==",
+        "requested": "[1.15.3, )",
+        "resolved": "1.15.3",
+        "contentHash": "u8n/W8yIlqv0BXZmvId1iVaeWXG42tGKdTkuLYg5g57Y/r9CeUNzqtrSHNdG5IoO8iPX79w3v+WsbAHgUQbfeg==",
         "dependencies": {
           "Microsoft.Extensions.Hosting.Abstractions": "10.0.0",
-          "OpenTelemetry": "1.15.2"
+          "OpenTelemetry": "1.15.3"
         }
       },
       "OpenTelemetry.Instrumentation.AspNetCore": {
