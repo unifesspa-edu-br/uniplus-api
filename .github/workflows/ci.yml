@@ -140,17 +140,25 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIG }} --no-restore
 
-      # bin/ + obj/ contêm tudo o que dotnet test --no-build precisa.
-      # Excluir TestResults/ evita acumular nada de runs anteriores
-      # (não deve existir aqui, mas guarda-corpo barato).
-      - name: Upload build output (bin/ + obj/)
+      # Empacotar em tar antes do upload preserva a estrutura por projeto
+      # (<projeto>/bin/Release/...) — actions/upload-artifact "rebaseia" globs
+      # iniciados com ** e flatteniza arquivos sob bin/ / obj/ comuns no
+      # download, quebrando dotnet test --no-build --no-restore.
+      # Solução com tar foi adotada em vez de actions/cache porque cache
+      # depende de chave estável e, em PRs com push novo, pode atingir cache
+      # de runs anteriores em vez do build atual; tar via artifact garante
+      # que o exato output do build deste run chega aos test jobs.
+      - name: Pack build output
+        run: |
+          find src tests -type d \( -path '*/bin/${{ env.BUILD_CONFIG }}' -o -name 'obj' \) > build-paths.txt
+          tar -cf build-output.tar -T build-paths.txt
+          ls -lh build-output.tar
+
+      - name: Upload build output
         uses: actions/upload-artifact@v5
         with:
           name: build-output
-          path: |
-            **/bin/${{ env.BUILD_CONFIG }}/**
-            **/obj/**
-            !**/TestResults/**
+          path: build-output.tar
           if-no-files-found: error
           retention-days: 1
 
@@ -188,6 +196,9 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: build-output
+
+      - name: Unpack build output
+        run: tar -xf build-output.tar
 
       - name: Run unit + arch tests with coverage
         # Filtra fora qualquer FullyQualifiedName contendo "IntegrationTests"
@@ -254,6 +265,9 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: build-output
+
+      - name: Unpack build output
+        run: tar -xf build-output.tar
 
       - name: Run integration tests with coverage
         run: |
