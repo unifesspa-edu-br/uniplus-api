@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Http;
@@ -12,6 +13,13 @@ public sealed partial class CorrelationIdMiddleware
     public const string HeaderName = "X-Correlation-Id";
     public const string LogContextProperty = "CorrelationId";
     public const int MaxCorrelationIdLength = 128;
+
+    /// <summary>
+    /// Nome do span attribute (Activity tag) que carrega o correlation_id no Tempo.
+    /// Lido por <c>derivedFields</c> do Loki datasource em Grafana para o drill-down
+    /// log → trace, fechando o ciclo log ↔ trace ↔ dashboard (ADR-0018).
+    /// </summary>
+    public const string ActivityTagName = "correlation_id";
 
     private readonly RequestDelegate _next;
 
@@ -29,6 +37,13 @@ public sealed partial class CorrelationIdMiddleware
         string correlationId = ObterOuGerarCorrelationId(context);
 
         writer.SetCorrelationId(correlationId);
+
+        // Propagar correlation_id como Activity span attribute habilita o
+        // drill-down Loki → Tempo via derivedFields no Grafana (ADR-0018) e
+        // fecha o ciclo log ↔ trace. Activity.Current pode ser null fora do
+        // request pipeline com OTel wired (ex.: testes unitários sem listener);
+        // o ?. mantém o middleware safe nesse cenário.
+        Activity.Current?.SetTag(ActivityTagName, correlationId);
 
         // Postergar a escrita do header até o início do flush da resposta
         // garante que o valor sobreviva a qualquer mutação feita por
