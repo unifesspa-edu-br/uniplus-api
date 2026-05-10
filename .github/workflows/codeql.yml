@@ -9,8 +9,19 @@ name: CodeQL
 on:
   push:
     branches: [main]
+    # paths-ignore evita execução em PRs/pushes docs-only (sem código C#
+    # alterado, CodeQL não acrescenta sinal). O schedule semanal abaixo
+    # cobre drift acidental.
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
   schedule:
     # Segunda-feira 03:30 UTC (= 00:30 BRT). Janela noturna de baixo tráfego
     # nos GitHub Actions runners e fora do horário operacional do time.
@@ -55,6 +66,11 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          # Cache de packages NuGet chaveado por hash dos .csproj. Reduz
+          # restore frio (~30-60s na árvore atual de ~30 projetos) para
+          # ~5s em cache hit, economizando runner minutes em PRs em rajada.
+          cache: true
+          cache-dependency-path: '**/*.csproj'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
