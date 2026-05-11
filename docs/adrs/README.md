@@ -81,7 +81,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0050](0050-registry-ghcr-e-tagging.md) | GitHub Container Registry e estratégia de tagging das imagens da `uniplus-api` | accepted | 2026-05-08 |
 | [0051](0051-apicurio-schema-registry-avro-wolverine.md) | Apicurio Schema Registry com Avro e Wolverine — schemas no Domain, registro idempotente, OAuth client_credentials | accepted | 2026-05-09 |
 | [0052](0052-rastreabilidade-cross-service-traceparent-service-name-enricher.md) | Rastreabilidade cross-service via `traceparent` W3C + Serilog `ServiceName` enricher + Wolverine envelope middleware para `CorrelationId` | proposed | 2026-05-11 |
-| [0053](0053-zero-test-environment-branches-in-production-code.md) | Zero ramos de ambiente de teste em código de produção — fitness test enforça `IsEnvironment(literal)` e `EnvironmentName == literal` banidos em `src/` | accepted | 2026-05-11 |
+| [0053](0053-zero-test-environment-branches-in-production-code.md) | Zero ramos de ambiente de teste em código de produção — `IsEnvironment(literal)` e `EnvironmentName == literal` banidos em `src/` (ADR normativa sem enforcement automático) | accepted | 2026-05-11 |
 
 ## Como adicionar um novo ADR
 
