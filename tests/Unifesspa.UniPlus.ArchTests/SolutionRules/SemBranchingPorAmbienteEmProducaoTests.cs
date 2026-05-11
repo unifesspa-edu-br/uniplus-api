@@ -145,17 +145,41 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
 
         foreach (string file in files)
         {
-            string[] lines = File.ReadAllLines(file);
+            // Strip de strings literais TEM que rodar no arquivo INTEIRO,
+            // não linha-a-linha. Strings raw/verbatim multi-linha podem
+            // conter `/*` sem `*/`; um strip per-line marcaria `inBlockComment`
+            // a partir daquela linha e descartaria silenciosamente violações
+            // reais que viessem depois (Codex 7ª rodada P1).
+            //
+            // Para preservar mapping de número de linha, o Replace substitui
+            // cada match por `"_S_"` MAIS os `\n` que estavam dentro do
+            // match — assim split('\n') no resultado mantém o mesmo número
+            // de linhas que o arquivo original.
+            string originalText = File.ReadAllText(file);
+            string sanitizedText = StringLiteralPattern().Replace(
+                originalText,
+                m =>
+                {
+                    int newlineCount = 0;
+                    foreach (char c in m.Value)
+                    {
+                        if (c == '\n') newlineCount++;
+                    }
+                    return StringLiteralPlaceholder + new string('\n', newlineCount);
+                });
+
+            string[] lines = originalText.Split('\n');
             string[] processed = new string[lines.Length];
+            string[] sanitizedLines = sanitizedText.Split('\n');
             bool inBlockComment = false;
 
-            // Pass 1: strip strings + comments por linha (state-machine
-            // mantém estado /*..*/ cross-line). Mesma lógica de
-            // DominioNaoUsaGuidNewGuidTests para preservar false-positives
-            // em comentários históricos.
-            for (int i = 0; i < lines.Length; i++)
+            // Pass 1: strip comments por linha sobre o texto JÁ com strings
+            // sanitizadas (state-machine mantém estado /*..*/ cross-line).
+            // Mesma lógica de DominioNaoUsaGuidNewGuidTests para preservar
+            // false-positives em comentários históricos.
+            for (int i = 0; i < sanitizedLines.Length && i < processed.Length; i++)
             {
-                string line = StringLiteralPattern().Replace(lines[i], StringLiteralPlaceholder);
+                string line = sanitizedLines[i];
 
                 if (inBlockComment)
                 {
