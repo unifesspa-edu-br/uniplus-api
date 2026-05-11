@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 using Cryptography;
@@ -30,6 +31,11 @@ public static class CryptographyServiceCollectionExtensions
         {
             optionsBuilder.Configure(configure);
         }
+
+        // Validator condicional Provider × campos dependentes. Composto com ValidateDataAnnotations:
+        // ambos rodam ao materializar IOptions<EncryptionOptions>.Value e ValidateOnStart força no boot.
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<EncryptionOptions>, EncryptionOptionsValidator>());
 
         optionsBuilder.ValidateDataAnnotations().ValidateOnStart();
 
