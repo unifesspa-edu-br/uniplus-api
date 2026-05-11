@@ -13,9 +13,10 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Observability;
 /// OpenTelemetry — esta é a invariante exigida pela ADR-0052 para evitar drift
 /// entre logs (Loki/Console) e traces (Tempo).</para>
 /// <para>Novos módulos da plataforma adicionam uma constante aqui antes de
-/// instanciar a sua <c>Program.cs</c>. Em testes, <see cref="TestPlaceholder"/>
-/// cobre o cenário em que <see cref="IntegrationTests.Fixtures.Hosting.ApiFactoryBase{T}"/>
-/// (ou equivalentes) precisa de um nome estável que não colida com produção.</para>
+/// instanciar a sua <c>Program.cs</c>. Suites de teste hoje rodam com
+/// <c>Observability:Enabled=false</c> (ver <c>ApiFactoryBase</c>) — quando uma
+/// suite futura precisar reativar o pipeline OTel real, adicione um placeholder
+/// específico aqui nesse momento (YAGNI por enquanto).</para>
 /// </remarks>
 public static class UniPlusServiceNames
 {
@@ -27,11 +28,4 @@ public static class UniPlusServiceNames
 
     /// <summary>Portal do candidato — API que orquestra perfil único e portfólio cross-módulo.</summary>
     public const string Portal = "uniplus-portal";
-
-    /// <summary>
-    /// Placeholder estável para suites de teste que sobem <c>Program.cs</c> via
-    /// <c>WebApplicationFactory</c>. Permite que <see cref="Logging.ServiceNameEnricher"/>
-    /// emita um valor não nulo nos logs do host de teste sem colidir com nomes de produção.
-    /// </summary>
-    public const string TestPlaceholder = "uniplus-test";
 }
