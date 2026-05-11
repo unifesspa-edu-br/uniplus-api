@@ -50,7 +50,12 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Trivy — fs scan
-        uses: aquasecurity/trivy-action@0.35.0
+        # Pin imutável (Codex P1): trivy-action é third-party e teve incidente
+        # de supply chain em março/2026 via retargeting de tag mutável. Para as
+        # actions de orgs auditadas (actions/, docker/, github/) o projeto
+        # mantém pin por major (consistência com codeql.yml e publish-images.yml).
+        # Atualizar este SHA exige PR explícito com diff visível do release notes.
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
           scan-type: fs
           scan-ref: .
@@ -124,7 +129,12 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.module }}
 
       - name: Trivy — image scan
-        uses: aquasecurity/trivy-action@0.35.0
+        # Pin imutável (Codex P1): trivy-action é third-party e teve incidente
+        # de supply chain em março/2026 via retargeting de tag mutável. Para as
+        # actions de orgs auditadas (actions/, docker/, github/) o projeto
+        # mantém pin por major (consistência com codeql.yml e publish-images.yml).
+        # Atualizar este SHA exige PR explícito com diff visível do release notes.
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
         with:
           image-ref: trivy-scan/uniplus-api-${{ matrix.module }}:ci
           format: sarif
