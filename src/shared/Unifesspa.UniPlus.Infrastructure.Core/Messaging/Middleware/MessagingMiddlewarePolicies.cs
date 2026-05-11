@@ -33,6 +33,31 @@ public static class MessagingMiddlewarePolicies
     }
 
     /// <summary>
+    /// Registra o <see cref="CorrelationIdEnvelopeMiddleware"/> em TODOS os chains
+    /// Wolverine (commands, queries, eventos cascading, mensagens consumidas de Kafka
+    /// que não são command/query). Implementa o terceiro componente da ADR-0052
+    /// (rastreabilidade cross-service via <c>uniplus.correlation-id</c>).
+    /// </summary>
+    /// <remarks>
+    /// <para>Aplicado sem filtro <see cref="IsCommandOrQueryChain"/> de propósito:
+    /// o <c>CorrelationId</c> precisa fluir também em handlers de eventos publicados
+    /// via outbox/Kafka, que não implementam <c>ICommand&lt;T&gt;</c>/<c>IQuery&lt;T&gt;</c>
+    /// — caso contrário, o consumer perderia a âncora de negócio assim que o span pai
+    /// fosse descartado pelo sampler de 10% em produção (ADR-0018).</para>
+    /// <para>Deve ser registrado <em>antes</em> de <see cref="AddCommandQueryMiddleware"/>:
+    /// o Wolverine respeita a ordem de registro, e o escopo do <see cref="Serilog.Context.LogContext"/>
+    /// precisa estar ativo quando o <see cref="WolverineLoggingMiddleware"/> emite
+    /// <c>Processando {RequestName}</c> — caso contrário a entrada inicial sai sem a
+    /// propriedade <c>CorrelationId</c>.</para>
+    /// </remarks>
+    public static void AddCorrelationIdMiddleware(this WolverineOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        options.Policies.AddMiddleware(typeof(CorrelationIdEnvelopeMiddleware));
+    }
+
+    /// <summary>
     /// Predicado público para reuso em testes e em policies derivadas: identifica
     /// chains cuja mensagem implementa <see cref="ICommand{TResponse}"/> ou
     /// <see cref="IQuery{TResponse}"/>.
