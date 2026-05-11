@@ -48,13 +48,22 @@ using TestSupport;
 /// </remarks>
 public sealed partial class SemBranchingPorAmbienteEmProducaoTests
 {
-    // Neutraliza strings literais "double-quoted" (incluindo escapes \") e
-    // verbatim @"...". Aplicado ANTES do comment scanner para evitar que
-    // sequências como "*/*" ou "// foo" dentro de strings confundam o
-    // detector de comments. Raw strings (""" ... """) C# 11+ não são
-    // exploradas hoje no src/ — se vierem a ser, expandir.
+    // Neutraliza CONTEÚDO de strings literais (incluindo escapes \" e
+    // verbatim @"..."). Aplicado ANTES do comment scanner para evitar que
+    // sequências como "*/*" ou "// foo" dentro de strings confundam a
+    // state-machine de block comments. Raw strings (""" ... """) C# 11+
+    // não são exploradas hoje no src/ — se vierem a ser, expandir.
+    //
+    // IMPORTANTE: substituição preserva ASPAS + insere placeholder não-vazio
+    // (`_S_`). Substituir por "" (vazio) seria fatal — os 7 patterns do
+    // detector exigem literal não-vazio `"[^"]+"`, então strings vazias
+    // não casariam e a regra ficaria inativa (Codex P1 original).
+    // O placeholder mantém os patterns funcionais: `IsEnvironment("Test")`
+    // vira `IsEnvironment("_S_")` que matcha `IsEnvironment\("[^"]+"\)`.
     [GeneratedRegex(@"@""(?:""""|[^""])*""|""(?:\\.|[^""\\])*""")]
     private static partial Regex StringLiteralPattern();
+
+    private const string StringLiteralPlaceholder = "\"_S_\"";
 
     [GeneratedRegex(@"\bIsEnvironment\s*\(\s*""[^""]+""\s*\)")]
     private static partial Regex IsEnvironmentLiteralPattern();
@@ -62,13 +71,21 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [GeneratedRegex(@"\bEnvironmentName\s*==\s*""[^""]+""")]
     private static partial Regex EnvironmentNameEqualsLiteralPattern();
 
-    [GeneratedRegex(@"""[^""]+""\s*==\s*\bEnvironmentName\b")]
+    // Aceita qualifier chain entre `==` e EnvironmentName:
+    // `"Test" == env.EnvironmentName` ou `"Test" == builder.Environment.EnvironmentName`.
+    // Test-the-test pegou esse buraco no draft inicial.
+    [GeneratedRegex(@"""[^""]+""\s*==\s*(?:[\w]+(?:\s*\.\s*[\w]+)*\s*\.\s*)?EnvironmentName\b")]
     private static partial Regex LiteralEqualsEnvironmentNamePattern();
 
     [GeneratedRegex(@"\bEnvironmentName\.Equals\s*\(\s*""[^""]+""")]
     private static partial Regex EnvironmentNameDotEqualsLiteralPattern();
 
-    [GeneratedRegex(@"\bstring\.Equals\s*\(\s*EnvironmentName\s*,\s*""[^""]+""")]
+    // Aceita qualifier chain antes de EnvironmentName: cobre
+    // `string.Equals(EnvironmentName, ...)` (acesso bare) e também
+    // `string.Equals(builder.Environment.EnvironmentName, ...)` ou
+    // `string.Equals(env.EnvironmentName, ...)` — bypass que o regex
+    // anterior deixava passar (Codex P2 original).
+    [GeneratedRegex(@"\bstring\.Equals\s*\(\s*(?:[\w]+(?:\s*\.\s*[\w]+)*\s*\.\s*)?EnvironmentName\s*,\s*""[^""]+""")]
     private static partial Regex StringEqualsEnvironmentNameLiteralPattern();
 
     [GeneratedRegex(@"\bEnvironmentName\s+is\s+""[^""]+""")]
@@ -103,11 +120,12 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
             for (int i = 0; i < lines.Length; i++)
             {
                 string originalLine = lines[i];
-                // Strip strings literais ANTES de aplicar a state-machine de
-                // comments. Caso real coberto: "*/*" em VendorMediaTypeAttribute
+                // Strip CONTEÚDO de strings literais ANTES da state-machine
+                // de comments. Caso real coberto: "*/*" em VendorMediaTypeAttribute
                 // que, sem o strip, faria o scanner entrar em inBlockComment e
-                // ignorar o resto do arquivo (Codex P1).
-                string line = StringLiteralPattern().Replace(originalLine, "\"\"");
+                // ignorar o resto do arquivo. Placeholder não-vazio preserva
+                // os patterns do detector funcionais.
+                string line = StringLiteralPattern().Replace(originalLine, StringLiteralPlaceholder);
                 string trimmed = line.TrimStart();
 
                 // State-machine mínima de comment: rastreia /* ... */ multi-linha.
@@ -163,5 +181,54 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
             "ou mova a customização para tests/Unifesspa.UniPlus.IntegrationTests.Fixtures/Hosting/ApiFactoryBase.cs. " +
             "HML/sanidade são semanticamente Production — Vault injeta config. " +
             $"Violações encontradas:\n  - {string.Join("\n  - ", violations)}");
+    }
+
+    // Test-the-test: prova que os 7 patterns realmente DETECTAM violações
+    // canônicas. Sem isso o detector poderia degradar silenciosamente para
+    // "passa em qualquer codebase" (regressão real do primeiro draft desta
+    // ADR — Codex P1 original onde strip de string deixava patterns sem o
+    // que casar). Cada cenário cobre uma das 7 síntaxes banidas.
+    [Theory(DisplayName = "ADR-0053: detector captura cada uma das 7 síntaxes banidas e ignora permitidos")]
+    [InlineData(@"if (env.IsEnvironment(""Testing""))", true)]
+    [InlineData(@"if (builder.Environment.IsEnvironment(""Test""))", true)]
+    [InlineData(@"if (env.EnvironmentName == ""Test"")", true)]
+    [InlineData(@"if (builder.Environment.EnvironmentName == ""Test"")", true)]
+    [InlineData(@"if (""Test"" == env.EnvironmentName)", true)]
+    [InlineData(@"if (env.EnvironmentName.Equals(""Test""))", true)]
+    [InlineData(@"if (string.Equals(env.EnvironmentName, ""Test"", StringComparison.OrdinalIgnoreCase))", true)]
+    [InlineData(@"if (string.Equals(builder.Environment.EnvironmentName, ""Test"", StringComparison.OrdinalIgnoreCase))", true)]
+    [InlineData(@"if (env.EnvironmentName is ""Test"")", true)]
+    [InlineData(@"switch (env.EnvironmentName) { case ""Test"": break; }", true)]
+    // Permitidos (não devem casar):
+    [InlineData(@"if (env.IsDevelopment())", false)]
+    [InlineData(@"if (env.IsProduction())", false)]
+    [InlineData(@"if (!env.IsDevelopment())", false)]
+    [InlineData(@"_logger.LogInformation(""Env={Env}"", env.EnvironmentName);", false)]
+    // String literal contendo /* não deve confundir detector nem dar falso positivo:
+    [InlineData(@"public string MediaType { get; } = ""*/*"";", false)]
+    [InlineData(@"// IsEnvironment(""Testing"") em comentário não conta", false)]
+    public void Detector_Captura_Sintaxes_Banidas_Ignora_Permitidos(string codeLine, bool deveMatchar)
+    {
+        // Replicar o pré-processamento exato do scanner real (strip string
+        // literais antes de aplicar patterns), para evitar divergência
+        // entre o que o test prova e o que o detector roda em src/.
+        string preprocessed = StringLiteralPattern().Replace(codeLine, StringLiteralPlaceholder);
+
+        // Linhas iniciadas por // são filtradas pela state-machine no
+        // detector real — replicar aqui para o caso de comentário.
+        bool inComment = preprocessed.TrimStart().StartsWith("//", StringComparison.Ordinal);
+
+        bool matched = !inComment && (
+            IsEnvironmentLiteralPattern().IsMatch(preprocessed)
+            || EnvironmentNameEqualsLiteralPattern().IsMatch(preprocessed)
+            || LiteralEqualsEnvironmentNamePattern().IsMatch(preprocessed)
+            || EnvironmentNameDotEqualsLiteralPattern().IsMatch(preprocessed)
+            || StringEqualsEnvironmentNameLiteralPattern().IsMatch(preprocessed)
+            || EnvironmentNameIsPatternLiteral().IsMatch(preprocessed)
+            || SwitchOverEnvironmentNamePattern().IsMatch(preprocessed));
+
+        matched.Should().Be(deveMatchar,
+            $"Linha `{codeLine}` deveria {(deveMatchar ? "" : "NÃO ")}matchar algum dos 7 patterns. " +
+            $"Pré-processado: `{preprocessed}`");
     }
 }
