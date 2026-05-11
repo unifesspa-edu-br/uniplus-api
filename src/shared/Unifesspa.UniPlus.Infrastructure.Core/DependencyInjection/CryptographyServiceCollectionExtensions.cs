@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using Cryptography;
@@ -56,6 +57,17 @@ public static class CryptographyServiceCollectionExtensions
             throw new InvalidOperationException(
                 $"UniPlus:Encryption:Provider inválido: '{opts.Provider}'. Use 'vault' ou 'local'.");
         });
+
+        // Warmup hosted service força a resolução do IUniPlusEncryptionService no
+        // Host.StartAsync — falha do construtor (JWT ausente, mutex auth method)
+        // vira CrashLoopBackOff antes do app aceitar tráfego, em vez de 500 na
+        // primeira request cifrada. Test factories (ApiFactoryBase) carregam
+        // appsettings.Development.json com LocalKey válida e por isso o warmup
+        // roda normalmente em integration tests; fixtures que precisem mockar o
+        // pipeline sem cifragem real podem filtrar via heurística estável de
+        // ImplementationType, mesmo pattern de MigrationHostedService/Wolverine.
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IHostedService, EncryptionWarmupHostedService>());
 
         return services;
     }
