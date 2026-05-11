@@ -48,19 +48,20 @@ using TestSupport;
 /// </remarks>
 public sealed partial class SemBranchingPorAmbienteEmProducaoTests
 {
-    // Neutraliza CONTEÚDO de strings literais (incluindo escapes \" e
-    // verbatim @"..."). Aplicado ANTES do comment scanner para evitar que
-    // sequências como "*/*" ou "// foo" dentro de strings confundam a
-    // state-machine de block comments. Raw strings (""" ... """) C# 11+
-    // não são exploradas hoje no src/ — se vierem a ser, expandir.
+    // Neutraliza CONTEÚDO de strings literais. Cobre:
+    //   - regulares "..." (com escapes \")
+    //   - verbatim @"..." (com "" como escape)
+    //   - interpolated $"..." e $@"..." / @$"..."
+    //   - raw strings C# 11+ """...""" (single-line; multi-linha via Singleline)
+    // Aplicado ANTES do comment scanner para evitar que sequências como
+    // "*/*" ou "// foo" dentro de strings confundam a state-machine de
+    // block comments. Cobre P1.A do Codex review (interpolated/raw bypass).
     //
     // IMPORTANTE: substituição preserva ASPAS + insere placeholder não-vazio
     // (`_S_`). Substituir por "" (vazio) seria fatal — os 7 patterns do
     // detector exigem literal não-vazio `"[^"]+"`, então strings vazias
-    // não casariam e a regra ficaria inativa (Codex P1 original).
-    // O placeholder mantém os patterns funcionais: `IsEnvironment("Test")`
-    // vira `IsEnvironment("_S_")` que matcha `IsEnvironment\("[^"]+"\)`.
-    [GeneratedRegex(@"@""(?:""""|[^""])*""|""(?:\\.|[^""\\])*""")]
+    // não casariam e a regra ficaria inativa.
+    [GeneratedRegex(@"""""""[\s\S]*?""""""|\$?@""(?:""""|[^""])*""|@\$""(?:""""|[^""])*""|\$?""(?:\\.|[^""\\])*""")]
     private static partial Regex StringLiteralPattern();
 
     private const string StringLiteralPlaceholder = "\"_S_\"";
@@ -115,36 +116,35 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
         foreach (string file in files)
         {
             string[] lines = File.ReadAllLines(file);
+            string[] processed = new string[lines.Length];
             bool inBlockComment = false;
 
+            // Pass 1: strip strings + comments por linha (state-machine
+            // mantém estado /*..*/ cross-line). Mesma lógica de
+            // DominioNaoUsaGuidNewGuidTests para preservar false-positives
+            // em comentários históricos.
             for (int i = 0; i < lines.Length; i++)
             {
-                string originalLine = lines[i];
-                // Strip CONTEÚDO de strings literais ANTES da state-machine
-                // de comments. Caso real coberto: "*/*" em VendorMediaTypeAttribute
-                // que, sem o strip, faria o scanner entrar em inBlockComment e
-                // ignorar o resto do arquivo. Placeholder não-vazio preserva
-                // os patterns do detector funcionais.
-                string line = StringLiteralPattern().Replace(originalLine, StringLiteralPlaceholder);
-                string trimmed = line.TrimStart();
+                string line = StringLiteralPattern().Replace(lines[i], StringLiteralPlaceholder);
 
-                // State-machine mínima de comment: rastreia /* ... */ multi-linha.
-                // Mesma lógica usada em DominioNaoUsaGuidNewGuidTests para preservar
-                // false-positives historicamente documentados em ADRs/comentários.
                 if (inBlockComment)
                 {
                     int closing = line.IndexOf("*/", StringComparison.Ordinal);
                     if (closing < 0)
+                    {
+                        processed[i] = string.Empty;
                         continue;
+                    }
                     inBlockComment = false;
                     line = line[(closing + 2)..];
-                    trimmed = line.TrimStart();
-                    if (trimmed.Length == 0)
-                        continue;
                 }
 
+                string trimmed = line.TrimStart();
                 if (trimmed.StartsWith("//", StringComparison.Ordinal))
+                {
+                    processed[i] = string.Empty;
                     continue;
+                }
 
                 int blockStart = line.IndexOf("/*", StringComparison.Ordinal);
                 if (blockStart >= 0)
@@ -161,18 +161,26 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
                     }
                 }
 
-                if (IsEnvironmentLiteralPattern().IsMatch(line)
-                    || EnvironmentNameEqualsLiteralPattern().IsMatch(line)
-                    || LiteralEqualsEnvironmentNamePattern().IsMatch(line)
-                    || EnvironmentNameDotEqualsLiteralPattern().IsMatch(line)
-                    || StringEqualsEnvironmentNameLiteralPattern().IsMatch(line)
-                    || EnvironmentNameIsPatternLiteral().IsMatch(line)
-                    || SwitchOverEnvironmentNamePattern().IsMatch(line))
-                {
-                    string relative = Path.GetRelativePath(solutionRoot, file);
-                    violations.Add($"{relative}:{i + 1}: {originalLine.Trim()}");
-                }
+                int singleComment = line.IndexOf("//", StringComparison.Ordinal);
+                if (singleComment >= 0)
+                    line = line[..singleComment];
+
+                processed[i] = line;
             }
+
+            // Pass 2: regex global no arquivo processado para capturar
+            // chamadas multi-linha (Codex P1.B). Newlines viram \n no
+            // joined; `\s*` nos regex matcha através de newline naturalmente.
+            // Cada match → linha original via Count('\n') no índice.
+            string joined = string.Join('\n', processed);
+
+            CollectMatches(joined, IsEnvironmentLiteralPattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, EnvironmentNameEqualsLiteralPattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, LiteralEqualsEnvironmentNamePattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, EnvironmentNameDotEqualsLiteralPattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, StringEqualsEnvironmentNameLiteralPattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, EnvironmentNameIsPatternLiteral(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, SwitchOverEnvironmentNamePattern(), lines, file, solutionRoot, violations);
         }
 
         violations.Should().BeEmpty(
@@ -181,6 +189,32 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
             "ou mova a customização para tests/Unifesspa.UniPlus.IntegrationTests.Fixtures/Hosting/ApiFactoryBase.cs. " +
             "HML/sanidade são semanticamente Production — Vault injeta config. " +
             $"Violações encontradas:\n  - {string.Join("\n  - ", violations)}");
+    }
+
+    private static void CollectMatches(
+        string joined,
+        Regex pattern,
+        string[] originalLines,
+        string filePath,
+        string solutionRoot,
+        List<string> violations)
+    {
+        foreach (Match match in pattern.Matches(joined))
+        {
+            // Index → line number: conta '\n' antes do match.
+            int lineNumber = 1;
+            for (int j = 0; j < match.Index; j++)
+            {
+                if (joined[j] == '\n')
+                    lineNumber++;
+            }
+
+            string relative = Path.GetRelativePath(solutionRoot, filePath);
+            string original = lineNumber <= originalLines.Length
+                ? originalLines[lineNumber - 1].Trim()
+                : "<sem linha original>";
+            violations.Add($"{relative}:{lineNumber}: {original}");
+        }
     }
 
     // Test-the-test: prova que os 7 patterns realmente DETECTAM violações
@@ -199,6 +233,9 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [InlineData(@"if (string.Equals(builder.Environment.EnvironmentName, ""Test"", StringComparison.OrdinalIgnoreCase))", true)]
     [InlineData(@"if (env.EnvironmentName is ""Test"")", true)]
     [InlineData(@"switch (env.EnvironmentName) { case ""Test"": break; }", true)]
+    // Bypass por interpolated/raw strings (Codex P1.A) — placeholder coverage:
+    [InlineData(@"if (env.IsEnvironment($""Test""))", true)]
+    [InlineData(@"if (env.IsEnvironment(""""""Test""""""))", true)]
     // Permitidos (não devem casar):
     [InlineData(@"if (env.IsDevelopment())", false)]
     [InlineData(@"if (env.IsProduction())", false)]
