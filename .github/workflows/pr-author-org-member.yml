@@ -12,21 +12,28 @@ jobs:
     name: PR author is org member
     runs-on: ubuntu-latest
     steps:
-      # Bots conhecidos do GitHub (Dependabot, GitHub Actions, Renovate)
-      # não são "members" no sentido organizacional — não passam pelo endpoint
-      # /collaborators/{login}/permission e nem aparecem em ?affiliation=outside.
-      # São agentes do próprio GitHub, autorizados a abrir PRs com as permissões
-      # do repo via secrets.GITHUB_TOKEN. Bypass explícito + nominal evita
-      # reescrever o gate semanticamente: humanos continuam sendo validados
-      # pela rota normal abaixo.
-      - name: Bypass para bots do GitHub
-        if: github.event.pull_request.user.type == 'Bot'
+      # Bots confiáveis instalados pelo Owner da org (Dependabot, GitHub Actions,
+      # Renovate) não são "members" no sentido organizacional — não passam pelo
+      # endpoint /collaborators/{login}/permission e nem aparecem em
+      # ?affiliation=outside. Operam com o GITHUB_TOKEN do repo, sem vetor de
+      # impersonation externa.
+      #
+      # Importante: whitelist NOMINAL (não `user.type == 'Bot'` genérico) — caso
+      # contrário qualquer GitHub App de terceiros instalado em qualquer momento
+      # passaria o gate. Para incluir um novo bot, adicionar o login aqui após
+      # revisão do Owner.
+      - name: Bypass para bots confiáveis do GitHub
+        if: |
+          github.event.pull_request.user.type == 'Bot' &&
+          contains(fromJSON('["dependabot[bot]", "github-actions[bot]", "renovate[bot]"]'), github.event.pull_request.user.login)
         run: |
-          echo "PR autor ${{ github.event.pull_request.user.login }} é Bot — bypass do gate org-member."
+          echo "PR autor ${{ github.event.pull_request.user.login }} é Bot confiável (whitelist) — bypass do gate org-member."
           exit 0
 
       - name: Validate author is org member with write access
-        if: github.event.pull_request.user.type != 'Bot'
+        if: |
+          github.event.pull_request.user.type != 'Bot' ||
+          !contains(fromJSON('["dependabot[bot]", "github-actions[bot]", "renovate[bot]"]'), github.event.pull_request.user.login)
         env:
           AUTHOR: ${{ github.event.pull_request.user.login }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
