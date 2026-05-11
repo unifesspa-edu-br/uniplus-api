@@ -45,15 +45,26 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
         bool hasRole = !string.IsNullOrWhiteSpace(opts.KubernetesRole);
         bool hasToken = !string.IsNullOrWhiteSpace(opts.VaultToken);
 
-        if (hasRole == hasToken)
+        // EncryptionOptionsValidator já enforça exatamente um dos dois quando Provider=vault.
+        // As guardas defensivas abaixo cobrem o fluxo de testes que instancia o serviço
+        // diretamente (sem passar pelo validator), tornando a violação explícita em vez
+        // de um NullReferenceException mais adiante em CreateVaultClient. Mensagens
+        // separadas facilitam o diagnóstico — ambos definidos vs nenhum definido têm
+        // ações corretivas distintas.
+        if (hasRole && hasToken)
         {
-            // EncryptionOptionsValidator já enforça exatamente um dos dois quando Provider=vault.
-            // Esta guarda defensiva cobre o fluxo de testes que instancia o serviço diretamente
-            // (sem passar pelo validator), tornando a violação explícita em vez de um
-            // NullReferenceException mais adiante em CreateVaultClient.
             throw new InvalidOperationException(
-                "UniPlus:Encryption: exatamente um entre KubernetesRole e VaultToken deve estar definido " +
-                "quando Provider = 'vault'. Ver EncryptionOptionsValidator e docs/guia-config-cifragem.md.");
+                "UniPlus:Encryption: KubernetesRole e VaultToken são mutuamente exclusivos quando Provider = 'vault'. " +
+                "Em produção use KubernetesRole; em testes/dev use VaultToken. " +
+                "Ver EncryptionOptionsValidator e docs/guia-config-cifragem.md.");
+        }
+
+        if (!hasRole && !hasToken)
+        {
+            throw new InvalidOperationException(
+                "UniPlus:Encryption: nem KubernetesRole nem VaultToken estão definidos quando Provider = 'vault'. " +
+                "Configure UNIPLUS__ENCRYPTION__KUBERNETESROLE (produção) ou UNIPLUS__ENCRYPTION__VAULTTOKEN (testes/dev). " +
+                "Ver EncryptionOptionsValidator e docs/guia-config-cifragem.md.");
         }
 
         _vaultAddress = opts.VaultAddress;
