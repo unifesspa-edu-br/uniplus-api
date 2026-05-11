@@ -62,7 +62,16 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     // (`_S_`). Substituir por "" (vazio) seria fatal — os patterns do
     // detector exigem literal não-vazio `"[^"]+"`, então strings vazias
     // não casariam e a regra ficaria inativa.
-    [GeneratedRegex(@"\$?""""""[\s\S]*?""""""|\$?@""(?:""""|[^""])*""|@\$""(?:""""|[^""])*""|\$?""(?:\\.|[^""\\])*""")]
+    // Raw string alternative cobre TODOS os delimitadores:
+    //   - `\$*` zero ou mais dollar signs (interpolated com N níveis: $, $$, $$$, …)
+    //   - `"{3,}` 3 ou mais aspas como opener (C# 11+ raw, C# 12+ com ≥4 quando
+    //     o conteúdo precisa de 3 quotes consecutivos)
+    //   - `[\s\S]*?` conteúdo non-greedy (cross-line ok)
+    //   - `"{3,}` closer espelhando opener (regex não force matching count
+    //     exato, mas para PROPÓSITO de strip isso é OK — não validamos C#
+    //     semanticamente, apenas neutralizamos para o detector)
+    // Codex 6ª rodada P2 — cobre $$"""..."""$$ e """"...""""
+    [GeneratedRegex(@"\$*""{3,}[\s\S]*?""{3,}|\$?@""(?:""""|[^""])*""|@\$""(?:""""|[^""])*""|\$?""(?:\\.|[^""\\])*""")]
     private static partial Regex StringLiteralPattern();
 
     private const string StringLiteralPlaceholder = "\"_S_\"";
@@ -272,6 +281,10 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [InlineData(@"if (""Test"" != env.EnvironmentName)", true)]
     // Interpolated raw string $"""...""" (Codex 5ª rodada P2):
     [InlineData(@"if (env.IsEnvironment($""""""Test"""""")) {}", true)]
+    // Multi-dollar interpolated raw $$"""..."""$$ + 4+ quotes raw """"...""""
+    // (Codex 6ª rodada P2):
+    [InlineData(@"if (env.IsEnvironment($$""""""Test"""""")) {}", true)]
+    [InlineData(@"if (env.IsEnvironment(""""""""Test"""""""")) {}", true)]
     // Repeated inline block comments (Codex 5ª rodada P1):
     [InlineData(@"/*a*/ if (env.IsEnvironment/*b*/(""Test"")) {}", true)]
     [InlineData(@"if (env.EnvironmentName is ""Test"")", true)]
