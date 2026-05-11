@@ -29,11 +29,12 @@ using Wolverine.Postgresql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// service.name canônico para Resource OTel (tracing/metrics) e ResourceAttributes
-// do sink OTLP do Serilog (logs). Mantido em const local para garantir igualdade
-// estrita entre os 2 pipelines — drift de naming entre logs e traces seria a
-// 1ª coisa a quebrar drill-down Loki↔Tempo no Grafana.
-const string nomeServicoSelecao = "uniplus-selecao";
+// service.name canônico para Resource OTel (tracing/metrics), ResourceAttributes
+// do sink OTLP do Serilog (logs) e propriedade Serilog `ServiceName` via
+// ServiceNameEnricher (ADR-0052). Single source of truth em UniPlusServiceNames —
+// drift de naming entre logs e traces seria a 1ª coisa a quebrar drill-down
+// Loki↔Tempo no Grafana.
+const string nomeServicoSelecao = UniPlusServiceNames.Selecao;
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoSelecao));
