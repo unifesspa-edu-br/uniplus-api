@@ -50,7 +50,7 @@ public sealed class VaultTransitEncryptionServiceConstructorTests : IDisposable
     }
 
     [Fact]
-    public void Construtor_SemRoleNemToken_DeveLancarInvalidOperationException()
+    public void Construtor_SemRoleNemToken_DeveLancarComMensagemDeConfiguracaoAusente()
     {
         EncryptionOptions opts = new()
         {
@@ -63,11 +63,11 @@ public sealed class VaultTransitEncryptionServiceConstructorTests : IDisposable
         Action ato = () => CriarServico(opts);
 
         ato.Should().Throw<InvalidOperationException>()
-            .WithMessage("*exatamente um*");
+            .WithMessage("*nem KubernetesRole nem VaultToken*Configure UNIPLUS__ENCRYPTION__KUBERNETESROLE*");
     }
 
     [Fact]
-    public void Construtor_ComRoleEToken_DeveLancarInvalidOperationException()
+    public void Construtor_ComRoleEToken_DeveLancarComMensagemDeExclusividade()
     {
         EncryptionOptions opts = new()
         {
@@ -81,7 +81,7 @@ public sealed class VaultTransitEncryptionServiceConstructorTests : IDisposable
         Action ato = () => CriarServico(opts);
 
         ato.Should().Throw<InvalidOperationException>()
-            .WithMessage("*exatamente um*");
+            .WithMessage("*mutuamente exclusivos*Em produção use KubernetesRole*");
     }
 
     [Fact]
@@ -150,6 +150,10 @@ public sealed class VaultTransitEncryptionServiceConstructorTests : IDisposable
     [Fact]
     public void Construtor_RoleConfiguradaEJwtPresente_DeveCriarServicoSemLancar()
     {
+        // VaultAddress aqui é não-resolvível de propósito: VaultClient (VaultSharp) é
+        // lazy — só faz handshake na primeira chamada de EncryptAsync/DecryptAsync.
+        // Por isso o construtor não tenta tráfego de rede e não lança em endereços
+        // sem DNS válido. Round-trip real fica em IntegrationTests com Testcontainers Vault.
         EncryptionOptions opts = new()
         {
             Provider = "vault",
