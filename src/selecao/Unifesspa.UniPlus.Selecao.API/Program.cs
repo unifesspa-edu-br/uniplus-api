@@ -117,11 +117,11 @@ bool kafkaEnabledForBuilder = !string.IsNullOrWhiteSpace(builder.Configuration["
 bool srMissing = string.IsNullOrWhiteSpace(selecaoSrSettings.Url);
 if (kafkaEnabledForBuilder && srMissing)
 {
-    bool isProductiveEnvironment =
-        !builder.Environment.IsDevelopment()
-        && !string.Equals(builder.Environment.EnvironmentName, "Test", StringComparison.OrdinalIgnoreCase);
-
-    if (isProductiveEnvironment)
+    // ADR-0053: HML/sanidade/Prod = mesmo binário, Vault injeta config — só
+    // Development (= local dev box) afrouxa a obrigatoriedade do Schema Registry.
+    // Test factories sobem com `UseEnvironment("Development")` (ApiFactoryBase),
+    // o que cobre o cenário antes resolvido via comparação literal `"Test"`.
+    if (!builder.Environment.IsDevelopment())
     {
         throw new InvalidOperationException(
             "Configuração inválida: Kafka:BootstrapServers populado mas SchemaRegistry:Url vazio em "

@@ -9,6 +9,14 @@ dependências de DI cruzadas e comportamento do servidor HTTP real.
 (Story pai), [#116](https://github.com/unifesspa-edu-br/uniplus-api/issues/116)
 (primeira Task — `CorrelationIdMiddleware`).
 
+**Decisão arquitetural binding:** [ADR-0053](../../../docs/adrs/0053-zero-test-environment-branches-in-production-code.md)
+proíbe `IsEnvironment("Testing")` e `EnvironmentName == "..."` em `src/`. A
+fixture canônica deste diretório (`InfraCoreApiFactory : ApiFactoryBase<Program>`)
+é o **port** que substitui esse antipattern — toda customização de teste
+vive aqui, não no `Program.cs`. Fitness test
+`tests/Unifesspa.UniPlus.ArchTests/SolutionRules/SemBranchingPorAmbienteEmProducaoTests.cs`
+enforça a regra em CI.
+
 ## Convenção para adicionar um novo smoke
 
 A `ApiFactoryBase<TEntryPoint>` em `tests/Unifesspa.UniPlus.IntegrationTests.Fixtures/Hosting/`

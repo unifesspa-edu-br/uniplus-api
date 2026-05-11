@@ -223,6 +223,7 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 | Application referencia apenas Domain | Use cases dependem de interfaces, não de implementações |
 | Infrastructure implementa interfaces do Domain/Application | Inversão de dependência |
 | API referencia Application e Infrastructure (via DI) | Composição na raiz |
+| Código de produção é indiferente ao ambiente para comportamento | [ADR-0053](docs/adrs/0053-zero-test-environment-branches-in-production-code.md): `IsEnvironment("...")` e `EnvironmentName == "..."` banidos em `src/`. Customização de teste vive em `ApiFactoryBase<TEntryPoint>`. HML/sanidade = Production semanticamente — Vault injeta config |
 
 ### Naming
 
