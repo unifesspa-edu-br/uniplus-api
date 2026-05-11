@@ -69,8 +69,22 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [GeneratedRegex(@"\bIsEnvironment\s*\(\s*""[^""]+""\s*\)")]
     private static partial Regex IsEnvironmentLiteralPattern();
 
+    // Variante com named argument: `IsEnvironment(environmentName: "Test")`.
+    // C# aceita ambos os nomes do parâmetro `environmentName` (nome real do
+    // overload) ou positional. Codex 4ª rodada P2.
+    [GeneratedRegex(@"\bIsEnvironment\s*\(\s*environmentName\s*:\s*""[^""]+""")]
+    private static partial Regex IsEnvironmentNamedArgPattern();
+
     [GeneratedRegex(@"\bEnvironmentName\s*==\s*""[^""]+""")]
     private static partial Regex EnvironmentNameEqualsLiteralPattern();
+
+    // Operador `!=`: semanticamente equivalente ao `==` (apenas inverte o
+    // branch). Codex 4ª rodada P2. Mirror simétrico dos 2 patterns `==`.
+    [GeneratedRegex(@"\bEnvironmentName\s*!=\s*""[^""]+""")]
+    private static partial Regex EnvironmentNameNotEqualsLiteralPattern();
+
+    [GeneratedRegex(@"""[^""]+""\s*!=\s*(?:[\w]+(?:\s*\.\s*[\w]+)*\s*\.\s*)?EnvironmentName\b")]
+    private static partial Regex LiteralNotEqualsEnvironmentNamePattern();
 
     // Aceita qualifier chain entre `==` e EnvironmentName:
     // `"Test" == env.EnvironmentName` ou `"Test" == builder.Environment.EnvironmentName`.
@@ -181,8 +195,11 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
             string joined = string.Join('\n', processed);
 
             CollectMatches(joined, IsEnvironmentLiteralPattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, IsEnvironmentNamedArgPattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, EnvironmentNameEqualsLiteralPattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, EnvironmentNameNotEqualsLiteralPattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, LiteralEqualsEnvironmentNamePattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, LiteralNotEqualsEnvironmentNamePattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, EnvironmentNameDotEqualsLiteralPattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, StringEqualsEnvironmentNameLiteralPattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, StringEqualsLiteralEnvironmentNamePattern(), lines, file, solutionRoot, violations);
@@ -240,6 +257,12 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [InlineData(@"if (string.Equals(builder.Environment.EnvironmentName, ""Test"", StringComparison.OrdinalIgnoreCase))", true)]
     [InlineData(@"if (string.Equals(""Test"", env.EnvironmentName, StringComparison.OrdinalIgnoreCase))", true)]
     [InlineData(@"if (string.Equals(""Test"", builder.Environment.EnvironmentName, StringComparison.OrdinalIgnoreCase))", true)]
+    // Named argument syntax (Codex 4ª rodada P2.A):
+    [InlineData(@"if (env.IsEnvironment(environmentName: ""Test""))", true)]
+    // Operador != (Codex 4ª rodada P2.B):
+    [InlineData(@"if (env.EnvironmentName != ""Test"")", true)]
+    [InlineData(@"if (builder.Environment.EnvironmentName != ""Test"")", true)]
+    [InlineData(@"if (""Test"" != env.EnvironmentName)", true)]
     [InlineData(@"if (env.EnvironmentName is ""Test"")", true)]
     [InlineData(@"switch (env.EnvironmentName) { case ""Test"": break; }", true)]
     // Bypass por interpolated/raw strings (Codex P1.A) — placeholder coverage:
@@ -266,8 +289,11 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
 
         bool matched = !inComment && (
             IsEnvironmentLiteralPattern().IsMatch(preprocessed)
+            || IsEnvironmentNamedArgPattern().IsMatch(preprocessed)
             || EnvironmentNameEqualsLiteralPattern().IsMatch(preprocessed)
+            || EnvironmentNameNotEqualsLiteralPattern().IsMatch(preprocessed)
             || LiteralEqualsEnvironmentNamePattern().IsMatch(preprocessed)
+            || LiteralNotEqualsEnvironmentNamePattern().IsMatch(preprocessed)
             || EnvironmentNameDotEqualsLiteralPattern().IsMatch(preprocessed)
             || StringEqualsEnvironmentNameLiteralPattern().IsMatch(preprocessed)
             || StringEqualsLiteralEnvironmentNamePattern().IsMatch(preprocessed)
