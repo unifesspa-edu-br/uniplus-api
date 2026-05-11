@@ -136,10 +136,25 @@ public static class WolverineOutboxConfiguration
             opts.Policies.AutoApplyTransactions();
             opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
+            // CorrelationIdEnvelopeMiddleware roda em TODOS os chains (inclusive
+            // event handlers consumidos de Kafka) — implementa o terceiro componente
+            // da ADR-0052. Registrado ANTES do AddCommandQueryMiddleware para que o
+            // escopo do LogContext esteja ativo quando o WolverineLoggingMiddleware
+            // emite a entrada inicial "Processando {RequestName}".
+            opts.AddCorrelationIdMiddleware();
+
             // Middleware CQRS canônicos (logging + validação FluentValidation),
             // restritos a chains de ICommand<>/IQuery<> — mensagens internas do
             // Wolverine não atravessam esse pipeline.
             opts.AddCommandQueryMiddleware();
+
+            // Propaga o header `uniplus.correlation-id` de qualquer envelope incoming
+            // (HTTP → Send, ou outbox/Kafka → consumer) para todas as outgoing messages
+            // do mesmo handler context — cascading, IMessageBus.PublishAsync, agendamentos.
+            // É o que fecha a propagação do CorrelationId via Kafka exigida pela ADR-0052.
+            // O CorrelationIdEnvelopeMiddleware acima garante que o header esteja sempre
+            // presente no incoming envelope (gera GUID caso ausente/inválido).
+            opts.Policies.PropagateIncomingHeaderToOutgoing(CorrelationIdEnvelopeMiddleware.HeaderName);
 
             // Discovery do assembly Infrastructure.Core — handlers compartilhados (ex.:
             // SmokePingHandler que processa SmokePingMessage publicada pelo endpoint
