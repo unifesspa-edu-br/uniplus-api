@@ -196,4 +196,62 @@ public sealed class CryptographyDiTests
         ato.Should().Throw<OptionsValidationException>()
             .WithMessage("*KubernetesRole*");
     }
+
+    // ─── Determinismo do auth method em VaultTransitEncryptionService ─────────
+
+    [Fact]
+    public void AddUniPlusEncryption_ProviderVaultKubernetesRoleSemJwtNoDisco_DeveLancarInvalidOperationExceptionAoResolver()
+    {
+        // Config válida do ponto de vista do validator (KubernetesRole sozinho),
+        // mas o construtor do VaultTransitEncryptionService falha porque o JWT
+        // não existe no path configurado.
+        string pathInexistente = Path.Combine(Path.GetTempPath(), $"uniplus-test-no-jwt-{Guid.NewGuid():N}");
+        Dictionary<string, string?> values = new()
+        {
+            ["UniPlus:Encryption:Provider"] = "vault",
+            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
+            ["UniPlus:Encryption:KubernetesRole"] = "uniplus-api",
+            ["UniPlus:Encryption:KubernetesJwtPath"] = pathInexistente,
+        };
+        IConfiguration config = new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
+
+        ServiceProvider sp = new ServiceCollection()
+            .AddLogging()
+            .AddUniPlusEncryption(config)
+            .BuildServiceProvider();
+
+        Action ato = () => sp.GetRequiredService<IUniPlusEncryptionService>();
+
+        ato.Should().Throw<InvalidOperationException>()
+            .Where(e => e.Message.Contains(pathInexistente)
+                && e.Message.Contains("ServiceAccount"));
+    }
+
+    [Fact]
+    public void AddUniPlusEncryption_ProviderVaultVaultTokenSemJwt_DeveResolverServicoSemTocarOJwt()
+    {
+        // Caminho dev/CI: VaultToken estático, sem JWT do K8s. O construtor não deve
+        // tentar ler disco quando a config seleciona token auth.
+        Dictionary<string, string?> values = new()
+        {
+            ["UniPlus:Encryption:Provider"] = "vault",
+            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
+            ["UniPlus:Encryption:VaultToken"] = "hvs.dev",
+            ["UniPlus:Encryption:KubernetesJwtPath"] = "/path/inexistente",
+        };
+        IConfiguration config = new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
+
+        ServiceProvider sp = new ServiceCollection()
+            .AddLogging()
+            .AddUniPlusEncryption(config)
+            .BuildServiceProvider();
+
+        Action ato = () => sp.GetRequiredService<IUniPlusEncryptionService>();
+
+        ato.Should().NotThrow();
+    }
 }

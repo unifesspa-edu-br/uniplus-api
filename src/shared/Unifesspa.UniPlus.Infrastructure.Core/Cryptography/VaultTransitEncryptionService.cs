@@ -20,9 +20,10 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
     private volatile VaultClient _vault;
     private readonly string _vaultAddress;
     private readonly string _jwtPath;
-    private readonly string _role;
+    private readonly string? _role;
     private readonly string _transitMount;
     private readonly string? _vaultToken;
+    private readonly bool _useKubernetesAuth;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private readonly ILogger<VaultTransitEncryptionService> _logger;
 
@@ -41,11 +42,26 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
                 "UniPlus:Encryption:VaultAddress é obrigatório quando Provider = 'vault'.");
         }
 
+        bool hasRole = !string.IsNullOrWhiteSpace(opts.KubernetesRole);
+        bool hasToken = !string.IsNullOrWhiteSpace(opts.VaultToken);
+
+        if (hasRole == hasToken)
+        {
+            // EncryptionOptionsValidator já enforça exatamente um dos dois quando Provider=vault.
+            // Esta guarda defensiva cobre o fluxo de testes que instancia o serviço diretamente
+            // (sem passar pelo validator), tornando a violação explícita em vez de um
+            // NullReferenceException mais adiante em CreateVaultClient.
+            throw new InvalidOperationException(
+                "UniPlus:Encryption: exatamente um entre KubernetesRole e VaultToken deve estar definido " +
+                "quando Provider = 'vault'. Ver EncryptionOptionsValidator e docs/guia-config-cifragem.md.");
+        }
+
         _vaultAddress = opts.VaultAddress;
         _jwtPath = opts.KubernetesJwtPath;
-        _role = opts.KubernetesRole ?? "uniplus-api";
+        _role = opts.KubernetesRole;
         _transitMount = opts.VaultTransitMount;
         _vaultToken = opts.VaultToken;
+        _useKubernetesAuth = hasRole;
 
         _vault = CreateVaultClient();
     }
@@ -108,13 +124,47 @@ internal sealed partial class VaultTransitEncryptionService : IUniPlusEncryption
 
     private VaultClient CreateVaultClient()
     {
-        // K8s auth tem precedência quando o arquivo JWT existe — garante que um VaultToken
-        // acidentalmente injetado em produção não substitua a identidade de workload.
-        IAuthMethodInfo authMethod = !string.IsNullOrWhiteSpace(_jwtPath) && File.Exists(_jwtPath)
-            ? new KubernetesAuthMethodInfo(_role, File.ReadAllText(_jwtPath))
+        // O auth method é determinado pela configuração validada (EncryptionOptionsValidator
+        // garante exatamente um entre KubernetesRole e VaultToken). Sem heurística de
+        // File.Exists: se a config disser "K8s" mas o JWT não estiver disponível em disco,
+        // falha-se com mensagem específica em vez de cair silenciosamente para token estático
+        // (cenário que produziria NullReferenceException agora que VaultToken é mutuamente
+        // exclusivo com KubernetesRole).
+        IAuthMethodInfo authMethod = _useKubernetesAuth
+            ? new KubernetesAuthMethodInfo(_role, ReadJwtOrThrow())
             : new TokenAuthMethodInfo(_vaultToken!);
 
         return new VaultClient(new VaultClientSettings(_vaultAddress, authMethod));
+    }
+
+    private string ReadJwtOrThrow()
+    {
+        if (string.IsNullOrWhiteSpace(_jwtPath))
+        {
+            throw new InvalidOperationException(
+                "UniPlus:Encryption:KubernetesJwtPath está vazio. Configure o path do JWT do " +
+                "ServiceAccount (default: /var/run/secrets/kubernetes.io/serviceaccount/token).");
+        }
+
+        if (!File.Exists(_jwtPath))
+        {
+            throw new InvalidOperationException(
+                $"JWT do ServiceAccount não encontrado em '{_jwtPath}'. " +
+                "Verifique se o ServiceAccount está montado no Pod (automountServiceAccountToken=true) " +
+                "e se o caminho UniPlus:Encryption:KubernetesJwtPath corresponde ao volume do token.");
+        }
+
+        string content = File.ReadAllText(_jwtPath);
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new InvalidOperationException(
+                $"JWT do ServiceAccount em '{_jwtPath}' está vazio. " +
+                "O kubelet costuma re-popular o token automaticamente; verificar logs do pod e " +
+                "o estado do volume projetado do ServiceAccount.");
+        }
+
+        return content;
     }
 
     private async Task RefreshVaultClientAsync()

@@ -123,9 +123,10 @@ internal sealed class EncryptionOptionsValidator : IValidateOptions<EncryptionOp
         }
         else if (hasKubernetesRole && hasVaultToken)
         {
-            // VaultTransitEncryptionService cai para VaultToken quando o JWT do K8s não existe em disco.
-            // Aceitar ambos definidos abriria janela para um VaultToken estático suplantar a identidade
-            // de workload quando o ServiceAccount estiver mal montado. Operador escolhe um, explicitamente.
+            // O auth method é determinado pela configuração validada: KubernetesRole ativa Kubernetes auth,
+            // VaultToken ativa token auth. Aceitar ambos definidos forçaria uma escolha implícita no
+            // VaultTransitEncryptionService (originalmente uma heurística "K8s se JWT existir, senão token",
+            // retirada exatamente por este motivo). Operador escolhe um, explicitamente.
             failures.Add(
                 "UniPlus:Encryption: KubernetesRole e VaultToken são mutuamente exclusivos. " +
                 "Em produção use KubernetesRole; em testes/dev use VaultToken. " +
