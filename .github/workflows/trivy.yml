@@ -1,0 +1,144 @@
+name: Trivy
+
+# Varredura de vulnerabilidades (issue #24, ADR-0015 — "Snyk / Trivy"):
+#   1. `trivy fs` — dependências NuGet declaradas + lock files
+#   2. `trivy image` — vulnerabilidades das imagens Docker dos 3 módulos
+#
+# Resultados em SARIF alimentam a aba Security do GitHub via upload-sarif
+# (mesmo padrão do codeql.yml). Initial mode: alerta (não-bloqueante) —
+# severidade CRITICAL/HIGH listada mas exit code zero, permitindo merge
+# enquanto a baseline é triada. Elevação para required check (`exit-code: 1`)
+# fica para fase futura quando triagem inicial estiver completa.
+
+on:
+  push:
+    branches: [main]
+    # paths-ignore evita execução em PRs/pushes docs-only — sem código C# /
+    # Dockerfile alterado o sinal do Trivy é redundante com o schedule.
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
+  schedule:
+    # Sábado 04:00 UTC (= 01:00 BRT). Janela noturna de baixo tráfego no fim
+    # de semana; capta CVEs novos publicados na semana sem requerer push.
+    - cron: '0 4 * * 6'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: trivy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trivy-fs:
+    name: Trivy filesystem (NuGet + config)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Trivy — fs scan
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          # CRITICAL e HIGH viram alertas no GitHub Security; LOW/MEDIUM
+          # ficam fora do gate inicial para reduzir ruído (alinhado com
+          # política Snyk/Trivy da ADR-0015).
+          severity: CRITICAL,HIGH
+          # Sem `limit-severities-for-sarif: 'true'` o entrypoint da action
+          # ignora `severity` no path SARIF e a aba Security recebe TUDO
+          # (incluindo UNKNOWN/LOW/MEDIUM) — anula o filtro acima.
+          limit-severities-for-sarif: 'true'
+          # exit-code 0: não bloqueia PR; reporta para Security tab.
+          # Quando a baseline estiver triada, mudar para `1` faz virar gate.
+          exit-code: '0'
+          # Skip pastas que não chegam em produção — testes (FsCheck/Bogus)
+          # e docs poluiriam o report sem rodar em runtime.
+          skip-dirs: 'tests,docs'
+          # Habilita download cacheado do DB do Trivy via GHA cache —
+          # primeira execução ~2 min, subsequentes <30s.
+          cache: 'true'
+
+      - name: Upload SARIF (fs)
+        # `if: always()` garante upload mesmo se scan falhar internamente —
+        # importante para auditoria de runs que não geraram resultado.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-fs.sarif
+          # `category` separa os resultados na aba Security entre os 4 scans
+          # (fs + 3 imagens), evitando que findings sobrescrevam uns aos outros.
+          category: trivy-fs
+
+  trivy-image:
+    name: Trivy image (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # Mesmos 3 módulos do publish-images.yml. Mantém o set sincronizado
+        # — se um Dockerfile.X novo nascer, atualizar ambos.
+        module:
+          - selecao
+          - ingresso
+          - portal
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build local (sem push)
+        # `cache-from` aponta para o mesmo scope do publish-images.yml; o
+        # cache GHA é isolado por branch, então PRs partem do zero na
+        # primeira execução do branch e subsequentes herdam. Pushes em main
+        # se beneficiam do cache acumulado pelo próprio Trivy ali — não
+        # alimentamos cache aqui (sem `cache-to`) para não competir com o
+        # workflow de publish.
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.${{ matrix.module }}
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: trivy-scan/uniplus-api-${{ matrix.module }}:ci
+          cache-from: type=gha,scope=${{ matrix.module }}
+
+      - name: Trivy — image scan
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          image-ref: trivy-scan/uniplus-api-${{ matrix.module }}:ci
+          format: sarif
+          output: trivy-image-${{ matrix.module }}.sarif
+          severity: CRITICAL,HIGH
+          # Mesmo motivo do scan fs: sem este flag, severity é ignorado em
+          # output SARIF.
+          limit-severities-for-sarif: 'true'
+          exit-code: '0'
+          cache: 'true'
+
+      - name: Upload SARIF (image)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-image-${{ matrix.module }}.sarif
+          category: trivy-image-${{ matrix.module }}
