@@ -16,8 +16,9 @@ using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// service.name canônico — ver explicação em Selecao.API/Program.cs.
-const string nomeServicoIngresso = "uniplus-ingresso";
+// service.name canônico — ver explicação em Selecao.API/Program.cs. Single
+// source of truth em UniPlusServiceNames evita drift entre logs e traces.
+const string nomeServicoIngresso = UniPlusServiceNames.Ingresso;
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoIngresso));

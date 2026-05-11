@@ -69,8 +69,20 @@ public static class SerilogConfiguration
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
-            .Enrich.With<PiiMaskingEnricher>()
-            .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture);
+            .Enrich.With<PiiMaskingEnricher>();
+
+        // ServiceNameEnricher é o segundo componente da ADR-0052: popula a propriedade
+        // Serilog `ServiceName` em cada log event, visível em consumidores que não falam
+        // OTel Resource (Console em dev, exportações JSON para auditoria). Registrado
+        // APÓS o PiiMaskingEnricher e ANTES dos sinks — preserva a invariante ADR-0011
+        // (PII mascarado antes de qualquer egress). Sem nomeServico, o enricher não é
+        // registrado para evitar emitir property nula ou vazia.
+        if (!string.IsNullOrWhiteSpace(nomeServico))
+        {
+            loggerConfiguration.Enrich.With(new ServiceNameEnricher(nomeServico));
+        }
+
+        loggerConfiguration.WriteTo.Console(formatProvider: CultureInfo.InvariantCulture);
 
         bool observabilidadeAtivada = configuration.GetValue(
             OpenTelemetryConfiguration.EnabledConfigurationKey,

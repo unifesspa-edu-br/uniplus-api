@@ -18,8 +18,9 @@ using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// service.name canônico — ver explicação em Selecao.API/Program.cs.
-const string nomeServicoPortal = "uniplus-portal";
+// service.name canônico — ver explicação em Selecao.API/Program.cs. Single
+// source of truth em UniPlusServiceNames evita drift entre logs e traces.
+const string nomeServicoPortal = UniPlusServiceNames.Portal;
 
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoPortal));
