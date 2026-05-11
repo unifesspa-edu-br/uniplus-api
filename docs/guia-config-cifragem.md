@@ -39,40 +39,36 @@ head -c 32 /dev/urandom | base64
 
 A chave gerada nunca deve ser commitada. Em CI vive como segredo do runner; em ambientes Kubernetes, custodiada no Vault em `secret/<env>/uniplus-api/encryption-local` e materializada como Secret K8s via External Secrets Operator.
 
-## Diagnóstico — onde o erro estoura
+## Diagnóstico — todos os erros estouram no boot
 
-As validações se dividem em duas categorias com timing distinto:
+Qualquer config inválida derruba o pod com `CrashLoopBackOff` no startup, antes do app aceitar tráfego. Dois mecanismos cooperam para isso:
 
-### Erros no boot (via `EncryptionOptionsValidator` + `ValidateOnStart()`)
+1. **`EncryptionOptionsValidator` + `ValidateOnStart()`** — checa as settings que não dependem de recursos externos (provider conhecido, LocalKey 32 bytes Base64, VaultAddress como URL absoluta http/https, exclusividade KubernetesRole vs VaultToken). Falha → `OptionsValidationException` no `IStartupValidator.Validate()`.
+2. **`EncryptionWarmupHostedService`** — força a resolução do singleton `IUniPlusEncryptionService` no `Host.StartAsync`, propagando qualquer falha do construtor (JWT do ServiceAccount ausente, conteúdo whitespace, `KubernetesJwtPath` em branco) como exceção que aborta o boot.
 
-Configuração de settings que pode ser checada sem tocar em recursos externos. Falha aqui derruba o pod no startup com `OptionsValidationException`, antes de receber tráfego.
+| Sintoma no log | Mecanismo | Causa |
+|---|---|---|
+| `UniPlus:Encryption:LocalKey é obrigatório quando Provider = 'local'` | Validator | `Provider=local` (default) mas chave ausente. Provavelmente faltou `ExternalSecret` no chart Helm. |
+| `UniPlus:Encryption:LocalKey não é uma string Base64 válida` | Validator | Chave contém caracteres inválidos. Regere com o comando acima. |
+| `UniPlus:Encryption:LocalKey deve ter 32 bytes (256 bits) após decode Base64` | Validator | Chave com tamanho errado — AES-GCM-256 exige exatamente 32 bytes. |
+| `UniPlus:Encryption:Provider inválido: '...'` | Validator | Valor digitado não está em `{local, vault}`. |
+| `UniPlus:Encryption:VaultAddress é obrigatório quando Provider = 'vault'` | Validator | Esqueceu de plugar o endereço do Vault nos values do environment. |
+| `UniPlus:Encryption:VaultAddress inválido: '...' Deve ser uma URL absoluta com scheme http ou https` | Validator | Endereço sem scheme ou com scheme inesperado (ex.: `file://`). |
+| `UniPlus:Encryption: KubernetesRole e VaultToken são mutuamente exclusivos` | Validator + construtor | Ambos definidos simultaneamente. Em produção, manter apenas `KubernetesRole`. |
+| `UniPlus:Encryption: nem KubernetesRole nem VaultToken estão definidos` | Validator + construtor | Authentication method não configurado. |
+| `JWT do ServiceAccount não encontrado em '...'` | Warmup hosted service | `Provider=vault` + `KubernetesRole` definido, mas o arquivo do JWT não existe no path configurado. Verificar `automountServiceAccountToken=true` e volume projetado do SA. |
+| `JWT do ServiceAccount em '...' está vazio` | Warmup hosted service | Arquivo presente mas sem conteúdo. O kubelet costuma re-popular automaticamente; verificar logs e estado do volume projetado. |
+| `UniPlus:Encryption:KubernetesJwtPath está vazio` | Warmup hosted service | Path não configurado. Default é `/var/run/secrets/kubernetes.io/serviceaccount/token`; raramente precisa ser override. |
 
-| Sintoma no log | Causa |
-|---|---|
-| `UniPlus:Encryption:LocalKey é obrigatório quando Provider = 'local'` | `Provider=local` (default) mas chave ausente. Provavelmente faltou `ExternalSecret` no chart Helm. |
-| `UniPlus:Encryption:LocalKey não é uma string Base64 válida` | Chave contém caracteres inválidos. Regere com o comando acima. |
-| `UniPlus:Encryption:LocalKey deve ter 32 bytes (256 bits) após decode Base64` | Chave com tamanho errado — AES-GCM-256 exige exatamente 32 bytes. |
-| `UniPlus:Encryption:Provider inválido: '...'` | Valor digitado não está em `{local, vault}`. |
-| `UniPlus:Encryption:VaultAddress é obrigatório quando Provider = 'vault'` | Esqueceu de plugar o endereço do Vault nos values do environment. |
-| `UniPlus:Encryption:VaultAddress inválido: '...' Deve ser uma URL absoluta com scheme http ou https` | Endereço sem scheme ou com scheme inesperado (ex.: `file://`). |
-| `UniPlus:Encryption requer KubernetesRole (produção) ou VaultToken (testes/dev) quando Provider = 'vault'` | Authentication method não configurado. |
-| `UniPlus:Encryption: KubernetesRole e VaultToken são mutuamente exclusivos` | Ambos foram definidos simultaneamente. Em produção, manter apenas `KubernetesRole`. |
+## Por que validar no boot
 
-### Erros na primeira resolução do serviço (via construtor de `VaultTransitEncryptionService`)
+A escolha do `IUniPlusEncryptionService` (`LocalAesEncryptionService` vs `VaultTransitEncryptionService`) é resolvida por factory delegate em `CryptographyServiceCollectionExtensions`. Sem o validator + warmup, `Provider=local` sem `LocalKey` só estouraria quando o serviço é instanciado pelo DI **na primeira requisição** que toca cifragem (rota de Idempotency-Key, por exemplo). O consumer receberia `500 Internal Server Error` e o operador precisaria correlacionar log da API com mudanças de configuração — diagnóstico caro em produção.
 
-Validações que dependem de recursos externos (presença e conteúdo do JWT em disco). `IUniPlusEncryptionService` é registrado como singleton com factory lazy, então o construtor roda no primeiro `GetRequiredService`/`@Inject`. Em apps que tocam cifragem por algum hosted service no startup (Idempotency, cursor, etc.) isso acaba acontecendo cedo o suficiente para virar `CrashLoopBackOff`; em apps que só tocam cifragem em request, o erro aparece na primeira requisição.
+`OptionsValidationException` no `ValidateOnStart` + falha-no-construtor via `EncryptionWarmupHostedService` transformam todos esses cenários em `CrashLoopBackOff` claro: o pod nunca chega a aceitar tráfego com configuração inconsistente.
 
-| Sintoma no log | Causa |
-|---|---|
-| `JWT do ServiceAccount não encontrado em '...'` | `Provider=vault` + `KubernetesRole` definido, mas o arquivo do JWT não existe no path configurado. Verificar `automountServiceAccountToken=true` e volume projetado do SA. |
-| `JWT do ServiceAccount em '...' está vazio` | Arquivo presente mas sem conteúdo. O kubelet costuma re-popular automaticamente; verificar logs e estado do volume projetado. |
-| `UniPlus:Encryption:KubernetesJwtPath está vazio` | Path não configurado. Default é `/var/run/secrets/kubernetes.io/serviceaccount/token`; raramente precisa ser override. |
+## Test factories
 
-## Por que validar antes da primeira requisição cifrada
-
-A escolha do `IUniPlusEncryptionService` (`LocalAesEncryptionService` vs `VaultTransitEncryptionService`) é resolvida por factory delegate em `CryptographyServiceCollectionExtensions`. Sem o validator condicional, `Provider=local` sem `LocalKey` só estouraria quando o serviço é instanciado pelo DI **na primeira requisição** que toca cifragem (rota de Idempotency-Key, por exemplo). O consumer receberia `500 Internal Server Error` e o operador precisaria correlacionar log da API com mudanças de configuração — diagnóstico caro em produção.
-
-O fail-fast via `OptionsValidationException` transforma esse `500` em um `CrashLoopBackOff` claro para os erros de boot acima; e a falha-no-resolve do construtor o transforma em um `CrashLoopBackOff` apenas se o serviço for de fato resolvido cedo (caminho comum quando há hosted services consumindo cifragem). Em todos os cenários, o pod nunca aceita tráfego com configuração inconsistente sem sinalizar.
+`ApiFactoryBase` (em `tests/Unifesspa.UniPlus.IntegrationTests.Fixtures/`) carrega `appsettings.Development.json` que já provê `UniPlus:Encryption:LocalKey` para dev/CI. Por isso o warmup hosted service roda normalmente nos integration tests do projeto. Caso uma fixture específica precise mockar o pipeline sem cifragem real (cenário raro), o pattern do `DisableWolverineRuntimeForTests` é o template para criar um filtro análogo via heurística estável de `ImplementationType`.
 
 ## Relação com Vault Transit
 

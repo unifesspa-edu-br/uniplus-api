@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
@@ -253,5 +254,67 @@ public sealed class CryptographyDiTests
         Action ato = () => sp.GetRequiredService<IUniPlusEncryptionService>();
 
         ato.Should().NotThrow();
+    }
+
+    // ─── Warmup hosted service (fail-fast no Host.StartAsync) ─────────────────
+
+    private static IHost CriarHostComEncryption(IConfiguration config)
+    {
+        HostApplicationBuilder builder = Host.CreateEmptyApplicationBuilder(settings: null);
+        builder.Services.AddLogging();
+        builder.Services.AddUniPlusEncryption(config);
+        return builder.Build();
+    }
+
+    [Fact]
+    public async Task EncryptionWarmupHostedService_ProviderLocalSemLocalKey_StartAsync_DeveLancarOptionsValidationException()
+    {
+        using IHost host = CriarHostComEncryption(CriarConfig("local"));
+
+        Func<Task> ato = () => host.StartAsync();
+
+        await ato.Should().ThrowAsync<OptionsValidationException>()
+            .WithMessage("*UniPlus:Encryption:LocalKey*");
+    }
+
+    [Fact]
+    public async Task EncryptionWarmupHostedService_ProviderVaultKubernetesRoleSemJwtNoDisco_StartAsync_DeveLancarInvalidOperationException()
+    {
+        // EncryptionOptionsValidator passa (KubernetesRole + VaultAddress válidos),
+        // mas o construtor de VaultTransitEncryptionService falha em ReadJwtOrThrow
+        // porque o JWT path não existe. Antes deste PR isso só estouraria no
+        // primeiro GetRequiredService; agora o warmup garante CrashLoopBackOff.
+        string pathInexistente = Path.Combine(Path.GetTempPath(), $"uniplus-warmup-test-{Guid.NewGuid():N}");
+        Dictionary<string, string?> values = new()
+        {
+            ["UniPlus:Encryption:Provider"] = "vault",
+            ["UniPlus:Encryption:VaultAddress"] = "http://vault.vault.svc:8200",
+            ["UniPlus:Encryption:KubernetesRole"] = "uniplus-api",
+            ["UniPlus:Encryption:KubernetesJwtPath"] = pathInexistente,
+        };
+        IConfiguration config = new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
+
+        using IHost host = CriarHostComEncryption(config);
+
+        Func<Task> ato = () => host.StartAsync();
+
+        await ato.Should().ThrowAsync<InvalidOperationException>()
+            .Where(e => e.Message.Contains(pathInexistente)
+                && e.Message.Contains("ServiceAccount"));
+    }
+
+    [Fact]
+    public async Task EncryptionWarmupHostedService_ProviderLocalValido_StartAsync_NaoLanca()
+    {
+        string chaveValida = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        using IHost host = CriarHostComEncryption(CriarConfig("local", chaveValida));
+
+        Func<Task> ato = () => host.StartAsync();
+
+        await ato.Should().NotThrowAsync();
+
+        await host.StopAsync();
     }
 }
