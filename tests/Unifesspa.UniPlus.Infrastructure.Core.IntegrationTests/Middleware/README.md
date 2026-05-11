@@ -13,9 +13,9 @@ dependências de DI cruzadas e comportamento do servidor HTTP real.
 proíbe `IsEnvironment("Testing")` e `EnvironmentName == "..."` em `src/`. A
 fixture canônica deste diretório (`InfraCoreApiFactory : ApiFactoryBase<Program>`)
 é o **port** que substitui esse antipattern — toda customização de teste
-vive aqui, não no `Program.cs`. Fitness test
-`tests/Unifesspa.UniPlus.ArchTests/SolutionRules/SemBranchingPorAmbienteEmProducaoTests.cs`
-enforça a regra em CI.
+vive aqui, não no `Program.cs`. A regra é normativa (sem enforcement
+automático em CI nesta versão); code review humano + ausência de precedente
+no codebase são os gates.
 
 ## Convenção para adicionar um novo smoke
 

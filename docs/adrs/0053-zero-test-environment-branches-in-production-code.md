@@ -8,7 +8,7 @@ consulted:
 informed: []
 ---
 
-# ADR-0053: Zero ramos de ambiente de teste em código de produção — fitness test enforça `IsEnvironment(literal)` e `EnvironmentName == literal` banidos em `src/`
+# ADR-0053: Zero ramos de ambiente de teste em código de produção
 
 ## Contexto e enunciado do problema
 
@@ -29,27 +29,25 @@ A auditoria realizada em 2026-05-11 (compozy task `production-test-isolation`) c
 
 Há ainda uma postura institucional adjacente que esta ADR consolida: **ambientes HML/sanidade são semanticamente idênticos a Production**. O binário deployado é o mesmo; o que muda entre tiers é exclusivamente a configuração injetada pelo Vault (connection strings, OIDC client IDs, sampling ratios, segredos). Não existe motivo legítimo para `IsEnvironment("Hml")`, `IsEnvironment("Sanidade")` ou `IsEnvironment("Staging")` aparecerem em código de produção; permiti-los convida drift entre tiers.
 
-A ADR-0012 já estabeleceu ArchUnitNET como biblioteca oficial de fitness tests do projeto, e o padrão `DominioNaoUsaGuidNewGuidTests.cs` (em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/`) demonstra que regex textual sobre `src/` é viável para casos onde ArchUnitNET não enxerga (string literais, comparações via `==`). Os dois mecanismos serão combinados.
-
 ## Drivers da decisão
 
-- **Disciplina arquitetural mecânica > convenção humana.** Convenções sem gate automático driftam. Um fitness test em CI é o que torna a regra real.
-- **Cobertura de ambas as síntaxes do antipattern.** Banir só `IsEnvironment(literal)` deixaria buraco gigante: a violação que existe hoje (`Program.cs:121`) é via `EnvironmentName == "Test"`, não via `IsEnvironment`. O gate precisa cobrir as duas.
+- **Clean Architecture e 12-factor.** A Camada Frameworks (Hosting) recebe configuração de fora; jamais decide comportamento por interrogar o ambiente em que roda. Factor III (Config) impõe externalização — `if env.IsEnvironment("X")` é exatamente o que ele proíbe.
+- **Cobertura de ambas as síntaxes do antipattern.** Banir só `IsEnvironment(literal)` deixaria buraco gigante: a violação que existe hoje (`Program.cs:121`) é via `EnvironmentName == "Test"`, não via `IsEnvironment`. A regra precisa cobrir as duas.
 - **Distinguir composition root legítimo de domínio.** `IsDevelopment()` para HSTS/Swagger UI/dev-only validation guards é prática idiomática .NET — não pode ser banido. A linha está entre "infraestrutura do composition root" (permitido) e "decisão de comportamento/domínio" (banido).
-- **Aderência a Clean Architecture e 12-factor.** A Camada Frameworks (Hosting) recebe configuração de fora; jamais decide comportamento por interrogar o ambiente em que roda. Factor III (Config) impõe externalização — `if env.IsEnvironment("X")` é exatamente o que ele proíbe.
 - **Compatibilidade com posturas de deploy do CTIC.** HML/sanidade/Prod = mesmo binário com Vault diferente. Esta ADR formaliza essa premissa para evitar futuras introduções de `IsEnvironment("Hml")` por novos contribuidores.
+- **Custo proporcional ao risco real.** `src/` está limpo após o refator desta entrega; recidivas dependeriam de um novo contribuidor escrevendo deliberadamente o antipattern. Code review humano + uma ADR clara + um codebase sem precedente são gates suficientes na fase atual. Enforcement automático (Roslyn analyzer) é o upgrade natural se uma recidiva real ocorrer.
 
 ## Opções consideradas
 
-- **A. ADR + fitness test combinado (ArchUnitNET + regex textual)** — formaliza a regra E enforça em CI.
-- **B. Apenas ADR sem fitness test** — documenta convenção, depende de revisão humana.
+- **A. ADR + fitness test combinado (ArchUnitNET + regex textual)** — formaliza a regra E enforça em CI via scan de regex.
+- **B. ADR normativa sem enforcement automático** — documenta regra binding; gate é code review + ausência de precedente no codebase.
 - **C. `BannedApiAnalyzers` (Roslyn) em vez de ArchUnitNET** — feedback in-IDE compile-time.
 - **D. Whitelist de strings permitidas em `IsEnvironment(...)`** — permitir `"Development"`/`"Production"`, banir custom.
 - **E. `Microsoft.FeatureManagement` adoption** — substitui qualquer flag ambient-dependent.
 
 ## Resultado da decisão
 
-**Opção A — ADR + fitness test combinado (ArchUnitNET + regex textual)**.
+**Opção B — ADR normativa sem enforcement automático**.
 
 A regra binding institui:
 
@@ -61,7 +59,7 @@ A regra binding institui:
 
 ### Permitido em `src/`
 
-- `env.IsDevelopment()` em composition root e adapters: `Program.cs`, `Infrastructure.Core/DependencyInjection/*.cs`, `Infrastructure.Core/Cors/*.cs`, `Infrastructure.Core/Authentication/*.cs`, `Infrastructure.Core/Observability/*.cs`. Casos legítimos hoje: validação de obrigatoriedade de config (`Storage:Endpoint`, `Redis:ConnectionString`, `Cors:AllowedOrigins`, HTTPS no `Auth:Authority`, sampler OTel). Domain e Application **não** chamam `IsDevelopment()` — fitness test enforça via dependência cruzada.
+- `env.IsDevelopment()` em composition root e adapters: `Program.cs`, `Infrastructure.Core/DependencyInjection/*.cs`, `Infrastructure.Core/Cors/*.cs`, `Infrastructure.Core/Authentication/*.cs`, `Infrastructure.Core/Observability/*.cs`. Casos legítimos hoje: validação de obrigatoriedade de config (`Storage:Endpoint`, `Redis:ConnectionString`, `Cors:AllowedOrigins`, HTTPS no `Auth:Authority`, sampler OTel). Domain e Application **não** chamam `IsDevelopment()`.
 - `env.IsProduction()` quando a afirmativa for mais natural que a negação.
 - `env.EnvironmentName` como valor **read-only** passado para campos de log estruturado ou OTel resource attributes (`deployment.environment`). Sem `if` sobre o valor.
 
@@ -78,27 +76,21 @@ Toda manipulação de DI, configuração ou auth para testes vive em `tests/Unif
 
 HML, sanidade, staging e Production compartilham o mesmo binário com `ASPNETCORE_ENVIRONMENT=Production`. Diferenças entre tiers vêm exclusivamente da configuração injetada pelo Vault. Esta ADR documenta a premissa para vetar futuras introduções de `IsEnvironment("Hml")` por novos contribuidores.
 
-### Enforcement
-
-Fitness test em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/SemBranchingPorAmbienteEmProducaoTests.cs` faz scan textual com state-machine de comments + pré-processamento que strip strings literais (para evitar que sequências como `"*/*"` em atributos MIME ou `"// foo"` em mensagens de erro confundam o detector de comments).
-
-Os 7 patterns banidos cobrem as síntaxes equivalentes do antipattern:
-
-- `IsEnvironment\s*\(\s*"[^"]+"\s*\)` — chamada da API canônica com literal
-- `EnvironmentName\s*==\s*"[^"]+"` — comparação `==` literal à direita
-- `"[^"]+"\s*==\s*\bEnvironmentName\b` — comparação `==` literal à esquerda
-- `EnvironmentName\.Equals\s*\(\s*"[^"]+"` — chamada `.Equals(literal)`
-- `string\.Equals\s*\(\s*EnvironmentName\s*,\s*"[^"]+"` — `string.Equals(EnvironmentName, literal, ...)`
-- `EnvironmentName\s+is\s+"[^"]+"` — pattern matching C# 8+
-- `switch\s*\([^)]*\bEnvironmentName\b` — switch expression/statement com cases literais
-
-A abordagem é puramente textual (regex). ArchUnitNET (lib oficial de fitness tests do projeto, ADR-0012) opera por **tipo**, não por chamada de método com argumento literal — `IsEnvironment(string)` e `string.Equals(string, string)` são chamadas resolvidas via overload, não tipos importáveis. O scanner textual mira exatamente esse buraco que ArchUnitNET não enxerga.
-
-Glob exclui: `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs`. State-machine de comments rastreia `/* ... */` multi-linha + filtro de linhas iniciadas por `//`. Strings literais são neutralizadas antes do scanner.
-
 ### Refator de débito existente
 
-`src/selecao/Unifesspa.UniPlus.Selecao.API/Program.cs:121-122` (`EnvironmentName == "Test"` no guard de Schema Registry) é refatorado nesta mesma entrega para `IsDevelopment()`, que é semanticamente equivalente para o caso ("local sem PG/Kafka real") e satisfaz o gate. Config flag `Kafka:SchemaRegistry:Required` ficou descartada por adicionar superfície de configuração sem ganho — a decisão binária dev/prod é exatamente o que `IsDevelopment()` expressa.
+`src/selecao/Unifesspa.UniPlus.Selecao.API/Program.cs:121-122` (`EnvironmentName == "Test"` no guard de Schema Registry) é refatorado nesta mesma entrega para `IsDevelopment()`, que é semanticamente equivalente para o caso ("local sem PG/Kafka real") e satisfaz a regra. Config flag `Kafka:SchemaRegistry:Required` ficou descartada por adicionar superfície de configuração sem ganho — a decisão binária dev/prod é exatamente o que `IsDevelopment()` expressa.
+
+### Por que sem enforcement automático nesta versão
+
+A council debateu Opção A (ADR + fitness test) extensivamente. A primeira implementação do scanner textual revelou que cobrir todas as síntaxes do antipattern em regex puro é frágil: cada nova variante de C# (raw strings com N aspas, interpolação aninhada, comentários multi-linha, pattern matching, named args) abre uma aresta teórica que outro revisor pode achar. A ferramenta correta para "scan completo" é um Roslyn analyzer (mesmo lexer do compilador, tokens classificados de graça), não regex.
+
+Para o `src/` atual — zero violações pós-refator, zero raw strings complexas, code review humano ativo — um detector textual incompleto traria **falsa confiança** maior que o gap real que ele cobre. A regra fica documentada e binding; o gate é a combinação:
+
+1. **Codebase sem precedente** — não há nenhuma chamada `IsEnvironment(literal)` em `src/` para servir de exemplo a copiar.
+2. **Code review humano** — qualquer reintrodução é visível em diff (`IsEnvironment("…")` ou `EnvironmentName == "…"` são literais óbvios).
+3. **Esta ADR linkada do `CONTRIBUTING.md`** — onboarding contextualizado.
+
+**Upgrade natural se recidiva ocorrer:** Roslyn analyzer em projeto separado (`Unifesspa.UniPlus.Analyzers`) que usa `SyntaxKind.InvocationExpression` + `SemanticModel` para resolver `IHostEnvironment.IsEnvironment` e bater na lista de literais banidos. Custo estimado: ~200 LOC de boilerplate + wiring no `.csproj` de cada projeto. Decisão deferida até evidência empírica de recidiva.
 
 ## Consequências
 
@@ -106,57 +98,60 @@ Glob exclui: `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs`. State-machine de comment
 
 - Código de produção é **indiferente ao ambiente para comportamento**. Binário deployado é único entre tiers; diferenças são exclusivamente configuracionais.
 - Customização de teste é **explícita e descobrível** — qualquer dev lendo a fixture vê todo o delta em relação à produção em C# tipado, linha por linha.
-- Prevenção de drift é mecânica — fitness test roda em todo PR; violação falha CI em <1 min.
 - Sem string mágica em paths de produção — typos não passam silenciosos.
 - Boundary Clean Architecture preservada — Camada Frameworks (Hosting) não inverte dependência para conhecer Test concerns.
-- Postura HML=Prod fica documentada e enforced — futuros contribuidores sabem que `IsEnvironment("Hml")` é antipattern, não esquecimento.
+- Postura HML=Prod fica documentada — futuros contribuidores sabem que `IsEnvironment("Hml")` é antipattern, não esquecimento.
+- Custo de manutenção zero — sem suite de fitness tests a manter; sem regex frágil a evoluir.
 
 ### Negativas
 
-- `Program.cs:121-122` precisa ser refatorado no mesmo PR — débito real existente. Aceito.
+- Sem gate automático em CI: uma recidiva dependeria de code review humano captar. Mitigado pela natureza literal e óbvia do antipattern e pelo codebase sem precedente.
 - Onboarding requer leitura desta ADR + `Middleware/README.md` (issue #116) + `ApiFactoryBase` para entender o pattern alternativo. Mitigado por cross-link no `CONTRIBUTING.md`.
-- Allowlist implícita (regex não match em `IsDevelopment()`/`IsProduction()`) pode parecer permissiva demais para puristas. Aceito — explícito por path seria rigidez sem ROI; a comunidade .NET unanimemente aceita `IsDevelopment()` no composition root.
+- Allowlist implícita (`IsDevelopment()`/`IsProduction()` permitidos) pode parecer permissiva demais para puristas. Aceito — explícito por path seria rigidez sem ROI; a comunidade .NET unanimemente aceita `IsDevelopment()` no composition root.
 
 ### Neutras
 
-- Custo de manutenção do fitness test é próximo de zero após criado — só falha quando alguém viola a regra.
-- O scan textual depende do `SolutionRootLocator` já estabelecido — sem nova infraestrutura.
-- `BannedApiAnalyzers` fica como defense-in-depth opcional (Phase 4 da ADR) — não impacta V1.
+- O guard refatorado em `Program.cs:121` (`IsDevelopment()`) é semanticamente equivalente ao literal anterior para o cenário real (dev local sem Schema Registry vs HML/Prod com Schema Registry obrigatório).
+- Roslyn analyzer fica como follow-up condicional, não como débito — só justificável se recidiva ocorrer.
 
 ## Confirmação
 
-Fitness test `SemBranchingPorAmbienteEmProducaoTests` em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/` roda em todo `dotnet test` da solution. Pipeline CI já invoca `dotnet test` no job `Unit + arch tests`. Violação falha o build do PR.
+Conformidade verificada por:
 
-Métricas de acompanhamento:
+- **Auditoria pontual no momento da ADR**: `grep -rE "IsEnvironment\s*\(|EnvironmentName\s*(==|!=|\.Equals)" src/` retorna zero matches após o refator deste PR.
+- **Code review humano**: PRs que introduzam novos arquivos em `src/` passam pelo workflow `pr-author-org-member` + revisão cruzada. Reintroduções do antipattern são literais óbvios em diff.
+- **Onboarding documentado**: `CONTRIBUTING.md` linka esta ADR na tabela de regras de Clean Architecture; `tests/Unifesspa.UniPlus.Infrastructure.Core.IntegrationTests/Middleware/README.md` referencia como decisão binding.
 
-- `IsEnvironment(literal)` matches em `src/` — alvo: 0 (validado pelo teste)
+Métricas de acompanhamento (avaliadas em revisões trimestrais de débito técnico):
+
+- `IsEnvironment(literal)` matches em `src/` — alvo: 0
 - `EnvironmentName == literal` matches em `src/` — alvo: 0
-- Tempo até detecção de violação em PR — alvo: <5 min (job CI)
-- Recidiva pós-merge — alvo: 0 em 12 meses; re-avaliar regra caso recidiva real ocorra
+- Recidiva pós-ADR — alvo: 0 em 12 meses. **Trigger de re-avaliação:** uma única recidiva real abre a Opção A ou C (Roslyn analyzer) como follow-up obrigatório.
 
 ## Prós e contras das opções
 
 ### A. ADR + fitness test combinado (ArchUnitNET + regex textual)
 
-- Bom, porque torna a regra mecânica e cobre ambas as síntaxes do antipattern
-- Bom, porque reusa infraestrutura já estabelecida (`SolutionRootLocator`, ADR-0012 ArchUnitNET, padrão `DominioNaoUsaGuidNewGuidTests`)
-- Bom, porque custo de manutenção pós-criação é próximo de zero
-- Ruim, porque exige ~80 LOC de teste novo + refator do débito existente
+- Bom, porque tornaria a regra mecânica em CI
+- Ruim, porque análise textual de C# é fundamentalmente incompleta — cada regex que cobre uma síntaxe abre arestas teóricas em outras (raw strings, interpolação aninhada, named args, pattern matching). Whack-a-mole sem limite definido
+- Ruim, porque ArchUnitNET opera por **tipo**, não por chamada com argumento literal — `IsEnvironment(string)` é overload resolvido, não tipo importável; a parte ArchUnitNET puro seria limitada de qualquer forma
+- Ruim, porque detector textual incompleto dá **falsa confiança** maior que o gap real que ele cobre — convencer o revisor de que "o CI cobre" desincentiva atenção humana ao antipattern
 
-### B. Apenas ADR sem fitness test
+### B. ADR normativa sem enforcement automático **(escolhida)**
 
-- Bom, porque baixíssimo custo de implementação
-- Ruim, porque convenção sem gate drifta (devils-advocate destacou na council)
-- Ruim, porque ADR isolada vira "boa intenção" sem força operacional
-- Ruim, porque nenhum onboarding/code review captura 100% das violações
+- Bom, porque custo zero de manutenção
+- Bom, porque honesto sobre o nível de proteção: regra documentada + code review humano, sem promessa de gate mecânico que não é robusto
+- Bom, porque deixa porta aberta para Roslyn analyzer (Opção C estendida) como upgrade condicional se evidência empírica justificar
+- Ruim, porque depende de disciplina humana — uma recidiva pode escapar de um code review distraído
+- Mitigação: codebase sem precedente + antipattern literal e óbvio em diff + ADR linkada do `CONTRIBUTING.md`
 
 ### C. `BannedApiAnalyzers` (Roslyn) em vez de ArchUnitNET
 
 - Bom, porque feedback in-IDE compile-time (squiggle vermelho)
 - Bom, porque mensagem custom orienta o dev para `ApiFactoryBase`
-- Ruim, porque pega apenas chamadas de método simbólicas — `EnvironmentName == "..."` (que é a violação real hoje) não é captada
-- Ruim, porque exige adoção de NuGet package adicional fora do ecossistema de fitness tests já estabelecido (ADR-0012)
-- Ruim, porque produz dois sistemas paralelos de regras arquiteturais (analyzer + fitness test)
+- Ruim, porque pega apenas chamadas de método simbólicas — `EnvironmentName == "..."` (que é a violação real hoje) não é captada por `BannedApiAnalyzers` puro; precisaria de analyzer custom
+- Ruim, porque exige adoção de NuGet package adicional fora do ecossistema atual
+- **Re-avaliar** como upgrade da Opção B se recidiva ocorrer; analyzer custom (`Unifesspa.UniPlus.Analyzers`) com `SemanticModel` é a forma robusta
 
 ### D. Whitelist de strings permitidas em `IsEnvironment(...)`
 
@@ -174,7 +169,7 @@ Métricas de acompanhamento:
 
 ## Mais informações
 
-- ADR-0012 — ArchUnitNET como biblioteca oficial de fitness tests (estabelece a ferramenta)
+- ADR-0012 — ArchUnitNET como biblioteca oficial de fitness tests (estabelece a ferramenta para casos onde análise textual é suficiente)
 - ADR-0033 — `IUserContext` como abstração canônica (sibling estrutural — ports keep production code unaware)
 - ADR-0050 — Registry GHCR e tagging (HML/Prod semantic collapse rationale)
 - [Microsoft Learn — Integration tests in ASP.NET Core](https://learn.microsoft.com/aspnet/core/test/integration-tests)
