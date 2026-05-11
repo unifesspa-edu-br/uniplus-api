@@ -14,6 +14,17 @@
         "resolved": "8.0.1",
         "contentHash": "heVQl5tKYnnIDYlR1QMVGueYH6iriZTcZB6AjDczQNwZzxkjDIt9C84Pt4cCiZYrbo7jkZOYGWbs6Lo9wAtVLg=="
       },
+      "Microsoft.AspNetCore.Mvc.Testing": {
+        "type": "Direct",
+        "requested": "[10.0.7, )",
+        "resolved": "10.0.7",
+        "contentHash": "lWyzApi1g8/r0eXqZBbl5bA8zewS8koxOir83/+OvJcyn2HazdUzPFd4MWc9uMdVzCRX6Z5aY4tNK+N0pWXMLg==",
+        "dependencies": {
+          "Microsoft.AspNetCore.TestHost": "10.0.7",
+          "Microsoft.Extensions.DependencyModel": "10.0.7",
+          "Microsoft.Extensions.Hosting": "10.0.7"
+        }
+      },
       "Microsoft.EntityFrameworkCore": {
         "type": "Direct",
         "requested": "[10.0.7, )",
@@ -1156,6 +1167,46 @@
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },
+      "unifesspa.uniplus.selecao.api": {
+        "type": "Project",
+        "dependencies": {
+          "FluentValidation": "[12.1.1, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
+          "Serilog.AspNetCore": "[10.0.0, )",
+          "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )",
+          "Unifesspa.UniPlus.Selecao.Infrastructure": "[1.0.0, )",
+          "WolverineFx.Kafka": "[5.39.0, )",
+          "WolverineFx.Postgresql": "[5.39.0, )"
+        }
+      },
+      "unifesspa.uniplus.selecao.application": {
+        "type": "Project",
+        "dependencies": {
+          "FluentValidation": "[12.1.1, )",
+          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
+          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.selecao.domain": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.selecao.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Apache.Avro": "[1.12.1, )",
+          "Confluent.SchemaRegistry.Serdes.Avro": "[2.14.0, )",
+          "Microsoft.EntityFrameworkCore": "[10.0.7, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.7, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )"
+        }
+      },
       "Apache.Avro": {
         "type": "CentralTransitive",
         "requested": "[1.12.1, )",
@@ -1203,6 +1254,16 @@
         "resolved": "12.1.1",
         "contentHash": "EPpkIe1yh1a0OXyC100oOA8WMbZvqUu5plwhvYcb7oSELfyUZzfxV48BLhvs3kKo4NwG7MGLNgy1RJiYtT8Dpw=="
       },
+      "FluentValidation.DependencyInjectionExtensions": {
+        "type": "CentralTransitive",
+        "requested": "[12.1.1, )",
+        "resolved": "12.1.1",
+        "contentHash": "D0VXh4dtjjX2aQizuaa0g6R8X3U1JaVqJPfGCvLwZX9t/O2h7tkpbitbadQMfwcgSPdDbI2vDxuwRMv/Uf9dHA==",
+        "dependencies": {
+          "FluentValidation": "12.1.1",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "2.1.0"
+        }
+      },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "CentralTransitive",
         "requested": "[10.0.7, )",
@@ -1210,17 +1271,6 @@
         "contentHash": "g8klpd7OFJfJOq1EJKcBO8C8I8Dp0QUWoKDPUvvJYe+xunVyBHq6YxfF2CAc6+rkniV25iaWl+6RK87c25n4lA==",
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.0.1"
-        }
-      },
-      "Microsoft.AspNetCore.Mvc.Testing": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.7, )",
-        "resolved": "10.0.7",
-        "contentHash": "lWyzApi1g8/r0eXqZBbl5bA8zewS8koxOir83/+OvJcyn2HazdUzPFd4MWc9uMdVzCRX6Z5aY4tNK+N0pWXMLg==",
-        "dependencies": {
-          "Microsoft.AspNetCore.TestHost": "10.0.7",
-          "Microsoft.Extensions.DependencyModel": "10.0.7",
-          "Microsoft.Extensions.Hosting": "10.0.7"
         }
       },
       "Microsoft.AspNetCore.OpenApi": {
@@ -1255,13 +1305,13 @@
       "Microsoft.EntityFrameworkCore.Relational": {
         "type": "CentralTransitive",
         "requested": "[10.0.7, )",
-        "resolved": "10.0.4",
-        "contentHash": "DOTjTHy93W3TwpMLM4SCm0n57Sc0Jj3+m2S6LSTstKyBB34eT1UouaMS19mpWwvtj42+sRiEjA3+rOTNoNzXFQ==",
+        "resolved": "10.0.7",
+        "contentHash": "midwPufIwXhOJcVhaZpCZGNbjy2QoPfHI+70nw2dGcoULEW9DybMvMPYkRjOJV0eI46a1oVFhU4lFYDEx6YUbg==",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "10.0.4",
-          "Microsoft.Extensions.Caching.Memory": "10.0.4",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.4",
-          "Microsoft.Extensions.Logging": "10.0.4"
+          "Microsoft.EntityFrameworkCore": "10.0.7",
+          "Microsoft.Extensions.Caching.Memory": "10.0.7",
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.7",
+          "Microsoft.Extensions.Logging": "10.0.7"
         }
       },
       "Microsoft.Extensions.Logging.Abstractions": {

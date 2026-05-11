@@ -13,11 +13,21 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <!-- WebApplicationFactory<Program> para smoke tests do pipeline HTTP
+         (issue #117 / #116). Os outros *.IntegrationTests por módulo já
+         usam o mesmo pacote — versão central via Directory.Packages.props. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.IntegrationTests.Fixtures\Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
+    <!-- Selecao.API hospeda o Program.cs usado pelos smoke tests de
+         middleware shared. O middleware do Infrastructure.Core é cabeado
+         identicamente nos 3 Programs (Selecao/Ingresso/Portal); cobrir
+         via Selecao prova o pattern. Drift cross-module é coberto por
+         CodeQL e arch tests, não por este smoke. -->
+    <ProjectReference Include="..\..\src\selecao\Unifesspa.UniPlus.Selecao.API\Unifesspa.UniPlus.Selecao.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
