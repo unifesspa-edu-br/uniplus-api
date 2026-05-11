@@ -52,16 +52,17 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     //   - regulares "..." (com escapes \")
     //   - verbatim @"..." (com "" como escape)
     //   - interpolated $"..." e $@"..." / @$"..."
-    //   - raw strings C# 11+ """...""" (single-line; multi-linha via Singleline)
+    //   - raw strings C# 11+ """...""" (single-line; multi-linha via [\s\S])
+    //   - interpolated raw $"""...""" (Codex 5ª rodada P2)
     // Aplicado ANTES do comment scanner para evitar que sequências como
     // "*/*" ou "// foo" dentro de strings confundam a state-machine de
-    // block comments. Cobre P1.A do Codex review (interpolated/raw bypass).
+    // block comments.
     //
     // IMPORTANTE: substituição preserva ASPAS + insere placeholder não-vazio
-    // (`_S_`). Substituir por "" (vazio) seria fatal — os 7 patterns do
+    // (`_S_`). Substituir por "" (vazio) seria fatal — os patterns do
     // detector exigem literal não-vazio `"[^"]+"`, então strings vazias
     // não casariam e a regra ficaria inativa.
-    [GeneratedRegex(@"""""""[\s\S]*?""""""|\$?@""(?:""""|[^""])*""|@\$""(?:""""|[^""])*""|\$?""(?:\\.|[^""\\])*""")]
+    [GeneratedRegex(@"\$?""""""[\s\S]*?""""""|\$?@""(?:""""|[^""])*""|@\$""(?:""""|[^""])*""|\$?""(?:\\.|[^""\\])*""")]
     private static partial Regex StringLiteralPattern();
 
     private const string StringLiteralPlaceholder = "\"_S_\"";
@@ -166,19 +167,25 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
                     continue;
                 }
 
-                int blockStart = line.IndexOf("/*", StringComparison.Ordinal);
-                if (blockStart >= 0)
+                // Loop: remover TODOS os /* ... */ inline da linha. Sem loop,
+                // um segundo bloco inline (ex.: `/*a*/ IsEnvironment/*b*/(...)`)
+                // sobreviveria e quebraria o token sequence dos regex banidos
+                // (Codex 5ª rodada P1).
+                while (true)
                 {
+                    int blockStart = line.IndexOf("/*", StringComparison.Ordinal);
+                    if (blockStart < 0)
+                        break;
+
                     int blockEnd = line.IndexOf("*/", blockStart + 2, StringComparison.Ordinal);
                     if (blockEnd < 0)
                     {
                         inBlockComment = true;
                         line = line[..blockStart];
+                        break;
                     }
-                    else
-                    {
-                        line = string.Concat(line.AsSpan(0, blockStart), line.AsSpan(blockEnd + 2));
-                    }
+
+                    line = string.Concat(line.AsSpan(0, blockStart), line.AsSpan(blockEnd + 2));
                 }
 
                 int singleComment = line.IndexOf("//", StringComparison.Ordinal);
@@ -263,6 +270,10 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [InlineData(@"if (env.EnvironmentName != ""Test"")", true)]
     [InlineData(@"if (builder.Environment.EnvironmentName != ""Test"")", true)]
     [InlineData(@"if (""Test"" != env.EnvironmentName)", true)]
+    // Interpolated raw string $"""...""" (Codex 5ª rodada P2):
+    [InlineData(@"if (env.IsEnvironment($""""""Test"""""")) {}", true)]
+    // Repeated inline block comments (Codex 5ª rodada P1):
+    [InlineData(@"/*a*/ if (env.IsEnvironment/*b*/(""Test"")) {}", true)]
     [InlineData(@"if (env.EnvironmentName is ""Test"")", true)]
     [InlineData(@"switch (env.EnvironmentName) { case ""Test"": break; }", true)]
     // Bypass por interpolated/raw strings (Codex P1.A) — placeholder coverage:
@@ -278,10 +289,24 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [InlineData(@"// IsEnvironment(""Testing"") em comentário não conta", false)]
     public void Detector_Captura_Sintaxes_Banidas_Ignora_Permitidos(string codeLine, bool deveMatchar)
     {
-        // Replicar o pré-processamento exato do scanner real (strip string
-        // literais antes de aplicar patterns), para evitar divergência
-        // entre o que o test prova e o que o detector roda em src/.
+        // Replicar o pré-processamento exato do scanner real: strip string
+        // literais → strip block comments inline (loop) → filtro // de linha.
+        // Sem isso o test diverge do que o detector roda em src/.
         string preprocessed = StringLiteralPattern().Replace(codeLine, StringLiteralPlaceholder);
+
+        // Loop de block comments inline — mesmo padrão do detector real.
+        while (true)
+        {
+            int blockStart = preprocessed.IndexOf("/*", StringComparison.Ordinal);
+            if (blockStart < 0) break;
+            int blockEnd = preprocessed.IndexOf("*/", blockStart + 2, StringComparison.Ordinal);
+            if (blockEnd < 0)
+            {
+                preprocessed = preprocessed[..blockStart];
+                break;
+            }
+            preprocessed = string.Concat(preprocessed.AsSpan(0, blockStart), preprocessed.AsSpan(blockEnd + 2));
+        }
 
         // Linhas iniciadas por // são filtradas pela state-machine no
         // detector real — replicar aqui para o caso de comentário.
