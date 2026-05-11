@@ -89,6 +89,12 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [GeneratedRegex(@"\bstring\.Equals\s*\(\s*(?:[\w]+(?:\s*\.\s*[\w]+)*\s*\.\s*)?EnvironmentName\s*,\s*""[^""]+""")]
     private static partial Regex StringEqualsEnvironmentNameLiteralPattern();
 
+    // Variante reversa: argumentos invertidos `string.Equals("Test", env.EnvironmentName, ...)`.
+    // Codex 3ª rodada P2 — `string.Equals` aceita os dois operandos em qualquer
+    // ordem semanticamente; o detector precisa cobrir ambos.
+    [GeneratedRegex(@"\bstring\.Equals\s*\(\s*""[^""]+""\s*,\s*(?:[\w]+(?:\s*\.\s*[\w]+)*\s*\.\s*)?EnvironmentName\b")]
+    private static partial Regex StringEqualsLiteralEnvironmentNamePattern();
+
     [GeneratedRegex(@"\bEnvironmentName\s+is\s+""[^""]+""")]
     private static partial Regex EnvironmentNameIsPatternLiteral();
 
@@ -179,6 +185,7 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
             CollectMatches(joined, LiteralEqualsEnvironmentNamePattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, EnvironmentNameDotEqualsLiteralPattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, StringEqualsEnvironmentNameLiteralPattern(), lines, file, solutionRoot, violations);
+            CollectMatches(joined, StringEqualsLiteralEnvironmentNamePattern(), lines, file, solutionRoot, violations);
             CollectMatches(joined, EnvironmentNameIsPatternLiteral(), lines, file, solutionRoot, violations);
             CollectMatches(joined, SwitchOverEnvironmentNamePattern(), lines, file, solutionRoot, violations);
         }
@@ -231,6 +238,8 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
     [InlineData(@"if (env.EnvironmentName.Equals(""Test""))", true)]
     [InlineData(@"if (string.Equals(env.EnvironmentName, ""Test"", StringComparison.OrdinalIgnoreCase))", true)]
     [InlineData(@"if (string.Equals(builder.Environment.EnvironmentName, ""Test"", StringComparison.OrdinalIgnoreCase))", true)]
+    [InlineData(@"if (string.Equals(""Test"", env.EnvironmentName, StringComparison.OrdinalIgnoreCase))", true)]
+    [InlineData(@"if (string.Equals(""Test"", builder.Environment.EnvironmentName, StringComparison.OrdinalIgnoreCase))", true)]
     [InlineData(@"if (env.EnvironmentName is ""Test"")", true)]
     [InlineData(@"switch (env.EnvironmentName) { case ""Test"": break; }", true)]
     // Bypass por interpolated/raw strings (Codex P1.A) — placeholder coverage:
@@ -261,6 +270,7 @@ public sealed partial class SemBranchingPorAmbienteEmProducaoTests
             || LiteralEqualsEnvironmentNamePattern().IsMatch(preprocessed)
             || EnvironmentNameDotEqualsLiteralPattern().IsMatch(preprocessed)
             || StringEqualsEnvironmentNameLiteralPattern().IsMatch(preprocessed)
+            || StringEqualsLiteralEnvironmentNamePattern().IsMatch(preprocessed)
             || EnvironmentNameIsPatternLiteral().IsMatch(preprocessed)
             || SwitchOverEnvironmentNamePattern().IsMatch(preprocessed));
 
