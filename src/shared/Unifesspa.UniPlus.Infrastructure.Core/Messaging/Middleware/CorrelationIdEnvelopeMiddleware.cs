@@ -86,16 +86,27 @@ public static partial class CorrelationIdEnvelopeMiddleware
     /// (1) header canônico no envelope; (2) tag no <see cref="Activity.Current"/>;
     /// (3) escopo <see cref="LogContext"/> da propriedade <c>CorrelationId</c>.
     /// </summary>
+    /// <remarks>
+    /// <para><strong>Ordem de precedência canônica</strong> para resolver o
+    /// <c>CorrelationId</c> de um handler:</para>
+    /// <list type="number">
+    ///   <item><description><b>Header explícito</b> <c>uniplus.correlation-id</c> no envelope —
+    ///   fluxo cross-host (Kafka via outbox): o produtor já gerou/validou e o consumer
+    ///   preserva identicamente. Validado contra <c>CorrelationIdMiddleware.FormatoValidoPattern</c>.</description></item>
+    ///   <item><description><b>Ambient via <see cref="ICorrelationIdAccessor"/></b> (AsyncLocal
+    ///   populado pelo <see cref="CorrelationIdMiddleware"/> HTTP) — fluxo in-process:
+    ///   controller chama <c>ICommandBus.Send</c>, Wolverine cria envelope local sem o header
+    ///   mas o AsyncLocal flui através do <c>await</c>. Submetido à mesma validação regex.</description></item>
+    ///   <item><description><b>GUID novo</b> (formato <c>"D"</c>) — último recurso para handlers
+    ///   sem origem HTTP nem header de Kafka (scheduler interno, retry de mensagem que perdeu
+    ///   o header). Garante que todo handler emita logs com pelo menos um id estável.</description></item>
+    /// </list>
+    /// </remarks>
     /// <param name="envelope">Envelope Wolverine do incoming — fornecido pelo code-gen.</param>
     /// <param name="accessor"><see cref="ICorrelationIdAccessor"/> resolvido via DI pelo
-    /// code-gen Wolverine. Para handlers invocados via <c>ICommandBus.Send</c> de dentro
-    /// de um request HTTP (controllers, minimal APIs), o envelope local criado pelo
-    /// Wolverine não recebe o header <see cref="HeaderName"/> — o <c>CorrelationId</c> HTTP
-    /// flui através do <see cref="AsyncLocal{T}"/> interno do
-    /// <see cref="CorrelationIdAccessor"/>. Sem este fallback, o middleware geraria um
-    /// segundo GUID e sobrescreveria o <c>CorrelationId</c> empurrado pelo
-    /// <see cref="CorrelationIdMiddleware"/> HTTP, quebrando o drill-down end-to-end
-    /// (logs HTTP em um id, logs do handler em outro).</param>
+    /// code-gen Wolverine. Registrado por
+    /// <c>CorrelationIdServiceCollectionExtensions.AddCorrelationIdAccessor</c> em cada
+    /// <c>Program.cs</c>.</param>
     /// <returns>O escopo do <see cref="LogContext.PushProperty(string, object?, bool)"/>;
     /// o code-gen do Wolverine captura como variável local e o <c>Finally</c> dispõe ao
     /// término do handler (sucesso ou falha). Pattern espelhado do
@@ -169,9 +180,10 @@ public static partial class CorrelationIdEnvelopeMiddleware
         return Guid.NewGuid().ToString("D");
     }
 
-    // Espelha exatamente a regex de CorrelationIdMiddleware.FormatoValido() — qualquer
-    // mudança aqui DEVE acompanhar o middleware HTTP para preservar a invariante de
-    // wire format uniforme entre os dois boundaries (HTTP e Kafka).
-    [GeneratedRegex(@"^[A-Za-z0-9\-_.]{1,128}$")]
+    // Pattern consumido também por CorrelationIdMiddleware (HTTP) via
+    // CorrelationIdMiddleware.FormatoValidoPattern — single source of truth garante
+    // que ambos os boundaries (HTTP e Kafka) validem com a MESMA regra. Sem isto,
+    // refactor em um lado deixaria drift silencioso no wire format do uniplus.correlation-id.
+    [GeneratedRegex(CorrelationIdMiddleware.FormatoValidoPattern)]
     private static partial Regex FormatoValido();
 }

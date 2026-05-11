@@ -79,6 +79,13 @@ public sealed partial class CorrelationIdMiddleware
     // 1..128 chars. Rejeita controle (\r\n, NULL), whitespace e não-ASCII —
     // previne log injection e poluição de dashboards estruturados downstream.
     // O upper bound do quantificador deve espelhar MaxCorrelationIdLength.
-    [GeneratedRegex(@"^[A-Za-z0-9\-_.]{1,128}$")]
+    //
+    // Pattern exposto como `internal const` para ser consumido também pelo
+    // CorrelationIdEnvelopeMiddleware (Wolverine, ADR-0052): ambos os boundaries
+    // (HTTP e Kafka) precisam validar com a MESMA regra ou a invariante de wire
+    // format uniforme quebra silenciosamente em refactors.
+    internal const string FormatoValidoPattern = @"^[A-Za-z0-9\-_.]{1,128}$";
+
+    [GeneratedRegex(FormatoValidoPattern)]
     private static partial Regex FormatoValido();
 }
