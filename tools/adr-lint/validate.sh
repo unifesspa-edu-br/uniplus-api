@@ -40,7 +40,14 @@ for FILE in "$DIR"/*.md; do
 
   if ! head -1 "$FILE" | grep -q '^---$'; then
     ERR+=("frontmatter YAML ausente (esperado --- na linha 1)")
-  elif ! tail -n +2 "$FILE" | head -n 50 | grep -q '^---$'; then
+  # awk standalone evita falso positivo por SIGPIPE: a versão antiga
+  # `tail | head -n 50 | grep -q` falhava sob `pipefail` em ADRs grandes
+  # porque o `tail` recebia SIGPIPE quando o `grep -q` saía cedo após o match.
+  # `NR<=51` preserva o contrato de sanidade da versão original (frontmatter
+  # MADR 4.0 fica em ~5-10 linhas; 50 é folga) — sem isso, um `---` solto no
+  # corpo de um ADR com frontmatter aberto mas não fechado seria aceito como
+  # delimitador, mascarando o erro real.
+  elif ! awk 'NR==1 && /^---$/{c=1; next} NR<=51 && c==1 && /^---$/{found=1; exit} END{exit found ? 0 : 1}' "$FILE"; then
     ERR+=("frontmatter YAML sem delimitador de fechamento (esperado --- após bloco YAML)")
   fi
 
@@ -52,7 +59,10 @@ for FILE in "$DIR"/*.md; do
     fi
   done
 
-  STATUS=$(printf '%s\n' "$FM" | grep '^status:' | head -1 | sed -E 's/^status:[[:space:]]*"?([^"]*)"?[[:space:]]*$/\1/')
+  # `|| true` evita que o pipeline aborte sob `set -euo pipefail` quando o
+  # campo está ausente — o erro já foi registrado no loop anterior e o script
+  # precisa seguir até o relatório final.
+  STATUS=$(printf '%s\n' "$FM" | { grep '^status:' || true; } | head -1 | sed -E 's/^status:[[:space:]]*"?([^"]*)"?[[:space:]]*$/\1/')
   if [[ -n "$STATUS" ]]; then
     if [[ ! "$STATUS" =~ ^(proposed|accepted|rejected|deprecated)$ ]] && \
        [[ ! "$STATUS" =~ ^superseded\ by\ ADR-[0-9]{4}$ ]]; then
@@ -60,7 +70,7 @@ for FILE in "$DIR"/*.md; do
     fi
   fi
 
-  DATE=$(printf '%s\n' "$FM" | grep '^date:' | head -1 | sed -E 's/^date:[[:space:]]*"?([^"]*)"?[[:space:]]*$/\1/')
+  DATE=$(printf '%s\n' "$FM" | { grep '^date:' || true; } | head -1 | sed -E 's/^date:[[:space:]]*"?([^"]*)"?[[:space:]]*$/\1/')
   if [[ -n "$DATE" ]] && [[ ! "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
     ERR+=("date inválida: '$DATE' (esperado YYYY-MM-DD)")
   fi
