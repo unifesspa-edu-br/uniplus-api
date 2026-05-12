@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Logging;
 
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -25,9 +26,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 /// </summary>
 public sealed class SerilogConfigurationTests
 {
-    /// <summary>Regex exata configurada no datasource Loki via PR <c>uniplus-infra#225</c>.</summary>
-    private const string DerivedFieldsRegex = @"(?:traceID|trace_id|TraceId)[""]?[=:]\s*[""]?([a-fA-F0-9]{32})";
-
     // ─── CA-01: sentinela do outputTemplate ────────────────────────────────
 
     [Fact]
@@ -94,7 +92,7 @@ public sealed class SerilogConfigurationTests
 
         sink.Linhas.Should().ContainSingle();
         string linha = sink.Linhas[0];
-        Match match = Regex.Match(linha, DerivedFieldsRegex);
+        Match match = Regex.Match(linha, GrafanaDerivedFields.TraceIdMatcher);
         match.Success.Should().BeTrue(
             $"linha gerada `{linha}` deve casar a regex do derivedFields do Loki");
         match.Groups[1].Value.Should().Be(traceIdEsperado,
@@ -128,7 +126,7 @@ public sealed class SerilogConfigurationTests
         }
 
         sink.Linhas.Should().ContainSingle();
-        Regex.IsMatch(sink.Linhas[0], DerivedFieldsRegex)
+        Regex.IsMatch(sink.Linhas[0], GrafanaDerivedFields.TraceIdMatcher)
             .Should().BeFalse("string vazia após TraceId= não deve casar 32 hex chars");
     }
 
@@ -137,9 +135,17 @@ public sealed class SerilogConfigurationTests
     /// <see cref="MessageTemplateTextFormatter"/> do <c>WriteTo.Console</c>,
     /// capturando a STRING entregue ao stdout para assertion textual.
     /// </summary>
+    /// <remarks>
+    /// Recebe <see cref="CultureInfo.InvariantCulture"/> idêntico ao
+    /// <c>WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)</c> da
+    /// produção em <see cref="SerilogConfiguration.ConfigurarSerilog(LoggerConfiguration, IConfiguration, string?)"/> —
+    /// para que futuras placeholders sensíveis a cultura (decimais, datas) saiam
+    /// formatadas no teste exatamente como em produção.
+    /// </remarks>
     private sealed class CapturingTextSink(string outputTemplate) : ILogEventSink
     {
-        private readonly MessageTemplateTextFormatter _formatter = new(outputTemplate, formatProvider: null);
+        private readonly MessageTemplateTextFormatter _formatter =
+            new(outputTemplate, formatProvider: CultureInfo.InvariantCulture);
 
         public List<string> Linhas { get; } = [];
 
