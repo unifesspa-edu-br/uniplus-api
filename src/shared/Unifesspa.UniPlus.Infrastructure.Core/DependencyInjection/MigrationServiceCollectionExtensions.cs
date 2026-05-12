@@ -16,10 +16,14 @@ using Microsoft.Extensions.Logging;
 public static partial class MigrationServiceCollectionExtensions
 {
     /// <summary>
-    /// Aplica todas as migrations EF Core pendentes do <typeparamref name="TContext"/>. Idempotente —
-    /// chamadas em banco já migrado retornam sem efeito. Coordenação entre réplicas concorrentes
-    /// (várias réplicas startando simultâneo) é responsabilidade do EF Core / provider Npgsql,
-    /// que usa <c>__EFMigrationsHistory</c> como controle de aplicação.
+    /// Aplica todas as migrations EF Core pendentes do <typeparamref name="TContext"/>. Em banco
+    /// já migrado (com a migration registrada em <c>__EFMigrationsHistory</c>), retorna sem efeito.
+    /// Para bancos com schema pré-existente que ainda não foi rastreado pelo EF (caso de standalone
+    /// pré-#416), cada migration precisa ser explicitamente idempotente nos seus <c>Up()</c>
+    /// (ex.: <c>CREATE TABLE IF NOT EXISTS</c>) para evitar erro 42P07 — o EF não emite guards
+    /// nativos. Coordenação entre réplicas concorrentes startando simultâneo é coberta pelo
+    /// lock interno do provider Npgsql sobre <c>__EFMigrationsHistory</c>, não por garantia geral
+    /// de idempotência deste método.
     /// </summary>
     /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, SelecaoDbContext, IngressoDbContext).</typeparam>
     /// <param name="services">

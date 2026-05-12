@@ -59,12 +59,24 @@ public sealed class CascadingFixture : IAsyncLifetime
         // próprio framework via `AutoBuildMessageStorageOnStartup = CreateOrUpdate`
         // (issue #344) — antes ficava off-by-default e era criado lazy no primeiro
         // despacho, o que era origem de timing flakiness em testes outbox.
+        //
+        // Usar MigrateAsync (e não EnsureCreatedAsync) garante coabitação com o
+        // MigrationHostedService que o host produtivo carrega no startup
+        // (uniplus-api#416): popular __EFMigrationsHistory aqui faz o
+        // MigrationHostedService achar a migration já aplicada e ser no-op,
+        // evitando colisão 42P07 (relation already exists).
+        //
+        // Esta duplicidade fixture↔MigrationHostedService é tática e está
+        // documentada em ADR-0039 §"Atualizações posteriores". Follow-up
+        // planejado em uniplus-api#419: reordenar IHostedService no
+        // Program.cs (MigrationHostedService antes de UseWolverineOutboxCascading)
+        // + fitness test + remoção desta linha, restaurando 1 fonte de verdade.
         DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
             .UseNpgsql(ConnectionString)
             .Options;
 
         await using SelecaoDbContext db = new(options);
-        await db.Database.EnsureCreatedAsync().ConfigureAwait(false);
+        await db.Database.MigrateAsync().ConfigureAwait(false);
 
         // Captura todos os valores prévios ANTES de mutar o environment —
         // garantia de restore-em-falha dos dois sets atômicos. Sem isto,
