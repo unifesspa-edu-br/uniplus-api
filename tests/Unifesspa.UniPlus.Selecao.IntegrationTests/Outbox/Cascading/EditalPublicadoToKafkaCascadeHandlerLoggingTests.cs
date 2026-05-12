@@ -15,7 +15,7 @@ using EditalPublicadoAvro = unifesspa.uniplus.selecao.events.EditalPublicado;
 /// Unit tests do logging estruturado do <see cref="EditalPublicadoToKafkaCascadeHandler"/>
 /// (story uniplus-api#427). Cobre:
 ///   - <c>Handle()</c> projeta o Avro mapeado corretamente (mantém invariante existente).
-///   - <c>Handle()</c> emite log Information com <c>EventId</c>/<c>EditalId</c>/<c>NumeroEdital</c>
+///   - <c>Handle()</c> emite log Information com <c>EventoId</c>/<c>EditalId</c>/<c>NumeroEdital</c>
 ///     como propriedades estruturadas (consultáveis via LogQL no Loki, não só texto).
 ///   - <c>Handle()</c> rejeita <c>@event</c> e <c>logger</c> nulos com
 ///     <see cref="ArgumentNullException"/>.
@@ -39,7 +39,7 @@ public sealed class EditalPublicadoToKafkaCascadeHandlerLoggingTests
         avro.NumeroEdital.Should().Be(numeroEdital);
     }
 
-    [Fact(DisplayName = "Handle emite log Information com EventId/EditalId/NumeroEdital como properties estruturadas")]
+    [Fact(DisplayName = "Handle emite log Information com EventoId/EditalId/NumeroEdital como properties estruturadas")]
     public void Handle_EmiteLogStruturadoAntesDaProjecao()
     {
         Guid editalId = Guid.CreateVersion7();
@@ -53,13 +53,13 @@ public sealed class EditalPublicadoToKafkaCascadeHandlerLoggingTests
             "exatamente uma chamada ao LoggerMessage por execução do Handle");
         EstruturalLogger<EditalPublicadoToKafkaCascadeHandler>.Entrada entrada = logger.Entradas[0];
         entrada.Level.Should().Be(LogLevel.Information);
-        // Property name match do template `Projetando ... EventId={EventId} EditalId={EditalId} NumeroEdital={NumeroEdital}`.
+        // Property name match do template `Projetando ... EventoId={EventoId} EditalId={EditalId} NumeroEdital={NumeroEdital}`.
         // O [LoggerMessage] source generator emite cada placeholder como key
         // estruturado — Loki/Grafana indexa diretamente.
-        entrada.Properties.Should().ContainKey("EventId");
+        entrada.Properties.Should().ContainKey("EventoId");
         entrada.Properties.Should().ContainKey("EditalId");
         entrada.Properties.Should().ContainKey("NumeroEdital");
-        entrada.Properties["EventId"].Should().Be(@event.EventId);
+        entrada.Properties["EventoId"].Should().Be(@event.EventId);
         entrada.Properties["EditalId"].Should().Be(editalId);
         entrada.Properties["NumeroEdital"].Should().Be(numeroEdital);
     }
