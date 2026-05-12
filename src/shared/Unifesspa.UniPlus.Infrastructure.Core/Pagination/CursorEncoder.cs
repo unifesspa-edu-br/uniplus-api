@@ -13,8 +13,17 @@ using Cryptography;
 /// </summary>
 public sealed class CursorEncoder
 {
-    /// <summary>Nome de chave usado para cifrar cursores em <see cref="IUniPlusEncryptionService"/>.</summary>
-    public const string KeyName = "cursor";
+    /// <summary>
+    /// Nome de chave usado para cifrar cursores em <see cref="IUniPlusEncryptionService"/>.
+    /// Default alinhado com a key canônica provisionada pelo chart
+    /// <c>platform/vault-transit-bootstrap</c> do uniplus-infra (uniplus-infra#219):
+    /// <c>uniplus-idempotency-aesgcm</c>. Por enquanto reusa a mesma key da
+    /// Idempotency-Key (escopo pragmático, mesma policy <c>uniplus-api-transit</c>).
+    /// Quando o standalone evoluir para key separation por capability (ex.: dedicar
+    /// uma key <c>uniplus-cursor-aesgcm</c> para pagination), extrair para options
+    /// configurável + key + policy dedicada (follow-up uniplus-infra TBD).
+    /// </summary>
+    public const string KeyName = "uniplus-idempotency-aesgcm";
 
     private static readonly JsonSerializerOptions PayloadJsonOptions = new()
     {
