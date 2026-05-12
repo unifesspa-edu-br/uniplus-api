@@ -23,11 +23,11 @@ using EditalPublicadoAvro = unifesspa.uniplus.selecao.events.EditalPublicado;
 /// O envelope Avro é instalado no outbox dentro da transação do listener da PG queue —
 /// se o publish para Kafka falhar, o Wolverine retenta a partir do outbox, garantindo
 /// at-least-once para o consumidor cross-módulo. A duplicação eventual é tratada pela
-/// idempotência exigida pela ADR-0014 (consumers deduplicam por <c>EventId</c>).
+/// idempotência exigida pela ADR-0014 (consumers deduplicam por <c>EventoId</c>).
 /// </para>
 /// <para>
 /// <b>Observabilidade (issue #427):</b> emite log estruturado <c>LogProjetandoParaKafkaCascade</c>
-/// (EventId, EditalId, NumeroEdital) antes de retornar o Avro projetado. Permite confirmar
+/// (EventoId, EditalId, NumeroEdital) antes de retornar o Avro projetado. Permite confirmar
 /// no Loki/Grafana que o evento foi consumido por este cascade handler antes do roteamento
 /// Wolverine → Kafka. O <i>sucesso de entrega ao broker</i> não é logado aqui — Wolverine
 /// despacha assincronamente após este handler retornar; a confirmação definitiva vem da
@@ -55,10 +55,10 @@ public sealed partial class EditalPublicadoToKafkaCascadeHandler
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Projetando EditalPublicadoEvent para Kafka cascade. EventId={EventId} EditalId={EditalId} NumeroEdital={NumeroEdital}")]
+        Message = "Projetando EditalPublicadoEvent para Kafka cascade. EventoId={EventoId} EditalId={EditalId} NumeroEdital={NumeroEdital}")]
     private static partial void LogProjetandoParaKafkaCascade(
         ILogger logger,
-        Guid eventId,
+        Guid eventoId,
         Guid editalId,
         string numeroEdital);
 }
