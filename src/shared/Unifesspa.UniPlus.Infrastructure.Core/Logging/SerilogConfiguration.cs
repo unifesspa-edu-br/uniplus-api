@@ -40,8 +40,12 @@ public static class SerilogConfiguration
     /// parsing por humanos durante troubleshooting e mantém a regra <c>TraceId=...</c>
     /// no fim da linha (próxima ao <c>NewLine</c>), padrão amplamente
     /// reconhecido por regex log scrapers.</para>
+    /// <para><strong>Visibilidade:</strong> <c>internal</c> deliberadamente — é detalhe
+    /// de configuração interna; o assembly <c>Unifesspa.UniPlus.Infrastructure.Core.UnitTests</c>
+    /// recebe acesso via <c>InternalsVisibleTo</c> para sentinelas. Pattern consistente
+    /// com <see cref="Middleware.CorrelationIdMiddleware.FormatoValidoPattern"/>.</para>
     /// </remarks>
-    public const string ConsoleOutputTemplate =
+    internal const string ConsoleOutputTemplate =
         "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j} TraceId={TraceId} SpanId={SpanId}{NewLine}{Exception}";
 
 

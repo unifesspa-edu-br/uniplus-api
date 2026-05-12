@@ -63,8 +63,6 @@ public sealed class TraceContextEnricherTests
         // Se este teste falhar, o link "Ver trace no Tempo" deixa de renderizar
         // mesmo com tudo "instalado". Defeito silencioso clássico que justifica
         // a existência da issue #227 (smoke E2E visual).
-        const string derivedFieldsRegex = @"(?:traceID|trace_id|TraceId)[""]?[=:]\s*[""]?([a-fA-F0-9]{32})";
-
         using ActivitySource source = new(nameof(Enrich_DadoActivityAtiva_RegexDoDerivedFieldsDeveCasarOTraceIdEmitido));
         using ActivityListener listener = CriarListenerAllData(source.Name);
         ActivitySource.AddActivityListener(listener);
@@ -75,7 +73,7 @@ public sealed class TraceContextEnricherTests
 
         string traceId = (string)((ScalarValue)evento.Properties[TraceContextEnricher.TraceIdPropertyName]).Value!;
         string linhaSimulada = $"[12:34:56 INF] mensagem TraceId={traceId} SpanId=...";
-        System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(linhaSimulada, derivedFieldsRegex);
+        System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(linhaSimulada, GrafanaDerivedFields.TraceIdMatcher);
 
         match.Success.Should().BeTrue("derivedFields do Loki deve capturar o TraceId no body do log");
         match.Groups[1].Value.Should().Be(traceId);
@@ -105,7 +103,6 @@ public sealed class TraceContextEnricherTests
         // Garantia de não-spurious: quando não há trace, o output `TraceId= SpanId=`
         // NÃO pode casar a regex hex32 — senão o Grafana renderiza link para um
         // trace inexistente, pior que não ter link nenhum.
-        const string derivedFieldsRegex = @"(?:traceID|trace_id|TraceId)[""]?[=:]\s*[""]?([a-fA-F0-9]{32})";
         Activity.Current = null;
         LogEvent evento = CriarEventoBasico();
 
@@ -113,7 +110,7 @@ public sealed class TraceContextEnricherTests
 
         string traceId = (string)((ScalarValue)evento.Properties[TraceContextEnricher.TraceIdPropertyName]).Value!;
         string linhaSimulada = $"[12:34:56 INF] startup pre-routing TraceId={traceId} SpanId=";
-        bool casa = System.Text.RegularExpressions.Regex.IsMatch(linhaSimulada, derivedFieldsRegex);
+        bool casa = System.Text.RegularExpressions.Regex.IsMatch(linhaSimulada, GrafanaDerivedFields.TraceIdMatcher);
         casa.Should().BeFalse("string vazia após TraceId= não deve casar 32 hex chars");
     }
 
