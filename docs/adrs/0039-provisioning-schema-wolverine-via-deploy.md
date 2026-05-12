@@ -87,3 +87,17 @@ Em testes integrados, a `CascadingFixture` usa `EnsureCreatedAsync` no Postgres 
 - ADR-0040 — Helper `UseWolverineOutboxCascading`
 - ADR-0026 — Outbox transacional via Wolverine
 - Origem: spike S10 cascading; issue [#180](https://github.com/unifesspa-edu-br/uniplus-api/issues/180); PR [#172](https://github.com/unifesspa-edu-br/uniplus-api/pull/172)
+
+## Atualizações posteriores
+
+### 2026-05-11 — coabitação com `MigrationHostedService` (issue #416)
+
+Duas evoluções relevantes desde a decisão original:
+
+1. **Schema Wolverine: `AutoBuildMessageStorageOnStartup = CreateOrUpdate` reativado** (issue #344). Em ambientes Uni+ não há orquestração de schema externa ao host (sem step `dotnet wolverine db-apply` no Helm), então delegar a criação ao próprio host destrava bring-up de pods com banco vazio (standalone/lab). A opção B continua válida para produção PROD/HML quando o pipeline ganhar o step explícito; CreateOrUpdate é idempotente (delta-only) e seguro como default para os ambientes atuais. Ver `WolverineOutboxConfiguration.cs:177`.
+
+2. **Schema EF Core do domínio: `MigrationHostedService<TContext>` no startup do host** (issue #344 + #416). `AddDbContextMigrationsOnStartup<>` registra um `IHostedService` que invoca `MigrateAsync`. Coordenação cross-replica usa lock do Npgsql sobre `__EFMigrationsHistory` (ver `MigrationServiceCollectionExtensions.cs:84`). Para que a primeira aplicação contra bancos com schema pré-existente (caso do standalone hoje) não falhe com 42P07, a migration `Up()` precisa ser escrita com guards explícitos (`CREATE TABLE IF NOT EXISTS`) — EF Core não emite isso por padrão.
+
+3. **`CascadingFixture` mudou de `EnsureCreatedAsync` → `MigrateAsync`** (issue #416). Justificativa: a fixture precisa provisionar o schema do domínio ANTES do host startar para evitar a race com Wolverine outbox (timing histórico documentado em #344/#180). Com migrations EF Core agora registradas (PR #416), `EnsureCreatedAsync` colide com `MigrationHostedService` (42P07 relation already exists). `MigrateAsync` na fixture popula `__EFMigrationsHistory` e o `MigrationHostedService` do host vê banco já migrado e vira no-op. Resultado: dois caminhos chamam `MigrateAsync` (fixture + host), funcionalmente idempotente mas conceitualmente duplicado.
+
+A coabitação fixture↔MigrationHostedService é tática. Follow-up planejado em [issue #419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419): reordenar `Program.cs` para registrar `AddDbContextMigrationsOnStartup` antes de `UseWolverineOutboxCascading` nos 3 módulos (Selecao/Ingresso/Portal) + fitness test garantindo a ordem + remover `MigrateAsync` da fixture, restaurando 1 fonte de verdade para o schema do domínio.
