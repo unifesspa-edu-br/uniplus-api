@@ -26,13 +26,46 @@ using EditalPublicadoAvro = unifesspa.uniplus.selecao.events.EditalPublicado;
 /// idempotência exigida pela ADR-0014 (consumers deduplicam por <c>EventoId</c>).
 /// </para>
 /// <para>
-/// <b>Observabilidade (issue #427):</b> emite log estruturado <c>LogProjetandoParaKafkaCascade</c>
-/// (EventoId, EditalId, NumeroEdital) antes de retornar o Avro projetado. Permite confirmar
-/// no Loki/Grafana que o evento foi consumido por este cascade handler antes do roteamento
-/// Wolverine → Kafka. O <i>sucesso de entrega ao broker</i> não é logado aqui — Wolverine
-/// despacha assincronamente após este handler retornar; a confirmação definitiva vem da
-/// inspeção do topic (AKHQ) ou de spans do producer no Tempo. Story uniplus-api#427
-/// fornece apenas o sinal estruturado; dashboards/métricas pertencem ao Epic uniplus-infra#240.
+/// <b>Observabilidade do publish para Kafka (issue #427):</b>
+/// </para>
+/// <list type="bullet">
+///   <item>
+///     <description>
+///       <b>Span OTel built-in do Wolverine</b> (fonte primária): cada publish para Kafka
+///       gera um span <c>send</c> com <see cref="System.Diagnostics.ActivityKind.Producer"/>
+///       e atributos OpenTelemetry messaging semantic conventions —
+///       <c>messaging.system=kafka</c>, <c>messaging.destination=kafka://topic/edital_events</c>,
+///       <c>messaging.message_id</c>, <c>messaging.conversation_id</c> (TraceId),
+///       <c>messaging.message_type=unifesspa.uniplus.selecao.events.EditalPublicado</c>,
+///       <c>messaging.message_payload_size_bytes</c>. Disponível no Grafana Tempo via
+///       TraceQL <c>{ name = "send" &amp;&amp; messaging.destination = "kafka://topic/edital_events" }</c>
+///       sem instrumentação adicional. Esta é a confirmação canônica de que o publish foi
+///       enviado ao broker (o span fecha após o ack do producer Kafka).
+///     </description>
+///   </item>
+///   <item>
+///     <description>
+///       <b>Log estruturado emitido por este handler</b> (fonte complementar):
+///       <c>LogProjetandoParaKafkaCascade(EventoId, EditalId, NumeroEdital)</c> em
+///       Information com TraceId/SpanId attachados pelo enricher Serilog. Permite query
+///       LogQL no Loki <c>{k8s_namespace_name="uniplus"} |= "Projetando EditalPublicadoEvent
+///       para Kafka cascade"</c> para alertas baseados em frequência de cascading
+///       (ex.: detectar quedas anômalas no volume de publicações).
+///     </description>
+///   </item>
+///   <item>
+///     <description>
+///       <b>Métricas Prometheus</b> (não disponíveis hoje): Wolverine emite métricas OTel
+///       (counters/histograms) via <c>OpenTelemetry().WithMetrics()</c>, mas o pipeline
+///       <c>otelcol → prometheusremotewrite</c> ainda não está implementado no standalone.
+///       Endereçado pela Feature uniplus-infra#242. Até lá, derivação de SLO/SLI usa
+///       <c>rate({...} |= "...")</c> sobre o log estruturado deste handler.
+///     </description>
+///   </item>
+/// </list>
+/// <para>
+/// Em incidente, priorizar Tempo (span semantic conventions) sobre o log: o span tem
+/// duração e atributos do broker, o log apenas registra que o cascade handler executou.
 /// </para>
 /// </remarks>
 [SuppressMessage(
