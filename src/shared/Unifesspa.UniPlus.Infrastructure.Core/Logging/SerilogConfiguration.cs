@@ -21,6 +21,31 @@ using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 public static class SerilogConfiguration
 {
     /// <summary>
+    /// Template de saída do <c>WriteTo.Console(...)</c> — inclui <c>TraceId=&lt;hex&gt;</c>
+    /// e <c>SpanId=&lt;hex&gt;</c> no body do log line. Esse formato é contrato com o
+    /// <c>derivedFields</c> do datasource Loki do Grafana
+    /// (<c>uniplus-infra</c> PR #225), cuja regex
+    /// <c>(?:traceID|trace_id|TraceId)["]?[=:]\s*["]?([a-fA-F0-9]{32})</c> captura o
+    /// <c>TraceId</c> e gera o link <em>"Ver trace no Tempo"</em>.
+    /// </summary>
+    /// <remarks>
+    /// <para><strong>Invariante</strong>: qualquer refactor que altere a posição ou
+    /// formato de <c>TraceId=</c> ou <c>SpanId=</c> quebra o drill-down log↔trace no
+    /// Grafana — defeito silencioso (CI verde, smoke visual quebrado). Sentinel test
+    /// em <c>SerilogConfigurationTests.OutputTemplate_DeveConterTraceIdESpanId_*</c>
+    /// trava regressões.</para>
+    /// <para><strong>Posição do <c>{Properties:j}</c>:</strong> precede <c>TraceId</c>/<c>SpanId</c>
+    /// para que as propriedades estruturadas (<c>CorrelationId</c>, <c>ServiceName</c>,
+    /// custom enrichers) saiam em JSON inline antes do par chave-valor textual — facilita
+    /// parsing por humanos durante troubleshooting e mantém a regra <c>TraceId=...</c>
+    /// no fim da linha (próxima ao <c>NewLine</c>), padrão amplamente
+    /// reconhecido por regex log scrapers.</para>
+    /// </remarks>
+    public const string ConsoleOutputTemplate =
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j} TraceId={TraceId} SpanId={SpanId}{NewLine}{Exception}";
+
+
+    /// <summary>
     /// Sobrecarga sem nome de serviço — mantida para callers que ainda não precisam
     /// rotular logs com <c>service.name</c>/<c>service.namespace</c> no Loki.
     /// O sink OTLP é registrado mesmo assim (quando o toggle está ativo); apenas
@@ -69,7 +94,13 @@ public static class SerilogConfiguration
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
-            .Enrich.With<PiiMaskingEnricher>();
+            .Enrich.With<PiiMaskingEnricher>()
+            // TraceContextEnricher popula TraceId/SpanId a partir de Activity.Current
+            // (ADR-0018) — invariante para o derivedFields do Loki no Grafana renderizar
+            // o link "Ver trace no Tempo". Registrado APÓS PiiMaskingEnricher (preserva
+            // ordem ADR-0011) e ANTES dos sinks (Console renderiza no outputTemplate;
+            // OTLP popula via IncludedData.TraceIdField independentemente do enricher).
+            .Enrich.With<TraceContextEnricher>();
 
         // ServiceNameEnricher é o segundo componente da ADR-0052: popula a propriedade
         // Serilog `ServiceName` em cada log event, visível em consumidores que não falam
@@ -82,7 +113,9 @@ public static class SerilogConfiguration
             loggerConfiguration.Enrich.With(new ServiceNameEnricher(nomeServico));
         }
 
-        loggerConfiguration.WriteTo.Console(formatProvider: CultureInfo.InvariantCulture);
+        loggerConfiguration.WriteTo.Console(
+            outputTemplate: ConsoleOutputTemplate,
+            formatProvider: CultureInfo.InvariantCulture);
 
         bool observabilidadeAtivada = configuration.GetValue(
             OpenTelemetryConfiguration.EnabledConfigurationKey,
