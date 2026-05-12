@@ -17,7 +17,27 @@ public static class CorsConfiguration
     public const string DefaultPolicyName = "DefaultCorsPolicy";
 
     private static readonly string[] DefaultMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
-    private static readonly string[] DefaultHeaders = ["Content-Type", "Authorization", "Accept", "X-Requested-With"];
+
+    // Headers explicitamente declarados no CORS preflight. Lista canônica:
+    // qualquer header novo que o frontend precise enviar deve entrar aqui sob
+    // pena de browsers rejeitarem o preflight (curl/server-to-server não sofre).
+    //
+    // - Content-Type, Authorization, Accept, X-Requested-With: básicos REST.
+    // - Idempotency-Key: header obrigatório em POSTs com [RequiresIdempotencyKey]
+    //   (ADR-0027). Sem este aqui, toda criação via SPA falha "Não foi possível
+    //   conectar ao servidor" antes da request real sair.
+    // - If-Match, If-None-Match: condicionais HTTP (RFC 9110); preventivos para
+    //   ETags do Contrato V1 (ADR-0022).
+    private static readonly string[] DefaultHeaders =
+    [
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "X-Requested-With",
+        "Idempotency-Key",
+        "If-Match",
+        "If-None-Match",
+    ];
 
     /// <summary>
     /// Binds <see cref="CorsOptions"/> and registers the default CORS policy.
