@@ -1,11 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Domain.Interfaces;
 using ExternalServices;
 using Persistence;
@@ -17,55 +15,19 @@ public static class SelecaoInfrastructureRegistration
 
     /// <summary>
     /// Registra a infraestrutura do módulo Seleção (DbContext + interceptors +
-    /// repositórios + serviços externos). A connection string é lida do
-    /// <see cref="IConfiguration"/> injetado no factory do <c>AddDbContext</c>
-    /// — alinhado com o padrão lazy do <c>UseWolverineOutboxCascading</c>
-    /// (issue #204). Test hosts que sobrescrevem <c>ConnectionStrings:SelecaoDb</c>
-    /// via env var ou <c>InMemoryCollection</c> ganham o override automaticamente,
-    /// sem precisar re-registrar o DbContext.
+    /// repositórios + serviços externos). Wire-up centralizado em
+    /// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0050): convenção
+    /// snake_case global, soft delete + audit interceptors, leitura lazy de
+    /// connection string.
     /// </summary>
     public static IServiceCollection AddSelecaoInfrastructure(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // SoftDeleteInterceptor (issue #127) e AuditableInterceptor (issue #390)
-        // consomem IUserContext scoped (HttpUserContext) para preencher
-        // DeletedBy / CreatedBy / UpdatedBy com o usuário autenticado. Scoped
-        // acompanha o ciclo de vida do request — Singleton aqui causaria
-        // captive dependency com IUserContext (UserId congelaria no primeiro
-        // request servido pelo processo).
-        services.AddScoped<SoftDeleteInterceptor>();
-        services.AddScoped<AuditableInterceptor>();
+        services.AddUniPlusEfInterceptors();
 
         services.AddDbContext<SelecaoDbContext>((serviceProvider, options) =>
-        {
-            IConfiguration configuration = serviceProvider.GetRequiredService<IConfiguration>();
-            string? connectionString = configuration.GetConnectionString(ConnectionStringName);
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new InvalidOperationException(
-                    $"ConnectionStrings:{ConnectionStringName} não configurada — defina via appsettings ou env var "
-                    + $"`ConnectionStrings__{ConnectionStringName}`. Valores vazios/whitespace também são rejeitados.");
-            }
-
-            options.UseNpgsql(connectionString, npgsqlOptions =>
-            {
-                npgsqlOptions.MigrationsAssembly(typeof(SelecaoDbContext).Assembly.FullName);
-
-                // EnableRetryOnFailure é deliberadamente NÃO configurado aqui:
-                // o NpgsqlRetryingExecutionStrategy é incompatível com as
-                // user-initiated transactions abertas pela política
-                // AutoApplyTransactions + EnrollDbContextInTransaction do
-                // Wolverine outbox (ver WolverineOutboxConfiguration e
-                // CascadingApiFactory). Resiliência a falhas transientes de
-                // conexão fica a cargo das policies de retry do Wolverine no
-                // nível do envelope, não do EF Core.
-            });
-
-            options.AddInterceptors(
-                serviceProvider.GetRequiredService<SoftDeleteInterceptor>(),
-                serviceProvider.GetRequiredService<AuditableInterceptor>());
-        });
+            options.UseUniPlusNpgsqlConventions<SelecaoDbContext>(serviceProvider, ConnectionStringName));
 
         services.AddScoped<IUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<SelecaoDbContext>());
