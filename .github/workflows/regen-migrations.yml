@@ -46,6 +46,10 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
         with:
+          # Pin para main mesmo em workflow_dispatch — base do PR criado abaixo
+          # também é `main`. Sem isso, dispatch de outra branch poderia regenerar
+          # migrations sobre um estado divergente do que será mergeado.
+          ref: main
           fetch-depth: 0
 
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
@@ -99,21 +103,27 @@ jobs:
           grep -q "options.UseSnakeCaseNamingConvention();" \
             "$HELPER"
 
-      - name: Deletar migrations existentes do Selecao
+      - name: Deletar migrations existentes (Selecao + Ingresso)
         run: |
-          MIGDIR=src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Migrations
           # Glob protege contra mudanças de timestamp (Codex P2): casa qualquer
           # *_InitialCreate*.cs já existente, não apenas o ID atual.
+          # Trata Ingresso simetricamente — `dotnet ef migrations add` abaixo
+          # falharia se já existisse uma InitialCreate (de regeneração anterior
+          # ou branch divergente).
           shopt -s nullglob
-          REMOVED=0
-          for f in "$MIGDIR"/*_InitialCreate*.cs "$MIGDIR"/SelecaoDbContextModelSnapshot.cs; do
-            echo "removing $f"
-            rm -f "$f"
-            REMOVED=$((REMOVED+1))
+          for MIGDIR in \
+              src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Migrations \
+              src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Persistence/Migrations; do
+            REMOVED=0
+            for f in "$MIGDIR"/*_InitialCreate*.cs "$MIGDIR"/*DbContextModelSnapshot.cs; do
+              echo "removing $f"
+              rm -f "$f"
+              REMOVED=$((REMOVED+1))
+            done
+            if [ "$REMOVED" -eq 0 ]; then
+              echo "::notice::$MIGDIR — sem InitialCreate prévio (estado virgem)"
+            fi
           done
-          if [ "$REMOVED" -eq 0 ]; then
-            echo "::warning::Nenhuma migration *_InitialCreate*.cs ou snapshot encontrada — banco pode estar em outro estado."
-          fi
 
       - name: Build após mudanças
         run: dotnet build UniPlus.slnx --nologo
