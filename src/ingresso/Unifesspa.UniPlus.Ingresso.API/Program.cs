@@ -56,6 +56,16 @@ builder.Services.AdicionarObservabilidade(nomeServicoIngresso, builder.Configura
 // simetria com UseWolverineOutboxCascading e com Selecao.
 builder.Services.AddIngressoInfrastructure();
 
+// Migrations EF Core do módulo Ingresso aplicadas no host StartAsync via IHostedService
+// (issue #344). Como hosted service, o registro é filtrável por test factories que sobem
+// o pipeline HTTP sem Postgres real (ver ApiFactoryBase). Idempotente.
+//
+// INVARIANTE (#419): registrado antes de UseWolverineOutboxCascading +
+// AddWolverineMessaging — mesma justificativa do Selecao.API. Fitness em
+// tests/Unifesspa.UniPlus.ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
+// cobre os 3 entry points.
+builder.Services.AddDbContextMigrationsOnStartup<IngressoDbContext>();
+
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005.
 //
@@ -65,11 +75,6 @@ builder.Services.AddIngressoInfrastructure();
 // ganharem destino cross-módulo.
 builder.Host.UseWolverineOutboxCascading(builder.Configuration, connectionStringName: "IngressoDb");
 builder.Services.AddWolverineMessaging();
-
-// Migrations EF Core do módulo Ingresso aplicadas no host StartAsync via IHostedService
-// (issue #344). Como hosted service, o registro é filtrável por test factories que sobem
-// o pipeline HTTP sem Postgres real (ver ApiFactoryBase). Idempotente.
-builder.Services.AddDbContextMigrationsOnStartup<IngressoDbContext>();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);

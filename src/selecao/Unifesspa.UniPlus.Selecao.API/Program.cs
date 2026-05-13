@@ -167,6 +167,19 @@ builder.Services.AddSchemaRegistry(builder.Configuration)
         schemaResourceName: unifesspa.uniplus.selecao.events.EditalPublicado.SchemaResourceName,
         resourceAssembly: typeof(EditalPublicadoEvent).Assembly);
 
+// Migrations EF Core do módulo Selecao aplicadas no host StartAsync via IHostedService
+// (issue #344). Como hosted service, o registro é filtrável por test factories que sobem
+// o pipeline HTTP sem Postgres real (ver ApiFactoryBase). Idempotente.
+//
+// INVARIANTE (#419): este registro precede UseWolverineOutboxCascading + AddWolverineMessaging
+// abaixo. HostOptions.ServicesStartConcurrently=false (default) garante que IHostedService
+// inicia sequencialmente na ordem de registro — então MigrationHostedService aplica o
+// schema EF do domínio ANTES do WolverineRuntime aceitar o primeiro envelope cascading,
+// evitando 42P01 em handlers que tocam tabelas do módulo. Fitness test em
+// tests/Unifesspa.UniPlus.ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
+// trava regressão de ordem nos 3 entry points (Selecao/Ingresso/Portal).
+builder.Services.AddDbContextMigrationsOnStartup<SelecaoDbContext>();
+
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005.
 //
@@ -217,11 +230,6 @@ builder.Host.UseWolverineOutboxCascading(
         }
     });
 builder.Services.AddWolverineMessaging();
-
-// Migrations EF Core do módulo Selecao aplicadas no host StartAsync via IHostedService
-// (issue #344). Como hosted service, o registro é filtrável por test factories que sobem
-// o pipeline HTTP sem Postgres real (ver ApiFactoryBase). Idempotente.
-builder.Services.AddDbContextMigrationsOnStartup<SelecaoDbContext>();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);

@@ -66,18 +66,23 @@ builder.Services.AdicionarObservabilidade(nomeServicoPortal, builder.Configurati
 // injetada no factory do AddDbContext — simetria com Selecao/Ingresso (#204).
 builder.Services.AddPortalInfrastructure();
 
+// Migrations EF Core do módulo Portal aplicadas no host StartAsync via IHostedService —
+// pareado com AutoBuildMessageStorageOnStartup do Wolverine (issue #344). Como hosted
+// service, o registro é filtrável por test factories que sobem o pipeline HTTP sem
+// Postgres real (ver ApiFactoryBase). Idempotente; banco já migrado é no-op.
+//
+// INVARIANTE (#419): registrado antes de UseWolverineOutboxCascading +
+// AddWolverineMessaging — mesma justificativa do Selecao.API. Fitness em
+// tests/Unifesspa.UniPlus.ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
+// cobre os 3 entry points.
+builder.Services.AddDbContextMigrationsOnStartup<PortalDbContext>();
+
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005. Esqueleto sem rotas adicionais
 // (não há domain events publicáveis ainda); a Story que introduzir o
 // primeiro caso de uso completa o roteamento.
 builder.Host.UseWolverineOutboxCascading(builder.Configuration, connectionStringName: "PortalDb");
 builder.Services.AddWolverineMessaging();
-
-// Migrations EF Core do módulo Portal aplicadas no host StartAsync via IHostedService —
-// pareado com AutoBuildMessageStorageOnStartup do Wolverine (issue #344). Como hosted
-// service, o registro é filtrável por test factories que sobem o pipeline HTTP sem
-// Postgres real (ver ApiFactoryBase). Idempotente; banco já migrado é no-op.
-builder.Services.AddDbContextMigrationsOnStartup<PortalDbContext>();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);

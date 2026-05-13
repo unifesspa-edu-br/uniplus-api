@@ -2,11 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Microsoft.EntityFrameworkCore;
-
 using Testcontainers.PostgreSql;
-
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 [SuppressMessage(
     "Performance",
@@ -52,31 +48,20 @@ public sealed class CascadingFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        // Cria o schema do domínio Selecao no Postgres efêmero ANTES do host
-        // Wolverine inicializar — sem isso há disputa de timing com o
-        // PostgresqlTransport e o handler reporta `relation "editais" does not exist`.
-        // O schema do Wolverine (`wolverine.*`) agora é provisionado no startup pelo
-        // próprio framework via `AutoBuildMessageStorageOnStartup = CreateOrUpdate`
-        // (issue #344) — antes ficava off-by-default e era criado lazy no primeiro
-        // despacho, o que era origem de timing flakiness em testes outbox.
+        // Schema do domínio Selecao no Postgres efêmero é provisionado pelo
+        // MigrationHostedService<SelecaoDbContext> registrado no Program.cs
+        // ANTES de UseWolverineOutboxCascading (uniplus-api#419). Como
+        // HostOptions.ServicesStartConcurrently=false (default), o host inicia
+        // hosted services em ordem: Migration aplica __EFMigrationsHistory antes
+        // do WolverineRuntime aceitar qualquer envelope que toque tabelas do
+        // módulo. Esta fixture confia 100% nessa ordem — não chama MigrateAsync
+        // localmente para não duplicar uma fonte de verdade. O fitness test
+        // MigrationBeforeWolverineRuntimeOrderTests em
+        // tests/Unifesspa.UniPlus.ArchTests/Hosting/ trava regressão da ordem.
         //
-        // Usar MigrateAsync (e não EnsureCreatedAsync) garante coabitação com o
-        // MigrationHostedService que o host produtivo carrega no startup
-        // (uniplus-api#416): popular __EFMigrationsHistory aqui faz o
-        // MigrationHostedService achar a migration já aplicada e ser no-op,
-        // evitando colisão 42P07 (relation already exists).
-        //
-        // Esta duplicidade fixture↔MigrationHostedService é tática e está
-        // documentada em ADR-0039 §"Atualizações posteriores". Follow-up
-        // planejado em uniplus-api#419: reordenar IHostedService no
-        // Program.cs (MigrationHostedService antes de UseWolverineOutboxCascading)
-        // + fitness test + remoção desta linha, restaurando 1 fonte de verdade.
-        DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
-            .UseNpgsql(ConnectionString)
-            .Options;
-
-        await using SelecaoDbContext db = new(options);
-        await db.Database.MigrateAsync().ConfigureAwait(false);
+        // Schema do Wolverine (`wolverine.*`) é provisionado pelo próprio
+        // framework via `AutoBuildMessageStorageOnStartup = CreateOrUpdate`
+        // (issue #344, ADR-0039), independente do schema do domínio.
 
         // Captura todos os valores prévios ANTES de mutar o environment —
         // garantia de restore-em-falha dos dois sets atômicos. Sem isto,

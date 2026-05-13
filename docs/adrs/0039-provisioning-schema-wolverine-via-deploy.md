@@ -101,3 +101,13 @@ Duas evoluções relevantes desde a decisão original:
 3. **`CascadingFixture` mudou de `EnsureCreatedAsync` → `MigrateAsync`** (issue #416). Justificativa: a fixture precisa provisionar o schema do domínio ANTES do host startar para evitar a race com Wolverine outbox (timing histórico documentado em #344/#180). Com migrations EF Core agora registradas (PR #416), `EnsureCreatedAsync` colide com `MigrationHostedService` (42P07 relation already exists). `MigrateAsync` na fixture popula `__EFMigrationsHistory` e o `MigrationHostedService` do host vê banco já migrado e vira no-op. Resultado: dois caminhos chamam `MigrateAsync` (fixture + host), funcionalmente idempotente mas conceitualmente duplicado.
 
 A coabitação fixture↔MigrationHostedService é tática. Follow-up planejado em [issue #419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419): reordenar `Program.cs` para registrar `AddDbContextMigrationsOnStartup` antes de `UseWolverineOutboxCascading` nos 3 módulos (Selecao/Ingresso/Portal) + fitness test garantindo a ordem + remover `MigrateAsync` da fixture, restaurando 1 fonte de verdade para o schema do domínio.
+
+### 2026-05-13 — coabitação resolvida em #419
+
+`Program.cs` dos 3 entry points reordenado: `AddDbContextMigrationsOnStartup<TContext>()` agora precede `UseWolverineOutboxCascading` + `AddWolverineMessaging` em Selecao, Ingresso e Portal. `HostOptions.ServicesStartConcurrently=false` (default) garante que `MigrationHostedService<TContext>` complete `MigrateAsync` antes do `WolverineRuntime` aceitar o primeiro envelope que toque tabelas do módulo.
+
+`CascadingFixture.InitializeAsync` parou de chamar `MigrateAsync` localmente — a fixture confia 100% no host. Comentário inline aponta para a invariante de ordem e para o fitness test.
+
+Fitness test `MigrationBeforeWolverineRuntimeOrderTests` em `tests/Unifesspa.UniPlus.ArchTests/Hosting/` materializa cada `WebApplicationFactory<TEntryPoint>` (Selecao/Ingresso/Portal), captura o `IServiceCollection` antes de qualquer ConfigureTestServices, e verifica que `IsMigrationHostedService` aparece antes de `IsWolverineRuntime` na lista de `IHostedService`. Segundo teórico explicitamente assert que `HostOptions.ServicesStartConcurrently=false`, garantindo que a ordem de registro continua sendo proxy válido da ordem de execução.
+
+Marker `SelecaoApiAssemblyMarker` criado para simetria com `PortalApiAssemblyMarker` e `IngressoApiAssemblyMarker` — usado como type-arg do fitness para evitar ambiguidade de `typeof(Program)` cross-module.

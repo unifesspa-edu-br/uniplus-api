@@ -10,6 +10,7 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="TngTech.ArchUnitNET" />
     <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
   </ItemGroup>
