@@ -15,7 +15,7 @@ public static class IngressoInfrastructureRegistration
     /// <summary>
     /// Registra a infraestrutura do módulo Ingresso (DbContext + interceptors +
     /// repositórios). Wire-up centralizado em
-    /// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0050).
+    /// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0054).
     /// </summary>
     public static IServiceCollection AddIngressoInfrastructure(this IServiceCollection services)
     {

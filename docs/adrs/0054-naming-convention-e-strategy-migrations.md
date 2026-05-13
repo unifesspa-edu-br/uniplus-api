@@ -60,13 +60,15 @@ Esta ADR fecha #155 com decisão única e habilita um guia operacional (`docs/gu
 
 ### Naming convention: **B — `EFCore.NamingConventions` 10.0.1**
 
-Aplicado globalmente via `UseSnakeCaseNamingConvention()` no helper `UniPlusDbContextOptionsExtensions.UseUniPlusNpgsqlConventions<TContext>`. Cobre **tabelas, colunas, índices, PKs, FKs** sem `HasColumnName` manual. NuGet maduro (12M+ downloads, mantenedor ativo, alinhado com EF 10). Custom plugin (Opção C) traria custo de manutenção sem ganho — biblioteca cobre o caso.
+Pacote adicionado ao `Directory.Packages.props` e referenciado em `Infrastructure.Core.csproj`. NuGet maduro (12M+ downloads, mantenedor ativo, alinhado com EF 10). Custom plugin (Opção C) traria custo de manutenção sem ganho — biblioteca cobre o caso.
 
-### Value Objects: **D — preservar `OwnsOne` (decisão diferida em #397)**
+**Ativação diferida**: `UseSnakeCaseNamingConvention()` está documentado como ponto de extensão no helper `UseUniPlusNpgsqlConventions<TContext>` mas **não é invocado ainda**. O schema atual em Selecao foi criado pelo `20260512010258_InitialCreate` com audit columns em PascalCase quoted (`"CreatedAt"`, `"IsDeleted"`, etc.). PostgreSQL trata identifiers quoted com case-sensitivity exata, então ativar o snake_case no runtime ANTES de uma migration de normalização causaria erro `42703 column "created_at" does not exist`. O helper deixa a chamada `UseSnakeCaseNamingConvention()` como TODO comentado, a ser ligado pela próxima Story junto com uma migration `NormalizaAuditColumnsParaSnakeCase` (`ALTER TABLE ... RENAME COLUMN ...`) ou regeração completa do `InitialCreate` via `dotnet ef`.
 
-A intenção original era migrar para **E (ComplexProperty universal)** porque elimina shadow keys e table splitting. Bloqueio técnico encontrado durante a implementação desta ADR: **EF Core 10 ainda não suporta `HasIndex` em subpropriedade de `ComplexProperty`** ([doc oficial](https://learn.microsoft.com/en-us/ef/core/modeling/complex-types) confirma; issue [dotnet/efcore#31250](https://github.com/dotnet/efcore/issues/31250) acompanha). Como o domínio Uni+ exige unique constraints sobre VOs 1-campo (Cpf — RN01; ProtocoloConvocacao), uma migração universal para ComplexProperty hoje obriga `CREATE UNIQUE INDEX` via SQL raw em migration, vazando schema para fora do model EF.
+### Value Objects: **D — preservar `OwnsOne` (decisão diferida)**
 
-Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` funcional). A decisão **fica diferida para a issue [#397](https://github.com/unifesspa-edu-br/uniplus-api/issues/397)** quando o suporte EF for resolvido — `ValueObjectConventions` e os 4 `ValueConverter` ficam disponíveis para uso pontual ou para o cutover futuro.
+A intenção original era migrar para **E (ComplexProperty universal)** porque elimina shadow keys e table splitting. Bloqueio técnico encontrado durante a implementação desta ADR: tentamos `HasIndex(c => c.Cpf.Valor)` sobre `ComplexProperty` em EF Core 10.0.7 e o EF lança `ExpressionExtensions.GetMemberAccessList` rejeitando o acesso encadeado; `HasIndex(["Cpf_Valor"])` (string path) também falha porque ComplexProperty não expõe subpropriedades como entidades indexáveis. Como o domínio Uni+ exige unique constraints sobre VOs 1-campo (Cpf — RN01; ProtocoloConvocacao), uma migração universal para ComplexProperty hoje obriga `CREATE UNIQUE INDEX` via SQL raw em migration, vazando schema para fora do model EF.
+
+Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` funcional). A decisão **fica diferida** — reescopo de [#397](https://github.com/unifesspa-edu-br/uniplus-api/issues/397) cobre a transição quando o suporte EF for resolvido ou quando aceitarmos o trade-off de indexes via SQL raw. `ValueObjectConventions` e os 4 `ValueConverter` ficam disponíveis para uso pontual ou para o cutover futuro.
 
 ### Estratégia de migration: **H + J — migration por Story, forward-only**
 
@@ -75,7 +77,9 @@ Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` f
 
 ### Aplicação no startup: já resolvido em ADRs anteriores
 
-`MigrationHostedService<TContext>` aplica migrations no `StartAsync` do host (#344), registrado **antes** de `UseWolverineOutboxCascading` em cada Program.cs (#419). Fitness test `MigrationBeforeWolverineRuntimeOrderTests` em `tests/Unifesspa.UniPlus.ArchTests/Hosting/` trava a ordem. Aplicação no deploy do standalone é descrita em `RUNBOOKS.md`.
+`MigrationHostedService<TContext>` aplica migrations no `StartAsync` do host (#344), registrado **antes** de `UseWolverineOutboxCascading` em cada Program.cs (#419). Fitness test `MigrationBeforeWolverineRuntimeOrderTests` em `tests/Unifesspa.UniPlus.ArchTests/Hosting/` trava a ordem.
+
+Aplicação no cluster standalone: o pod restart aciona o `MigrationHostedService` que aplica migrations pendentes. O repositório `uniplus-infra` documenta procedimento de operação (drop+recreate, troubleshooting) — fica fora do escopo deste repo.
 
 ## Consequências
 
@@ -88,8 +92,8 @@ Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` f
 
 ### Negativas
 
-- **Schema atual desalinhado da convention**: `20260512010258_InitialCreate` em Selecao cria audit fields em PascalCase quoted (`"CreatedAt"`); convention global expecta `created_at`. Em runtime, isso bate por insensibilidade de case do PG quando identificadores são emitidos sem aspas pelo EF; permanece como débito documentado (ver "Confirmação" abaixo).
-- **EF tool 10.0.x quebrado em .NET 10 SDK 10.0.104** (`FileNotFoundException: System.Runtime, Version=10.0.0.0`): impede `dotnet ef migrations add` localmente. Workaround: `IDesignTimeDbContextFactory` criado nos 3 Infrastructure aguardando fix do EF tool ou rodada via container .NET oficial.
+- **Schema atual desalinhado**: `20260512010258_InitialCreate` em Selecao cria audit fields em PascalCase quoted (`"CreatedAt"`, etc.). Ativar `UseSnakeCaseNamingConvention()` no runtime antes de migrar essas colunas resulta em `42703 column does not exist`. Esta ADR aceita o desalinhamento como **transitório** — o pacote está instalado e o ponto de ativação documentado no helper, aguardando a Story de normalização.
+- **EF tool 10.0.x quebrado em .NET 10 SDK 10.0.104** (`FileNotFoundException: System.Runtime, Version=10.0.0.0`): impede `dotnet ef migrations add` localmente. Workaround: `IDesignTimeDbContextFactory` criado nos 3 Infrastructure (já aplicando `UseSnakeCaseNamingConvention()` para que migrations geradas pós-fix saiam em snake_case) aguardando fix do EF tool ou rodada via container .NET oficial.
 - **ComplexProperty universal adiado**: pattern `OwnsOne` continua nas Configurations existentes. Resolve quando #397 for retomada.
 
 ### Neutras
@@ -98,8 +102,8 @@ Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` f
 
 ## Confirmação
 
-- **Runtime**: helper `UseUniPlusNpgsqlConventions` aplica `UseSnakeCaseNamingConvention()`. Validável via `dotnet test` (suite completa verde) e via `EXPLAIN` de queries reais em ambiente local (todas referências às colunas em `snake_case`).
-- **Schema drift**: o `InitialCreate` atual em Selecao cria audit em PascalCase. Quando o EF tool for resolvido (ou container `.NET 10 SDK` mais recente estiver disponível), uma nova Story regenera `InitialCreate` ou cria migration `NormalizaAuditColumnsParaSnakeCase` que faz `ALTER TABLE … RENAME COLUMN`. Documentado em `RUNBOOKS.md` §19.
+- **Runtime**: helper `UseUniPlusNpgsqlConventions` centraliza `UseNpgsql` + interceptors (soft delete + audit). `UseSnakeCaseNamingConvention()` permanece comentado até a Story de normalização — qualquer PR que ative deve trazer junto a migration de rename. Teste unitário em `tests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests/Persistence/UniPlusDbContextOptionsExtensionsTests.cs` cobre: (a) connection string vazia lança `InvalidOperationException`; (b) interceptors são adicionados; (c) `MigrationsAssembly` é setado.
+- **Design-time**: os 3 `<Modulo>DbContextDesignTimeFactory` aplicam `UseSnakeCaseNamingConvention()` para que regeração de migrations via `dotnet ef` (quando o EF tool for utilizável em .NET 10) produza SQL em snake_case desde o início.
 - **Ingresso InitialCreate**: ausente; será gerado pela primeira Story que tocar entity Ingresso ou por refactor dedicado quando EF tool estiver utilizável.
 
 ## Prós e contras das opções
@@ -162,10 +166,10 @@ Status quo `OwnsOne` cobre o cenário (com `HasIndex(v => v.Valor).IsUnique()` f
 ## Mais informações
 
 - **Guia operacional**: [`docs/guia-banco-de-dados.md`](../guia-banco-de-dados.md) — naming convention completa, tipos PG preferidos, soft delete, audit, workflow de migration, FAQ.
-- **CONTRIBUTING**: seção "Migrations EF Core" referencia o guia.
-- **RUNBOOK standalone**: `RUNBOOKS.md` §19 cobre como aplicar/regenerar migrations no cluster e o follow-up quando o EF tool for resolvido.
+- **CONTRIBUTING**: seção "Entity Framework e migrations" referencia este ADR e o guia.
 - **ADRs relacionadas**: [ADR-0007](0007-postgresql-como-banco-de-dados-primario.md), [ADR-0027](0027-idempotency-key-opt-in-com-store-postgresql.md), [ADR-0032](0032-guid-v7-para-identidade-de-entidades.md), [ADR-0039](0039-provisioning-schema-wolverine-via-deploy.md), [ADR-0040](0040-helper-wolverine-outbox-cascading-canonico.md).
 - **Issues correlatas**: #155 (esta), #397 (ComplexProperty cutover diferido), #420 (FKs faltantes em `inscricoes`/`processos_seletivos`).
+- **Procedimentos de cluster**: detalhes operacionais (drop+recreate, troubleshooting de migration em prod/standalone) vivem no repositório `uniplus-infra`, fora deste repo.
 - **Documentação externa**:
   - [Microsoft Learn — Owned Entities](https://learn.microsoft.com/en-us/ef/core/modeling/owned-entities)
   - [Microsoft Learn — Complex Types (EF 10)](https://learn.microsoft.com/en-us/ef/core/modeling/complex-types)
