@@ -66,12 +66,16 @@ public static class UniPlusDbContextOptionsExtensions
         {
             npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
 
-            // EFCore.NamingConventions aplica snake_case TAMBÉM na tabela
-            // system `__EFMigrationsHistory` (issue efcore/EFCore.NamingConventions#108):
-            // o EF Core escreve a tabela com colunas `MigrationId`/`ProductVersion`
-            // mas a convention faz queries em runtime esperarem `migration_id`/
-            // `product_version`. Forçar o nome explícito mantém o contrato system
-            // intacto e PascalCase, sem afetar tabelas de domínio.
+            // EFCore.NamingConventions aplica snake_case também na tabela
+            // system `__EFMigrationsHistory` (issue efcore/EFCore.NamingConventions#108).
+            // Sem pin do nome, a convention pode renomear a tabela para
+            // `__ef_migrations_history`, criando drift quando outro pod
+            // (sem a convention) já criou com o nome PascalCase default
+            // do EF Core. Pin garante que todos os pods do rollout enxerguem
+            // a mesma tabela. As COLUNAS continuam sendo processadas pela
+            // convention — em rollouts mistos com pods sem convention, o
+            // drift de colunas ainda exige drop+recreate; este pin estabiliza
+            // apenas o nome da tabela.
             npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
         });
 
