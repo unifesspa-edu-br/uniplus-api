@@ -978,12 +978,14 @@
           "Apache.Avro": "[1.12.1, )",
           "Confluent.Kafka": "[2.14.0, )",
           "Confluent.SchemaRegistry": "[2.14.0, )",
+          "EFCore.NamingConventions": "[10.0.1, )",
           "FluentValidation": "[12.1.1, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.7, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
           "Microsoft.EntityFrameworkCore": "[10.0.7, )",
           "Minio": "[7.0.0, )",
           "Npgsql": "[10.0.2, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.15.3, )",
           "OpenTelemetry.Extensions.Hosting": "[1.15.3, )",
           "OpenTelemetry.Instrumentation.AspNetCore": "[1.15.2, )",
@@ -1060,6 +1062,17 @@
           "Apache.Avro": "1.12.1",
           "Confluent.Kafka": "2.14.0",
           "Confluent.SchemaRegistry": "2.14.0"
+        }
+      },
+      "EFCore.NamingConventions": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.1, )",
+        "resolved": "10.0.1",
+        "contentHash": "Xs5k8XfNKPkkQSkGmZkmDI1je0prLTdxse+s8PgTFZxyBrlrTLzTBUTVJtQKSsbvu4y+luAv8DdtO5SALJE++A==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.1, 11.0.0)",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.1, 11.0.0)",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.1"
         }
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {

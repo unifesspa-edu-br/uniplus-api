@@ -27,6 +27,8 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7" />
+    <!-- snake_case automático para tabelas, colunas, índices, FKs (ADR-0050). -->
+    <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
 
     <!-- Messaging -->
     <PackageVersion Include="Confluent.Kafka" Version="2.14.0" />
