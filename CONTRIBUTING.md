@@ -248,12 +248,22 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 - API retorna `ProblemDetails` (RFC 7807) em todos os erros
 - Incluir `traceId` nas respostas de erro
 
-### Entity Framework
+### Entity Framework e migrations
 
-- Configurações via `IEntityTypeConfiguration<T>` (nunca data annotations)
-- Migrations nomeadas descritivamente: `AddCandidatoTable`, `AddIndexOnCpf`
-- Nunca editar migrations já aplicadas — criar nova migration
-- Soft delete via filtro global: `entity.HasQueryFilter(e => !e.Deletado)`
+Referências canônicas:
+
+- [`docs/guia-banco-de-dados.md`](docs/guia-banco-de-dados.md) — instruções operacionais (naming, tipos PG, soft delete, audit, workflow de migration, FAQ).
+- [ADR-0054](docs/adrs/0054-naming-convention-e-strategy-migrations.md) — decisões binding (snake_case via `EFCore.NamingConventions`, forward-only, migration por Story).
+
+Regras essenciais (mais detalhes no guia):
+
+- **Configurações** via `IEntityTypeConfiguration<T>` (nunca data annotations).
+- **Naming convention global** (`snake_case`) aplicada automaticamente pelo helper `UseUniPlusNpgsqlConventions` — não usar `HasColumnName` para mapear `CreatedAt → created_at`.
+- **Migration por Story** que altera schema, com nomenclatura `{Verbo}{Objeto}` em pt-BR indicativo presente (`AdicionaCampoBonus`, `RemoveColunaObsoleta`). Sem squash inicial.
+- **Forward-only**: revert = nova migration `Reverte<X>`. `Down()` proibido em produção.
+- **Nunca editar migrations já aplicadas** — criar nova.
+- **Soft delete obrigatório** via `HasQueryFilter(e => !e.IsDeleted)` + `SoftDeleteInterceptor` (já no helper).
+- **Aplicação automática no startup** via `MigrationHostedService<TContext>` registrado antes do `WolverineRuntime` em cada Program.cs ([ADR-0039](docs/adrs/0039-provisioning-schema-wolverine-via-deploy.md) + [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)).
 
 ---
 

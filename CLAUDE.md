@@ -171,8 +171,8 @@ docker compose -f docker/docker-compose.yml up -d
 # APIs em modo desenvolvimento
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d
 
-# Migrations EF Core — NÃO rodar para entidades de domínio até #155 definir naming convention.
-dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --startup-project src/selecao/Unifesspa.UniPlus.Selecao.API
+# Migrations EF Core — ver CONTRIBUTING.md §Entity Framework + docs/guia-banco-de-dados.md (ADR-0054).
+dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --context SelecaoDbContext --output-dir Persistence/Migrations
 ```
 
 ## Workflow obrigatório
