@@ -1,7 +1,8 @@
 namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Factory consumido apenas pelo <c>dotnet ef</c> CLI em design-time. Ver
@@ -11,13 +12,7 @@ public sealed class IngressoDbContextDesignTimeFactory : IDesignTimeDbContextFac
 {
     public IngressoDbContext CreateDbContext(string[] args)
     {
-        DbContextOptions<IngressoDbContext> options = new DbContextOptionsBuilder<IngressoDbContext>()
-            .UseNpgsql(
-                "Host=design-time-stub;Database=design_time_stub;Username=stub;Password=stub",
-                npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(IngressoDbContext).Assembly.FullName))
-            .UseSnakeCaseNamingConvention()
-            .Options;
-
-        return new IngressoDbContext(options);
+        return new IngressoDbContext(
+            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<IngressoDbContext>());
     }
 }
