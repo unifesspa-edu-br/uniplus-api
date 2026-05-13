@@ -70,18 +70,50 @@ jobs:
 
       - name: Ativar UseSnakeCaseNamingConvention() no helper
         run: |
-          sed -i 's|// snake_case automático em tabelas.*|options.UseSnakeCaseNamingConvention();|' \
-            src/shared/Unifesspa.UniPlus.Infrastructure.Core/Persistence/UniPlusDbContextOptionsExtensions.cs
-          # Verifica que a substituição aconteceu
+          HELPER=src/shared/Unifesspa.UniPlus.Infrastructure.Core/Persistence/UniPlusDbContextOptionsExtensions.cs
+          # Verifica primeiro que a chamada está ausente (estado esperado em main).
+          if grep -q "options.UseSnakeCaseNamingConvention();" "$HELPER"; then
+            echo "::notice::UseSnakeCaseNamingConvention já presente — nada a fazer."
+          else
+            # Substitui o bloco do TODO (2 linhas iniciadas em '// UseSnakeCaseNamingConvention')
+            # pela chamada efetiva, preservando indentação canônica do método.
+            python3 - "$HELPER" <<'PY'
+          import re, sys
+          path = sys.argv[1]
+          content = open(path).read()
+          # Casa o bloco de comentário TODO + linha em branco seguinte (se existir)
+          new = re.sub(
+              r'^(\s*)// UseSnakeCaseNamingConvention\(\) ficará aqui quando a migration de\n\s*// normalização do schema.*?\n(\s*\n)?',
+              r'\1options.UseSnakeCaseNamingConvention();\n\n',
+              content,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          if new == content:
+              print("::error::Padrão TODO não encontrado em UniPlusDbContextOptionsExtensions.cs", file=sys.stderr)
+              sys.exit(1)
+          open(path, 'w').write(new)
+          PY
+          fi
+          # Sanity: chamada efetiva presente
           grep -q "options.UseSnakeCaseNamingConvention();" \
-            src/shared/Unifesspa.UniPlus.Infrastructure.Core/Persistence/UniPlusDbContextOptionsExtensions.cs
+            "$HELPER"
 
       - name: Deletar migrations existentes do Selecao
         run: |
-          rm -f \
-            src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Migrations/20260512010258_InitialCreate.cs \
-            src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Migrations/20260512010258_InitialCreate.Designer.cs \
-            src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Migrations/SelecaoDbContextModelSnapshot.cs
+          MIGDIR=src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Migrations
+          # Glob protege contra mudanças de timestamp (Codex P2): casa qualquer
+          # *_InitialCreate*.cs já existente, não apenas o ID atual.
+          shopt -s nullglob
+          REMOVED=0
+          for f in "$MIGDIR"/*_InitialCreate*.cs "$MIGDIR"/SelecaoDbContextModelSnapshot.cs; do
+            echo "removing $f"
+            rm -f "$f"
+            REMOVED=$((REMOVED+1))
+          done
+          if [ "$REMOVED" -eq 0 ]; then
+            echo "::warning::Nenhuma migration *_InitialCreate*.cs ou snapshot encontrada — banco pode estar em outro estado."
+          fi
 
       - name: Build após mudanças
         run: dotnet build UniPlus.slnx --nologo
