@@ -138,17 +138,14 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "convocacoes");
-
-            migrationBuilder.DropTable(
-                name: "documentos_matricula");
-
-            migrationBuilder.DropTable(
-                name: "chamadas");
-
-            migrationBuilder.DropTable(
-                name: "matriculas");
+            // Rollback de InitialCreate é proibido em automation (ADR-0054):
+            // derrubaria tabelas com dados de chamadas/matrículas em produção.
+            // Reverter exige procedimento operacional manual com backup
+            // explícito — nunca pelo `dotnet ef database update <previous>`.
+            throw new InvalidOperationException(
+                "Rollback de InitialCreate é proibido em automation. "
+                + "Para reverter, executar procedimento operacional manual com backup do schema ingresso.* + DROP explícito. "
+                + "Política forward-only documentada em docs/guia-banco-de-dados.md §8.");
         }
     }
 }

@@ -224,26 +224,15 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "candidatos");
-
-            migrationBuilder.DropTable(
-                name: "cotas");
-
-            migrationBuilder.DropTable(
-                name: "etapas");
-
-            migrationBuilder.DropTable(
-                name: "idempotency_cache");
-
-            migrationBuilder.DropTable(
-                name: "inscricoes");
-
-            migrationBuilder.DropTable(
-                name: "processos_seletivos");
-
-            migrationBuilder.DropTable(
-                name: "editais");
+            // Rollback de InitialCreate é proibido em automation (ADR-0054):
+            // derrubaria todas as tabelas com PII de candidatos (LGPD) +
+            // editais publicados. Reverter exige procedimento operacional manual
+            // com backup explícito e aprovação — nunca pelo
+            // `dotnet ef database update <previous>` no pipeline.
+            throw new InvalidOperationException(
+                "Rollback de InitialCreate é proibido em automation (LGPD: derrubaria PII de candidatos). "
+                + "Para reverter, executar procedimento operacional manual com backup do schema selecao.* + DROP explícito. "
+                + "Política forward-only documentada em docs/guia-banco-de-dados.md §8.");
         }
     }
 }
