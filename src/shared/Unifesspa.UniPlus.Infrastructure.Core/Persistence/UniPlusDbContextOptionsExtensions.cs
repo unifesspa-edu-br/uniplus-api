@@ -9,22 +9,11 @@ using Interceptors;
 /// <summary>
 /// Helpers de configuração de <see cref="DbContext"/> consumidos pelos 3
 /// módulos (Selecao, Ingresso, Portal). Centraliza invariantes da camada de
-/// persistência declaradas no ADR-0054 — interceptors transversais (soft
-/// delete + audit) e leitura lazy da connection string. Substitui código
-/// duplicado nos <c>Add{Module}Infrastructure</c>.
+/// persistência declaradas no ADR-0054 — naming convention global
+/// (snake_case automático), interceptors transversais (soft delete + audit)
+/// e leitura lazy da connection string. Substitui código duplicado nos
+/// <c>Add{Module}Infrastructure</c>.
 /// </summary>
-/// <remarks>
-/// <para><b>Naming convention snake_case.</b> O pacote
-/// <c>EFCore.NamingConventions</c> já está disponível como dependência e o
-/// guia <c>docs/guia-banco-de-dados.md</c> documenta a regra. A ativação do
-/// <c>UseSnakeCaseNamingConvention</c> está deliberadamente DESLIGADA aqui
-/// até a Story de normalização do schema atual (que cria audit columns
-/// como <c>"CreatedAt"</c> quoted em PascalCase) ser entregue. Ligar a
-/// convention antes da migration de normalização causaria erro em runtime
-/// (EF traduz LINQ usando o model em snake_case mas o banco tem
-/// PascalCase quoted). Ver ADR-0054 §"Consequências" e
-/// <c>guia-banco-de-dados.md</c> §"Workflow de migration".</para>
-/// </remarks>
 public static class UniPlusDbContextOptionsExtensions
 {
     /// <summary>
@@ -78,9 +67,10 @@ public static class UniPlusDbContextOptionsExtensions
             npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
         });
 
-        // UseSnakeCaseNamingConvention() ficará aqui quando a migration de
-        // normalização do schema (PascalCase quoted → snake_case) for entregue.
-        // Ver remarks da classe.
+        // snake_case automático em tabelas, colunas, índices e FKs (ADR-0054).
+        // Alinhado com as migrations regeneradas via `dotnet ef migrations add`
+        // usando `--startup-project = .API`.
+        options.UseSnakeCaseNamingConvention();
 
         options.AddInterceptors(
             serviceProvider.GetRequiredService<SoftDeleteInterceptor>(),
