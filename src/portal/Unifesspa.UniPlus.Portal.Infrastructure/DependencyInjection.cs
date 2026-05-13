@@ -13,7 +13,7 @@ public static class PortalInfrastructureRegistration
     /// <summary>
     /// Registra a infraestrutura do módulo Portal (DbContext + interceptors).
     /// Wire-up centralizado em <see cref="UniPlusDbContextOptionsExtensions"/>
-    /// (ADR-0050).
+    /// (ADR-0054).
     /// </summary>
     public static IServiceCollection AddPortalInfrastructure(this IServiceCollection services)
     {

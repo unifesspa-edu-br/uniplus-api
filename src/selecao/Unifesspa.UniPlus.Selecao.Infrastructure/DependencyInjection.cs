@@ -16,7 +16,7 @@ public static class SelecaoInfrastructureRegistration
     /// <summary>
     /// Registra a infraestrutura do módulo Seleção (DbContext + interceptors +
     /// repositórios + serviços externos). Wire-up centralizado em
-    /// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0050): convenção
+    /// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0054): convenção
     /// snake_case global, soft delete + audit interceptors, leitura lazy de
     /// connection string.
     /// </summary>

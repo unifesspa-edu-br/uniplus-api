@@ -198,13 +198,13 @@ git commit -m "feat(<modulo>): adiciona <coisa>"
 
 ### Bug atual do EF tool (.NET 10)
 
-`dotnet ef migrations add` falha com `FileNotFoundException: System.Runtime, Version=10.0.0.0` no SDK 10.0.104. Workaround temporário:
+`dotnet ef migrations add` falha com `FileNotFoundException: System.Runtime, Version=10.0.0.0` no SDK 10.0.104 + dotnet-ef 10.0.4/10.0.5/10.0.7 (testado). Workaround temporário:
 
 - Escrever migration manualmente (espelhando o Up/Down de migrations existentes).
 - Ou rodar `dotnet ef` em container `mcr.microsoft.com/dotnet/sdk:10.0` montando o repo.
 - Acompanhar [dotnet/efcore](https://github.com/dotnet/efcore/issues) por release que corrija.
 
-Quando o EF tool for utilizável, regenerar `InitialCreate` de Selecao para alinhar audit columns com convention (`created_at` em vez de `"CreatedAt"`).
+**Convention snake_case está preparada mas não ligada no runtime** ([ADR-0054](adrs/0054-naming-convention-e-strategy-migrations.md)) — espera Story de normalização do schema (regenerar `InitialCreate` ou migration `NormalizaAuditColumnsParaSnakeCase`) para ser ativada via `UseSnakeCaseNamingConvention()` no helper. Design-time factories já invocam a convention para que migrations geradas saiam corretas.
 
 ## 8. Forward-only revert
 
@@ -393,4 +393,4 @@ Confira se a entidade expõe método de restauração (não é padrão — imple
 
 ### Onde vejo o schema atual em produção/standalone?
 
-`RUNBOOKS.md` §19 documenta o procedimento para SSH + `psql` no host standalone.
+Procedimentos de cluster (SSH, `psql` no host, troubleshooting) vivem no repositório `uniplus-infra`, fora deste repo. Consulte RUNBOOKS lá ou peça acesso ao SRE/DevOps.
