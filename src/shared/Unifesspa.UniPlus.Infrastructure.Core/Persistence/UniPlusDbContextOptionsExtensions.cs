@@ -65,6 +65,14 @@ public static class UniPlusDbContextOptionsExtensions
         options.UseNpgsql(connectionString, npgsqlOptions =>
         {
             npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
+
+            // EFCore.NamingConventions aplica snake_case TAMBÉM na tabela
+            // system `__EFMigrationsHistory` (issue efcore/EFCore.NamingConventions#108):
+            // o EF Core escreve a tabela com colunas `MigrationId`/`ProductVersion`
+            // mas a convention faz queries em runtime esperarem `migration_id`/
+            // `product_version`. Forçar o nome explícito mantém o contrato system
+            // intacto e PascalCase, sem afetar tabelas de domínio.
+            npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
         });
 
         // snake_case automático em tabelas, colunas, índices e FKs (ADR-0054).
