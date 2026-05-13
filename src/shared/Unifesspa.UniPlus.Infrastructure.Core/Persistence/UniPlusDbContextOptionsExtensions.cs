@@ -92,6 +92,41 @@ public static class UniPlusDbContextOptionsExtensions
     }
 
     /// <summary>
+    /// Constrói <see cref="DbContextOptions{TContext}"/> para uso de
+    /// <c>IDesignTimeDbContextFactory&lt;T&gt;</c> consumidos pelo
+    /// <c>dotnet ef</c> CLI. Compartilha com o runtime as duas decisões
+    /// sensíveis à geração de migrations:
+    /// <list type="bullet">
+    ///   <item><see cref="UseSnakeCaseNamingConvention"/> garante que o SQL
+    ///   emitido pela migration nasça em snake_case (ADR-0054);</item>
+    ///   <item><c>MigrationsHistoryTable("__EFMigrationsHistory")</c> evita
+    ///   split-brain entre o nome da tabela usado em design-time (ex.:
+    ///   <c>dotnet ef migrations script</c>) e o usado em runtime — caso
+    ///   contrário, o EF poderia inserir/consultar histórias em duas tabelas
+    ///   distintas.</item>
+    /// </list>
+    /// </summary>
+    /// <remarks>
+    /// A connection string é sintética porque migrations EF Core não conectam
+    /// ao banco durante <c>migrations add</c>. <c>database update</c> rodado
+    /// localmente sobrescreve via <c>--connection</c>.
+    /// </remarks>
+    public static DbContextOptions<TContext> BuildDesignTimeOptions<TContext>()
+        where TContext : DbContext
+    {
+        return new DbContextOptionsBuilder<TContext>()
+            .UseNpgsql(
+                "Host=design-time-stub;Database=design_time_stub;Username=stub;Password=stub",
+                npgsqlOptions =>
+                {
+                    npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
+                    npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+                })
+            .UseSnakeCaseNamingConvention()
+            .Options;
+    }
+
+    /// <summary>
     /// Registra os interceptors transversais consumidos pelo
     /// <see cref="UseUniPlusNpgsqlConventions{TContext}"/> — Scoped por
     /// ciclo de request, pois ambos dependem de <c>IUserContext</c> scoped
