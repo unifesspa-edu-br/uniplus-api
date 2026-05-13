@@ -63,13 +63,17 @@ public sealed class CascadingApiFactory : ApiFactoryBase<Program>
             RemoveAllOptionsConfigurations<DbContextOptions<SelecaoDbContext>>(services);
 
             // Re-registro do DbContext mantém SoftDeleteInterceptor + AuditableInterceptor
-            // simétrico à produção (`SelecaoInfrastructureRegistration.AddSelecaoInfrastructure`).
-            // Sem isto a fixture cascading silenciosamente deixaria os interceptors
-            // de fora — as colunas IsDeleted/DeletedAt/UpdatedAt não seriam preenchidas
-            // automaticamente, mascarando regressões em testes que dependam disso.
+            // + UseSnakeCaseNamingConvention simétrico à produção (`SelecaoInfrastructureRegistration.
+            // AddSelecaoInfrastructure` via `UseUniPlusNpgsqlConventions`). Sem isto:
+            // (a) os interceptors ficariam de fora — as colunas is_deleted/deleted_at/updated_at
+            //     não seriam preenchidas automaticamente, mascarando regressões;
+            // (b) sem snake_case, o model em runtime ficaria em PascalCase implícito enquanto
+            //     o Snapshot regenerado pelo `dotnet ef` está em snake_case (ADR-0054), e o EF
+            //     dispararia PendingModelChangesWarning bloqueando MigrateAsync.
             services.AddDbContext<SelecaoDbContext>((sp, opts) =>
             {
                 opts.UseNpgsql(_connectionString);
+                opts.UseSnakeCaseNamingConvention();
                 opts.AddInterceptors(
                     sp.GetRequiredService<SoftDeleteInterceptor>(),
                     sp.GetRequiredService<AuditableInterceptor>());

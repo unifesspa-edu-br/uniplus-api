@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260512010258_InitialCreate")]
+    [Migration("20260513220911_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -29,48 +29,60 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("BodyHash")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character(64)")
+                        .HasColumnName("body_hash")
                         .IsFixedLength();
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("endpoint");
 
                     b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
 
                     b.Property<string>("IdempotencyKey")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("idempotency_key");
 
                     b.Property<byte[]>("ResponseBodyCipher")
-                        .HasColumnType("bytea");
+                        .HasColumnType("bytea")
+                        .HasColumnName("response_body_cipher");
 
                     b.Property<string>("ResponseHeadersJson")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("response_headers_json");
 
                     b.Property<int?>("ResponseStatus")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("response_status");
 
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("scope");
 
                     b.Property<short>("Status")
-                        .HasColumnType("smallint");
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_idempotency_cache");
 
                     b.HasIndex("ExpiresAt")
                         .HasDatabaseName("idx_idempotency_expires_at");
@@ -86,31 +98,40 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateOnly>("DataNascimento")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("data_nascimento");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("deleted_by");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Telefone")
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("telefone");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_candidatos");
 
                     b.ToTable("candidatos", (string)null);
                 });
@@ -119,40 +140,52 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("deleted_by");
 
                     b.Property<string>("Descricao")
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("descricao");
 
                     b.Property<Guid>("EditalId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("edital_id");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<int>("Modalidade")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("modalidade");
 
                     b.Property<decimal>("PercentualVagas")
                         .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("percentual_vagas");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_cotas");
 
-                    b.HasIndex("EditalId");
+                    b.HasIndex("EditalId")
+                        .HasDatabaseName("ix_cotas_edital_id");
 
                     b.ToTable("cotas", (string)null);
                 });
@@ -161,43 +194,55 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<bool>("BonusRegionalHabilitado")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("bonus_regional_habilitado");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("deleted_by");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<int>("MaximoOpcoesCurso")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(1);
+                        .HasDefaultValue(1)
+                        .HasColumnName("maximo_opcoes_curso");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
                     b.Property<int>("TipoProcesso")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tipo_processo");
 
                     b.Property<string>("Titulo")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("titulo");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_editais");
 
                     b.ToTable("editais", (string)null);
                 });
@@ -206,51 +251,66 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("deleted_by");
 
                     b.Property<Guid>("EditalId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("edital_id");
 
                     b.Property<bool>("Eliminatoria")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("eliminatoria");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome");
 
                     b.Property<decimal?>("NotaMinima")
                         .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("nota_minima");
 
                     b.Property<int>("Ordem")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
 
                     b.Property<decimal>("Peso")
                         .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("peso");
 
                     b.Property<int>("Tipo")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("tipo");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_etapas");
 
-                    b.HasIndex("EditalId");
+                    b.HasIndex("EditalId")
+                        .HasDatabaseName("ix_etapas_edital_id");
 
                     b.ToTable("etapas", (string)null);
                 });
@@ -259,56 +319,73 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("CandidatoId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("candidato_id");
 
                     b.Property<string>("CodigoCursoPrimeiraOpcao")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo_curso_primeira_opcao");
 
                     b.Property<string>("CodigoCursoSegundaOpcao")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo_curso_segunda_opcao");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("deleted_by");
 
                     b.Property<Guid>("EditalId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("edital_id");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<bool>("ListaEspera")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("lista_espera");
 
                     b.Property<int>("Modalidade")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("modalidade");
 
                     b.Property<string>("NumeroInscricao")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("numero_inscricao");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_inscricoes");
 
                     b.HasIndex("NumeroInscricao")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_inscricoes_numero_inscricao");
 
-                    b.HasIndex("CandidatoId", "EditalId");
+                    b.HasIndex("CandidatoId", "EditalId")
+                        .HasDatabaseName("ix_inscricoes_candidato_id_edital_id");
 
                     b.ToTable("inscricoes", (string)null);
                 });
@@ -317,49 +394,62 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Campus")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("campus");
 
                     b.Property<string>("CodigoCurso")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo_curso");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("deleted_by");
 
                     b.Property<Guid>("EditalId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("edital_id");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("NomeCurso")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("nome_curso");
 
                     b.Property<int>("TotalVagas")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("total_vagas");
 
                     b.Property<string>("Turno")
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("turno");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_processos_seletivos");
 
                     b.ToTable("processos_seletivos", (string)null);
                 });
@@ -369,7 +459,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.ValueObjects.Cpf", "Cpf", b1 =>
                         {
                             b1.Property<Guid>("CandidatoId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
 
                             b1.Property<string>("Valor")
                                 .IsRequired()
@@ -380,18 +471,21 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             b1.HasKey("CandidatoId");
 
                             b1.HasIndex("Valor")
-                                .IsUnique();
+                                .IsUnique()
+                                .HasDatabaseName("ix_candidatos_cpf");
 
                             b1.ToTable("candidatos");
 
                             b1.WithOwner()
-                                .HasForeignKey("CandidatoId");
+                                .HasForeignKey("CandidatoId")
+                                .HasConstraintName("fk_candidatos_candidatos_id");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.ValueObjects.Email", "Email", b1 =>
                         {
                             b1.Property<Guid>("CandidatoId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
 
                             b1.Property<string>("Valor")
                                 .IsRequired()
@@ -404,13 +498,15 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             b1.ToTable("candidatos");
 
                             b1.WithOwner()
-                                .HasForeignKey("CandidatoId");
+                                .HasForeignKey("CandidatoId")
+                                .HasConstraintName("fk_candidatos_candidatos_id");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.ValueObjects.NomeSocial", "NomeSocial", b1 =>
                         {
                             b1.Property<Guid>("CandidatoId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
 
                             b1.Property<string>("Nome")
                                 .HasMaxLength(300)
@@ -428,7 +524,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             b1.ToTable("candidatos");
 
                             b1.WithOwner()
-                                .HasForeignKey("CandidatoId");
+                                .HasForeignKey("CandidatoId")
+                                .HasConstraintName("fk_candidatos_candidatos_id");
                         });
 
                     b.Navigation("Cpf")
@@ -447,7 +544,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .WithMany("Cotas")
                         .HasForeignKey("EditalId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cotas_editais_edital_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Edital", b =>
@@ -455,7 +553,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.FormulaCalculo", "FormulaCalculo", b1 =>
                         {
                             b1.Property<Guid>("EditalId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
 
                             b1.Property<decimal>("BonusRegionalPercentual")
                                 .HasPrecision(5, 2)
@@ -472,13 +571,15 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             b1.ToTable("editais");
 
                             b1.WithOwner()
-                                .HasForeignKey("EditalId");
+                                .HasForeignKey("EditalId")
+                                .HasConstraintName("fk_editais_editais_id");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.NumeroEdital", "NumeroEdital", b1 =>
                         {
                             b1.Property<Guid>("EditalId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
 
                             b1.Property<int>("Ano")
                                 .HasColumnType("integer")
@@ -493,13 +594,15 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             b1.ToTable("editais");
 
                             b1.WithOwner()
-                                .HasForeignKey("EditalId");
+                                .HasForeignKey("EditalId")
+                                .HasConstraintName("fk_editais_editais_id");
                         });
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.PeriodoInscricao", "PeriodoInscricao", b1 =>
                         {
                             b1.Property<Guid>("EditalId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
 
                             b1.Property<DateTimeOffset>("Fim")
                                 .HasColumnType("timestamp with time zone")
@@ -514,7 +617,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                             b1.ToTable("editais");
 
                             b1.WithOwner()
-                                .HasForeignKey("EditalId");
+                                .HasForeignKey("EditalId")
+                                .HasConstraintName("fk_editais_editais_id");
                         });
 
                     b.Navigation("FormulaCalculo");
@@ -531,7 +635,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .WithMany("Etapas")
                         .HasForeignKey("EditalId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_etapas_editais_edital_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Edital", b =>
