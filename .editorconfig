@@ -88,3 +88,13 @@ dotnet_diagnostic.CA1812.severity = none
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.CA1861.severity = none
+
+# Migrations EF Core são auto-geradas pelo tool — analyzers que cobram
+# defensive coding, perf de array literal ou estilo C# moderno não se aplicam:
+# - CA1062: tool não emite ArgumentNullException no migrationBuilder
+# - CA1861: tool emite arrays inline (`new[] { ... }`) em CreateIndex
+# - IDE0161: tool emite namespace-block clássico, não file-scoped
+[src/**/Migrations/**.cs]
+dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.IDE0161.severity = none

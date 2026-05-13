@@ -62,7 +62,19 @@ Esta ADR fecha #155 com decisão única e habilita um guia operacional (`docs/gu
 
 Pacote adicionado ao `Directory.Packages.props` e referenciado em `Infrastructure.Core.csproj`. NuGet maduro (12M+ downloads, mantenedor ativo, alinhado com EF 10). Custom plugin (Opção C) traria custo de manutenção sem ganho — biblioteca cobre o caso.
 
-**Ativação diferida**: `UseSnakeCaseNamingConvention()` está documentado como ponto de extensão no helper `UseUniPlusNpgsqlConventions<TContext>` mas **não é invocado ainda**. O schema atual em Selecao foi criado pelo `20260512010258_InitialCreate` com audit columns em PascalCase quoted (`"CreatedAt"`, `"IsDeleted"`, etc.). PostgreSQL trata identifiers quoted com case-sensitivity exata, então ativar o snake_case no runtime ANTES de uma migration de normalização causaria erro `42703 column "created_at" does not exist`. O helper deixa a chamada `UseSnakeCaseNamingConvention()` como TODO comentado, a ser ligado pela próxima Story junto com uma migration `NormalizaAuditColumnsParaSnakeCase` (`ALTER TABLE ... RENAME COLUMN ...`) ou regeração completa do `InitialCreate` via `dotnet ef`.
+**Ativação completa**: `UseSnakeCaseNamingConvention()` é invocado no helper `UseUniPlusNpgsqlConventions<TContext>`. `InitialCreate` Selecao foi **regenerada via `dotnet ef migrations add`** usando `Selecao.API` (Web SDK) como `--startup-project`. `InitialCreate` Ingresso também gerada simetricamente. Snapshot e Designer alinhados automaticamente pelo EF tool.
+
+**Comando canônico** para gerar/atualizar migration (documentado em `docs/guia-banco-de-dados.md` §7):
+
+```bash
+dotnet ef migrations add <Nome> \
+  --project src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure \
+  --startup-project src/<modulo>/Unifesspa.UniPlus.<Modulo>.API \
+  --context <Modulo>DbContext \
+  --output-dir Persistence/Migrations
+```
+
+⚠️ **`--startup-project` precisa apontar para o projeto `.API`** (Web SDK com runtime AspNetCore resolvido), **não** para `.Infrastructure` (classlib com `FrameworkReference AspNetCore.App` mas sem ser Web SDK). O segundo cenário dispara o bug do EF tool em .NET 10 SDK 10.0.104 (`FileNotFoundException: System.Runtime, Version=10.0.0.0`), reproduzido em SDK 10.0.104 host, SDK 10.0.100 container, SDK 10.0.300 container e runner Ubuntu fresh do GitHub Actions. POC isolada em `repositories/poc-efc-10/` confirmou o root cause: o EF tool resolve runtime corretamente quando o startup-project é Web SDK; o erro só ocorre com classlib + FrameworkReference + Wolverine + EF tool combinados.
 
 ### Value Objects: **D — preservar `OwnsOne` (decisão diferida)**
 
