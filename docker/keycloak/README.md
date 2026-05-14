@@ -84,12 +84,40 @@ Esses claims são consumidos pelo frontend para preencher o perfil do usuário a
 
 ## Roles (realm roles)
 
+### Personas do sistema
+
 - `admin`
 - `gestor`
 - `avaliador`
 - `candidato`
 
-Correspondem às personas do sistema.
+### Roles de área organizacional (RBAC por áreas — ADR-0055 / ADR-0057)
+
+Cada `AreaOrganizacional` do roster fechado (CEPS, CRCA, PROEG, PROGEP, PLATAFORMA) projeta-se em **dois realm roles** seguindo a convenção `{codigo-lowercase}-{papel}`:
+
+| Role | Autoridade |
+| ---- | ---------- |
+| `{area}-admin` | Escrita — edita catálogos cujo `Proprietario` é aquela área. |
+| `{area}-leitor` | Leitura — enxerga catálogos visíveis à área, sem escrita. |
+
+Roles atuais: `ceps-admin`, `ceps-leitor`, `crca-admin`, `crca-leitor`, `proeg-admin`, `proeg-leitor`, `progep-admin`, `progep-leitor`, `plataforma-admin`, `plataforma-leitor`.
+
+O `IUserContext.AreasAdministradas` deriva `AreaCodigo` a partir dos roles `{area}-admin` do JWT; `plataforma-admin` é tratado à parte (`IsPlataformaAdmin`) — é o bypass platform-wide, não uma área comum (ver `HttpUserContext`).
+
+**Adicionar uma área nova** é ato de governança (ADR exigida — ADR-0055). Ao registrar uma `AreaOrganizacional` nova, provisionar os 2 roles correspondentes:
+
+```sh
+# Substituir {area} pelo código em minúsculas.
+for papel in admin leitor; do
+  /opt/keycloak/bin/kcadm.sh create roles -r unifesspa \
+    -s name={area}-$papel \
+    -s "description=Role da área {area} ({papel})"
+done
+```
+
+Em dev o realm é importado de `realm-export.json` (já contém os 10 roles). Em standalone/HML/PROD o provisionamento via `kcadm.sh` acima é parte do runbook de criação de área no `uniplus-infra`.
+
+O usuário de teste `admin` recebe `plataforma-admin` no realm de dev para permitir exercitar os endpoints admin de catálogo localmente.
 
 ## Usuários de teste
 
