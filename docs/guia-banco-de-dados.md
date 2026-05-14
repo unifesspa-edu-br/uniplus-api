@@ -26,13 +26,22 @@ Referência canônica para devs que tocam persistência: naming convention, tipo
 
 ## 1. Topologia
 
-Uni+ usa **3 bancos PostgreSQL 18 isolados** (um por módulo), no mesmo host PG mas com usuários distintos:
+Uni+ usa **5 bancos PostgreSQL 18 isolados** (um por módulo), no mesmo host PG mas isolados por database:
 
 | Banco | Usuário | DbContext | Cobertura |
 |---|---|---|---|
-| `uniplus_selecao` | `selecao` | `SelecaoDbContext` | Editais, Candidatos, Inscrições, Cotas, Etapas, ProcessosSeletivos |
-| `uniplus_ingresso` | `ingresso` | `IngressoDbContext` | Chamadas, Convocações, Matrículas, DocumentosMatricula |
-| `uniplus_portal` | `portal` | `PortalDbContext` | Vazio até primeira Story tocar entity Portal |
+| `uniplus_selecao` | `uniplus` | `SelecaoDbContext` | Editais, Candidatos, Inscrições, Cotas, Etapas, ProcessosSeletivos |
+| `uniplus_ingresso` | `uniplus` | `IngressoDbContext` | Chamadas, Convocações, Matrículas, DocumentosMatricula |
+| `uniplus_portal` | `uniplus` | `PortalDbContext` | Vazio até primeira Story tocar entity Portal |
+| `uniplus_parametrizacao` | `uniplus_parametrizacao_app` | `ParametrizacaoDbContext` (a criar — F1.S3) | Catálogos cross-cutting: Modalidade, NecessidadeEspecial, TipoDocumento, Endereco |
+| `uniplus_organizacao` | `uniplus_organizacao_app` | `OrganizacaoInstitucionalDbContext` (a criar — F1.S2) | AreaOrganizacional |
+
+Os bancos legados (Selecao/Ingresso/Portal) compartilham o superusuário `uniplus`. Os bancos da Sprint 3 (Parametrizacao/Organizacao) usam **usuários `_app` dedicados, cada um dono (`OWNER`) do seu próprio banco** — o owner tem DDL completo no schema `public` (necessário a partir do PG 15, que removeu o `CREATE` implícito) e instala extensões trusted sem superusuário. Provisionamento em `docker/init-db.sql`.
+
+Extensões habilitadas:
+
+- `uuid-ossp`, `pg_trgm` — em todos os bancos de aplicação.
+- `btree_gist` — em `uniplus_selecao`, `uniplus_parametrizacao` e `uniplus_organizacao`: requerida pelos exclusion constraints GIST das junction tables de `AreasDeInteresse` ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)). Em dev é habilitada via `init-db.sql`; em standalone/HML/PROD, via a primeira migration de cada DbContext (idempotente, `CREATE EXTENSION IF NOT EXISTS`).
 
 Schemas usados em cada banco:
 
@@ -286,8 +295,8 @@ migrationBuilder.Sql(@"
 docker compose -f docker/docker-compose.yml up postgres -d
 
 # Bancos criados automaticamente via docker/init-db.sql:
-# uniplus_selecao, uniplus_ingresso, uniplus_portal
-# Usuários: selecao, ingresso, portal (senhas no .env local)
+# uniplus_selecao, uniplus_ingresso, uniplus_portal (usuário uniplus)
+# uniplus_parametrizacao, uniplus_organizacao (usuários _app dedicados)
 ```
 
 ### Aplicar migrations local
