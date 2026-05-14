@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
+using Unifesspa.UniPlus.Governance.Contracts;
+
 /// <summary>
 /// Provides access to the authenticated user context extracted from the current request.
 /// </summary>
@@ -57,4 +59,25 @@ public interface IUserContext
     /// <param name="resourceName">The resource name.</param>
     /// <returns>The list of roles associated with the resource.</returns>
     IReadOnlyList<string> GetResourceRoles(string resourceName);
+
+    /// <summary>
+    /// Gets the organizational areas the user administers, derived from the
+    /// <c>{area}-admin</c> roles in the JWT (ADR-0055 / ADR-0057). Empty when the
+    /// request is anonymous or carries no area-admin role.
+    /// </summary>
+    /// <remarks>
+    /// The <c>plataforma-admin</c> role is deliberately excluded — it is the
+    /// platform-wide bypass, surfaced via <see cref="IsPlataformaAdmin"/>, not an
+    /// area-scoped administration grant. Roles whose stripped code is not a valid
+    /// <see cref="AreaCodigo"/> are skipped (defensive: an IdP misconfiguration
+    /// must not break authorization).
+    /// </remarks>
+    IReadOnlyCollection<AreaCodigo> AreasAdministradas { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the user holds the <c>plataforma-admin</c>
+    /// role — the platform-wide administration bypass (ADR-0057). Kept separate
+    /// from <see cref="AreasAdministradas"/> because it is not area-scoped.
+    /// </summary>
+    bool IsPlataformaAdmin { get; }
 }

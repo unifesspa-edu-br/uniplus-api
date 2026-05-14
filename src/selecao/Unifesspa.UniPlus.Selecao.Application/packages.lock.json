@@ -28,6 +28,13 @@
         "dependencies": {
           "FluentValidation": "[12.1.1, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.7, )",
+          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.governance.contracts": {
+        "type": "Project",
+        "dependencies": {
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },

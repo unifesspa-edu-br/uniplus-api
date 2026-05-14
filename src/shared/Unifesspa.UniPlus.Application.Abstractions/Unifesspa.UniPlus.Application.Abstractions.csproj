@@ -6,6 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
   </ItemGroup>
 
