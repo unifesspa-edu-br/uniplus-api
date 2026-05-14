@@ -82,6 +82,15 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0051](0051-apicurio-schema-registry-avro-wolverine.md) | Apicurio Schema Registry com Avro e Wolverine — schemas no Domain, registro idempotente, OAuth client_credentials | accepted | 2026-05-09 |
 | [0052](0052-rastreabilidade-cross-service-traceparent-service-name-enricher.md) | Rastreabilidade cross-service via `traceparent` W3C + Serilog `ServiceName` enricher + Wolverine envelope middleware para `CorrelationId` | proposed | 2026-05-11 |
 | [0053](0053-zero-test-environment-branches-in-production-code.md) | Zero ramos de ambiente de teste em código de produção — `IsEnvironment(literal)` e `EnvironmentName == literal` banidos em `src/` (ADR normativa sem enforcement automático) | accepted | 2026-05-11 |
+| [0054](0054-naming-convention-e-strategy-migrations.md) | Convenção de nomenclatura `snake_case` via `EFCore.NamingConventions` + isolamento por banco e estratégia de migrations | accepted | 2026-05-13 |
+| [0055](0055-organizacao-institucional-bounded-context.md) | `OrganizacaoInstitucional` como bounded context para áreas (CEPS, CRCA, PROEG, PROGEP, PLATAFORMA) com roster fechado | accepted | 2026-05-14 |
+| [0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) | Módulo `Parametrizacao` para catálogos cross-cutting + carve-out read-side cross-módulo via `IXxxReader` | accepted | 2026-05-14 |
+| [0057](0057-areas-rbac-snapshot-historia-invariantes.md) | RBAC por áreas com snapshot na publicação, histórico SCD Type 2 e invariantes de governança | accepted | 2026-05-14 |
+| [0058](0058-obrigatoriedade-legal-validacao-data-driven.md) | `ObrigatoriedadeLegal` como validação data-driven com citação legal e snapshot-on-bind | accepted | 2026-05-14 |
+| [0059](0059-sprint-3-decomposicao-estrategia-paralela.md) | Decomposição da Sprint 3 — foundation primeiro, depois 3 lanes paralelas | accepted | 2026-05-14 |
+| [0060](0060-junction-tables-por-entidade-com-view-unificada.md) | Junction tables por entidade para `AreasDeInteresse` + view unificada por DbContext para leituras cross-catálogo | accepted | 2026-05-14 |
+| [0061](0061-referencia-cross-modulo-via-snapshot-copy.md) | Referência cross-módulo via snapshot-copy (value object embedded) com `OrigemId` opcional sem FK | accepted | 2026-05-14 |
+| [0062](0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) | Seed de catálogos via Newman + endpoints admin (sem auto-seeder, audit captura usuário real) | accepted | 2026-05-14 |
 
 ## Como adicionar um novo ADR
 
