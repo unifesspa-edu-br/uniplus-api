@@ -2,13 +2,15 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
-// Convenções de mapeamento dos Value Objects do Kernel para o EF Core.
+// Convenções de mapeamento dos Value Objects para o EF Core.
 // Chamado no override `ConfigureConventions` dos DbContexts dos módulos
-// (Selecao, Ingresso, Portal) para que toda propriedade tipada como
-// Cpf/Email/NomeSocial/NotaFinal receba o converter e as restrições de
-// coluna apropriadas (tipo, tamanho máximo, precisão).
+// (Selecao, Ingresso, Portal, e os módulos da Sprint 3) para que toda
+// propriedade tipada como Cpf/Email/NomeSocial/NotaFinal/AreaCodigo receba
+// o converter e as restrições de coluna apropriadas (tipo, tamanho máximo,
+// precisão).
 //
 // IMPORTANTE — incompatível com `OwnsOne` para os mesmos VOs:
 // se um IEntityTypeConfiguration<T> existente mapeia Cpf/Email/NomeSocial
@@ -40,6 +42,10 @@ public static class ValueObjectConventions
     private const int NotaFinalPrecision = 9;
     private const int NotaFinalScale = 4;
 
+    // AreaCodigo é normalizado para 2-32 caracteres uppercase ASCII pelo VO
+    // (ADR-0055). `varchar(32)` enforça o limite no schema.
+    private const int AreaCodigoMaxLength = 32;
+
     public static void ConfigureValueObjectConverters(this ModelConfigurationBuilder configurationBuilder)
     {
         ArgumentNullException.ThrowIfNull(configurationBuilder);
@@ -60,5 +66,10 @@ public static class ValueObjectConventions
         configurationBuilder.Properties<NotaFinal>()
             .HaveConversion<NotaFinalValueConverter>()
             .HavePrecision(NotaFinalPrecision, NotaFinalScale);
+
+        configurationBuilder.Properties<AreaCodigo>()
+            .HaveConversion<AreaCodigoValueConverter>()
+            .HaveColumnType($"varchar({AreaCodigoMaxLength})")
+            .HaveMaxLength(AreaCodigoMaxLength);
     }
 }

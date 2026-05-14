@@ -1211,6 +1211,12 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
+      "unifesspa.uniplus.governance.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },

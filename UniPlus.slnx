@@ -18,12 +18,14 @@
   </Folder>
   <Folder Name="/src/shared/">
     <Project Path="src/shared/Unifesspa.UniPlus.Application.Abstractions/Unifesspa.UniPlus.Application.Abstractions.csproj" />
+    <Project Path="src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
     <Project Path="src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <Project Path="src/shared/Unifesspa.UniPlus.Kernel/Unifesspa.UniPlus.Kernel.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Unifesspa.UniPlus.Application.Abstractions.UnitTests/Unifesspa.UniPlus.Application.Abstractions.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.ArchTests/Unifesspa.UniPlus.ArchTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Governance.Contracts.UnitTests/Unifesspa.UniPlus.Governance.Contracts.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Infrastructure.Core.IntegrationTests/Unifesspa.UniPlus.Infrastructure.Core.IntegrationTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests/Unifesspa.UniPlus.Infrastructure.Core.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Ingresso.ArchTests/Unifesspa.UniPlus.Ingresso.ArchTests.csproj" />
