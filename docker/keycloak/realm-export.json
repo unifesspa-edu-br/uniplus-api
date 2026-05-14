@@ -112,6 +112,96 @@
         "clientRole": false,
         "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
         "attributes": {}
+      },
+      {
+        "id": "1ec5178d-f024-5075-bbe0-b2d793ab0a7b",
+        "name": "ceps-admin",
+        "description": "Administrador da área CEPS — Centro de Processos Seletivos: edita catálogos com Proprietario igual a esta área.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "24851a58-dc13-5ffd-ab7f-0c36670fb059",
+        "name": "ceps-leitor",
+        "description": "Leitor da área CEPS — Centro de Processos Seletivos: enxerga catálogos visíveis a esta área, sem permissão de escrita.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "2c3eeb0e-c5b2-589d-abd1-b0e12c200290",
+        "name": "crca-admin",
+        "description": "Administrador da área CRCA — Centro de Registro e Controle Acadêmico: edita catálogos com Proprietario igual a esta área.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "88097d18-4131-5f9c-b25c-8ccff0af4f4a",
+        "name": "crca-leitor",
+        "description": "Leitor da área CRCA — Centro de Registro e Controle Acadêmico: enxerga catálogos visíveis a esta área, sem permissão de escrita.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "040b9f8c-8af1-5931-addf-35a177cd2405",
+        "name": "proeg-admin",
+        "description": "Administrador da área PROEG — Pró-Reitoria de Ensino de Graduação: edita catálogos com Proprietario igual a esta área.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "316b8dbc-a1fd-5c43-b929-9f745701c579",
+        "name": "proeg-leitor",
+        "description": "Leitor da área PROEG — Pró-Reitoria de Ensino de Graduação: enxerga catálogos visíveis a esta área, sem permissão de escrita.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "649db30d-da3b-596e-8469-de1eeca50a95",
+        "name": "progep-admin",
+        "description": "Administrador da área PROGEP — Pró-Reitoria de Gestão de Pessoas: edita catálogos com Proprietario igual a esta área.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "22463508-ecdb-5620-8c4e-c9a21965f7f1",
+        "name": "progep-leitor",
+        "description": "Leitor da área PROGEP — Pró-Reitoria de Gestão de Pessoas: enxerga catálogos visíveis a esta área, sem permissão de escrita.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "6cfa5cfa-3a92-518e-9cb7-22684eed0cdd",
+        "name": "plataforma-admin",
+        "description": "Administrador da área Plataforma / CTIC: edita catálogos com Proprietario igual a esta área.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
+      },
+      {
+        "id": "f0cbd504-f67e-5b0c-852b-e9f42fba1a7e",
+        "name": "plataforma-leitor",
+        "description": "Leitor da área Plataforma / CTIC: enxerga catálogos visíveis a esta área, sem permissão de escrita.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "3310e85a-fc31-4029-a33a-dd49f8085fc5",
+        "attributes": {}
       }
     ],
     "client": {
@@ -2935,7 +3025,8 @@
       "firstName": "Usuário",
       "lastName": "Admin",
       "realmRoles": [
-        "admin"
+        "admin",
+        "plataforma-admin"
       ],
       "clientRoles": {
         "account": [
