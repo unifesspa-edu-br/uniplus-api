@@ -47,7 +47,20 @@ O risco que esta ADR mitiga: sem um conceito explícito de área, a plataforma o
 
 ### Estrutura do módulo
 
+> **Atualizado pela Emenda 1** (ver seção ao final): a superfície de contrato foi
+> renomeada para `Unifesspa.UniPlus.Governance.Contracts` e fica em `src/shared/`,
+> não na pasta do módulo. Os outros 4 csprojs permanecem em
+> `src/organizacao-institucional/`.
+
 ```text
+src/shared/
+└── Unifesspa.UniPlus.Governance.Contracts/   (contratos foundation — Emenda 1)
+    ├── IAreaOrganizacionalReader.cs           (leitor cross-módulo)
+    ├── AreaCodigo.cs                          (record struct sobre string, strongly-typed)
+    ├── AreaOrganizacionalView.cs              (DTO read-only para consumo cross-módulo)
+    ├── ICatalogEntity.cs                      (marker de catálogo área-scoped)
+    └── ReferenceDataAttribute.cs
+
 src/organizacao-institucional/
 ├── Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/
 │   └── Entities/
@@ -56,11 +69,6 @@ src/organizacao-institucional/
 │   ├── Commands/                    (admin: registrar via ADR, atualizar, soft-delete)
 │   ├── Queries/
 │   └── DTOs/
-├── Unifesspa.UniPlus.OrganizacaoInstitucional.Contracts/
-│   ├── IAreaOrganizacionalReader.cs (leitor cross-módulo)
-│   ├── AreaCodigo.cs                (record struct sobre string, strongly-typed)
-│   ├── AreaOrganizacionalView.cs    (DTO read-only para consumo cross-módulo)
-│   └── ReferenceDataAttribute.cs
 ├── Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure/
 │   └── Persistence/
 │       ├── OrganizacaoInstitucionalDbContext.cs (banco `uniplus_organizacao`)
@@ -90,7 +98,7 @@ AdrReferenceCode: string (ex.: "0055-organizacao-institucional-bounded-context")
 
 ### `AreaCodigo` — identificador strongly-typed
 
-`AreaCodigo` é `readonly record struct` em `OrganizacaoInstitucional.Contracts`:
+`AreaCodigo` é `readonly record struct` em `Unifesspa.UniPlus.Governance.Contracts` (`src/shared/`, ver Emenda 1):
 
 - Construtor privado; factory `From(string)` retorna `Result<AreaCodigo>` com validação (2-32 chars, uppercase, alfanum + underscore, sem leading digit).
 - Usado em todo o sistema: `Proprietario: AreaCodigo?` em entidades de catálogo, elementos de `AreasDeInteresse: IReadOnlySet<AreaCodigo>`, claims JWT derivados expõem `IReadOnlyCollection<AreaCodigo>`.
@@ -98,7 +106,7 @@ AdrReferenceCode: string (ex.: "0055-organizacao-institucional-bounded-context")
 
 ### Acesso cross-módulo
 
-`IAreaOrganizacionalReader` em `OrganizacaoInstitucional.Contracts` expõe:
+`IAreaOrganizacionalReader` em `Unifesspa.UniPlus.Governance.Contracts` (`src/shared/`, ver Emenda 1) expõe:
 
 - `Task<IReadOnlyList<AreaOrganizacionalView>> ListarAtivasAsync(CancellationToken)`
 - `Task<AreaOrganizacionalView?> ObterPorCodigoAsync(AreaCodigo codigo, CancellationToken)`
@@ -181,6 +189,45 @@ Cada extensão exige sua própria ADR com trigger condition documentado; nenhuma
 
 - **Prós**: Separa governança organizacional de dados de catálogo. `AreaCodigo` strongly-typed elimina string-typo bugs. Roster expansion auditável (`AdrReferenceCode` enforçado). `AreaOrganizacional` tem ciclo de vida completo (audit, soft-delete, eventos) sem poluir `Kernel`. Conceitos futuros de hierarquia/cargo/delegação têm casa limpa — sem extração depois. Acesso cross-módulo via `IAreaOrganizacionalReader` mantém boundary consistente com o resto da plataforma.
 - **Contras**: Um módulo adicional na solution (5 csproj). DI wiring em cada consumer. Build time cresce ~3-5 segundos. Novos devs precisam aprender que "áreas NÃO estão em Parametrizacao" — contraintuitivo para quem está acostumado a "todos os dados de referência em um módulo".
+
+## Emenda 1 — relocação de `Contracts` para `src/shared/` (2026-05-14)
+
+Durante a implementação de F1.S1 (Story #446), o assembly de contratos do
+módulo precisou de uma decisão de localização física que a versão original
+desta ADR não previa.
+
+**O que muda:** o projeto antes desenhado como
+`src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Contracts/`
+passa a ser `src/shared/Unifesspa.UniPlus.Governance.Contracts/` — renomeado
+(nome de *capability*, não de bounded context) e fisicamente em `src/shared/`.
+
+**Por quê:** `AreaCodigo`, `ICatalogEntity` e os atributos marker de área são
+contratos *foundation* — consumidos por `Infrastructure.Core` (EF value
+converter, authorization handler) e `Application.Abstractions`
+(`IUserContext.AreasAdministradas`), além das entidades de `Domain` de todos
+os módulos de catálogo. `src/shared/` é uma ilha de dependências fechada:
+nenhum projeto de `src/shared/` pode referenciar para dentro de uma pasta de
+módulo (`src/<modulo>/`). Um `.Contracts` dentro de `src/organizacao-institucional/`
+forçaria exatamente essa violação.
+
+**O que NÃO muda:** a decisão E (bounded context dedicado) permanece. Os
+outros 4 csprojs (`Domain`, `Application`, `Infrastructure`, `API`) continuam
+em `src/organizacao-institucional/`, criados em F1.S2. O `Kernel` permanece
+intocado — `AreaCodigo` e `ICatalogEntity` carregam semântica de governança
+por área, não primitivos universais, então não entram no `Kernel`.
+
+**Alternativas descartadas:**
+
+- *Manter `.Contracts` em `src/organizacao-institucional/`* — força `src/shared/`
+  a referenciar para dentro de uma pasta de módulo, violando a ilha fechada.
+- *Fundir `AreaCodigo`/`ICatalogEntity` no `Kernel`* — dilui o layer de
+  primitivos universais com semântica de um bounded context específico, sem
+  fronteira de assembly marcando onde a erosão começa.
+
+A opção adotada — projeto próprio em `src/shared/` com nome de *capability*
+(`Governance.Contracts`) — preserva a ilha fechada, dá dono e fronteira
+explícitos aos contratos foundation e não toca o `Kernel`. Decisão do Tech
+Lead do projeto; esta emenda registra o desvio do diagrama original.
 
 ## Mais informações
 

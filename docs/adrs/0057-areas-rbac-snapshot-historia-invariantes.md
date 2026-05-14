@@ -275,6 +275,20 @@ Quando triggered, nova ADR projeta a extensão. Até lá, **`AreaOrganizacional`
 - **Prós**: Discussão acima.
 - **Contras**: Discussão acima.
 
+## Emenda — vocabulário (2026-05-14)
+
+Onde este ADR diz **"catálogo"**, "entidade de catálogo" ou "catálogos
+cross-cutting", o **código usa "entidade área-scoped"**: a interface marker é
+`IAreaScopedEntity` (em `Governance.Contracts`) e a base EF é
+`AreaVisibilityConfiguration<TParent>` (em `Infrastructure.Core`).
+
+O termo "catálogo" fica **reservado a um futuro conceito de domínio** de fato
+(ex.: um catálogo de serviços) — não é vocabulário da demanda de
+configuração/Parametrização. A decisão foi tomada na ideação do módulo
+Parametrizacao; esta emenda registra o mapeamento para que a próxima pessoa
+não reintroduza "catálogo" achando que segue o ADR. O texto do corpo deste
+ADR é mantido como está; vale o mapeamento desta emenda.
+
 ## Mais informações
 
 - [ADR-0001](0001-monolito-modular-como-estilo-arquitetural.md) — Monolito modular.

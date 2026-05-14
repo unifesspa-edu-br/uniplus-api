@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contratos de governança por área compartilhados entre as camadas
+    foundation (Infrastructure.Core, Application.Abstractions) e todos os
+    módulos de negócio: AreaCodigo, ICatalogEntity e os atributos marker
+    de área. Vive em src/shared/ — e não na pasta do módulo
+    OrganizacaoInstitucional — porque é consumido pela ilha fechada de
+    src/shared/, que nunca pode referenciar para dentro de uma pasta de
+    módulo. Ver ADR-0055 (seção "Localização física de Governance.Contracts").
+
+    Mantém-se enxuto: só tipos de contrato, sem dependência além do Kernel
+    (para Result<T>). Em F1.S2 ganha IAreaOrganizacionalReader e
+    AreaOrganizacionalView.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

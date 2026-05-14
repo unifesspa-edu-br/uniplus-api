@@ -189,6 +189,22 @@ Quando `Edital.Publicar()` roda (Pattern 1 de [ADR-0057](0057-areas-rbac-snapsho
 - **Prós**: discussão acima.
 - **Contras**: discussão acima.
 
+## Emenda — vocabulário (2026-05-14)
+
+Onde este ADR diz **"catálogo"**, "entidade de catálogo" ou
+`CatalogVisibilityConfiguration<T>`, o **código usa "entidade área-scoped"**:
+a interface marker é `IAreaScopedEntity` (em `Governance.Contracts`) e a base
+EF templatada é `AreaVisibilityConfiguration<TParent>` (em
+`Infrastructure.Core/Persistence/Configurations/`).
+
+O termo "catálogo" fica **reservado a um futuro conceito de domínio** de fato
+— não é vocabulário da demanda de configuração/Parametrização. A decisão foi
+tomada na ideação do módulo Parametrizacao; esta emenda registra o mapeamento
+para que a próxima pessoa não reintroduza "catálogo" achando que segue o ADR.
+Os nomes de banco permanecem como estão (`{entidade}_areas_de_interesse`,
+`area_codigo`) — são neutros. O texto do corpo deste ADR é mantido; vale o
+mapeamento desta emenda.
+
 ## Mais informações
 
 - [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side.
