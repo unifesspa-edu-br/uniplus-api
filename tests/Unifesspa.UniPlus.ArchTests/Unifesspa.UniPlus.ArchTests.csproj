@@ -29,6 +29,10 @@
     <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
     <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Infrastructure/Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
     <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj" />
+    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.csproj" />
+    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />
+    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
