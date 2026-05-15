@@ -91,88 +91,71 @@ public sealed class CrossModuleReadCarveOutTests
             + string.Join("\n  - ", violations));
     }
 
-    [Fact(DisplayName = "R8 (Program top-level): cada API.Program não depende de tipos de outros módulos")]
+    [Fact(DisplayName = "R8 (Program top-level): tipos no global namespace de cada API não dependem de outros módulos")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "ArchUnitNET.Check() pode lançar tipos variados; o helper consolida violações cross-módulo em uma única mensagem para triage rápido.")]
     public void ProgramsApi_NaoDependemDeOutrosModulos()
     {
-        // `Program` de top-level statements em ASP.NET Core vive no global namespace
-        // (Type.Namespace == null) e não é capturado pelo predicate por-namespace
-        // do fitness principal. Esse teste varre as APIs por reflection, encontra
-        // tipos no global namespace que vivem no assembly de cada API, e verifica
-        // que nenhum tipo referenciado por eles desce para módulo cross.
+        // Top-level statements emitem `Program` no global namespace (Type.Namespace
+        // null), invisíveis ao predicate por-namespace do fitness principal.
+        // ArchUnitNET inspeciona método body via metadata IL — usar a fluent rule
+        // com filtro `HaveNameMatching("^Program$")` AND `ResideInAssembly(...)`
+        // captura DI wiring, extension method calls e qualquer dep arquitetural
+        // que apareça apenas no body de Main, não em signature.
 
-        var apiAssembliesPorModulo = new (string Modulo, System.Reflection.Assembly Asm)[]
-        {
+        (string Modulo, ReflectionAssembly Asm)[] apiAssembliesPorModulo =
+        [
             ("Selecao", typeof(global::Unifesspa.UniPlus.Selecao.API.Controllers.EditalController).Assembly),
             ("Ingresso", typeof(global::Unifesspa.UniPlus.Ingresso.API.IngressoApiAssemblyMarker).Assembly),
             ("Portal", typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly),
             ("OrganizacaoInstitucional", typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly),
             ("Parametrizacao", typeof(global::Unifesspa.UniPlus.Parametrizacao.API.ParametrizacaoApiAssemblyMarker).Assembly),
-        };
+        ];
 
         List<string> violations = [];
 
-        foreach ((string modulo, System.Reflection.Assembly asm) in apiAssembliesPorModulo)
+        foreach ((string modulo, ReflectionAssembly asm) in apiAssembliesPorModulo)
         {
-            // Tipos no global namespace (Program top-level statements e similares).
-            ReflectionType[] tiposGlobais = [..
-                asm.GetTypes().Where(t => string.IsNullOrEmpty(t.Namespace))];
+            // Carrega só este assembly — ArchUnitNET enxergará as dependências
+            // método-corpo nele E nos assemblies referenciados.
+            Architecture single = new ArchLoader().LoadAssemblies(asm).Build();
 
-            foreach (ReflectionType tipo in tiposGlobais)
+            foreach (string moduloOutro in ModulesRoster)
             {
-                foreach (string moduloOutro in ModulesRoster)
+                if (string.Equals(modulo, moduloOutro, StringComparison.Ordinal))
                 {
-                    if (string.Equals(modulo, moduloOutro, StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    string prefixoProibido = $"Unifesspa.UniPlus.{moduloOutro}.";
+                // Filtro alvo: layers internos do outro módulo (Domain/Application/
+                // Infrastructure/API). Contracts próprio do outro módulo é exceção
+                // documentada — apenas Parametrizacao tem em V1.
+                string destinoPattern = $@"^Unifesspa\.UniPlus\.{moduloOutro}\.(Domain|Application|Infrastructure|API)(\.|$)";
 
-                    // Inspeciona referências indiretas: tipos usados como base type, interfaces
-                    // implementadas, e tipos referenciados em métodos/fields do tipo global.
-                    foreach (System.Reflection.MethodInfo method in tipo.GetMethods(
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
-                        | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance
-                        | System.Reflection.BindingFlags.DeclaredOnly))
-                    {
-                        foreach (ReflectionType referenced in CollectReferencedTypes(method))
-                        {
-                            if (referenced.FullName?.StartsWith(prefixoProibido, StringComparison.Ordinal) == true
-                                && !IsAllowedCrossModuleNamespace(referenced.FullName, moduloOutro))
-                            {
-                                violations.Add(
-                                    $"{modulo}/{tipo.Name}.{method.Name} → {referenced.FullName}");
-                            }
-                        }
-                    }
+                IArchRule rule = Types()
+                    .That()
+                    .HaveNameMatching("^Program$")
+                    .Should()
+                    .NotDependOnAnyTypesThat()
+                    .ResideInNamespaceMatching(destinoPattern);
+
+                try
+                {
+                    rule.Check(single);
+                }
+                catch (Exception ex)
+                {
+                    violations.Add($"{modulo}/Program → {moduloOutro}: {ex.Message.Split('\n')[0]}");
                 }
             }
         }
 
         violations.Should().BeEmpty(
-            "R8 (Program top-level): Program.cs de uma API não pode usar tipos de outro módulo "
-            + $"(além de Governance.Contracts / Application.Abstractions / Kernel). Violações:\n  - "
-            + string.Join("\n  - ", violations));
-    }
-
-    private static IEnumerable<ReflectionType> CollectReferencedTypes(System.Reflection.MethodInfo method)
-    {
-        if (method.ReturnType is { } returnType)
-        {
-            yield return returnType;
-        }
-        foreach (System.Reflection.ParameterInfo p in method.GetParameters())
-        {
-            yield return p.ParameterType;
-        }
-    }
-
-    private static bool IsAllowedCrossModuleNamespace(string fullName, string moduloDestino)
-    {
-        // Whitelist: Contracts próprios de outro módulo são permitidos cross-módulo.
-        // Em V1 só Parametrizacao tem .Contracts; OrganizacaoInstitucional usa
-        // Governance.Contracts global.
-        return fullName.StartsWith($"Unifesspa.UniPlus.{moduloDestino}.Contracts.", StringComparison.Ordinal);
+            "R8 (Program top-level): Program.cs de uma API não pode usar tipos de Domain/Application/"
+            + "Infrastructure/API de outro módulo (Contracts próprio do outro módulo OK). "
+            + $"Violações:\n  - {string.Join("\n  - ", violations)}");
     }
 
     [Fact(DisplayName = "R8 S4: Application.Abstractions só depende de Governance.Contracts e Kernel cross-módulo")]
