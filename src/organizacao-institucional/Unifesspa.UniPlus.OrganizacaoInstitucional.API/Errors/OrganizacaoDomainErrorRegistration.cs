@@ -50,6 +50,12 @@ internal sealed class OrganizacaoDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.organizacao.area_organizacional.adr_reference_formato_invalido",
                 "AdrReferenceCode em formato inválido")),
 
+        new(AreaOrganizacionalErrorCodes.TipoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.area_organizacional.tipo_invalido",
+                "Tipo de área organizacional inválido")),
+
         new(AreaOrganizacionalErrorCodes.CodigoJaExiste,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
