@@ -92,10 +92,6 @@ public sealed class CrossModuleReadCarveOutTests
     }
 
     [Fact(DisplayName = "R8 (Program top-level): tipos no global namespace de cada API não dependem de outros módulos")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "ArchUnitNET.Check() pode lançar tipos variados; o helper consolida violações cross-módulo em uma única mensagem para triage rápido.")]
     public void ProgramsApi_NaoDependemDeOutrosModulos()
     {
         // Top-level statements emitem `Program` no global namespace (Type.Namespace
@@ -145,8 +141,11 @@ public sealed class CrossModuleReadCarveOutTests
                 {
                     rule.Check(single);
                 }
-                catch (Exception ex)
+                catch (Xunit.Sdk.XunitException ex)
                 {
+                    // ArchUnitNET.xUnit traduz violação em FailedArchRuleException, que
+                    // herda de XunitException. Outros tipos não são esperados aqui — se
+                    // surgir, propaga (mantém fail-fast em erros desconhecidos).
                     violations.Add($"{modulo}/Program → {moduloOutro}: {ex.Message.Split('\n')[0]}");
                 }
             }
@@ -184,12 +183,6 @@ public sealed class CrossModuleReadCarveOutTests
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "ArchUnitNET.Check() pode lançar tipos de exceção variados (XunitException, "
-            + "FailedArchRuleException, etc.); este helper consolida todas as violações cross-módulo "
-            + "em uma única mensagem de Assert.True para triage rápido — re-throw derrotaria o agregador.")]
     private static void AssertSemDependencia(
         string moduloOrigem,
         string origemPattern,
@@ -214,10 +207,11 @@ public sealed class CrossModuleReadCarveOutTests
         {
             rule.Check(SolutionArchitecture);
         }
-        catch (Exception ex)
+        catch (Xunit.Sdk.XunitException ex)
         {
-            // Coleta violações em vez de falhar no primeiro — relatório consolidado
-            // facilita o triage quando o fitness pega múltiplas violações de uma vez.
+            // ArchUnitNET.xUnit traduz violação em FailedArchRuleException, que
+            // herda de XunitException. Coleta violações em vez de falhar no primeiro
+            // — relatório consolidado facilita triage de múltiplas violações.
             violations.Add($"{moduloOrigem} → {moduloDestino}{layerDestino}: {ex.Message.Split('\n')[0]}");
         }
     }
