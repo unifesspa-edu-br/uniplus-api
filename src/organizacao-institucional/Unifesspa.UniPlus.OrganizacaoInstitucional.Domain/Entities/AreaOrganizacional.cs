@@ -138,6 +138,15 @@ public sealed partial class AreaOrganizacional : EntityBase, IAuditableEntity
     /// </summary>
     public Result Atualizar(string nome, TipoAreaOrganizacional tipo, string descricao)
     {
+        // Mesmo guard de Criar — preserva a invariante "Tipo válido" também
+        // em updates fora do pipeline HTTP (background jobs, testes, etc.).
+        if (!Enum.IsDefined(tipo) || tipo == TipoAreaOrganizacional.Nenhum)
+        {
+            return Result.Failure(new DomainError(
+                AreaOrganizacionalErrorCodes.TipoInvalido,
+                "Tipo de área organizacional inválido — use um valor definido em TipoAreaOrganizacional, diferente de Nenhum."));
+        }
+
         if (string.IsNullOrWhiteSpace(nome))
         {
             return Result.Failure(new DomainError(
