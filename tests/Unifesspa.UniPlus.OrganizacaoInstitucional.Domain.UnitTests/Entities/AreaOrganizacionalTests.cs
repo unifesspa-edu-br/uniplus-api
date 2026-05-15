@@ -126,6 +126,19 @@ public sealed class AreaOrganizacionalTests
         resultado.Error!.Code.Should().Be(AreaOrganizacionalErrorCodes.AdrReferenceFormatoInvalido);
     }
 
+    [Theory(DisplayName = "Criar com Tipo Nenhum ou cast inválido retorna TipoInvalido (defesa em profundidade)")]
+    [InlineData(TipoAreaOrganizacional.Nenhum)]
+    [InlineData((TipoAreaOrganizacional)42)]
+    public void Criar_ComTipoInvalido_DeveRetornarTipoInvalido(TipoAreaOrganizacional tipoInvalido)
+    {
+        Result<AreaOrganizacional> resultado = AreaOrganizacional.Criar(
+            CodigoValido, "Nome válido", tipoInvalido,
+            "Descricao válida.", "0055-organizacao-institucional-bounded-context");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AreaOrganizacionalErrorCodes.TipoInvalido);
+    }
+
     [Fact(DisplayName = "Atualizar com dados válidos altera Nome, Tipo, Descricao")]
     public void Atualizar_ComDadosValidos_DeveAlterarCampos()
     {

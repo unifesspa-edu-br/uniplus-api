@@ -83,9 +83,24 @@ internal sealed partial class AreaOrganizacionalReader : IAreaOrganizacionalRead
         // Cache miss — tenta adquirir o lease (stampede protection). try/finally
         // explícito em vez de `await using` para satisfazer CA2007 com IAsyncDisposable
         // nullable retornado pelo lease.
-        IAsyncDisposable? lease = await _cache
-            .AcquireLeaseAsync(AreaOrganizacionalCacheKeys.LeaseTodasAsAreasAtivas, LeaseTtl, cancellationToken)
-            .ConfigureAwait(false);
+        //
+        // AcquireLeaseAsync que falhe (Redis indisponível) é tratado como "lease ausente"
+        // — caller continua até a fonte direta, mantendo o contrato fail-open simétrico
+        // ao de ObterDoCacheAsync/DefinirAsync. Stampede degrada em outage parcial mas
+        // a leitura ainda responde.
+        IAsyncDisposable? lease = null;
+        try
+        {
+            lease = await _cache
+                .AcquireLeaseAsync(AreaOrganizacionalCacheKeys.LeaseTodasAsAreasAtivas, LeaseTtl, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogFalhaAdquirirLease(_logger, ex);
+            // lease permanece null — fluxo igual ao "lease perdido por concorrência",
+            // que já segue para fonte direta após esgotar TentativasDeRecheck.
+        }
 
         try
         {
@@ -207,4 +222,9 @@ internal sealed partial class AreaOrganizacionalReader : IAreaOrganizacionalRead
         Level = LogLevel.Warning,
         Message = "Falha ao ler cache de areas-organizacionais; usando fonte direta.")]
     private static partial void LogFalhaLerCache(ILogger logger, Exception exception);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Falha ao adquirir lease de stampede protection; seguindo sem coordenação (cache fail-open).")]
+    private static partial void LogFalhaAdquirirLease(ILogger logger, Exception exception);
 }

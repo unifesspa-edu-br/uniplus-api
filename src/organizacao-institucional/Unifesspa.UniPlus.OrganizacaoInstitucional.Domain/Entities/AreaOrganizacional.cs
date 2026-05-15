@@ -54,7 +54,7 @@ public sealed partial class AreaOrganizacional : EntityBase, IAuditableEntity
 
     /// <summary>
     /// Factory de criação. Valida formato de <paramref name="adrReferenceCode"/>
-    /// (regex <c>^\d{4}-[a-z0-9-]+$</c>) — a validação "arquivo existe em
+    /// (regex <c>^\d{4}-[a-z0-9]+(?:-[a-z0-9]+)*$</c>) — a validação "arquivo existe em
     /// <c>docs/adrs/</c>" é fitness test em CI (ADR-0055 §"Confirmação", Story #448).
     /// </summary>
     public static Result<AreaOrganizacional> Criar(
@@ -64,6 +64,17 @@ public sealed partial class AreaOrganizacional : EntityBase, IAuditableEntity
         string descricao,
         string adrReferenceCode)
     {
+        // Defesa em profundidade contra TipoAreaOrganizacional não definido (cast de
+        // int fora do enum) ou `Nenhum` (sentinel default). Validator FluentValidation
+        // cobre o caminho HTTP; este guard cobre construção via background job,
+        // teste, ou command construído manualmente fora do pipeline padrão.
+        if (!Enum.IsDefined(tipo) || tipo == TipoAreaOrganizacional.Nenhum)
+        {
+            return Result<AreaOrganizacional>.Failure(new DomainError(
+                AreaOrganizacionalErrorCodes.TipoInvalido,
+                "Tipo de área organizacional inválido — use um valor definido em TipoAreaOrganizacional, diferente de Nenhum."));
+        }
+
         if (string.IsNullOrWhiteSpace(nome))
         {
             return Result<AreaOrganizacional>.Failure(new DomainError(
