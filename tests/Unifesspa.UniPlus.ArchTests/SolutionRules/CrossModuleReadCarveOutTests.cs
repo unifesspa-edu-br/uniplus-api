@@ -5,9 +5,12 @@ using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
+using AwesomeAssertions;
+
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 using ReflectionAssembly = System.Reflection.Assembly;
+using ReflectionType = System.Type;
 
 /// <summary>
 /// Fitness test <strong>R8</strong> da ADR-0056 — carve-out read-side cross-módulo:
@@ -88,6 +91,90 @@ public sealed class CrossModuleReadCarveOutTests
             + string.Join("\n  - ", violations));
     }
 
+    [Fact(DisplayName = "R8 (Program top-level): cada API.Program não depende de tipos de outros módulos")]
+    public void ProgramsApi_NaoDependemDeOutrosModulos()
+    {
+        // `Program` de top-level statements em ASP.NET Core vive no global namespace
+        // (Type.Namespace == null) e não é capturado pelo predicate por-namespace
+        // do fitness principal. Esse teste varre as APIs por reflection, encontra
+        // tipos no global namespace que vivem no assembly de cada API, e verifica
+        // que nenhum tipo referenciado por eles desce para módulo cross.
+
+        var apiAssembliesPorModulo = new (string Modulo, System.Reflection.Assembly Asm)[]
+        {
+            ("Selecao", typeof(global::Unifesspa.UniPlus.Selecao.API.Controllers.EditalController).Assembly),
+            ("Ingresso", typeof(global::Unifesspa.UniPlus.Ingresso.API.IngressoApiAssemblyMarker).Assembly),
+            ("Portal", typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly),
+            ("OrganizacaoInstitucional", typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly),
+            ("Parametrizacao", typeof(global::Unifesspa.UniPlus.Parametrizacao.API.ParametrizacaoApiAssemblyMarker).Assembly),
+        };
+
+        List<string> violations = [];
+
+        foreach ((string modulo, System.Reflection.Assembly asm) in apiAssembliesPorModulo)
+        {
+            // Tipos no global namespace (Program top-level statements e similares).
+            ReflectionType[] tiposGlobais = [..
+                asm.GetTypes().Where(t => string.IsNullOrEmpty(t.Namespace))];
+
+            foreach (ReflectionType tipo in tiposGlobais)
+            {
+                foreach (string moduloOutro in ModulesRoster)
+                {
+                    if (string.Equals(modulo, moduloOutro, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    string prefixoProibido = $"Unifesspa.UniPlus.{moduloOutro}.";
+
+                    // Inspeciona referências indiretas: tipos usados como base type, interfaces
+                    // implementadas, e tipos referenciados em métodos/fields do tipo global.
+                    foreach (System.Reflection.MethodInfo method in tipo.GetMethods(
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
+                        | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance
+                        | System.Reflection.BindingFlags.DeclaredOnly))
+                    {
+                        foreach (ReflectionType referenced in CollectReferencedTypes(method))
+                        {
+                            if (referenced.FullName?.StartsWith(prefixoProibido, StringComparison.Ordinal) == true
+                                && !IsAllowedCrossModuleNamespace(referenced.FullName, moduloOutro))
+                            {
+                                violations.Add(
+                                    $"{modulo}/{tipo.Name}.{method.Name} → {referenced.FullName}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        violations.Should().BeEmpty(
+            "R8 (Program top-level): Program.cs de uma API não pode usar tipos de outro módulo "
+            + $"(além de Governance.Contracts / Application.Abstractions / Kernel). Violações:\n  - "
+            + string.Join("\n  - ", violations));
+    }
+
+    private static IEnumerable<ReflectionType> CollectReferencedTypes(System.Reflection.MethodInfo method)
+    {
+        if (method.ReturnType is { } returnType)
+        {
+            yield return returnType;
+        }
+        foreach (System.Reflection.ParameterInfo p in method.GetParameters())
+        {
+            yield return p.ParameterType;
+        }
+    }
+
+    private static bool IsAllowedCrossModuleNamespace(string fullName, string moduloDestino)
+    {
+        // Whitelist: Contracts próprios de outro módulo são permitidos cross-módulo.
+        // Em V1 só Parametrizacao tem .Contracts; OrganizacaoInstitucional usa
+        // Governance.Contracts global.
+        return fullName.StartsWith($"Unifesspa.UniPlus.{moduloDestino}.Contracts.", StringComparison.Ordinal);
+    }
+
     [Fact(DisplayName = "R8 S4: Application.Abstractions só depende de Governance.Contracts e Kernel cross-módulo")]
     public void ApplicationAbstractions_SoDependeDeFoundationCrossModulo()
     {
@@ -129,6 +216,10 @@ public sealed class CrossModuleReadCarveOutTests
     {
         string destinoPattern = $@"^Unifesspa\.UniPlus\.{moduloDestino}{System.Text.RegularExpressions.Regex.Escape(layerDestino)}(\.|$)";
 
+        // Predicate de origem inclui o namespace canônico do módulo. Para
+        // captar `Program` top-level statements (vive no global namespace),
+        // o teste em separado [Fact] ProgramsApi_NaoDependemDeOutrosModulos
+        // varre os Program de cada API por reflection no assembly do módulo.
         IArchRule rule = Types()
             .That()
             .ResideInNamespaceMatching(origemPattern)
