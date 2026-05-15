@@ -1,0 +1,37 @@
+[
+  {
+    "codigo": "CEPS",
+    "nome": "Centro de Processos Seletivos",
+    "tipo": "Centro",
+    "descricao": "Unidade responsável pelos processos seletivos da Unifesspa (vestibulares, PSE, transferências).",
+    "adrReferenceCode": "0055-organizacao-institucional-bounded-context"
+  },
+  {
+    "codigo": "CRCA",
+    "nome": "Centro de Registro e Controle Acadêmico",
+    "tipo": "Centro",
+    "descricao": "Unidade responsável pelo registro acadêmico e matrículas no Sigaa após o ingresso.",
+    "adrReferenceCode": "0055-organizacao-institucional-bounded-context"
+  },
+  {
+    "codigo": "PROEG",
+    "nome": "Pró-Reitoria de Ensino de Graduação",
+    "tipo": "ProReitoria",
+    "descricao": "Pró-Reitoria supervisora sobre CEPS/CRCA; rege políticas entre áreas de ensino de graduação.",
+    "adrReferenceCode": "0055-organizacao-institucional-bounded-context"
+  },
+  {
+    "codigo": "PROGEP",
+    "nome": "Pró-Reitoria de Gestão de Pessoas",
+    "tipo": "ProReitoria",
+    "descricao": "Pró-Reitoria que gere os processos de pessoal da Unifesspa (concursos, acessos institucionais).",
+    "adrReferenceCode": "0055-organizacao-institucional-bounded-context"
+  },
+  {
+    "codigo": "PLATAFORMA",
+    "nome": "Plataforma Uni+ (CTIC)",
+    "tipo": "Plataforma",
+    "descricao": "Centro de TIC — administra dados de referência universais (modalidades Lei 12.711/2023, regulamentações federais) e configurações cross-area.",
+    "adrReferenceCode": "0055-organizacao-institucional-bounded-context"
+  }
+]
