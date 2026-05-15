@@ -84,11 +84,14 @@ internal sealed partial class AreaOrganizacionalReader : IAreaOrganizacionalRead
         // explícito em vez de `await using` para satisfazer CA2007 com IAsyncDisposable
         // nullable retornado pelo lease.
         //
-        // AcquireLeaseAsync que falhe (Redis indisponível) é tratado como "lease ausente"
-        // — caller continua até a fonte direta, mantendo o contrato fail-open simétrico
-        // ao de ObterDoCacheAsync/DefinirAsync. Stampede degrada em outage parcial mas
-        // a leitura ainda responde.
+        // Distinção importante entre dois caminhos de "lease ausente":
+        //   - leaseIndisponivelPorOutage = true   → Redis caiu; não há populador, então
+        //     ir direto à fonte sem perder ~2.5s no recheck loop. Stampede pode aumentar
+        //     temporariamente o load em PG, mas latência por request fica baixa.
+        //   - leaseIndisponivelPorOutage = false → outro caller venceu o SET NX; aguardar
+        //     populá-lo via TentativasDeRecheck.
         IAsyncDisposable? lease = null;
+        bool leaseIndisponivelPorOutage = false;
         try
         {
             lease = await _cache
@@ -98,17 +101,24 @@ internal sealed partial class AreaOrganizacionalReader : IAreaOrganizacionalRead
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             LogFalhaAdquirirLease(_logger, ex);
-            // lease permanece null — fluxo igual ao "lease perdido por concorrência",
-            // que já segue para fonte direta após esgotar TentativasDeRecheck.
+            leaseIndisponivelPorOutage = true;
         }
 
         try
         {
-            if (lease is null)
+            if (leaseIndisponivelPorOutage)
             {
-                // Lease perdido — outro caller está populando. Espera curta + recheck.
-                // Após N tentativas sem sucesso, vai à fonte direta (fail-open): preferimos
-                // pagar uma query a mais a degradar latência além de ~500 ms.
+                // Outage de Redis — ObterDoCacheAsync e DefinirAsync também falharão.
+                // Pula recheck loop (zero benefício sem populador concorrente) e cai
+                // direto na fonte. Cada request abre uma query PG até Redis voltar;
+                // catálogo é bounded então o load é aceitável vs latência alta.
+            }
+            else if (lease is null)
+            {
+                // Lease perdido por concorrência — outro caller está populando.
+                // Espera curta + recheck. Após N tentativas sem sucesso, vai à fonte
+                // direta (fail-open): preferimos pagar uma query a mais a degradar
+                // latência além de ~2.5s.
                 for (int tentativa = 0; tentativa < TentativasDeRecheck; tentativa++)
                 {
                     await Task.Delay(EsperaCurta, cancellationToken).ConfigureAwait(false);

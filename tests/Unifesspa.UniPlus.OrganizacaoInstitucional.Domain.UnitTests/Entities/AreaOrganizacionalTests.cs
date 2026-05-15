@@ -155,6 +155,21 @@ public sealed class AreaOrganizacionalTests
         area.Codigo.Should().Be(CodigoValido, "Codigo é imutável após criação (ADR-0057 §Invariante 2)");
     }
 
+    [Theory(DisplayName = "Atualizar com Tipo Nenhum ou cast inválido retorna TipoInvalido")]
+    [InlineData(TipoAreaOrganizacional.Nenhum)]
+    [InlineData((TipoAreaOrganizacional)42)]
+    public void Atualizar_ComTipoInvalido_DeveRetornarTipoInvalido(TipoAreaOrganizacional tipoInvalido)
+    {
+        AreaOrganizacional area = AreaOrganizacional.Criar(
+            CodigoValido, "Nome inicial", TipoAreaOrganizacional.Centro,
+            "Desc inicial.", "0055-organizacao-institucional-bounded-context").Value!;
+
+        Result resultado = area.Atualizar("Novo nome", tipoInvalido, "Nova descricao.");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AreaOrganizacionalErrorCodes.TipoInvalido);
+    }
+
     [Fact(DisplayName = "Atualizar com nome vazio retorna NomeObrigatorio")]
     public void Atualizar_ComNomeVazio_DeveRetornarNomeObrigatorio()
     {
