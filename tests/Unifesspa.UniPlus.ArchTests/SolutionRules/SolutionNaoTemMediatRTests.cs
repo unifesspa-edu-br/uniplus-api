@@ -70,6 +70,10 @@ public sealed class SolutionNaoTemMediatRTests
             typeof(Portal.Domain.PortalDomainAssemblyMarker).Assembly,
             typeof(Portal.Infrastructure.Persistence.PortalDbContext).Assembly,
             typeof(Portal.API.PortalApiAssemblyMarker).Assembly,
+            typeof(OrganizacaoInstitucional.Domain.Entities.AreaOrganizacional).Assembly,
+            typeof(OrganizacaoInstitucional.Application.Commands.AreasOrganizacionais.CriarAreaOrganizacionalCommand).Assembly,
+            typeof(OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalDbContext).Assembly,
+            typeof(OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();
