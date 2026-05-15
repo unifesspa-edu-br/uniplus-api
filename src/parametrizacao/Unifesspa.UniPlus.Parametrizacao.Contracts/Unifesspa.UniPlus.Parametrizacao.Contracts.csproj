@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contracts próprio do módulo Parametrizacao (distinto de Governance.Contracts).
+    Hospeda IModalidadeReader, INecessidadeEspecialReader, ITipoDocumentoReader,
+    IEnderecoReader e os respectivos *View DTOs em F2 (issue futura). Em V1, vazio
+    com marker — fitness test R8 cobre o boundary cross-módulo desde o dia 1.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

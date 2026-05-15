@@ -132,3 +132,34 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  parametrizacao-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.parametrizacao
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__ParametrizacaoDb: "Host=postgres;Port=5432;Database=uniplus_parametrizacao;Username=uniplus_parametrizacao_app;Password=${POSTGRES_PASSWORD}"
+      Redis__ConnectionString: "redis:6379"
+      Kafka__BootstrapServers: "kafka:29092"
+      Storage__Endpoint: "minio:9000"
+      Storage__AccessKey: "${MINIO_ROOT_USER}"
+      Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+    ports:
+      - "5264:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

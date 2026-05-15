@@ -33,6 +33,12 @@
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
+    <ProjectReference Include="../../src/parametrizacao/Unifesspa.UniPlus.Parametrizacao.Domain/Unifesspa.UniPlus.Parametrizacao.Domain.csproj" />
+    <ProjectReference Include="../../src/parametrizacao/Unifesspa.UniPlus.Parametrizacao.Application/Unifesspa.UniPlus.Parametrizacao.Application.csproj" />
+    <ProjectReference Include="../../src/parametrizacao/Unifesspa.UniPlus.Parametrizacao.Contracts/Unifesspa.UniPlus.Parametrizacao.Contracts.csproj" />
+    <ProjectReference Include="../../src/parametrizacao/Unifesspa.UniPlus.Parametrizacao.Infrastructure/Unifesspa.UniPlus.Parametrizacao.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/parametrizacao/Unifesspa.UniPlus.Parametrizacao.API/Unifesspa.UniPlus.Parametrizacao.API.csproj" />
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

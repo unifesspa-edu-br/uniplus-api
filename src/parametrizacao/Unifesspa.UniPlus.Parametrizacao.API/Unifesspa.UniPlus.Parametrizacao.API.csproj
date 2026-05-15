@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Parametrizacao.Application\Unifesspa.UniPlus.Parametrizacao.Application.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Parametrizacao.Infrastructure\Unifesspa.UniPlus.Parametrizacao.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
