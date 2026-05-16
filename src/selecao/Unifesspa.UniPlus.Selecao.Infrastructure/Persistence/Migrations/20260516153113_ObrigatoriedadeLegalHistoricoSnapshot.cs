@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+
 using Microsoft.EntityFrameworkCore.Migrations;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -141,6 +142,21 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 column: "hash",
                 unique: true,
                 filter: "is_deleted = false");
+
+            // FK historico → regra (Codex P2): integridade referencial impede
+            // orphan rows e bloqueia hard-delete acidental da regra mãe.
+            // RESTRICT é coerente com a semântica append-only (ADR-0063): o
+            // caminho normal é soft-delete (Modified state), que não dispara
+            // o RESTRICT. Adicionado via AddForeignKey separado porque a
+            // tabela historico é criada ANTES de obrigatoriedades_legais na
+            // ordem alfabética emitida pelo EF Core.
+            migrationBuilder.AddForeignKey(
+                name: "fk_obrigatoriedade_legal_historico_regra_id",
+                table: "obrigatoriedade_legal_historico",
+                column: "regra_id",
+                principalTable: "obrigatoriedades_legais",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Restrict);
 
             // Exclusion constraint GIST per ADR-0060: impede janelas de
             // validade sobrepostas para o mesmo (regra, área). Não é

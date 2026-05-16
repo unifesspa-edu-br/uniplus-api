@@ -685,6 +685,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_obrigatoriedade_legal_areas_de_interesse_obrigatoriedades_l");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegalHistorico", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", null)
+                        .WithMany()
+                        .HasForeignKey("RegraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_obrigatoriedade_legal_historico_regra_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Candidato", b =>
                 {
                     b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.ValueObjects.Cpf", "Cpf", b1 =>
