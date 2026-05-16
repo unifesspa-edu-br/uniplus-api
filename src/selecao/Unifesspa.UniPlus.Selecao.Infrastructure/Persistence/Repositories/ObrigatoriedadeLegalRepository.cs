@@ -127,11 +127,18 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoEditalCodigo);
 
+        // Comparação case-insensitive defensiva (Codex P2 round 2): mesmo
+        // que o caller já passe o lookup uppercased, a persistência aceita
+        // caixa livre — divergências de caixa entre Criar/Atualizar e o
+        // lookup quebrariam silenciosamente a conformidade. `EF.Functions.ILike`
+        // traduz para o operador case-insensitive nativo do PostgreSQL.
+        // Universal "*" segue por igualdade direta — sentinela ASCII sem
+        // letras.
         return await _context.ObrigatoriedadesLegais
             .AsNoTracking()
             .Where(o =>
                 (o.TipoEditalCodigo == ObrigatoriedadeLegal.TipoEditalUniversal
-                    || o.TipoEditalCodigo == tipoEditalCodigo)
+                    || EF.Functions.ILike(o.TipoEditalCodigo, tipoEditalCodigo))
                 && o.VigenciaInicio <= hoje
                 && (o.VigenciaFim == null || o.VigenciaFim > hoje))
             .ToListAsync(cancellationToken)
