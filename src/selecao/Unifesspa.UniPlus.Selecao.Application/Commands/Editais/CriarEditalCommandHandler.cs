@@ -31,7 +31,7 @@ public static class CriarEditalCommandHandler
             return Result<Guid>.Failure(numeroResult.Error!);
         }
 
-        Edital edital = Edital.Criar(numeroResult.Value!, command.Titulo, command.TipoProcesso);
+        Edital edital = Edital.Criar(numeroResult.Value!, command.Titulo, command.TipoEditalId);
 
         await editalRepository.AdicionarAsync(edital, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

@@ -11,7 +11,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Domain.Entities;
-using Domain.Enums;
 using Domain.ValueObjects;
 using Kernel.Results;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -57,7 +56,6 @@ public sealed class EditalEndpointTests
                 numeroEdital = numero,
                 anoEdital = 2026,
                 titulo = "EditalEndpointTests CriarEdital",
-                tipoProcesso = (int)TipoProcesso.SiSU,
             }),
         };
         AppendTestAuth(request);
@@ -73,6 +71,70 @@ public sealed class EditalEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Guid editalId = doc.RootElement.GetGuid();
         editalId.Should().NotBe(Guid.Empty);
+    }
+
+    [Fact(DisplayName = "POST /api/editais com tipoEditalId Guid v7 persiste e GET retorna o mesmo valor")]
+    public async Task CriarEdital_ComTipoEditalIdInformado_PersisteEReflete()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        Guid tipoEditalId = Guid.CreateVersion7();
+        int numero = NextNumeroSeed();
+
+        using HttpRequestMessage post = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new
+            {
+                numeroEdital = numero,
+                anoEdital = 2026,
+                titulo = "EditalEndpointTests com TipoEditalId",
+                tipoEditalId = tipoEditalId,
+            }),
+        };
+        AppendTestAuth(post);
+        post.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+
+        HttpResponseMessage created = await client.SendAsync(post);
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        Guid editalId = JsonDocument.Parse(await created.Content.ReadAsStringAsync()).RootElement.GetGuid();
+
+        using HttpRequestMessage get = new(HttpMethod.Get,
+            new Uri($"/api/editais/{editalId}", UriKind.Relative));
+        AppendTestAuth(get);
+        get.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.uniplus.edital.v1+json"));
+
+        HttpResponseMessage response = await client.SendAsync(get);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        body.RootElement.GetProperty("tipoEditalId").GetGuid().Should().Be(tipoEditalId);
+    }
+
+    [Fact(DisplayName = "POST /api/editais com tipoEditalId = Guid.Empty retorna 422 (validator)")]
+    public async Task CriarEdital_ComTipoEditalIdEmpty_Retorna422()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        int numero = NextNumeroSeed();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        {
+            Content = JsonContent.Create(new
+            {
+                numeroEdital = numero,
+                anoEdital = 2026,
+                titulo = "EditalEndpointTests com TipoEditalId vazio",
+                tipoEditalId = Guid.Empty,
+            }),
+        };
+        AppendTestAuth(request);
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact(DisplayName = "GET /api/editais/{id} retorna 200 quando o edital existe")]
@@ -160,7 +222,7 @@ public sealed class EditalEndpointTests
         int numeroSeed = NextNumeroSeed();
         Result<NumeroEdital> numeroResult = NumeroEdital.Criar(numero: numeroSeed, ano: 2026);
         numeroResult.IsSuccess.Should().BeTrue();
-        Edital edital = Edital.Criar(numeroResult.Value!, "EditalEndpointTests seed", TipoProcesso.SiSU);
+        Edital edital = Edital.Criar(numeroResult.Value!, "EditalEndpointTests seed");
         edital.ClearDomainEvents();
         await db.Editais.AddAsync(edital);
         await db.SaveChangesAsync();

@@ -22,9 +22,14 @@ public sealed class CriarEditalCommandValidator : AbstractValidator<CriarEditalC
             .MaximumLength(500)
             .WithMessage("Título do edital deve ter no máximo 500 caracteres.");
 
-        RuleFor(x => x.TipoProcesso)
-            .IsInEnum()
-            .WithMessage("Tipo de processo seletivo inválido.");
+        // TipoEditalId opcional nesta Story #454 — a entidade `TipoEdital`
+        // ainda não existe (será criada em #455). Quando informado, rejeita
+        // Guid.Empty defensivamente: payload do cliente não deve carregar
+        // valor "vazio" mascarando a ausência. `null` continua válido.
+        RuleFor(x => x.TipoEditalId!.Value)
+            .NotEqual(Guid.Empty)
+            .When(x => x.TipoEditalId.HasValue)
+            .WithMessage("TipoEditalId não pode ser Guid vazio. Omita o campo para deixá-lo nulo.");
 
         RuleFor(x => x.MaximoOpcoesCurso)
             .InclusiveBetween(1, 2)

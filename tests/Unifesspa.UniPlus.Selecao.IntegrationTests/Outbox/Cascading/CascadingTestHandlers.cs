@@ -28,7 +28,7 @@ public sealed class PublicarEditalCascadingHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(db);
 
-        Edital edital = Edital.Criar(command.Numero, command.Titulo, command.Tipo);
+        Edital edital = Edital.Criar(command.Numero, command.Titulo);
         edital.Publicar();
         db.Editais.Add(edital);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -60,7 +60,7 @@ public sealed class FalharAposSaveChangesCascadingHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(db);
 
-        Edital edital = Edital.Criar(command.Numero, command.Titulo, command.Tipo);
+        Edital edital = Edital.Criar(command.Numero, command.Titulo);
         edital.Publicar();
         db.Editais.Add(edital);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

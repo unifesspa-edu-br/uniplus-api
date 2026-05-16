@@ -11,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Assertions;
 using Kernel.Results;
 using Domain.Entities;
-using Domain.Enums;
 using Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Outbox.Cascading;
@@ -177,7 +176,7 @@ public sealed class ListarEditaisEndpointTests
             int numeroSeed = Math.Abs((Guid.NewGuid().GetHashCode() + i) % 9000) + 1;
             Result<NumeroEdital> numero = NumeroEdital.Criar(numero: numeroSeed, ano: 2026);
             numero.IsSuccess.Should().BeTrue();
-            Edital edital = Edital.Criar(numero.Value!, $"ListarEditaisEndpointTests seed {i}", TipoProcesso.SiSU);
+            Edital edital = Edital.Criar(numero.Value!, $"ListarEditaisEndpointTests seed {i}");
             edital.ClearDomainEvents();
             await db.Editais.AddAsync(edital);
             seeded.Add(edital);

@@ -21,7 +21,14 @@ public sealed class EditalConfiguration : IEntityTypeConfiguration<Edital>
         });
 
         builder.Property(e => e.Titulo).HasMaxLength(500).IsRequired();
-        builder.Property(e => e.TipoProcesso).HasConversion<int>().IsRequired();
+
+        // FK preparatória para a futura entidade `TipoEdital` (Story #455).
+        // Permanece nullable nesta Story #454 — ainda não existe agregado
+        // referenciável; a constraint NOT NULL e a HasOne(...).WithMany(...)
+        // entram em migration futura quando #455 popular as linhas-template.
+        // EFCore.NamingConventions mapeia para `tipo_edital_id` (snake_case).
+        builder.Property(e => e.TipoEditalId);
+
         builder.Property(e => e.Status).HasConversion<int>().IsRequired();
         builder.Property(e => e.MaximoOpcoesCurso).HasDefaultValue(1);
 

@@ -553,8 +553,7 @@
         "required": [
           "numeroEdital",
           "anoEdital",
-          "titulo",
-          "tipoProcesso"
+          "titulo"
         ],
         "type": "object",
         "properties": {
@@ -577,8 +576,12 @@
           "titulo": {
             "type": "string"
           },
-          "tipoProcesso": {
-            "$ref": "#/components/schemas/TipoProcesso"
+          "tipoEditalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "maximoOpcoesCurso": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -596,7 +599,7 @@
           "id",
           "numeroEdital",
           "titulo",
-          "tipoProcesso",
+          "tipoEditalId",
           "status",
           "maximoOpcoesCurso",
           "bonusRegionalHabilitado",
@@ -614,8 +617,12 @@
           "titulo": {
             "type": "string"
           },
-          "tipoProcesso": {
-            "type": "string"
+          "tipoEditalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "status": {
             "type": "string"
@@ -687,9 +694,6 @@
             ]
           }
         }
-      },
-      "TipoProcesso": {
-        "type": "integer"
       },
       "UserProfileResponse": {
         "required": [
