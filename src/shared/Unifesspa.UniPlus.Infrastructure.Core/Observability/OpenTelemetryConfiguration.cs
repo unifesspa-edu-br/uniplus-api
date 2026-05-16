@@ -130,13 +130,19 @@ public static class OpenTelemetryConfiguration
     }
 
     /// <summary>
-    /// Retorna <see langword="true"/> quando a rota deve ser instrumentada (spans e métricas).
+    /// Retorna <see langword="true"/> quando a rota deve ser instrumentada.
     /// Rotas de health check (<c>/health*</c>) são excluídas: o Kubernetes já as monitora
     /// via <c>kube_pod_status_ready</c> e incluí-las distorceria SLO, percentis de latência
     /// e cardinality no Prometheus com volume de tráfego não-usuário.
     /// <c>StartsWithSegments</c> respeita fronteiras de segmento — <c>/healthz</c> não
     /// é excluído acidentalmente.
     /// </summary>
+    /// <remarks>
+    /// Usado atualmente apenas para filtro de tracing
+    /// (<c>AspNetCoreTraceInstrumentationOptions.Filter</c>).
+    /// O <see cref="MeterProviderBuilder"/> não oferece sobrecarga com filtro na versão 1.15.1
+    /// do SDK; quando suportado, este predicado deverá ser reutilizado para métricas também.
+    /// </remarks>
     internal static bool EhRotaInstrumentavel(PathString path)
         => !path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
 

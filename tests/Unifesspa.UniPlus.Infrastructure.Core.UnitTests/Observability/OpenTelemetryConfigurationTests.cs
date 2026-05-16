@@ -164,6 +164,17 @@ public class OpenTelemetryConfigurationTests
     }
 
     [Theory]
+    [InlineData("/Health")]
+    [InlineData("/HEALTH/live")]
+    [InlineData("/Health/ready")]
+    public void EhRotaInstrumentavel_RotasHealthComCaseVariado_RetornaFalse(string path)
+    {
+        bool resultado = OpenTelemetryConfiguration.EhRotaInstrumentavel(new PathString(path));
+
+        resultado.Should().BeFalse(because: $"OrdinalIgnoreCase deve excluir '{path}' independente de capitalização");
+    }
+
+    [Theory]
     [InlineData("/api/editais")]
     [InlineData("/api/editais/123")]
     [InlineData("/api/inscricoes")]
