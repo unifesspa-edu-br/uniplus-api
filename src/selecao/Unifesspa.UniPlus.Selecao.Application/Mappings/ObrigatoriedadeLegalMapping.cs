@@ -35,7 +35,10 @@ public static class ObrigatoriedadeLegalMapping
             VigenciaInicio: regra.VigenciaInicio,
             VigenciaFim: regra.VigenciaFim,
             Hash: regra.Hash,
-            Proprietario: regra.Proprietario?.Value,
+            // Pattern matching no nullable record struct — elimina o
+            // dereference de `?.` que o analisador flagra como ambíguo
+            // (mesmo padrão aplicado no interceptor de #520).
+            Proprietario: regra.Proprietario is { } prop ? prop.Value : null,
             AreasDeInteresse: [.. areasVigentes
                 .Select(a => a.Value)
                 .OrderBy(v => v, StringComparer.Ordinal)],

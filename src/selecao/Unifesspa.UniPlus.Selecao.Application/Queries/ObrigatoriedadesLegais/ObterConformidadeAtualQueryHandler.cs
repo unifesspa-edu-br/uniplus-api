@@ -48,6 +48,13 @@ public static class ObterConformidadeAtualQueryHandler
 
         ResultadoConformidade resultado = ValidadorConformidadeEdital.Evaluate(edital, regras);
 
+        // Hash do payload precisa ser o canônico persistido em
+        // ObrigatoriedadeLegal.Hash (HashCanonicalComputer per #460) — não o
+        // placeholder textual emitido pelo ValidadorConformidadeEdital
+        // (que vem do código #459 anterior à forma plena). Sem isso o
+        // hash retornado por GET /conformidade divergiria do hash do
+        // snapshot histórico e do catálogo admin, quebrando correlação
+        // client-side (Codex P1).
         RegraAvaliadaDto[] regrasAvaliadas = [.. resultado.Regras.Select(avaliada =>
         {
             ObrigatoriedadeLegal? fonte = regras.FirstOrDefault(r => r.RegraCodigo == avaliada.RegraCodigo);
@@ -59,7 +66,7 @@ public static class ObterConformidadeAtualQueryHandler
                 PortariaInternaCodigo: avaliada.PortariaInterna,
                 AtoNormativoUrl: fonte?.AtoNormativoUrl,
                 DescricaoHumana: avaliada.DescricaoHumana,
-                Hash: avaliada.Hash,
+                Hash: fonte?.Hash ?? avaliada.Hash,
                 VigenciaInicio: fonte?.VigenciaInicio ?? hoje,
                 VigenciaFim: fonte?.VigenciaFim);
         })];

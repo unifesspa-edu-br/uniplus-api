@@ -100,9 +100,11 @@ public static class CriarObrigatoriedadeLegalCommandHandler
     internal static Result<HashSet<AreaCodigo>> ConverterAreas(IReadOnlySet<string> areas)
     {
         HashSet<AreaCodigo> convertidas = [];
-        foreach (string raw in areas)
+        // Select explícito materializa o map raw → Result<AreaCodigo>; o
+        // loop só carrega a lógica de fail-fast (early-return no primeiro
+        // inválido) e agregação no HashSet.
+        foreach (Result<AreaCodigo> resultado in areas.Select(AreaCodigo.From))
         {
-            Result<AreaCodigo> resultado = AreaCodigo.From(raw);
             if (resultado.IsFailure)
             {
                 return Result<HashSet<AreaCodigo>>.Failure(resultado.Error!);

@@ -183,26 +183,20 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
 
         HashSet<AreaCodigo> vigentesCodigos = [.. vigentes.Select(b => b.AreaCodigo)];
 
-        // Encerra bindings que sumiram do novo set.
-        foreach (AreaDeInteresseBinding<ObrigatoriedadeLegal> binding in vigentes)
+        // Encerra bindings que sumiram do novo set — filtro explícito com
+        // Where torna a intenção visível na origem da iteração.
+        foreach (AreaDeInteresseBinding<ObrigatoriedadeLegal> binding in
+            vigentes.Where(b => !novasAreasDeInteresse.Contains(b.AreaCodigo)))
         {
-            if (!novasAreasDeInteresse.Contains(binding.AreaCodigo))
-            {
-                binding.Encerrar(agora);
-            }
+            binding.Encerrar(agora);
         }
 
         // Insere bindings que não existiam na junção. Strict greater-than no
         // ValidoDe versus o ValidoAte recém-fechado preserva o invariante de
         // janela do exclusion GIST.
         DateTimeOffset proximoValidoDe = agora.AddTicks(1);
-        foreach (AreaCodigo nova in novasAreasDeInteresse)
+        foreach (AreaCodigo nova in novasAreasDeInteresse.Where(a => !vigentesCodigos.Contains(a)))
         {
-            if (vigentesCodigos.Contains(nova))
-            {
-                continue;
-            }
-
             await junction.AddAsync(
                 AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
                     regra.Id, nova, proximoValidoDe, adicionadoPor),
