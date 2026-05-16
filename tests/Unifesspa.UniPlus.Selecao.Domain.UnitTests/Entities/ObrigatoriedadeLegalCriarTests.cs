@@ -159,7 +159,12 @@ public sealed class ObrigatoriedadeLegalCriarTests
             predicado: null!,
             descricaoHumana: "x",
             baseLegal: "Lei",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
+            vigenciaInicio: new DateOnly(2026, 1, 1),
+            vigenciaFim: null,
+            atoNormativoUrl: null,
+            portariaInternaCodigo: null,
+            proprietario: null,
+            areasDeInteresse: null);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoObrigatorio");
@@ -221,11 +226,64 @@ public sealed class ObrigatoriedadeLegalCriarTests
             predicado: PredicadoBase,
             descricaoHumana: "Edital deve incluir etapa de Prova Objetiva.",
             baseLegal: "Lei 14.723/2023 art.2º",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
+            vigenciaInicio: new DateOnly(2026, 1, 1),
+            vigenciaFim: null,
+            atoNormativoUrl: null,
+            portariaInternaCodigo: null,
+            proprietario: null,
+            areasDeInteresse: null);
 
         r.IsSuccess.Should().BeTrue();
         regra.Hash.Should().NotBe(hashAntes);
         regra.BaseLegal.Should().Be("Lei 14.723/2023 art.2º");
+    }
+
+    [Fact(DisplayName = "Atualizar é full-replace — passar null em opcional limpa o estado anterior")]
+    public void Atualizar_FullReplace_LimpaOpcionaisNaoPassados()
+    {
+        AreaCodigo ceps = AreaCodigo.From("CEPS").Value;
+
+        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
+            tipoEditalCodigo: "*",
+            categoria: CategoriaObrigatoriedade.Etapa,
+            regraCodigo: "ETAPA_FULL_REPLACE",
+            predicado: PredicadoBase,
+            descricaoHumana: "Regra com opcionais preenchidos.",
+            baseLegal: "Lei 12.711/2012",
+            vigenciaInicio: new DateOnly(2026, 1, 1),
+            vigenciaFim: new DateOnly(2027, 1, 1),
+            atoNormativoUrl: "https://www.planalto.gov.br/lei",
+            portariaInternaCodigo: "PORT/2026/01",
+            proprietario: ceps,
+            areasDeInteresse: new HashSet<AreaCodigo> { ceps }).Value!;
+
+        regra.AtoNormativoUrl.Should().Be("https://www.planalto.gov.br/lei");
+        regra.PortariaInternaCodigo.Should().Be("PORT/2026/01");
+        regra.Proprietario.Should().Be(ceps);
+
+        // Caller que NÃO repassa os opcionais aceita semântica full-replace:
+        // o estado anterior dos opcionais é apagado, e o invariante de
+        // governance proíbe AreasDeInteresse vazio com Proprietario setado.
+        Result r = regra.Atualizar(
+            tipoEditalCodigo: regra.TipoEditalCodigo,
+            categoria: regra.Categoria,
+            regraCodigo: regra.RegraCodigo,
+            predicado: regra.Predicado,
+            descricaoHumana: regra.DescricaoHumana,
+            baseLegal: regra.BaseLegal,
+            vigenciaInicio: regra.VigenciaInicio,
+            vigenciaFim: null,
+            atoNormativoUrl: null,
+            portariaInternaCodigo: null,
+            proprietario: null,
+            areasDeInteresse: null);
+
+        r.IsSuccess.Should().BeTrue();
+        regra.VigenciaFim.Should().BeNull();
+        regra.AtoNormativoUrl.Should().BeNull();
+        regra.PortariaInternaCodigo.Should().BeNull();
+        regra.Proprietario.Should().BeNull();
+        regra.AreasDeInteresse.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Factory de retrocompatibilidade aplica defaults pragmáticos")]
