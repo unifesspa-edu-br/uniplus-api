@@ -2,6 +2,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <!--
+      Governance.Contracts entra no Domain do Selecao na Story #460:
+      ObrigatoriedadeLegal implementa IAreaScopedEntity e referencia AreaCodigo
+      diretamente. Compatível com "Domain → shared apenas", pois Governance.Contracts
+      vive em src/shared/ e não tem dependências de infra.
+    -->
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
   </ItemGroup>
 
   <!--
