@@ -73,6 +73,30 @@ public static class HashCanonicalComputer
     /// semânticas. O caller é responsável por passar valores normalizados
     /// (uppercase do <c>tipoEditalCodigo</c>, trim de strings, etc.).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>Campos deliberadamente fora do hash</strong> (ADR-0058 §"Snapshot-on-bind"):
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><c>DescricaoHumana</c> — texto de apresentação para o admin;
+    ///   corrigir typo não cria nova regra.</item>
+    ///   <item><c>AtoNormativoUrl</c> — link de citação documental; mudança
+    ///   de URL (DOI, link governamental) não muda a regra avaliada.</item>
+    ///   <item><c>Proprietario</c> e <c>AreasDeInteresse</c> — governança
+    ///   (ADR-0057), não conteúdo da regra; troca de dono entre áreas não
+    ///   instancia "outra" regra. Esses campos entram no snapshot forense
+    ///   (<c>ObrigatoriedadeLegalHistorico</c>) e no <c>EditalGovernanceSnapshot</c>
+    ///   sem alimentar o hash.</item>
+    ///   <item>Audit fields (<c>CreatedAt/By</c>, <c>UpdatedAt/By</c>) e
+    ///   <c>Hash</c>/<c>IsDeleted</c> — ruído sem semântica de regra.</item>
+    /// </list>
+    /// <para>
+    /// Adicionar/remover campos desta lista exige amendment do ADR-0058 —
+    /// muda a definição de "duas regras com mesmo conteúdo" e, por
+    /// consequência, o comportamento da constraint <c>UNIQUE</c> parcial
+    /// sobre <c>hash</c>.
+    /// </para>
+    /// </remarks>
     /// <param name="tipoEditalCodigo">Código do tipo de edital ou <c>"*"</c> para universal.</param>
     /// <param name="categoria">Categoria da regra.</param>
     /// <param name="regraCodigo">Código simbólico da regra (ex.: <c>ETAPA_OBRIGATORIA</c>).</param>
@@ -180,14 +204,6 @@ public static class HashCanonicalComputer
             return false;
         }
 
-        foreach (char c in hash)
-        {
-            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return hash.All(static c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
     }
 }
