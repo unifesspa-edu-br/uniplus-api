@@ -45,7 +45,11 @@ public sealed class CriarEditalCommandValidatorTests
         ValidationResult result = new CriarEditalCommandValidator().Validate(BaseValid(tipoEditalId: Guid.Empty));
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().ContainSingle(e => e.PropertyName == "TipoEditalId.Value");
+
+        // PropertyName ancorado ao campo do request (`TipoEditalId`, não
+        // `TipoEditalId.Value`) — clientes que mapeiam ProblemDetails para
+        // input fields esperam a chave `tipoEditalId` no envelope de erro.
+        result.Errors.Should().ContainSingle(e => e.PropertyName == "TipoEditalId");
         result.Errors[0].ErrorMessage.Should().Contain("Guid vazio");
     }
 }
