@@ -46,8 +46,26 @@ internal sealed class ObrigatoriedadeLegalHistoricoConfiguration : IEntityTypeCo
             .HasMaxLength(SnapshotByMaxLength)
             .IsRequired();
 
+        // FK para obrigatoriedades_legais (regra alvo do snapshot). Sem nav
+        // property — a forensic não navega de volta para evitar carregar a
+        // regra acidentalmente em queries de histórico. ON DELETE RESTRICT
+        // bloqueia hard-delete da regra mãe; o caminho normal é soft-delete
+        // (IsDeleted=true, Modified state), que não dispara o RESTRICT.
+        // Qualquer DELETE físico (DBA bypass) precisa explicitamente lidar
+        // com o histórico antes — invariante de integridade forense.
+        // Nome do constraint explícito porque o derivado pelo EF
+        // (`fk_obrigatoriedade_legal_historico_obrigatoriedades_legais_regra_id`)
+        // estoura o limite de 63 chars do PostgreSQL e é truncado de forma
+        // pouco legível.
+        builder.HasOne<ObrigatoriedadeLegal>()
+            .WithMany()
+            .HasForeignKey(h => h.RegraId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_obrigatoriedade_legal_historico_regra_id");
+
         // Consulta "evolução desta regra" é o caso principal — index por
-        // (regra_id, snapshot_at DESC) suporta paginação descendente.
+        // (regra_id, snapshot_at DESC) suporta paginação descendente. Também
+        // serve o lookup de FK (regra_id como leading column).
         builder.HasIndex(h => new { h.RegraId, h.SnapshotAt })
             .IsDescending(false, true)
             .HasDatabaseName("ix_obrigatoriedade_legal_historico_regra_snapshot_at");

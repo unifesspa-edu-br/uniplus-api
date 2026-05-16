@@ -348,6 +348,30 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             "o hash do banco precisa bater com o computado fresh — invariante de evidência forense");
     }
 
+    [Fact(DisplayName = "FK historico→regra bloqueia INSERT de histórico órfão (Codex P2)")]
+    public async Task FkHistorico_BloqueiaOrfao()
+    {
+        // Tentar inserir uma linha de histórico apontando para regra_id que
+        // não existe — o FK ON DELETE RESTRICT precisa rejeitar via Postgres.
+        Guid regraInexistente = Guid.CreateVersion7();
+
+        ObrigatoriedadeLegalHistorico orphan = ObrigatoriedadeLegalHistorico.Snapshot(
+            regraId: regraInexistente,
+            conteudoJson: "{}",
+            hash: new string('a', 64),
+            snapshotAt: DateTimeOffset.UtcNow,
+            snapshotBy: AdminA);
+
+        await using SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.ObrigatoriedadeLegalHistorico.Add(orphan);
+
+        Func<Task> act = async () => await ctx.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>()
+            .WithInnerException(typeof(Npgsql.PostgresException))
+            ;
+    }
+
     [Fact(DisplayName = "edital_governance_snapshot é tabela criada vazia em V1 (CA-04)")]
     public async Task EditalGovernanceSnapshot_TabelaVaziaPorPadrao()
     {
