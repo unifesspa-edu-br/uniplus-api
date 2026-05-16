@@ -68,17 +68,17 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
         return base.SavingChanges(eventData!, result);
     }
 
-    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
         if (eventData?.Context is not null)
         {
-            CapturarHistorico(eventData.Context);
+            await CapturarHistoricoAsync(eventData.Context, cancellationToken).ConfigureAwait(false);
         }
 
-        return base.SavingChangesAsync(eventData!, result, cancellationToken);
+        return await base.SavingChangesAsync(eventData!, result, cancellationToken).ConfigureAwait(false);
     }
 
     private void CapturarHistorico(DbContext context)
@@ -86,19 +86,7 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
         DateTimeOffset snapshotAt = DateTimeOffset.UtcNow;
         string snapshotBy = ResolveSnapshotBy();
 
-        // Snapshot ANTES de mutar o ChangeTracker — adicionar entries
-        // durante a iteração pode invalidar o enumerador.
-        List<EntityEntry<ObrigatoriedadeLegal>> entries = [];
-        foreach (EntityEntry<ObrigatoriedadeLegal> entry in context
-            .ChangeTracker
-            .Entries<ObrigatoriedadeLegal>())
-        {
-            if (entry.State is EntityState.Added or EntityState.Modified)
-            {
-                entries.Add(entry);
-            }
-        }
-
+        List<EntityEntry<ObrigatoriedadeLegal>> entries = CapturarEntries(context);
         if (entries.Count == 0)
         {
             return;
@@ -109,29 +97,77 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
 
         foreach (EntityEntry<ObrigatoriedadeLegal> entry in entries)
         {
-            ObrigatoriedadeLegal regra = entry.Entity;
-            string hash = regra.RecomputeHash();
-
-            // EF Core não reflete writes feitos no entity em propriedades já
-            // marcadas como Modified sem um novo DetectChanges. Para garantir
-            // que o save persiste o hash recomputado, atualiza o current value
-            // da property no entry explicitamente.
-            entry.Property(static r => r.Hash).CurrentValue = hash;
-            entry.Property(static r => r.Hash).IsModified = true;
-
             HashSet<AreaCodigo> areasParaSnapshot = ResolverAreasParaSnapshot(
                 context,
-                regra,
+                entry.Entity,
                 entry.State);
 
-            string conteudoJson = SerializarConteudoCanonical(regra, hash, areasParaSnapshot);
-            historicoSet.Add(ObrigatoriedadeLegalHistorico.Snapshot(
-                regraId: regra.Id,
-                conteudoJson: conteudoJson,
-                hash: hash,
-                snapshotAt: snapshotAt,
-                snapshotBy: snapshotBy));
+            historicoSet.Add(CriarSnapshot(entry, areasParaSnapshot, snapshotAt, snapshotBy));
         }
+    }
+
+    private async ValueTask CapturarHistoricoAsync(DbContext context, CancellationToken cancellationToken)
+    {
+        DateTimeOffset snapshotAt = DateTimeOffset.UtcNow;
+        string snapshotBy = ResolveSnapshotBy();
+
+        List<EntityEntry<ObrigatoriedadeLegal>> entries = CapturarEntries(context);
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        DbSet<ObrigatoriedadeLegalHistorico> historicoSet =
+            context.Set<ObrigatoriedadeLegalHistorico>();
+
+        foreach (EntityEntry<ObrigatoriedadeLegal> entry in entries)
+        {
+            HashSet<AreaCodigo> areasParaSnapshot = await ResolverAreasParaSnapshotAsync(
+                context,
+                entry.Entity,
+                entry.State,
+                cancellationToken).ConfigureAwait(false);
+
+            historicoSet.Add(CriarSnapshot(entry, areasParaSnapshot, snapshotAt, snapshotBy));
+        }
+    }
+
+    // Snapshot ANTES de mutar o ChangeTracker — adicionar entries durante a
+    // iteração pode invalidar o enumerador. Retorna lista materializada para
+    // que o caller (sync ou async) consuma sem reentrar no tracker.
+    private static List<EntityEntry<ObrigatoriedadeLegal>> CapturarEntries(DbContext context) =>
+        [.. context
+            .ChangeTracker
+            .Entries<ObrigatoriedadeLegal>()
+            .Where(static entry => entry.State is EntityState.Added or EntityState.Modified)];
+
+    private static ObrigatoriedadeLegalHistorico CriarSnapshot(
+        EntityEntry<ObrigatoriedadeLegal> entry,
+        HashSet<AreaCodigo> areasParaSnapshot,
+        DateTimeOffset snapshotAt,
+        string snapshotBy)
+    {
+        ObrigatoriedadeLegal regra = entry.Entity;
+        string hash = regra.RecomputeHash();
+
+        // EF Core não reflete writes feitos no entity em propriedades já
+        // marcadas como Modified sem um novo DetectChanges. Para garantir
+        // que o save persiste o hash recomputado, atualiza o current value
+        // da property no entry explicitamente. Só faz sentido em Modified
+        // — Added insere todas as colunas, IsModified é no-op.
+        if (entry.State == EntityState.Modified)
+        {
+            entry.Property(static r => r.Hash).CurrentValue = hash;
+            entry.Property(static r => r.Hash).IsModified = true;
+        }
+
+        string conteudoJson = SerializarConteudoCanonical(regra, hash, areasParaSnapshot);
+        return ObrigatoriedadeLegalHistorico.Snapshot(
+            regraId: regra.Id,
+            conteudoJson: conteudoJson,
+            hash: hash,
+            snapshotAt: snapshotAt,
+            snapshotBy: snapshotBy);
     }
 
     /// <summary>
@@ -155,47 +191,100 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
             return [.. regra.AreasDeInteresse];
         }
 
-        // Em Modified (inclui soft-delete via SoftDeleteInterceptor), buscar
-        // os bindings vigentes da junction. Como o save ainda não comitou,
-        // alterações pendentes em AreaDeInteresseBinding no mesmo SaveChanges
-        // já estão no ChangeTracker — combinamos: tracked entries (Added/
-        // Modified) sobrescrevem os valid_to=null persistidos.
-        Guid regraId = regra.Id;
+        ResolvedBindings bindings = ResolverBindingsRastreados(context, regra.Id);
 
-        IEnumerable<AreaCodigo> trackedAdded = context.ChangeTracker
-            .Entries<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
-            .Where(e => e.State is EntityState.Added or EntityState.Unchanged or EntityState.Modified
-                       && e.Entity.ParentId == regraId
-                       && e.Entity.ValidoAte is null)
-            .Select(e => e.Entity.AreaCodigo);
-
-        IEnumerable<AreaCodigo> trackedRemoved = context.ChangeTracker
-            .Entries<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
-            .Where(e => e.State == EntityState.Deleted
-                       && e.Entity.ParentId == regraId)
-            .Select(e => e.Entity.AreaCodigo)
-            .ToHashSet();
-
-        HashSet<AreaCodigo> trackedIds = [..
-            context.ChangeTracker
-                .Entries<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
-                .Where(e => e.Entity.ParentId == regraId)
-                .Select(e => e.Entity.AreaCodigo)];
-
-        // Linhas persistidas vigentes que o ChangeTracker não conhece —
-        // bindings antigos preservados na junction sem mutação nesta save.
-        IEnumerable<AreaCodigo> persistedVigentes = context
+        List<AreaCodigo> persistedVigentes = context
             .Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
             .AsNoTracking()
-            .Where(b => b.ParentId == regraId && b.ValidoAte == null)
+            .Where(b => b.ParentId == regra.Id && b.ValidoAte == null)
             .Select(b => b.AreaCodigo)
-            .ToList()
-            .Where(area => !trackedIds.Contains(area));
+            .ToList();
 
-        HashSet<AreaCodigo> resolvidas = [.. trackedAdded, .. persistedVigentes];
-        resolvidas.ExceptWith(trackedRemoved);
+        return ComporResultado(bindings, persistedVigentes);
+    }
+
+    private static async ValueTask<HashSet<AreaCodigo>> ResolverAreasParaSnapshotAsync(
+        DbContext context,
+        ObrigatoriedadeLegal regra,
+        EntityState state,
+        CancellationToken cancellationToken)
+    {
+        if (state == EntityState.Added)
+        {
+            return [.. regra.AreasDeInteresse];
+        }
+
+        ResolvedBindings bindings = ResolverBindingsRastreados(context, regra.Id);
+
+        List<AreaCodigo> persistedVigentes = await context
+            .Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
+            .AsNoTracking()
+            .Where(b => b.ParentId == regra.Id && b.ValidoAte == null)
+            .Select(b => b.AreaCodigo)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return ComporResultado(bindings, persistedVigentes);
+    }
+
+    /// <summary>
+    /// Passada única sobre o <c>ChangeTracker</c> classificando os bindings
+    /// rastreados em "adicionados/vigentes" e "removidos". Combinada com os
+    /// persistidos via <see cref="ComporResultado"/>: tracked entries têm
+    /// precedência sobre <c>valid_to=null</c> persistidos (Added/Modified
+    /// sobrescrevem; Deleted invalida).
+    /// </summary>
+    private static ResolvedBindings ResolverBindingsRastreados(DbContext context, Guid regraId)
+    {
+        HashSet<AreaCodigo> added = [];
+        HashSet<AreaCodigo> removed = [];
+        HashSet<AreaCodigo> known = [];
+
+        foreach (EntityEntry<AreaDeInteresseBinding<ObrigatoriedadeLegal>> e in context
+            .ChangeTracker
+            .Entries<AreaDeInteresseBinding<ObrigatoriedadeLegal>>())
+        {
+            if (e.Entity.ParentId != regraId)
+            {
+                continue;
+            }
+
+            known.Add(e.Entity.AreaCodigo);
+
+            if (e.State == EntityState.Deleted)
+            {
+                removed.Add(e.Entity.AreaCodigo);
+            }
+            else if (e.State is EntityState.Added or EntityState.Unchanged or EntityState.Modified
+                && e.Entity.ValidoAte is null)
+            {
+                added.Add(e.Entity.AreaCodigo);
+            }
+        }
+
+        return new ResolvedBindings(added, removed, known);
+    }
+
+    private static HashSet<AreaCodigo> ComporResultado(
+        ResolvedBindings tracked,
+        IReadOnlyCollection<AreaCodigo> persistedVigentes)
+    {
+        HashSet<AreaCodigo> resolvidas = [.. tracked.Added];
+        foreach (AreaCodigo area in persistedVigentes)
+        {
+            if (!tracked.Known.Contains(area))
+            {
+                resolvidas.Add(area);
+            }
+        }
+
+        resolvidas.ExceptWith(tracked.Removed);
         return resolvidas;
     }
+
+    private readonly record struct ResolvedBindings(
+        HashSet<AreaCodigo> Added,
+        HashSet<AreaCodigo> Removed,
+        HashSet<AreaCodigo> Known);
 
     private string ResolveSnapshotBy()
     {
@@ -231,6 +320,12 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
             areas.Add(area.Value);
         }
 
+        // Hoist do valor nulo-seguro para uma local — reduz ambiguidade
+        // do analisador estático sobre o uso de `?.` em record struct
+        // nullable (preserva exatamente a semântica de "null quando não
+        // houver proprietário").
+        string? proprietarioCodigo = regra.Proprietario?.Value;
+
         JsonObject payload = new()
         {
             ["id"] = regra.Id,
@@ -245,7 +340,7 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
             ["vigenciaInicio"] = regra.VigenciaInicio.ToString("O", CultureInfo.InvariantCulture),
             ["vigenciaFim"] = regra.VigenciaFim?.ToString("O", CultureInfo.InvariantCulture),
             ["hash"] = hash,
-            ["proprietario"] = regra.Proprietario?.Value,
+            ["proprietario"] = proprietarioCodigo,
             ["areasDeInteresse"] = areas,
             ["isDeleted"] = regra.IsDeleted,
         };
