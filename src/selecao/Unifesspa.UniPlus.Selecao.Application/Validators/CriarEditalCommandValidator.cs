@@ -26,9 +26,11 @@ public sealed class CriarEditalCommandValidator : AbstractValidator<CriarEditalC
         // ainda não existe (será criada em #455). Quando informado, rejeita
         // Guid.Empty defensivamente: payload do cliente não deve carregar
         // valor "vazio" mascarando a ausência. `null` continua válido.
-        RuleFor(x => x.TipoEditalId!.Value)
-            .NotEqual(Guid.Empty)
-            .When(x => x.TipoEditalId.HasValue)
+        // Predicate sobre a propriedade `Guid?` direto preserva o PropertyName
+        // como `TipoEditalId` no ValidationFailure — clientes mapeiam erros
+        // pelo nome do campo do request, não por `TipoEditalId.Value`.
+        RuleFor(x => x.TipoEditalId)
+            .Must(static value => !value.HasValue || value.Value != Guid.Empty)
             .WithMessage("TipoEditalId não pode ser Guid vazio. Omita o campo para deixá-lo nulo.");
 
         RuleFor(x => x.MaximoOpcoesCurso)
