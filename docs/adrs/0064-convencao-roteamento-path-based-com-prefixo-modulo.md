@@ -165,9 +165,17 @@ Como nenhum controller expõe endpoint em exatamente `/api/{modulo}` (sem
 sub-path), a trailing slash no matcher é suficiente. Caso futuro precise
 de endpoint na raiz do módulo, usar `Path(\`/api/{modulo}\`) || PathPrefix(\`/api/{modulo}/\`)`.
 
-Para os health checks na raiz, regra separada por host (não path) ou,
-preferencialmente, configurar a probe Kubernetes direto contra o pod IP
-bypassando o ingress (pattern padrão).
+Para os health checks na raiz (`/health`, `/health/live`, `/health/ready`),
+**o ingress não consegue desambiguar a API alvo** — todas as 5 APIs
+expõem os mesmos paths sob o mesmo host compartilhado
+`api.uniplus.unifesspa.edu.br`. Tentar rotear por host apenas mandaria
+todas as probes para um único backend (o que casar a regra de maior
+prioridade), quebrando as probes das demais APIs. Por isso, as probes
+Kubernetes **devem** ser configuradas direto contra o pod IP (ou contra
+o `Service` interno do cluster) — bypassando o ingress. Esse é o pattern
+canônico (`livenessProbe` / `readinessProbe` no manifest do `Deployment`)
+e o que `uniplus-infra` aplica. Acesso externo a `/health*` via ingress
+não é suportado por design.
 
 Um único certificado TLS para `api.uniplus.unifesspa.edu.br` (HTTP-01
 challenge funciona — não exige wildcard). CORS configurado para um único
