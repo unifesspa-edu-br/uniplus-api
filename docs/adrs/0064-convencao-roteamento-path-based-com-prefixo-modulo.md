@@ -134,15 +134,17 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
 em main em todas as 5 APIs (via `app.MapHealthChecks(...)` em `Program.cs`)
 e alinha com a convenção Kubernetes — probes (`livenessProbe`,
 `readinessProbe`) são configuradas direto contra o pod IP, frequentemente
-bypassando o ingress. Manter `/health*` na raiz preserva esse caminho
-operacional sem precisar de regra extra no Traefik.
+bypassando o ingress. Health checks são registrados pelo framework
+(`MapHealthChecks`), não por Controller; **não entram no OpenAPI** e não
+suportam vendor MIME — são endpoints de infra.
 
-**Outros endpoints operacionais** sem semântica REST de recurso (ping,
-metrics, info) seguem `/api/{modulo}/{endpoint}` — ex.: `/api/portal/ping`.
-São endpoints "lógicos" da API e fazem sentido dentro do prefix de módulo.
-
-Em todos os casos: não suportam vendor MIME, não aparecem no OpenAPI
-público.
+**Outros endpoints operacionais** sem semântica REST de recurso de
+domínio (ping, info, status) seguem `/api/{modulo}/{endpoint}` —
+ex.: `/api/portal/ping`. São Controllers regulares que **aparecem no
+OpenAPI** (e isso é desejável — `PingController` em Portal existe
+justamente para validar o pipeline de transformers OpenAPI 3.1 do
+esqueleto inicial da API). Não suportam vendor MIME porque o response
+shape é simples e não-versionado por design.
 
 ### Roteamento Traefik / Ingress
 
