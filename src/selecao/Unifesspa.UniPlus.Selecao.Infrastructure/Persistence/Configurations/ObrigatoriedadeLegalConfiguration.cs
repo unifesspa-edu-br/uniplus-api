@@ -132,6 +132,20 @@ internal sealed class ObrigatoriedadeLegalConfiguration()
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ux_obrigatoriedades_legais_hash_ativos");
 
+        // UNIQUE parcial sobre RegraCodigo entre regras ativas (Codex P1 de
+        // #461). O ExisteRegraCodigoAtivoAsync no handler é check-then-act
+        // não-atômico — duas escritas concorrentes com o mesmo RegraCodigo
+        // poderiam ambas passar a checagem e commitar, criando o cenário
+        // ambíguo de "duas regras vigentes com mesmo código simbólico"
+        // mesmo que seus hashes canônicos divirjam por um campo qualquer
+        // (vigência, base legal). Constraint do banco é a única defesa
+        // realmente atômica; o ExisteRegraCodigoAtivoAsync vira fast path
+        // pra emitir 409 ProblemDetails antes do INSERT em casos não-race.
+        builder.HasIndex(o => o.RegraCodigo)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName("ux_obrigatoriedades_legais_regra_codigo_ativos");
+
         ConfigureAreaVisibility(builder);
     }
 

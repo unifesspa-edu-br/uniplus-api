@@ -40,7 +40,19 @@ public static class ObterConformidadeAtualQueryHandler
         }
 
         DateOnly hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime.Date);
-        string tipoEditalCodigo = edital.TipoEditalId?.ToString() ?? ObrigatoriedadeLegal.TipoEditalUniversal;
+
+        // V1: TipoEdital ainda é Guid (entity vem só com a promoção
+        // enum → entidade em #455). Até lá, o lookup case-sensitive de
+        // TipoEditalCodigo nunca casa um Guid contra um código textual
+        // tipo "PSIQ"/"SISU" — então só as regras universais (TipoEditalCodigo
+        // = "*") são aplicadas na prática. Quando #455 mergeie, basta trocar
+        // a resolução abaixo para tipoEdital.Codigo carregado pelo repositório
+        // de TipoEdital. Mantemos o ToUpperInvariant pelo invariante de
+        // normalização do PayloadNormalizer (uppercase ASCII canônico) —
+        // evita falso-negativo se o admin seedar a regra com o mesmo Guid
+        // que está em edital.TipoEditalId.
+        string tipoEditalCodigo = edital.TipoEditalId?.ToString().ToUpperInvariant()
+            ?? ObrigatoriedadeLegal.TipoEditalUniversal;
 
         IReadOnlyList<ObrigatoriedadeLegal> regras = await regraRepository
             .ObterVigentesParaTipoEditalAsync(tipoEditalCodigo, hoje, cancellationToken)
