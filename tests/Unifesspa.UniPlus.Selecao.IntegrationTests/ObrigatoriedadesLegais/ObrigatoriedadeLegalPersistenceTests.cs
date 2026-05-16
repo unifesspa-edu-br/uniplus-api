@@ -348,6 +348,81 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             "o hash do banco precisa bater com o computado fresh — invariante de evidência forense");
     }
 
+    [Fact(DisplayName = "Mutação junction-only gera linha de histórico (Codex P1 round 2)")]
+    public async Task JunctionOnlyMutation_GeraSnapshotMesmoComRegraUnchanged()
+    {
+        // Cenário forense: o admin (#461) reassigna visibilidade de áreas
+        // de uma regra sem alterar nenhum campo dela (proprietario, áreas
+        // são governance, não entram no hash). O EF marca a regra como
+        // Unchanged porque AreasDeInteresse é Ignore no modelo (ADR-0060).
+        // Sem o fix, esta mutação passaria sem snapshot — perdendo evidência
+        // de governance.
+
+        AreaCodigo cepsArea = AreaCodigo.From("CEPS").Value!;
+        AreaCodigo proegArea = AreaCodigo.From("PROEG").Value!;
+        AreaCodigo crcaArea = AreaCodigo.From("CRCA").Value!;
+
+        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
+            tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,
+            categoria: CategoriaObrigatoriedade.Etapa,
+            regraCodigo: "ETAPA_JUNCTION_ONLY",
+            predicado: new EtapaObrigatoria("ProvaObjetiva"),
+            descricaoHumana: "Regra para teste de mutação junction-only.",
+            baseLegal: "Lei 12.711/2012 art.1º",
+            vigenciaInicio: new DateOnly(2026, 1, 1),
+            proprietario: cepsArea,
+            areasDeInteresse: new HashSet<AreaCodigo> { cepsArea, proegArea }).Value!;
+
+        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.ObrigatoriedadesLegais.Add(regra);
+            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
+                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
+                    regra.Id, cepsArea, DateTimeOffset.UtcNow, AdminA));
+            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
+                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
+                    regra.Id, proegArea, DateTimeOffset.UtcNow, AdminA));
+            await ctx.SaveChangesAsync();
+        }
+
+        // Apenas adiciona binding na junction — não toca na regra em si.
+        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
+                .SingleAsync(o => o.Id == regra.Id);
+
+            // Sanity: regra está Unchanged depois do load.
+            ctx.Entry(tracked).State.Should().Be(EntityState.Unchanged);
+
+            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
+                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
+                    regra.Id, crcaArea, DateTimeOffset.UtcNow, AdminB));
+
+            await ctx.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+
+        List<ObrigatoriedadeLegalHistorico> historico = await readCtx.ObrigatoriedadeLegalHistorico
+            .Where(h => h.RegraId == regra.Id)
+            .OrderBy(h => h.SnapshotAt)
+            .ToListAsync();
+
+        historico.Should().HaveCount(2,
+            "junction-only mutation precisa gerar snapshot — sem isso a evidência "
+            + "forense de governance some quando o admin reassigna visibilidade");
+
+        historico[1].SnapshotBy.Should().Be(AdminB);
+
+        using JsonDocument snapshotJuncao = JsonDocument.Parse(historico[1].ConteudoJson);
+        JsonElement areas = snapshotJuncao.RootElement.GetProperty("areasDeInteresse");
+        IReadOnlyList<string> codigos = [.. areas.EnumerateArray().Select(e => e.GetString()!)];
+
+        codigos.Should().BeEquivalentTo(new[] { "CEPS", "PROEG", "CRCA" },
+            "snapshot deve refletir o conjunto completo de bindings vigentes "
+            + "(persistidos + tracked Added) após a reassignment de governance");
+    }
+
     [Fact(DisplayName = "FK historico→regra bloqueia INSERT de histórico órfão (Codex P2)")]
     public async Task FkHistorico_BloqueiaOrfao()
     {
