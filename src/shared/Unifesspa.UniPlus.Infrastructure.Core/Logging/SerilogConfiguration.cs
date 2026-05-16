@@ -34,6 +34,12 @@ public static class SerilogConfiguration
     /// Grafana — defeito silencioso (CI verde, smoke visual quebrado). Sentinel test
     /// em <c>SerilogConfigurationTests.OutputTemplate_DeveConterTraceIdESpanId_*</c>
     /// trava regressões.</para>
+    /// <para><strong>Formato do level — <c>{Level}</c> (palavra completa):</strong>
+    /// Serilog emite palavras completas (<c>Information</c>, <c>Warning</c>, <c>Error</c>
+    /// etc.) — reconhecidas pelo auto-detector <c>detected_level</c> do Loki.
+    /// A alternativa <c>{Level:u3}</c> produzia abreviações (<c>INF</c>, <c>WRN</c>, <c>ERR</c>)
+    /// que o Loki categoriza como <c>unknown</c> — distorcendo o painel
+    /// "Logs per service" (#513).</para>
     /// <para><strong>Posição do <c>{Properties:j}</c>:</strong> precede <c>TraceId</c>/<c>SpanId</c>
     /// para que as propriedades estruturadas (<c>CorrelationId</c>, <c>ServiceName</c>,
     /// custom enrichers) saiam em JSON inline antes do par chave-valor textual — facilita
@@ -46,7 +52,7 @@ public static class SerilogConfiguration
     /// com <see cref="Middleware.CorrelationIdMiddleware.FormatoValidoPattern"/>.</para>
     /// </remarks>
     internal const string ConsoleOutputTemplate =
-        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j} TraceId={TraceId} SpanId={SpanId}{NewLine}{Exception}";
+        "[{Timestamp:HH:mm:ss} {Level}] {Message:lj} {Properties:j} TraceId={TraceId} SpanId={SpanId}{NewLine}{Exception}";
 
 
     /// <summary>
