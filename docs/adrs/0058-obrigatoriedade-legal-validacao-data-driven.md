@@ -260,7 +260,7 @@ insere nova (hash muda)". A entrega em #520 (Story #460) convergiu para
 - O `ObrigatoriedadeLegalHistoricoInterceptor` grava uma linha no histórico
   com o `Hash` recomputado e o conteúdo canônico — invariante atômico
   garantido por estar dentro do mesmo `SaveChangesAsync`.
-- A URI do recurso é estável: `GET /api/obrigatoriedades-legais/{id}`
+- A URI do recurso é estável: `GET /api/selecao/obrigatoriedades-legais/{id}`
   sempre retorna a versão vigente; reconstrução histórica é via
   `obrigatoriedade_legal_historico` ou via `EditalGovernanceSnapshot`
   (quando a regra foi vinculada a um edital publicado).
