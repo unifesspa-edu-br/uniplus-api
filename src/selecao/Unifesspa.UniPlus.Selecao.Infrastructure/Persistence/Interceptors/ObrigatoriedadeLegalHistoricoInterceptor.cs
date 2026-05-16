@@ -269,12 +269,9 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
         IReadOnlyCollection<AreaCodigo> persistedVigentes)
     {
         HashSet<AreaCodigo> resolvidas = [.. tracked.Added];
-        foreach (AreaCodigo area in persistedVigentes)
+        foreach (AreaCodigo area in persistedVigentes.Where(area => !tracked.Known.Contains(area)))
         {
-            if (!tracked.Known.Contains(area))
-            {
-                resolvidas.Add(area);
-            }
+            resolvidas.Add(area);
         }
 
         resolvidas.ExceptWith(tracked.Removed);
@@ -320,11 +317,12 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
             areas.Add(area.Value);
         }
 
-        // Hoist do valor nulo-seguro para uma local — reduz ambiguidade
-        // do analisador estático sobre o uso de `?.` em record struct
-        // nullable (preserva exatamente a semântica de "null quando não
-        // houver proprietário").
-        string? proprietarioCodigo = regra.Proprietario?.Value;
+        // Branch explícito via pattern matching — preserva exatamente a
+        // semântica "null quando não houver proprietário" e elimina o
+        // dereference ambíguo de `Proprietario?.Value` (record struct
+        // nullable) que o analisador estático ainda flagrava com a
+        // simples hoist em local.
+        string? proprietarioCodigo = regra.Proprietario is { } prop ? prop.Value : null;
 
         JsonObject payload = new()
         {
