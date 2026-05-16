@@ -21,6 +21,7 @@ Referência canônica para devs que tocam persistência: naming convention, tipo
 13. [Inspecionar schema](#13-inspecionar-schema)
 14. [Cifragem at-rest](#14-cifragem-at-rest)
 15. [FAQ](#15-faq)
+16. [Promoção de enum → entidade](#16-promoção-de-enum--entidade)
 
 ---
 
@@ -403,3 +404,48 @@ Confira se a entidade expõe método de restauração (não é padrão — imple
 ### Onde vejo o schema atual em produção/standalone?
 
 Procedimentos de cluster (SSH, `psql` no host, troubleshooting) vivem no repositório `uniplus-infra`, fora deste repo. Consulte RUNBOOKS lá ou peça acesso ao SRE/DevOps.
+
+## 16. Promoção de enum → entidade
+
+Quando um enum modelado como `int4` em coluna de tabela (`HasConversion<int>`) precisa virar uma **entidade plena** (com aggregate próprio, código strongly-typed, atributos extensíveis), o cutover é feito em **três Stories sequenciais** para evitar schema drift entre o domain model e o banco. O padrão foi consolidado na promoção `TipoProcesso → TipoEdital` (Stories #454 → #455) e vale para qualquer enum futuro que ganhar status de entidade.
+
+### Etapa 1 — Migration preparatória (drop + add FK NULL)
+
+Story de schema-only que **dropa a coluna `<nome>_<enum>` (`int`)** e **adiciona uma coluna FK preparatória `<nome>_id uuid NULL`**, sem `HasOne` configurado e sem constraint.
+
+- A propriedade na entidade vira `Guid? <Nome>Id { get; private set; }`.
+- Configurations EF removem o `HasConversion<int>()`; a propriedade passa a ser mapeada nativamente como `uuid` nullable (snake_case automático via `EFCore.NamingConventions`).
+- Migration `Up()` executa `DropColumn` + `AddColumn`. `Down()` lança `NotSupportedException("Forward-only migration per ADR-0054 §J.")`.
+- Command/Validator: parâmetro `<Nome>Id` opcional e nullable; validator rejeita `Guid.Empty` quando informado.
+- DTOs e schemas OpenAPI são regerados — a baseline `contracts/openapi.<modulo>.json` muda neste passo (`UPDATE_OPENAPI_BASELINE=1 dotnet test --filter SpecRuntime`).
+
+Referência: [Story #454](https://github.com/unifesspa-edu-br/uniplus-api/issues/454) — migration `DropEnumColumnsPrePromotion` em `SelecaoDbContext`.
+
+### Etapa 2 — Criação da entidade + seed Newman
+
+Story que **cria o agregado** (`<Nome>` em `Selecao.Domain.Entities`) com todos os atributos planejados, incluindo `Codigo` strongly-typed (substitui o enum), `Descricao`, audit fields. Configurações EF, repositório, command de criação e seed via Newman (CSV/JSON committed sob `seeds/`).
+
+- A coluna FK introduzida na Etapa 1 ainda é `NULL`able. Adiciona `HasOne(e => e.<Nome>).WithMany().HasForeignKey(e => e.<Nome>Id)` em Configuration.
+- Enum legado (`Selecao.Domain.Enums.<EnumLegado>`) é **removido nesta etapa** — não na Etapa 1 — para evitar refactor amplo enquanto schema migration ainda está em vôo.
+- Seed via Newman popula linhas-template em todos os ambientes (dev local, CI, HML, prod) — o CD não cria entries em runtime.
+
+Referência: [Story #455](https://github.com/unifesspa-edu-br/uniplus-api/issues/455) — promove `TipoProcesso → TipoEdital` entidade.
+
+### Etapa 3 — Constraint NOT NULL
+
+Story de schema-only **separada**, executada quando dados de produção foram migrados (via script ou seed) para que toda linha tenha `<nome>_id` preenchido. Migration `AlterColumn` muda a coluna de `nullable: true` para `nullable: false`.
+
+- Pré-requisito: query auditiva em prod (`SELECT COUNT(*) WHERE <nome>_id IS NULL`) retorna zero.
+- Sem essa garantia, `AlterColumn` falha com `23502 not_null_violation` no `MigrationHostedService` no `StartAsync` do pod, derrubando o rollout.
+
+### Por quê três Stories e não uma só
+
+- **Risco de rollback**: três migrations forward-only permitem revert via nova migration parcial (ex.: voltar Etapa 3 sem perder Etapa 2).
+- **PR review focado**: cada Story tem um único concern (schema, domain, constraint), reduzindo superfície de revisão.
+- **CI testável incrementalmente**: a Etapa 1 já fica verde no CI antes de a entidade existir, permitindo merge sem aguardar #455.
+
+### Anti-patterns proibidos
+
+- ❌ **Drop + create entidade na mesma migration**: PR fica grande, qualquer issue de domain/EF reverte schema também. Aumenta risco de coluna órfã ou data loss em rollout parcial.
+- ❌ **NOT NULL na Etapa 1**: dados não existem ainda — a coluna nasce `NULL` por design. Tentar `nullable: false` no DropColumn+AddColumn quebra inserts existentes em qualquer ambiente já com dados.
+- ❌ **Manter o enum em `Domain.Enums` após Etapa 2**: causa risco de devs continuarem instanciando `<Nome>Id` a partir do enum legado, gerando GUIDs hardcoded sem entrada no agregado real.
