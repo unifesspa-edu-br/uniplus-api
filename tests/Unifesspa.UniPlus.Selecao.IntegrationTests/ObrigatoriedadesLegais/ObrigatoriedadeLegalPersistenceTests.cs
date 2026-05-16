@@ -93,7 +93,12 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
                 predicado: tracked.Predicado,
                 descricaoHumana: tracked.DescricaoHumana,
                 baseLegal: "Lei 14.723/2023 art.2º — atualizada",
-                vigenciaInicio: tracked.VigenciaInicio);
+                vigenciaInicio: tracked.VigenciaInicio,
+                vigenciaFim: tracked.VigenciaFim,
+                atoNormativoUrl: tracked.AtoNormativoUrl,
+                portariaInternaCodigo: tracked.PortariaInternaCodigo,
+                proprietario: tracked.Proprietario,
+                areasDeInteresse: tracked.AreasDeInteresse);
 
             await ctx.SaveChangesAsync();
         }
@@ -253,6 +258,9 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
         }
 
         // Update via DbContext fresco — set in-memory vem VAZIO da carga EF.
+        // O admin CRUD (#461) terá que reidratar AreasDeInteresse da junction
+        // antes de chamar Atualizar (semântica full-replace do ADR-0058).
+        // Aqui simulamos esse passo: lemos a junction e passamos como input.
         await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
@@ -263,6 +271,15 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             tracked.AreasDeInteresse.Should().BeEmpty(
                 "premissa do Codex finding: EF não popula AreasDeInteresse via junction");
 
+            // Hidratação explícita das áreas a partir da junction — papel do
+            // repositório admin (#461) quando reconciliar set ↔ junction.
+            HashSet<AreaCodigo> areasHidratadas = [..
+                await ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
+                    .AsNoTracking()
+                    .Where(b => b.ParentId == regra.Id && b.ValidoAte == null)
+                    .Select(b => b.AreaCodigo)
+                    .ToListAsync()];
+
             tracked.Atualizar(
                 tipoEditalCodigo: tracked.TipoEditalCodigo,
                 categoria: tracked.Categoria,
@@ -270,7 +287,12 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
                 predicado: tracked.Predicado,
                 descricaoHumana: tracked.DescricaoHumana,
                 baseLegal: "Lei 14.723/2023 art.2º — Codex hydration test",
-                vigenciaInicio: tracked.VigenciaInicio);
+                vigenciaInicio: tracked.VigenciaInicio,
+                vigenciaFim: tracked.VigenciaFim,
+                atoNormativoUrl: tracked.AtoNormativoUrl,
+                portariaInternaCodigo: tracked.PortariaInternaCodigo,
+                proprietario: tracked.Proprietario,
+                areasDeInteresse: areasHidratadas);
 
             await ctx.SaveChangesAsync();
         }

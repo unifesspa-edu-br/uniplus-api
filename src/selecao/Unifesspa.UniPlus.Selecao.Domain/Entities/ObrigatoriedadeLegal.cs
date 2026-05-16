@@ -184,7 +184,7 @@ public sealed class ObrigatoriedadeLegal : EntityBase, IAuditableEntity, IAreaSc
             predicado: predicado,
             descricaoHumana: descricaoHumana,
             baseLegal: baseLegal,
-            vigenciaInicio: DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime.Date),
+            vigenciaInicio: DateOnly.FromDateTime(effectiveClock.GetUtcNow().UtcDateTime.Date),
             vigenciaFim: null,
             atoNormativoUrl: null,
             portariaInternaCodigo: portariaInternaCodigo,
@@ -198,6 +198,18 @@ public sealed class ObrigatoriedadeLegal : EntityBase, IAuditableEntity, IAreaSc
     /// de versionamento documentada no ADR-0058 (soft-delete + new row vs
     /// in-place update); esta entidade só garante consistência interna.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <strong>Semântica full-replace</strong>: todos os campos (inclusive
+    /// opcionais) são aplicados literalmente ao estado da regra. O caller
+    /// que só quer alterar um campo precisa repassar os valores atuais
+    /// dos demais — sem parâmetros opcionais com default <c>null</c>, para
+    /// evitar limpeza silenciosa de <c>AtoNormativoUrl</c>,
+    /// <c>PortariaInternaCodigo</c>, <c>Proprietario</c> ou
+    /// <c>AreasDeInteresse</c> persistidos previamente (corrupção de
+    /// evidência de governance).
+    /// </para>
+    /// </remarks>
     public Result Atualizar(
         string tipoEditalCodigo,
         CategoriaObrigatoriedade categoria,
@@ -206,11 +218,11 @@ public sealed class ObrigatoriedadeLegal : EntityBase, IAuditableEntity, IAreaSc
         string descricaoHumana,
         string baseLegal,
         DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim = null,
-        string? atoNormativoUrl = null,
-        string? portariaInternaCodigo = null,
-        AreaCodigo? proprietario = null,
-        IReadOnlySet<AreaCodigo>? areasDeInteresse = null)
+        DateOnly? vigenciaFim,
+        string? atoNormativoUrl,
+        string? portariaInternaCodigo,
+        AreaCodigo? proprietario,
+        IReadOnlySet<AreaCodigo>? areasDeInteresse)
     {
         if (predicado is null)
         {
