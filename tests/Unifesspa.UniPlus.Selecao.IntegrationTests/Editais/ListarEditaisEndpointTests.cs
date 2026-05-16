@@ -26,13 +26,13 @@ public sealed class ListarEditaisEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "GET /api/editais retorna 200, body JSON array, header Link com rel=\"self\"")]
+    [Fact(DisplayName = "GET /api/selecao/editais retorna 200, body JSON array, header Link com rel=\"self\"")]
     public async Task Listar_SemCursor_RetornaArrayJsonComLinkSelf()
     {
         await SemearEditaisAsync(_fixture.Factory, quantidade: 2);
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(new Uri("/api/editais?limit=10", UriKind.Relative));
+        HttpResponseMessage response = await client.GetAsync(new Uri("/api/selecao/editais?limit=10", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/vnd.uniplus.edital.v1+json");
@@ -48,13 +48,13 @@ public sealed class ListarEditaisEndpointTests
         await response.AssertNoPiiAsync();
     }
 
-    [Fact(DisplayName = "GET /api/editais com cursor adulterado retorna 400 cursor_invalido")]
+    [Fact(DisplayName = "GET /api/selecao/editais com cursor adulterado retorna 400 cursor_invalido")]
     public async Task Listar_CursorAdulterado_Retorna400()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/editais?cursor=AAAA-cursor-invalido-AAAA", UriKind.Relative));
+            new Uri("/api/selecao/editais?cursor=AAAA-cursor-invalido-AAAA", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -63,11 +63,11 @@ public sealed class ListarEditaisEndpointTests
         await response.AssertNoPiiAsync();
     }
 
-    [Fact(DisplayName = "GET /api/editais com Accept de versao inexistente retorna 406 + available_versions")]
+    [Fact(DisplayName = "GET /api/selecao/editais com Accept de versao inexistente retorna 406 + available_versions")]
     public async Task Listar_AcceptVersaoInexistente_Retorna406()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/api/editais", UriKind.Relative));
+        using HttpRequestMessage request = new(HttpMethod.Get, new Uri("/api/selecao/editais", UriKind.Relative));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.uniplus.edital.v9+json"));
 
         HttpResponseMessage response = await client.SendAsync(request);
@@ -82,32 +82,32 @@ public sealed class ListarEditaisEndpointTests
         await response.AssertNoPiiAsync();
     }
 
-    [Fact(DisplayName = "GET /api/editais com limit fora de faixa retorna 422 cursor_limit_invalido")]
+    [Fact(DisplayName = "GET /api/selecao/editais com limit fora de faixa retorna 422 cursor_limit_invalido")]
     public async Task Listar_LimitInvalido_Retorna422()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(new Uri("/api/editais?limit=999", UriKind.Relative));
+        HttpResponseMessage response = await client.GetAsync(new Uri("/api/selecao/editais?limit=999", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.cursor.limit_invalido");
     }
 
-    [Fact(DisplayName = "GET /api/editais ?limit do query string vence sobre limit do cursor")]
+    [Fact(DisplayName = "GET /api/selecao/editais ?limit do query string vence sobre limit do cursor")]
     public async Task Listar_LimitDoQueryStringVencePrecedencia()
     {
         await SemearEditaisAsync(_fixture.Factory, quantidade: 6);
         using HttpClient client = _fixture.Factory.CreateClient();
 
         // Primeira página com limit=2 — emite cursor com Limit=2 embutido.
-        HttpResponseMessage paginaUm = await client.GetAsync(new Uri("/api/editais?limit=2", UriKind.Relative));
+        HttpResponseMessage paginaUm = await client.GetAsync(new Uri("/api/selecao/editais?limit=2", UriKind.Relative));
         paginaUm.StatusCode.Should().Be(HttpStatusCode.OK);
         string nextCursor = ExtrairCursorNext(paginaUm);
 
         // Reutiliza o cursor mas pede explicitamente limit=4 — query string deve vencer.
         HttpResponseMessage paginaDois = await client.GetAsync(
-            new Uri($"/api/editais?cursor={Uri.EscapeDataString(nextCursor)}&limit=4", UriKind.Relative));
+            new Uri($"/api/selecao/editais?cursor={Uri.EscapeDataString(nextCursor)}&limit=4", UriKind.Relative));
         paginaDois.StatusCode.Should().Be(HttpStatusCode.OK);
 
         IReadOnlyList<Guid> ids = await ExtrairIdsAsync(paginaDois);
@@ -116,7 +116,7 @@ public sealed class ListarEditaisEndpointTests
             "limit=4 do query string venceu sobre Limit=2 herdado do cursor");
     }
 
-    [Fact(DisplayName = "GET /api/editais navega cursor sem duplicar nem omitir itens")]
+    [Fact(DisplayName = "GET /api/selecao/editais navega cursor sem duplicar nem omitir itens")]
     public async Task Listar_CursorNavegacao_PreservaJanela()
     {
         // Seed garante volume mínimo; o DB pode ter editais residuais de outros
@@ -125,7 +125,7 @@ public sealed class ListarEditaisEndpointTests
         await SemearEditaisAsync(_fixture.Factory, quantidade: 5);
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage paginaUm = await client.GetAsync(new Uri("/api/editais?limit=2", UriKind.Relative));
+        HttpResponseMessage paginaUm = await client.GetAsync(new Uri("/api/selecao/editais?limit=2", UriKind.Relative));
         paginaUm.StatusCode.Should().Be(HttpStatusCode.OK);
         IReadOnlyList<Guid> idsPagina1 = await ExtrairIdsAsync(paginaUm);
 
@@ -133,7 +133,7 @@ public sealed class ListarEditaisEndpointTests
         nextCursor.Should().NotBeNullOrEmpty();
 
         HttpResponseMessage paginaDois = await client.GetAsync(
-            new Uri($"/api/editais?cursor={Uri.EscapeDataString(nextCursor)}", UriKind.Relative));
+            new Uri($"/api/selecao/editais?cursor={Uri.EscapeDataString(nextCursor)}", UriKind.Relative));
         paginaDois.StatusCode.Should().Be(HttpStatusCode.OK);
         IReadOnlyList<Guid> idsPagina2 = await ExtrairIdsAsync(paginaDois);
 
@@ -153,7 +153,7 @@ public sealed class ListarEditaisEndpointTests
     private static string ExtrairCursorNext(HttpResponseMessage response)
     {
         string linkHeader = string.Join(',', response.Headers.GetValues("Link"));
-        // Formato: <https://.../api/editais?cursor=ABC&limit=2>; rel="next", <...>; rel="self"
+        // Formato: <https://.../api/selecao/editais?cursor=ABC&limit=2>; rel="next", <...>; rel="self"
         int relIndex = linkHeader.IndexOf("rel=\"next\"", StringComparison.Ordinal);
         relIndex.Should().BeGreaterThan(-1);
         int urlEnd = linkHeader.LastIndexOf('>', relIndex);
