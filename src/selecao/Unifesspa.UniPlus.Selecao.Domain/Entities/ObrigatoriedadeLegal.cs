@@ -159,16 +159,24 @@ public sealed class ObrigatoriedadeLegal : EntityBase, IAuditableEntity, IAreaSc
     /// Factory de retrocompatibilidade preservada para os testes do avaliador
     /// (#459): aplica defaults pragmáticos para os campos novos da forma
     /// plena (universal, categoria <see cref="CategoriaObrigatoriedade.Outros"/>,
-    /// vigência aberta a partir de hoje, global). Use a sobrecarga completa
-    /// em código de produção.
+    /// vigência aberta a partir de "hoje" do <paramref name="clock"/>, global).
+    /// Use a sobrecarga completa em código de produção.
     /// </summary>
+    /// <param name="clock">
+    /// Fonte de "hoje" para <c>VigenciaInicio</c>. Default
+    /// <see cref="TimeProvider.System"/>; testes determinísticos passam
+    /// um <see cref="TimeProvider"/> fake para isolar o cenário do relógio
+    /// do sistema.
+    /// </param>
     public static Result<ObrigatoriedadeLegal> Criar(
         string regraCodigo,
         PredicadoObrigatoriedade predicado,
         string baseLegal,
         string descricaoHumana,
-        string? portariaInternaCodigo = null)
+        string? portariaInternaCodigo = null,
+        TimeProvider? clock = null)
     {
+        TimeProvider effectiveClock = clock ?? TimeProvider.System;
         return Criar(
             tipoEditalCodigo: TipoEditalUniversal,
             categoria: CategoriaObrigatoriedade.Outros,
