@@ -126,11 +126,14 @@ public sealed class OpenTelemetryWiringTests(OtelCollectorContainerFixture colle
 
             string collectorOutput = await collector.GetLogsAsync();
 
-            collectorOutput.Should().Contain("ResourceMetrics",
-                because: "o exporter debug do Collector escreve o nome do tipo OTLP recebido em stderr");
+            // Instrumento específico criado neste teste — assert discriminante real de
+            // AddMeter(nomeServico). ResourceMetrics pode ser satisfeito por runtime
+            // instrumentation acumulada do fixture; test.wiring.counter não.
             collectorOutput.Should().Contain("test.wiring.counter",
                 because: "o nome do instrumento emitido via AddMeter(nomeServico) precisa aparecer no output — " +
                          "valida que AddMeter(nomeServico) está registrado e o exporter OTLP está emitindo");
+            collectorOutput.Should().Contain("ResourceMetrics",
+                because: "o exporter debug do Collector escreve o nome do tipo OTLP recebido em stderr");
             collectorOutput.Should().Contain(ServiceName,
                 because: $"o Resource attribute service.name precisa chegar ao Collector " +
                          $"— confirma que ConfigureResource(...AddService(\"{ServiceName}\")) está wired");
