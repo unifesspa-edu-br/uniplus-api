@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 /// <summary>
@@ -53,6 +54,7 @@ public abstract partial class AreaVisibilityConfiguration<TParent>
     where TParent : EntityBase, IAreaScopedEntity
 {
     private const int AdicionadoPorMaxLength = 255;
+    private const int AreaCodigoMaxLength = 32;
 
     // O nome de constraint derivado mais longo é
     // `excl_{prefixo}_areas_de_interesse_overlap` (32 chars de fixo). O limite
@@ -149,7 +151,16 @@ public abstract partial class AreaVisibilityConfiguration<TParent>
         builder.HasKey(binding => new { binding.ParentId, binding.AreaCodigo, binding.ValidoDe });
 
         builder.Property(binding => binding.ParentId).HasColumnName(_parentForeignKeyColumn);
-        builder.Property(binding => binding.AreaCodigo).HasColumnName("area_codigo");
+        // AreaCodigo é record struct — sem ValueConverter explícito o EF Core
+        // não sabe mapeá-lo. AreaCodigoValueConverter (ADR-0055) faz o
+        // round-trip uppercase com fail-fast tanto em escrita (rejeita
+        // default(AreaCodigo)) quanto em leitura (rejeita valor corrompido
+        // que não passa em AreaCodigo.From).
+        builder.Property(binding => binding.AreaCodigo)
+            .HasColumnName("area_codigo")
+            .HasConversion<AreaCodigoValueConverter>()
+            .HasMaxLength(AreaCodigoMaxLength)
+            .IsRequired();
         builder.Property(binding => binding.ValidoDe).HasColumnName("valid_from");
         builder.Property(binding => binding.ValidoAte).HasColumnName("valid_to");
         builder.Property(binding => binding.AdicionadoPor)
