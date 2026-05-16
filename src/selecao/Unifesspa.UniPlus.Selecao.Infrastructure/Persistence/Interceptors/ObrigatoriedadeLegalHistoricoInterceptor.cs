@@ -135,11 +135,27 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
     // Snapshot ANTES de mutar o ChangeTracker — adicionar entries durante a
     // iteração pode invalidar o enumerador. Retorna lista materializada para
     // que o caller (sync ou async) consuma sem reentrar no tracker.
-    private static List<EntityEntry<ObrigatoriedadeLegal>> CapturarEntries(DbContext context) =>
-        [.. context
+    //
+    // Inclui também regras Unchanged cujo conjunto de bindings na junction
+    // teve mutação no mesmo save — sem isso, mudanças de governance que
+    // não tocam o conteúdo da regra (admin adiciona/remove área de
+    // visibilidade) passariam sem snapshot, perdendo evidência forense
+    // (AreasDeInteresse é Ignore no modelo EF e o hash não inclui áreas,
+    // então o EF nunca marca a regra como Modified nesses cenários).
+    private static List<EntityEntry<ObrigatoriedadeLegal>> CapturarEntries(DbContext context)
+    {
+        HashSet<Guid> ruleIdsComJunctionMutada = [..
+            context.ChangeTracker
+                .Entries<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
+                .Where(static e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                .Select(static e => e.Entity.ParentId)];
+
+        return [.. context
             .ChangeTracker
             .Entries<ObrigatoriedadeLegal>()
-            .Where(static entry => entry.State is EntityState.Added or EntityState.Modified)];
+            .Where(entry => entry.State is EntityState.Added or EntityState.Modified
+                || (entry.State == EntityState.Unchanged && ruleIdsComJunctionMutada.Contains(entry.Entity.Id)))];
+    }
 
     private static ObrigatoriedadeLegalHistorico CriarSnapshot(
         EntityEntry<ObrigatoriedadeLegal> entry,
@@ -175,11 +191,13 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
     /// <see cref="EntityState.Added"/> a regra acabou de ser hidratada via
     /// factory e o set in-memory é a fonte da verdade — o repositório
     /// ainda vai persistir as junctions correspondentes neste mesmo save
-    /// (Story #461). Em <see cref="EntityState.Modified"/>, entretanto, o
-    /// EF carregou a regra sem nav property para a junction (ADR-0060) e
-    /// o set in-memory pode estar vazio mesmo quando há bindings vigentes
-    /// — recorremos à consulta direta da tabela para preservar a evidência
-    /// forense de governance.
+    /// (Story #461). Em <see cref="EntityState.Modified"/> ou
+    /// <see cref="EntityState.Unchanged"/> (este último só entra aqui via
+    /// <c>CapturarEntries</c> quando há mutação junction-only), o EF carregou
+    /// a regra sem nav property para a junction (ADR-0060) e o set in-memory
+    /// pode estar vazio mesmo quando há bindings vigentes — recorremos à
+    /// consulta direta da tabela para preservar a evidência forense de
+    /// governance.
     /// </summary>
     private static HashSet<AreaCodigo> ResolverAreasParaSnapshot(
         DbContext context,
