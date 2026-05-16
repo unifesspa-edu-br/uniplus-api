@@ -91,6 +91,8 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0060](0060-junction-tables-por-entidade-com-view-unificada.md) | Junction tables por entidade para `AreasDeInteresse` + view unificada por DbContext para leituras cross-catálogo | accepted | 2026-05-14 |
 | [0061](0061-referencia-cross-modulo-via-snapshot-copy.md) | Referência cross-módulo via snapshot-copy (value object embedded) com `OrigemId` opcional sem FK | accepted | 2026-05-14 |
 | [0062](0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) | Seed de catálogos via Newman + endpoints admin (sem auto-seeder, audit captura usuário real) | accepted | 2026-05-14 |
+| [0063](0063-entidades-forensics-isentas-de-soft-delete.md) | Entidades forensics append-only (`IForensicEntity`) isentas de soft-delete, mutuamente exclusivas com `EntityBase` | accepted | 2026-05-16 |
+| [0064](0064-convencao-roteamento-path-based-com-prefixo-modulo.md) | Convenção de roteamento — path-based com prefixo de módulo (`/api/{modulo}/{recurso}`), separação cross-API via PathPrefix no Traefik | accepted | 2026-05-16 |
 
 ## Como adicionar um novo ADR
 

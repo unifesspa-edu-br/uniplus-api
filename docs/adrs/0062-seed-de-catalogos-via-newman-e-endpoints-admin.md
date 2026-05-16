@@ -211,6 +211,40 @@ Decisão por classe de teste durante a implementação. Call sites mais simples 
 - **Prós**: discussão acima.
 - **Contras**: discussão acima.
 
+## Emenda 1 (2026-05-16) — vocabulário e URLs path-based
+
+A diretriz sponsor reservou o termo "catálogo" para um futuro conceito de
+domínio. O que esta ADR descreve são **entidades de parametrização** (per
+ADR-0056). E, per ADR-0064, todos os endpoints admin seguem o padrão
+path-based com prefixo de módulo. O conteúdo técnico (Newman, idempotência,
+audit, fitness test de roster) permanece válido — apenas os nomes e
+URLs mudam:
+
+| Antigo | Novo |
+|---|---|
+| "10 catálogos" | "10 entidades de parametrização" |
+| `tools/seeds/seed-catalogos.postman_collection.json` | `tools/seeds/seed-parametrizacao.postman_collection.json` |
+| variável `${CATALOG}` no `run.sh` | `${ENTIDADE}` |
+| Folder Postman "AreasOrganizacionais (catálogo)" | "AreasOrganizacionais" (sem qualificador) |
+
+As URLs admin alvo dos POSTs do Newman seguem a ADR-0064:
+
+| Recurso | URL admin |
+|---|---|
+| Modalidade | `POST /api/parametrizacao/admin/modalidades` |
+| NecessidadeEspecial | `POST /api/parametrizacao/admin/necessidades-especiais` |
+| TipoDocumento | `POST /api/parametrizacao/admin/tipos-documento` |
+| Endereco | `POST /api/parametrizacao/admin/enderecos` |
+| AreaOrganizacional | `POST /api/organizacao/admin/areas-organizacionais` |
+| TipoEdital | `POST /api/selecao/admin/tipos-edital` |
+| TipoEtapa | `POST /api/selecao/admin/tipos-etapa` |
+| CriterioDesempate | `POST /api/selecao/admin/criterios-desempate` |
+| LocalProva | `POST /api/selecao/admin/locais-prova` |
+| ObrigatoriedadeLegal | `POST /api/selecao/admin/obrigatoriedades-legais` |
+
+`docs/guia-banco-de-dados.md` e `seeds/README.md` (quando criado em #463)
+devem refletir o novo vocabulário e os paths atualizados.
+
 ## Mais informações
 
 - [ADR-0023](0023-problemdetails-rfc-9457.md) — ProblemDetails RFC 9457 (Newman tests checam contra).
