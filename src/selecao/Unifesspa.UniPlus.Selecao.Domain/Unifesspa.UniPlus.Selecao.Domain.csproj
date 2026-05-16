@@ -1,15 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <!--
-      Microsoft.Extensions.Logging.Abstractions é abstração pura (interfaces +
-      LoggerMessage source generator). Usada exclusivamente pelo domain service
-      ValidadorConformidadeEdital para emitir warning na variante
-      PredicadoObrigatoriedade.Customizado (ADR-0058 §"válvula de escape").
-      Não viola ADR-0013 "pure domain services" — é dependency invertida,
-      não infraestrutura concreta.
-    -->
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
   </ItemGroup>
 

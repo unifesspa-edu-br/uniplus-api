@@ -4,8 +4,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-using Microsoft.Extensions.Logging;
-
 using Entities;
 using ValueObjects;
 
@@ -13,31 +11,27 @@ using ValueObjects;
 /// Domain service puro que avalia um conjunto de
 /// <see cref="ObrigatoriedadeLegal"/> contra um <see cref="Edital"/>
 /// (ou sua projeção <see cref="EditalConformidadeView"/>), conforme
-/// ADR-0058. Sem dependência de infraestrutura: o avaliador é função pura
-/// modulo o logger opcional usado para a variante
-/// <see cref="Customizado"/>.
+/// ADR-0058. <strong>Sem dependência de infraestrutura nem de
+/// abstrações de logging</strong>: ADR-0013 mantido estrito.
 /// </summary>
 /// <remarks>
 /// <para>Pattern match: 8 cases concretos + catch-all <c>_ => throw</c>
-/// (C# não suporta union fechado; CS8509 só dispararia se removêssemos
-/// o catch-all, o que silenciaria variantes futuras). A garantia
-/// substantiva de exhaustividade vive no fitness reflectivo
+/// (C# não suporta union fechado nativamente). A garantia substantiva de
+/// exhaustividade vive no fitness reflectivo
 /// <c>ValidadorConformidadeEditalExhaustividadeTests</c> em
 /// <c>Selecao.Domain.UnitTests</c>: ele itera por reflection cada tipo
 /// derivado e exige que o avaliador responda sem cair no catch-all.</para>
 /// <para>Comparações textuais usam <see cref="StringComparison.OrdinalIgnoreCase"/>
-/// com <c>Trim()</c> nos inputs (admin UI pode chegar com capitalização
-/// inconsistente). Predicados cujas listas obrigatórias só contêm
-/// whitespace/null são tratados como <em>malformados</em> e reprovam com
-/// motivo explícito — não como "tudo presente, lista vazia equivale a
-/// nenhum requisito".</para>
-/// <para>Avisos diagnósticos (uso de <see cref="Customizado"/>, por
-/// exemplo) são propagados via <see cref="ResultadoConformidade.Avisos"/>
-/// E também via <see cref="ILogger"/> opcional quando o caller passa um.
-/// Application layers que quiserem manter Domain ainda mais frio podem
-/// consumir só <see cref="ResultadoConformidade.Avisos"/>.</para>
+/// com <c>Trim()</c> nos inputs. Predicados cujas listas obrigatórias só
+/// contêm whitespace/null são tratados como <em>malformados</em> e
+/// reprovam com motivo explícito.</para>
+/// <para>Sinais diagnósticos (uso de <see cref="Customizado"/>) saem
+/// pela coleção estruturada <see cref="ResultadoConformidade.Avisos"/>.
+/// O caller — Application/API — consome a coleção e roteia para o
+/// pipeline de logging local (<c>[LoggerMessage]</c> idiomático lá).
+/// O domain não emite logs.</para>
 /// </remarks>
-public static partial class ValidadorConformidadeEdital
+public static class ValidadorConformidadeEdital
 {
     /// <summary>
     /// Avalia as regras contra o agregado <see cref="Edital"/>. Internamente
@@ -46,13 +40,12 @@ public static partial class ValidadorConformidadeEdital
     /// </summary>
     public static ResultadoConformidade Evaluate(
         Edital edital,
-        IReadOnlyList<ObrigatoriedadeLegal> regras,
-        ILogger? logger = null)
+        IReadOnlyList<ObrigatoriedadeLegal> regras)
     {
         ArgumentNullException.ThrowIfNull(edital);
         ArgumentNullException.ThrowIfNull(regras);
 
-        return Evaluate(EditalConformidadeView.From(edital), regras, logger);
+        return Evaluate(EditalConformidadeView.From(edital), regras);
     }
 
     /// <summary>
@@ -61,8 +54,7 @@ public static partial class ValidadorConformidadeEdital
     /// </summary>
     public static ResultadoConformidade Evaluate(
         EditalConformidadeView view,
-        IReadOnlyList<ObrigatoriedadeLegal> regras,
-        ILogger? logger = null)
+        IReadOnlyList<ObrigatoriedadeLegal> regras)
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(regras);
@@ -71,7 +63,7 @@ public static partial class ValidadorConformidadeEdital
         List<string> avisos = [];
         foreach (ObrigatoriedadeLegal regra in regras)
         {
-            avaliadas.Add(Avaliar(regra, view, logger, avisos));
+            avaliadas.Add(Avaliar(regra, view, avisos));
         }
 
         return new ResultadoConformidade(avaliadas, avisos);
@@ -80,7 +72,6 @@ public static partial class ValidadorConformidadeEdital
     private static RegraAvaliada Avaliar(
         ObrigatoriedadeLegal regra,
         EditalConformidadeView view,
-        ILogger? logger,
         List<string> avisos)
     {
         ArgumentNullException.ThrowIfNull(regra);
@@ -94,7 +85,7 @@ public static partial class ValidadorConformidadeEdital
             BonusObrigatorio p => AvaliarBonus(p, view),
             AtendimentoDisponivel p => AvaliarAtendimento(p, view),
             ConcorrenciaDuplaObrigatoria => AvaliarConcorrenciaDupla(view),
-            Customizado p => AvaliarCustomizado(p, regra, logger, avisos),
+            Customizado p => AvaliarCustomizado(p, regra, avisos),
             _ => throw new InvalidOperationException(
                 $"Variante PredicadoObrigatoriedade não suportada: {regra.Predicado.GetType().Name}. "
                 + "Adicione um case explícito em ValidadorConformidadeEdital.Avaliar."),
@@ -212,21 +203,19 @@ public static partial class ValidadorConformidadeEdital
     /// a integridade da evidência legal, a avaliação é <strong>conservadora
     /// (Aprovada=false)</strong> — o admin que adotou Customizado precisa
     /// substituir por variante tipada ou anexar parecer manual.
-    /// Aviso estruturado é propagado via <see cref="ResultadoConformidade.Avisos"/>
-    /// e (quando logger fornecido) via <see cref="ILogger"/> warning,
-    /// rastreável em telemetria.
+    /// O sinal de uso é propagado via
+    /// <see cref="ResultadoConformidade.Avisos"/>; a Application consome a
+    /// coleção e roteia para o pipeline de logging local
+    /// (<c>[LoggerMessage]</c> idiomático no handler de
+    /// <c>ObterConformidadeQuery</c>, planejado para a Story #461).
     /// </summary>
     private static (bool, string) AvaliarCustomizado(
         Customizado p,
         ObrigatoriedadeLegal regra,
-        ILogger? logger,
         List<string> avisos)
     {
-        string aviso = $"Predicado.Customizado em uso — RegraCodigo={regra.RegraCodigo} BaseLegal={regra.BaseLegal}. Considere variante tipada.";
-        avisos.Add(aviso);
-
-        if (logger is not null)
-            LogCustomizadoEmUso(logger, regra.RegraCodigo, regra.BaseLegal);
+        avisos.Add(
+            $"Predicado.Customizado em uso — RegraCodigo={regra.RegraCodigo} BaseLegal={regra.BaseLegal}. Considere variante tipada.");
 
         // p.Parametros é preservado na regra para snapshot/auditoria; nesta
         // V1 não tentamos interpretar conteúdo arbitrário.
@@ -287,12 +276,4 @@ public static partial class ValidadorConformidadeEdital
         // Convert.ToHexString já produz uppercase — aceitamos para evitar CA1308.
         return Convert.ToHexString(bytes);
     }
-
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Predicado.Customizado em uso — considerar variante tipada. RegraCodigo={RegraCodigo} BaseLegal={BaseLegal}")]
-    private static partial void LogCustomizadoEmUso(
-        ILogger logger,
-        string regraCodigo,
-        string baseLegal);
 }
