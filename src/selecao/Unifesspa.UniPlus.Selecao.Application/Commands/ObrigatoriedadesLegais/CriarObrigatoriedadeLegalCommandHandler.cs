@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using System.Collections.Generic;
 
+using Microsoft.EntityFrameworkCore;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Governance.Contracts;
@@ -88,7 +90,30 @@ public static class CriarObrigatoriedadeLegalCommandHandler
             userContext.UserId ?? "system",
             cancellationToken).ConfigureAwait(false);
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException ex)
+        {
+            // Race entre ExisteRegraCodigoAtivoAsync e o INSERT (check-then-act):
+            // a constraint UNIQUE parcial sobre regra_codigo/hash dispara 23505,
+            // viramos 409 ProblemDetails consistente com o caminho não-race.
+            string? constraint = UniqueConstraintViolation.GetViolatedConstraint(ex);
+            if (UniqueConstraintViolation.IsRegraCodigoConflict(constraint))
+            {
+                return Result<Guid>.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.RegraCodigoDuplicada",
+                    $"Já existe regra ativa com RegraCodigo '{command.RegraCodigo}'."));
+            }
+            if (UniqueConstraintViolation.IsHashConflict(constraint))
+            {
+                return Result<Guid>.Failure(new DomainError(
+                    "ObrigatoriedadeLegal.HashColisao",
+                    "Já existe regra ativa com o mesmo conteúdo canônico."));
+            }
+            throw;
+        }
 
         return Result<Guid>.Success(regra.Id);
     }
