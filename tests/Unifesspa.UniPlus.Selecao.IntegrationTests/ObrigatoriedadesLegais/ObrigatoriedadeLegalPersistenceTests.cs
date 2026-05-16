@@ -459,6 +459,29 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
         total.Should().Be(0L, "#460 cria apenas o schema — INSERT é responsabilidade de #462");
     }
 
+    [Fact(DisplayName = "FK governance_snapshot→editais bloqueia INSERT órfão (Codex P2 round 2)")]
+    public async Task FkGovernanceSnapshot_BloqueiaOrfao()
+    {
+        // Mesma proteção do FK histórico → regra, mas para o
+        // edital_governance_snapshot (CA-04). Tabela está vazia em V1, mas
+        // a constraint precisa estar ativa para o INSERT path de #462.
+        Guid editalInexistente = Guid.CreateVersion7();
+
+        EditalGovernanceSnapshot orphan = EditalGovernanceSnapshot.Capturar(
+            editalId: editalInexistente,
+            regrasJson: "[]",
+            snapshottedAt: DateTimeOffset.UtcNow);
+
+        await using SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.EditalGovernanceSnapshots.Add(orphan);
+
+        Func<Task> act = async () => await ctx.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>()
+            .WithInnerException(typeof(Npgsql.PostgresException))
+            ;
+    }
+
     private static ObrigatoriedadeLegal NovaRegraValida(string regraCodigo) =>
         ObrigatoriedadeLegal.Criar(
             tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,

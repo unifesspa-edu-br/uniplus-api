@@ -158,6 +158,21 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
 
+            // FK edital_governance_snapshot → editais (Codex P2 round 2):
+            // mesmo padrão da FK histórico → regra. Tabela está vazia em V1
+            // (CA-04 — INSERT diferido para #462), mas a constraint é
+            // defensiva contra orphan rows assim que a publicação começar
+            // a popular o snapshot. Tabela `editais` foi criada na
+            // migration inicial (InitialCreate), então a FK é resolvível
+            // neste ponto.
+            migrationBuilder.AddForeignKey(
+                name: "fk_edital_governance_snapshot_edital_id",
+                table: "edital_governance_snapshot",
+                column: "edital_id",
+                principalTable: "editais",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Restrict);
+
             // Exclusion constraint GIST per ADR-0060: impede janelas de
             // validade sobrepostas para o mesmo (regra, área). Não é
             // expressável no fluent API do EF — emitido em SQL bruto via

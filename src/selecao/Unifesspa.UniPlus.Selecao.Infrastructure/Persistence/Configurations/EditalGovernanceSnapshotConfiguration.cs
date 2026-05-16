@@ -34,8 +34,22 @@ internal sealed class EditalGovernanceSnapshotConfiguration : IEntityTypeConfigu
 
         builder.Property(s => s.SnapshottedAt).IsRequired();
 
+        // FK para editais (edital alvo do snapshot). Mesmo padrão de
+        // obrigatoriedade_legal_historico (ADR-0063): sem nav property
+        // para evitar carregar Edital acidentalmente em queries forense;
+        // ON DELETE RESTRICT bloqueia hard-delete do Edital mãe — soft-
+        // delete (Modified + IsDeleted=true) não dispara. Tabela está
+        // vazia em V1, mas a constraint é defensiva para o INSERT path
+        // que entra em #462 (US-F4-04).
+        builder.HasOne<Edital>()
+            .WithMany()
+            .HasForeignKey(s => s.EditalId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_edital_governance_snapshot_edital_id");
+
         // Consulta "snapshot do edital" é o único caso de uso previsto até
-        // #462 ativar a leitura — index simples por edital_id basta.
+        // #462 ativar a leitura — index simples por edital_id basta. Também
+        // serve o lookup do FK (edital_id como leading column).
         builder.HasIndex(s => s.EditalId)
             .HasDatabaseName("ix_edital_governance_snapshot_edital_id");
     }
