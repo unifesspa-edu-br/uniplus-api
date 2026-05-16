@@ -311,6 +311,38 @@ public sealed class ValidadorConformidadeEditalTests
         return data;
     }
 
+    [Fact(DisplayName = "PredicadoObrigatoriedade rejeita JSON com discriminator $tipo desconhecido")]
+    public void Deserialize_DiscriminatorDesconhecido_Lanca()
+    {
+        // CA da Task #491: contrato JSON do System.Text.Json com [JsonPolymorphic]
+        // deve rejeitar tipos não registrados via [JsonDerivedType] — proteção
+        // contra row corrompida no jsonb (cenário BDD #459 "Predicado JSON
+        // malformado quebra deserialização").
+        const string jsonComTipoDesconhecido = """{"$tipo":"variantePropostaQueNaoExiste","x":1}""";
+
+        Action act = () => JsonSerializer.Deserialize<PredicadoObrigatoriedade>(
+            jsonComTipoDesconhecido,
+            PredicadoObrigatoriedade.JsonOptions);
+
+        act.Should().Throw<JsonException>();
+    }
+
+    [Fact(DisplayName = "PredicadoObrigatoriedade rejeita JSON sem discriminator $tipo")]
+    public void Deserialize_SemDiscriminator_Lanca()
+    {
+        // Reforça a invariante: rows no jsonb sem o campo $tipo (ex.: legado
+        // pré-#459 ou corrupção) não devem deserializar para nenhuma variante.
+        // STJ levanta NotSupportedException por se tratar de tipo abstrato sem
+        // discriminator (vs JsonException para discriminator desconhecido).
+        const string jsonSemDiscriminator = """{"tipoEtapaCodigo":"ProvaObjetiva"}""";
+
+        Action act = () => JsonSerializer.Deserialize<PredicadoObrigatoriedade>(
+            jsonSemDiscriminator,
+            PredicadoObrigatoriedade.JsonOptions);
+
+        act.Should().Throw<NotSupportedException>();
+    }
+
     // ─── Guards de argumento ────────────────────────────────────────────
 
     [Fact(DisplayName = "Evaluate com view nula lança ArgumentNullException")]
