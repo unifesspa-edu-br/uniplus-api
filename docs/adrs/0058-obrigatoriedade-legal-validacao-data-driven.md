@@ -215,6 +215,73 @@ Vendor MIME: `application/vnd.uniplus.obrigatoriedade-legal.v1+json`.
 - **Prós**: Discussão acima.
 - **Contras**: Discussão acima.
 
+## Emenda 1 (2026-05-16) — vocabulário, URL path-based e semântica do PUT
+
+Durante a auditoria pré-implementação de #461, três pontos desta ADR foram
+reconciliados com (a) a diretriz sponsor sobre vocabulário, (b) a convenção
+de roteamento formalizada na ADR-0064 (path-based com prefixo de módulo,
+otimizada para Traefik) e (c) o que foi efetivamente entregue em #520
+(Story #460):
+
+### 1.1 — URLs com prefixo de módulo (`/api/selecao/...`) sem "catálogos"
+
+A seção §"REST surface" usava `/api/catalogos/obrigatoriedades`. O termo
+"catálogo" fica reservado para um futuro conceito de domínio (Catálogo de
+Serviços ou equivalente); o que estamos construindo é parametrização. E,
+per ADR-0064, recursos REST seguem `/api/{modulo}/{recurso}` para permitir
+roteamento path-prefix simples no Traefik (1 subdomain, 1 cert TLS, 1
+origin CORS).
+
+Mapeamento canônico:
+
+| Antigo (desta ADR) | Novo (per ADR-0064) |
+|---|---|
+| `GET /api/catalogos/obrigatoriedades?tipoEdital={codigo}` | `GET /api/selecao/obrigatoriedades-legais?tipoEdital={codigo}` |
+| `GET /api/catalogos/obrigatoriedades/{id:guid}` | `GET /api/selecao/obrigatoriedades-legais/{id:guid}` |
+| `POST /api/admin/catalogos/obrigatoriedades` | `POST /api/selecao/admin/obrigatoriedades-legais` |
+| `PUT /api/admin/catalogos/obrigatoriedades/{id:guid}` | `PUT /api/selecao/admin/obrigatoriedades-legais/{id:guid}` |
+| `DELETE /api/admin/catalogos/obrigatoriedades/{id:guid}` | `DELETE /api/selecao/admin/obrigatoriedades-legais/{id:guid}` |
+| `GET /api/editais/{id:guid}/conformidade` | `GET /api/selecao/editais/{id:guid}/conformidade` |
+| `GET /api/editais/{id:guid}/conformidade-historica` | `GET /api/selecao/editais/{id:guid}/conformidade-historica` |
+
+Logs estruturados, OpenAPI tags e códigos de erro continuam usando o nome
+da entidade (`obrigatoriedade_legal`, `ObrigatoriedadeLegal`), nunca
+"catálogo".
+
+### 1.2 — Semântica do PUT é in-place full-replace
+
+A seção §"REST surface" descreveu PUT como "soft-delete a versão anterior,
+insere nova (hash muda)". A entrega em #520 (Story #460) convergiu para
+**in-place full-replace** com auditoria via tabela append-only
+`obrigatoriedade_legal_historico`:
+
+- O método `ObrigatoriedadeLegal.Atualizar(...)` aplica todos os campos
+  literalmente sobre a entidade existente (mantém o `Id`).
+- O `ObrigatoriedadeLegalHistoricoInterceptor` grava uma linha no histórico
+  com o `Hash` recomputado e o conteúdo canônico — invariante atômico
+  garantido por estar dentro do mesmo `SaveChangesAsync`.
+- A URI do recurso é estável: `GET /api/obrigatoriedades-legais/{id}`
+  sempre retorna a versão vigente; reconstrução histórica é via
+  `obrigatoriedade_legal_historico` ou via `EditalGovernanceSnapshot`
+  (quando a regra foi vinculada a um edital publicado).
+- Editais já publicados antes da edição mantêm seu `EditalGovernanceSnapshot`
+  original — o hash difere do hash atual da regra; é exatamente isso que
+  preserva a evidência forense.
+- O `Atualizar` exige **todos os campos explicitamente** (full-replace
+  semantics — defaults `null` removidos da assinatura per Codex P1 em #520).
+
+Esta semântica é mais simples, preserva URI stability e dispensa lógica de
+"reativação" de versões soft-deleted — o snapshot histórico já cumpre o
+papel de evidência da versão anterior.
+
+### 1.3 — `EditalGovernanceSnapshot` é `IForensicEntity`
+
+A seção §"Snapshot-on-bind" referia-se a `ObrigatoriedadesSnapshot` como
+nome conceitual. A entrega em #520 nomeou-o `EditalGovernanceSnapshot` e
+o classificou como `IForensicEntity` (ADR-0063) — append-only, sem
+soft-delete, com FK `RESTRICT` para `editais` (em #461) e para
+`obrigatoriedades_legais` quando relevante.
+
 ## Mais informações
 
 - [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md) — Motor de classificação como pure domain services (precedent para evaluator data-driven sem DSL).
@@ -225,3 +292,5 @@ Vendor MIME: `application/vnd.uniplus.obrigatoriedade-legal.v1+json`.
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — OrganizacaoInstitucional bounded context.
 - [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side.
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — RBAC por áreas com snapshot, histórico, invariantes.
+- [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md) — Entidades forensics append-only isentas de soft-delete.
+- [ADR-0064](0064-convencao-roteamento-path-based-com-prefixo-modulo.md) — Convenção de roteamento path-based com prefixo de módulo.
