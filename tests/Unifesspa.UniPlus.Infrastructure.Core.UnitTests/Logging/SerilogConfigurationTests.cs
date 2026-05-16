@@ -50,6 +50,20 @@ public sealed class SerilogConfigurationTests
             @"SpanId\s*[=:]\s*\{SpanId\}");
     }
 
+    [Fact]
+    public void ConsoleOutputTemplate_DeveUsarNivelPorExtenso_ParaCompatibilidadeLoki()
+    {
+        // {Level:u3} emite INF/WRN/ERR — não reconhecidos pelo detected_level do Loki,
+        // que classifica como `unknown`. {Level} emite Information/Warning/Error (#513).
+        // Literal armazenado em const para evitar CA2241 (analisador trata strings com
+        // {token:especificador} como composite format strings).
+        const string nivelAbreviado = "{Level" + ":u3}";
+        SerilogConfiguration.ConsoleOutputTemplate.Should().Contain("{Level}",
+            "Loki detected_level reconhece apenas palavras completas, não abreviações u3");
+        SerilogConfiguration.ConsoleOutputTemplate.Should().NotContain(nivelAbreviado,
+            "abreviações Serilog (INF/WRN/ERR) são categorizadas como unknown pelo Loki");
+    }
+
     // ─── CA-02/CA-04: pipeline real emite log que casa a regex ─────────────
 
     [Fact]
