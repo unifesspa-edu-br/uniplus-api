@@ -151,7 +151,7 @@ public sealed class PublicarEditalEndpointTests
         using HttpClient client = api.CreateClient();
 
         HttpResponseMessage response = await client.PostAsync(
-            new Uri($"/api/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative), content: null);
+            new Uri($"/api/selecao/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative), content: null);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -167,7 +167,7 @@ public sealed class PublicarEditalEndpointTests
         using HttpClient client = api.CreateClient();
 
         using HttpRequestMessage request = new(HttpMethod.Post,
-            new Uri($"/api/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative));
         request.Headers.TryAddWithoutValidation("Idempotency-Key", "invalid key with spaces");
 
         HttpResponseMessage response = await client.SendAsync(request);
@@ -188,7 +188,7 @@ public sealed class PublicarEditalEndpointTests
         using HttpClient client = api.CreateClient();
 
         using HttpRequestMessage request = new(HttpMethod.Post,
-            new Uri($"/api/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{Guid.CreateVersion7()}/publicar", UriKind.Relative));
         request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
         // Sem AppendTestAuth — request anonymous deliberada.
 
@@ -212,7 +212,7 @@ public sealed class PublicarEditalEndpointTests
         int numero2 = NextNumeroSeed(); // body diferente garantido (incrementos sequenciais)
 
         // Primeira request: cria edital normalmente.
-        using HttpRequestMessage primeiraReq = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        using HttpRequestMessage primeiraReq = new(HttpMethod.Post, new Uri("/api/selecao/editais", UriKind.Relative))
         {
             Content = JsonContent.Create(new
             {
@@ -227,7 +227,7 @@ public sealed class PublicarEditalEndpointTests
         primeira.StatusCode.Should().Be(HttpStatusCode.Created);
 
         // Segunda request: mesma key, body diferente (numero2).
-        using HttpRequestMessage segundaReq = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        using HttpRequestMessage segundaReq = new(HttpMethod.Post, new Uri("/api/selecao/editais", UriKind.Relative))
         {
             Content = JsonContent.Create(new
             {
@@ -249,7 +249,7 @@ public sealed class PublicarEditalEndpointTests
     private static async Task<HttpResponseMessage> PostPublicarAsync(HttpClient client, Guid editalId, string idempotencyKey)
     {
         using HttpRequestMessage request = new(HttpMethod.Post,
-            new Uri($"/api/editais/{editalId}/publicar", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{editalId}/publicar", UriKind.Relative));
         AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
         return await client.SendAsync(request).ConfigureAwait(false);

@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Outbox.Cascading;
 
 /// <summary>
-/// Cobertura de <c>GET /api/editais/{id}</c> em runtime real, focando em
+/// Cobertura de <c>GET /api/selecao/editais/{id}</c> em runtime real, focando em
 /// HATEOAS Level 1 (ADR-0029): body inclui <c>_links.self</c> sempre, e
 /// <c>_links.collection</c>; nenhum action link (<c>publicar</c>, etc.) per
 /// vedação explícita da ADR-0029.
@@ -32,14 +32,14 @@ public sealed class ObterEditalEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "GET /api/editais/{id} retorna 200 + body com _links.self e _links.collection (ADR-0029)")]
+    [Fact(DisplayName = "GET /api/selecao/editais/{id} retorna 200 + body com _links.self e _links.collection (ADR-0029)")]
     public async Task ObterPorId_EditalExistente_RetornaBodyComLinks()
     {
         Edital seeded = await SemearEditalAsync(_fixture.Factory);
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/api/editais/{seeded.Id}", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{seeded.Id}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -53,13 +53,13 @@ public sealed class ObterEditalEndpointTests
         // _links.self obrigatório, URI relativa apontando para o próprio recurso.
         string self = links.GetProperty("self").GetString()!;
         self.Should().Be(
-            $"/api/editais/{seeded.Id.ToString("D", CultureInfo.InvariantCulture)}",
+            $"/api/selecao/editais/{seeded.Id.ToString("D", CultureInfo.InvariantCulture)}",
             "ADR-0029 §'URIs relativas': self é URI relativa à raiz da API");
 
         // _links.collection navega de volta para a coleção.
         string collection = links.GetProperty("collection").GetString()!;
         collection.Should().Be(
-            "/api/editais",
+            "/api/selecao/editais",
             "ADR-0029 §'Forma do _links': collection aponta para o endpoint de listagem");
 
         // Action links (publicar etc.) NÃO aparecem em V1 — ADR-0029 §'Esta ADR não decide'.
@@ -76,13 +76,13 @@ public sealed class ObterEditalEndpointTests
         await response.AssertNoPiiAsync();
     }
 
-    [Fact(DisplayName = "GET /api/editais/{id} para id inexistente retorna 404 sem body de _links")]
+    [Fact(DisplayName = "GET /api/selecao/editais/{id} para id inexistente retorna 404 sem body de _links")]
     public async Task ObterPorId_EditalInexistente_Retorna404()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/api/editais/{Guid.NewGuid()}", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{Guid.NewGuid()}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

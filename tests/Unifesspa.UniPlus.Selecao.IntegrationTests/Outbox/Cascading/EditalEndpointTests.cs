@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
-/// Cobertura HTTP direta de <c>POST /api/editais</c> (criação) e
-/// <c>GET /api/editais/{id}</c> (consulta) — endpoints que ganharam
+/// Cobertura HTTP direta de <c>POST /api/selecao/editais</c> (criação) e
+/// <c>GET /api/selecao/editais/{id}</c> (consulta) — endpoints que ganharam
 /// roteamento pelo fix de #173 mas não tinham testes HTTP dedicados.
 /// Issue #202.
 /// </summary>
@@ -42,14 +42,14 @@ public sealed class EditalEndpointTests
 
     public EditalEndpointTests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "POST /api/editais retorna 201 + Location quando o command é válido")]
+    [Fact(DisplayName = "POST /api/selecao/editais retorna 201 + Location quando o command é válido")]
     public async Task CriarEdital_DeveRetornar201()
     {
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
 
         int numero = NextNumeroSeed();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/selecao/editais", UriKind.Relative))
         {
             Content = JsonContent.Create(new
             {
@@ -73,7 +73,7 @@ public sealed class EditalEndpointTests
         editalId.Should().NotBe(Guid.Empty);
     }
 
-    [Fact(DisplayName = "POST /api/editais com tipoEditalId Guid v7 persiste e GET retorna o mesmo valor")]
+    [Fact(DisplayName = "POST /api/selecao/editais com tipoEditalId Guid v7 persiste e GET retorna o mesmo valor")]
     public async Task CriarEdital_ComTipoEditalIdInformado_PersisteEReflete()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -82,7 +82,7 @@ public sealed class EditalEndpointTests
         Guid tipoEditalId = Guid.CreateVersion7();
         int numero = NextNumeroSeed();
 
-        using HttpRequestMessage post = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        using HttpRequestMessage post = new(HttpMethod.Post, new Uri("/api/selecao/editais", UriKind.Relative))
         {
             Content = JsonContent.Create(new
             {
@@ -101,7 +101,7 @@ public sealed class EditalEndpointTests
         Guid editalId = JsonDocument.Parse(await created.Content.ReadAsStringAsync()).RootElement.GetGuid();
 
         using HttpRequestMessage get = new(HttpMethod.Get,
-            new Uri($"/api/editais/{editalId}", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{editalId}", UriKind.Relative));
         AppendTestAuth(get);
         get.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.uniplus.edital.v1+json"));
 
@@ -112,14 +112,14 @@ public sealed class EditalEndpointTests
         body.RootElement.GetProperty("tipoEditalId").GetGuid().Should().Be(tipoEditalId);
     }
 
-    [Fact(DisplayName = "POST /api/editais com tipoEditalId = Guid.Empty retorna 422 (validator)")]
+    [Fact(DisplayName = "POST /api/selecao/editais com tipoEditalId = Guid.Empty retorna 422 (validator)")]
     public async Task CriarEdital_ComTipoEditalIdEmpty_Retorna422()
     {
         CascadingApiFactory api = _fixture.Factory;
         using HttpClient client = api.CreateClient();
 
         int numero = NextNumeroSeed();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/editais", UriKind.Relative))
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/selecao/editais", UriKind.Relative))
         {
             Content = JsonContent.Create(new
             {
@@ -137,7 +137,7 @@ public sealed class EditalEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
-    [Fact(DisplayName = "GET /api/editais/{id} retorna 200 quando o edital existe")]
+    [Fact(DisplayName = "GET /api/selecao/editais/{id} retorna 200 quando o edital existe")]
     public async Task ObterEdital_DeveRetornar200_QuandoExiste()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -146,7 +146,7 @@ public sealed class EditalEndpointTests
         Edital edital = await SemearEditalAsync(api);
 
         using HttpRequestMessage request = new(HttpMethod.Get,
-            new Uri($"/api/editais/{edital.Id}", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{edital.Id}", UriKind.Relative));
         AppendTestAuth(request);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.uniplus.edital.v1+json"));
 
@@ -157,7 +157,7 @@ public sealed class EditalEndpointTests
         doc.RootElement.GetProperty("id").GetGuid().Should().Be(edital.Id);
     }
 
-    [Fact(DisplayName = "GET /api/editais/{id} retorna 404 quando o edital não existe")]
+    [Fact(DisplayName = "GET /api/selecao/editais/{id} retorna 404 quando o edital não existe")]
     public async Task ObterEdital_DeveRetornar404_QuandoNaoExiste()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -165,7 +165,7 @@ public sealed class EditalEndpointTests
 
         Guid inexistente = Guid.CreateVersion7();
         using HttpRequestMessage request = new(HttpMethod.Get,
-            new Uri($"/api/editais/{inexistente}", UriKind.Relative));
+            new Uri($"/api/selecao/editais/{inexistente}", UriKind.Relative));
         AppendTestAuth(request);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.uniplus.edital.v1+json"));
 
@@ -174,7 +174,7 @@ public sealed class EditalEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "GET /api/editais retorna Link e X-Page-Size headers (RFC 5988/8288, ADR-0026)")]
+    [Fact(DisplayName = "GET /api/selecao/editais retorna Link e X-Page-Size headers (RFC 5988/8288, ADR-0026)")]
     public async Task ListarEditais_DeveExporLinkEXPageSizeHeaders()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -185,7 +185,7 @@ public sealed class EditalEndpointTests
         await SemearEditalAsync(api);
 
         using HttpRequestMessage request = new(HttpMethod.Get,
-            new Uri("/api/editais?limit=1", UriKind.Relative));
+            new Uri("/api/selecao/editais?limit=1", UriKind.Relative));
         AppendTestAuth(request);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.uniplus.edital.v1+json"));
 
