@@ -12,7 +12,6 @@ using Npgsql;
 using Wolverine;
 
 using Kernel.Results;
-using Domain.Enums;
 using Domain.Events;
 using Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -61,8 +60,7 @@ public sealed class CascadingScenariosTests
 
         var command = new PublicarEditalCascadingCommand(
             numero,
-            "V8 — cascading happy path",
-            TipoProcesso.SiSU);
+            "V8 — cascading happy path");
 
         await bus.InvokeAsync(command);
 
@@ -105,8 +103,7 @@ public sealed class CascadingScenariosTests
 
         var command = new FalharAposSaveChangesCascadingCommand(
             numero,
-            "V9 — cascading rollback",
-            TipoProcesso.SiSU);
+            "V9 — cascading rollback");
 
         Func<Task> act = () => bus.InvokeAsync(command);
 

@@ -6,7 +6,7 @@ public sealed record EditalDto(
     Guid Id,
     string NumeroEdital,
     string Titulo,
-    string TipoProcesso,
+    Guid? TipoEditalId,
     string Status,
     int MaximoOpcoesCurso,
     bool BonusRegionalHabilitado,

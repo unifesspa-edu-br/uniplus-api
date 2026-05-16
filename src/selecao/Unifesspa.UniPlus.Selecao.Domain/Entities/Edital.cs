@@ -9,7 +9,15 @@ public sealed class Edital : EntityBase
 {
     public NumeroEdital NumeroEdital { get; private set; } = null!;
     public string Titulo { get; private set; } = string.Empty;
-    public TipoProcesso TipoProcesso { get; private set; }
+
+    /// <summary>
+    /// FK preparatória para a futura entidade <c>TipoEdital</c> (Story #455).
+    /// Permanece <c>null</c> nesta Story #454 — a entidade ainda não existe;
+    /// será populada quando a promoção do enum <see cref="TipoProcesso"/>
+    /// for concluída e o seed Newman (#463) tiver inserido as linhas-template.
+    /// FK não-nula entra em migration futura quando dados existirem.
+    /// </summary>
+    public Guid? TipoEditalId { get; private set; }
     public StatusEdital Status { get; private set; }
     public PeriodoInscricao? PeriodoInscricao { get; private set; }
     public FormulaCalculo? FormulaCalculo { get; private set; }
@@ -24,17 +32,26 @@ public sealed class Edital : EntityBase
 
     private Edital() { }
 
-    public static Edital Criar(NumeroEdital numeroEdital, string titulo, TipoProcesso tipoProcesso)
+    public static Edital Criar(NumeroEdital numeroEdital, string titulo, Guid? tipoEditalId = null)
     {
-        var edital = new Edital
+        // Invariante de factory: TipoEditalId é opcional (null), mas
+        // Guid.Empty é estado inválido — significa "informado, mas vazio".
+        // Validator espelha a regra na borda HTTP; este guard cobre callers
+        // internos (handlers, seeds) que não passam pelo command bus.
+        if (tipoEditalId.HasValue && tipoEditalId.Value == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "TipoEditalId não pode ser Guid vazio. Omita o argumento para nulo.",
+                nameof(tipoEditalId));
+        }
+
+        return new Edital
         {
             NumeroEdital = numeroEdital,
             Titulo = titulo,
-            TipoProcesso = tipoProcesso,
-            Status = StatusEdital.Rascunho
+            TipoEditalId = tipoEditalId,
+            Status = StatusEdital.Rascunho,
         };
-
-        return edital;
     }
 
     public void DefinirPeriodoInscricao(PeriodoInscricao periodo) =>

@@ -15,7 +15,12 @@ public sealed class EtapaConfiguration : IEntityTypeConfiguration<Etapa>
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Nome).HasMaxLength(200).IsRequired();
-        builder.Property(e => e.Tipo).HasConversion<int>().IsRequired();
+
+        // FK preparatória para a futura entidade `TipoEtapa` (Story #455).
+        // Mesma justificativa de EditalConfiguration.TipoEditalId — nullable
+        // até a entidade existir; mapeada para `tipo_etapa_id` automaticamente.
+        builder.Property(e => e.TipoEtapaId);
+
         builder.Property(e => e.Peso).HasPrecision(5, 2).IsRequired();
         builder.Property(e => e.Ordem).IsRequired();
         builder.Property(e => e.NotaMinima).HasPrecision(5, 2);

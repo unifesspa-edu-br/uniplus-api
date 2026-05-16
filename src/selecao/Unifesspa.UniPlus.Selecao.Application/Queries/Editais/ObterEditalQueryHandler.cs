@@ -29,7 +29,7 @@ public static class ObterEditalQueryHandler
             edital.Id,
             edital.NumeroEdital.ToString(),
             edital.Titulo,
-            edital.TipoProcesso.ToString(),
+            edital.TipoEditalId,
             edital.Status.ToString(),
             edital.MaximoOpcoesCurso,
             edital.BonusRegionalHabilitado,

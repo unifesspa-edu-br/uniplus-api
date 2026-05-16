@@ -219,7 +219,6 @@ public sealed class PublicarEditalEndpointTests
                 numeroEdital = numero1,
                 anoEdital = 2026,
                 titulo = "Body-mismatch test",
-                tipoProcesso = 1, // SiSU — enum serializado como número (System.Text.Json default)
             }),
         };
         AppendTestAuth(primeiraReq);
@@ -235,7 +234,6 @@ public sealed class PublicarEditalEndpointTests
                 numeroEdital = numero2,
                 anoEdital = 2026,
                 titulo = "Body-mismatch test",
-                tipoProcesso = 1, // SiSU — enum serializado como número (System.Text.Json default)
             }),
         };
         AppendTestAuth(segundaReq);
@@ -282,7 +280,7 @@ public sealed class PublicarEditalEndpointTests
         int numeroSeed = NextNumeroSeed();
         Result<NumeroEdital> numeroResult = NumeroEdital.Criar(numero: numeroSeed, ano: 2026);
         numeroResult.IsSuccess.Should().BeTrue();
-        Edital edital = Edital.Criar(numeroResult.Value!, "PublicarEditalEndpointTests seed", TipoProcesso.SiSU);
+        Edital edital = Edital.Criar(numeroResult.Value!, "PublicarEditalEndpointTests seed");
         // O agregado já tem domain events na coleção (do `Criar`/Publicar futuro).
         // Como esta seed bypassa o handler produtivo, drenamos manualmente para
         // não vazar eventos no coletor antes do POST.

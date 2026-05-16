@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 using Kernel.Results;
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Events;
 using Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -39,8 +38,7 @@ public sealed class CascadingHandlerUnitTests
 
         var command = new PublicarEditalCascadingCommand(
             numero,
-            "UnitTest cascading",
-            TipoProcesso.SiSU);
+            "UnitTest cascading");
 
         IEnumerable<object> cascading = await PublicarEditalCascadingHandler.Handle(
             command,
