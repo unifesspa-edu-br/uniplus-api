@@ -129,23 +129,43 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
 
 ### Endpoints operacionais
 
-Endpoints sem semântica REST de recurso (health, readiness, ping, metrics)
-seguem o mesmo padrão: `/api/{modulo}/health`, `/api/{modulo}/ping`. Não
-suportam vendor MIME nem aparecem no OpenAPI público. `PingController` em
-Portal (`/api/portal/ping`) já segue.
+**Health checks** (`/health`, `/health/live`, `/health/ready`) ficam na
+**raiz de cada API**, sem prefixo `/api/{modulo}/`. Esse é o pattern já
+em main em todas as 5 APIs (via `app.MapHealthChecks(...)` em `Program.cs`)
+e alinha com a convenção Kubernetes — probes (`livenessProbe`,
+`readinessProbe`) são configuradas direto contra o pod IP, frequentemente
+bypassando o ingress. Manter `/health*` na raiz preserva esse caminho
+operacional sem precisar de regra extra no Traefik.
+
+**Outros endpoints operacionais** sem semântica REST de recurso (ping,
+metrics, info) seguem `/api/{modulo}/{endpoint}` — ex.: `/api/portal/ping`.
+São endpoints "lógicos" da API e fazem sentido dentro do prefix de módulo.
+
+Em todos os casos: não suportam vendor MIME, não aparecem no OpenAPI
+público.
 
 ### Roteamento Traefik / Ingress
 
 Em HML/PROD, um único host (`api.uniplus.unifesspa.edu.br`) com regras
-path-prefix:
+de path-prefix usando **trailing slash explícita** para garantir limite
+de segmento de caminho (sem essa precaução, `PathPrefix(/api/selecao)`
+em Traefik também casaria `/api/selecao-foo`, gerando colisão potencial):
 
 ```text
-Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/selecao`)       → uniplus-selecao
-Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/ingresso`)      → uniplus-ingresso
-Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/parametrizacao`)→ uniplus-parametrizacao
-Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/organizacao`)   → uniplus-organizacao
-Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/portal`)        → uniplus-portal
+Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/selecao/`)        → uniplus-selecao
+Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/ingresso/`)       → uniplus-ingresso
+Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/parametrizacao/`) → uniplus-parametrizacao
+Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/organizacao/`)    → uniplus-organizacao
+Host(`api.uniplus.unifesspa.edu.br`) && PathPrefix(`/api/portal/`)         → uniplus-portal
 ```
+
+Como nenhum controller expõe endpoint em exatamente `/api/{modulo}` (sem
+sub-path), a trailing slash no matcher é suficiente. Caso futuro precise
+de endpoint na raiz do módulo, usar `Path(\`/api/{modulo}\`) || PathPrefix(\`/api/{modulo}/\`)`.
+
+Para os health checks na raiz, regra separada por host (não path) ou,
+preferencialmente, configurar a probe Kubernetes direto contra o pod IP
+bypassando o ingress (pattern padrão).
 
 Um único certificado TLS para `api.uniplus.unifesspa.edu.br` (HTTP-01
 challenge funciona — não exige wildcard). CORS configurado para um único
