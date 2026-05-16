@@ -40,6 +40,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ObrigatoriedadeLegal.HashColisao", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.obrigatoriedade_legal.hash_colisao", "Colisão de hash de regra ativa")),
         new("ObrigatoriedadeLegal.ProprietarioForaDeAreasDeInteresse", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.proprietario_fora_de_areas_de_interesse", "Proprietario deve estar em AreasDeInteresse")),
         new("ObrigatoriedadeLegal.ProprietarioObrigatorioComAreas", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.proprietario_obrigatorio_com_areas", "Proprietario obrigatório quando há AreasDeInteresse")),
+        new("ObrigatoriedadeLegal.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.obrigatoriedade_legal.nao_encontrada", "ObrigatoriedadeLegal não encontrada")),
+        new("AreaCodigo.Invalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.governance.area_codigo.invalido", "AreaCodigo inválido (uppercase ASCII, 2..32 chars)")),
+        new("Area.EscopoNegado", new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.area.escopo_negado", "Caller não administra a área proprietária do recurso")),
+        // Conformidade (Story #461). Snapshot ausente em edital não publicado.
+        new("Conformidade.SnapshotNaoDisponivel", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.conformidade.snapshot_nao_disponivel", "Snapshot de conformidade indisponível — edital não publicado")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

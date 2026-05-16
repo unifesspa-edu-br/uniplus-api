@@ -63,6 +63,7 @@ builder.Services.AddDomainErrorMapper();
 // HATEOAS Level 1 (ADR-0029) — builder de _links por recurso. Singleton
 // porque encapsula apenas um LinkGenerator (também singleton); função pura.
 builder.Services.AddSingleton<IResourceLinksBuilder<Unifesspa.UniPlus.Selecao.Application.DTOs.EditalDto>, EditalLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<Unifesspa.UniPlus.Selecao.Application.DTOs.ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
 
 // Criptografia + cursor pagination usados pelos endpoints de listagem
 // (ADR-0026 + ADR-0031). AddUniPlusEncryption: provider 'local' AES-GCM 256
