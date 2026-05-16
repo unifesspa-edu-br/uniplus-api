@@ -21,6 +21,29 @@ public sealed class SelecaoDbContext : DbContext, IUnitOfWork
     public DbSet<ProcessoSeletivo> ProcessosSeletivos => Set<ProcessoSeletivo>();
 
     /// <summary>
+    /// Catálogo data-driven de regras legais (Story #460, ADR-0058). O CRUD
+    /// admin entra em #461; em V1 esta DbSet é populada via factory direta
+    /// para testes e seeds.
+    /// </summary>
+    public DbSet<ObrigatoriedadeLegal> ObrigatoriedadesLegais => Set<ObrigatoriedadeLegal>();
+
+    /// <summary>
+    /// Histórico append-only de mutações de <see cref="ObrigatoriedadesLegais"/>
+    /// (CA-03). Linha inserida na mesma transação do save da regra pelo
+    /// <c>ObrigatoriedadeLegalHistoricoInterceptor</c>.
+    /// </summary>
+    public DbSet<ObrigatoriedadeLegalHistorico> ObrigatoriedadeLegalHistorico =>
+        Set<ObrigatoriedadeLegalHistorico>();
+
+    /// <summary>
+    /// Snapshots de governança capturados por <c>Edital.Publicar()</c>
+    /// (ADR-0057 §"Pattern 1"). Em #460 a tabela é criada vazia; #462
+    /// é responsável pelo INSERT.
+    /// </summary>
+    public DbSet<EditalGovernanceSnapshot> EditalGovernanceSnapshots =>
+        Set<EditalGovernanceSnapshot>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado
     /// para permitir gravação adjacente no outbox; entries cifradas at-rest
     /// via <c>IUniPlusEncryptionService</c>.

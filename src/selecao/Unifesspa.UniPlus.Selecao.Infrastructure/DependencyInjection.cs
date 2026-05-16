@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Domain.Interfaces;
 using ExternalServices;
 using Persistence;
+using Persistence.Interceptors;
 using Persistence.Repositories;
 
 public static class SelecaoInfrastructureRegistration
@@ -26,8 +27,22 @@ public static class SelecaoInfrastructureRegistration
 
         services.AddUniPlusEfInterceptors();
 
+        // ObrigatoriedadeLegalHistoricoInterceptor (Story #460, ADR-0058) é
+        // scoped por simetria com SoftDelete/Auditable — depende do
+        // IUserContext scoped para preencher snapshot_by.
+        services.AddScoped<ObrigatoriedadeLegalHistoricoInterceptor>();
+
         services.AddDbContext<SelecaoDbContext>((serviceProvider, options) =>
-            options.UseUniPlusNpgsqlConventions<SelecaoDbContext>(serviceProvider, ConnectionStringName));
+        {
+            options.UseUniPlusNpgsqlConventions<SelecaoDbContext>(serviceProvider, ConnectionStringName);
+
+            // Encaixe deliberado em sequência aos interceptors cross-cutting do
+            // UseUniPlusNpgsqlConventions — roda DEPOIS de SoftDelete + Auditable,
+            // garantindo que mutações via soft-delete (Delete convertido para
+            // Modified+IsDeleted=true) também gerem linha no histórico.
+            options.AddInterceptors(
+                serviceProvider.GetRequiredService<ObrigatoriedadeLegalHistoricoInterceptor>());
+        });
 
         services.AddScoped<IUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<SelecaoDbContext>());
