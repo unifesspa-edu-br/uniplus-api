@@ -49,6 +49,7 @@ public static class SelecaoInfrastructureRegistration
 
         services.AddScoped<IEditalRepository, EditalRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
+        services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();
 
         return services;
