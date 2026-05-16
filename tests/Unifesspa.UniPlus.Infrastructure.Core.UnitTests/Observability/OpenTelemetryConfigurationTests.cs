@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -148,6 +149,32 @@ public class OpenTelemetryConfigurationTests
         Action acao = () => OpenTelemetryConfiguration.SelecionarSampler(environment!);
 
         acao.Should().Throw<ArgumentNullException>();
+    }
+
+    [Theory]
+    [InlineData("/health")]
+    [InlineData("/health/live")]
+    [InlineData("/health/ready")]
+    [InlineData("/health/startup")]
+    public void EhRotaInstrumentavel_RotasHealth_RetornaFalse(string path)
+    {
+        bool resultado = OpenTelemetryConfiguration.EhRotaInstrumentavel(new PathString(path));
+
+        resultado.Should().BeFalse(because: $"a rota '{path}' é health check e não deve gerar telemetria");
+    }
+
+    [Theory]
+    [InlineData("/api/editais")]
+    [InlineData("/api/editais/123")]
+    [InlineData("/api/inscricoes")]
+    [InlineData("/swagger")]
+    [InlineData("/healthz")]
+    [InlineData("/")]
+    public void EhRotaInstrumentavel_RotasNegocioEOutras_RetornaTrue(string path)
+    {
+        bool resultado = OpenTelemetryConfiguration.EhRotaInstrumentavel(new PathString(path));
+
+        resultado.Should().BeTrue(because: $"a rota '{path}' deve ser instrumentada normalmente");
     }
 
     private static IConfiguration NovaConfiguracao(IEnumerable<KeyValuePair<string, string?>>? values = null)

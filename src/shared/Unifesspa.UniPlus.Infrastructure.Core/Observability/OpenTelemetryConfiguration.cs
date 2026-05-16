@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Observability;
 
 using System.Collections.Generic;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -112,7 +113,8 @@ public static class OpenTelemetryConfiguration
                 .SetSampler(sampler)
                 .AddSource(nomeServico)
                 .AddSource(WolverineActivityAndMeterName)
-                .AddAspNetCoreInstrumentation()
+                .AddAspNetCoreInstrumentation(opts =>
+                    opts.Filter = ctx => EhRotaInstrumentavel(ctx.Request.Path))
                 .AddHttpClientInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation()
                 .AddOtlpExporter())
@@ -126,6 +128,17 @@ public static class OpenTelemetryConfiguration
 
         return services;
     }
+
+    /// <summary>
+    /// Retorna <see langword="true"/> quando a rota deve ser instrumentada (spans e métricas).
+    /// Rotas de health check (<c>/health*</c>) são excluídas: o Kubernetes já as monitora
+    /// via <c>kube_pod_status_ready</c> e incluí-las distorceria SLO, percentis de latência
+    /// e cardinality no Prometheus com volume de tráfego não-usuário.
+    /// <c>StartsWithSegments</c> respeita fronteiras de segmento — <c>/healthz</c> não
+    /// é excluído acidentalmente.
+    /// </summary>
+    internal static bool EhRotaInstrumentavel(PathString path)
+        => !path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Seleciona o sampler conforme ambiente: <see cref="AlwaysOnSampler"/>
