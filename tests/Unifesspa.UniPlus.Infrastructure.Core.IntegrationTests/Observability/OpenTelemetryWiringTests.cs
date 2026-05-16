@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.IntegrationTests.Observability;
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 using AwesomeAssertions;
 
@@ -10,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
@@ -73,6 +75,64 @@ public sealed class OpenTelemetryWiringTests(OtelCollectorContainerFixture colle
             collectorOutput.Should().Contain(ServiceName, because: $"o Resource attribute service.name precisa chegar até o Collector — confirma que ConfigureResource(...AddService(\"{ServiceName}\")) está wired");
             collectorOutput.Should().Contain("test-wiring-span", because: "o nome do span emitido localmente precisa aparecer no output do Collector — confirma que AddOtlpExporter() está exportando de fato");
             collectorOutput.Should().Contain(OpenTelemetryConfiguration.ServiceNamespaceResourceValue, because: "service.namespace=uniplus deve chegar no Resource exportado");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(EnvVarName, endpointAnterior);
+        }
+    }
+
+    [Fact]
+    public async Task AdicionarObservabilidade_PipelineEndToEnd_ExportaMetricaRotuladaParaCollector()
+    {
+        // Mesmo padrão de env-var patching do teste de traces —
+        // xUnit não paraleliza dentro da mesma collection, sem race.
+        string? endpointAnterior = Environment.GetEnvironmentVariable(EnvVarName);
+        try
+        {
+            Environment.SetEnvironmentVariable(EnvVarName, collector.GrpcEndpoint);
+
+            ServiceCollection services = new();
+            services.AddLogging();
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            IHostEnvironment environment = new TestHostEnvironment("Development");
+
+            services.AdicionarObservabilidade(ServiceName, configuration, environment);
+
+            await using ServiceProvider provider = services.BuildServiceProvider();
+
+            MeterProvider? meterProvider = provider.GetService<MeterProvider>();
+            meterProvider.Should().NotBeNull(
+                "AdicionarObservabilidade deve registrar um MeterProvider quando Observability:Enabled é o default true");
+
+            // Meter com o mesmo nome do serviço — AddMeter(nomeServico) em
+            // AdicionarObservabilidade registra o listener neste Meter específico.
+            // Sem correspondência de nome, o SDK ignora as medições.
+            using Meter meter = new(ServiceName);
+            Counter<long> counter = meter.CreateCounter<long>(
+                "test.wiring.counter",
+                unit: "requests",
+                description: "Contador de teste de wiring de métricas");
+            counter.Add(1, new KeyValuePair<string, object?>("test.scenario", "wiring-end-to-end"));
+
+            // ForceFlush garante envio imediato do batch periódico em vez de aguardar
+            // o intervalo padrão (60s). Timeout de 5s é margem para gRPC handshake
+            // + envio em runners CI mais lentos.
+            meterProvider!.ForceFlush(timeoutMilliseconds: 5_000).Should().BeTrue();
+
+            // Buffer extra (200ms) para o Collector processar o batch e emitir no
+            // exporter debug. Heurística: na prática 50ms basta, 200ms dá folga.
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+
+            string collectorOutput = await collector.GetLogsAsync();
+
+            collectorOutput.Should().Contain("ResourceMetrics",
+                because: "o exporter debug do Collector escreve o nome do tipo OTLP recebido em stderr");
+            collectorOutput.Should().Contain(ServiceName,
+                because: $"o Resource attribute service.name precisa chegar ao Collector " +
+                         $"— confirma que ConfigureResource(...AddService(\"{ServiceName}\")) está wired");
+            collectorOutput.Should().Contain(OpenTelemetryConfiguration.ServiceNamespaceResourceValue,
+                because: "service.namespace=uniplus deve chegar no Resource exportado com as métricas");
         }
         finally
         {
