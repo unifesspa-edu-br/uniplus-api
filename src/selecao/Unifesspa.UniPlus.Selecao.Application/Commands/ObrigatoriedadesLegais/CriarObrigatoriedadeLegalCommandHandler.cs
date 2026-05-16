@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using System.Collections.Generic;
 
-using Microsoft.EntityFrameworkCore;
-
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Governance.Contracts;
@@ -94,12 +92,13 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (DbUpdateException ex)
+        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint)
         {
             // Race entre ExisteRegraCodigoAtivoAsync e o INSERT (check-then-act):
             // a constraint UNIQUE parcial sobre regra_codigo/hash dispara 23505,
             // viramos 409 ProblemDetails consistente com o caminho não-race.
-            string? constraint = UniqueConstraintViolation.GetViolatedConstraint(ex);
+            // Filtro do `when` garante que outras exceções não-23505 propagam
+            // intactas (não engolimos falhas inesperadas).
             if (UniqueConstraintViolation.IsRegraCodigoConflict(constraint))
             {
                 return Result<Guid>.Failure(new DomainError(

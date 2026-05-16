@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using System.Collections.Generic;
 
-using Microsoft.EntityFrameworkCore;
-
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Governance.Contracts;
@@ -113,12 +111,11 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (DbUpdateException ex)
+        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint)
         {
             // Mesmo tratamento do Criar: race entre o ExisteRegraCodigoAtivoAsync
             // e o UPDATE (caller troca RegraCodigo para um valor que outra escrita
             // concorrente acabou de assumir) dispara a constraint do banco.
-            string? constraint = UniqueConstraintViolation.GetViolatedConstraint(ex);
             if (UniqueConstraintViolation.IsRegraCodigoConflict(constraint))
             {
                 return Result.Failure(new DomainError(
