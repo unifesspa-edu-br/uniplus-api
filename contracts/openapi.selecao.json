@@ -162,7 +162,7 @@
         }
       }
     },
-    "/api/editais": {
+    "/api/selecao/editais": {
       "post": {
         "tags": [
           "Edital"
@@ -370,7 +370,7 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/editais/{id}": {
+    "/api/selecao/editais/{id}": {
       "get": {
         "tags": [
           "Edital"
@@ -430,7 +430,7 @@
         }
       }
     },
-    "/api/editais/{id}/publicar": {
+    "/api/selecao/editais/{id}/publicar": {
       "post": {
         "tags": [
           "Edital"
@@ -505,10 +505,693 @@
         },
         "x-uniplus-idempotent": true
       }
+    },
+    "/api/selecao/editais/{id}/conformidade": {
+      "get": {
+        "tags": [
+          "Edital"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/editais/{id}/conformidade-historica": {
+      "get": {
+        "tags": [
+          "Edital"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/obrigatoriedades-legais": {
+      "get": {
+        "tags": [
+          "ObrigatoriedadeLegal"
+        ],
+        "parameters": [
+          {
+            "name": "tipoEdital",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoria",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+            }
+          },
+          {
+            "name": "proprietario",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vigentes",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Cursor opaco AES-GCM emitido pelo servidor no header Link da p\u00E1gina anterior. Ausente na primeira p\u00E1gina. Cliente trata como string opaca \u2014 n\u00E3o decodificar (ADR-0026, ADR-0031).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Link": {
+                "description": "Links de navega\u00E7\u00E3o da pagina\u00E7\u00E3o (RFC 5988/8288). rel=\u0022self\u0022 sempre presente; rel=\u0022next\u0022 s\u00F3 quando h\u00E1 pr\u00F3xima p\u00E1gina. Cada link carrega o cursor opaco no par\u00E2metro \u0060cursor\u0060 (ADR-0026).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Page-Size": {
+                "description": "Quantidade de itens retornados na p\u00E1gina atual (sempre menor ou igual ao limit efetivo).",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-paginated": true
+      }
+    },
+    "/api/selecao/obrigatoriedades-legais/{id}": {
+      "get": {
+        "tags": [
+          "ObrigatoriedadeLegal"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selecao/admin/obrigatoriedades-legais": {
+      "post": {
+        "tags": [
+          "ObrigatoriedadeLegal"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarObrigatoriedadeLegalCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarObrigatoriedadeLegalCommand"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarObrigatoriedadeLegalCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
+    "/api/selecao/admin/obrigatoriedades-legais/{id}": {
+      "put": {
+        "tags": [
+          "ObrigatoriedadeLegal"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarObrigatoriedadeLegalCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarObrigatoriedadeLegalCommand"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarObrigatoriedadeLegalCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      },
+      "delete": {
+        "tags": [
+          "ObrigatoriedadeLegal"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AtualizarObrigatoriedadeLegalCommand": {
+        "required": [
+          "id",
+          "tipoEditalCodigo",
+          "categoria",
+          "regraCodigo",
+          "predicado",
+          "descricaoHumana",
+          "baseLegal",
+          "vigenciaInicio",
+          "vigenciaFim",
+          "atoNormativoUrl",
+          "portariaInternaCodigo",
+          "proprietario",
+          "areasDeInteresse"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoEditalCodigo": {
+            "type": "string"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+          },
+          "regraCodigo": {
+            "type": "string"
+          },
+          "predicado": {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+          },
+          "descricaoHumana": {
+            "type": "string"
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "vigenciaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "vigenciaFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "atoNormativoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "portariaInternaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "proprietario": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "areasDeInteresse": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "AuthenticatedUserResponse": {
         "required": [
           "userId",
@@ -546,6 +1229,37 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CategoriaObrigatoriedade": {
+        "type": "integer"
+      },
+      "ConformidadeDto": {
+        "required": [
+          "editalId",
+          "regras"
+        ],
+        "type": "object",
+        "properties": {
+          "editalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraAvaliadaDto"
+            }
+          },
+          "_links": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
@@ -591,6 +1305,78 @@
             ],
             "format": "int32",
             "default": 1
+          }
+        }
+      },
+      "CriarObrigatoriedadeLegalCommand": {
+        "required": [
+          "tipoEditalCodigo",
+          "categoria",
+          "regraCodigo",
+          "predicado",
+          "descricaoHumana",
+          "baseLegal",
+          "vigenciaInicio",
+          "vigenciaFim",
+          "atoNormativoUrl",
+          "portariaInternaCodigo",
+          "proprietario",
+          "areasDeInteresse"
+        ],
+        "type": "object",
+        "properties": {
+          "tipoEditalCodigo": {
+            "type": "string"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+          },
+          "regraCodigo": {
+            "type": "string"
+          },
+          "predicado": {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+          },
+          "descricaoHumana": {
+            "type": "string"
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "vigenciaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "vigenciaFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "atoNormativoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "portariaInternaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "proprietario": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "areasDeInteresse": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -657,6 +1443,281 @@
         "type": "string",
         "format": "binary"
       },
+      "JsonElement": {},
+      "ObrigatoriedadeLegalDto": {
+        "required": [
+          "id",
+          "tipoEditalCodigo",
+          "categoria",
+          "regraCodigo",
+          "predicado",
+          "descricaoHumana",
+          "baseLegal",
+          "atoNormativoUrl",
+          "portariaInternaCodigo",
+          "vigenciaInicio",
+          "vigenciaFim",
+          "hash",
+          "proprietario",
+          "areasDeInteresse",
+          "isDeleted"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoEditalCodigo": {
+            "type": "string"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+          },
+          "regraCodigo": {
+            "type": "string"
+          },
+          "predicado": {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+          },
+          "descricaoHumana": {
+            "type": "string"
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "atoNormativoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "portariaInternaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vigenciaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "vigenciaFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "proprietario": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "areasDeInteresse": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "_links": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PredicadoObrigatoriedade": {
+        "required": [
+          "$tipo"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeEtapaObrigatoria"
+          },
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeModalidadesMinimas"
+          },
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeDesempateDeveIncluir"
+          },
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeDocumentoObrigatorioParaModalidade"
+          },
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeBonusObrigatorio"
+          },
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeAtendimentoDisponivel"
+          },
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeConcorrenciaDuplaObrigatoria"
+          },
+          {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedadeCustomizado"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$tipo",
+          "mapping": {
+            "etapaObrigatoria": "#/components/schemas/PredicadoObrigatoriedadeEtapaObrigatoria",
+            "modalidadesMinimas": "#/components/schemas/PredicadoObrigatoriedadeModalidadesMinimas",
+            "desempateDeveIncluir": "#/components/schemas/PredicadoObrigatoriedadeDesempateDeveIncluir",
+            "documentoObrigatorioParaModalidade": "#/components/schemas/PredicadoObrigatoriedadeDocumentoObrigatorioParaModalidade",
+            "bonusObrigatorio": "#/components/schemas/PredicadoObrigatoriedadeBonusObrigatorio",
+            "atendimentoDisponivel": "#/components/schemas/PredicadoObrigatoriedadeAtendimentoDisponivel",
+            "concorrenciaDuplaObrigatoria": "#/components/schemas/PredicadoObrigatoriedadeConcorrenciaDuplaObrigatoria",
+            "customizado": "#/components/schemas/PredicadoObrigatoriedadeCustomizado"
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeAtendimentoDisponivel": {
+        "required": [
+          "necessidades"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "atendimentoDisponivel"
+            ],
+            "type": "string"
+          },
+          "necessidades": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeBonusObrigatorio": {
+        "required": [
+          "modalidadesAplicaveis"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "bonusObrigatorio"
+            ],
+            "type": "string"
+          },
+          "modalidadesAplicaveis": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeConcorrenciaDuplaObrigatoria": {
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "concorrenciaDuplaObrigatoria"
+            ],
+            "type": "string"
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeCustomizado": {
+        "required": [
+          "parametros"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "customizado"
+            ],
+            "type": "string"
+          },
+          "parametros": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeDesempateDeveIncluir": {
+        "required": [
+          "criterio"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "desempateDeveIncluir"
+            ],
+            "type": "string"
+          },
+          "criterio": {
+            "type": "string"
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeDocumentoObrigatorioParaModalidade": {
+        "required": [
+          "modalidade",
+          "tipoDocumento"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "documentoObrigatorioParaModalidade"
+            ],
+            "type": "string"
+          },
+          "modalidade": {
+            "type": "string"
+          },
+          "tipoDocumento": {
+            "type": "string"
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeEtapaObrigatoria": {
+        "required": [
+          "tipoEtapaCodigo"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "etapaObrigatoria"
+            ],
+            "type": "string"
+          },
+          "tipoEtapaCodigo": {
+            "type": "string"
+          }
+        }
+      },
+      "PredicadoObrigatoriedadeModalidadesMinimas": {
+        "required": [
+          "codigos"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "modalidadesMinimas"
+            ],
+            "type": "string"
+          },
+          "codigos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -692,6 +1753,65 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "RegraAvaliadaDto": {
+        "required": [
+          "regraId",
+          "regraCodigo",
+          "aprovada",
+          "baseLegal",
+          "portariaInternaCodigo",
+          "atoNormativoUrl",
+          "descricaoHumana",
+          "hash",
+          "vigenciaInicio",
+          "vigenciaFim"
+        ],
+        "type": "object",
+        "properties": {
+          "regraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regraCodigo": {
+            "type": "string"
+          },
+          "aprovada": {
+            "type": "boolean"
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "portariaInternaCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "atoNormativoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descricaoHumana": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "vigenciaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "vigenciaFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },
@@ -765,6 +1885,9 @@
     },
     {
       "name": "Edital"
+    },
+    {
+      "name": "ObrigatoriedadeLegal"
     }
   ]
 }
