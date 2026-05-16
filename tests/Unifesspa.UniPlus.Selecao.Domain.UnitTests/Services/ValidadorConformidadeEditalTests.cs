@@ -4,9 +4,6 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -264,25 +261,22 @@ public sealed class ValidadorConformidadeEditalTests
         resultado.Regras[0].Aprovada.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Customizado reprova conservadoramente e emite warning + aviso estruturado")]
+    [Fact(DisplayName = "Customizado reprova conservadoramente e propaga aviso estruturado")]
     public void Customizado_Smoke_Reprova_E_Avisa()
     {
         using JsonDocument doc = JsonDocument.Parse("{\"campoArbitrario\":\"valor\"}");
         ObrigatoriedadeLegal regra = NovaRegra(new Customizado(doc.RootElement.Clone()));
-        RecordingLogger logger = new();
 
         ResultadoConformidade resultado = ValidadorConformidadeEdital.Evaluate(
             ViewVazia(),
-            [regra],
-            logger);
+            [regra]);
 
         resultado.Regras[0].Aprovada.Should().BeFalse(
             "ADR-0058 §válvula de escape: avaliação manual é exigida para preservar evidência legal");
         resultado.Regras[0].DescricaoHumana.Should().Contain("Customizado");
-        resultado.Avisos.Should().Contain(a => a.Contains("Customizado em uso", StringComparison.Ordinal));
-        logger.Records.Should().Contain(r =>
-            r.Level == LogLevel.Warning &&
-            r.Message.Contains("Customizado em uso", StringComparison.Ordinal));
+        resultado.Avisos.Should().Contain(a =>
+            a.Contains("Customizado em uso", StringComparison.Ordinal) &&
+            a.Contains(regra.RegraCodigo, StringComparison.Ordinal));
     }
 
     // ─── Round-trip JSON polimórfico (P3 Codex) ─────────────────────────
@@ -362,47 +356,6 @@ public sealed class ValidadorConformidadeEditalTests
         return r.Value!;
     }
 
-    /// <summary>
-    /// Coletor minimal de logs em memória; substitui NSubstitute para evitar
-    /// dependência adicional no projeto de testes de domínio.
-    /// </summary>
-    private sealed class RecordingLogger : ILogger
-    {
-        public List<(LogLevel Level, string Message)> Records { get; } = [];
-
-        public IDisposable BeginScope<TState>(TState state) where TState : notnull
-            => NullScope.Instance;
-
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(
-            LogLevel logLevel,
-            EventId eventId,
-            TState state,
-            Exception? exception,
-            Func<TState, Exception?, string> formatter)
-        {
-            ArgumentNullException.ThrowIfNull(formatter);
-            Records.Add((logLevel, formatter(state, exception)));
-        }
-
-        private sealed class NullScope : IDisposable
-        {
-            public static readonly NullScope Instance = new();
-            public void Dispose() { }
-        }
-    }
-
-    [Fact(DisplayName = "Evaluate sem logger ainda funciona para Customizado (não lança)")]
-    public void Customizado_SemLogger_NaoLanca()
-    {
-        using JsonDocument doc = JsonDocument.Parse("{\"x\":1}");
-        ObrigatoriedadeLegal regra = NovaRegra(new Customizado(doc.RootElement.Clone()));
-
-        Action act = () => ValidadorConformidadeEdital.Evaluate(ViewVazia(), [regra], logger: null);
-        act.Should().NotThrow();
-    }
-
     [Fact(DisplayName = "Evaluate com Edital agregado projeta para view via From e funciona")]
     public void Evaluate_ComEdital_FuncionaViaProjecao()
     {
@@ -414,10 +367,7 @@ public sealed class ValidadorConformidadeEditalTests
         Edital edital = Edital.Criar(numero.Value!, "Edital de teste");
         ObrigatoriedadeLegal regra = NovaRegra(new EtapaObrigatoria("ProvaObjetiva"));
 
-        ResultadoConformidade resultado = ValidadorConformidadeEdital.Evaluate(
-            edital,
-            [regra],
-            NullLogger.Instance);
+        ResultadoConformidade resultado = ValidadorConformidadeEdital.Evaluate(edital, [regra]);
 
         // Edital sem etapas → EtapaObrigatoria reprova.
         resultado.Regras[0].Aprovada.Should().BeFalse();
@@ -465,10 +415,7 @@ public sealed class ValidadorConformidadeEditalExhaustividadeTests
                 descricaoHumana: "Fitness");
             regra.IsSuccess.Should().BeTrue();
 
-            Action act = () => ValidadorConformidadeEdital.Evaluate(
-                view,
-                [regra.Value!],
-                NullLogger.Instance);
+            Action act = () => ValidadorConformidadeEdital.Evaluate(view, [regra.Value!]);
 
             act.Should().NotThrow(
                 $"variante {derivado.Name} precisa ter case explícito em ValidadorConformidadeEdital.Avaliar");
