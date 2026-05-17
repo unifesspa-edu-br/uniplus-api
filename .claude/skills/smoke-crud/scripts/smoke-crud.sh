@@ -241,26 +241,41 @@ if should_run "POST"; then
   print_body
 
   # --- POST replay (idempotência) ---
+  # ADR-0027: o middleware de idempotência pode devolver tanto 201 (replay
+  # detectado dentro da mesma janela de cache antes da persistência) quanto
+  # 200 (cache hit servindo a resposta capturada). O integration test
+  # `Criar_IdempotencyKeyRepetido_RetornaMesmaResposta` aceita ambos —
+  # a invariante real é "mesma identidade retornada", não o status code.
   if [ -n "$CREATED_ID" ]; then
     CODE=$(do_request POST "$API_BASE$PATH_ADMIN" "Idempotency-Key: $IDEM_KEY" /tmp/smoke-crud.create.json)
     REPLAY_ID=$(cat /tmp/smoke-crud.body | tr -d '"')
-    if [ "$CODE" = "201" ] && [ "$REPLAY_ID" = "$CREATED_ID" ]; then
-      record "POST replay idempotente" "OK" "201 mesmo ID"
+    if { [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; } && [ "$REPLAY_ID" = "$CREATED_ID" ]; then
+      record "POST replay idempotente" "OK" "$CODE mesmo ID"
     else
-      record "POST replay idempotente" "FAIL" "esperado 201+mesmo ID; recebido $CODE id=$REPLAY_ID"
+      record "POST replay idempotente" "FAIL" "esperado 200/201+mesmo ID; recebido $CODE id=$REPLAY_ID"
     fi
     print_body
   fi
 
   # --- POST conflito (mesmo regraCodigo, nova chave) ---
+  # ProblemDetails canônico (RFC 9457 + ADR-0023): o slug da taxonomia
+  # `uniplus.<modulo>.<recurso>.<erro>` vive na URI `type`
+  # (`https://uniplus.unifesspa.edu.br/errors/<slug>`). O campo `code` é
+  # uma extension (`ProblemDetails.Extensions["code"]`) e NÃO consta da
+  # schema oficial — clientes que só leem o que está no contrato OpenAPI
+  # não enxergam `code`. Extrai do `type` por basename; fallback `.code`
+  # quando uma resposta omitir o type (cenário defensivo, não esperado).
   if [ -n "$CREATED_ID" ] && [ -n "$CONFLICT_FIELD" ]; then
     CODE=$(do_request POST "$API_BASE$PATH_ADMIN" "Idempotency-Key: $(uuidgen)" /tmp/smoke-crud.create.json)
     BODY=$(cat /tmp/smoke-crud.body)
-    CODE_TAXONOMY=$(echo "$BODY" | jq -r '.code // empty' 2>/dev/null)
+    CODE_TAXONOMY=$(echo "$BODY" | jq -r '
+      (.type // "") as $t |
+      if ($t | test("/errors/")) then ($t | sub(".*/errors/"; "")) else (.code // empty) end
+    ' 2>/dev/null)
     if [ "$CODE" = "409" ] && echo "$CODE_TAXONOMY" | grep -q "$CONFLICT_ERROR_SUFFIX"; then
       record "POST conflito ($CONFLICT_FIELD)" "OK" "409 $CODE_TAXONOMY"
     else
-      record "POST conflito ($CONFLICT_FIELD)" "FAIL" "esperado 409+$CONFLICT_ERROR_SUFFIX; recebido $CODE code=$CODE_TAXONOMY"
+      record "POST conflito ($CONFLICT_FIELD)" "FAIL" "esperado 409+$CONFLICT_ERROR_SUFFIX; recebido $CODE taxonomia='$CODE_TAXONOMY'"
     fi
     print_body
   fi
