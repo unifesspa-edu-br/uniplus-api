@@ -1,0 +1,43 @@
+{
+  "resource": "obrigatoriedade-legal",
+  "api": "selecao",
+  "vendorMime": "application/vnd.uniplus.obrigatoriedade-legal.v1+json",
+  "paths": {
+    "public": "/api/selecao/obrigatoriedades-legais",
+    "admin": "/api/selecao/admin/obrigatoriedades-legais"
+  },
+  "putRequiresIdInBody": true,
+  "conflictField": {
+    "name": "regraCodigo",
+    "errorCodeSuffix": "regra_codigo_duplicada"
+  },
+  "historico": {
+    "table": "obrigatoriedade_legal_historico",
+    "regraIdColumn": "regra_id",
+    "snapshotAtColumn": "snapshot_at",
+    "database": "uniplus_selecao"
+  },
+  "payload": {
+    "create": {
+      "tipoEditalCodigo": "GRADUACAO",
+      "categoria": "documento",
+      "regraCodigo": "SMOKE-CRUD-DOC-COMPROVANTE-RESIDENCIA",
+      "predicado": {
+        "$tipo": "documentoObrigatorioParaModalidade",
+        "modalidade": "BONUS_REGIONAL",
+        "tipoDocumento": "COMPROVANTE_RESIDENCIA"
+      },
+      "descricaoHumana": "Candidato cotista de bônus regional deve apresentar comprovante de residência.",
+      "baseLegal": "Resolução CONSEPE 184/2017",
+      "vigenciaInicio": "2026-01-01",
+      "vigenciaFim": null,
+      "atoNormativoUrl": null,
+      "portariaInternaCodigo": "PORT-184/2017",
+      "proprietario": "GRADUACAO",
+      "areasDeInteresse": ["GRADUACAO"]
+    },
+    "updateOverrides": {
+      "descricaoHumana": "ATUALIZADA via smoke-crud: comprovante de residência válido nos últimos 90 dias."
+    }
+  }
+}
