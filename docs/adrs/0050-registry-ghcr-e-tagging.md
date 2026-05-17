@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "accepted — emendado em 2026-05-17 (multi-arch habilitado)"
 date: "2026-05-08"
 decision-makers:
   - "Tech Lead"
@@ -10,6 +10,19 @@ informed:
 ---
 
 # ADR-0050: GitHub Container Registry e estratégia de tagging das imagens da `uniplus-api`
+
+> **Emenda de 2026-05-17 — multi-arch (`linux/arm64`) habilitado**
+>
+> A decisão original deferia `linux/arm64` "até existir cluster ARM ou demanda concreta de Apple Silicon em CI" (seção "Resultado da decisão"). O primeiro gatilho acaba de disparar: a Epic [`uniplus-infra#317`](https://github.com/unifesspa-edu-br/uniplus-infra/issues/317) provisiona o lab Uni+ em `us-ashburn-1` sobre `VM.Standard.A1.Flex` (ARM Ampere) — alvo de migração do lab atual `standalone` (`sa-saopaulo-1`/E5 AMD) antes do trial OCI expirar em 2026-06-03.
+>
+> **O que muda:**
+>
+> - `publish-images.yml` passa a produzir manifest list multi-arch (`linux/amd64,linux/arm64`) por release. ArgoCD em cluster amd64 ou arm64 consome a mesma tag `vX.Y.Z`; o daemon Docker resolve o digest correto pela plataforma do nó.
+> - Smoke test estrutural permanece em `linux/amd64` apenas: as invariantes validadas (usuário não-root, entrypoint, runtime .NET responde) são idênticas entre arquiteturas, então emular arm64 via QEMU só repete o mesmo cheque com overhead. Smoke runtime real (sidecars Postgres/Kafka/Redis) continua deferido para compose/Helm pós-publish.
+> - Layer arm64 é compilado via QEMU emulation no runner amd64 do GitHub Actions (`docker/setup-qemu-action` registra os handlers `binfmt_misc`). Custo: ~2–3× mais lento por release. Aceitável porque o trigger continua sendo tag explícita (lockstep raro, não rolling tag).
+> - SBOM e attestation cosign keyless seguem parqueados (mesma posição da decisão original).
+>
+> **O que permanece válido:** registry (GHCR), naming `uniplus-api-<modulo>`, estratégia lockstep semver, gates de validação (formato semver, tag em commit em `main`), smoke estrutural pré-push. A emenda toca apenas a cláusula de plataformas.
 
 ## Contexto e enunciado do problema
 

@@ -19,6 +19,15 @@ name: Publish Images
 #   - ghcr.io/<owner>/uniplus-api-selecao
 #   - ghcr.io/<owner>/uniplus-api-ingresso
 #   - ghcr.io/<owner>/uniplus-api-portal
+#
+# Multi-arch: cada tag acima é publicada como manifest list cobrindo
+#   - linux/amd64  (cluster legacy GRU/E5)
+#   - linux/arm64  (cluster IAD/A1 ARM Ampere, Epic uniplus-infra#317)
+# O smoke test estrutural roda apenas no build amd64 — invariantes
+# validadas (usuário não-root, entrypoint, runtime) são idênticas em ambas
+# arquiteturas, então emular arm64 só repete o mesmo cheque com overhead
+# de QEMU. Smoke runtime real (com sidecar Postgres/Kafka/Redis) acontece
+# em compose/Helm pós-publish.
 
 on:
   push:
@@ -105,6 +114,16 @@ jobs:
           fi
           echo "✓ Tag aponta para commit em main: $TAG_COMMIT"
 
+      - name: Set up QEMU
+        # Habilita cross-build linux/arm64 no runner amd64 do GitHub
+        # Actions registrando os binfmt_misc handlers para emulação
+        # user-mode. Buildx delega para QEMU quando a plataforma alvo
+        # não bate com a do runner. Smoke roda em amd64 (nativo); push
+        # multi-arch usa esta capability para compilar o layer arm64.
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -159,14 +178,22 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
+          # Smoke fica amd64 apenas: o `load: true` do buildx só funciona
+          # com uma plataforma por vez (carrega no daemon Docker local
+          # para `docker create`/`docker run`). As invariantes que o smoke
+          # valida (usuário não-root, entrypoint, runtime .NET responde)
+          # são identicas entre arquiteturas — repetir com arm64 emulado
+          # via QEMU não acrescenta cobertura, só overhead.
           platforms: linux/amd64
           push: false
           load: true
           tags: smoke/uniplus-api-${{ matrix.module }}:ci
-          # Cache scoped por módulo: builds independentes não invalidam cache uns
-          # dos outros (cada Dockerfile copia src/<module>/ separadamente).
-          cache-from: type=gha,scope=${{ matrix.module }}
-          cache-to: type=gha,scope=${{ matrix.module }},mode=max
+          # Cache scoped por módulo + arch amd64: builds independentes
+          # não invalidam cache uns dos outros, e o cache amd64 deste
+          # smoke é reaproveitado integralmente pelo layer amd64 do
+          # push multi-arch a seguir.
+          cache-from: type=gha,scope=${{ matrix.module }}-amd64
+          cache-to: type=gha,scope=${{ matrix.module }}-amd64,mode=max
 
       - name: Smoke test — validação estrutural da imagem
         # Smoke runtime (/health/live) não é viável em CI puro: Wolverine valida
@@ -222,20 +249,33 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
-          platforms: linux/amd64
+          # Manifest list multi-arch: ArgoCD em cluster amd64 (GRU/E5)
+          # ou arm64 (IAD/A1) puxa o layer correto automaticamente do
+          # mesmo `ghcr.io/.../uniplus-api-<module>:vX.Y.Z`. Layer amd64
+          # reusa cache integral do step smoke; layer arm64 compila via
+          # QEMU emulation (~2-3x mais lento que nativo, aceitável para
+          # release explícito em tag).
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Reusa o cache do build_local — segundo build é praticamente
-          # instantâneo (apenas resolve manifest e push das layers já em cache).
-          cache-from: type=gha,scope=${{ matrix.module }}
+          # Cache amd64 vem do smoke (cache-to amd64-only); cache arm64
+          # é populado neste push e fica disponível para releases futuras
+          # do mesmo módulo. Scopes separados por arch evitam invalidação
+          # cruzada quando só uma arquitetura tem mudança de base image.
+          cache-from: |
+            type=gha,scope=${{ matrix.module }}-amd64
+            type=gha,scope=${{ matrix.module }}-arm64
+          cache-to: type=gha,scope=${{ matrix.module }}-arm64,mode=max
 
       - name: Resumo
         if: always()
         run: |
           echo "### Publish: \`uniplus-api-${{ matrix.module }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Tags publicadas:**" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Plataformas:** \`linux/amd64\`, \`linux/arm64\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Tags publicadas (manifest list multi-arch):**" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
