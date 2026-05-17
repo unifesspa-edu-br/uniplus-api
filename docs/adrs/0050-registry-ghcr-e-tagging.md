@@ -1,5 +1,5 @@
 ---
-status: "accepted — emendado em 2026-05-17 (multi-arch habilitado)"
+status: "accepted"
 date: "2026-05-08"
 decision-makers:
   - "Tech Lead"
