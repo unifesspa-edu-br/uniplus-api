@@ -1,3 +1,9 @@
+---
+name: smoke-crud
+description: "Smoke test do ciclo CRUD de um recurso REST contra a API local Uni+ (Keycloak unifesspa-dev-local + selecao-api/ingresso-api). Cobre LIST + POST + replay idempotente + 409 conflito + GET com HATEOAS + PUT + DELETE soft + 404 pós-delete + UNIQUE parcial + histórico forense no PG. Recursos descritos via manifesto JSON em resources/."
+argument-hint: "--resource=<nome> [--methods=POST,GET,PUT,DELETE,LIST,ALL] [--api=selecao|ingresso|portal] [--user=admin|gestor|...] [--realm=<realm>] [--keep-going] [--no-cleanup] [--verbose]"
+---
+
 # Skill: Smoke test de CRUD local contra a API Uni+
 
 Executa o ciclo CRUD completo de um recurso REST contra o stack local (`docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up`), respeitando todas as invariantes do contrato V1:
