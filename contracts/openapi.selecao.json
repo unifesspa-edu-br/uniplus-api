@@ -1242,7 +1242,8 @@
           "bonus",
           "atendimento",
           "outros"
-        ]
+        ],
+        "type": "string"
       },
       "ConformidadeDto": {
         "required": [
