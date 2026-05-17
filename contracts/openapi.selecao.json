@@ -1233,7 +1233,16 @@
         }
       },
       "CategoriaObrigatoriedade": {
-        "type": "integer"
+        "enum": [
+          "nenhuma",
+          "etapa",
+          "modalidade",
+          "desempate",
+          "documento",
+          "bonus",
+          "atendimento",
+          "outros"
+        ]
       },
       "ConformidadeDto": {
         "required": [

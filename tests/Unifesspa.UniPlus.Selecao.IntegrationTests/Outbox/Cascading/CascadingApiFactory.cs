@@ -63,10 +63,12 @@ public sealed class CascadingApiFactory : ApiFactoryBase<Program>
             RemoveAllOptionsConfigurations<DbContextOptions<SelecaoDbContext>>(services);
 
             // Re-registro do DbContext mantém SoftDeleteInterceptor + AuditableInterceptor
-            // + UseSnakeCaseNamingConvention simétrico à produção (`SelecaoInfrastructureRegistration.
-            // AddSelecaoInfrastructure` via `UseUniPlusNpgsqlConventions`). Sem isto:
-            // (a) os interceptors ficariam de fora — as colunas is_deleted/deleted_at/updated_at
-            //     não seriam preenchidas automaticamente, mascarando regressões;
+            // + ObrigatoriedadeLegalHistoricoInterceptor (#460) + UseSnakeCaseNamingConvention
+            // simétrico à produção (`SelecaoInfrastructureRegistration.AddSelecaoInfrastructure`
+            // via `UseUniPlusNpgsqlConventions`). Sem isto:
+            // (a) os interceptors ficariam de fora — colunas is_deleted/deleted_at/updated_at
+            //     não preenchidas + linhas em obrigatoriedade_legal_historico não gravadas,
+            //     mascarando regressões em PRs futuros;
             // (b) sem snake_case, o model em runtime ficaria em PascalCase implícito enquanto
             //     o Snapshot regenerado pelo `dotnet ef` está em snake_case (ADR-0054), e o EF
             //     dispararia PendingModelChangesWarning bloqueando MigrateAsync.
@@ -76,7 +78,8 @@ public sealed class CascadingApiFactory : ApiFactoryBase<Program>
                 opts.UseSnakeCaseNamingConvention();
                 opts.AddInterceptors(
                     sp.GetRequiredService<SoftDeleteInterceptor>(),
-                    sp.GetRequiredService<AuditableInterceptor>());
+                    sp.GetRequiredService<AuditableInterceptor>(),
+                    sp.GetRequiredService<Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Interceptors.ObrigatoriedadeLegalHistoricoInterceptor>());
             });
 
             services.AddSingleton<DomainEventCollector>();

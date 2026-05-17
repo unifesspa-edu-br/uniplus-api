@@ -36,4 +36,4 @@ public sealed record AtualizarObrigatoriedadeLegalCommand(
     string? AtoNormativoUrl,
     string? PortariaInternaCodigo,
     string? Proprietario,
-    IReadOnlySet<string> AreasDeInteresse) : ICommand<Result>;
+    HashSet<string> AreasDeInteresse) : ICommand<Result>;
