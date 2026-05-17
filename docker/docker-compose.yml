@@ -166,7 +166,10 @@ services:
     ports:
       - "8081:8081"
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8081 && echo -e 'GET /q/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && timeout 1 cat <&3 | grep -q '\"UP\"'"]
+      # Apicurio 3.x não expõe /q/health/ready nem /health — verificamos a API
+      # principal (/apis/registry/v3/system/info) que só retorna 200 quando
+      # storage SQL está pronto e o servidor está aceitando requests.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8081 && echo -e 'GET /apis/registry/v3/system/info HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && timeout 1 cat <&3 | grep -q '200 OK'"]
       interval: 10s
       timeout: 5s
       retries: 10
