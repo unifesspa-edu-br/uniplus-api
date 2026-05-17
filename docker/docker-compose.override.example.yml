@@ -1,4 +1,14 @@
 services:
+  keycloak:
+    # Override do compose canônico para importar ADICIONALMENTE o realm
+    # `unifesspa-dev-local` — variante de conveniência para smoke local
+    # (selecao-web com directAccessGrantsEnabled, audience mapper para
+    # `uniplus`, senha do admin não-temporária e requiredActions vazias).
+    # O realm canônico `unifesspa` (de realm-export.json) continua importado
+    # em paralelo, sem perda de funcionalidade.
+    volumes:
+      - ./keycloak/realm-export-dev-local.json:/opt/keycloak/data/import/realm-export-dev-local.json
+
   selecao-api:
     build:
       context: ..
@@ -16,7 +26,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
     ports:
       - "5202:8080"
     depends_on:
@@ -52,7 +62,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
     ports:
       - "5262:8080"
     depends_on:
@@ -85,7 +95,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
     ports:
       - "5302:8080"
     depends_on:
@@ -116,7 +126,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
     ports:
       - "5263:8080"
     depends_on:
@@ -150,7 +160,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
     ports:
       - "5264:8080"
     depends_on:
