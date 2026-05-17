@@ -41,4 +41,4 @@ public sealed record CriarObrigatoriedadeLegalCommand(
     string? AtoNormativoUrl,
     string? PortariaInternaCodigo,
     string? Proprietario,
-    IReadOnlySet<string> AreasDeInteresse) : ICommand<Result<Guid>>;
+    HashSet<string> AreasDeInteresse) : ICommand<Result<Guid>>;

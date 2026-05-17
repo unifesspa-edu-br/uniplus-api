@@ -43,6 +43,12 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Enums em wire format como nome camelCase (ex.: "etapa", não 1).
+        // Alinha com o Newman seed (ADR-0062) e admin DX em pt-BR. Sem isso,
+        // qualquer payload admin com enum como string vira 400 — quebra
+        // CategoriaObrigatoriedade no #461, futuras enums em #455 etc.
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
     });
 
 // Minimal API endpoints use a separate JSON options pipeline (ConfigureHttpJsonOptions),
@@ -50,6 +56,8 @@ builder.Services.AddControllers()
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
 });
 
 builder.Services.AddEndpointsApiExplorer();

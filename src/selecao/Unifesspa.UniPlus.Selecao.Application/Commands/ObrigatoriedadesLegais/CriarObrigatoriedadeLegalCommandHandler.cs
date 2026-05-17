@@ -121,7 +121,7 @@ public static class CriarObrigatoriedadeLegalCommandHandler
     /// Converte cada string de área para <see cref="AreaCodigo"/> via
     /// <see cref="AreaCodigo.From"/>. Falha no primeiro inválido.
     /// </summary>
-    internal static Result<HashSet<AreaCodigo>> ConverterAreas(IReadOnlySet<string> areas)
+    internal static Result<HashSet<AreaCodigo>> ConverterAreas(HashSet<string> areas)
     {
         HashSet<AreaCodigo> convertidas = [];
         // Select explícito materializa o map raw → Result<AreaCodigo>; o
