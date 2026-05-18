@@ -37,9 +37,9 @@
       },
       "WolverineFx": {
         "type": "Direct",
-        "requested": "[5.39.0, )",
-        "resolved": "5.39.0",
-        "contentHash": "x1aXrnxRcezLioZnesFLgGZO0BINqI4tKxiS411iaZw/z/JVtoJ575IZML4FvEBjMkFBPirrSF3hkuveL4i2sQ==",
+        "requested": "[5.39.2, )",
+        "resolved": "5.39.2",
+        "contentHash": "veS9x5NU0fvKMYc+MRxyZ1S/w3Q5HuLumAD2MsXB7gzOE1ZFl9j/FHw2PENan7TLDFERBnYV8XsQNJf5cTwt1A==",
         "dependencies": {
           "JasperFx": "1.31.0",
           "JasperFx.Events": "1.36.0",
@@ -1123,7 +1123,7 @@
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "VaultSharp": "[1.17.5.1, )",
-          "WolverineFx": "[5.39.0, )",
+          "WolverineFx": "[5.39.2, )",
           "WolverineFx.EntityFrameworkCore": "[5.39.0, )",
           "WolverineFx.Kafka": "[5.39.0, )",
           "WolverineFx.Postgresql": "[5.39.0, )"
