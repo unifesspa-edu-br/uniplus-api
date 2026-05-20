@@ -93,6 +93,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0062](0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) | Seed de catálogos via Newman + endpoints admin (sem auto-seeder, audit captura usuário real) | accepted | 2026-05-14 |
 | [0063](0063-entidades-forensics-isentas-de-soft-delete.md) | Entidades forensics append-only (`IForensicEntity`) isentas de soft-delete, mutuamente exclusivas com `EntityBase` | accepted | 2026-05-16 |
 | [0064](0064-convencao-roteamento-path-based-com-prefixo-modulo.md) | Convenção de roteamento — path-based com prefixo de módulo (`/api/{modulo}/{recurso}`), separação cross-API via PathPrefix no Traefik | accepted | 2026-05-16 |
+| [0065](0065-localoferta-flat-um-por-endereco-emec.md) | LocalOferta como entidade flat, uma entrada por local de oferta (endereço e-MEC) | accepted | 2026-05-19 |
+| [0066](0066-ofertacurso-modelo-tres-niveis-emec-por-campus.md) | Modelo de oferta em três níveis — Curso curricular, OfertaCurso regulatória e código e-MEC por campus | accepted | 2026-05-19 |
+| [0067](0067-aninhamento-tipodeficiencia-sob-pcd.md) | Aninhamento de TipoDeficiencia sob a condição PCD na oferta de atendimento especializado | accepted | 2026-05-19 |
 
 ## Como adicionar um novo ADR
 
