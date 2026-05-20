@@ -51,14 +51,14 @@ AtendimentoEspecializadoOferta {
 
 **Invariantes estruturais** (o modelo não admite estado inválido):
 
-- `PCD ∈ condicoesAceitas` ⟺ `detalhesPcd.tiposDeficiencia.Count ≥ 1`
+- `PCD ∈ condicoesAceitas` ⟺ `detalhesPcd.tiposDeficiencia` contém ao menos um item
 - `PCD ∉ condicoesAceitas` ⟹ `detalhesPcd` é null/ausente
 - `TipoDeficiencia` jamais aparece fora de `detalhesPcd`
 
 **Mapeamento para o `uniplus-api`:**
 
 - `detalhesPcd` é um **value object** (sem identidade própria).
-- `TipoDeficiencia` é uma **entidade dependente** — não tem identidade fora do contexto da oferta PCD; o catálogo de tipos vive em Parametrizacao (junto a `NecessidadeEspecial`/`RecursoAcessibilidade`, [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)), mas no edital só aparece aninhado.
+- `TipoDeficiencia` é uma **entidade dependente** — não tem identidade fora do contexto da oferta PCD; o catálogo de tipos vive em Parametrizacao, junto aos catálogos de acessibilidade da [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) (lá nomeado `NecessidadeEspecial`, nome anterior à adoção do vocabulário "atendimento especializado" — a reconciliação terminológica fica como pendência registrada, candidata a ADR futura), mas no edital só aparece aninhado.
 - A invariante `OBRIGATORIEDADE_PCD_COERENTE` é validada no domínio na construção/edição da oferta.
 - **Snapshot RN08**: na publicação do edital, `detalhesPcd.tiposDeficiencia` é denormalizado no snapshot de governança (consistente com [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md)), preservando a integridade mesmo que um `TipoDeficiencia` seja inativado depois.
 
