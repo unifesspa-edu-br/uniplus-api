@@ -47,7 +47,7 @@ Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Paramet
 - `CargaHorariaTotal`, `DuracaoSemestresPadrao`, `DescricaoCurricular`, `Ativo`.
 - **Sem `e_mec_codigo`.**
 
-**`OfertaCurso` — instância regulatória (~95 entradas reais):**
+**`OfertaCurso` — instância regulatória (cerca de uma centena de entradas reais):**
 
 - `CursoId` — referência à matriz curricular.
 - `LocalOfertaId` — referência ao `LocalOferta` específico ([ADR-0065](0065-localoferta-flat-um-por-endereco-emec.md)).
@@ -56,7 +56,7 @@ Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Paramet
 - `FormatoPedagogico` — `Presencial` (default, não-nulo), `Semipresencial`, `Ead`.
 - `Turno` — `Matutino`, `Vespertino`, `Noturno`, `Integral`.
 - `EMecCodigo` — código e-MEC **por campus-sede** (do registro de diploma/COC), herdado pelos convênios do mesmo campus.
-- `CodigoSga` — código no Sistema de Gestão Acadêmica (do `cod_curso` do SIGAA). Nome **vendor-neutral** ([ver convenção](#mais-informações)) para não acoplar o domínio ao SIGAA.
+- `CodigoSga` — código no Sistema de Gestão Acadêmica (do `cod_curso` do SIGAA). Nome **vendor-neutral** (ver a convenção de nome na seção "Mais informações") para não acoplar o domínio ao SIGAA.
 - `VagasAnuaisAutorizadas`.
 - `BaseLegal` — **obrigatório quando `Modalidade != Regular`** (programa-mãe, ex.: "Convênio Forma Pará nº 004/2020").
 - `AtoAutorizacaoMec` — **opcional** (ato específico da oferta, ex.: "Carta de aceite Prefeitura de Almeirim 2024").
@@ -79,7 +79,7 @@ A pesquisa sobre os programas itinerantes confirmou um padrão **híbrido nos qu
 
 ### Negativas
 
-- Migração dos dados legados exige separar ~40 cursos curriculares de ~95 ofertas, com matching COC↔SIGAA imperfeito (parte das ofertas ainda sem `CodigoSga`).
+- Migração dos dados legados exige separar cerca de 40 cursos curriculares das ofertas regulatórias, com matching COC↔SIGAA imperfeito (parte das ofertas ainda sem `CodigoSga`).
 - Snapshot-copy da unidade ofertante ([ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md)) exige disciplina de rebinding quando a unidade muda — trade-off já assumido pela ADR-0061.
 
 ### Neutras
