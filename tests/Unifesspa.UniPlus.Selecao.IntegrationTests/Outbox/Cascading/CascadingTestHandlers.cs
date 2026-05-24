@@ -23,13 +23,15 @@ public sealed class PublicarEditalCascadingHandler
     public static async Task<IEnumerable<object>> Handle(
         PublicarEditalCascadingCommand command,
         SelecaoDbContext db,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         Edital edital = Edital.Criar(command.Numero, command.Titulo);
-        edital.Publicar();
+        edital.Publicar(timeProvider);
         db.Editais.Add(edital);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -55,13 +57,15 @@ public sealed class FalharAposSaveChangesCascadingHandler
     public static async Task<IEnumerable<object>> Handle(
         FalharAposSaveChangesCascadingCommand command,
         SelecaoDbContext db,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         Edital edital = Edital.Criar(command.Numero, command.Titulo);
-        edital.Publicar();
+        edital.Publicar(timeProvider);
         db.Editais.Add(edital);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

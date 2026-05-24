@@ -53,7 +53,8 @@ public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
             httpClient,
             ownsHttpClient: true,
             settings ?? DefaultSettings(),
-            NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance);
+            NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance,
+            TimeProvider.System);
     }
 
     [Fact(DisplayName = "200 OK retorna Bearer header com access_token + cacheia o token")]
@@ -196,7 +197,8 @@ public sealed class OAuthBearerAuthenticationHeaderValueProviderTests
         using (OAuthBearerAuthenticationHeaderValueProvider sut = new(
             externalClient,
             settings: DefaultSettings(),
-            logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance))
+            logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance,
+            timeProvider: TimeProvider.System))
         {
             sut.GetAuthenticationHeader();
         }

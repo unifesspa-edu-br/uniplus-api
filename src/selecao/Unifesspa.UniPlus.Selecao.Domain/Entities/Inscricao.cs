@@ -20,8 +20,9 @@ public sealed class Inscricao : EntityBase
 
     private Inscricao() { }
 
-    public static Result<Inscricao> Criar(Guid candidatoId, Guid editalId, ModalidadeConcorrencia modalidade, string codigoCursoPrimeiraOpcao)
+    public static Result<Inscricao> Criar(Guid candidatoId, Guid editalId, ModalidadeConcorrencia modalidade, string codigoCursoPrimeiraOpcao, TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         var inscricao = new Inscricao
         {
             CandidatoId = candidatoId,
@@ -29,19 +30,20 @@ public sealed class Inscricao : EntityBase
             Modalidade = modalidade,
             Status = StatusInscricao.Rascunho,
             CodigoCursoPrimeiraOpcao = codigoCursoPrimeiraOpcao,
-            NumeroInscricao = GerarNumeroInscricao()
+            NumeroInscricao = GerarNumeroInscricao(clock)
         };
 
         return Result<Inscricao>.Success(inscricao);
     }
 
-    public Result<Inscricao> Confirmar()
+    public Result<Inscricao> Confirmar(TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         if (Status != StatusInscricao.Rascunho)
             return Result<Inscricao>.Failure(new DomainError("Inscricao.StatusInvalido", "Somente inscrições em rascunho podem ser confirmadas."));
 
         Status = StatusInscricao.Confirmada;
-        AddDomainEvent(new InscricaoRealizadaEvent(Id, CandidatoId, EditalId));
+        AddDomainEvent(new InscricaoRealizadaEvent(Id, CandidatoId, EditalId, clock.GetUtcNow()));
         return Result<Inscricao>.Success(this);
     }
 
@@ -59,7 +61,8 @@ public sealed class Inscricao : EntityBase
     // Usa RandomNumberGenerator em vez de Guid v4 porque (a) Guid.NewGuid é
     // proibido em domínio (ADR-0032 / fitness test) e (b) Guid v7 não serve
     // aqui — seus primeiros 8 chars são timestamp ms, não random; quem quer
-    // entropia em string curta usa RNG direto.
-    private static string GerarNumeroInscricao() =>
-        $"{DateTimeOffset.UtcNow:yyyyMMdd}-{RandomNumberGenerator.GetHexString(stringLength: 8, lowercase: false)}";
+    // entropia em string curta usa RNG direto. O prefixo de data vem do
+    // TimeProvider injetado (nunca DateTimeOffset.UtcNow), mantendo determinismo.
+    private static string GerarNumeroInscricao(TimeProvider clock) =>
+        $"{clock.GetUtcNow():yyyyMMdd}-{RandomNumberGenerator.GetHexString(stringLength: 8, lowercase: false)}";
 }

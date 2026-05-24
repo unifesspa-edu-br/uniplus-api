@@ -87,9 +87,9 @@ public sealed class ObrigatoriedadeLegalDbFixture : IAsyncLifetime
             .UseNpgsql(ConnectionString)
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(
-                new SoftDeleteInterceptor(userContext),
-                new AuditableInterceptor(userContext),
-                new ObrigatoriedadeLegalHistoricoInterceptor(userContext))
+                new SoftDeleteInterceptor(TimeProvider.System, userContext),
+                new AuditableInterceptor(TimeProvider.System, userContext),
+                new ObrigatoriedadeLegalHistoricoInterceptor(TimeProvider.System, userContext))
             .Options;
 
         return new SelecaoDbContext(options);

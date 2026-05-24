@@ -15,16 +15,27 @@ public abstract class EntityBase
     // O timestamp leak não cria risco LGPD novo: toda entidade já carrega
     // CreatedAt como audit trail obrigatório, expondo o mesmo dado.
     public Guid Id { get; protected init; } = Guid.CreateVersion7();
-    public DateTimeOffset CreatedAt { get; protected set; } = DateTimeOffset.UtcNow;
+
+    // CreatedAt/UpdatedAt/DeletedAt são audit trail de persistência: a fonte
+    // única do instante é o relógio injetado (TimeProvider) nos interceptors
+    // de Infrastructure (AuditableInterceptor/SoftDeleteInterceptor), nunca
+    // DateTimeOffset.UtcNow lido no domínio. Por isso CreatedAt NÃO tem
+    // inicializador — uma entidade transiente (pré-SaveChanges) tem CreatedAt
+    // default; o AuditableInterceptor o carimba em Added. O fitness test
+    // RelogioViaTimeProviderTests bane leituras diretas de relógio em src/.
+    public DateTimeOffset CreatedAt { get; protected set; }
     public DateTimeOffset? UpdatedAt { get; protected set; }
     public bool IsDeleted { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
     public string? DeletedBy { get; private set; }
 
-    public void MarkAsDeleted(string deletedBy)
+    // O instante é parâmetro, não relógio lido aqui: o caller (SoftDeleteInterceptor
+    // ou repositório) provê deletedAt a partir do TimeProvider injetado, mantendo
+    // o domínio determinístico e a leitura de relógio concentrada em Infrastructure.
+    public void MarkAsDeleted(string deletedBy, DateTimeOffset deletedAt)
     {
         IsDeleted = true;
-        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedAt = deletedAt;
         DeletedBy = deletedBy;
     }
 

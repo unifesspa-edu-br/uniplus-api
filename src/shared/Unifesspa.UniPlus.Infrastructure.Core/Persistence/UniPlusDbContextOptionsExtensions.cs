@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Interceptors;
 
@@ -136,6 +137,12 @@ public static class UniPlusDbContextOptionsExtensions
     public static IServiceCollection AddUniPlusEfInterceptors(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        // Relógio canônico (ADR de convenção de TimeProvider): os interceptors
+        // dependem dele para CreatedAt/UpdatedAt/DeletedAt. TryAdd preserva
+        // overrides de teste (TimeProvider fixo) e é idempotente com os demais
+        // pontos que já registram TimeProvider.System (paginação, idempotência).
+        services.TryAddSingleton(TimeProvider.System);
 
         services.AddScoped<SoftDeleteInterceptor>();
         services.AddScoped<AuditableInterceptor>();

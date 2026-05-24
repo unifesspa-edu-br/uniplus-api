@@ -8,10 +8,12 @@ using Domain.Interfaces;
 public sealed class MatriculaRepository : IMatriculaRepository
 {
     private readonly IngressoDbContext _context;
+    private readonly TimeProvider _timeProvider;
 
-    public MatriculaRepository(IngressoDbContext context)
+    public MatriculaRepository(IngressoDbContext context, TimeProvider timeProvider)
     {
         _context = context;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Matricula?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -43,7 +45,7 @@ public sealed class MatriculaRepository : IMatriculaRepository
     public void Remover(Matricula entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        entity.MarkAsDeleted("system");
+        entity.MarkAsDeleted("system", _timeProvider.GetUtcNow());
     }
 
     public async Task<Matricula?> ObterComDocumentosAsync(Guid id, CancellationToken cancellationToken = default)

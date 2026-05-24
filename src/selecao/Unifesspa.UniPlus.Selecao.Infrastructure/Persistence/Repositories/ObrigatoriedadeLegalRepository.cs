@@ -27,11 +27,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalRepository
 {
     private readonly SelecaoDbContext _context;
+    private readonly TimeProvider _timeProvider;
 
-    public ObrigatoriedadeLegalRepository(SelecaoDbContext context)
+    public ObrigatoriedadeLegalRepository(SelecaoDbContext context, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         _context = context;
+        _timeProvider = timeProvider;
     }
 
     public async Task<ObrigatoriedadeLegal?> ObterPorIdAsync(
@@ -106,7 +109,7 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
 
         if (vigentes)
         {
-            DateOnly hoje = DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime.Date);
+            DateOnly hoje = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime.Date);
             query = query.Where(o =>
                 o.VigenciaInicio <= hoje
                 && (o.VigenciaFim == null || o.VigenciaFim > hoje));

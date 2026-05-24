@@ -8,10 +8,12 @@ using Domain.Interfaces;
 public sealed class EditalRepository : IEditalRepository
 {
     private readonly SelecaoDbContext _context;
+    private readonly TimeProvider _timeProvider;
 
-    public EditalRepository(SelecaoDbContext context)
+    public EditalRepository(SelecaoDbContext context, TimeProvider timeProvider)
     {
         _context = context;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Edital?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -43,7 +45,7 @@ public sealed class EditalRepository : IEditalRepository
     public void Remover(Edital entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        entity.MarkAsDeleted("system");
+        entity.MarkAsDeleted("system", _timeProvider.GetUtcNow());
     }
 
     public async Task<Edital?> ObterComEtapasECotasAsync(Guid id, CancellationToken cancellationToken = default)

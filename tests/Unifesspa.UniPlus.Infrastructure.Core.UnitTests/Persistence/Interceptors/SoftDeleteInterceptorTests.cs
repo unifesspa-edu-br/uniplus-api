@@ -14,6 +14,15 @@ public sealed class SoftDeleteInterceptorTests
 {
     private const string SystemUser = "system";
 
+    // Instante fixo + relógio determinístico (ADR-0068): DeletedAt vem do
+    // TimeProvider injetado, então a asserção verifica o valor EXATO.
+    private static readonly DateTimeOffset Instante = new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
     private sealed class EntidadeTeste : EntityBase
     {
         public string Nome { get; set; } = string.Empty;
@@ -27,7 +36,7 @@ public sealed class SoftDeleteInterceptorTests
     private static ContextoTeste CriarContexto(IUserContext? userContext = null) =>
         new(new DbContextOptionsBuilder<ContextoTeste>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .AddInterceptors(new SoftDeleteInterceptor(userContext))
+            .AddInterceptors(new SoftDeleteInterceptor(new FixedTimeProvider(Instante), userContext))
             .Options);
 
     private static IUserContext UsuarioAutenticado(string userId)
@@ -58,7 +67,7 @@ public sealed class SoftDeleteInterceptorTests
         contexto.SaveChanges();
 
         entidade.IsDeleted.Should().BeTrue();
-        entidade.DeletedAt.Should().NotBeNull();
+        entidade.DeletedAt.Should().Be(Instante, "DeletedAt vem do TimeProvider injetado no interceptor");
         entidade.DeletedBy.Should().Be(SystemUser);
         contexto.Entidades.Find(entidade.Id).Should().NotBeNull();
     }
@@ -75,7 +84,7 @@ public sealed class SoftDeleteInterceptorTests
         await contexto.SaveChangesAsync();
 
         entidade.IsDeleted.Should().BeTrue();
-        entidade.DeletedAt.Should().NotBeNull();
+        entidade.DeletedAt.Should().Be(Instante, "DeletedAt vem do TimeProvider injetado no interceptor");
         entidade.DeletedBy.Should().Be(SystemUser);
         (await contexto.Entidades.FindAsync(entidade.Id)).Should().NotBeNull();
     }

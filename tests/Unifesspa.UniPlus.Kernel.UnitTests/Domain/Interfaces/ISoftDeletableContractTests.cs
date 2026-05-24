@@ -23,11 +23,12 @@ public sealed class ISoftDeletableContractTests
         DummySoftDeletable dummy = new();
         ISoftDeletable contrato = dummy;
 
-        contrato.MarkAsDeleted("auditor@exemplo.com");
+        DateTimeOffset instante = new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
+        contrato.MarkAsDeleted("auditor@exemplo.com", instante);
 
         contrato.IsDeleted.Should().BeTrue();
         contrato.DeletedBy.Should().Be("auditor@exemplo.com");
-        contrato.DeletedAt.Should().NotBeNull();
+        contrato.DeletedAt.Should().Be(instante);
     }
 
     private sealed class DummySoftDeletable : ISoftDeletable
@@ -36,10 +37,10 @@ public sealed class ISoftDeletableContractTests
         public DateTimeOffset? DeletedAt { get; private set; }
         public string? DeletedBy { get; private set; }
 
-        public void MarkAsDeleted(string deletedBy)
+        public void MarkAsDeleted(string deletedBy, DateTimeOffset deletedAt)
         {
             IsDeleted = true;
-            DeletedAt = DateTimeOffset.UtcNow;
+            DeletedAt = deletedAt;
             DeletedBy = deletedBy;
         }
     }

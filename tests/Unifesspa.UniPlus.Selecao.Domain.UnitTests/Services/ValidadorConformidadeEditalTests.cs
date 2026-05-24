@@ -382,7 +382,8 @@ public sealed class ValidadorConformidadeEditalTests
             predicado: predicado,
             baseLegal: "Lei 12.711/2012 art.1º",
             descricaoHumana: "Regra de teste",
-            portariaInternaCodigo: "Portaria CTIC 2026/01");
+            portariaInternaCodigo: "Portaria CTIC 2026/01",
+            clock: TimeProvider.System);
 
         r.IsSuccess.Should().BeTrue();
         return r.Value!;
@@ -444,7 +445,9 @@ public sealed class ValidadorConformidadeEditalExhaustividadeTests
                 regraCodigo: $"FITNESS_{derivado.Name}",
                 predicado: predicado,
                 baseLegal: "Lei 12.711/2012",
-                descricaoHumana: "Fitness");
+                descricaoHumana: "Fitness",
+                portariaInternaCodigo: null,
+                clock: TimeProvider.System);
             regra.IsSuccess.Should().BeTrue();
 
             Action act = () => ValidadorConformidadeEdital.Evaluate(view, [regra.Value!]);

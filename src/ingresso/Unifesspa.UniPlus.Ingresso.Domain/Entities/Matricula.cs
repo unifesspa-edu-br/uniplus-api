@@ -49,9 +49,14 @@ public sealed class Matricula : EntityBase
         Observacoes = observacoes;
     }
 
-    public void Efetivar()
+    public void Efetivar(TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         Status = StatusMatricula.Efetivada;
-        AddDomainEvent(new MatriculaEfetivadaEvent(Id, CandidatoId, CodigoCurso));
+        AddDomainEvent(new MatriculaEfetivadaEvent(
+            Id,
+            CandidatoId,
+            CodigoCurso,
+            clock.GetUtcNow()));
     }
 }

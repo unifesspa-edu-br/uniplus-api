@@ -163,20 +163,20 @@ public sealed class ObrigatoriedadeLegal : EntityBase, IAuditableEntity, IAreaSc
     /// Use a sobrecarga completa em código de produção.
     /// </summary>
     /// <param name="clock">
-    /// Fonte de "hoje" para <c>VigenciaInicio</c>. Default
-    /// <see cref="TimeProvider.System"/>; testes determinísticos passam
-    /// um <see cref="TimeProvider"/> fake para isolar o cenário do relógio
-    /// do sistema.
+    /// Fonte de "hoje" para <c>VigenciaInicio</c>. Obrigatório (sem default
+    /// <see cref="TimeProvider.System"/>): a convenção de relógio exige que o
+    /// <see cref="TimeProvider"/> seja sempre injetado. Testes passam um
+    /// <see cref="TimeProvider"/> fake para isolar o cenário do relógio.
     /// </param>
     public static Result<ObrigatoriedadeLegal> Criar(
         string regraCodigo,
         PredicadoObrigatoriedade predicado,
         string baseLegal,
         string descricaoHumana,
-        string? portariaInternaCodigo = null,
-        TimeProvider? clock = null)
+        string? portariaInternaCodigo,
+        TimeProvider clock)
     {
-        TimeProvider effectiveClock = clock ?? TimeProvider.System;
+        ArgumentNullException.ThrowIfNull(clock);
         return Criar(
             tipoEditalCodigo: TipoEditalUniversal,
             categoria: CategoriaObrigatoriedade.Outros,
@@ -184,7 +184,7 @@ public sealed class ObrigatoriedadeLegal : EntityBase, IAuditableEntity, IAreaSc
             predicado: predicado,
             descricaoHumana: descricaoHumana,
             baseLegal: baseLegal,
-            vigenciaInicio: DateOnly.FromDateTime(effectiveClock.GetUtcNow().UtcDateTime.Date),
+            vigenciaInicio: DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime.Date),
             vigenciaFim: null,
             atoNormativoUrl: null,
             portariaInternaCodigo: portariaInternaCodigo,

@@ -28,19 +28,17 @@ public sealed class EntityBaseTests
         a.Id.Should().NotBe(b.Id);
     }
 
-    [Fact(DisplayName = "CreatedAt é preenchido com UtcNow ±5s no momento da criação")]
-    public void CreatedAt_ProximoDoAgoraUtc()
+    [Fact(DisplayName = "CreatedAt nasce default — o AuditableInterceptor o carimba no SaveChanges (fonte única)")]
+    public void CreatedAt_NasceDefault_InterceptorCarimba()
     {
-        DateTimeOffset antes = DateTimeOffset.UtcNow;
-
+        // Convenção de relógio: a fonte única de CreatedAt é o TimeProvider
+        // injetado no AuditableInterceptor (Infrastructure), nunca um
+        // DateTimeOffset.UtcNow lido no domínio. Uma entidade transiente
+        // (pré-persistência) tem CreatedAt default; o carimbo em Added é
+        // coberto por teste de integração do interceptor.
         EntidadeDeTeste entidade = new();
 
-        DateTimeOffset depois = DateTimeOffset.UtcNow;
-
-        entidade.CreatedAt.Should().BeOnOrAfter(antes.AddSeconds(-5));
-        entidade.CreatedAt.Should().BeOnOrBefore(depois.AddSeconds(5));
-        entidade.CreatedAt.Offset.Should().Be(TimeSpan.Zero,
-            "audit trail é normalizado em UTC");
+        entidade.CreatedAt.Should().Be(default);
     }
 
     [Fact(DisplayName = "Entidade recém-criada não tem UpdatedAt, IsDeleted, DeletedAt, DeletedBy")]
@@ -54,21 +52,19 @@ public sealed class EntityBaseTests
         entidade.DeletedBy.Should().BeNull();
     }
 
-    [Fact(DisplayName = "MarkAsDeleted altera IsDeleted, DeletedAt (UtcNow) e DeletedBy")]
+    [Fact(DisplayName = "MarkAsDeleted altera IsDeleted, DeletedAt (instante recebido) e DeletedBy")]
     public void MarkAsDeleted_AlteraFlagsDeSoftDelete()
     {
         EntidadeDeTeste entidade = new();
-        DateTimeOffset antes = DateTimeOffset.UtcNow;
+        // Instante determinístico: o caller (SoftDeleteInterceptor/repositório)
+        // provê deletedAt a partir do TimeProvider; o domínio só o registra.
+        DateTimeOffset instante = new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
 
-        entidade.MarkAsDeleted("usuario@exemplo.com");
-
-        DateTimeOffset depois = DateTimeOffset.UtcNow;
+        entidade.MarkAsDeleted("usuario@exemplo.com", instante);
 
         entidade.IsDeleted.Should().BeTrue();
         entidade.DeletedBy.Should().Be("usuario@exemplo.com");
-        entidade.DeletedAt.Should().NotBeNull();
-        entidade.DeletedAt!.Value.Should().BeOnOrAfter(antes.AddSeconds(-1))
-            .And.BeOnOrBefore(depois.AddSeconds(1));
+        entidade.DeletedAt.Should().Be(instante);
         entidade.DeletedAt!.Value.Offset.Should().Be(TimeSpan.Zero);
     }
 
@@ -76,9 +72,10 @@ public sealed class EntityBaseTests
     public void MarkAsDeleted_PodeSerChamadoMaisDeUmaVez()
     {
         EntidadeDeTeste entidade = new();
-        entidade.MarkAsDeleted("primeiro");
+        DateTimeOffset instante = new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
+        entidade.MarkAsDeleted("primeiro", instante);
 
-        entidade.MarkAsDeleted("segundo");
+        entidade.MarkAsDeleted("segundo", instante);
 
         entidade.IsDeleted.Should().BeTrue();
         entidade.DeletedBy.Should().Be("segundo");

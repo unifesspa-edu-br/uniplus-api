@@ -293,7 +293,9 @@ public sealed class ObrigatoriedadeLegalCriarTests
             regraCodigo: "REGRA_LEGADA",
             predicado: PredicadoBase,
             baseLegal: "Lei 12.711/2012",
-            descricaoHumana: "Regra retrocompatível.");
+            descricaoHumana: "Regra retrocompatível.",
+            portariaInternaCodigo: null,
+            clock: TimeProvider.System);
 
         r.IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = r.Value!;

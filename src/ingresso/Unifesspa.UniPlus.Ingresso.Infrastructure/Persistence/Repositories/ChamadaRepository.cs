@@ -8,10 +8,12 @@ using Domain.Interfaces;
 public sealed class ChamadaRepository : IChamadaRepository
 {
     private readonly IngressoDbContext _context;
+    private readonly TimeProvider _timeProvider;
 
-    public ChamadaRepository(IngressoDbContext context)
+    public ChamadaRepository(IngressoDbContext context, TimeProvider timeProvider)
     {
         _context = context;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Chamada?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -43,7 +45,7 @@ public sealed class ChamadaRepository : IChamadaRepository
     public void Remover(Chamada entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        entity.MarkAsDeleted("system");
+        entity.MarkAsDeleted("system", _timeProvider.GetUtcNow());
     }
 
     public async Task<Chamada?> ObterComConvocacoesAsync(Guid id, CancellationToken cancellationToken = default)
