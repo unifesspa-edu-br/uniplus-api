@@ -83,6 +83,10 @@ public static class SchemaRegistryServiceCollectionExtensions
         bool useOAuthBearer = string.Equals(settings.AuthType, "OAuthBearer", StringComparison.OrdinalIgnoreCase);
         if (useOAuthBearer)
         {
+            // Relógio canônico (ADR-0068): registrado aqui para que o provider
+            // resolva via GetRequiredService (fail-fast), coerente com os demais
+            // pontos de DI. TryAdd preserva override de teste.
+            services.TryAddSingleton(TimeProvider.System);
             services.AddHttpClient<OAuthBearerAuthenticationHeaderValueProvider>();
             services.TryAddSingleton<IAuthenticationHeaderValueProvider>(static sp =>
             {
@@ -91,10 +95,12 @@ public static class SchemaRegistryServiceCollectionExtensions
                 ILogger<OAuthBearerAuthenticationHeaderValueProvider> logger = sp
                     .GetRequiredService<ILogger<OAuthBearerAuthenticationHeaderValueProvider>>();
                 HttpClient client = factory.CreateClient(nameof(OAuthBearerAuthenticationHeaderValueProvider));
+                TimeProvider timeProvider = sp.GetRequiredService<TimeProvider>();
                 return new OAuthBearerAuthenticationHeaderValueProvider(
                     client,
                     opts.Value.OAuth,
-                    logger);
+                    logger,
+                    timeProvider);
             });
         }
 
@@ -198,11 +204,15 @@ public static class SchemaRegistryServiceCollectionExtensions
             // — necessário porque CachedSchemaRegistryClient.Dispose não dispõe
             // custom auth providers (Codex P2 na review do PR #359, issue #360).
             HttpClient httpClient = new();
+            // TimeProvider.System explícito: este é um composition root genuíno
+            // (callback do Wolverine que roda antes de builder.Build(), sem
+            // IServiceProvider disponível), não um fallback escondido.
             OAuthBearerAuthenticationHeaderValueProvider authProvider = new(
                 httpClient,
                 ownsHttpClient: true,
                 settings.OAuth,
-                loggerFactory.CreateLogger<OAuthBearerAuthenticationHeaderValueProvider>());
+                loggerFactory.CreateLogger<OAuthBearerAuthenticationHeaderValueProvider>(),
+                TimeProvider.System);
 
             // Registrations:
             // - Singleton(instance) torna o auth provider resolvable via DI (mesma

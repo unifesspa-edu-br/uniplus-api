@@ -39,11 +39,13 @@ public sealed class PublicarEditalCommandHandler
         PublicarEditalCommand command,
         IEditalRepository editalRepository,
         IUnitOfWork unitOfWork,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(editalRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         Edital? edital = await editalRepository.ObterPorIdAsync(command.EditalId, cancellationToken).ConfigureAwait(false);
         if (edital is null)
@@ -60,7 +62,7 @@ public sealed class PublicarEditalCommandHandler
                 []);
         }
 
-        edital.Publicar();
+        edital.Publicar(timeProvider);
         editalRepository.Atualizar(edital);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 

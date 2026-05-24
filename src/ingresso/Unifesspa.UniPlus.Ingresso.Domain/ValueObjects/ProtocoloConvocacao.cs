@@ -8,9 +8,12 @@ public sealed record ProtocoloConvocacao
 
     private ProtocoloConvocacao(string valor) => Valor = valor;
 
-    public static ProtocoloConvocacao Gerar(int numeroChamada, int sequencial)
+    public static ProtocoloConvocacao Gerar(int numeroChamada, int sequencial, TimeProvider clock)
     {
-        string protocolo = $"CONV-{DateTimeOffset.UtcNow:yyyyMMdd}-{numeroChamada:D2}-{sequencial:D5}";
+        ArgumentNullException.ThrowIfNull(clock);
+        // Prefixo de data vem do TimeProvider injetado (obrigatório, nunca
+        // DateTimeOffset.UtcNow): determinístico sob um TimeProvider fixo em testes.
+        string protocolo = $"CONV-{clock.GetUtcNow():yyyyMMdd}-{numeroChamada:D2}-{sequencial:D5}";
         return new ProtocoloConvocacao(protocolo);
     }
 

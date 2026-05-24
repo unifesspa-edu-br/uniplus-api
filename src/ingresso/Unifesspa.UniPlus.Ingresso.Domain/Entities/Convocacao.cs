@@ -18,9 +18,10 @@ public sealed class Convocacao : EntityBase
 
     private Convocacao() { }
 
-    public static Convocacao Criar(Guid chamadaId, Guid inscricaoId, Guid candidatoId, ProtocoloConvocacao protocolo, int posicao, string codigoCurso)
+    public static Convocacao Criar(Guid chamadaId, Guid inscricaoId, Guid candidatoId, ProtocoloConvocacao protocolo, int posicao, string codigoCurso, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(protocolo);
+        ArgumentNullException.ThrowIfNull(clock);
 
         var convocacao = new Convocacao
         {
@@ -33,21 +34,28 @@ public sealed class Convocacao : EntityBase
             CodigoCurso = codigoCurso
         };
 
-        convocacao.AddDomainEvent(new CandidatoConvocadoEvent(inscricaoId, candidatoId, chamadaId, protocolo.Valor));
+        convocacao.AddDomainEvent(new CandidatoConvocadoEvent(
+            inscricaoId,
+            candidatoId,
+            chamadaId,
+            protocolo.Valor,
+            clock.GetUtcNow()));
 
         return convocacao;
     }
 
-    public void Aceitar()
+    public void Aceitar(TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         Status = StatusConvocacao.Aceita;
-        DataManifestacao = DateTimeOffset.UtcNow;
+        DataManifestacao = clock.GetUtcNow();
     }
 
-    public void Recusar()
+    public void Recusar(TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         Status = StatusConvocacao.Recusada;
-        DataManifestacao = DateTimeOffset.UtcNow;
+        DataManifestacao = clock.GetUtcNow();
     }
 
     public void MarcarComoNaoCompareceu() =>

@@ -48,7 +48,8 @@ public sealed class EditalPublicadoAvroTests
     {
         EditalPublicadoEvent evt = new(
             EditalId: Guid.CreateVersion7(),
-            NumeroEdital: "001/2026");
+            NumeroEdital: "001/2026",
+            OccurredOn: new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
 
         EditalPublicadoAvro avro = EditalPublicadoToAvroMapper.ToAvro(evt);
 
@@ -73,7 +74,8 @@ public sealed class EditalPublicadoAvroTests
         // qualquer drift entre .avsc e a classe ISpecificRecord falhará aqui.
         EditalPublicadoEvent evt = new(
             EditalId: Guid.CreateVersion7(),
-            NumeroEdital: "042/2026");
+            NumeroEdital: "042/2026",
+            OccurredOn: new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
 
         EditalPublicadoAvro original = EditalPublicadoToAvroMapper.ToAvro(evt);
 

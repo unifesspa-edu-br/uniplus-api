@@ -41,6 +41,7 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
     private readonly bool ownsHttpClient;
     private readonly OAuthBearerSettings settings;
     private readonly ILogger<OAuthBearerAuthenticationHeaderValueProvider> logger;
+    private readonly TimeProvider timeProvider;
     private readonly SemaphoreSlim refreshLock = new(initialCount: 1, maxCount: 1);
 
     private string? cachedToken;
@@ -54,8 +55,9 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
     public OAuthBearerAuthenticationHeaderValueProvider(
         HttpClient httpClient,
         OAuthBearerSettings settings,
-        ILogger<OAuthBearerAuthenticationHeaderValueProvider> logger)
-        : this(httpClient, ownsHttpClient: false, settings, logger)
+        ILogger<OAuthBearerAuthenticationHeaderValueProvider> logger,
+        TimeProvider timeProvider)
+        : this(httpClient, ownsHttpClient: false, settings, logger, timeProvider)
     {
     }
 
@@ -68,16 +70,19 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
         HttpClient httpClient,
         bool ownsHttpClient,
         OAuthBearerSettings settings,
-        ILogger<OAuthBearerAuthenticationHeaderValueProvider> logger)
+        ILogger<OAuthBearerAuthenticationHeaderValueProvider> logger,
+        TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         this.httpClient = httpClient;
         this.ownsHttpClient = ownsHttpClient;
         this.settings = settings;
         this.logger = logger;
+        this.timeProvider = timeProvider;
         this.httpClient.Timeout = TimeSpan.FromMilliseconds(settings.RequestTimeoutMs);
     }
 
@@ -92,7 +97,7 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
 
     private async Task<string> GetOrRefreshTokenAsync(CancellationToken cancellationToken)
     {
-        DateTimeOffset now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = timeProvider.GetUtcNow();
         TimeSpan skew = TimeSpan.FromSeconds(settings.RefreshSkewSeconds);
 
         if (cachedToken is not null && now < cachedTokenExpiresAt - skew)
@@ -104,7 +109,7 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
         try
         {
             // Re-check após acquire — outro thread pode ter renovado enquanto esperávamos.
-            now = DateTimeOffset.UtcNow;
+            now = timeProvider.GetUtcNow();
             if (cachedToken is not null && now < cachedTokenExpiresAt - skew)
             {
                 return cachedToken;
@@ -113,7 +118,7 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
             TokenEndpointResponse response = await RequestTokenAsync(cancellationToken).ConfigureAwait(false);
 
             cachedToken = response.AccessToken;
-            cachedTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(response.ExpiresInSeconds);
+            cachedTokenExpiresAt = timeProvider.GetUtcNow().AddSeconds(response.ExpiresInSeconds);
 
             LogTokenRefreshed(logger, settings.ClientId, response.ExpiresInSeconds);
 

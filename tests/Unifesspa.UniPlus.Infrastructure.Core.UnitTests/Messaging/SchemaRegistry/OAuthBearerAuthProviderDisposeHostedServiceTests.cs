@@ -35,7 +35,8 @@ public sealed class OAuthBearerAuthProviderDisposeHostedServiceTests
             httpClient: new HttpClient(),
             ownsHttpClient: true,
             settings: new OAuthBearerSettings { ClientId = "x", ClientSecret = "x", TokenEndpoint = "https://x" },
-            logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance);
+            logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance,
+            timeProvider: TimeProvider.System);
     }
 
     /// <summary>Cria provider com stub HTTP que responde 200 OK — útil para
@@ -64,7 +65,8 @@ public sealed class OAuthBearerAuthProviderDisposeHostedServiceTests
                 ClientSecret = "test",
                 TokenEndpoint = "https://kc.test/token",
             },
-            logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance);
+            logger: NullLogger<OAuthBearerAuthenticationHeaderValueProvider>.Instance,
+            timeProvider: TimeProvider.System);
     }
 
     [Fact(DisplayName = "StartAsync é no-op — retorna Task concluída e provider continua funcional")]

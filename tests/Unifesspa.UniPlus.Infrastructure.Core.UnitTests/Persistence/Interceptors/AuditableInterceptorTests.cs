@@ -15,6 +15,17 @@ public sealed class AuditableInterceptorTests
 {
     private const string SystemUser = "system";
 
+    // Instante fixo + relógio determinístico (ADR-0068): o interceptor carimba
+    // CreatedAt/UpdatedAt a partir do TimeProvider injetado, então as asserções
+    // verificam o valor EXATO — prova que a fonte é o relógio injetado, não
+    // DateTimeOffset.UtcNow.
+    private static readonly DateTimeOffset Instante = new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
+
+    private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
+
     private sealed class EntidadeTeste : EntityBase
     {
         public string Nome { get; set; } = string.Empty;
@@ -40,7 +51,7 @@ public sealed class AuditableInterceptorTests
     private static ContextoTeste CriarContexto(IUserContext? userContext = null, string? dbName = null) =>
         new(new DbContextOptionsBuilder<ContextoTeste>()
             .UseInMemoryDatabase(dbName ?? Guid.NewGuid().ToString())
-            .AddInterceptors(new AuditableInterceptor(userContext))
+            .AddInterceptors(new AuditableInterceptor(new FixedTimeProvider(Instante), userContext))
             .Options);
 
     private static IUserContext UsuarioAutenticado(string userId)
@@ -63,13 +74,12 @@ public sealed class AuditableInterceptorTests
     public void SavingChanges_DadoEntityAdicionada_EntaoDeveDefinirCreatedAt()
     {
         using ContextoTeste contexto = CriarContexto();
-        DateTimeOffset antes = DateTimeOffset.UtcNow.AddSeconds(-1);
         EntidadeTeste entidade = new() { Nome = "teste" };
 
         contexto.Entidades.Add(entidade);
         contexto.SaveChanges();
 
-        entidade.CreatedAt.Should().BeOnOrAfter(antes);
+        entidade.CreatedAt.Should().Be(Instante, "CreatedAt vem do TimeProvider injetado no interceptor");
     }
 
     [Fact]
@@ -81,24 +91,21 @@ public sealed class AuditableInterceptorTests
         contexto.SaveChanges();
 
         entidade.Nome = "modificado";
-        DateTimeOffset antes = DateTimeOffset.UtcNow.AddSeconds(-1);
         contexto.SaveChanges();
 
-        entidade.UpdatedAt.Should().NotBeNull();
-        entidade.UpdatedAt.Should().BeOnOrAfter(antes);
+        entidade.UpdatedAt.Should().Be(Instante, "UpdatedAt vem do TimeProvider injetado no interceptor");
     }
 
     [Fact]
     public async Task SavingChangesAsync_DadoEntityAdicionada_EntaoDeveDefinirCreatedAt()
     {
         await using ContextoTeste contexto = CriarContexto();
-        DateTimeOffset antes = DateTimeOffset.UtcNow.AddSeconds(-1);
         EntidadeTeste entidade = new() { Nome = "teste" };
 
         contexto.Entidades.Add(entidade);
         await contexto.SaveChangesAsync();
 
-        entidade.CreatedAt.Should().BeOnOrAfter(antes);
+        entidade.CreatedAt.Should().Be(Instante, "CreatedAt vem do TimeProvider injetado no interceptor");
     }
 
     [Fact]
@@ -110,11 +117,9 @@ public sealed class AuditableInterceptorTests
         await contexto.SaveChangesAsync();
 
         entidade.Nome = "modificado";
-        DateTimeOffset antes = DateTimeOffset.UtcNow.AddSeconds(-1);
         await contexto.SaveChangesAsync();
 
-        entidade.UpdatedAt.Should().NotBeNull();
-        entidade.UpdatedAt.Should().BeOnOrAfter(antes);
+        entidade.UpdatedAt.Should().Be(Instante, "UpdatedAt vem do TimeProvider injetado no interceptor");
     }
 
     // ───── #390: ramos IAuditableEntity (opt-in) ──────────────────────────
@@ -211,6 +216,6 @@ public sealed class AuditableInterceptorTests
         };
 
         acao.Should().NotThrow();
-        entidade.CreatedAt.Should().BeAfter(DateTimeOffset.UtcNow.AddSeconds(-5));
+        entidade.CreatedAt.Should().Be(Instante, "CreatedAt é carimbado pelo interceptor mesmo em entidade não-auditável");
     }
 }

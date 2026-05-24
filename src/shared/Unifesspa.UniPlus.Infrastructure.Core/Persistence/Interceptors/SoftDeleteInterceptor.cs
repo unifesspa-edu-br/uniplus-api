@@ -21,11 +21,16 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
     private const string SystemUser = "system";
 
     private readonly IUserContext? _userContext;
+    private readonly TimeProvider _timeProvider;
 
-    // Construtor sem args preservado para uso em testes que não exigem
-    // IUserContext (cenário equivalente ao fallback "system").
-    public SoftDeleteInterceptor(IUserContext? userContext = null)
+    // TimeProvider é obrigatório (sem fallback TimeProvider.System): o relógio
+    // é sempre injetado pela DI (Singleton). IUserContext permanece opcional —
+    // o fallback "system" é regra legítima para fluxos sem principal (jobs,
+    // migrations), não um backdoor de não-determinismo.
+    public SoftDeleteInterceptor(TimeProvider timeProvider, IUserContext? userContext = null)
     {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        _timeProvider = timeProvider;
         _userContext = userContext;
     }
 
@@ -57,6 +62,7 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
     private void ConvertDeleteToSoftDelete(DbContext context)
     {
         string deletedBy = ResolveDeletedBy();
+        DateTimeOffset deletedAt = _timeProvider.GetUtcNow();
 
         foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<EntityBase> entry
             in context.ChangeTracker.Entries<EntityBase>())
@@ -64,7 +70,7 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
             if (entry.State == EntityState.Deleted)
             {
                 entry.State = EntityState.Modified;
-                entry.Entity.MarkAsDeleted(deletedBy);
+                entry.Entity.MarkAsDeleted(deletedBy, deletedAt);
             }
         }
     }

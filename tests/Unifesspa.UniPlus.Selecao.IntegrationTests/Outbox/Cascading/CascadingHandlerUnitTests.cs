@@ -43,6 +43,7 @@ public sealed class CascadingHandlerUnitTests
         IEnumerable<object> cascading = await PublicarEditalCascadingHandler.Handle(
             command,
             db,
+            TimeProvider.System,
             CancellationToken.None);
 
         IReadOnlyList<object> materialized = [.. cascading];

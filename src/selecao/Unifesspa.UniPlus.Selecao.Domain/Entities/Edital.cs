@@ -67,9 +67,17 @@ public sealed class Edital : EntityBase
 
     public void AdicionarCota(Cota cota) => _cotas.Add(cota);
 
-    public void Publicar()
+    // clock é obrigatório (sem default): o relógio sempre é injetado — handlers
+    // de produção passam o TimeProvider da DI, testes passam um TimeProvider fixo.
+    // Não há fallback TimeProvider.System aqui para não reintroduzir leitura de
+    // relógio não-determinística. OccurredOn é o instante de negócio da publicação.
+    public void Publicar(TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         Status = StatusEdital.Publicado;
-        AddDomainEvent(new EditalPublicadoEvent(Id, NumeroEdital.ToString()));
+        AddDomainEvent(new EditalPublicadoEvent(
+            Id,
+            NumeroEdital.ToString(),
+            clock.GetUtcNow()));
     }
 }

@@ -9,10 +9,12 @@ using Domain.Interfaces;
 public sealed class InscricaoRepository : IInscricaoRepository
 {
     private readonly SelecaoDbContext _context;
+    private readonly TimeProvider _timeProvider;
 
-    public InscricaoRepository(SelecaoDbContext context)
+    public InscricaoRepository(SelecaoDbContext context, TimeProvider timeProvider)
     {
         _context = context;
+        _timeProvider = timeProvider;
     }
 
     public async Task<Inscricao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -44,7 +46,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
     public void Remover(Inscricao entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        entity.MarkAsDeleted("system");
+        entity.MarkAsDeleted("system", _timeProvider.GetUtcNow());
     }
 
     public async Task<bool> ExisteInscricaoAtivaAsync(Guid candidatoId, Guid editalId, CancellationToken cancellationToken = default)

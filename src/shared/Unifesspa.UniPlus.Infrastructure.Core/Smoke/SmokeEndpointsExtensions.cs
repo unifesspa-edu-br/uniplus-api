@@ -104,15 +104,17 @@ public static class SmokeEndpointsExtensions
     private static async Task<IResult> ProbeSmokeCacheAsync(
         string key,
         IConnectionMultiplexer redis,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(redis);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         cancellationToken.ThrowIfCancellationRequested();
 
         IDatabase db = redis.GetDatabase();
         string fullKey = SmokeCacheKeyPrefix + key;
-        string value = DateTimeOffset.UtcNow.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        string value = timeProvider.GetUtcNow().ToString("O", System.Globalization.CultureInfo.InvariantCulture);
 
         await db.StringSetAsync(fullKey, value, DefaultCacheTtl).ConfigureAwait(false);
         RedisValue retrieved = await db.StringGetAsync(fullKey).ConfigureAwait(false);
@@ -127,11 +129,13 @@ public static class SmokeEndpointsExtensions
 
     private static async Task<IResult> PublishSmokeMessageAsync(
         IMessageBus bus,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(bus);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
-        SmokePingMessage message = new(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        SmokePingMessage message = new(Guid.NewGuid(), timeProvider.GetUtcNow());
         await bus.PublishAsync(message).ConfigureAwait(false);
 
         return Results.Ok(new { id = message.Id, timestamp = message.Timestamp });

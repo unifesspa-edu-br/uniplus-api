@@ -28,7 +28,7 @@ public sealed class EditalPublicadoToKafkaCascadeHandlerLoggingTests
     {
         Guid editalId = Guid.CreateVersion7();
         const string numeroEdital = "42/2026";
-        EditalPublicadoEvent @event = new(editalId, numeroEdital);
+        EditalPublicadoEvent @event = new(editalId, numeroEdital, new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
         EstruturalLogger<EditalPublicadoToKafkaCascadeHandler> logger = new();
 
         EditalPublicadoAvro avro = EditalPublicadoToKafkaCascadeHandler.Handle(@event, logger);
@@ -44,7 +44,7 @@ public sealed class EditalPublicadoToKafkaCascadeHandlerLoggingTests
     {
         Guid editalId = Guid.CreateVersion7();
         const string numeroEdital = "99/2030";
-        EditalPublicadoEvent @event = new(editalId, numeroEdital);
+        EditalPublicadoEvent @event = new(editalId, numeroEdital, new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
         EstruturalLogger<EditalPublicadoToKafkaCascadeHandler> logger = new();
 
         _ = EditalPublicadoToKafkaCascadeHandler.Handle(@event, logger);
@@ -81,7 +81,7 @@ public sealed class EditalPublicadoToKafkaCascadeHandlerLoggingTests
     [Fact(DisplayName = "Handle lança ArgumentNullException com logger nulo")]
     public void Handle_ComLoggerNulo_LancaArgumentNullException()
     {
-        EditalPublicadoEvent @event = new(Guid.CreateVersion7(), "1/2026");
+        EditalPublicadoEvent @event = new(Guid.CreateVersion7(), "1/2026", new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
 
         Action act = () => EditalPublicadoToKafkaCascadeHandler.Handle(@event, null!);
 

@@ -24,11 +24,16 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
     private const string SystemUser = "system";
 
     private readonly IUserContext? _userContext;
+    private readonly TimeProvider _timeProvider;
 
-    // Construtor sem args preservado para uso em testes que não exigem
-    // IUserContext (cenário equivalente ao fallback "system").
-    public AuditableInterceptor(IUserContext? userContext = null)
+    // TimeProvider é obrigatório (sem fallback TimeProvider.System): o relógio
+    // é sempre injetado pela DI (Singleton). IUserContext permanece opcional —
+    // o fallback "system" é regra legítima para fluxos sem principal (jobs,
+    // migrations), não um backdoor de não-determinismo.
+    public AuditableInterceptor(TimeProvider timeProvider, IUserContext? userContext = null)
     {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        _timeProvider = timeProvider;
         _userContext = userContext;
     }
 
@@ -59,7 +64,7 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
 
     private void ApplyAuditFields(DbContext context)
     {
-        DateTimeOffset now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = _timeProvider.GetUtcNow();
         string userBy = ResolveUserBy();
 
         foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<EntityBase> entry

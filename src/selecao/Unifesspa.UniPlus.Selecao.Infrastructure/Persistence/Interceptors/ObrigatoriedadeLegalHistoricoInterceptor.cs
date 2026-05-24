@@ -50,9 +50,16 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
     private const string SystemUser = "system";
 
     private readonly IUserContext? _userContext;
+    private readonly TimeProvider _timeProvider;
 
-    public ObrigatoriedadeLegalHistoricoInterceptor(IUserContext? userContext = null)
+    // TimeProvider é obrigatório (sem fallback TimeProvider.System): o relógio
+    // é sempre injetado pela DI (Singleton). IUserContext permanece opcional —
+    // o fallback "system" é regra legítima para fluxos sem principal (jobs,
+    // migrations), não um backdoor de não-determinismo.
+    public ObrigatoriedadeLegalHistoricoInterceptor(TimeProvider timeProvider, IUserContext? userContext = null)
     {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        _timeProvider = timeProvider;
         _userContext = userContext;
     }
 
@@ -83,7 +90,7 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
 
     private void CapturarHistorico(DbContext context)
     {
-        DateTimeOffset snapshotAt = DateTimeOffset.UtcNow;
+        DateTimeOffset snapshotAt = _timeProvider.GetUtcNow();
         string snapshotBy = ResolveSnapshotBy();
 
         List<EntityEntry<ObrigatoriedadeLegal>> entries = CapturarEntries(context);
@@ -108,7 +115,7 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
 
     private async ValueTask CapturarHistoricoAsync(DbContext context, CancellationToken cancellationToken)
     {
-        DateTimeOffset snapshotAt = DateTimeOffset.UtcNow;
+        DateTimeOffset snapshotAt = _timeProvider.GetUtcNow();
         string snapshotBy = ResolveSnapshotBy();
 
         List<EntityEntry<ObrigatoriedadeLegal>> entries = CapturarEntries(context);
