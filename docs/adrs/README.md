@@ -96,6 +96,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0065](0065-localoferta-flat-um-por-endereco-emec.md) | LocalOferta como entidade flat, uma entrada por local de oferta (endereço e-MEC) | accepted | 2026-05-19 |
 | [0066](0066-ofertacurso-modelo-tres-niveis-emec-por-campus.md) | Modelo de oferta em três níveis — Curso curricular, OfertaCurso regulatória e código e-MEC por campus | accepted | 2026-05-19 |
 | [0067](0067-aninhamento-tipodeficiencia-sob-pcd.md) | Aninhamento de TipoDeficiencia sob a condição PCD na oferta de atendimento especializado | accepted | 2026-05-19 |
+| [0068](0068-relogio-via-timeprovider-injetado.md) | Relógio via TimeProvider injetado, obrigatório em todo o `src/` | proposed | 2026-05-24 |
 
 ## Como adicionar um novo ADR
 
