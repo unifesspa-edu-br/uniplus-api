@@ -1,0 +1,9 @@
+# Convenções de teste do spike (espelha a seção [tests/**] do .editorconfig raiz,
+# que não alcança spikes/). Nomes de teste usam underscores; ConfigureAwait e
+# arrays literais não se aplicam ao estilo idiomático de xUnit.
+[*.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1861.severity = none
+# Fixtures e classes de teste do xUnit precisam ser públicas (descoberta por reflexão).
+dotnet_diagnostic.CA1515.severity = none
