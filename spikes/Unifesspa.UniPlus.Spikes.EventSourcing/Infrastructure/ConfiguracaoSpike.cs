@@ -50,11 +50,12 @@ public static class ConfiguracaoSpike
                 // Coletor de eventos de integração entregues (observabilidade de teste).
                 opts.Services.AddSingleton<ColetorIntegracao>();
 
-                // Protetor de PII: uma instância por escopo, exposta por duas portas,
-                // compartilhando a sessão Marten ambiente do handler.
-                opts.Services.AddScoped(sp => new ProtetorPiiAesGcm(sp.GetRequiredService<IDocumentSession>()));
-                opts.Services.AddScoped<IProtetorPii>(sp => sp.GetRequiredService<ProtetorPiiAesGcm>());
-                opts.Services.AddScoped<IServicoEsquecimento>(sp => sp.GetRequiredService<ProtetorPiiAesGcm>());
+                // Protetor de PII: singleton sem estado (gere sessões próprias via
+                // IDocumentStore), exposto por duas portas. As chaves vivem num
+                // unit-of-work separado — modela um cofre de chaves desacoplado.
+                opts.Services.AddSingleton(sp => new ProtetorPiiAesGcm(sp.GetRequiredService<IDocumentStore>()));
+                opts.Services.AddSingleton<IProtetorPii>(sp => sp.GetRequiredService<ProtetorPiiAesGcm>());
+                opts.Services.AddSingleton<IServicoEsquecimento>(sp => sp.GetRequiredService<ProtetorPiiAesGcm>());
 
                 // Handlers vivem neste assembly (classlib), não no de entrada (ADR-0043).
                 opts.Discovery.IncludeAssembly(typeof(AbrirEditalHandler).Assembly);
