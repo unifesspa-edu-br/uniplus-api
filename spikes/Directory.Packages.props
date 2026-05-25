@@ -1,0 +1,40 @@
+<Project>
+
+  <!--
+    Ilha de pacotes do spike (ADR-0069 / #540).
+
+    Standalone: NÃO importa o Directory.Packages.props da raiz. Isso isola
+    deliberadamente a linhagem de pacotes do Marten (Npgsql/Weasel) do pin de
+    produção, deixando o spike provar a coabitação Npgsql 10 × Marten de forma
+    controlada (gate G2). As versões de teste são espelhadas da raiz para manter
+    consistência de ferramentas.
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Event Sourcing + messaging -->
+    <PackageVersion Include="Marten" Version="8.37.1" />
+    <PackageVersion Include="WolverineFx" Version="5.39.3" />
+    <PackageVersion Include="WolverineFx.Marten" Version="5.39.3" />
+
+    <!-- Hosting / logging (mesma major do .NET 10) -->
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
+
+    <!-- Driver PostgreSQL: pin de produção (prova a coabitação no gate G2) -->
+    <PackageVersion Include="Npgsql" Version="10.0.2" />
+
+    <!-- Testing (espelhado da raiz) -->
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
+    <PackageVersion Include="AwesomeAssertions" Version="9.4.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.11.0" />
+    <PackageVersion Include="TngTech.ArchUnitNET" Version="0.13.3" />
+    <PackageVersion Include="TngTech.ArchUnitNET.xUnit" Version="0.13.3" />
+    <PackageVersion Include="coverlet.collector" Version="8.0.1" />
+  </ItemGroup>
+
+</Project>

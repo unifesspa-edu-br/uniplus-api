@@ -1,0 +1,21 @@
+<Project>
+
+  <!--
+    Spike de Event Sourcing (ADR-0069 / issue #540).
+
+    Herda as convenções estritas da raiz (net10.0, nullable, TreatWarningsAsErrors,
+    AnalysisLevel=latest-all) para manter o mesmo padrão de qualidade do produto,
+    mas vive numa ilha de pacotes própria (spikes/Directory.Packages.props) para
+    isolar as dependências do Marten do CPM de produção.
+
+    Código descartável: não entra no UniPlus.slnx, não é publicável e não é
+    referenciado por nenhum módulo de produção.
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsSpike>true</IsSpike>
+  </PropertyGroup>
+
+</Project>

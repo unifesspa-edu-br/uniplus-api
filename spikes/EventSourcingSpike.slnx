@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Unifesspa.UniPlus.Spikes.EventSourcing.Tests/Unifesspa.UniPlus.Spikes.EventSourcing.Tests.csproj" />
+  <Project Path="Unifesspa.UniPlus.Spikes.EventSourcing/Unifesspa.UniPlus.Spikes.EventSourcing.csproj" />
+</Solution>
