@@ -17,7 +17,7 @@ O Event Sourcing seletivo com **Marten 8.37.1 + WolverineFx.Marten 5.39.3** é *
 |------|----------|----------|-------------------|
 | T0 | Marten + WolverineFx.Marten funcionam sob .NET 10 / Npgsql 10? | ✅ Sim | `CompatibilidadeRuntimeTests` (append + projeção inline + stream cru) |
 | G1 | `append` (Marten) + `envelope` (outbox Wolverine) commitam na mesma transação? | ✅ Sim | `AtomicidadeTests` (happy: entrega; rollback: nada commitado) |
-| G2 | Marten coabita com o backbone PostgreSQL/Wolverine sem componente novo? | ⚠️ Parcial | `CoexistenciaSchemaTests` (mesmo schema) — ver limitação host-level abaixo |
+| G2 | Marten coabita com o backbone PostgreSQL/Wolverine sem componente novo? | ✅ Sim (host-level) | `Coexistencia*`/`MultiNoLeaderElectionTests` — EF main + Marten ancillary, cluster com failover |
 | G3 | Crypto-shredding atende LGPD sobre log append-only? | ⚠️ Conteúdo sim; resta correlação pseudônima | `CryptoShreddingTests` (revelável → esquecer → conteúdo irrecuperável; fato permanece) |
 | G4 | Replay reconstrói estado e projeções? | ✅ Sim | `ReplayProjecaoTests` (replay == inline; rebuild via daemon) |
 | G5 | Evolução de evento (upcasting) é viável? | ✅ Sim | `UpcastingTests` (v1 legado lido como v2) |
@@ -36,9 +36,14 @@ Os handlers usam o **Aggregate Handler Workflow** idiomático do Wolverine (`[Wr
 - **Happy:** publicar anexa `EditalPublicado` **e** entrega `EditalPublicadoIntegrado` pelo outbox durável (observado via `ColetorIntegracao`).
 - **Rollback:** um handler que anexa + publica e então lança não commita **nem** o evento **nem** o envelope.
 
-### G2 — Coabitação
+### G2 — Coabitação (host-level resolvida)
 
-O Event Store do Marten (`mt_*`) e os envelopes do outbox durável do Wolverine convivem **no mesmo schema PostgreSQL** (`edital_es`), sem componente operacional novo. **Limitação (ver abaixo):** a coabitação no **mesmo host** do outbox EF Core de produção não foi exercida.
+Inicialmente o spike provou apenas a coabitação no mesmo schema. A questão **host-level** — rodar o outbox EF Core de produção **junto** com o Marten num só host — foi então **fechada** (ver [proposta de topologia](adr-0069-coexistencia-marten-efcore-proposta.md)):
+
+- A limitação "um message store por host" é **pré-Wolverine 5**; o projeto roda 5.39, que suporta múltiplos stores via **um 'main' + N 'ancillary'**. A config ingênua (dois 'main') falha com erro acionável (`InvalidWolverineStorageConfigurationException`).
+- Topologia provada: **EF Core/Postgres como store 'main'** (`PersistMessagesWithPostgresql`, preserva ADR-0004) + **Marten como store 'ancillary'** (`AddMartenStore<IEditalEsStore>().IntegrateWithWolverine()`), que **compartilha o envelope storage operacional** do main.
+- `CoexistenciaBootTests` (boot dos dois stores), `CoexistenciaTests` (handler EF main atômico+outbox; event store ancillary utilizável) e `MultiNoLeaderElectionTests` (2 réplicas em `Balanced`, eleição de líder, failover com ejeção do nó morto e continuidade de processamento) provam a coabitação e o comportamento de cluster.
+- **Caveat de teste (não é defeito):** um handler `[MartenStore]` cascateando pelo outbox falha quando **múltiplos apps Wolverine coexistem no mesmo processo de teste** (cache de geração de código do JasperFx compartilhado) — em produção há um app por processo. O store ancillary é, por isso, exercido por append direto no teste; o handler `[MartenStore]` funciona quando isolado.
 
 ### G3 — LGPD / crypto-shredding
 
@@ -68,7 +73,7 @@ Fitness tests ArchUnitNET garantem que **Domain** e **Application** não depende
 
 ## Limitações e questões em aberto (para a decisão de gate)
 
-1. **Coabitação host-level (principal).** O host do spike roda **apenas Marten** como message store. Rodar o outbox do Marten **junto** com o outbox EF Core (`PersistMessagesWithPostgresql`) de produção **no mesmo host Wolverine** não foi exercido — o Wolverine tende a ter um message store primário por host. Opções a avaliar: (a) **serviço/host dedicado** para os agregados event-sourced; (b) **ancillary stores** do Wolverine; (c) migrar o módulo crítico inteiro para Marten-as-store. **Esta é a decisão arquitetural que falta.**
+1. **Coabitação host-level — RESOLVIDA.** Provada num só host via **EF Core 'main' + Marten 'ancillary'** (Wolverine 5 multi-store), com cluster (2 réplicas, leader election, failover) verde. Detalhes e topologia recomendada na [proposta de coabitação](adr-0069-coexistencia-marten-efcore-proposta.md). Resta apenas a **decisão de produção** sobre detalhes operacionais (schema de envelope compartilhado vs separado, DLQ/replay por store), não viabilidade.
 2. **Provisioning de schema.** O spike usa `AutoCreate.All`; em produção o schema é responsabilidade do deploy (ADR-0039), não auto-create em runtime.
 3. **Externalização de chaves.** No spike as chaves vivem numa coleção Marten; em produção devem residir em Vault/KMS, fora do banco dos eventos.
 4. **Correlação pseudônima residual (LGPD).** O spike retém `SujeitoId` em claro e um `ChaveId` compartilhado por titular nos eventos, que sobrevivem ao shredding. Para o piloto recomenda-se: **(a)** não persistir identificador de titular em claro no evento; **(b)** usar **chave única por evento** (`ChaveId` aleatório por append) para que o id da chave não correlacione eventos; **(c)** manter o mapeamento `titular → [ChaveId]` apenas no cofre (deletável), de modo que o esquecimento elimine também a capacidade de correlação. Assim o log append-only fica, após o shredding, sem qualquer handle de correlação do titular.

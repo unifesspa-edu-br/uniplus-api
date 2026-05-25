@@ -29,6 +29,10 @@ public static class ConfiguracaoSpike
         return Host.CreateDefaultBuilder()
             .UseWolverine(opts =>
             {
+                // Nome distinto: namespaceia o código gerado do Wolverine, evitando
+                // colisão de tipos gerados com o host de coabitação no mesmo processo.
+                opts.ServiceName = "uniplus-spike-es";
+
                 opts.Services.AddMarten(marten =>
                 {
                     marten.Connection(connectionString);
@@ -57,8 +61,16 @@ public static class ConfiguracaoSpike
                 opts.Services.AddSingleton<IProtetorPii>(sp => sp.GetRequiredService<ProtetorPiiAesGcm>());
                 opts.Services.AddSingleton<IServicoEsquecimento>(sp => sp.GetRequiredService<ProtetorPiiAesGcm>());
 
-                // Handlers vivem neste assembly (classlib), não no de entrada (ADR-0043).
-                opts.Discovery.IncludeAssembly(typeof(AbrirEditalHandler).Assembly);
+                // Discovery escopado APENAS aos handlers ES deste host (ADR-0043). Não
+                // usa IncludeAssembly para não arrastar os handlers do módulo de
+                // coabitação (que dependem de CrudDbContext / store ancillary) e evitar
+                // contaminação da geração de código entre hosts no mesmo processo de teste.
+                opts.Discovery.DisableConventionalDiscovery()
+                    .IncludeType(typeof(AbrirEditalHandler))
+                    .IncludeType(typeof(PublicarEditalHandler))
+                    .IncludeType(typeof(RetificarEditalHandler))
+                    .IncludeType(typeof(FalharAposAnexarHandler))
+                    .IncludeType(typeof(EditalPublicadoIntegradoHandler));
 
                 // Atomicidade write+evento: a middleware aplica SaveChanges e instala
                 // os envelopes do outbox na mesma transação do append.

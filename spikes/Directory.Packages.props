@@ -18,6 +18,12 @@
     <PackageVersion Include="Marten" Version="8.37.1" />
     <PackageVersion Include="WolverineFx" Version="5.39.3" />
     <PackageVersion Include="WolverineFx.Marten" Version="5.39.3" />
+    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="5.39.3" />
+
+    <!-- EF Core (módulo CRUD da prova de coabitação) -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
 
     <!-- Hosting / logging (mesma major do .NET 10) -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />

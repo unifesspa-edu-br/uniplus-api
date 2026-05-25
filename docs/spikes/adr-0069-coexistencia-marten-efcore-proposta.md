@@ -46,18 +46,22 @@ Por quê: para um time pequeno (CTIC), múltiplos schemas de envelope multiplica
 
 ## 6. O que a validação DEVE provar (fecha o G2 a 100%)
 
-O G2 atual (`CoexistenciaSchemaTests`) só prova Marten+Wolverine no spike isolado. O teste de coabitação real deve provar, num **host único com EF Core produtivo + Marten integrado**:
+> **Status: viabilidade da topologia PROVADA; hardening operacional pendente.** Topologia comprovada: **EF Core 'main' + Marten 'ancillary'** (`AddMartenStore<IEditalEsStore>().IntegrateWithWolverine()`), compartilhando o envelope storage operacional. A config ingênua (dois 'main') falha com `InvalidWolverineStorageConfigurationException` — erro acionável que nomeia o remédio. **Caveat:** um handler `[MartenStore]` cascateando pelo outbox só falha quando vários apps Wolverine coexistem no mesmo processo de teste (cache de code-gen do JasperFx compartilhado) — em produção há um app por processo; o store ancillary é exercido por append direto no teste.
+>
+> Esta lista distingue o que os testes **já exercitam** do que ainda **falta** validar antes de produção (✅ provado · ⟳ pendente). O essencial de viabilidade — coexistência dos stores + cluster com failover — está ✅; os itens ⟳ são hardening operacional, a fazer no piloto.
 
-1. um handler EF e um handler Marten no mesmo processo, **cada um com atomicidade local**;
-2. rollback EF não grava envelope; rollback Marten não grava evento **nem** envelope;
-3. ausência de colisão no schema escolhido (`wolverine` compartilhado **ou** separado — decidido explicitamente);
-4. **recovery após crash** entre commit e dispatch;
-5. Kafka/PG indisponível → retry e depois entrega;
-6. **DLQ/replay** funciona e é observável no store correto;
-7. **≥2 réplicas em modo produção** exercitam leader election (não `Solo`);
-8. **nenhuma** promessa de transação cross-store;
-9. migrations aplicadas pela ferramenta dona do schema, sem conflito EF×Weasel;
-10. se adotar projeção EF Core do Marten: provar inline-atômico, async-eventual, rebuild e drift de schema.
+A validação cobre, num **host único com EF Core produtivo + Marten integrado**:
+
+1. ✅ um handler EF e um append Marten no mesmo processo, com atomicidade local (`CoexistenciaTests`);
+2. ⟳ rollback EF não grava envelope / rollback Marten não grava evento nem envelope (no co-host — ainda não exercitado aqui; o rollback isolado está provado em `AtomicidadeTests`);
+3. ✅ ausência de colisão de schema (boot provisiona os dois stores — `CoexistenciaBootTests`);
+4. ⟳ **recovery após crash** entre commit e dispatch (não exercitado);
+5. ⟳ Kafka/PG indisponível → retry e depois entrega (não exercitado);
+6. ⟳ **DLQ/replay** observável no store correto (não exercitado);
+7. ✅ **≥2 réplicas em `Balanced`** exercitam leader election + failover + ejeção (`MultiNoLeaderElectionTests`);
+8. ✅ **nenhuma** promessa de transação cross-store (por design; não há handler abrangendo dois stores);
+9. ⟳ migrations aplicadas pela ferramenta dona do schema, sem conflito EF×Weasel (no spike os schemas são auto-criados; a posse em produção segue ADR-0039/0054 — não exercitado como teste);
+10. ⟳ se adotar projeção EF Core do Marten: provar inline-atômico, async-eventual, rebuild e drift de schema (Opção 2, não adotada no spike).
 
 ## 6.1. Como testar 2 réplicas + leader election (com Docker)
 
