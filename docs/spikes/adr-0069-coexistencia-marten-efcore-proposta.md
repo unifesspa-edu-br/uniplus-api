@@ -61,7 +61,8 @@ A validação cobre, num **host único com EF Core produtivo + Marten integrado*
 7. ✅ **≥2 réplicas em `Balanced`** exercitam leader election + failover + ejeção (`MultiNoLeaderElectionTests`);
 8. ✅ **nenhuma** promessa de transação cross-store (por design; não há handler abrangendo dois stores);
 9. ⟳ migrations aplicadas pela ferramenta dona do schema, sem conflito EF×Weasel (no spike os schemas são auto-criados; a posse em produção segue ADR-0039/0054 — não exercitado como teste);
-10. ⟳ se adotar projeção EF Core do Marten: provar inline-atômico, async-eventual, rebuild e drift de schema (Opção 2, não adotada no spike).
+10. ⟳ se adotar projeção EF Core do Marten: provar inline-atômico, async-eventual, rebuild e drift de schema (Opção 2, não adotada no spike);
+11. ✅ **mecanismo de base da escala — concorrência otimista por stream**: dois writers concorrentes no mesmo stream (duas sessões Marten; a concorrência é imposta no **banco**, independe do processo) — o perdedor leva `EventStreamUnexpectedMaxEventIdException`, faz retry com estado fresco e **nada é perdido** (`ConcorrenciaStreamTests`). É serialização por-stream (não lock global), então escala. ⟳ **Não exercitado neste teste:** o caminho completo (handler `[WriteAggregate]` com ≥2 `IHost` em `Balanced` na topologia co-hospedada) **herda** essa garantia, mas não foi rodado como teste — o que é provado aqui é o mecanismo de concorrência do Marten, não a stack Wolverine multi-réplica ponta a ponta. Pré-requisitos de produção: instâncias em `Balanced` (não `Solo`) e schema provisionado no deploy.
 
 ## 6.1. Como testar 2 réplicas + leader election (com Docker)
 
