@@ -1,4 +1,5 @@
 using JasperFx;
+using JasperFx.Events;
 using Marten;
 using Marten.Events.Projections;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,7 @@ using Unifesspa.UniPlus.Spikes.EventSourcing.Domain;
 using Unifesspa.UniPlus.Spikes.EventSourcing.Infrastructure.Handlers;
 using Unifesspa.UniPlus.Spikes.EventSourcing.Infrastructure.Pii;
 using Wolverine;
+using Wolverine.ErrorHandling;
 using Wolverine.Marten;
 
 namespace Unifesspa.UniPlus.Spikes.EventSourcing.Infrastructure;
@@ -22,7 +24,7 @@ public static class ConfiguracaoSpike
     /// <summary>Schema PostgreSQL isolado para eventos e tabelas do Marten/Wolverine.</summary>
     public const string SchemaEventos = "edital_es";
 
-    public static IHostBuilder CriarHost(string connectionString)
+    public static IHostBuilder CriarHost(string connectionString, DurabilityMode modo = DurabilityMode.Solo)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
@@ -80,8 +82,20 @@ public static class ConfiguracaoSpike
                 // outbox (persistido na mesma transação), não é processado inline.
                 opts.Policies.UseDurableLocalQueues();
 
-                // Nó único: determinístico para testes, sem eleição de liderança.
-                opts.Durability.Mode = DurabilityMode.Solo;
+                // Solo (default) para os testes single-node; Balanced para o teste de
+                // escala horizontal (≥2 réplicas com eleição de líder).
+                opts.Durability.Mode = modo;
+
+                // Concorrência otimista de stream sob escala: quando duas réplicas
+                // gravam no mesmo agregado, o perdedor é retentado com estado fresco
+                // (FetchForWriting recarrega a versão) — converge sem lost update.
+                opts.OnException<EventStreamUnexpectedMaxEventIdException>()
+                    .RetryWithCooldown(
+                        TimeSpan.FromMilliseconds(50),
+                        TimeSpan.FromMilliseconds(100),
+                        TimeSpan.FromMilliseconds(250),
+                        TimeSpan.FromMilliseconds(500),
+                        TimeSpan.FromSeconds(1));
             });
     }
 }
