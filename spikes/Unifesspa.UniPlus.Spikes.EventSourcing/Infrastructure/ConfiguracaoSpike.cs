@@ -47,6 +47,9 @@ public static class ConfiguracaoSpike
                 // Relógio injetável (ADR-0068): determinismo em teste, sem DateTime.UtcNow.
                 opts.Services.AddSingleton(TimeProvider.System);
 
+                // Coletor de eventos de integração entregues (observabilidade de teste).
+                opts.Services.AddSingleton<ColetorIntegracao>();
+
                 // Protetor de PII: uma instância por escopo, exposta por duas portas,
                 // compartilhando a sessão Marten ambiente do handler.
                 opts.Services.AddScoped(sp => new ProtetorPiiAesGcm(sp.GetRequiredService<IDocumentSession>()));
@@ -59,6 +62,10 @@ public static class ConfiguracaoSpike
                 // Atomicidade write+evento: a middleware aplica SaveChanges e instala
                 // os envelopes do outbox na mesma transação do append.
                 opts.Policies.AutoApplyTransactions();
+
+                // Filas locais duráveis: o evento de integração cascateado passa pelo
+                // outbox (persistido na mesma transação), não é processado inline.
+                opts.Policies.UseDurableLocalQueues();
 
                 // Nó único: determinístico para testes, sem eleição de liderança.
                 opts.Durability.Mode = DurabilityMode.Solo;
