@@ -9,11 +9,16 @@ using Unifesspa.UniPlus.Spikes.EventSourcing.Infrastructure.Persistencia;
 namespace Unifesspa.UniPlus.Spikes.EventSourcing.Infrastructure.Pii;
 
 /// <summary>
-/// Protetor de PII com AES-256-GCM + crypto-shredding. A chave por titular vive na
-/// sessão Marten ambiente — quando usado dentro de um handler, a criação da chave e
-/// o append do evento commitam na mesma transação. Esquecer = apagar a chave.
+/// Protetor de PII com AES-256-GCM + crypto-shredding.
+/// <para>
+/// As chaves são geridas num <b>unit-of-work próprio</b> (sessão dedicada via
+/// <see cref="IDocumentStore"/>), desacopladas da transação do append de eventos.
+/// Isso modela um cofre de chaves separado — a recomendação de produção é externalizar
+/// as chaves (Vault/KMS), nunca guardá-las junto dos eventos. Uma chave órfã (cujo
+/// evento sofreu rollback) é inócua; cada evento referencia a chave exata que o cifrou.
+/// </para>
 /// </summary>
-internal sealed class ProtetorPiiAesGcm(IDocumentSession session)
+internal sealed class ProtetorPiiAesGcm(IDocumentStore store)
     : IProtetorPii, IServicoEsquecimento
 {
     private const int TamanhoChaveBytes = 32; // AES-256
@@ -25,8 +30,15 @@ internal sealed class ProtetorPiiAesGcm(IDocumentSession session)
     {
         ArgumentNullException.ThrowIfNull(ator);
 
-        (Guid chaveId, byte[] chave) = await ObterOuCriarChaveAsync(ator.SujeitoId, cancellationToken)
-            .ConfigureAwait(false);
+        Guid chaveId;
+        byte[] chave;
+        IDocumentSession session = store.LightweightSession();
+        await using (session.ConfigureAwait(false))
+        {
+            (chaveId, chave) = await ObterOuCriarChaveAsync(session, ator.SujeitoId, cancellationToken)
+                .ConfigureAwait(false);
+            await session.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         byte[] claro = Encoding.UTF8.GetBytes($"{ator.Nome}{Separador}{ator.Cpf}");
         byte[] nonce = RandomNumberGenerator.GetBytes(TamanhoNonceBytes);
@@ -48,8 +60,14 @@ internal sealed class ProtetorPiiAesGcm(IDocumentSession session)
 
         // Decifra com a chave EXATA do evento; nunca uma substituta. Se a chave foi
         // esquecida (crypto-shredding), o conteúdo é irrecuperável → null.
-        ChaveTitular? chave = await session.LoadAsync<ChaveTitular>(cifrado.ChaveId, cancellationToken)
-            .ConfigureAwait(false);
+        ChaveTitular? chave;
+        IQuerySession session = store.QuerySession();
+        await using (session.ConfigureAwait(false))
+        {
+            chave = await session.LoadAsync<ChaveTitular>(cifrado.ChaveId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         if (chave is null)
         {
             return null;
@@ -71,15 +89,20 @@ internal sealed class ProtetorPiiAesGcm(IDocumentSession session)
         return new Ator(cifrado.SujeitoId, partes[0], partes[1]);
     }
 
-    public Task EsquecerAsync(Guid sujeitoId, CancellationToken cancellationToken = default)
+    public async Task EsquecerAsync(Guid sujeitoId, CancellationToken cancellationToken = default)
     {
-        // Apaga TODAS as chaves do titular (idempotente); efetiva no SaveChanges.
+        // Apaga TODAS as chaves do titular (idempotente), no seu próprio commit.
         // Eventos antigos passam a referenciar ChaveIds inexistentes → irrecuperáveis.
-        session.DeleteWhere<ChaveTitular>(k => k.SujeitoId == sujeitoId);
-        return Task.CompletedTask;
+        IDocumentSession session = store.LightweightSession();
+        await using (session.ConfigureAwait(false))
+        {
+            session.DeleteWhere<ChaveTitular>(k => k.SujeitoId == sujeitoId);
+            await session.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
-    private async Task<(Guid ChaveId, byte[] Chave)> ObterOuCriarChaveAsync(
+    private static async Task<(Guid ChaveId, byte[] Chave)> ObterOuCriarChaveAsync(
+        IDocumentSession session,
         Guid sujeitoId,
         CancellationToken cancellationToken)
     {
