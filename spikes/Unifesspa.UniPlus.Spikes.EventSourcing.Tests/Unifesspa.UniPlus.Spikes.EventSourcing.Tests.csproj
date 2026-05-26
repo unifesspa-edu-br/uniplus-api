@@ -11,7 +11,8 @@
          compilado antes do teste de escala co-hospedada, que o lança como processo.
          ReferenceOutputAssembly=false evita arrastar as dependências web para o teste. -->
     <ProjectReference Include="../Unifesspa.UniPlus.Spikes.EventSourcing.Host/Unifesspa.UniPlus.Spikes.EventSourcing.Host.csproj"
-                      ReferenceOutputAssembly="false" />
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
   <ItemGroup>
