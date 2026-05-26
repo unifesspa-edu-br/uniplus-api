@@ -1,15 +1,15 @@
 # Spike — Viabilidade de Event Sourcing com Marten (gate da ADR-0069)
 
 - **Issue:** uniplus-api#540
-- **ADR:** [ADR-0069 — Event Sourcing seletivo com Marten](../adrs/0069-event-sourcing-seletivo-marten-contextos-criticos.md) (status `proposed`)
+- **ADR:** [ADR-0069 — Event Sourcing seletivo com Marten](../adrs/0069-event-sourcing-seletivo-marten-contextos-criticos.md) (status **`accepted`** — gate cumprido)
 - **Código do spike:** `spikes/EventSourcingSpike.slnx` (ilha isolada, fora do `UniPlus.slnx`)
 - **Contexto de teste:** ciclo de vida do *Edital* event-sourced (`EditalEs`), como cobaia descartável — não toca o módulo Seleção de produção.
 
 ## Resumo executivo
 
-O Event Sourcing seletivo com **Marten 8.37.1 + WolverineFx.Marten 5.39.3** é **tecnicamente viável** sob a stack atual (.NET 10, PostgreSQL 18, Npgsql 10.0.2, Wolverine 5.39). Os seis portões da ADR-0069 foram exercidos por **15 testes de integração/arquitetura verdes** (Testcontainers Postgres 18), build com **zero avisos** sob os analisadores estritos do projeto.
+O Event Sourcing seletivo com **Marten 8.37.1 + WolverineFx.Marten 5.39.3** é **tecnicamente viável** sob a stack atual (.NET 10, PostgreSQL 18, Npgsql 10.0.2, Wolverine 5.39). Os portões da ADR-0069 — incluindo coabitação host-level, cluster com leader election/failover e escala horizontal — foram exercidos por **22 testes de integração/arquitetura verdes** (Testcontainers Postgres 18), build com **zero avisos** sob os analisadores estritos do projeto.
 
-**Recomendação:** promover a ADR-0069 a `accepted` **mantendo as condições** já previstas (desacoplada do pacote primário; piloto = homologação documental), com **três decisões de produção** a fechar antes da implementação do piloto: (1) a **topologia de coabitação** entre o outbox do Marten e o outbox EF Core atual; (2) a **externalização das chaves** de cifragem para um cofre (Vault/KMS); (3) a **eliminação da correlação pseudônima residual** no log (identificador de titular / id de chave que sobrevivem ao shredding). A decisão de gate é do Tech Lead.
+**Veredito (gate, 2026-05-25):** a ADR-0069 está **`accepted`**. **Topologia decidida:** Marten como store **`ancillary`** (auxiliar), por-API e só onde há agregado event-sourced (Seleção, Ingresso); **EF Core/Postgres permanece o `main`**. Piloto = **homologação documental**. Hardening a fechar antes de produção (não bloqueia o gate): **externalização das chaves** (Vault/KMS), **eliminação da correlação pseudônima residual**, recovery pós-crash, DLQ/replay e posse de migrations. Detalhes na [Conclusão e veredito](#conclusão-e-veredito).
 
 ## Veredito por portão
 
@@ -80,6 +80,13 @@ Fitness tests ArchUnitNET garantem que **Domain** e **Application** não depende
 5. **Projeções inline vs async.** O spike usa projeção inline (consistência forte). Streams longos ou muitas projeções podem exigir projeções assíncronas (consistência eventual explícita).
 6. **Versionamento de eventos é disciplina permanente** (upcasters mantidos por anos).
 
-## Conclusão
+## Conclusão e veredito
 
-A viabilidade técnica está **comprovada**. O risco remanescente não é "se o Marten funciona", e sim **como integrá-lo à topologia de outbox de produção** — uma decisão de arquitetura, não de viabilidade. Recomenda-se promover a ADR-0069 a `accepted` com as condições acima e abrir o piloto de **homologação documental** já endereçando a topologia de coabitação como primeira tarefa de design.
+A viabilidade técnica está **comprovada** em todos os gates, incluindo coabitação host-level, cluster com leader election/failover e escala horizontal (até 2 processos co-hospedados reais). O risco remanescente não era "se o Marten funciona", e sim a topologia — agora decidida.
+
+**Veredito (decisão de gate, 2026-05-25):** a ADR-0069 foi promovida a **`accepted`**. Adoção:
+
+- **Marten como store `ancillary` (auxiliar)** — `AddMartenStore<…>().IntegrateWithWolverine()` — **por-API e apenas onde há agregado event-sourced** (Seleção e Ingresso). **EF Core/Postgres permanece o message store `main`** (plano operacional, preserva a ADR-0004). **Não** adotar Marten como `main`.
+- APIs CRUD (Parametrização, Organização Institucional, Portal) **não recebem Marten**.
+- **Piloto: homologação documental.** Antes de produção, fechar o hardening pendente (⟳ no relatório/proposta): externalização de chaves (Vault/KMS), eliminação da correlação pseudônima residual, recovery pós-crash, DLQ/replay e posse de migrations.
+- Reavaliar "Marten como `main`" apenas se algum serviço futuro nascer **event-first** (maioria dos agregados event-sourced).
