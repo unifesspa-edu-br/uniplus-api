@@ -65,6 +65,8 @@ A drenagem de domain events não passa por dispatcher injetado: handlers que mut
 
 Capacidades avançadas (sagas, process managers, scheduled messages, event sourcing) ficam **deliberadamente fora** desta decisão e só entram no projeto quando um caso de uso concreto exigir, com emenda a esta ADR.
 
+> **Emenda (2026-05-25):** a [ADR-0069](0069-event-sourcing-seletivo-marten-contextos-criticos.md) ativou a exceção de **event sourcing** para agregados críticos (Seleção e Ingresso), com Marten como store `ancillary` sobre o PostgreSQL existente. As demais capacidades permanecem fora até justificativa própria. As abstrações `ICommandBus`/`IQueryBus` continuam sendo a entrada da Application — handlers event-sourced ficam na Infrastructure para não acoplar a camada a `Wolverine.*`.
+
 ## Consequências
 
 ### Positivas
@@ -117,6 +119,7 @@ Capacidades avançadas (sagas, process managers, scheduled messages, event sourc
 
 - ADR-0004 define o outbox transacional sobre Wolverine + EF Core.
 - ADR-0005 define a estratégia de drenagem de domain events via cascading messages.
+- ADR-0069 ativa a exceção de event sourcing seletivo (Marten como store `ancillary`) prevista por esta ADR.
 - ADR-0012 define ArchUnitNET como ferramenta de enforcement.
 - ADR-0018 define OpenTelemetry como observabilidade obrigatória.
 - [Wolverine documentation](https://wolverinefx.net/)

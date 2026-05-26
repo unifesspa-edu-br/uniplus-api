@@ -97,6 +97,7 @@ Decisões contratuais derivadas:
 - ADR-0014 define Kafka como bus inter-módulo.
 - ADR-0007 define PostgreSQL como banco primário (provedor da persistência outbox).
 - ADR-0018 define OpenTelemetry como observabilidade obrigatória — métricas e alertas Wolverine ficam ali.
+- ADR-0069 define que, em agregados event-sourced, o envelope do outbox é persistido na mesma unidade transacional do *append* no Marten via integração Marten/Wolverine; o EF Core/Postgres permanece o message store `main` e a invariante deste outbox é preservada.
 - [Wolverine — Durable Outbox](https://wolverinefx.net/guide/durability/)
 - [JasperFx/wolverine#2586 — fix do DomainEventScraper](https://github.com/JasperFx/wolverine/pull/2586)
 - **Origem:** revisão da ADR interna Uni+ ADR-025 (não publicada). A ADR interna ADR-024, que documentou a primeira tentativa reprovada, permanece como histórico interno e não é canonizada aqui — só o estado atual.
