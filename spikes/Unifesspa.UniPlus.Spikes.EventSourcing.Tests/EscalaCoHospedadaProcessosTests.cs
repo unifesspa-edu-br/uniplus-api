@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
-using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -51,19 +51,17 @@ public sealed class EscalaCoHospedadaProcessosTests : IAsyncLifetime
         string hostDll = LocalizarHostDll();
         File.Exists(hostDll).Should().BeTrue($"o host deve estar compilado em {hostDll}");
 
-        int portaA = PortaLivre();
-        int portaB = PortaLivre();
-
         using HttpClient http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
-        // Sobe a réplica A e espera ficar pronta (provisiona o schema).
-        IniciarReplica(hostDll, portaA);
-        (await EsperarSaudavelAsync(http, portaA, TimeSpan.FromSeconds(90)))
+        // Réplica A: porta efêmera (:0). A porta REAL é lida do log "Now listening on"
+        // do processo — sem pré-alocação, sem corrida de porta. Provisiona o schema.
+        int portaA = await IniciarReplicaAsync(hostDll, TimeSpan.FromSeconds(90));
+        (await EsperarSaudavelAsync(http, portaA, TimeSpan.FromSeconds(30)))
             .Should().BeTrue($"a réplica A (porta {portaA}) deve ficar pronta. Logs:\n{Logs()}");
 
-        // Sobe a réplica B (schema já existe).
-        IniciarReplica(hostDll, portaB);
-        (await EsperarSaudavelAsync(http, portaB, TimeSpan.FromSeconds(90)))
+        // Réplica B (schema já existe).
+        int portaB = await IniciarReplicaAsync(hostDll, TimeSpan.FromSeconds(90));
+        (await EsperarSaudavelAsync(http, portaB, TimeSpan.FromSeconds(30)))
             .Should().BeTrue($"a réplica B (porta {portaB}) deve ficar pronta. Logs:\n{Logs()}");
 
         // Abre o stream (via réplica A).
@@ -94,7 +92,7 @@ public sealed class EscalaCoHospedadaProcessosTests : IAsyncLifetime
         convergiu.Should().BeTrue($"as {Retificacoes} retificações devem convergir sem lost update (aplicadas: {total})");
     }
 
-    private void IniciarReplica(string hostDll, int porta)
+    private async Task<int> IniciarReplicaAsync(string hostDll, TimeSpan timeout)
     {
         ProcessStartInfo psi = new("dotnet", $"exec \"{hostDll}\"")
         {
@@ -103,17 +101,36 @@ public sealed class EscalaCoHospedadaProcessosTests : IAsyncLifetime
             RedirectStandardError = true,
         };
         psi.Environment["SPIKE_DB"] = _postgres.GetConnectionString();
-        psi.Environment["ASPNETCORE_URLS"] = $"http://127.0.0.1:{porta}";
+        // Porta efêmera: o SO escolhe uma porta livre; lemos a real do log de startup.
+        psi.Environment["ASPNETCORE_URLS"] = "http://127.0.0.1:0";
         psi.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         psi.Environment["DOTNET_ENVIRONMENT"] = "Development";
 
+        TaskCompletionSource<int> portaLida = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Observar(string? linha)
+        {
+            if (linha is null)
+            {
+                return;
+            }
+
+            _logs.Enqueue(linha);
+            Match m = Regex.Match(linha, @"Now listening on:\s*http://[^:]+:(\d+)");
+            if (m.Success)
+            {
+                portaLida.TrySetResult(int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
+
         Process processo = new() { StartInfo = psi };
-        processo.OutputDataReceived += (_, e) => { if (e.Data is not null) { _logs.Enqueue($"[{porta}] {e.Data}"); } };
-        processo.ErrorDataReceived += (_, e) => { if (e.Data is not null) { _logs.Enqueue($"[{porta}!] {e.Data}"); } };
+        processo.OutputDataReceived += (_, e) => Observar(e.Data);
+        processo.ErrorDataReceived += (_, e) => Observar(e.Data);
         processo.Start();
         processo.BeginOutputReadLine();
         processo.BeginErrorReadLine();
         _processos.Add(processo);
+
+        return await portaLida.Task.WaitAsync(timeout);
     }
 
     private static string LocalizarHostDll()
@@ -128,15 +145,6 @@ public sealed class EscalaCoHospedadaProcessosTests : IAsyncLifetime
         return Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             $"../../../../Unifesspa.UniPlus.Spikes.EventSourcing.Host/bin/{config}/{tfm}/Unifesspa.UniPlus.Spikes.EventSourcing.Host.dll"));
-    }
-
-    private static int PortaLivre()
-    {
-        using TcpListener listener = new(IPAddress.Loopback, 0);
-        listener.Start();
-        int porta = ((IPEndPoint)listener.LocalEndpoint).Port;
-        listener.Stop();
-        return porta;
     }
 
     private static Uri Url(int porta, string caminho) => new($"http://127.0.0.1:{porta}{caminho}");
