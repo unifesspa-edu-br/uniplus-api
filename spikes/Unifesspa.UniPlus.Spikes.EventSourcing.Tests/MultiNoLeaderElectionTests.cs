@@ -52,13 +52,10 @@ public sealed class MultiNoLeaderElectionTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        foreach (IHost? no in new[] { _noA, _noB })
+        foreach (IHost no in new[] { _noA, _noB }.OfType<IHost>())
         {
-            if (no is not null)
-            {
-                try { await no.StopAsync(); no.Dispose(); }
-                catch (ObjectDisposedException) { /* já parado no teste de failover */ }
-            }
+            try { await no.StopAsync(); no.Dispose(); }
+            catch (ObjectDisposedException) { /* já parado no teste de failover */ }
         }
 
         await _postgres.DisposeAsync();

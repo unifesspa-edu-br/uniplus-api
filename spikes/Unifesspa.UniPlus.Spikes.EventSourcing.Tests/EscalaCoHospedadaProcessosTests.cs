@@ -142,9 +142,13 @@ public sealed class EscalaCoHospedadaProcessosTests : IAsyncLifetime
         string tfm = saidaTeste.Name;            // ex.: net10.0
         string config = saidaTeste.Parent!.Name; // Debug | Release
 
+        // Segmentos separados (nenhum enraizado) — evita que Path.Combine descarte
+        // argumentos anteriores se um segmento parecer absoluto.
         return Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
-            $"../../../../Unifesspa.UniPlus.Spikes.EventSourcing.Host/bin/{config}/{tfm}/Unifesspa.UniPlus.Spikes.EventSourcing.Host.dll"));
+            "..", "..", "..", "..",
+            "Unifesspa.UniPlus.Spikes.EventSourcing.Host", "bin", config, tfm,
+            "Unifesspa.UniPlus.Spikes.EventSourcing.Host.dll"));
     }
 
     private static Uri Url(int porta, string caminho) => new($"http://127.0.0.1:{porta}{caminho}");
