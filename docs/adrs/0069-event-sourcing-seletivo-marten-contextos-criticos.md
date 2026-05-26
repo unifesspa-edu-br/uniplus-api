@@ -1,6 +1,6 @@
 ---
-status: "proposed"
-date: "2026-05-24"
+status: "accepted"
+date: "2026-05-25"
 decision-makers:
   - "Tech Lead (CTIC)"
 consulted: []
@@ -9,13 +9,24 @@ informed: []
 
 # ADR-0069: Event Sourcing seletivo com Marten em agregados críticos do Uni+
 
-> **Aceita em princípio** pelo Tech Lead, **não binding** até o gate passar. Adoção
-> desacoplada do pacote primário (configuração + inscrição seguem CRUD, embarcam sem
-> Marten); piloto = homologação documental. O gate antes de virar binding combina spike
-> de atomicidade *append (Marten) + outbox (Wolverine)*, estratégia LGPD/crypto-shredding
-> e fitness test da fronteira EF Core × Marten. Expansão (classificação/recurso/resultado)
-> só após o piloto. **Origem:** revisão da ADR interna Uni+ (não publicada) e deliberação
-> multi-perspectiva de 2026-05-21.
+> **Accepted (binding).** O gate de viabilidade foi cumprido pelo spike da issue #540
+> (22 testes de integração via Testcontainers): atomicidade *append (Marten) + outbox
+> (Wolverine)* (happy + rollback verificado contra a tabela de envelopes), crypto-shredding
+> de PII, replay/rebuild de projeção, upcasting, fitness da fronteira EF Core × Marten,
+> coabitação host-level, cluster com leader election/failover e escala horizontal
+> (incl. 2 processos co-hospedados reais).
+>
+> **Topologia decidida:** **EF Core/Postgres permanece o message store `main`** (plano
+> operacional, preserva a ADR-0004) e **o Marten entra como store `ancillary`**
+> (`AddMartenStore<…>().IntegrateWithWolverine()`), **por-API e apenas onde há agregado
+> event-sourced** (Seleção e Ingresso); APIs CRUD (Parametrização, Organização
+> Institucional, Portal) não recebem Marten. **Não** adotar Marten como `main`.
+> Piloto = homologação documental. Condições e topologia detalhadas em
+> [`docs/spikes/adr-0069-coexistencia-marten-efcore-proposta.md`](../spikes/adr-0069-coexistencia-marten-efcore-proposta.md)
+> e no [relatório do spike](../spikes/adr-0069-event-sourcing-findings.md).
+>
+> **Origem:** revisão da ADR interna Uni+ (não publicada), deliberação multi-perspectiva
+> de 2026-05-21 e o spike de viabilidade #540.
 
 ## Contexto e enunciado do problema
 
@@ -88,10 +99,13 @@ funcional auditável e reconstrução temporal sem introduzir componente
 operacional novo, reaproveitando o PostgreSQL (ADR-0007) e o ecossistema
 JasperFx já presente pelo Wolverine (ADR-0003).
 
-A decisão é **aceita em princípio** e **desacoplada do pacote primário**:
-configuração e inscrição seguem CRUD e embarcam sem Marten. O ES só vira binding
-após um gate de viabilidade (ver Confirmação) e é validado por um único piloto —
-homologação documental — antes de expandir. Mantém-se:
+A decisão é **accepted (binding)** — o gate de viabilidade foi cumprido pelo spike da
+issue 540 (ver Confirmação) — e **desacoplada do pacote primário**: configuração e
+inscrição seguem CRUD e embarcam sem Marten. O Marten é adotado como store
+**`ancillary`** (auxiliar), **por-API e apenas onde há agregado event-sourced**
+(Seleção e Ingresso), enquanto o **EF Core/Postgres permanece o message store
+`main`** (plano operacional). É validado por um único piloto — homologação
+documental — antes de expandir. Mantém-se:
 
 - Wolverine como backbone de comandos, handlers e mensageria;
 - EF Core como persistência dos contextos CRUD;
@@ -331,8 +345,9 @@ e operação.
 
 ## Confirmação
 
-Esta ADR só vira **binding** depois que o gate de viabilidade passar. O gate é
-composto por:
+O gate de viabilidade foi **cumprido** pelo spike #540 (22 testes de integração
+verdes — ver [relatório](../spikes/adr-0069-event-sourcing-findings.md)) e a ADR
+está **accepted**. O gate era composto por:
 
 1. **Spike de atomicidade** provando que `append (Marten) + outbox (Wolverine)`
    commitam na mesma unidade transacional — incluindo falha controlada que prove
@@ -365,21 +380,25 @@ Testes obrigatórios do piloto (homologação documental):
 8. LGPD: teste/validação de que payloads críticos não carregam anexos ou PII
    excessiva.
 
-Pendências a fechar antes de o piloto virar binding:
+Decisões **fechadas pelo gate** (spike #540):
 
-- escolher formalmente o agregado piloto (recomendado: homologação documental);
-- definir pacote/versão de Marten e da integração Wolverine/Marten;
-- definir schema PostgreSQL do Marten e estratégia de provisionamento (alinhado
-  à ADR-0039 — provisioning de schema como responsabilidade do deploy);
-- definir se o outbox será via integração Marten/Wolverine nativa ou outro
-  mecanismo validado por spike;
-- definir convenções de nomes de streams e de nomes/versões de eventos;
-- definir metadados obrigatórios por tipo de decisão;
-- definir política LGPD para payload de eventos;
-- definir política de evolução/upcasting de eventos;
-- definir política de projeções síncronas vs. assíncronas;
-- definir observabilidade mínima: logs, traces, métricas de projeção, outbox,
-  replay e falhas.
+- agregado piloto: **homologação documental**;
+- pacotes: **Marten 8.37.1 + WolverineFx.Marten 5.39.3** (.NET 10 / Npgsql 10);
+- topologia: **EF Core/Postgres = store `main`**; **Marten = store `ancillary`**
+  (`AddMartenStore<…>`), por-API e só onde há agregado event-sourced.
+
+Hardening e decisões de implementação do piloto (não bloqueiam o gate):
+
+- schema PostgreSQL do Marten + provisionamento no deploy (ADR-0039);
+- convenções de nomes de streams e de nomes/versões de eventos;
+- metadados obrigatórios por tipo de decisão;
+- política LGPD para payload de eventos: externalizar chaves (Vault/KMS) e
+  eliminar a correlação pseudônima residual (chave por evento, sem id de titular
+  em claro);
+- política de evolução/upcasting de eventos;
+- política de projeções síncronas vs. assíncronas;
+- observabilidade mínima: logs, traces, métricas de projeção, outbox, replay,
+  DLQ e falhas.
 
 ## Prós e contras das opções
 
