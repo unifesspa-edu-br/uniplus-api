@@ -19,7 +19,7 @@ informed: []
 > **Topologia decidida:** **EF Core/Postgres permanece o message store `main`** (plano
 > operacional, preserva a ADR-0004) e **o Marten entra como store `ancillary`**
 > (`AddMartenStore<…>().IntegrateWithWolverine()`), **por-API e apenas onde há agregado
-> event-sourced** (Seleção e Ingresso); APIs CRUD (Parametrização, Organização
+> event-sourced** (Seleção e Ingresso); APIs CRUD (Configuração, Organização
 > Institucional, Portal) não recebem Marten. **Não** adotar Marten como `main`.
 > Piloto = homologação documental. Condições e topologia detalhadas em
 > [`docs/spikes/adr-0069-coexistencia-marten-efcore-proposta.md`](../spikes/adr-0069-coexistencia-marten-efcore-proposta.md)
@@ -82,7 +82,7 @@ suficiente.
 - Coerência com a stack existente: Wolverine e Marten pertencem ao ecossistema
   JasperFx, com integração nativa entre command handling, event store e outbox.
 - Adoção seletiva e justificada por agregado, sem contaminar cadastros,
-  catálogos, RBAC, parametrização, templates e demais CRUDs auxiliares.
+  configuração, RBAC, templates e demais CRUDs auxiliares.
 
 ## Opções consideradas
 
@@ -279,7 +279,7 @@ Itens que devem permanecer CRUD em V1:
 
 - cadastros auxiliares;
 - RBAC e permissões;
-- parametrização e catálogos;
+- configuração;
 - templates e conteúdo administrativo;
 - endpoints técnicos e smoke tests;
 - read models e projeções derivadas.
