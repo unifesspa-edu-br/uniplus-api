@@ -154,7 +154,17 @@ internal sealed class ProtetorPiiAesGcm(IDocumentStore store)
             .ConfigureAwait(false);
         if (existente is not null)
         {
-            return (existente.Id, Convert.FromBase64String(existente.Chave));
+            byte[] bytes = Convert.FromBase64String(existente.Chave);
+            // Fail-fast: uma chave persistida corrompida (tamanho != 32) cifraria
+            // novos eventos que ficariam irreveláveis (Decifrar rejeita chave != 32) —
+            // perda silenciosa. Recusa-se a usar material de chave inválido.
+            if (bytes.Length != TamanhoChaveBytes)
+            {
+                throw new InvalidOperationException(
+                    $"Chave do titular {sujeitoId} corrompida (tamanho {bytes.Length}, esperado {TamanhoChaveBytes}).");
+            }
+
+            return (existente.Id, bytes);
         }
 
         // Cada chave tem id próprio. Uma corrida de criação concorrente gera no

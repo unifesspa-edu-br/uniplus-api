@@ -135,20 +135,15 @@ public sealed class EscalaCoHospedadaProcessosTests : IAsyncLifetime
 
     private static string LocalizarHostDll()
     {
-        // Resolve a configuração (Debug/Release) e o TFM a partir do diretório de
-        // saída do próprio teste — .../Tests/bin/<Config>/<Tfm>/ — para lançar o host
-        // da MESMA configuração da execução (não hard-coda Debug).
-        DirectoryInfo saidaTeste = new(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
-        string tfm = saidaTeste.Name;            // ex.: net10.0
-        string config = saidaTeste.Parent!.Name; // Debug | Release
+        // O host é um projeto irmão sob a MESMA config/TFM. Derivamos o diretório do
+        // host trocando o nome do projeto no diretório de saída do teste — assim a
+        // configuração (Debug/Release) e o TFM vêm de graça, sem hard-code e sem
+        // segmentos potencialmente enraizados em Path.Combine.
+        const string projetoTeste = "Unifesspa.UniPlus.Spikes.EventSourcing.Tests";
+        const string projetoHost = "Unifesspa.UniPlus.Spikes.EventSourcing.Host";
+        string baseHost = AppContext.BaseDirectory.Replace(projetoTeste, projetoHost, StringComparison.Ordinal);
 
-        // Segmentos separados (nenhum enraizado) — evita que Path.Combine descarte
-        // argumentos anteriores se um segmento parecer absoluto.
-        return Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..",
-            "Unifesspa.UniPlus.Spikes.EventSourcing.Host", "bin", config, tfm,
-            "Unifesspa.UniPlus.Spikes.EventSourcing.Host.dll"));
+        return Path.GetFullPath(Path.Combine(baseHost, $"{projetoHost}.dll"));
     }
 
     private static Uri Url(int porta, string caminho) => new($"http://127.0.0.1:{porta}{caminho}");
