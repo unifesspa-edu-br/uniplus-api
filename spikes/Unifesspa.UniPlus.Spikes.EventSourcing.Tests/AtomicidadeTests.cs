@@ -1,7 +1,9 @@
+using System.Globalization;
 using AwesomeAssertions;
 using JasperFx.Events;
 using Marten;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Unifesspa.UniPlus.Spikes.EventSourcing.Application;
 using Unifesspa.UniPlus.Spikes.EventSourcing.Application.Comandos;
 using Unifesspa.UniPlus.Spikes.EventSourcing.Domain;
@@ -67,10 +69,41 @@ public sealed class AtomicidadeTests(SpikeFixture fixture)
         IReadOnlyList<IEvent> eventos = await session.Events.FetchStreamAsync(editalId);
         eventos.Should().ContainSingle("o append deve ser revertido junto com a transação");
 
-        // Assert: a mensagem de integração NÃO é entregue (envelope nunca commitado).
-        // Espera uma janela para garantir que não há entrega tardia.
+        // Assert (forte): nenhum envelope foi commitado no outbox para este edital —
+        // consulta direta à tabela de envelopes de saída (não depende de timing de entrega).
+        int envelopes = await ContarEnvelopesDoEditalAsync(editalId);
+        envelopes.Should().Be(0, "o envelope do outbox deve ser revertido junto com o append");
+
+        // Assert (secundário): também não houve entrega.
         bool entregueIndevidamente = await TestHelpers.EsperarAsync(
-            () => coletor.Contem(editalId), TimeSpan.FromSeconds(3));
-        entregueIndevidamente.Should().BeFalse("o envelope do outbox deve ser revertido junto com o append");
+            () => coletor.Contem(editalId), TimeSpan.FromSeconds(2));
+        entregueIndevidamente.Should().BeFalse("o envelope revertido não pode ser entregue");
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Security", "CA2100:Review SQL queries for security vulnerabilities",
+        Justification = "O nome do schema vem do information_schema (não é input de usuário) e identificadores SQL não podem ser parametrizados; o valor de filtro vai por parâmetro.")]
+    private async Task<int> ContarEnvelopesDoEditalAsync(Guid editalId)
+    {
+        await using NpgsqlConnection conexao = new(fixture.ConnectionString);
+        await conexao.OpenAsync();
+
+        // Descobre o schema da tabela de envelopes de saída (Marten/Wolverine integration).
+        await using NpgsqlCommand acharSchema = conexao.CreateCommand();
+        acharSchema.CommandText =
+            "SELECT table_schema FROM information_schema.tables WHERE table_name = 'wolverine_outgoing_envelopes' LIMIT 1;";
+        object? schemaRaw = await acharSchema.ExecuteScalarAsync();
+        if (schemaRaw is null or DBNull)
+        {
+            return 0;
+        }
+
+        string schema = (string)schemaRaw;
+        await using NpgsqlCommand contar = conexao.CreateCommand();
+        contar.CommandText =
+            $"SELECT count(*) FROM {schema}.wolverine_outgoing_envelopes WHERE convert_from(body, 'UTF8') LIKE @padrao;";
+        contar.Parameters.AddWithValue("padrao", $"%{editalId}%");
+        object? raw = await contar.ExecuteScalarAsync();
+        return raw is null ? 0 : Convert.ToInt32(raw, CultureInfo.InvariantCulture);
     }
 }
