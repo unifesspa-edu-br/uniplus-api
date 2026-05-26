@@ -87,6 +87,6 @@ A viabilidade técnica está **comprovada** em todos os gates, incluindo coabita
 **Veredito (decisão de gate, 2026-05-25):** a ADR-0069 foi promovida a **`accepted`**. Adoção:
 
 - **Marten como store `ancillary` (auxiliar)** — `AddMartenStore<…>().IntegrateWithWolverine()` — **por-API e apenas onde há agregado event-sourced** (Seleção e Ingresso). **EF Core/Postgres permanece o message store `main`** (plano operacional, preserva a ADR-0004). **Não** adotar Marten como `main`.
-- APIs CRUD (Parametrização, Organização Institucional, Portal) **não recebem Marten**.
+- APIs CRUD (Configuração, Organização Institucional, Portal) **não recebem Marten**.
 - **Piloto: homologação documental.** Antes de produção, fechar o hardening pendente (⟳ no relatório/proposta): externalização de chaves (Vault/KMS), eliminação da correlação pseudônima residual, recovery pós-crash, DLQ/replay e posse de migrations.
 - Reavaliar "Marten como `main`" apenas se algum serviço futuro nascer **event-first** (maioria dos agregados event-sourced).
