@@ -46,7 +46,7 @@ Por quê: para um time pequeno (CTIC), múltiplos schemas de envelope multiplica
 
 ## 6. O que a validação DEVE provar (fecha o G2 a 100%)
 
-> **Status: viabilidade da topologia PROVADA; hardening operacional pendente.** Topologia comprovada: **EF Core 'main' + Marten 'ancillary'** (`AddMartenStore<IEditalEsStore>().IntegrateWithWolverine()`), compartilhando o envelope storage operacional. A config ingênua (dois 'main') falha com `InvalidWolverineStorageConfigurationException` — erro acionável que nomeia o remédio. **Caveat:** um handler `[MartenStore]` cascateando pelo outbox só falha quando vários apps Wolverine coexistem no mesmo processo de teste (cache de code-gen do JasperFx compartilhado) — em produção há um app por processo; o store ancillary é exercido por append direto no teste.
+> **Status: viabilidade da topologia PROVADA; hardening operacional pendente.** Topologia comprovada: **EF Core 'main' + Marten 'ancillary'** (`AddMartenStore<IEditalEsStore>().IntegrateWithWolverine()`), compartilhando o envelope storage operacional. A config ingênua (dois 'main') falha com `InvalidWolverineStorageConfigurationException` — erro acionável que nomeia o remédio. **Observação sobre o handler ancillary:** num host em que o Marten é apenas ancillary (sem `AddMarten` primário), a injeção de `IDocumentSession` via `[MartenStore]` **não resolve** a sessão (ver achado no item 11); o padrão adotado injeta o store marcador (`IEditalEsStore`) e abre a sessão explicitamente.
 >
 > Esta lista distingue o que os testes **já exercitam** do que ainda **falta** validar antes de produção (✅ provado · ⟳ pendente). O essencial de viabilidade — coexistência dos stores + cluster com failover — está ✅; os itens ⟳ são hardening operacional, a fazer no piloto.
 
