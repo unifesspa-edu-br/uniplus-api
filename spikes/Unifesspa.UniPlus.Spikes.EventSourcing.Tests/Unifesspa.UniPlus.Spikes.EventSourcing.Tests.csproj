@@ -7,6 +7,11 @@
 
   <ItemGroup>
     <ProjectReference Include="../Unifesspa.UniPlus.Spikes.EventSourcing/Unifesspa.UniPlus.Spikes.EventSourcing.csproj" />
+    <!-- Dependência de build (sem linkar): garante que o host executável seja
+         compilado antes do teste de escala co-hospedada, que o lança como processo.
+         ReferenceOutputAssembly=false evita arrastar as dependências web para o teste. -->
+    <ProjectReference Include="../Unifesspa.UniPlus.Spikes.EventSourcing.Host/Unifesspa.UniPlus.Spikes.EventSourcing.Host.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
