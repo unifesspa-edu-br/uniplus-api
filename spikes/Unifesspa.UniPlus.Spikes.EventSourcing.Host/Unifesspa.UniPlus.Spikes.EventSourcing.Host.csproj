@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Unifesspa.UniPlus.Spikes.EventSourcing.Host</RootNamespace>
+    <!-- Host executável do spike, lançado como processo separado pelo teste de
+         escala co-hospedada (2 instâncias em portas distintas). -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Unifesspa.UniPlus.Spikes.EventSourcing/Unifesspa.UniPlus.Spikes.EventSourcing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Marten" />
+    <PackageReference Include="WolverineFx" />
+    <PackageReference Include="WolverineFx.Marten" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

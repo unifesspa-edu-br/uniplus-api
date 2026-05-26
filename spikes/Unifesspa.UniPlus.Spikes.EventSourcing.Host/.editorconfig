@@ -1,0 +1,6 @@
+# Host de spike (executável): relaxa regras que não se aplicam a um app de
+# demonstração (ConfigureAwait em minimal API, tipos públicos do host, nomes).
+[*.cs]
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1515.severity = none
+dotnet_diagnostic.CA1707.severity = none
