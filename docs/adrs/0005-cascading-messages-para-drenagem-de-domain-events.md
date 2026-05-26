@@ -95,6 +95,7 @@ Convenções:
 
 - ADR-0003 define Wolverine como backbone CQRS.
 - ADR-0004 define o outbox transacional (configuração de transport, persistence, retenção de dead letters).
+- ADR-0069 mantém esta invariante nos contextos event-sourced: `PublishDomainEventsFromEntityFrameworkCore` permanece desabilitado e não há scraper EF para streams Marten; contextos CRUD seguem com cascading messages explícitas, como hoje.
 - [Wolverine — Cascading Messages](https://wolverinefx.net/guide/handlers/cascading.html)
 - [JasperFx/wolverine#2585 — thread upstream com recomendação do maintainer](https://github.com/JasperFx/wolverine/issues/2585)
 - **Origem:** revisão da ADR interna Uni+ ADR-026 (não publicada).
