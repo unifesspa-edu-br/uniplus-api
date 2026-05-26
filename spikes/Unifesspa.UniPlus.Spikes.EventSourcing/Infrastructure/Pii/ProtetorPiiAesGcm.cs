@@ -24,7 +24,9 @@ internal sealed class ProtetorPiiAesGcm(IDocumentStore store)
     private const int TamanhoChaveBytes = 32; // AES-256
     private const int TamanhoNonceBytes = 12; // GCM padrão
     private const int TamanhoTagBytes = 16;
-    private const char Separador = '\u001F'; // Unit Separator: não ocorre em nome/CPF
+    // Cada campo é serializado em Base64 e unido por '.'. O alfabeto Base64 não inclui
+    // '.', então a separação é inequívoca mesmo que o nome contenha qualquer caractere.
+    private const char Separador = '.';
 
     public async Task<AtorCifrado> ProtegerAsync(Ator ator, CancellationToken cancellationToken = default)
     {
@@ -40,7 +42,13 @@ internal sealed class ProtetorPiiAesGcm(IDocumentStore store)
             await session.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        byte[] claro = Encoding.UTF8.GetBytes($"{ator.Nome}{Separador}{ator.Cpf}");
+        // Cada campo em Base64, unidos por '.': inequívoco e sem escaping (o nome pode
+        // conter qualquer caractere sem colidir com o separador).
+        string serializado = string.Concat(
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(ator.Nome)),
+            Separador,
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(ator.Cpf)));
+        byte[] claro = Encoding.UTF8.GetBytes(serializado);
         byte[] nonce = RandomNumberGenerator.GetBytes(TamanhoNonceBytes);
         byte[] cifrado = new byte[claro.Length];
         byte[] tag = new byte[TamanhoTagBytes];
@@ -73,20 +81,54 @@ internal sealed class ProtetorPiiAesGcm(IDocumentStore store)
             return null;
         }
 
+        // Conteúdo corrompido/adulterado ou chave malformada → trata como PII
+        // irrecuperável (null), de forma consistente com o caso de chave ausente,
+        // em vez de derrubar a leitura/replay. (Em produção, distinguir corrupção
+        // de adulteração — esta última merece log/alerta de integridade.)
+        try
+        {
+            return Decifrar(cifrado, chave);
+        }
+        catch (Exception e) when (e is FormatException or CryptographicException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    private static Ator? Decifrar(AtorCifrado cifrado, ChaveTitular chave)
+    {
         byte[] combinado = Convert.FromBase64String(cifrado.Conteudo);
+        if (combinado.Length < TamanhoNonceBytes + TamanhoTagBytes)
+        {
+            return null;
+        }
+
+        byte[] chaveBytes = Convert.FromBase64String(chave.Chave);
+        if (chaveBytes.Length != TamanhoChaveBytes)
+        {
+            return null;
+        }
+
         ReadOnlySpan<byte> span = combinado;
         ReadOnlySpan<byte> nonce = span[..TamanhoNonceBytes];
         ReadOnlySpan<byte> tag = span[^TamanhoTagBytes..];
         ReadOnlySpan<byte> texto = span[TamanhoNonceBytes..^TamanhoTagBytes];
 
         byte[] claro = new byte[texto.Length];
-        using (AesGcm aes = new(Convert.FromBase64String(chave.Chave), TamanhoTagBytes))
+        using (AesGcm aes = new(chaveBytes, TamanhoTagBytes))
         {
             aes.Decrypt(nonce, texto, tag, claro);
         }
 
         string[] partes = Encoding.UTF8.GetString(claro).Split(Separador);
-        return new Ator(cifrado.SujeitoId, partes[0], partes[1]);
+        if (partes.Length != 2)
+        {
+            return null;
+        }
+
+        string nome = Encoding.UTF8.GetString(Convert.FromBase64String(partes[0]));
+        string cpf = Encoding.UTF8.GetString(Convert.FromBase64String(partes[1]));
+        return new Ator(cifrado.SujeitoId, nome, cpf);
     }
 
     public async Task EsquecerAsync(Guid sujeitoId, CancellationToken cancellationToken = default)

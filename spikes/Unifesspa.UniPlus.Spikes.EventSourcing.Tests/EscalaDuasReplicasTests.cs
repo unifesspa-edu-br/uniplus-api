@@ -44,13 +44,10 @@ public sealed class EscalaDuasReplicasTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        foreach (IHost? r in new[] { _replicaA, _replicaB })
+        foreach (IHost r in new[] { _replicaA, _replicaB }.OfType<IHost>())
         {
-            if (r is not null)
-            {
-                await r.StopAsync();
-                r.Dispose();
-            }
+            await r.StopAsync();
+            r.Dispose();
         }
 
         await _postgres.DisposeAsync();
