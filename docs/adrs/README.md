@@ -98,6 +98,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0067](0067-aninhamento-tipodeficiencia-sob-pcd.md) | Aninhamento de TipoDeficiencia sob a condição PCD na oferta de atendimento especializado | accepted | 2026-05-19 |
 | [0068](0068-relogio-via-timeprovider-injetado.md) | Relógio via TimeProvider injetado, obrigatório em todo o `src/` | proposed | 2026-05-24 |
 | [0069](0069-event-sourcing-seletivo-marten-contextos-criticos.md) | Event Sourcing seletivo com Marten em agregados críticos (Marten como store ancillary; EF Core permanece o main) | accepted | 2026-05-25 |
+| [0070](0070-validacao-runtime-avalia-snapshot-congelado.md) | A validação de documentos em runtime avalia o snapshot congelado, não a configuração viva | accepted | 2026-05-31 |
+| [0071](0071-aplicabilidade-exigencia-documental-explicita.md) | Aplicabilidade da exigência documental é configuração explícita (`GERAL`/`CONDICIONAL`), não inferida | accepted | 2026-05-31 |
+| [0072](0072-correlacao-exigencia-por-id-congelado.md) | Correlação apresentação↔exigência pela identidade congelada (`exigencia_id`), não pelo tipo de documento | accepted | 2026-05-31 |
+| [0073](0073-fatos-atendimento-com-identidade-congelada.md) | Os fatos de atendimento especializado carregam a identidade congelada da oferta; a validação lê o código congelado | accepted | 2026-05-31 |
+| [0074](0074-base-legal-exigencia-1n-validacao-publicacao.md) | A base legal da exigência documental é 1:N e enforçada por uma validação de publicação | accepted | 2026-05-31 |
+| [0075](0075-snapshot-do-ato-resolvido-no-instante.md) | O snapshot que governa um ato é resolvido deterministicamente no instante do ato e gravado nele | accepted | 2026-05-31 |
+| [0076](0076-contrato-snapshot-runtime-espelha-publicacao.md) | A validação do snapshot lido em runtime reproduz, integralmente, a validação aplicada à configuração na publicação | accepted | 2026-05-31 |
 
 ## Como adicionar um novo ADR
 
