@@ -1,0 +1,53 @@
+# Gateway de DESENVOLVIMENTO para testar o frontend `selecao` (npx nx serve selecao)
+# contra as APIs conteinerizadas — SEM editar código do frontend.
+#
+# O runtime-config do selecao usa um único `apiUrl=http://localhost:5000` e chama
+# /api/editais... (path pré-ADR-0064). Este arquivo:
+#   1. Sobe um Traefik na :5000 que roteia por path-prefix (ADR-0064) e reescreve
+#      /api/editais -> /api/selecao/editais (ver traefik/dynamic.yml).
+#   2. Realinha o Auth__Authority da selecao-api ao realm `unifesspa` (o realm em
+#      que o frontend autentica), em vez do `unifesspa-dev-local` do override
+#      (esse é usado por scripts de smoke). CORS p/ localhost:4200 já vem do
+#      appsettings.Development.json da API.
+#
+# Uso:
+#   docker compose -f docker-compose.yml \
+#                  -f docker-compose.override.yml \
+#                  -f docker-compose.frontend-test.yml up -d
+#
+# Depois: cd ../../uniplus-web && npx nx serve selecao  ->  http://localhost:4200
+services:
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --log.level=INFO
+    ports:
+      - "5000:80"     # gateway consumido pelo frontend (apiUrl=http://localhost:5000)
+      - "5080:8080"   # dashboard do Traefik -> http://localhost:5080/dashboard/
+    volumes:
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    depends_on:
+      selecao-api:
+        condition: service_healthy
+      ingresso-api:
+        condition: service_healthy
+
+  selecao-api:
+    environment:
+      # O frontend autentica no realm `unifesspa` (clients selecao-web/portal-web),
+      # que emitem aud=uniplus via o client scope default `uniplus-profile`. A API
+      # precisa validar ESSE realm. Issuer canonicalizado por KC_HOSTNAME.
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      # Apps Angular de dev: selecao(4200), ingresso(4201), portal(4202). O
+      # appsettings.Development.json lista 4100/4200/4300 — 4201/4202 ficam de
+      # fora e o CORS (WithOrigins) bloquearia o portal. Reescreve a lista p/
+      # cobrir os três apps. Os índices sobrescrevem o array do appsettings.
+      Cors__AllowedOrigins__0: "http://localhost:4200"
+      Cors__AllowedOrigins__1: "http://localhost:4201"
+      Cors__AllowedOrigins__2: "http://localhost:4202"
