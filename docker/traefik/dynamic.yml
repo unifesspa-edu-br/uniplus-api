@@ -1,0 +1,45 @@
+# Configuração dinâmica do Traefik (file provider) para o gateway de DEV.
+# Roteamento path-based por prefixo de módulo (ADR-0064) + shim que reescreve
+# o path legado do cliente Angular (/api/editais) para o path migrado da API
+# (/api/selecao/editais). Em HML/PROD o equivalente vive no uniplus-infra (K8s).
+http:
+  routers:
+    # Shim: o cliente `editais.api.ts` ainda chama /api/editais (pré-ADR-0064).
+    # Reescreve para /api/selecao/editais antes de encaminhar à selecao-api.
+    selecao-editais-legacy:
+      rule: "PathPrefix(`/api/editais`)"
+      entryPoints:
+        - web
+      middlewares:
+        - rewrite-editais
+      service: selecao
+
+    # Passthrough já no padrão ADR-0064 (/api/selecao/...).
+    selecao:
+      rule: "PathPrefix(`/api/selecao/`)"
+      entryPoints:
+        - web
+      service: selecao
+
+    # Passthrough do módulo Ingresso (/api/ingresso/...).
+    ingresso:
+      rule: "PathPrefix(`/api/ingresso/`)"
+      entryPoints:
+        - web
+      service: ingresso
+
+  middlewares:
+    rewrite-editais:
+      replacePathRegex:
+        regex: "^/api/editais"
+        replacement: "/api/selecao/editais"
+
+  services:
+    selecao:
+      loadBalancer:
+        servers:
+          - url: "http://selecao-api:8080"
+    ingresso:
+      loadBalancer:
+        servers:
+          - url: "http://ingresso-api:8080"
