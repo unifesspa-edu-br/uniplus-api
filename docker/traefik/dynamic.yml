@@ -21,13 +21,6 @@ http:
         - web
       service: selecao
 
-    # Passthrough do módulo Ingresso (/api/ingresso/...).
-    ingresso:
-      rule: "PathPrefix(`/api/ingresso/`)"
-      entryPoints:
-        - web
-      service: ingresso
-
   middlewares:
     rewrite-editais:
       replacePathRegex:
@@ -39,7 +32,3 @@ http:
       loadBalancer:
         servers:
           - url: "http://selecao-api:8080"
-    ingresso:
-      loadBalancer:
-        servers:
-          - url: "http://ingresso-api:8080"
