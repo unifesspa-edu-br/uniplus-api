@@ -35,19 +35,10 @@ services:
     depends_on:
       selecao-api:
         condition: service_healthy
-      ingresso-api:
-        condition: service_healthy
 
   selecao-api:
     environment:
-      # O frontend autentica no realm `unifesspa` (clients selecao-web/portal-web),
-      # que emitem aud=uniplus via o client scope default `uniplus-profile`. A API
+      # O frontend `selecao` autentica no realm `unifesspa` (client selecao-web),
+      # que emite aud=uniplus via o client scope default `uniplus-profile`. A API
       # precisa validar ESSE realm. Issuer canonicalizado por KC_HOSTNAME.
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
-      # Apps Angular de dev: selecao(4200), ingresso(4201), portal(4202). O
-      # appsettings.Development.json lista 4100/4200/4300 — 4201/4202 ficam de
-      # fora e o CORS (WithOrigins) bloquearia o portal. Reescreve a lista p/
-      # cobrir os três apps. Os índices sobrescrevem o array do appsettings.
-      Cors__AllowedOrigins__0: "http://localhost:4200"
-      Cors__AllowedOrigins__1: "http://localhost:4201"
-      Cors__AllowedOrigins__2: "http://localhost:4202"
