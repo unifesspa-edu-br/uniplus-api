@@ -21,6 +21,11 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
 
     public DbSet<AreaOrganizacional> AreasOrganizacionais => Set<AreaOrganizacional>();
 
+    public DbSet<Unidade> Unidades => Set<Unidade>();
+
+    public DbSet<UnidadeIdentificadorHistorico> UnidadesIdentificadoresHistorico =>
+        Set<UnidadeIdentificadorHistorico>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado
     /// para permitir gravação adjacente no outbox; entries cifradas at-rest
