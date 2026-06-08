@@ -80,7 +80,16 @@ builder.Services.AddDbContextMigrationsOnStartup<OrganizacaoInstitucionalDbConte
 // específico — o módulo não emite eventos Kafka em V1 (D4 do plano #447); o
 // wire-up básico permanece para que ICommandBus/IQueryBus funcionem com
 // middleware de validação e logging.
-builder.Host.UseWolverineOutboxCascading(builder.Configuration, connectionStringName: "OrganizacaoDb");
+builder.Host.UseWolverineOutboxCascading(
+    builder.Configuration,
+    connectionStringName: "OrganizacaoDb",
+    configureRouting: opts =>
+    {
+        // Wolverine escaneia o entry assembly (OrganizacaoInstitucional.API) por padrão;
+        // handlers produtivos vivem em OrganizacaoInstitucional.Application —
+        // incluir explicitamente para que os command/query handlers sejam descobertos.
+        opts.Discovery.IncludeAssembly(typeof(OrganizacaoInstitucionalApplicationServiceRegistration).Assembly);
+    });
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
