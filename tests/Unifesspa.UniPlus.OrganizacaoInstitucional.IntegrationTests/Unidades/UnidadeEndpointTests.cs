@@ -7,31 +7,32 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Smoke tests dos endpoints de <c>Unidade</c> introduzidos na Story #586.
-/// Verificam wiring do controller (routing, vendor media type, HATEOAS),
-/// aplicação de autenticação/autorização e resposta 404 para recursos
-/// inexistentes — sem dependência de banco de dados real.
+/// Smoke tests dos endpoints de <c>Unidade</c> (Story #586). Verificam
+/// routing, vendor media type, HATEOAS, autenticação e autorização com
+/// Wolverine rodando contra Postgres efêmero (<see cref="OrganizacaoEndpointFixture"/>).
 /// </summary>
+[Collection(OrganizacaoEndpointCollection.Name)]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
-    Justification = "xUnit IClassFixture<T> exige tipo de teste público.")]
-public sealed class UnidadeEndpointTests : IClassFixture<OrganizacaoApiFactory>
+    Justification = "xUnit collection fixture exige tipo de teste público.")]
+public sealed class UnidadeEndpointTests
 {
-    private readonly OrganizacaoApiFactory _factory;
+    private readonly OrganizacaoEndpointFixture _fixture;
 
-    public UnidadeEndpointTests(OrganizacaoApiFactory factory)
+    public UnidadeEndpointTests(OrganizacaoEndpointFixture fixture)
     {
-        _factory = factory;
+        _fixture = fixture;
     }
 
     [Fact(DisplayName = "GET /api/unidades retorna 200 com Content-Type vendor MIME de unidade")]
     public async Task Listar_Retorna200ComVendorMime()
     {
-        using HttpClient client = _factory.CreateClient();
+        using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
             new Uri("/api/unidades", UriKind.Relative));
@@ -44,7 +45,7 @@ public sealed class UnidadeEndpointTests : IClassFixture<OrganizacaoApiFactory>
     [Fact(DisplayName = "GET /api/unidades retorna array JSON (catálogo vazio)")]
     public async Task Listar_RetornaArrayJson()
     {
-        using HttpClient client = _factory.CreateClient();
+        using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
             new Uri("/api/unidades", UriKind.Relative));
@@ -59,7 +60,7 @@ public sealed class UnidadeEndpointTests : IClassFixture<OrganizacaoApiFactory>
     [Fact(DisplayName = "GET /api/unidades/{id} retorna 404 quando unidade inexistente")]
     public async Task ObterPorId_NaoExiste_Retorna404()
     {
-        using HttpClient client = _factory.CreateClient();
+        using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
             new Uri($"/api/unidades/{Guid.NewGuid()}", UriKind.Relative));
@@ -70,22 +71,28 @@ public sealed class UnidadeEndpointTests : IClassFixture<OrganizacaoApiFactory>
     [Fact(DisplayName = "POST /api/admin/unidades sem Idempotency-Key retorna 400")]
     public async Task Criar_SemIdempotencyKey_Retorna400()
     {
-        using HttpClient client = _factory.CreateClient();
-        using StringContent content = new("{}", Encoding.UTF8, "application/json");
+        // Auth precisa passar (Authorize roda antes dos filtros MVC).
+        // [RequiresIdempotencyKey] é um filtro MVC — retorna 400 antes de
+        // atingir o action quando o header está ausente.
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(
+            HttpMethod.Post,
+            new Uri("/api/admin/unidades", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        // Sem Idempotency-Key — esperamos 400 do filtro.
+        request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
-        // TestAuthHandler injeta user autenticado como plataforma-admin.
-        HttpResponseMessage response = await client.PostAsync(
-            new Uri("/api/admin/unidades", UriKind.Relative), content);
+        HttpResponseMessage response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
-            "Idempotency-Key é obrigatório — sem ela o filter retorna 400");
+            "Idempotency-Key é obrigatório — sem ela o filtro retorna 400 antes do action");
     }
 
     [Fact(DisplayName = "POST /api/admin/unidades sem autenticação retorna 401")]
     public async Task Criar_SemAuth_Retorna401()
     {
-        // Factory sem autenticação — CreateDefaultClient não injeta o TestAuthHandler.
-        using HttpClient client = _factory.CreateDefaultClient();
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post,
             new Uri("/api/admin/unidades", UriKind.Relative));
@@ -100,7 +107,7 @@ public sealed class UnidadeEndpointTests : IClassFixture<OrganizacaoApiFactory>
     [Fact(DisplayName = "DELETE /api/admin/unidades/{id} sem autenticação retorna 401")]
     public async Task Remover_SemAuth_Retorna401()
     {
-        using HttpClient client = _factory.CreateDefaultClient();
+        using HttpClient client = _fixture.Factory.CreateDefaultClient();
 
         HttpResponseMessage response = await client.DeleteAsync(
             new Uri($"/api/admin/unidades/{Guid.NewGuid()}", UriKind.Relative));
