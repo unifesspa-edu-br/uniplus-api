@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// <para>
 /// <strong>Esta Story #460 cria apenas o schema vazio</strong> (CA-04). A
 /// inserção de uma linha pelo agregado <c>Edital.Publicar()</c> — leitura
-/// da <c>ParametrizacaoGovernanceProjection</c> + cópia para esta tabela —
+/// da <c>ConfiguracaoGovernanceProjection</c> + cópia para esta tabela —
 /// é responsabilidade da Story #462 (US-F4-04). Fronteira deliberada para
 /// manter "1 PR por Story" do Uni+.
 /// </para>

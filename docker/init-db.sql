@@ -3,7 +3,7 @@
 -- Topologia (docs/guia-banco-de-dados.md §1): um banco PostgreSQL por módulo,
 -- todos no mesmo host PG (custo de dev local) mas isolados por database.
 -- Selecao/Ingresso/Portal compartilham o superusuário `uniplus` (legado);
--- Parametrizacao e Organizacao (Sprint 3) usam usuários `_app` dedicados,
+-- Configuracao e Organizacao (Sprint 3) usam usuários `_app` dedicados,
 -- cada um dono (OWNER) do seu próprio banco.
 --
 -- Este script roda como `POSTGRES_USER` (superusuário) no primeiro boot do
@@ -25,8 +25,8 @@ CREATE DATABASE keycloak;
 -- A senha `uniplus_dev` abaixo é dev-only (mesmo padrão de POSTGRES_PASSWORD).
 -- Em standalone/HML/PROD os usuários `_app` são provisionados com segredos
 -- reais via o RUNBOOK do uniplus-infra — nunca esta senha.
-CREATE ROLE uniplus_parametrizacao_app LOGIN PASSWORD 'uniplus_dev';
-CREATE DATABASE uniplus_parametrizacao OWNER uniplus_parametrizacao_app;
+CREATE ROLE uniplus_configuracao_app LOGIN PASSWORD 'uniplus_dev';
+CREATE DATABASE uniplus_configuracao OWNER uniplus_configuracao_app;
 
 CREATE ROLE uniplus_organizacao_app LOGIN PASSWORD 'uniplus_dev';
 CREATE DATABASE uniplus_organizacao OWNER uniplus_organizacao_app;
@@ -37,7 +37,7 @@ CREATE DATABASE uniplus_organizacao OWNER uniplus_organizacao_app;
 --   btree_gist — exclusion constraints GIST das junction tables de
 --                AreasDeInteresse (ADR-0060). Habilitada nos bancos que
 --                hospedam entidades com governança por área na Sprint 3:
---                selecao, parametrizacao e organizacao.
+--                selecao, configuracao e organizacao.
 
 \c uniplus_selecao
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -52,7 +52,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
-\c uniplus_parametrizacao
+\c uniplus_configuracao
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS btree_gist;

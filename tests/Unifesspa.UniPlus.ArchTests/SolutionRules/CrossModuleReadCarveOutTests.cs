@@ -31,7 +31,7 @@ using ReflectionType = System.Type;
 ///   <item><description>Ingresso (3 layers — sem Application separada, handlers em Infrastructure)</description></item>
 ///   <item><description>Portal (3 layers — sem Application separada)</description></item>
 ///   <item><description>OrganizacaoInstitucional (4 layers)</description></item>
-///   <item><description>Parametrizacao (5 layers — inclui Contracts próprio)</description></item>
+///   <item><description>Configuracao (5 layers — inclui Contracts próprio)</description></item>
 /// </list>
 /// Quando um novo módulo entrar, adicionar ao <see cref="ModulesRoster"/> com os
 /// namespace prefixes dele.</para>
@@ -52,7 +52,7 @@ public sealed class CrossModuleReadCarveOutTests
         "Ingresso",
         "Portal",
         "OrganizacaoInstitucional",
-        "Parametrizacao",
+        "Configuracao",
     ];
 
     private static readonly Architecture SolutionArchitecture = LoadSolutionArchitecture();
@@ -107,7 +107,7 @@ public sealed class CrossModuleReadCarveOutTests
             ("Ingresso", typeof(global::Unifesspa.UniPlus.Ingresso.API.IngressoApiAssemblyMarker).Assembly),
             ("Portal", typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly),
             ("OrganizacaoInstitucional", typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly),
-            ("Parametrizacao", typeof(global::Unifesspa.UniPlus.Parametrizacao.API.ParametrizacaoApiAssemblyMarker).Assembly),
+            ("Configuracao", typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly),
         ];
 
         List<string> violations = [];
@@ -127,7 +127,7 @@ public sealed class CrossModuleReadCarveOutTests
 
                 // Filtro alvo: layers internos do outro módulo (Domain/Application/
                 // Infrastructure/API). Contracts próprio do outro módulo é exceção
-                // documentada — apenas Parametrizacao tem em V1.
+                // documentada — apenas Configuracao tem em V1.
                 string destinoPattern = $@"^Unifesspa\.UniPlus\.{moduloOutro}\.(Domain|Application|Infrastructure|API)(\.|$)";
 
                 IArchRule rule = Types()
@@ -162,7 +162,7 @@ public sealed class CrossModuleReadCarveOutTests
     {
         // Application.Abstractions hospeda IUserContext.AreasAdministradas → AreaCodigo
         // (de Governance.Contracts) e value objects do Kernel. Qualquer ref para módulo
-        // de negócio (Selecao, Ingresso, Portal, OrganizacaoInstitucional, Parametrizacao)
+        // de negócio (Selecao, Ingresso, Portal, OrganizacaoInstitucional, Configuracao)
         // viola a invariante "foundation não desce para módulos" — S4 do PR #500.
         foreach (string modulo in ModulesRoster)
         {
@@ -250,12 +250,12 @@ public sealed class CrossModuleReadCarveOutTests
             typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly,
 
-            // Parametrizacao
-            typeof(global::Unifesspa.UniPlus.Parametrizacao.Domain.ParametrizacaoDomainAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Parametrizacao.Application.ParametrizacaoApplicationAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Parametrizacao.Contracts.ParametrizacaoContractsAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Parametrizacao.Infrastructure.Persistence.ParametrizacaoDbContext).Assembly,
-            typeof(global::Unifesspa.UniPlus.Parametrizacao.API.ParametrizacaoApiAssemblyMarker).Assembly,
+            // Configuracao
+            typeof(global::Unifesspa.UniPlus.Configuracao.Domain.ConfiguracaoDomainAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Configuracao.Application.ConfiguracaoApplicationAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();

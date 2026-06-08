@@ -143,18 +143,18 @@ services:
       retries: 5
       start_period: 15s
 
-  parametrizacao-api:
+  configuracao-api:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.parametrizacao
+      dockerfile: docker/Dockerfile.configuracao
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      # role uniplus_parametrizacao_app provisionada em docker/init-db.sql com
+      # role uniplus_configuracao_app provisionada em docker/init-db.sql com
       # senha literal 'uniplus_dev' (dev only); POSTGRES_PASSWORD pertence ao
       # super user `postgres`. Mantém credencial role-specific.
-      ConnectionStrings__ParametrizacaoDb: "Host=postgres;Port=5432;Database=uniplus_parametrizacao;Username=uniplus_parametrizacao_app;Password=uniplus_dev"
+      ConnectionStrings__ConfiguracaoDb: "Host=postgres;Port=5432;Database=uniplus_configuracao;Username=uniplus_configuracao_app;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
       Storage__Endpoint: "minio:9000"

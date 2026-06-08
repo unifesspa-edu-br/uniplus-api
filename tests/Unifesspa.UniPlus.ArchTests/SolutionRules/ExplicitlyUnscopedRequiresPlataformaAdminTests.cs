@@ -29,7 +29,7 @@ using ReflectionAssembly = System.Reflection.Assembly;
 /// <para>O <see cref="ExplicitlyUnscopedAttribute"/> aceita apenas
 /// <see cref="AttributeTargets.Method"/>, então a regra inspeciona métodos
 /// dos assemblies do produto via reflection. Não há call sites em V1
-/// (atributo vai aparecer em F2 com background jobs do Parametrizacao).</para>
+/// (atributo vai aparecer em F2 com background jobs do Configuracao).</para>
 /// </remarks>
 public sealed class ExplicitlyUnscopedRequiresPlataformaAdminTests
 {
@@ -138,11 +138,11 @@ public sealed class ExplicitlyUnscopedRequiresPlataformaAdminTests
         typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalDbContext).Assembly,
         typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly,
 
-        // Parametrizacao
-        typeof(global::Unifesspa.UniPlus.Parametrizacao.Domain.ParametrizacaoDomainAssemblyMarker).Assembly,
-        typeof(global::Unifesspa.UniPlus.Parametrizacao.Application.ParametrizacaoApplicationAssemblyMarker).Assembly,
-        typeof(global::Unifesspa.UniPlus.Parametrizacao.Contracts.ParametrizacaoContractsAssemblyMarker).Assembly,
-        typeof(global::Unifesspa.UniPlus.Parametrizacao.Infrastructure.Persistence.ParametrizacaoDbContext).Assembly,
-        typeof(global::Unifesspa.UniPlus.Parametrizacao.API.ParametrizacaoApiAssemblyMarker).Assembly,
+        // Configuracao
+        typeof(global::Unifesspa.UniPlus.Configuracao.Domain.ConfiguracaoDomainAssemblyMarker).Assembly,
+        typeof(global::Unifesspa.UniPlus.Configuracao.Application.ConfiguracaoApplicationAssemblyMarker).Assembly,
+        typeof(global::Unifesspa.UniPlus.Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
+        typeof(global::Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
+        typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
     ];
 }

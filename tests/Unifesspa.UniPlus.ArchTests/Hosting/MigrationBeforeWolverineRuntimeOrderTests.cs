@@ -13,13 +13,13 @@ using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Ingresso.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
-using Unifesspa.UniPlus.Parametrizacao.API;
+using Unifesspa.UniPlus.Configuracao.API;
 using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Selecao.API;
 
 /// <summary>
 /// Fitness test (uniplus-api#419) que trava a invariante de ordem dos
-/// <see cref="IHostedService"/> nos 5 entry points (Selecao/Ingresso/Portal/Organizacao/Parametrizacao):
+/// <see cref="IHostedService"/> nos 5 entry points (Selecao/Ingresso/Portal/Organizacao/Configuracao):
 /// <c>MigrationHostedService&lt;TContext&gt;</c> precisa ser registrado antes
 /// do <c>WolverineRuntime</c> para que o schema EF do domínio esteja aplicado
 /// quando o Wolverine começar a processar envelopes que tocam tabelas do módulo.
@@ -117,10 +117,10 @@ public sealed class MigrationOrderFixture : IDisposable
     public const string IngressoKey = "Ingresso";
     public const string PortalKey = "Portal";
     public const string OrganizacaoKey = "OrganizacaoInstitucional";
-    public const string ParametrizacaoKey = "Parametrizacao";
+    public const string ConfiguracaoKey = "Configuracao";
 
     public static IReadOnlyCollection<string> RegisteredKeys { get; } =
-        [SelecaoKey, IngressoKey, PortalKey, OrganizacaoKey, ParametrizacaoKey];
+        [SelecaoKey, IngressoKey, PortalKey, OrganizacaoKey, ConfiguracaoKey];
 
     /// <summary>
     /// Env vars sintéticas aplicadas process-wide via static ctor. Replica o
@@ -147,7 +147,7 @@ public sealed class MigrationOrderFixture : IDisposable
             "ConnectionStrings__OrganizacaoDb",
             "Host=fitness-not-real;Database=fake;Username=u;Password=p");
         Environment.SetEnvironmentVariable(
-            "ConnectionStrings__ParametrizacaoDb",
+            "ConnectionStrings__ConfiguracaoDb",
             "Host=fitness-not-real;Database=fake;Username=u;Password=p");
 
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
@@ -162,7 +162,7 @@ public sealed class MigrationOrderFixture : IDisposable
     private readonly CapturingFactory<IngressoApiAssemblyMarker> _ingressoFactory = new();
     private readonly CapturingFactory<PortalApiAssemblyMarker> _portalFactory = new();
     private readonly CapturingFactory<OrganizacaoApiAssemblyMarker> _organizacaoFactory = new();
-    private readonly CapturingFactory<ParametrizacaoApiAssemblyMarker> _parametrizacaoFactory = new();
+    private readonly CapturingFactory<ConfiguracaoApiAssemblyMarker> _configuracaoFactory = new();
 
     public IReadOnlyList<ServiceDescriptor> GetCapturedSnapshot(string entryPointKey) => entryPointKey switch
     {
@@ -170,7 +170,7 @@ public sealed class MigrationOrderFixture : IDisposable
         IngressoKey => _ingressoFactory.CapturedSnapshot,
         PortalKey => _portalFactory.CapturedSnapshot,
         OrganizacaoKey => _organizacaoFactory.CapturedSnapshot,
-        ParametrizacaoKey => _parametrizacaoFactory.CapturedSnapshot,
+        ConfiguracaoKey => _configuracaoFactory.CapturedSnapshot,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
@@ -180,7 +180,7 @@ public sealed class MigrationOrderFixture : IDisposable
         IngressoKey => _ingressoFactory.Services,
         PortalKey => _portalFactory.Services,
         OrganizacaoKey => _organizacaoFactory.Services,
-        ParametrizacaoKey => _parametrizacaoFactory.Services,
+        ConfiguracaoKey => _configuracaoFactory.Services,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
@@ -190,7 +190,7 @@ public sealed class MigrationOrderFixture : IDisposable
         _ingressoFactory.Dispose();
         _portalFactory.Dispose();
         _organizacaoFactory.Dispose();
-        _parametrizacaoFactory.Dispose();
+        _configuracaoFactory.Dispose();
     }
 }
 

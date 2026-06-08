@@ -32,6 +32,6 @@ public static class UniPlusServiceNames
     /// <summary>Módulo OrganizacaoInstitucional — API que governa o roster fechado de áreas (CEPS, CRCA, PROEG, …).</summary>
     public const string OrganizacaoInstitucional = "uniplus-organizacao";
 
-    /// <summary>Módulo Parametrizacao — API que hospeda catálogos cross-cutting área-scoped (Modalidade, NecessidadeEspecial, …).</summary>
-    public const string Parametrizacao = "uniplus-parametrizacao";
+    /// <summary>Módulo Configuracao — API que hospeda catálogos cross-cutting área-scoped (Modalidade, NecessidadeEspecial, …).</summary>
+    public const string Configuracao = "uniplus-configuracao";
 }
