@@ -1,0 +1,79 @@
+namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Configurations;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Converters;
+
+[System.Diagnostics.CodeAnalysis.SuppressMessage(
+    "Performance",
+    "CA1812:Avoid uninstantiated internal classes",
+    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
+internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
+{
+    public void Configure(EntityTypeBuilder<Unidade> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ToTable("unidade");
+        builder.HasKey(u => u.Id);
+
+        builder.Property(u => u.Nome).HasMaxLength(250).IsRequired();
+        builder.Property(u => u.Alias).HasMaxLength(100);
+        builder.Property(u => u.Slug)
+            .HasConversion(new SlugValueConverter())
+            .HasMaxLength(64)
+            .IsRequired();
+        builder.Property(u => u.Sigla).HasMaxLength(50).IsRequired();
+        builder.Property(u => u.Codigo).HasMaxLength(50).IsRequired();
+        builder.Property(u => u.Tipo).HasConversion<string>().HasMaxLength(30).IsRequired();
+        builder.Property(u => u.Origem).HasConversion<string>().HasMaxLength(30).IsRequired();
+        builder.Property(u => u.UnidadeAcademica).IsRequired();
+        builder.Property(u => u.VigenciaInicio).IsRequired();
+        builder.Property(u => u.VigenciaFim);
+
+        // Auditoria (IAuditableEntity)
+        builder.Property(u => u.CreatedBy).HasMaxLength(255);
+        builder.Property(u => u.UpdatedBy).HasMaxLength(255);
+
+        // Hierarquia: auto-referência intra-banco (ADR-0054)
+        builder.HasOne<Unidade>()
+            .WithMany()
+            .HasForeignKey(u => u.UnidadeSuperiorId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Histórico de identificadores — coleção owned dentro do agregado
+        builder.HasMany(u => u.Historico)
+            .WithOne()
+            .HasForeignKey(h => h.UnidadeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Índices únicos parciais (WHERE is_deleted = false) — unicidade entre vivos
+        builder.HasIndex(u => u.Slug)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName("ix_unidade_slug_vivo");
+
+        builder.HasIndex(u => u.Sigla)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName("ix_unidade_sigla_vivo");
+
+        builder.HasIndex(u => u.Codigo)
+            .IsUnique()
+            .HasFilter("is_deleted = false")
+            .HasDatabaseName("ix_unidade_codigo_vivo");
+
+        // Alias: índice não-único (para agrupamento/busca)
+        builder.HasIndex(u => u.Alias)
+            .HasDatabaseName("ix_unidade_alias");
+
+        // Hierarquia: índice para busca de subordinadas
+        builder.HasIndex(u => u.UnidadeSuperiorId)
+            .HasDatabaseName("ix_unidade_superior_id");
+
+        builder.HasQueryFilter(u => !u.IsDeleted);
+    }
+}

@@ -46,8 +46,9 @@ builder.Services.AddUniPlusOpenApi("organizacao", builder.Configuration);
 builder.Services.AddSingleton<IDomainErrorRegistration, OrganizacaoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
 
-// HATEOAS Level 1 (ADR-0029/0049) — builder de _links para AreaOrganizacionalDto.
+// HATEOAS Level 1 (ADR-0029/0049) — builders de _links.
 builder.Services.AddSingleton<IResourceLinksBuilder<AreaOrganizacionalDto>, AreaOrganizacionalLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
 
 // Criptografia (Idempotency response cipher) + Idempotency-Key (ADR-0027).
 // AddIdempotency injeta o filter de MVC que ativa-se em endpoints com
