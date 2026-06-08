@@ -10,6 +10,8 @@ informed:
 
 # ADR-0057: RBAC por áreas com snapshot, histórico e invariantes auditáveis
 
+> **Supersessão proposta:** o modelo de autorização desta ADR está sendo superseded pela [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md) (PBAC + ABAC com ponto de decisão único). Enquanto a ADR-0078 está em avaliação (`proposed`), esta ADR permanece `accepted` como registro do modelo vigente; passa a `superseded` quando a ADR-0078 for aceita.
+
 ## Contexto e enunciado do problema
 
 Toda entidade admin-editável dos catálogos cross-cutting de Parametrizacao e dos catálogos domain-specific de Selecao carrega dois campos de governança:
