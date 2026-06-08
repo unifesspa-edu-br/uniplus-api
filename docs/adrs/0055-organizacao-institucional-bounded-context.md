@@ -111,7 +111,7 @@ AdrReferenceCode: string (ex.: "0055-organizacao-institucional-bounded-context")
 - `Task<IReadOnlyList<AreaOrganizacionalView>> ListarAtivasAsync(CancellationToken)`
 - `Task<AreaOrganizacionalView?> ObterPorCodigoAsync(AreaCodigo codigo, CancellationToken)`
 
-Outros módulos consomem via DI in-process (ver [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)). Write-side cross-módulo permanece Kafka-only (ADR-0001).
+Outros módulos consomem via DI in-process (ver [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)). Write-side cross-módulo permanece Kafka-only (ADR-0001).
 
 ### Convenção de roles Keycloak
 
@@ -236,7 +236,7 @@ Lead do projeto; esta emenda registra o desvio do diagrama original.
 - [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md) — Sem PII em URLs (informa postura LGPD; `DeletedBy` é JWT sub, nunca CPF).
 - [ADR-0033](0033-icurrentuser-abstraction-via-iusercontext.md) — `IUserContext` é estendido com `AreasAdministradas: IReadOnlyCollection<AreaCodigo>` derivada dos roles JWT.
 - [ADR-0034](0034-problemdetails-em-401-403-via-jwtbearer-events.md) — ProblemDetails em 401/403 herdado.
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side cross-módulo.
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) — Módulo Parametrizacao e desmembramento read-side cross-módulo.
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — RBAC baseado em áreas com snapshot, histórico e invariantes.
 - [ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md) — `ObrigatoriedadeLegal` como validação data-driven com citação legal.
 - Confirmação do sponsor (2026-05-13): roster fechado com adições via ADR; single-deployment per institution.

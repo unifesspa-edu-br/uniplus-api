@@ -12,12 +12,12 @@ informed:
 
 ## Contexto e enunciado do problema
 
-A estratégia do módulo Parametrizacao (per ADRs [0055](0055-organizacao-institucional-bounded-context.md), [0056](0056-parametrizacao-modulo-e-read-side-carve-out.md), [0057](0057-areas-rbac-snapshot-historia-invariantes.md) e [0058](0058-obrigatoriedade-legal-validacao-data-driven.md)) envolve seis sub-features identificadas:
+A estratégia do módulo Parametrizacao (per ADRs [0055](0055-organizacao-institucional-bounded-context.md), [0056](0056-modulo-configuracao-e-read-side-via-reader.md), [0057](0057-areas-rbac-snapshot-historia-invariantes.md) e [0058](0058-obrigatoriedade-legal-validacao-data-driven.md)) envolve seis sub-features identificadas:
 
 1. Módulo `OrganizacaoInstitucional` (foundation).
 2. Módulo `Parametrizacao` + 4 catálogos cross-cutting (Modalidade, NecessidadeEspecial, TipoDocumento, Endereco).
 3. RBAC por áreas com snapshot/histórico infrastructure.
-4. Carve-out read-side cross-módulo (`IXxxReader` + `.Contracts` + ArchUnitNET).
+4. Desmembramento read-side cross-módulo (`IXxxReader` + `.Contracts` + ArchUnitNET).
 5. `ObrigatoriedadeLegal` validação data-driven em Selecao.
 6. Catálogos Selecao-específicos (TipoEdital, TipoEtapa, CriterioDesempate, LocalProva) — promove enums para entidades + endpoints do wizard.
 
@@ -59,7 +59,7 @@ Todos os três devs trabalham como sub-time único na foundation load-bearing:
 - Infraestrutura de junction table para `AreasDeInteresse` com validade temporal (Pattern 3 de [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md)).
 - Tabela history SCD Type 2 para mudanças de `Proprietario` (Pattern 2).
 - Documentação do pattern `IXxxReader` em `Infrastructure.Core` + primeira implementação canônica como exemplar.
-- Fitness tests ArchUnitNET para o carve-out cross-módulo ([ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)).
+- Fitness tests ArchUnitNET para o desmembramento cross-módulo ([ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)).
 - Dois novos bancos PostgreSQL provisionados: `uniplus_parametrizacao`, `uniplus_organizacao` com usuários isolados.
 - Naming convention snake_case aplicada desde a concepção (per [ADR-0054](0054-naming-convention-e-strategy-migrations.md)).
 
@@ -74,7 +74,7 @@ Cada dev assume uma das três lanes, trabalhando de forma independente com baixo
 - `Modalidade` entidade + EF config (com `CatalogVisibilityConfiguration<Modalidade>`) + migration adicionando tabelas `modalidades` + `modalidade_areas_de_interesse` + JSON seed (12 entradas Lei 12.711) + `IModalidadeReader`.
 - `NecessidadeEspecial` analogous.
 - `TipoDocumento` analogous.
-- `Endereco` analogous (admin POST restrito a `plataforma-admin` per [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)).
+- `Endereco` analogous (admin POST restrito a `plataforma-admin` per [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)).
 
 **Lane B — Dev 2 — Promoções Selecao e endpoints do wizard:**
 
@@ -151,7 +151,7 @@ Cada dev assume uma das três lanes, trabalhando de forma independente com baixo
 ## Mais informações
 
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — OrganizacaoInstitucional bounded context.
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side.
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) — Módulo Parametrizacao e desmembramento read-side.
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — RBAC por áreas com snapshot/histórico.
 - [ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md) — ObrigatoriedadeLegal como validação data-driven.
 - [ADR-0054](0054-naming-convention-e-strategy-migrations.md) — Snake_case + 3-DB isolation (informa as migrations dos novos módulos).

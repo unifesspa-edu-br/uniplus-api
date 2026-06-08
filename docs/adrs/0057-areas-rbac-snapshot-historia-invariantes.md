@@ -300,6 +300,6 @@ ADR é mantido como está; vale o mapeamento desta emenda.
 - RN08 de `docs/visao-do-projeto.md` — Congelamento de parâmetros na publicação do edital.
 - LGPD Lei 13.709/2018 — Requisitos de retenção e auditoria.
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — OrganizacaoInstitucional bounded context.
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side.
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) — Módulo Parametrizacao e desmembramento read-side.
 - [ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md) — ObrigatoriedadeLegal como validação data-driven.
 - Diretiva do sponsor (2026-05-13): endereçar TODOS os seis pontos do Devil's Advocate nas ADRs.

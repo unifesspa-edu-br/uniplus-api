@@ -84,7 +84,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0053](0053-zero-test-environment-branches-in-production-code.md) | Zero ramos de ambiente de teste em código de produção — `IsEnvironment(literal)` e `EnvironmentName == literal` banidos em `src/` (ADR normativa sem enforcement automático) | accepted | 2026-05-11 |
 | [0054](0054-naming-convention-e-strategy-migrations.md) | Convenção de nomenclatura `snake_case` via `EFCore.NamingConventions` + isolamento por banco e estratégia de migrations | accepted | 2026-05-13 |
 | [0055](0055-organizacao-institucional-bounded-context.md) | `OrganizacaoInstitucional` como bounded context para áreas (CEPS, CRCA, PROEG, PROGEP, PLATAFORMA) com roster fechado | accepted | 2026-05-14 |
-| [0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) | Módulo `Parametrizacao` para catálogos cross-cutting + carve-out read-side cross-módulo via `IXxxReader` | accepted | 2026-05-14 |
+| [0056](0056-modulo-configuracao-e-read-side-via-reader.md) | Módulo `Configuracao` para catálogos cross-cutting + desmembramento read-side cross-módulo via `IXxxReader` | accepted | 2026-05-14 |
 | [0057](0057-areas-rbac-snapshot-historia-invariantes.md) | RBAC por áreas com snapshot na publicação, histórico SCD Type 2 e invariantes de governança — **supersessão proposta pela ADR-0078** | accepted | 2026-05-14 |
 | [0058](0058-obrigatoriedade-legal-validacao-data-driven.md) | `ObrigatoriedadeLegal` como validação data-driven com citação legal e snapshot-on-bind | accepted | 2026-05-14 |
 | [0059](0059-sprint-3-decomposicao-estrategia-paralela.md) | Decomposição da Sprint 3 — foundation primeiro, depois 3 lanes paralelas | accepted | 2026-05-14 |

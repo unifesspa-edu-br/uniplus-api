@@ -34,7 +34,7 @@ A autorização, nesta frente, ganha um conjunto próprio de entidades persistid
 **Escolhida:** "B — banco isolado dedicado de autorização", porque é a aplicação direta do isolamento por contexto da ADR-0054 a um contexto que é transversal e tem entidades próprias com integridade referencial entre si.
 
 - As entidades de autorização vivem em um **banco isolado** dedicado ao contexto. As chaves estrangeiras **entre elas** são intra-banco (normais).
-- Referências a entidades de **outros contextos** — `Unidade`, `Candidato` — entram por **identificador** (Guid v7), resolvidas por **leitor read-side** ([ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)), **sem** chave estrangeira cruzando banco (conforme ADR-0054).
+- Referências a entidades de **outros contextos** — `Unidade`, `Candidato` — entram por **identificador** (Guid v7), resolvidas por **leitor read-side** ([ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)), **sem** chave estrangeira cruzando banco (conforme ADR-0054).
 - A **trilha de auditoria forense** ([ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md)) reside nesse banco, com a fronteira de isolamento própria do contexto.
 
 ## Consequências
@@ -79,6 +79,6 @@ A autorização, nesta frente, ganha um conjunto próprio de entidades persistid
 ## Mais informações
 
 - Aplica a [ADR-0054](0054-naming-convention-e-strategy-migrations.md) (bancos isolados por módulo) ao contexto transversal de autorização.
-- As referências cross-contexto seguem a [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) (leitor read-side) e a regra de não-FK cross-banco da ADR-0054.
+- As referências cross-contexto seguem a [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) (leitor read-side) e a regra de não-FK cross-banco da ADR-0054.
 - A trilha de auditoria forense isolada segue a [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md).
 - Este banco persiste as entidades decididas na [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) e na [ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md), entre outras desta frente.

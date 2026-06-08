@@ -12,9 +12,9 @@ informed:
 
 ## Contexto e enunciado do problema
 
-[ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) estabelece o carve-out read-side cross-módulo: módulos consomem dados de referência uns dos outros via `IXxxReader` em assemblies `.Contracts`. A ADR deixou implícita uma questão crítica sobre **semântica de escrita** quando uma entidade de domínio em um módulo referencia um catálogo em outro módulo.
+[ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) estabelece o desmembramento read-side cross-módulo: módulos consomem dados de referência uns dos outros via `IXxxReader` em assemblies `.Contracts`. A ADR deixou implícita uma questão crítica sobre **semântica de escrita** quando uma entidade de domínio em um módulo referencia um catálogo em outro módulo.
 
-Exemplo concreto: `Selecao.LocalProva` (local de prova) precisa do endereço físico. Per [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md), o endereço vive em `Parametrizacao.Endereco`. Pergunta: `LocalProva.EnderecoId` carrega referência viva por foreign key para `Endereco` em outro banco, ou tira snapshot dos dados do endereço no momento do binding?
+Exemplo concreto: `Selecao.LocalProva` (local de prova) precisa do endereço físico. Per [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md), o endereço vive em `Parametrizacao.Endereco`. Pergunta: `LocalProva.EnderecoId` carrega referência viva por foreign key para `Endereco` em outro banco, ou tira snapshot dos dados do endereço no momento do binding?
 
 A restrição é firme: per [ADR-0054](0054-naming-convention-e-strategy-migrations.md) e `docs/guia-banco-de-dados.md`, a plataforma usa **bancos PostgreSQL isolados por módulo** (connection strings e usuários separados). Não há schema compartilhado; **FK cross-banco não é exequível** no PostgreSQL.
 
@@ -125,7 +125,7 @@ Não é garantia referencial. A linha-fonte pode ter sido soft-deletada; o ID de
 2. **Validação na escrita** — `ObterPorIdAsync` resolve a linha-fonte para montar o snapshot.
 3. **Workflow opcional de re-bind** — admin pode re-resolver `LocalProva.EnderecoOrigemId` e atualizar o snapshot (ação explícita, auditada).
 
-O reader **não** materializa o valor continuamente na entidade consumidora. Não há tabela de projeção espelhando `Endereco` em `Selecao`. O cache distribuído Redis 5 minutos sobre o reader (Pattern 4 do [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)) atende as leituras.
+O reader **não** materializa o valor continuamente na entidade consumidora. Não há tabela de projeção espelhando `Endereco` em `Selecao`. O cache distribuído Redis 5 minutos sobre o reader (Pattern 4 do [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)) atende as leituras.
 
 ## Consequências
 
@@ -192,7 +192,7 @@ O reader **não** materializa o valor continuamente na entidade consumidora. Nã
 
 ## Mais informações
 
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side (esta ADR clarifica a semântica do write).
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) — Módulo Parametrizacao e desmembramento read-side (esta ADR clarifica a semântica do write).
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — Pattern 1 é precedente para snapshot-on-bind de metadata de governança.
 - [ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md) — Snapshot-on-bind para regras legais.
 - [ADR-0060](0060-junction-tables-por-entidade-com-view-unificada.md) — Mesmo raciocínio de isolation entre bancos.
