@@ -179,7 +179,7 @@ Decisão por classe de teste durante a implementação. Call sites mais simples 
 
 **2026-05-13 (inicial):** Decidido `IReferenceDataSeeder` + `EmbeddedJsonSeedSource` com sentinel `"seed:embedded@v1"`.
 
-**2026-05-14 (revisado):** Diretriz do sponsor substitui o auto-seeder pelo bootstrap via Newman. Auditoria captura usuário real; formulários admin (pós-frontend-ready) usam o mesmo caminho de escrita. ADR reescrita; [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) §"Implementation Notes" atualizada para remover referências ao seeder.
+**2026-05-14 (revisado):** Diretriz do sponsor substitui o auto-seeder pelo bootstrap via Newman. Auditoria captura usuário real; formulários admin (pós-frontend-ready) usam o mesmo caminho de escrita. ADR reescrita; [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) §"Implementation Notes" atualizada para remover referências ao seeder.
 
 ## Prós e contras das opções
 
@@ -253,7 +253,7 @@ devem refletir o novo vocabulário e os paths atualizados.
 - [ADR-0054](0054-naming-convention-e-strategy-migrations.md) — Naming snake_case + migrations.
 - `docs/guia-banco-de-dados.md` §5 — Pattern opt-in do `IAuditableEntity`.
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — Invariante de roster fechado para AreaOrganizacional.
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e read-side carve-out (referências ao seeder removidas).
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) — Módulo Parametrizacao e read-side desmembramento (referências ao seeder removidas).
 - [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) — Pattern de snapshot-copy cross-módulo (independente deste seed).
 - Documentação Newman — <https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/>.
 - Diretrizes do sponsor (2026-05-14): "remover os seeds e termos os arquivos json para fazer as requests"; "quando a interface gráfica tiver pronta aí pode cadastrar pelo formulario"; "podemos usar newman para fazer isso para nós".

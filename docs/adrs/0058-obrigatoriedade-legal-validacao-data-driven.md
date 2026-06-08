@@ -120,7 +120,7 @@ Retorna as regras snapshotadas **como eram na publicação**, recuperável para 
 
 ### Localização: fica em Selecao para V1
 
-`ObrigatoriedadeLegal` vive em `Unifesspa.UniPlus.Selecao.Domain.Entities`. **Não** está em `Parametrizacao` (apenas catálogos cross-cutting per [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)). **Não** está em módulo `Normativos` separado ainda.
+`ObrigatoriedadeLegal` vive em `Unifesspa.UniPlus.Selecao.Domain.Entities`. **Não** está em `Parametrizacao` (apenas catálogos cross-cutting per [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)). **Não** está em módulo `Normativos` separado ainda.
 
 ### Critérios de promoção a futuro módulo `Normativos`
 
@@ -290,7 +290,7 @@ soft-delete, com FK `RESTRICT` para `editais` (em #461) e para
 - DAMA-DMBOK 2 — Reference Data Management (snapshot patterns).
 - Specification Pattern com Rule Repository — Microsoft Learn, DevIQ.
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — OrganizacaoInstitucional bounded context.
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side.
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) — Módulo Parametrizacao e desmembramento read-side.
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — RBAC por áreas com snapshot, histórico, invariantes.
 - [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md) — Entidades forensics append-only isentas de soft-delete.
 - [ADR-0064](0064-convencao-roteamento-path-based-com-prefixo-modulo.md) — Convenção de roteamento path-based com prefixo de módulo.

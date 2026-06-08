@@ -35,7 +35,7 @@ A evidência canônica (cadastro e-MEC da IES 18440, consultado em 2026-05-19) r
 
 **Escolhida:** "Entidade flat, uma entrada por local de oferta", porque espelha exatamente o cadastro e-MEC da IES 18440, mantém rastreabilidade direta ao código federal e evita inventar uma hierarquia que o cadastro regulatório não declara.
 
-`LocalOferta` é catálogo cross-módulo e, por consistência com a [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md), vive no módulo **Parametrizacao**. O endereço físico é modelado como o value object `Endereco` da [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md), embedded na entidade. Forma da entidade (em termos de domínio):
+`LocalOferta` é catálogo cross-módulo e, por consistência com a [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md), vive no módulo **Parametrizacao**. O endereço físico é modelado como o value object `Endereco` da [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md), embedded na entidade. Forma da entidade (em termos de domínio):
 
 - `Codigo` — slug interno estável (`MARABA_UI`, `MARABA_UII`, …).
 - `CodigoEmec` — código do endereço no e-MEC, **opcional**: presente nos endereços cadastrados (sede e fora de sede), ausente nas ofertas por convênio que herdam o código do campus responsável via `OfertaCurso`.
@@ -75,6 +75,6 @@ A agregação de apresentação ("Campus de Marabá" agrupando suas Unidades) é
 ## Mais informações
 
 - Relaciona-se com a [ADR-0066](0066-ofertacurso-modelo-tres-niveis-emec-por-campus.md) — `OfertaCurso.LocalOfertaId` aponta sempre para um `LocalOferta` específico.
-- Endereço físico via value object `Endereco` da [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md); referência de município segue o catálogo `Cidade`.
+- Endereço físico via value object `Endereco` da [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md); referência de município segue o catálogo `Cidade`.
 - **Pendências a confirmar com PROEG/Procuradoria (não bloqueiam o modelo):** significado de `Polo=A` no e-MEC; classificação regulatória (`Tipo`) definitiva de Jacundá/Parauapebas/Canaã (provisoriamente `ConvenioInteriorizacao`).
 - **Origem:** deliberação técnica de modelagem do Módulo Configuração de Edital conduzida pelo Tech Lead (2026-05-19), validada contra o cadastro e-MEC da IES 18440 e confirmada com a equipe CTIC com conhecimento operacional dos sistemas legados; rascunhos de trabalho não publicados.

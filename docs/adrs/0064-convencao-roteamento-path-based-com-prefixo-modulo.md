@@ -320,8 +320,8 @@ usa `/catalogos/` ou rótulo categoria-genérica.
   (links sempre relativos).
 - [ADR-0055](0055-organizacao-institucional-bounded-context.md) — APIs
   por bounded context.
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) —
-  Carve-out cross-módulo via `IXxxReader`.
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) —
+  Desmembramento cross-módulo via `IXxxReader`.
 - [ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md) — Emenda
   1 aplica as URLs com prefixo de módulo desta ADR.
 - [ADR-0062](0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) —

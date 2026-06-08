@@ -38,7 +38,7 @@ Quatro fontes institucionais autoritativas (endereços e-MEC da IES 18440; campo
 
 **Escolhida:** "Modelo de três níveis com `e_mec_codigo` na OfertaCurso" (`Curso → OfertaCurso → Turma`), porque é o único que reconcilia a granularidade mista observada (mesmo curso, institutos e códigos e-MEC diferentes por campus) com a estabilidade da matriz curricular.
 
-Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Parametrizacao** ([ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md)). A referência de `OfertaCurso` à `Unidade` ofertante atravessa o bounded context `OrganizacaoInstitucional` ([ADR-0055](0055-organizacao-institucional-bounded-context.md)) e, por isso, segue o snapshot-copy da [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) (cópia imutável dos dados relevantes da unidade, sem FK cross-banco).
+Como catálogo cross-módulo, `Curso` e `OfertaCurso` vivem no módulo **Parametrizacao** ([ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md)). A referência de `OfertaCurso` à `Unidade` ofertante atravessa o bounded context `OrganizacaoInstitucional` ([ADR-0055](0055-organizacao-institucional-bounded-context.md)) e, por isso, segue o snapshot-copy da [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) (cópia imutável dos dados relevantes da unidade, sem FK cross-banco).
 
 **`Curso` — curricular puro (~40 entradas):**
 

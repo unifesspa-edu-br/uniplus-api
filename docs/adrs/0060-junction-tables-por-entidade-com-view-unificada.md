@@ -207,7 +207,7 @@ mapeamento desta emenda.
 
 ## Mais informações
 
-- [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) — Módulo Parametrizacao e carve-out read-side.
+- [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) — Módulo Parametrizacao e desmembramento read-side.
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — RBAC por áreas, Pattern 3 detalhado nesta ADR.
 - [ADR-0059](0059-sprint-3-decomposicao-estrategia-paralela.md) — Decomposição Sprint 3 (Phase 1 inclui essa infra).
 - [ADR-0054](0054-naming-convention-e-strategy-migrations.md) — snake_case + isolation 3-DB.

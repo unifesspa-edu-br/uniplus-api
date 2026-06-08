@@ -58,7 +58,7 @@ AtendimentoEspecializadoOferta {
 **Mapeamento para o `uniplus-api`:**
 
 - `detalhesPcd` é um **value object** (sem identidade própria).
-- `TipoDeficiencia` é uma **entidade dependente** — não tem identidade fora do contexto da oferta PCD; o catálogo de tipos vive em Parametrizacao, junto aos catálogos de acessibilidade da [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md) (lá nomeado `NecessidadeEspecial`, nome anterior à adoção do vocabulário "atendimento especializado" — a reconciliação terminológica fica como pendência registrada, candidata a ADR futura), mas no edital só aparece aninhado.
+- `TipoDeficiencia` é uma **entidade dependente** — não tem identidade fora do contexto da oferta PCD; o catálogo de tipos vive em Parametrizacao, junto aos catálogos de acessibilidade da [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md) (lá nomeado `NecessidadeEspecial`, nome anterior à adoção do vocabulário "atendimento especializado" — a reconciliação terminológica fica como pendência registrada, candidata a ADR futura), mas no edital só aparece aninhado.
 - A invariante `OBRIGATORIEDADE_PCD_COERENTE` é validada no domínio na construção/edição da oferta.
 - **Snapshot RN08**: na publicação do edital, `detalhesPcd.tiposDeficiencia` é denormalizado no snapshot de governança (consistente com [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md)), preservando a integridade mesmo que um `TipoDeficiencia` seja inativado depois.
 
@@ -87,6 +87,6 @@ AtendimentoEspecializadoOferta {
 ## Mais informações
 
 - Vocabulário canônico: **"atendimento especializado"** (INEP/Edital ENEM 52/2025); três entidades distintas — `TipoDeficiencia`, `RecursoAcessibilidade`, `SolicitacaoAtendimentoEspecializado`.
-- Catálogos de referência em Parametrizacao: ver [ADR-0056](0056-parametrizacao-modulo-e-read-side-carve-out.md).
+- Catálogos de referência em Parametrizacao: ver [ADR-0056](0056-modulo-configuracao-e-read-side-via-reader.md).
 - Snapshot na publicação: ver [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) e RN08 de `docs/visao-do-projeto.md`.
 - **Origem:** deliberação técnica de modelagem do Módulo Configuração de Edital conduzida pelo Tech Lead (2026-05-19), fundamentada em pesquisa sobre modelos brasileiros de atendimento especializado (INEP/ENEM, Cebraspe/UnB, LBI Lei 13.146/2015); rascunhos de trabalho não publicados.
