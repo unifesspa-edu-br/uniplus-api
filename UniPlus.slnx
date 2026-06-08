@@ -52,5 +52,6 @@
     <Project Path="tests/Unifesspa.UniPlus.Selecao.IntegrationTests/Unifesspa.UniPlus.Selecao.IntegrationTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.csproj" />
   </Folder>
 </Solution>
