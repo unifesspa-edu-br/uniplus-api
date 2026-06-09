@@ -34,15 +34,17 @@ public sealed class RemoverUnidadeCommandHandlerTests
     public async Task Handle_ComUnidadeValida_RemoveEInvalidaCache()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
+        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
         IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
 
         Unidade unidade = CriarUnidade();
         repo.ObterPorIdAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(unidade);
         repo.PossuiSubordinadasVivasAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(false);
+        instituicaoRepo.ExisteComUnidadeRaizAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         Result resultado = await RemoverUnidadeCommandHandler.Handle(
-            new RemoverUnidadeCommand(unidade.Id), repo, uow, cache, CancellationToken.None);
+            new RemoverUnidadeCommand(unidade.Id), repo, instituicaoRepo, uow, cache, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         repo.Received(1).Remover(unidade);
@@ -54,12 +56,13 @@ public sealed class RemoverUnidadeCommandHandlerTests
     public async Task Handle_ComUnidadeInexistente_RetornaNaoEncontrada()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
+        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
         IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
         repo.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Unidade?)null);
 
         Result resultado = await RemoverUnidadeCommandHandler.Handle(
-            new RemoverUnidadeCommand(Guid.NewGuid()), repo, uow, cache, CancellationToken.None);
+            new RemoverUnidadeCommand(Guid.NewGuid()), repo, instituicaoRepo, uow, cache, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NaoEncontrada);
@@ -71,6 +74,7 @@ public sealed class RemoverUnidadeCommandHandlerTests
     public async Task Handle_ComSubordinadasVivas_RetornaBloqueio()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
+        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
         IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
 
@@ -79,11 +83,34 @@ public sealed class RemoverUnidadeCommandHandlerTests
         repo.PossuiSubordinadasVivasAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(true);
 
         Result resultado = await RemoverUnidadeCommandHandler.Handle(
-            new RemoverUnidadeCommand(unidade.Id), repo, uow, cache, CancellationToken.None);
+            new RemoverUnidadeCommand(unidade.Id), repo, instituicaoRepo, uow, cache, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.RemocaoBloqueadaPorSubordinadas);
         repo.DidNotReceive().Remover(Arg.Any<Unidade>());
         await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle com unidade que é raiz de Instituição viva retorna RemocaoBloqueadaPorInstituicao e NÃO persiste")]
+    public async Task Handle_ComUnidadeRaizDeInstituicao_RetornaBloqueio()
+    {
+        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
+        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
+
+        Unidade unidade = CriarUnidade();
+        repo.ObterPorIdAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(unidade);
+        repo.PossuiSubordinadasVivasAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(false);
+        instituicaoRepo.ExisteComUnidadeRaizAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result resultado = await RemoverUnidadeCommandHandler.Handle(
+            new RemoverUnidadeCommand(unidade.Id), repo, instituicaoRepo, uow, cache, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.RemocaoBloqueadaPorInstituicao);
+        repo.DidNotReceive().Remover(Arg.Any<Unidade>());
+        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
     }
 }
