@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "Uni+ — Organização API",
+    "description": "Coleção de testes HTTP da API de Organização (módulo OrganizacaoInstitucional). Exercita o ciclo de vida completo da Instituição singleton (#585) — autenticação plataforma-admin via Keycloak (realm unifesspa-dev-local), Idempotency-Key (ADR-0027), vendor MIME por recurso (ADR-0028), ProblemDetails RFC 9457 (ADR-0023/0024), HATEOAS Level 1 (ADR-0029/0049) e soft-delete. Roda contra o stack local (organizacao-api em :5263). Auto-contida e re-executável (limpa o estado no início e ao final).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Obter token plataforma-admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.expect(j.access_token, 'access_token presente').to.be.a('string').and.to.have.length.above(0);",
+                  "pm.environment.set('token', j.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "password" },
+                { "key": "client_id", "value": "{{client_id}}" },
+                { "key": "username", "value": "{{username}}" },
+                { "key": "password", "value": "{{password}}" }
+              ]
+            },
+            "url": "{{keycloak_token_url}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Limpeza inicial — remover Instituição se existir",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('estado conhecido (200 ou 404)', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+                  "if (pm.response.code === 200) {",
+                  "  const id = pm.response.json().id;",
+                  "  pm.sendRequest({",
+                  "    url: pm.environment.get('base_url') + '/api/admin/instituicao/' + id,",
+                  "    method: 'DELETE',",
+                  "    header: { Authorization: 'Bearer ' + pm.environment.get('token') }",
+                  "  }, (err, res) => {",
+                  "    pm.test('limpeza: DELETE da Instituição pré-existente → 204', () => {",
+                  "      pm.expect(res.code).to.eql(204);",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/instituicao"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validações (negativos)",
+      "item": [
+        {
+          "name": "Criar sem autenticação → 401",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"codigoEmec\":\"3990\",\"nome\":\"Universidade Federal do Sul e Sudeste do Pará\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\"}" },
+            "url": "{{base_url}}/api/admin/instituicao"
+          }
+        },
+        {
+          "name": "Criar sem Idempotency-Key → 400",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/api/admin/instituicao"
+          }
+        },
+        {
+          "name": "Criar sem campo obrigatório → 422",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('rejeitado na validação (400 ou 422)', () => pm.expect(pm.response.code).to.be.oneOf([400, 422]));"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"codigoEmec\":\"\",\"nome\":\"Sem código\",\"sigla\":\"X\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\"}" },
+            "url": "{{base_url}}/api/admin/instituicao"
+          }
+        },
+        {
+          "name": "Criar com unidade raiz inexistente → 422",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+              "pm.test('code = unidade_raiz_nao_encontrada', () => pm.expect(pm.response.json().code).to.eql('uniplus.organizacao.instituicao.unidade_raiz_nao_encontrada'));"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"codigoEmec\":\"3990\",\"nome\":\"Universidade\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\",\"unidadeRaizId\":\"{{$guid}}\"}" },
+            "url": "{{base_url}}/api/admin/instituicao"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ciclo de vida (singleton)",
+      "item": [
+        {
+          "name": "Criar Instituição → 201",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const id = pm.response.json();",
+              "pm.test('retorna Id Guid v7', () => { pm.expect(id).to.be.a('string'); pm.expect(id[14]).to.eql('7'); });",
+              "pm.environment.set('instituicao_id', id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"codigoEmec\":\"3990\",\"nome\":\"Universidade Federal do Sul e Sudeste do Pará\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\",\"municipioSede\":\"Marabá\"}" },
+            "url": "{{base_url}}/api/admin/instituicao"
+          }
+        },
+        {
+          "name": "Obter Instituição → 200 (vendor MIME + HATEOAS)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('vendor MIME instituicao.v1', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.uniplus.instituicao.v1+json'));",
+              "const j = pm.response.json();",
+              "pm.test('dados corretos', () => { pm.expect(j.codigoEmec).to.eql('3990'); pm.expect(j.sigla).to.eql('Unifesspa'); pm.expect(j.municipioSede).to.eql('Marabá'); });",
+              "pm.test('HATEOAS _links.self', () => pm.expect(j._links.self).to.eql('/api/instituicao'));"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/vnd.uniplus.instituicao.v1+json" } ],
+            "url": "{{base_url}}/api/instituicao"
+          }
+        },
+        {
+          "name": "Criar segunda Instituição → 409 (singleton, CA-02)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+              "pm.test('code = ja_existe', () => pm.expect(pm.response.json().code).to.eql('uniplus.organizacao.instituicao.ja_existe'));"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"codigoEmec\":\"4000\",\"nome\":\"Outra Instituição\",\"sigla\":\"OUTRA\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\"}" },
+            "url": "{{base_url}}/api/admin/instituicao"
+          }
+        },
+        {
+          "name": "Atualizar Instituição → 204",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ] } }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"id\":\"{{instituicao_id}}\",\"codigoEmec\":\"3990\",\"nome\":\"Universidade Federal do Sul e Sudeste do Pará\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\",\"situacao\":\"Credenciada\",\"municipioSede\":\"Marabá\"}" },
+            "url": "{{base_url}}/api/admin/instituicao/{{instituicao_id}}"
+          }
+        },
+        {
+          "name": "Obter após atualização → 200 (situacao Credenciada)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('situacao atualizada', () => pm.expect(pm.response.json().situacao).to.eql('Credenciada'));"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/instituicao"
+          }
+        },
+        {
+          "name": "Remover Instituição (soft-delete) → 204",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ] } }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [],
+            "url": "{{base_url}}/api/admin/instituicao/{{instituicao_id}}"
+          }
+        },
+        {
+          "name": "Obter após remoção → 404 (slot liberado, CA-05)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/instituicao"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unidade (smoke)",
+      "item": [
+        {
+          "name": "Listar unidades → 200 (vendor MIME)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('vendor MIME unidade.v1', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.uniplus.unidade.v1+json'));",
+              "pm.test('corpo é array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/unidades"
+          }
+        }
+      ]
+    }
+  ]
+}
