@@ -38,6 +38,9 @@ services:
         condition: service_healthy
       apicurio:
         condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -74,6 +77,9 @@ services:
         condition: service_healthy
       apicurio:
         condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -104,6 +110,9 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
@@ -139,6 +148,11 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      # A API valida JWT contra o realm dev-local do Keycloak; declarar a
+      # dependência garante que o Keycloak suba junto da API e esteja pronto
+      # quando ela aceitar requisições autenticadas (admin CRUD).
+      keycloak:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -172,6 +186,9 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]

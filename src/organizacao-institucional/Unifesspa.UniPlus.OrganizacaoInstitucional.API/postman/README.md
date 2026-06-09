@@ -13,18 +13,17 @@ vida completo da **Instituição** singleton (issue #585) e um smoke de **Unidad
 
 ## Pré-condições
 
-Stack local **completo** rodando — a coleção precisa do Keycloak (`:8080`) para
-obter o token, e o Keycloak não é `depends_on` da `organizacao-api`, então subir
-só a API não basta:
+A `organizacao-api` declara dependência de Postgres, Redis, Kafka e **Keycloak**,
+então subir a API já traz tudo que a coleção precisa (o token sai do Keycloak):
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml \
-  --env-file docker/.env --project-directory docker up -d
+  --env-file docker/.env --project-directory docker up -d organizacao-api
 ```
 
-Isso sobe Postgres, Redis, Kafka, MinIO, Keycloak e a `organizacao-api` em
-`:5263`. O Keycloak importa o realm `unifesspa-dev-local` com o usuário `admin`
-(role `plataforma-admin`).
+Use `up -d` sem o nome do serviço para o stack inteiro (inclui MinIO, Apicurio e
+as demais APIs). A `organizacao-api` fica em `:5263`; o Keycloak importa o realm
+`unifesspa-dev-local` com o usuário `admin` (role `plataforma-admin`).
 
 ## Rodar (Newman)
 
