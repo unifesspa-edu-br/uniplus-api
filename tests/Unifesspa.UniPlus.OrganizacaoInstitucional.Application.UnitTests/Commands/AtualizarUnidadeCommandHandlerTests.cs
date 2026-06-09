@@ -166,6 +166,36 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Handle trocando Codigo só na caixa (ABC→abc) detecta mudança e checa unicidade")]
+    public async Task Handle_ComCodigoMudandoApenasCaixa_RodaChecagemDeUnicidade()
+    {
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        Unidade existente = Unidade.Criar(
+            "Centro de Processos Seletivos",
+            null,
+            Slug.From("ceps").Value!,
+            "CEPS",
+            "ABC",
+            null,
+            TipoUnidade.Centro,
+            false,
+            DataInicio,
+            null,
+            OrigemUnidade.CriadoNoUniPlus).Value!;
+        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        repo.CodigoExisteEntreLivosAsync("abc", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
+
+        // Mesmos Slug/Sigla (pulam a checagem); só o Codigo muda de "ABC" para "abc".
+        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(existente.Id) with { Codigo = "abc" };
+
+        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
+            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.CodigoJaExiste);
+        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Handle com command válido persiste e invalida cache")]
     public async Task Handle_ComCommandValido_PersisteEInvalidaCache()
     {
