@@ -55,9 +55,10 @@ public interface IUnidadeRepository
     Task<bool> PossuiSubordinadasVivasAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Verifica se definir <paramref name="candidatoSuperiorId"/> como superior de
-    /// <paramref name="unidadeId"/> formaria ciclo na hierarquia (o candidato é
-    /// descendente ou igual à unidade).
+    /// Indica se <paramref name="possivelDescendenteId"/> é descendente (ou igual)
+    /// de <paramref name="possivelAncestralId"/> na hierarquia, percorrendo a
+    /// cadeia de superiores. O handler usa isto para barrar a atribuição de um
+    /// superior que formaria ciclo (superior que é descendente da própria unidade).
     /// </summary>
-    Task<bool> FormariaCicloAsync(Guid unidadeId, Guid candidatoSuperiorId, CancellationToken cancellationToken);
+    Task<bool> EhDescendenteAsync(Guid possivelDescendenteId, Guid possivelAncestralId, CancellationToken cancellationToken);
 }

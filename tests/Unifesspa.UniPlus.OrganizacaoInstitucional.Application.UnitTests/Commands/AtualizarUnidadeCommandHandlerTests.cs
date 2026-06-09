@@ -144,7 +144,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com superior que é descendente retorna SuperiorFormaCiclo (via FormariaCicloAsync)")]
+    [Fact(DisplayName = "Handle com superior que é descendente retorna SuperiorFormaCiclo (via EhDescendenteAsync)")]
     public async Task Handle_ComSuperiorDescendente_RetornaSuperiorFormaCiclo()
     {
         (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
@@ -153,7 +153,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         Guid superiorId = Guid.NewGuid();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         repo.ObterPorIdAsync(superiorId, Arg.Any<CancellationToken>()).Returns(superior);
-        repo.FormariaCicloAsync(existente.Id, superiorId, Arg.Any<CancellationToken>()).Returns(true);
+        repo.EhDescendenteAsync(superiorId, existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 
         AtualizarUnidadeCommand command =
             CommandSemMudancaDeIdentificador(existente.Id) with { UnidadeSuperiorId = superiorId };
