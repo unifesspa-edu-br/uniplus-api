@@ -24,7 +24,13 @@ public interface IUnidadeRepository
     /// </summary>
     Task<Unidade?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<Unidade>> ListarAtivasAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Lista unidades ativas paginadas por cursor keyset (ADR-0026): ordena por
+    /// <c>Id</c> (Guid v7, ADR-0032 — ordem cronológica) e retorna até
+    /// <paramref name="take"/> itens com <c>Id</c> maior que
+    /// <paramref name="afterId"/> (ou a primeira janela quando <c>null</c>).
+    /// </summary>
+    Task<IReadOnlyList<Unidade>> ListarPaginadoAsync(Guid? afterId, int take, CancellationToken cancellationToken);
 
     Task AdicionarAsync(Unidade unidade, CancellationToken cancellationToken);
 

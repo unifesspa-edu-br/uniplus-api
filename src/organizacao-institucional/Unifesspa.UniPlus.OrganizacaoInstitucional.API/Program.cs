@@ -55,6 +55,9 @@ builder.Services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBui
 // [RequiresIdempotencyKey], usando o DbContext do módulo para persistir
 // entries cifradas at-rest.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
+// Cursor pagination (ADR-0026) — CursorEncoder, PageRequestModelBinder e o hook
+// que traduz falhas do binder para 400/410/422; usado por GET /api/unidades.
+builder.Services.AddCursorPagination(builder.Configuration);
 builder.Services.AddIdempotency<OrganizacaoInstitucionalDbContext>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
