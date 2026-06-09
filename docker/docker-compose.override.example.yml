@@ -120,7 +120,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus_organizacao;Username=uniplus_organizacao_app;Password=${POSTGRES_PASSWORD}"
+      # role uniplus_organizacao_app provisionada em docker/init-db.sql com
+      # senha literal 'uniplus_dev' (dev only); POSTGRES_PASSWORD pertence ao
+      # super user `postgres`. Mantém credencial role-specific.
+      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus_organizacao;Username=uniplus_organizacao_app;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
       Storage__Endpoint: "minio:9000"
