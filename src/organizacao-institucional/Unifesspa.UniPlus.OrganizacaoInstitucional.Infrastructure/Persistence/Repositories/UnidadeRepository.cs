@@ -103,20 +103,20 @@ internal sealed class UnidadeRepository : IUnidadeRepository
     }
 
     /// <summary>
-    /// Determina se definir <paramref name="candidatoSuperiorId"/> como superior de
-    /// <paramref name="unidadeId"/> formaria ciclo, percorrendo os ancestrais do
-    /// candidato até a raiz. A operação é O(profundidade) — na prática ≤6 níveis
-    /// na Unifesspa.
+    /// Indica se <paramref name="possivelDescendenteId"/> é descendente (ou igual)
+    /// de <paramref name="possivelAncestralId"/>, percorrendo a cadeia de
+    /// superiores do possível descendente até a raiz. A operação é O(profundidade)
+    /// — na prática ≤6 níveis na Unifesspa.
     /// </summary>
-    public async Task<bool> FormariaCicloAsync(
-        Guid unidadeId,
-        Guid candidatoSuperiorId,
+    public async Task<bool> EhDescendenteAsync(
+        Guid possivelDescendenteId,
+        Guid possivelAncestralId,
         CancellationToken cancellationToken)
     {
-        Guid? atual = candidatoSuperiorId;
+        Guid? atual = possivelDescendenteId;
         while (atual.HasValue)
         {
-            if (atual.Value == unidadeId)
+            if (atual.Value == possivelAncestralId)
             {
                 return true;
             }

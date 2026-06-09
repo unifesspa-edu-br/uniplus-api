@@ -83,7 +83,8 @@ public static class AtualizarUnidadeCommandHandler
                     "A Unidade superior informada não foi encontrada."));
             }
 
-            if (await repository.FormariaCicloAsync(command.Id, command.UnidadeSuperiorId.Value, cancellationToken).ConfigureAwait(false))
+            // Ciclo: o superior proposto é descendente da própria unidade editada.
+            if (await repository.EhDescendenteAsync(command.UnidadeSuperiorId.Value, command.Id, cancellationToken).ConfigureAwait(false))
             {
                 return Result.Failure(new DomainError(
                     UnidadeErrorCodes.SuperiorFormaCiclo,
