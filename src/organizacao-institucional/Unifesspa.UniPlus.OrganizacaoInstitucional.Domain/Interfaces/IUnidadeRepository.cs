@@ -10,7 +10,19 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 /// </summary>
 public interface IUnidadeRepository
 {
+    /// <summary>
+    /// Carrega a unidade com o histórico de identificadores incluído, rastreada
+    /// pelo contexto — para mutação (atualização que renomeia identificadores) e
+    /// verificações que dependem do agregado completo.
+    /// </summary>
     Task<Unidade?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Carrega a unidade para leitura (<c>AsNoTracking</c>, sem o histórico de
+    /// identificadores) — para projeção em DTO. Evita o over-fetch da coleção de
+    /// histórico em caminhos que não a expõem.
+    /// </summary>
+    Task<Unidade?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Unidade>> ListarAtivasAsync(CancellationToken cancellationToken);
 

@@ -16,7 +16,7 @@ public static class ObterUnidadePorIdQueryHandler
         ArgumentNullException.ThrowIfNull(repository);
 
         Unidade? unidade = await repository
-            .ObterPorIdAsync(query.Id, cancellationToken)
+            .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
         return unidade?.ToDto();
