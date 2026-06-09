@@ -287,6 +287,25 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         (await repository.EhDescendenteAsync(d.Id, a.Id, CancellationToken.None)).Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Checagens de unicidade normalizam (Trim) Sigla e Codigo do argumento")]
+    public async Task ChecagensDeUnicidade_NormalizamArgumentoComEspacos()
+    {
+        Unidade existente = NovaUnidade("trim-check", "TRIMSIG", "TRIMCOD");
+        await using (OrganizacaoInstitucionalDbContext seed = _fixture.CreateDbContext(AdminA))
+        {
+            seed.Unidades.Add(existente);
+            await seed.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repository = new UnidadeRepository(ctx);
+
+        // " trimsig " deve casar com "TRIMSIG" persistido (Trim + ToUpperInvariant).
+        (await repository.SiglaExisteEntreLivosAsync(" trimsig ", null, CancellationToken.None)).Should().BeTrue();
+        // " TRIMCOD " deve casar com "TRIMCOD" persistido (Trim).
+        (await repository.CodigoExisteEntreLivosAsync(" TRIMCOD ", null, CancellationToken.None)).Should().BeTrue();
+    }
+
     // ── Factory helper ───────────────────────────────────────────────────
 
     private static Unidade NovaUnidade(

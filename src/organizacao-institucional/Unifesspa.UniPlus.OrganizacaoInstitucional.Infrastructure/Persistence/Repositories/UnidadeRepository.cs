@@ -80,7 +80,10 @@ internal sealed class UnidadeRepository : IUnidadeRepository
 
     public Task<bool> SiglaExisteEntreLivosAsync(string sigla, Guid? excluirId, CancellationToken cancellationToken)
     {
-        string siglaNorm = sigla.ToUpperInvariant();
+        // Espelha a normalização do agregado (Trim + ToUpperInvariant) para que
+        // " abc " case com o "ABC" persistido — senão a checagem erra e a colisão
+        // só estoura no índice único (500 em vez do 409 SiglaJaExiste).
+        string siglaNorm = sigla.Trim().ToUpperInvariant();
         return _dbContext.Unidades
             .AsNoTracking()
             .Where(u => excluirId == null || u.Id != excluirId)
@@ -89,10 +92,12 @@ internal sealed class UnidadeRepository : IUnidadeRepository
 
     public Task<bool> CodigoExisteEntreLivosAsync(string codigo, Guid? excluirId, CancellationToken cancellationToken)
     {
+        // Espelha o Trim do agregado (mesma razão da Sigla).
+        string codigoNorm = codigo.Trim();
         return _dbContext.Unidades
             .AsNoTracking()
             .Where(u => excluirId == null || u.Id != excluirId)
-            .AnyAsync(u => u.Codigo == codigo, cancellationToken);
+            .AnyAsync(u => u.Codigo == codigoNorm, cancellationToken);
     }
 
     public Task<bool> PossuiSubordinadasVivasAsync(Guid id, CancellationToken cancellationToken)
@@ -116,14 +121,15 @@ internal sealed class UnidadeRepository : IUnidadeRepository
         Guid? atual = possivelDescendenteId;
         while (atual.HasValue)
         {
-            if (atual.Value == possivelAncestralId)
+            Guid atualId = atual.Value;
+            if (atualId == possivelAncestralId)
             {
                 return true;
             }
 
             Guid? superiorDoAtual = await _dbContext.Unidades
                 .AsNoTracking()
-                .Where(u => u.Id == atual.Value)
+                .Where(u => u.Id == atualId)
                 .Select(u => u.UnidadeSuperiorId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
