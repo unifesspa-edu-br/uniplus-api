@@ -271,7 +271,7 @@ Regras essenciais (mais detalhes no guia):
 
 ### Obrigatório em toda contribuição
 
-- **PII masking:** CPF nunca aparece completo em logs — usar `***.***.***-XX`
+- **PII masking:** CPF nunca aparece completo em logs — usar `***.999.999-**` (padrão CGU/IN Unifesspa, Parecer DPO 002/2026)
 - **Sem secrets no código:** nunca hardcodar credenciais, tokens ou chaves
 - **Soft delete:** nunca usar `DELETE` físico — marcar como deletado
 - **Autorização:** todo endpoint deve ter `[Authorize]` com policy adequada

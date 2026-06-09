@@ -98,21 +98,23 @@ public sealed class CpfTests
     // ─── Mascaramento (LGPD) ───────────────────────────────────────────────
 
     [Fact]
-    public void Mascarado_DeveRetornarPadraoComHifenAntesDosDoisUltimosDigitos()
+    public void Mascarado_DeveRetornarPadraoInstituicionalCGUOcultandoPrimeirosEVerificadores()
     {
         Cpf cpf = Cpf.Criar("529.982.247-25").Value!;
 
-        cpf.Mascarado.Should().Be("***.***.***-25",
-            "o padrão SERPRO/Gov.br exige hífen antes dos dois dígitos verificadores");
+        cpf.Mascarado.Should().Be("***.982.247-**",
+            "o padrão CGU/IN Unifesspa (Parecer DPO 002/2026) exige ocultar os três primeiros dígitos e os dígitos verificadores");
     }
 
     [Fact]
-    public void Mascarado_DevePreservarApenasOsDoisUltimosDigitos()
+    public void Mascarado_DeveExporSeisDigitosCentraisEOcultarExtremos()
     {
         Cpf cpf = Cpf.Criar("52998224725").Value!;
 
-        cpf.Mascarado.Should().EndWith("-25");
-        cpf.Mascarado.Should().NotContain("52998224", "dígitos intermediários não podem vazar");
+        cpf.Mascarado.Should().StartWith("***.");
+        cpf.Mascarado.Should().EndWith("-**");
+        cpf.Mascarado.Should().NotContain("529", "primeiros três dígitos não podem vazar");
+        cpf.Mascarado.Should().NotContain("25", "dígitos verificadores não podem vazar");
     }
 
     [Fact]
@@ -121,7 +123,7 @@ public sealed class CpfTests
         Cpf cpf = Cpf.Criar("529.982.247-25").Value!;
 
         cpf.ToString().Should().Be(cpf.Mascarado);
-        cpf.ToString().Should().Be("***.***.***-25");
+        cpf.ToString().Should().Be("***.982.247-**");
     }
 
     // ─── Igualdade de record ───────────────────────────────────────────────

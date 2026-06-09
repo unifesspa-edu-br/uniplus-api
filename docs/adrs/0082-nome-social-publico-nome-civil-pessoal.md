@@ -1,17 +1,15 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
 consulted:
-  - "Encarregada de Proteção de Dados (DPO) — validação pendente"
+  - "Encarregada de Proteção de Dados (DPO) — validada pelo Parecer Técnico 002/2026 (08/06/2026)"
 informed:
   - "Equipe Uni+"
 ---
 
 # ADR-0082: Nome social como dado público e nome civil como dado pessoal protegido
-
-> **Status:** proposta **pendente de validação da Encarregada de Proteção de Dados (DPO)** antes de ser aceita. A classificação de dados e a regra de exibição abaixo tocam dignidade da pessoa e legislação específica; a aceitação formal depende do parecer da DPO.
 
 ## Contexto e enunciado do problema
 
@@ -93,4 +91,4 @@ Invariantes da preferência:
 
 - Ancora na [ADR-0081](0081-lgpd-by-design-dto-por-permissao.md): esta é a classificação específica do nome social/civil dentro do controle de proteção por projeção.
 - Base legal e normativa: Decreto 8.727/2016; Constituição art. 1º, III; LGPD (Lei 13.709/2018).
-- **Validação pendente da DPO** da instituição antes da aceitação formal desta ADR.
+- Validada pela **Encarregada de Proteção de Dados (DPO)** da instituição — Parecer Técnico 002/2026 (08/06/2026): nome social confirmado como dado público quando preferido; nome civil como dado pessoal protegido (art. 7º II/III e art. 23 LGPD; Decreto 8.727/2016).

@@ -1,17 +1,15 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
 consulted:
-  - "Encarregada de Proteção de Dados (DPO) — validação pendente"
+  - "Encarregada de Proteção de Dados (DPO) — validada pelo Parecer Técnico 002/2026 (08/06/2026)"
 informed:
   - "Equipe Uni+"
 ---
 
 # ADR-0081: LGPD-by-design — projeção por permissão como controle primário de proteção de dado pessoal
-
-> **Status:** a decisão estrutural (projeção por permissão como controle primário) está proposta; a **classificação de cada dado e a base legal de cada tratamento** descritas abaixo ficam **pendentes de validação da Encarregada de Proteção de Dados (DPO)** antes da aceitação formal desta ADR.
 
 ## Contexto e enunciado do problema
 
@@ -91,4 +89,4 @@ A conformidade é verificada por **testes de exposição** (Broken Object Proper
 - Ancora no modelo de decisão da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): a permissão determina qual DTO é projetado e se a base legal é exigida.
 - Relaciona-se com a [ADR-0019](0019-proibir-pii-em-path-segments-de-url.md) (sem dado pessoal em URL) e a [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md) (trilha forense).
 - A classificação específica do **nome social e do nome civil** (quando cada um é público ou pessoal) é decidida na ADR seguinte desta frente, por tocar dignidade e legislação própria.
-- A base legal de cada tratamento e a classificação de cada dado são **validadas com a Encarregada de Proteção de Dados (DPO)** da instituição — **validação pendente** antes da aceitação formal desta ADR.
+- A base legal de cada tratamento e a classificação de cada dado foram **validadas pela Encarregada de Proteção de Dados (DPO)** da instituição — Parecer Técnico 002/2026 (08/06/2026), fundamentado nos arts. 7º II, 7º III e 23 da LGPD.
