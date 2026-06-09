@@ -203,5 +203,96 @@ internal sealed class OrganizacaoDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status409Conflict,
                 "uniplus.organizacao.unidade.remocao_bloqueada_por_instituicao",
                 "Não é possível remover uma unidade que é raiz de uma instituição")),
+
+        // ── Instituicao (singleton e-MEC) ────────────────────────────────
+        new(InstituicaoErrorCodes.CodigoEmecObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.codigo_emec_obrigatorio",
+                "Código e-MEC da instituição é obrigatório")),
+
+        new(InstituicaoErrorCodes.CodigoEmecTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.codigo_emec_tamanho",
+                "Tamanho do código e-MEC da instituição inválido")),
+
+        new(InstituicaoErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.nome_obrigatorio",
+                "Nome da instituição é obrigatório")),
+
+        new(InstituicaoErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.nome_tamanho",
+                "Tamanho do nome da instituição inválido")),
+
+        new(InstituicaoErrorCodes.SiglaObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.sigla_obrigatoria",
+                "Sigla da instituição é obrigatória")),
+
+        new(InstituicaoErrorCodes.SiglaTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.sigla_tamanho",
+                "Tamanho da sigla da instituição inválido")),
+
+        new(InstituicaoErrorCodes.OrganizacaoAcademicaObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.organizacao_academica_obrigatoria",
+                "Organização acadêmica da instituição é obrigatória")),
+
+        new(InstituicaoErrorCodes.OrganizacaoAcademicaTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.organizacao_academica_tamanho",
+                "Tamanho da organização acadêmica da instituição inválido")),
+
+        new(InstituicaoErrorCodes.CategoriaAdministrativaObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.categoria_administrativa_obrigatoria",
+                "Categoria administrativa da instituição é obrigatória")),
+
+        new(InstituicaoErrorCodes.CategoriaAdministrativaTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.categoria_administrativa_tamanho",
+                "Tamanho da categoria administrativa da instituição inválido")),
+
+        new(InstituicaoErrorCodes.CampoOpcionalTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.campo_opcional_tamanho",
+                "Tamanho de um campo opcional da instituição inválido")),
+
+        new(InstituicaoErrorCodes.JaExisteInstituicaoViva,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.organizacao.instituicao.ja_existe",
+                "Já existe uma instituição cadastrada — a plataforma atende uma única instituição")),
+
+        new(InstituicaoErrorCodes.NaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.organizacao.instituicao.nao_encontrada",
+                "Instituição não encontrada")),
+
+        new(InstituicaoErrorCodes.UnidadeRaizNaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.unidade_raiz_nao_encontrada",
+                "A unidade informada como raiz não foi encontrada ou foi removida")),
+
+        new(InstituicaoErrorCodes.UnidadeRaizNaoEhReitoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.instituicao.unidade_raiz_nao_eh_reitoria",
+                "A unidade informada como raiz da instituição deve ser do tipo reitoria")),
     ];
 }

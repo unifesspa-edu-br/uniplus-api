@@ -49,6 +49,7 @@ builder.Services.AddDomainErrorMapper();
 // HATEOAS Level 1 (ADR-0029/0049) — builders de _links.
 builder.Services.AddSingleton<IResourceLinksBuilder<AreaOrganizacionalDto>, AreaOrganizacionalLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<InstituicaoDto>, InstituicaoLinksBuilder>();
 
 // Criptografia (Idempotency response cipher) + Idempotency-Key (ADR-0027).
 // AddIdempotency injeta o filter de MVC que ativa-se em endpoints com

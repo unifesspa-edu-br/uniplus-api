@@ -37,6 +37,7 @@ public static class OrganizacaoInstitucionalInfrastructureRegistration
 
         services.AddScoped<IAreaOrganizacionalRepository, AreaOrganizacionalRepository>();
         services.AddScoped<IUnidadeRepository, UnidadeRepository>();
+        services.AddScoped<IInstituicaoRepository, InstituicaoRepository>();
 
         // Readers cross-módulo (ADR-0056) + cache invalidators. Scoped porque
         // dependem de ICacheService (Scoped) e DbContext (Scoped).
@@ -44,6 +45,8 @@ public static class OrganizacaoInstitucionalInfrastructureRegistration
         services.AddScoped<IAreaOrganizacionalCacheInvalidator, AreaOrganizacionalCacheInvalidator>();
         services.AddScoped<IUnidadeReader, UnidadeReader>();
         services.AddScoped<IUnidadeCacheInvalidator, UnidadeCacheInvalidator>();
+        services.AddScoped<IInstituicaoReader, InstituicaoReader>();
+        services.AddScoped<IInstituicaoCacheInvalidator, InstituicaoCacheInvalidator>();
 
         return services;
     }
