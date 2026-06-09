@@ -131,6 +131,7 @@ public sealed class UnidadesController : ControllerBase
     /// </summary>
     [HttpPut("admin/unidades/{id:guid}")]
     [Authorize(Roles = "plataforma-admin")]
+    [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
