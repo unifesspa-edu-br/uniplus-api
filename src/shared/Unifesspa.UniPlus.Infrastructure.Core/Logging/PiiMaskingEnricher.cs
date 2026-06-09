@@ -30,7 +30,18 @@ public sealed partial class PiiMaskingEnricher : ILogEventEnricher
         }
 
         return CpfPattern().Replace(texto, static match =>
-            string.Concat("***.***.***-".AsSpan(), match.ValueSpan[^2..]));
+        {
+            Span<char> digitos = stackalloc char[11];
+            int count = 0;
+            foreach (char c in match.ValueSpan)
+            {
+                if (char.IsAsciiDigit(c))
+                    digitos[count++] = c;
+            }
+            return count == 11
+                ? $"***.{new string(digitos[3..6])}.{new string(digitos[6..9])}-**"
+                : "***.***.***-**";
+        });
     }
 
     private static LogEventPropertyValue MascararValor(LogEventPropertyValue valor) => valor switch

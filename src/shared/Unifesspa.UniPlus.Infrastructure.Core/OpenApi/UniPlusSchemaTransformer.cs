@@ -48,7 +48,7 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
         if (string.Equals(propertyName, "cpf", StringComparison.Ordinal))
         {
             schema.Pattern = @"^\d{11}$";
-            schema.Description ??= "CPF (apenas dígitos, sem formatação). PII — sempre mascarar em logs ('***.***.***-XX', ADR-0011).";
+            schema.Description ??= "CPF (apenas dígitos, sem formatação). PII — sempre mascarar em logs ('***.999.999-**', ADR-0011).";
         }
 
         return Task.CompletedTask;
