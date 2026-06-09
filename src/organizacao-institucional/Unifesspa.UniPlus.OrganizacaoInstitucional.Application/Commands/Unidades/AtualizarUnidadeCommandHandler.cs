@@ -56,7 +56,10 @@ public static class AtualizarUnidadeCommandHandler
                 $"Já existe uma Unidade viva com a sigla '{command.Sigla}'."));
         }
 
-        if (!string.Equals(command.Codigo, unidade.Codigo, StringComparison.OrdinalIgnoreCase)
+        // Codigo é case-sensitive (o agregado preserva a caixa e o índice único é
+        // case-sensitive) — compara com Ordinal para que ABC→abc conte como
+        // mudança e dispare a checagem, em vez de estourar no índice (500).
+        if (!string.Equals(command.Codigo.Trim(), unidade.Codigo, StringComparison.Ordinal)
             && await repository.CodigoExisteEntreLivosAsync(command.Codigo, command.Id, cancellationToken).ConfigureAwait(false))
         {
             return Result.Failure(new DomainError(
