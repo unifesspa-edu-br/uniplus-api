@@ -177,8 +177,11 @@ public sealed class Unidade : EntityBase, IAuditableEntity
         DateOnly dataAtual,
         string? motivo)
     {
-        // Nenhuma mudança — sem histórico.
-        if (string.Equals(valorAtual, novoValor, StringComparison.OrdinalIgnoreCase))
+        // Nenhuma mudança — sem histórico. Comparação Ordinal (case-sensitive):
+        // os valores chegam já normalizados (Slug lowercase, Sigla uppercase), e
+        // Codigo/Alias preservam a caixa — então uma troca só na caixa (ABC→abc)
+        // conta como mudança e gera entrada de histórico (CA-04).
+        if (string.Equals(valorAtual, novoValor, StringComparison.Ordinal))
         {
             return;
         }
