@@ -34,14 +34,28 @@ internal sealed class UnidadeRepository : IUnidadeRepository
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Unidade>> ListarAtivasAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Unidade>> ListarPaginadoAsync(
+        Guid? afterId,
+        int take,
+        CancellationToken cancellationToken)
     {
-        List<Unidade> unidades = await _dbContext.Unidades
+        IQueryable<Unidade> query = _dbContext.Unidades
             .AsNoTracking()
-            .OrderBy(u => u.Sigla)
+            .OrderBy(u => u.Id);
+
+        if (afterId is { } cursor)
+        {
+            // Keyset coerente server-side (ADR-0026 + ADR-0032): Npgsql traduz
+            // Guid.CompareTo para o operador uuid > nativo do PG — mesmo
+            // comparador do OrderBy(Id). Com Guid v7, a ordem por Id reflete a
+            // criação temporal.
+            query = query.Where(u => u.Id.CompareTo(cursor) > 0);
+        }
+
+        return await query
+            .Take(take)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        return unidades;
     }
 
     public async Task AdicionarAsync(Unidade unidade, CancellationToken cancellationToken)

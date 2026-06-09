@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
@@ -33,6 +34,8 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Unidades;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class UnidadesController : ControllerBase
 {
+    private const string ResourceTag = "unidades";
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -51,20 +54,34 @@ public sealed class UnidadesController : ControllerBase
     }
 
     /// <summary>
-    /// Lista todas as unidades organizacionais ativas. Sem cursor — catálogo é
-    /// reference data bounded (exceção deliberada a ADR-0026).
+    /// Lista as unidades organizacionais ativas, paginadas por cursor opaco
+    /// (ADR-0026). Navegação via header <c>Link</c> (RFC 5988/8288); cada item
+    /// carrega seu <c>_links.self</c> (ADR-0029 §"Coleção").
     /// </summary>
     [HttpGet("unidades")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "unidade", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<UnidadeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> Listar(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Listar(
+        [FromCursor(ResourceTag)] PageRequest page,
+        CancellationToken cancellationToken)
     {
-        IReadOnlyList<UnidadeDto> unidades = await _queryBus
-            .Send(new ListarUnidadesAtivasQuery(), cancellationToken)
+        ArgumentNullException.ThrowIfNull(page);
+
+        ListarUnidadesAtivasResult resultado = await _queryBus
+            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit), cancellationToken)
             .ConfigureAwait(false);
-        return Ok(unidades);
+
+        // HATEOAS Level 1 (ADR-0029 §"Coleção"): cada item carrega seu _links.self.
+        UnidadeDto[] comLinks = [.. resultado.Items.Select(u => u with { Links = _linksBuilder.Build(u) })];
+
+        return await this.OkPaginatedAsync(
+            comLinks, resultado.ProximoAfterId, page, ResourceTag,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
