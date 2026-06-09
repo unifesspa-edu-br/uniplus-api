@@ -33,7 +33,7 @@ public sealed class CriarUnidadeCommandValidator : AbstractValidator<CriarUnidad
             .WithMessage("Tipo de Unidade inválido.");
 
         RuleFor(x => x.Origem)
-            .Must(o => Enum.IsDefined(o))
+            .Must(o => Enum.IsDefined(o) && o != OrigemUnidade.Nenhum)
             .WithMessage("Origem da Unidade inválida.");
 
         RuleFor(x => x.VigenciaFim)
