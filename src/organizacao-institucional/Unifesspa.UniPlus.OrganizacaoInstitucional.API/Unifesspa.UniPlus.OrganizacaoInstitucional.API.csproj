@@ -12,4 +12,12 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure\Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!-- Coleção Postman versionada junto da API (uma por API, não compartilhada),
+       mas fora do output de publish — sem a exclusão o Web SDK copia os .json
+       como Content e leva os artefatos de teste (e credenciais dev do environment)
+       para a imagem de runtime. -->
+  <ItemGroup>
+    <Content Remove="postman/**" />
+  </ItemGroup>
+
 </Project>
