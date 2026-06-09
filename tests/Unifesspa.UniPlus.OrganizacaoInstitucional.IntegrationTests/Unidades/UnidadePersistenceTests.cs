@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Integração ponta-a-ponta da Story #586 contra Postgres real. Cobre os
@@ -247,6 +248,43 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "FK unidade_superior_id com RESTRICT deve impedir DELETE físico de unidade pai que possui filhos referenciando-a");
+    }
+
+    [Fact(DisplayName = "EhDescendenteAsync percorre a cadeia de superiores e ignora não-relacionados")]
+    public async Task EhDescendenteAsync_PercorreAncestraisContraPostgresReal()
+    {
+        // Hierarquia A → B → C (A superior de B, B superior de C) + D solta.
+        Unidade a = NovaUnidade("hier-a", "HIERA", "HRA001");
+        Unidade b = NovaUnidade("hier-b", "HIERB", "HRB001", a.Id);
+        Unidade c = NovaUnidade("hier-c", "HIERC", "HRC001", b.Id);
+        Unidade d = NovaUnidade("hier-d", "HIERD", "HRD001");
+
+        await using (OrganizacaoInstitucionalDbContext seed = _fixture.CreateDbContext(AdminA))
+        {
+            // Saves sequenciais respeitam a FK auto-referencial (pai antes do filho).
+            seed.Unidades.Add(a);
+            await seed.SaveChangesAsync();
+            seed.Unidades.Add(b);
+            await seed.SaveChangesAsync();
+            seed.Unidades.Add(c);
+            await seed.SaveChangesAsync();
+            seed.Unidades.Add(d);
+            await seed.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repository = new UnidadeRepository(ctx);
+
+        // C é descendente de A (A→B→C): tornar C superior de A formaria ciclo.
+        (await repository.EhDescendenteAsync(c.Id, a.Id, CancellationToken.None)).Should().BeTrue();
+        // B é descendente direto de A.
+        (await repository.EhDescendenteAsync(b.Id, a.Id, CancellationToken.None)).Should().BeTrue();
+        // A não é descendente de C: reapontar A para sob C é válido (sem ciclo).
+        (await repository.EhDescendenteAsync(a.Id, c.Id, CancellationToken.None)).Should().BeFalse();
+        // Igualdade conta como descendente — barra a auto-referência.
+        (await repository.EhDescendenteAsync(a.Id, a.Id, CancellationToken.None)).Should().BeTrue();
+        // D não tem vínculo com A.
+        (await repository.EhDescendenteAsync(d.Id, a.Id, CancellationToken.None)).Should().BeFalse();
     }
 
     // ── Factory helper ───────────────────────────────────────────────────
