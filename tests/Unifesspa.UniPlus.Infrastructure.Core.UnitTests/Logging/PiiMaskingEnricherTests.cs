@@ -395,9 +395,9 @@ public sealed class PiiMaskingEnricherTests
     [InlineData("12345678901", "***.456.789-**")]
     [InlineData("123.45678901", "***.456.789-**")]
     [InlineData("123456789-01", "***.456.789-**")]
-    [InlineData("000.000.000-00", "***.***.***-00")]
-    [InlineData("999.999.999-99", "***.***.***-99")]
-    public void MascararCpf_DadoVariacoesDeFormatacao_DeveRetornarMascaraNoPadraoSerpro(string entrada, string esperado)
+    [InlineData("000.000.000-00", "***.000.000-**")]
+    [InlineData("999.999.999-99", "***.999.999-**")]
+    public void MascararCpf_DadoVariacoesDeFormatacao_DeveRetornarMascaraNoPadraoCGU(string entrada, string esperado)
     {
         PiiMaskingEnricher.MascararCpf(entrada).Should().Be(esperado);
     }
