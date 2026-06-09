@@ -12,9 +12,11 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// pontos, e há colisões de normalização que exigem decisão humana).
 /// </summary>
 /// <remarks>
-/// Formato: <c>^[a-z][a-z0-9-]{1,62}[a-z0-9]$</c> — inicia com letra
-/// minúscula, termina com letra minúscula ou dígito, comprimento 3-64 chars.
-/// O valor normalizado é armazenado em lowercase, sem espaços ou acentos.
+/// Formato: <c>^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$</c> — inicia com letra
+/// minúscula, segmentos separados por hífen único (sem hífens consecutivos nem
+/// nas pontas), termina com letra minúscula ou dígito. O comprimento (3-64) é
+/// validado à parte em <see cref="From"/>. O valor normalizado é armazenado em
+/// lowercase, sem espaços ou acentos.
 /// </remarks>
 public readonly partial record struct Slug
 {
@@ -57,6 +59,6 @@ public readonly partial record struct Slug
 
     public override string ToString() => Valor ?? string.Empty;
 
-    [GeneratedRegex(@"^[a-z][a-z0-9-]{1,62}[a-z0-9]$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
     private static partial Regex FormatoValido();
 }
