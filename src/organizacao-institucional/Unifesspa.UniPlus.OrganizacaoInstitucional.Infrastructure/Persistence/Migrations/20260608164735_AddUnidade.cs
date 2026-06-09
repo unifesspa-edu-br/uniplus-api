@@ -114,11 +114,11 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "unidade_identificador_historico");
-
-            migrationBuilder.DropTable(
-                name: "unidade");
+            // Forward-only per ADR-0054 §J: nova migration "Reverte..." é o
+            // mecanismo canônico de revert. Dropar as tabelas aqui induziria
+            // um `database update <baseline>` a destruir unidade/historico em
+            // staging/prod sem audit trail — caminho proibido.
+            throw new NotSupportedException("Forward-only migration per ADR-0054 §J.");
         }
     }
 }
