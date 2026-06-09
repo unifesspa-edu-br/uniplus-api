@@ -235,6 +235,31 @@ public sealed class UnidadeTests
             h.VigenciaFim == null);
     }
 
+    [Fact(DisplayName = "Atualizar troca de Codigo só na caixa (ABC→abc) registra histórico")]
+    public void Atualizar_ComCodigoMudandoApenasCaixa_AdicionaEntradaDeHistorico()
+    {
+        Unidade unidade = Unidade.Criar(
+            "Centro de Processos Seletivos", null, SlugValido, "CEPS", "ABC", null,
+            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus).Value!;
+        DateOnly dataAtual = DataInicio.AddMonths(1);
+
+        Result resultado = unidade.Atualizar(
+            unidade.Nome, null, SlugValido, "CEPS", "abc", null,
+            TipoUnidade.Centro, false, null, dataAtual, "Correção de caixa");
+
+        resultado.IsSuccess.Should().BeTrue();
+        unidade.Codigo.Should().Be("abc");
+
+        // Entrada antiga "ABC" fechada na data da mudança.
+        unidade.Historico.Should().Contain(h =>
+            h.TipoIdentificador == TipoIdentificador.Codigo &&
+            h.Valor == "ABC" && h.VigenciaFim == dataAtual);
+        // Nova entrada "abc" aberta.
+        unidade.Historico.Should().Contain(h =>
+            h.TipoIdentificador == TipoIdentificador.Codigo &&
+            h.Valor == "abc" && h.VigenciaFim == null);
+    }
+
     [Fact(DisplayName = "Sigla é normalizada para uppercase no Criar")]
     public void Criar_SiglaEhNormalizadaParaUppercase()
     {
