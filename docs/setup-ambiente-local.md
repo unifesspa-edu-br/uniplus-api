@@ -44,6 +44,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.ym
 | Keycloak 26.5 | 8080 | http://localhost:8080 | `admin` / `admin` |
 | Seleção API | 5202 | http://localhost:5202/health | — |
 | Ingresso API | 5262 | http://localhost:5262/health | — |
+| Organização API | 5263 | http://localhost:5263/health | — |
 
 ## Databases PostgreSQL
 
