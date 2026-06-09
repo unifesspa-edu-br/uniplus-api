@@ -27,6 +27,13 @@ internal sealed class UnidadeRepository : IUnidadeRepository
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
+    public Task<Unidade?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return _dbContext.Unidades
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Unidade>> ListarAtivasAsync(CancellationToken cancellationToken)
     {
         List<Unidade> unidades = await _dbContext.Unidades
