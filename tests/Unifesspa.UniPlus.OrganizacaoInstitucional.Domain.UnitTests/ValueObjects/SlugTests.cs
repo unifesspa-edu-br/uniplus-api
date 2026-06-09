@@ -59,6 +59,7 @@ public sealed class SlugTests
     [InlineData("CEPS")]           // maiúsculas
     [InlineData("ceps-")]          // termina com hífen
     [InlineData("ceps unifesspa")] // espaço
+    [InlineData("ceps--unifesspa")] // hífens consecutivos
     public void From_ComFormatoInvalido_DeveRetornarSlugFormatoInvalido(string valor)
     {
         Result<Slug> resultado = Slug.From(valor);
