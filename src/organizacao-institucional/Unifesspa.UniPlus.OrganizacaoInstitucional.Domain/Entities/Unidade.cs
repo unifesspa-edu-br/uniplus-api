@@ -183,8 +183,8 @@ public sealed class Unidade : EntityBase, IAuditableEntity
             return;
         }
 
-        // Caso especial: Alias pode ir de null para valor ou vice-versa.
-        bool valorAtualNulo = valorAtual is null;
+        // Caso especial: Alias pode ir de null para valor ou vice-versa — só
+        // abrimos nova entrada quando o novo valor é não nulo.
         bool novoValorNulo = novoValor is null;
 
         // Fecha entrada aberta do identificador.
