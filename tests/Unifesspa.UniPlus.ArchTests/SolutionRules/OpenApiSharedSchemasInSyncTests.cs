@@ -9,7 +9,7 @@ using TestSupport;
 
 /// <summary>
 /// Fitness function da ADR-0035: schemas duplicados entre baselines OpenAPI
-/// dos módulos (<c>contracts/openapi.{selecao,ingresso}.json</c>) devem ser
+/// dos módulos (<c>contracts/openapi.{selecao,ingresso,organizacao}.json</c>) devem ser
 /// byte-equivalentes. <c>Microsoft.AspNetCore.OpenApi</c> 10 emite cada
 /// documento independentemente — então é possível regerar um baseline e
 /// esquecer o outro, deixando o contrato cross-module inconsistente sem
@@ -36,6 +36,7 @@ public sealed class OpenApiSharedSchemasInSyncTests
     [
         Path.Combine("contracts", "openapi.selecao.json"),
         Path.Combine("contracts", "openapi.ingresso.json"),
+        Path.Combine("contracts", "openapi.organizacao.json"),
     ];
 
     private static readonly JsonSerializerOptions CanonicalOptions = new()
@@ -48,13 +49,13 @@ public sealed class OpenApiSharedSchemasInSyncTests
     {
         string solutionRoot = SolutionRootLocator.Locate();
         Dictionary<string, JsonElement>[] schemasByModule =
-        [
-            LoadSchemas(Path.Combine(solutionRoot, BaselinePaths[0])),
-            LoadSchemas(Path.Combine(solutionRoot, BaselinePaths[1])),
-        ];
+            [.. BaselinePaths.Select(p => LoadSchemas(Path.Combine(solutionRoot, p)))];
 
-        IEnumerable<string> sharedNames = schemasByModule[0].Keys
-            .Intersect(schemasByModule[1].Keys, StringComparer.Ordinal)
+        IEnumerable<string> sharedNames = schemasByModule
+            .Skip(1)
+            .Aggregate(
+                schemasByModule[0].Keys.AsEnumerable(),
+                (acc, schemas) => acc.Intersect(schemas.Keys, StringComparer.Ordinal))
             .OrderBy(static n => n, StringComparer.Ordinal);
 
         sharedNames.Should().NotBeEmpty(
@@ -64,13 +65,15 @@ public sealed class OpenApiSharedSchemasInSyncTests
 
         foreach (string name in sharedNames)
         {
-            string canonicalSelecao = SerializeCanonical(schemasByModule[0][name]);
-            string canonicalIngresso = SerializeCanonical(schemasByModule[1][name]);
+            string canonicalReferencia = SerializeCanonical(schemasByModule[0][name]);
+            bool divergiu = schemasByModule
+                .Skip(1)
+                .Any(schemas => !string.Equals(canonicalReferencia, SerializeCanonical(schemas[name]), StringComparison.Ordinal));
 
-            if (!string.Equals(canonicalSelecao, canonicalIngresso, StringComparison.Ordinal))
+            if (divergiu)
             {
                 divergencias.Add(
-                    $"Schema '{name}' diverge entre selecao e ingresso. "
+                    $"Schema '{name}' diverge entre baselines OpenAPI. "
                     + "Para sincronizar, rode "
                     + "`UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.{modulo}.IntegrationTests --filter \"FullyQualifiedName~SpecRuntime\"` "
                     + "no módulo stale e confira o diff em contracts/.");

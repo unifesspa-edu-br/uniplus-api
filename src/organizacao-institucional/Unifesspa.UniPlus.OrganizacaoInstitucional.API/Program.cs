@@ -47,7 +47,6 @@ builder.Services.AddSingleton<IDomainErrorRegistration, OrganizacaoDomainErrorRe
 builder.Services.AddDomainErrorMapper();
 
 // HATEOAS Level 1 (ADR-0029/0049) — builders de _links.
-builder.Services.AddSingleton<IResourceLinksBuilder<AreaOrganizacionalDto>, AreaOrganizacionalLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<InstituicaoDto>, InstituicaoLinksBuilder>();
 
