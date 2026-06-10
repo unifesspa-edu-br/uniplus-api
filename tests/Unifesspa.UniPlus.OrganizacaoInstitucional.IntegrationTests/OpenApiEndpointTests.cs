@@ -81,6 +81,12 @@ public sealed class OpenApiEndpointTests : IClassFixture<OrganizacaoApiFactory>
 
     private static string ResolveRepoPath(string relative)
     {
+        // Caminho deve ser relativo à raiz do repositório — um caminho enraizado
+        // faria Path.Combine descartar `current` silenciosamente.
+        ArgumentException.ThrowIfNullOrWhiteSpace(relative);
+        if (Path.IsPathRooted(relative))
+            throw new ArgumentException("Caminho deve ser relativo à raiz do repositório.", nameof(relative));
+
         string? current = AppContext.BaseDirectory;
         while (current is not null && !File.Exists(Path.Combine(current, "UniPlus.slnx")))
             current = Path.GetDirectoryName(current);

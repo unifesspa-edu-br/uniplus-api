@@ -19,7 +19,7 @@ using TestSupport;
 /// Schemas vindos do shared kernel (<c>ProblemDetails</c>,
 /// <c>AuthenticatedUserResponse</c>, <c>UserProfileResponse</c>) são os
 /// candidatos óbvios. A regra captura QUALQUER schema com mesmo nome em
-/// ambos os documentos — extensível por construção: se o time mover mais
+/// dois ou mais documentos — extensível por construção: se o time mover mais
 /// tipos para shared, eles passam automaticamente a ser fitness-checked.
 ///
 /// Quando este teste falhar:
@@ -32,11 +32,13 @@ using TestSupport;
 /// </remarks>
 public sealed class OpenApiSharedSchemasInSyncTests
 {
-    private static readonly string[] BaselinePaths =
+    private const string ContractsDir = "contracts";
+
+    private static readonly string[] BaselineFileNames =
     [
-        Path.Combine("contracts", "openapi.selecao.json"),
-        Path.Combine("contracts", "openapi.ingresso.json"),
-        Path.Combine("contracts", "openapi.organizacao.json"),
+        "openapi.selecao.json",
+        "openapi.ingresso.json",
+        "openapi.organizacao.json",
     ];
 
     private static readonly JsonSerializerOptions CanonicalOptions = new()
@@ -49,14 +51,20 @@ public sealed class OpenApiSharedSchemasInSyncTests
     {
         string solutionRoot = SolutionRootLocator.Locate();
         Dictionary<string, JsonElement>[] schemasByModule =
-            [.. BaselinePaths.Select(p => LoadSchemas(Path.Combine(solutionRoot, p)))];
+            [.. BaselineFileNames.Select(f => LoadSchemas(Path.Combine(solutionRoot, ContractsDir, f)))];
 
-        IEnumerable<string> sharedNames = schemasByModule
-            .Skip(1)
-            .Aggregate(
-                schemasByModule[0].Keys.AsEnumerable(),
-                (acc, schemas) => acc.Intersect(schemas.Keys, StringComparer.Ordinal))
-            .OrderBy(static n => n, StringComparer.Ordinal);
+        // Pairwise, NÃO interseção de todos: um schema compartilhado por
+        // QUALQUER par de módulos deve ser byte-equivalente, mesmo que ausente
+        // num terceiro. Interseção total deixaria escapar um DTO usado só por,
+        // p.ex., Seleção e Ingresso (ausente em Organização) — enfraquecendo a
+        // guarda da ADR-0035. Critério: nome presente em ≥2 módulos.
+        IReadOnlyList<string> sharedNames = schemasByModule
+            .SelectMany(static schemas => schemas.Keys)
+            .GroupBy(static name => name, StringComparer.Ordinal)
+            .Where(static grupo => grupo.Count() > 1)
+            .Select(static grupo => grupo.Key)
+            .OrderBy(static n => n, StringComparer.Ordinal)
+            .ToList();
 
         sharedNames.Should().NotBeEmpty(
             "ao menos `ProblemDetails` é compartilhado entre os módulos via ADR-0023; ausência aqui sugere regressão da geração OpenAPI.");
@@ -65,10 +73,13 @@ public sealed class OpenApiSharedSchemasInSyncTests
 
         foreach (string name in sharedNames)
         {
-            string canonicalReferencia = SerializeCanonical(schemasByModule[0][name]);
+            // Compara TODAS as ocorrências do schema (nos módulos que o têm):
+            // mais de uma forma canônica distinta = divergência.
             bool divergiu = schemasByModule
-                .Skip(1)
-                .Any(schemas => !string.Equals(canonicalReferencia, SerializeCanonical(schemas[name]), StringComparison.Ordinal));
+                .Where(schemas => schemas.ContainsKey(name))
+                .Select(schemas => SerializeCanonical(schemas[name]))
+                .Distinct(StringComparer.Ordinal)
+                .Count() > 1;
 
             if (divergiu)
             {
