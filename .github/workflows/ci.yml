@@ -78,7 +78,9 @@ jobs:
           npx --yes @stoplight/spectral-cli@6.15.0 lint \
             --ruleset tools/spectral/.spectral.yaml \
             --fail-severity=error \
-            contracts/openapi.selecao.json contracts/openapi.ingresso.json
+            contracts/openapi.selecao.json \
+            contracts/openapi.ingresso.json \
+            contracts/openapi.organizacao.json
 
   forbidden-deps:
     name: Forbidden dependencies

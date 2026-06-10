@@ -11,7 +11,7 @@
 #
 # Uso:
 #   npx @stoplight/spectral-cli lint --ruleset tools/spectral/.spectral.yaml \
-#     contracts/openapi.selecao.json contracts/openapi.ingresso.json
+#     contracts/openapi.selecao.json contracts/openapi.ingresso.json contracts/openapi.organizacao.json
 #
 # Severidades: error (bloqueia CI), warn (visibilidade), info (informativo).
 
