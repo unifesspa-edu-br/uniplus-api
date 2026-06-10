@@ -9,17 +9,19 @@
 #   2. obtain_admin_token                   — ROPC contra master realm
 #   3. configure_admin_cli_for_ropc         — uniplus-profile + lightweight off
 #                                             (libera smoke tests via curl)
-#   4. reset_test_user_passwords            — 4 users de teste, senha não-temporária
-#   5. configure_ldap_federation_if_available — User Federation contra openldap
+#   4. ensure_configuracao_web_client       — client OIDC do app Configuração
+#                                             para ambientes já provisionados
+#   5. reset_test_user_passwords            — 4 users de teste, senha não-temporária
+#   6. configure_ldap_federation_if_available — User Federation contra openldap
 #                                             sintético
-#   6. setup-cpf-matcher-flow.sh            — clona flow built-in,
+#   7. setup-cpf-matcher-flow.sh            — clona flow built-in,
 #                                             insere uniplus-cpf-matcher,
 #                                             aponta IdPs gov.br + govbr-mock
 #                                             [delegado para script standalone]
-#   7. setup-govbr-mock.sh                  — IdP mock para validar gov.br E2E
+#   8. setup-govbr-mock.sh                  — IdP mock para validar gov.br E2E
 #                                             em ambiente local (sub=cpf)
 #                                             [SKIP_GOVBR_MOCK=true desabilita]
-#   8. print_smoke_test_hint                — exemplo de uso pós-setup
+#   9. print_smoke_test_hint                — exemplo de uso pós-setup
 #
 # Em DEV o "Login gov.br" efetivo é o realm fake `govbr-mock` no mesmo
 # Keycloak. Em HML/PRD o IdP `govbr` aponta para o gov.br staging/produção
@@ -64,6 +66,8 @@ KC_ADMIN_PASS="${KC_ADMIN_PASS:-admin}"
 TEST_PASSWORD="${TEST_PASSWORD:-Changeme!123}"
 
 readonly TEST_USERS=("admin" "gestor" "avaliador" "candidato")
+readonly CONFIGURACAO_WEB_CLIENT_ID="configuracao-web"
+readonly CONFIGURACAO_WEB_ORIGIN="http://localhost:4203"
 
 LDAP_HOST="${LDAP_HOST:-openldap}"
 LDAP_PORT="${LDAP_PORT:-389}"
@@ -161,7 +165,128 @@ configure_admin_cli_for_ropc() {
     ok "lightweight access token desligado em admin-cli"
 }
 
-# ---- Etapa 4 — Senhas dos usuários de teste --------------------------------
+# ---- Etapa 4 — Client web do app Configuração ------------------------------
+
+build_configuracao_web_client_body() {
+    jq -nc \
+        --arg clientId "$CONFIGURACAO_WEB_CLIENT_ID" \
+        --arg origin "$CONFIGURACAO_WEB_ORIGIN" \
+        '{
+            clientId: $clientId,
+            name: $clientId,
+            description: "App Configuração (Angular)",
+            rootUrl: "",
+            adminUrl: "",
+            baseUrl: "",
+            surrogateAuthRequired: false,
+            enabled: true,
+            alwaysDisplayInConsole: false,
+            clientAuthenticatorType: "client-secret",
+            redirectUris: [$origin + "/*"],
+            webOrigins: [$origin],
+            notBefore: 0,
+            bearerOnly: false,
+            consentRequired: false,
+            standardFlowEnabled: true,
+            implicitFlowEnabled: false,
+            directAccessGrantsEnabled: false,
+            serviceAccountsEnabled: false,
+            publicClient: true,
+            frontchannelLogout: true,
+            protocol: "openid-connect",
+            attributes: {
+                "logout.confirmation.enabled": "false",
+                "realm_client": "false",
+                "oidc.ciba.grant.enabled": "false",
+                "backchannel.logout.session.required": "true",
+                "standard.token.exchange.enabled": "false",
+                "frontchannel.logout.session.required": "true",
+                "post.logout.redirect.uris": "+",
+                "display.on.consent.screen": "false",
+                "oauth2.device.authorization.grant.enabled": "false",
+                "backchannel.logout.revoke.offline.tokens": "false",
+                "dpop.bound.access.tokens": "false",
+                "pkce.code.challenge.method": "S256"
+            },
+            authenticationFlowBindingOverrides: {},
+            fullScopeAllowed: false,
+            nodeReRegistrationTimeout: -1,
+            defaultClientScopes: [
+                "web-origins",
+                "acr",
+                "uniplus-profile",
+                "profile",
+                "roles",
+                "basic",
+                "email"
+            ],
+            optionalClientScopes: [
+                "address",
+                "phone",
+                "organization",
+                "offline_access",
+                "microprofile-jwt"
+            ]
+        }'
+}
+
+ensure_configuracao_web_client() {
+    log "Garantindo client OIDC '$CONFIGURACAO_WEB_CLIENT_ID'"
+
+    local body existing_id current patched role_payload has_role_mapping
+    body=$(build_configuracao_web_client_body)
+    existing_id=$(auth "$API/clients?clientId=$CONFIGURACAO_WEB_CLIENT_ID" | jq -r '.[0].id // empty')
+
+    if [ -n "$existing_id" ]; then
+        current=$(auth "$API/clients/$existing_id")
+        patched=$(echo "$current" | jq --argjson new "$body" '
+            .name = $new.name
+            | .description = $new.description
+            | .rootUrl = $new.rootUrl
+            | .adminUrl = $new.adminUrl
+            | .baseUrl = $new.baseUrl
+            | .enabled = $new.enabled
+            | .clientAuthenticatorType = $new.clientAuthenticatorType
+            | .redirectUris = $new.redirectUris
+            | .webOrigins = $new.webOrigins
+            | .bearerOnly = $new.bearerOnly
+            | .consentRequired = $new.consentRequired
+            | .standardFlowEnabled = $new.standardFlowEnabled
+            | .implicitFlowEnabled = $new.implicitFlowEnabled
+            | .directAccessGrantsEnabled = $new.directAccessGrantsEnabled
+            | .serviceAccountsEnabled = $new.serviceAccountsEnabled
+            | .publicClient = $new.publicClient
+            | .frontchannelLogout = $new.frontchannelLogout
+            | .protocol = $new.protocol
+            | .attributes = ((.attributes // {}) + $new.attributes)
+            | .authenticationFlowBindingOverrides = $new.authenticationFlowBindingOverrides
+            | .fullScopeAllowed = $new.fullScopeAllowed
+            | .nodeReRegistrationTimeout = $new.nodeReRegistrationTimeout
+            | .defaultClientScopes = $new.defaultClientScopes
+            | .optionalClientScopes = $new.optionalClientScopes
+        ')
+        auth_json -X PUT "$API/clients/$existing_id" -d "$patched" >/dev/null
+        ok "client '$CONFIGURACAO_WEB_CLIENT_ID' atualizado"
+    else
+        auth_json -X POST "$API/clients" -d "$body" >/dev/null
+        existing_id=$(auth "$API/clients?clientId=$CONFIGURACAO_WEB_CLIENT_ID" | jq -r '.[0].id // empty')
+        [ -n "$existing_id" ] || fail "Client '$CONFIGURACAO_WEB_CLIENT_ID' não foi criado"
+        ok "client '$CONFIGURACAO_WEB_CLIENT_ID' criado"
+    fi
+
+    has_role_mapping=$(auth "$API/clients/$existing_id/scope-mappings/realm" \
+        | jq -r '.[] | select(.name=="plataforma-admin") | .name' | head -n 1)
+    if [ "$has_role_mapping" = "plataforma-admin" ]; then
+        ok "scope mapping 'plataforma-admin' já presente em '$CONFIGURACAO_WEB_CLIENT_ID'"
+        return
+    fi
+
+    role_payload=$(auth "$API/roles/plataforma-admin" | jq '[.]')
+    auth_json -X POST "$API/clients/$existing_id/scope-mappings/realm" -d "$role_payload" >/dev/null
+    ok "scope mapping 'plataforma-admin' adicionado a '$CONFIGURACAO_WEB_CLIENT_ID'"
+}
+
+# ---- Etapa 5 — Senhas dos usuários de teste --------------------------------
 
 reset_test_user_passwords() {
     log "Resetando senha dos usuários de teste como não-temporária (libera ROPC)"
@@ -455,6 +580,7 @@ main() {
     wait_for_keycloak
     obtain_admin_token
     configure_admin_cli_for_ropc
+    ensure_configuracao_web_client
     reset_test_user_passwords
     configure_ldap_federation_if_available
     configure_first_broker_login_with_cpf
