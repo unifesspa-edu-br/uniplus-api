@@ -245,8 +245,8 @@ public sealed class CrossModuleReadCarveOutTests
             typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly,
 
             // OrganizacaoInstitucional
-            typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.AreaOrganizacional).Assembly,
-            typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.AreasOrganizacionais.CriarAreaOrganizacionalCommand).Assembly,
+            typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Unidade).Assembly,
+            typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades.CriarUnidadeCommand).Assembly,
             typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly,
 
