@@ -73,7 +73,5 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         // Hierarquia: índice para busca de subordinadas
         builder.HasIndex(u => u.UnidadeSuperiorId)
             .HasDatabaseName("ix_unidade_superior_id");
-
-        builder.HasQueryFilter(u => !u.IsDeleted);
     }
 }

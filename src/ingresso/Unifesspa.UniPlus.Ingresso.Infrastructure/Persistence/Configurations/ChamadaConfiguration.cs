@@ -22,7 +22,5 @@ public sealed class ChamadaConfiguration : IEntityTypeConfiguration<Chamada>
         builder.HasMany(c => c.Convocacoes).WithOne().HasForeignKey(cv => cv.ChamadaId);
 
         builder.HasIndex(c => new { c.EditalId, c.Numero }).IsUnique();
-
-        builder.HasQueryFilter(c => !c.IsDeleted);
     }
 }

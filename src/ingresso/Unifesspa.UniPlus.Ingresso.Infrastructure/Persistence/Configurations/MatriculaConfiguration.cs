@@ -19,7 +19,5 @@ public sealed class MatriculaConfiguration : IEntityTypeConfiguration<Matricula>
         builder.Property(m => m.Observacoes).HasMaxLength(2000);
 
         builder.HasMany(m => m.Documentos).WithOne().HasForeignKey(d => d.MatriculaId);
-
-        builder.HasQueryFilter(m => !m.IsDeleted);
     }
 }

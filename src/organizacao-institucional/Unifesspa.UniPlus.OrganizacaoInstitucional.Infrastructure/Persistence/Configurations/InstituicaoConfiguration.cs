@@ -71,7 +71,5 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ix_instituicao_singleton_vivo");
-
-        builder.HasQueryFilter(i => !i.IsDeleted);
     }
 }

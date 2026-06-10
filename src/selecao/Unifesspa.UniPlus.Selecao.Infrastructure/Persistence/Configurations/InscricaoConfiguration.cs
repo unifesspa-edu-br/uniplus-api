@@ -22,7 +22,5 @@ public sealed class InscricaoConfiguration : IEntityTypeConfiguration<Inscricao>
 
         builder.HasIndex(i => new { i.CandidatoId, i.EditalId });
         builder.HasIndex(i => i.NumeroInscricao).IsUnique();
-
-        builder.HasQueryFilter(i => !i.IsDeleted);
     }
 }

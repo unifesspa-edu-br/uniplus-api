@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// <see cref="DbContext"/> do módulo Configuracao — banco
@@ -31,6 +32,9 @@ public sealed class ConfiguracaoDbContext : DbContext, IUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ConfiguracaoDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);
+        // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
+        // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
+        modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
     }
 

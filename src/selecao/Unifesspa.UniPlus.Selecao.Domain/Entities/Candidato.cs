@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
-public sealed class Candidato : EntityBase
+public sealed class Candidato : SoftDeletableEntity
 {
     public Cpf Cpf { get; private set; } = null!;
     public NomeSocial NomeSocial { get; private set; } = null!;

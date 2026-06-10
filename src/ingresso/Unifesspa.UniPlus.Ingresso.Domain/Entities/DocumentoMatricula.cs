@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Ingresso.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class DocumentoMatricula : EntityBase
+public sealed class DocumentoMatricula : SoftDeletableEntity
 {
     public Guid MatriculaId { get; private set; }
     public string TipoDocumento { get; private set; } = string.Empty;

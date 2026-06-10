@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// Unidade referenciada é viva e do tipo reitoria é responsabilidade do handler
 /// (via repositório); esta entidade recebe o Id já validado.</para>
 /// </remarks>
-public sealed class Instituicao : EntityBase, IAuditableEntity
+public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
 {
     private const int CodigoEmecMaxLength = 20;
     private const int NomeMaxLength = 250;

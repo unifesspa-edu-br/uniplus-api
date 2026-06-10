@@ -12,9 +12,11 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 /// <remarks>
 /// Entidade interna ao agregado <see cref="Unidade"/>; criada apenas por
 /// métodos do agregado. Construtor privado mantém o invariante.
-/// Soft-delete herdado de <see cref="EntityBase"/> não se aplica: o histórico
-/// é imutável (append-only). Entradas fechadas não são deletadas — mantidas
-/// para auditoria.
+/// Não implementa soft-delete: deriva de <see cref="EntityBase"/> (não de
+/// <c>SoftDeletableEntity</c>), portanto não carrega as colunas
+/// is_deleted/deleted_at/deleted_by. O histórico é imutável (append-only):
+/// entradas fechadas não são deletadas — a vigência é encerrada por
+/// <see cref="VigenciaFim"/> e mantida para auditoria.
 /// </remarks>
 public sealed class UnidadeIdentificadorHistorico : EntityBase
 {

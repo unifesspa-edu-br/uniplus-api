@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// <c>AreaOrganizacional</c> NÃO é "área-scoped"; ela é a própria dimensão de
 /// governança. Não tem <c>Proprietario</c> nem <c>AreasDeInteresse</c>.</para>
 /// </remarks>
-public sealed partial class AreaOrganizacional : EntityBase, IAuditableEntity
+public sealed partial class AreaOrganizacional : SoftDeletableEntity, IAuditableEntity
 {
     private const int NomeMaxLength = 120;
     private const int NomeMinLength = 2;

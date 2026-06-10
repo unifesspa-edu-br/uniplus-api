@@ -122,8 +122,6 @@ internal sealed class ObrigatoriedadeLegalConfiguration()
         // é responsabilidade do domínio na hora da escrita.
         builder.Ignore(o => o.AreasDeInteresse);
 
-        builder.HasQueryFilter(o => !o.IsDeleted);
-
         // CA-02 — UNIQUE parcial sobre Hash. Soft-deletes não disputam o slot,
         // permitindo recriar uma regra com hash idêntico após a desativação
         // da anterior (cenário de versionamento canônico do ADR-0058).

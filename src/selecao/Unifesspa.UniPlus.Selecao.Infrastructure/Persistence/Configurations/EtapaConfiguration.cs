@@ -24,7 +24,5 @@ public sealed class EtapaConfiguration : IEntityTypeConfiguration<Etapa>
         builder.Property(e => e.Peso).HasPrecision(5, 2).IsRequired();
         builder.Property(e => e.Ordem).IsRequired();
         builder.Property(e => e.NotaMinima).HasPrecision(5, 2);
-
-        builder.HasQueryFilter(e => !e.IsDeleted);
     }
 }

@@ -36,10 +36,5 @@ internal sealed class AreaOrganizacionalConfiguration : IEntityTypeConfiguration
         // do IUserContext. EntityBase.CreatedAt/UpdatedAt mantidos pela EntityBase.
         builder.Property(a => a.CreatedBy).HasMaxLength(255);
         builder.Property(a => a.UpdatedBy).HasMaxLength(255);
-
-        // Soft delete query filter (ADR — pattern Uni+). Reader e listagens
-        // públicas operam apenas sobre não-deletadas; auditoria histórica
-        // bypassa o filter via IgnoreQueryFilters.
-        builder.HasQueryFilter(a => !a.IsDeleted);
     }
 }

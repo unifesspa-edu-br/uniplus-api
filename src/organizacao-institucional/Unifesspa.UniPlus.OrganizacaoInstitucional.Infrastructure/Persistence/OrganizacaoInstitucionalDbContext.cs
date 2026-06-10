@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 /// <summary>
@@ -41,6 +42,10 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrganizacaoInstitucionalDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);
+        // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
+        // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
+        // UnidadeIdentificadorHistorico não implementa ISoftDeletable → não filtra.
+        modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
     }
 

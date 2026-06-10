@@ -23,7 +23,5 @@ public sealed class ConvocacaoConfiguration : IEntityTypeConfiguration<Convocaca
         builder.Property(c => c.Status).HasConversion<int>().IsRequired();
         builder.Property(c => c.Posicao).IsRequired();
         builder.Property(c => c.CodigoCurso).HasMaxLength(50).IsRequired();
-
-        builder.HasQueryFilter(c => !c.IsDeleted);
     }
 }

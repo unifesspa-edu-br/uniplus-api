@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 /// <para>Detecção de ciclo na hierarquia é responsabilidade do handler (via
 /// repositório); este agregado recebe o ID do superior já validado.</para>
 /// </remarks>
-public sealed class Unidade : EntityBase, IAuditableEntity
+public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 {
     private const int NomeMaxLength = 250;
     private const int NomeMinLength = 2;

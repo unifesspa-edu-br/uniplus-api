@@ -5,7 +5,7 @@ using Events;
 using ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class Convocacao : EntityBase
+public sealed class Convocacao : SoftDeletableEntity
 {
     public Guid ChamadaId { get; private set; }
     public Guid InscricaoId { get; private set; }

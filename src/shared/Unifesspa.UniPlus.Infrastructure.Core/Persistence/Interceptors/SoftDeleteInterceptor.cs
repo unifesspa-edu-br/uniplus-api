@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Kernel.Domain.Entities;
+using Kernel.Domain.Interfaces;
 
 // LGPD audit trail (issue #127): converte DELETE em UPDATE preservando o
 // identificador do usuário responsável em DeletedBy. Em requests autenticados,
@@ -64,8 +64,12 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
         string deletedBy = ResolveDeletedBy();
         DateTimeOffset deletedAt = _timeProvider.GetUtcNow();
 
-        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<EntityBase> entry
-            in context.ChangeTracker.Entries<EntityBase>())
+        // Opt-in por interface (issue #629): só entidades ISoftDeletable são
+        // convertidas em soft-delete. Entidades que não implementam a interface
+        // (ex.: históricos append-only como UnidadeIdentificadorHistorico) sofrem
+        // hard-delete físico — coerente com sua semântica imutável.
+        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<ISoftDeletable> entry
+            in context.ChangeTracker.Entries<ISoftDeletable>())
         {
             if (entry.State == EntityState.Deleted)
             {

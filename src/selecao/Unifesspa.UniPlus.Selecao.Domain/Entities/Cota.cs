@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class Cota : EntityBase
+public sealed class Cota : SoftDeletableEntity
 {
     public Guid EditalId { get; private set; }
     public ModalidadeConcorrencia Modalidade { get; private set; }

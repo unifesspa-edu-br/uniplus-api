@@ -46,7 +46,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     "CA1054:URI-like parameters should not be strings",
     Justification = "Pareado com a justificativa de CA1056 acima — factory aceita string para "
         + "preservar fidelidade do payload textual da citação normativa.")]
-public sealed class ObrigatoriedadeLegal : EntityBase, IAuditableEntity, IAreaScopedEntity
+public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity, IAreaScopedEntity
 {
     /// <summary>
     /// Valor sentinela aceito em <see cref="TipoEditalCodigo"/> para regras
