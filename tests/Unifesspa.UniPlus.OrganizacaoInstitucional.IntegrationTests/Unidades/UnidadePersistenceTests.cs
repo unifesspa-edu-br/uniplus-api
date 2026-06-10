@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
@@ -65,6 +66,68 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             h.TipoIdentificador == TipoIdentificador.Sigla && h.Valor == "CEPS-INS" && h.VigenciaFim == null);
         persistida.Historico.Should().Contain(h =>
             h.TipoIdentificador == TipoIdentificador.Codigo && h.Valor == "INS001" && h.VigenciaFim == null);
+    }
+
+    [Fact(DisplayName = "Update de identificador fecha histórico atual e insere nova entrada")]
+    public async Task Update_Identificador_InsereNovaEntradaHistorico()
+    {
+        Unidade unidade = NovaUnidade(
+            "hist-update",
+            "HUPD",
+            "HUP001",
+            alias: "Alias original");
+
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Unidades.Add(unidade);
+            await ctx.SaveChangesAsync();
+        }
+
+        DateOnly dataMudanca = DataInicio.AddDays(10);
+
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            var repository = new UnidadeRepository(ctx);
+            Unidade tracked = (await repository.ObterPorIdAsync(unidade.Id, CancellationToken.None))!;
+
+            Result atualizarResult = tracked.Atualizar(
+                tracked.Nome,
+                "Alias atualizado",
+                tracked.Slug,
+                tracked.Sigla,
+                tracked.Codigo,
+                tracked.UnidadeSuperiorId,
+                tracked.Tipo,
+                tracked.UnidadeAcademica,
+                tracked.VigenciaFim,
+                dataMudanca,
+                "ajuste de alias");
+
+            atualizarResult.IsSuccess.Should().BeTrue();
+
+            Func<Task> act = async () => await ctx.SaveChangesAsync();
+
+            await act.Should().NotThrowAsync(
+                "a nova entrada de histórico deve ser inserida, não tratada como update de linha existente");
+        }
+
+        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+
+        Unidade persistida = await readCtx.Unidades.SingleAsync(u => u.Id == unidade.Id);
+        persistida.Alias.Should().Be("Alias atualizado");
+        persistida.UpdatedBy.Should().Be(AdminB);
+
+        List<UnidadeIdentificadorHistorico> historicoAlias = await readCtx.UnidadesIdentificadoresHistorico
+            .Where(h => h.UnidadeId == unidade.Id && h.TipoIdentificador == TipoIdentificador.Alias)
+            .OrderBy(h => h.VigenciaInicio)
+            .ToListAsync();
+
+        historicoAlias.Should().HaveCount(2);
+        historicoAlias[0].Valor.Should().Be("Alias original");
+        historicoAlias[0].VigenciaFim.Should().Be(dataMudanca);
+        historicoAlias[1].Valor.Should().Be("Alias atualizado");
+        historicoAlias[1].VigenciaFim.Should().BeNull();
+        historicoAlias[1].MotivoMudanca.Should().Be("ajuste de alias");
     }
 
     [Fact(DisplayName = "AuditableInterceptor preenche created_by com o UserId do contexto")]
@@ -356,10 +419,11 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         string slug,
         string sigla,
         string codigo,
-        Guid? superiorId = null) =>
+        Guid? superiorId = null,
+        string? alias = null) =>
         Unidade.Criar(
             nome: $"Unidade {sigla}",
-            alias: null,
+            alias: alias,
             slug: Slug.From(slug).Value!,
             sigla: sigla,
             codigo: codigo,

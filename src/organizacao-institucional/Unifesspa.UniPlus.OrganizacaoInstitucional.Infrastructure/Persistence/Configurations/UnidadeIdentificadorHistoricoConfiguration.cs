@@ -19,6 +19,11 @@ internal sealed class UnidadeIdentificadorHistoricoConfiguration
         builder.ToTable("unidade_identificador_historico");
         builder.HasKey(h => h.Id);
 
+        // EntityBase gera UUIDv7 no cliente. Sem explicitar isso, o EF trata
+        // novas entradas adicionadas a uma Unidade já rastreada como existentes
+        // e emite UPDATE em vez de INSERT ao fechar/abrir histórico.
+        builder.Property(h => h.Id).ValueGeneratedNever();
+
         builder.Property(h => h.UnidadeId).IsRequired();
         builder.Property(h => h.TipoIdentificador).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(h => h.Valor).HasMaxLength(100).IsRequired();

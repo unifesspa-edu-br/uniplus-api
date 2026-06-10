@@ -61,6 +61,8 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
             .WithOne()
             .HasForeignKey(h => h.UnidadeId)
             .OnDelete(DeleteBehavior.ClientNoAction);
+        builder.Navigation(u => u.Historico)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Índices únicos parciais (WHERE is_deleted = false) — unicidade entre vivos
         builder.HasIndex(u => u.Slug)
