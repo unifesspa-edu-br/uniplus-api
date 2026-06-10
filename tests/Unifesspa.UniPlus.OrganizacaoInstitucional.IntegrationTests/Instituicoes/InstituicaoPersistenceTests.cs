@@ -82,9 +82,8 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         // (UniqueConstraintViolation.GetViolatedConstraint/IsSingletonConflict) em
         // JaExisteInstituicaoViva/409: SqlState 23505 + nome do índice sentinela.
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        var pg = ex.InnerException as Npgsql.PostgresException;
-        pg.Should().NotBeNull();
-        pg!.SqlState.Should().Be("23505");
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
         pg.ConstraintName.Should().Be("ix_instituicao_singleton_vivo");
     }
 
