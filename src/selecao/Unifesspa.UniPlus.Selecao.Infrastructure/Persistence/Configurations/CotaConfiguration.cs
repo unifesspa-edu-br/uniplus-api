@@ -17,7 +17,5 @@ public sealed class CotaConfiguration : IEntityTypeConfiguration<Cota>
         builder.Property(c => c.Modalidade).HasConversion<int>().IsRequired();
         builder.Property(c => c.PercentualVagas).HasPrecision(5, 2).IsRequired();
         builder.Property(c => c.Descricao).HasMaxLength(500);
-
-        builder.HasQueryFilter(c => !c.IsDeleted);
     }
 }

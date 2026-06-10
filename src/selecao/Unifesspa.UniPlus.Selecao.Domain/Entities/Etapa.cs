@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class Etapa : EntityBase
+public sealed class Etapa : SoftDeletableEntity
 {
     public Guid EditalId { get; private set; }
     public string Nome { get; private set; } = string.Empty;

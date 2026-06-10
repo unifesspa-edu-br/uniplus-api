@@ -5,8 +5,9 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 // Cobre o ciclo de vida básico do EntityBase. A drenagem de domain events
-// fica em EntityBaseDomainEventsTests — esta classe foca em Id, audit e
-// soft delete (ADR-0032 + invariantes da issue #127).
+// fica em EntityBaseDomainEventsTests; soft-delete (opt-in via
+// SoftDeletableEntity, issue #629) fica em SoftDeletableEntityTests — esta
+// classe foca em Id e audit timestamps (ADR-0032).
 public sealed class EntityBaseTests
 {
     [Fact(DisplayName = "Nova entidade nasce com Id UUID v7 (preserva ordering temporal)")]
@@ -41,44 +42,12 @@ public sealed class EntityBaseTests
         entidade.CreatedAt.Should().Be(default);
     }
 
-    [Fact(DisplayName = "Entidade recém-criada não tem UpdatedAt, IsDeleted, DeletedAt, DeletedBy")]
-    public void NovaEntidade_FlagsDeAuditNaoIniciam()
+    [Fact(DisplayName = "Entidade recém-criada não tem UpdatedAt")]
+    public void NovaEntidade_NaoTemUpdatedAt()
     {
         EntidadeDeTeste entidade = new();
 
         entidade.UpdatedAt.Should().BeNull();
-        entidade.IsDeleted.Should().BeFalse();
-        entidade.DeletedAt.Should().BeNull();
-        entidade.DeletedBy.Should().BeNull();
-    }
-
-    [Fact(DisplayName = "MarkAsDeleted altera IsDeleted, DeletedAt (instante recebido) e DeletedBy")]
-    public void MarkAsDeleted_AlteraFlagsDeSoftDelete()
-    {
-        EntidadeDeTeste entidade = new();
-        // Instante determinístico: o caller (SoftDeleteInterceptor/repositório)
-        // provê deletedAt a partir do TimeProvider; o domínio só o registra.
-        DateTimeOffset instante = new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
-
-        entidade.MarkAsDeleted("usuario@exemplo.com", instante);
-
-        entidade.IsDeleted.Should().BeTrue();
-        entidade.DeletedBy.Should().Be("usuario@exemplo.com");
-        entidade.DeletedAt.Should().Be(instante);
-        entidade.DeletedAt!.Value.Offset.Should().Be(TimeSpan.Zero);
-    }
-
-    [Fact(DisplayName = "MarkAsDeleted pode ser chamado mais de uma vez — sobrescreve DeletedBy")]
-    public void MarkAsDeleted_PodeSerChamadoMaisDeUmaVez()
-    {
-        EntidadeDeTeste entidade = new();
-        DateTimeOffset instante = new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
-        entidade.MarkAsDeleted("primeiro", instante);
-
-        entidade.MarkAsDeleted("segundo", instante);
-
-        entidade.IsDeleted.Should().BeTrue();
-        entidade.DeletedBy.Should().Be("segundo");
     }
 
     [Fact(DisplayName = "DomainEvents inicia como coleção vazia e imutável (não array)")]

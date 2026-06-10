@@ -18,7 +18,5 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Property(p => p.NomeCurso).HasMaxLength(300).IsRequired();
         builder.Property(p => p.Campus).HasMaxLength(200).IsRequired();
         builder.Property(p => p.Turno).HasMaxLength(50);
-
-        builder.HasQueryFilter(p => !p.IsDeleted);
     }
 }

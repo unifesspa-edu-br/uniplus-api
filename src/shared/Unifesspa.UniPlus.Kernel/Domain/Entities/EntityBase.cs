@@ -16,28 +16,18 @@ public abstract class EntityBase
     // CreatedAt como audit trail obrigatório, expondo o mesmo dado.
     public Guid Id { get; protected init; } = Guid.CreateVersion7();
 
-    // CreatedAt/UpdatedAt/DeletedAt são audit trail de persistência: a fonte
-    // única do instante é o relógio injetado (TimeProvider) nos interceptors
-    // de Infrastructure (AuditableInterceptor/SoftDeleteInterceptor), nunca
-    // DateTimeOffset.UtcNow lido no domínio. Por isso CreatedAt NÃO tem
-    // inicializador — uma entidade transiente (pré-SaveChanges) tem CreatedAt
-    // default; o AuditableInterceptor o carimba em Added. O fitness test
-    // RelogioViaTimeProviderTests bane leituras diretas de relógio em src/.
+    // CreatedAt/UpdatedAt são audit trail de persistência: a fonte única do
+    // instante é o relógio injetado (TimeProvider) no AuditableInterceptor
+    // de Infrastructure, nunca DateTimeOffset.UtcNow lido no domínio. Por isso
+    // CreatedAt NÃO tem inicializador — uma entidade transiente (pré-SaveChanges)
+    // tem CreatedAt default; o AuditableInterceptor o carimba em Added. O fitness
+    // test RelogioViaTimeProviderTests bane leituras diretas de relógio em src/.
+    //
+    // Soft-delete NÃO vive aqui (issue #629): é capability opt-in via
+    // SoftDeletableEntity : EntityBase, ISoftDeletable — só entidades que
+    // derivam dela carregam IsDeleted/DeletedAt/DeletedBy e as colunas no banco.
     public DateTimeOffset CreatedAt { get; protected set; }
     public DateTimeOffset? UpdatedAt { get; protected set; }
-    public bool IsDeleted { get; private set; }
-    public DateTimeOffset? DeletedAt { get; private set; }
-    public string? DeletedBy { get; private set; }
-
-    // O instante é parâmetro, não relógio lido aqui: o caller (SoftDeleteInterceptor
-    // ou repositório) provê deletedAt a partir do TimeProvider injetado, mantendo
-    // o domínio determinístico e a leitura de relógio concentrada em Infrastructure.
-    public void MarkAsDeleted(string deletedBy, DateTimeOffset deletedAt)
-    {
-        IsDeleted = true;
-        DeletedAt = deletedAt;
-        DeletedBy = deletedBy;
-    }
 
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();

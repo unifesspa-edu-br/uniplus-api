@@ -5,7 +5,7 @@ using Events;
 using ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class Edital : EntityBase
+public sealed class Edital : SoftDeletableEntity
 {
     public NumeroEdital NumeroEdital { get; private set; } = null!;
     public string Titulo { get; private set; } = string.Empty;

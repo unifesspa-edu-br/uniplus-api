@@ -11,6 +11,11 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <!-- InMemory: o fitness test SoftDeleteOptInConventionTests (issue #629)
+         materializa o modelo EF dos 5 DbContexts — model building é
+         provider-agnostic — para verificar que a convenção de soft-delete
+         aplicou o query filter a cada ISoftDeletable. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="TngTech.ArchUnitNET" />
     <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
   </ItemGroup>

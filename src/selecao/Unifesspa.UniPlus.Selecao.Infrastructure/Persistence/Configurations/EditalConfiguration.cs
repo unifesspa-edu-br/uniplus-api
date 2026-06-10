@@ -46,7 +46,5 @@ public sealed class EditalConfiguration : IEntityTypeConfiguration<Edital>
 
         builder.HasMany(e => e.Etapas).WithOne().HasForeignKey(et => et.EditalId);
         builder.HasMany(e => e.Cotas).WithOne().HasForeignKey(c => c.EditalId);
-
-        builder.HasQueryFilter(e => !e.IsDeleted);
     }
 }

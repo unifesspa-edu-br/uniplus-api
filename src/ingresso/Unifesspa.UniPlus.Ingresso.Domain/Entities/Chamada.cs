@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Ingresso.Domain.Entities;
 using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class Chamada : EntityBase
+public sealed class Chamada : SoftDeletableEntity
 {
     public Guid EditalId { get; private set; }
     public int Numero { get; private set; }

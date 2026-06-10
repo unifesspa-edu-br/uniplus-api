@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class ProcessoSeletivo : EntityBase
+public sealed class ProcessoSeletivo : SoftDeletableEntity
 {
     public Guid EditalId { get; private set; }
     public string CodigoCurso { get; private set; } = string.Empty;

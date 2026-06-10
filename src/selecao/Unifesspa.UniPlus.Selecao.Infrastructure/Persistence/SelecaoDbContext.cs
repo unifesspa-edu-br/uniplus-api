@@ -6,6 +6,7 @@ using Domain.Entities;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 public sealed class SelecaoDbContext : DbContext, IUnitOfWork
 {
@@ -56,6 +57,9 @@ public sealed class SelecaoDbContext : DbContext, IUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SelecaoDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (ex.: idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);
+        // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
+        // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
+        modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
     }
 

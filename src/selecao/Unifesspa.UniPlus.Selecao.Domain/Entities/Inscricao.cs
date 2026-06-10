@@ -7,7 +7,7 @@ using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Kernel.Results;
 
-public sealed class Inscricao : EntityBase
+public sealed class Inscricao : SoftDeletableEntity
 {
     public Guid CandidatoId { get; private set; }
     public Guid EditalId { get; private set; }
