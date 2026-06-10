@@ -64,14 +64,15 @@ docker compose -f docker/docker-compose.yml up -d keycloak
 
 ## Clients configurados
 
-| `clientId`     | Tipo                | Uso                              | Redirect URI              |
-| -------------- | ------------------- | -------------------------------- | ------------------------- |
-| `selecao-web`  | público + PKCE S256 | App Angular **Seleção**          | `http://localhost:4200/*` |
-| `ingresso-web` | público + PKCE S256 | App Angular **Ingresso**         | `http://localhost:4300/*` |
-| `portal-web`   | público + PKCE S256 | App Angular **Portal**           | `http://localhost:4100/*` |
-| `uniplus-api`  | confidential        | Backend .NET (validação de JWT)  | —                         |
+| `clientId`         | Tipo                | Uso                                  | Redirect URI              |
+| ------------------ | ------------------- | ------------------------------------ | ------------------------- |
+| `selecao-web`      | público + PKCE S256 | App Angular **Seleção**              | `http://localhost:4200/*` |
+| `ingresso-web`     | público + PKCE S256 | App Angular **Ingresso**             | `http://localhost:4201/*` |
+| `portal-web`       | público + PKCE S256 | App Angular **Portal**               | `http://localhost:4202/*` |
+| `configuracao-web` | público + PKCE S256 | App Angular **Configuração**         | `http://localhost:4203/*` |
+| `uniplus-api`      | confidential        | Backend .NET (validação de JWT)      | —                         |
 
-Os 3 clients web são **públicos** (SPA) com **PKCE S256 obrigatório** — sem `client_secret`, conforme OAuth 2.1 / BCP for Browser-Based Apps.
+Os clients web são **públicos** (SPA) com **PKCE S256 obrigatório** — sem `client_secret`, conforme OAuth 2.1 / BCP for Browser-Based Apps.
 
 ## Client scope `uniplus-profile`
 
@@ -195,7 +196,7 @@ Resposta esperada de `/api/profile/me`:
 }
 ```
 
-> ⚠️ Em produção, ROPC **não deve ser usado** — frontends Angular usam Authorization Code com PKCE (clients `selecao-web`, `ingresso-web`, `portal-web`). Os patches deste script são exclusivamente de ergonomia para desenvolvimento e CI local.
+> ⚠️ Em produção, ROPC **não deve ser usado** — frontends Angular usam Authorization Code com PKCE (clients `selecao-web`, `ingresso-web`, `portal-web`, `configuracao-web`). Os patches deste script são exclusivamente de ergonomia para desenvolvimento e CI local.
 
 ## User Federation LDAP (sintético, dev local)
 
