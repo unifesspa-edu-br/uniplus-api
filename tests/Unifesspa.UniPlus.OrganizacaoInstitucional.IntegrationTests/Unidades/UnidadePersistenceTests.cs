@@ -306,6 +306,50 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         (await repository.CodigoExisteEntreLivosAsync(" TRIMCOD ", null, CancellationToken.None)).Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Soft-delete de Unidade preserva o histórico de identificadores (FK não cascateia) — regressão #629")]
+    public async Task SoftDelete_PreservaHistoricoDeIdentificadores()
+    {
+        // Regressão (issue #629 / PR #631): ObterPorIdAsync faz Include(Historico);
+        // com a FK em Cascade, Remover(unidade) marcava os históricos carregados como
+        // Deleted e — como o SoftDeleteInterceptor só converte ISoftDeletable — eles
+        // sofriam hard-delete físico, destruindo a trilha append-only. A FK Restrict
+        // impede o cascade em memória: a Unidade vira soft-delete e o histórico sobrevive.
+        Unidade unidade = NovaUnidade("hist-preserva", "HPRES", "HPR001");
+
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Unidades.Add(unidade);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Caminho EXATO do RemoverUnidadeCommandHandler: ObterPorIdAsync (Include
+        // Historico, rastreado) seguido de Remover, no mesmo contexto.
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            var repository = new UnidadeRepository(ctx);
+            Unidade tracked = (await repository.ObterPorIdAsync(unidade.Id, CancellationToken.None))!;
+            tracked.Historico.Should().HaveCount(3,
+                "a criação abriu 3 entradas (Slug, Sigla, Codigo), carregadas e rastreadas");
+
+            repository.Remover(tracked);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+
+        // Unidade soft-deletada (UPDATE is_deleted=true), não removida fisicamente.
+        Unidade excluida = await readCtx.Unidades
+            .IgnoreQueryFilters()
+            .SingleAsync(u => u.Id == unidade.Id);
+        excluida.IsDeleted.Should().BeTrue();
+
+        // Histórico append-only PRESERVADO — as 3 linhas seguem no banco.
+        int historicoCount = await readCtx.UnidadesIdentificadoresHistorico
+            .CountAsync(h => h.UnidadeId == unidade.Id);
+        historicoCount.Should().Be(3,
+            "o histórico de identificadores não pode ser hard-deletado no soft-delete da Unidade (issue #629)");
+    }
+
     // ── Factory helper ───────────────────────────────────────────────────
 
     private static Unidade NovaUnidade(

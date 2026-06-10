@@ -63,7 +63,10 @@ public static class RemoverUnidadeCommandHandler
         }
 
         // SoftDeleteInterceptor converte EntityState.Deleted em soft-delete
-        // preenchendo DeletedBy/DeletedAt a partir de IUserContext + TimeProvider.
+        // (Unidade é ISoftDeletable), preenchendo DeletedBy/DeletedAt a partir de
+        // IUserContext + TimeProvider. O Historico carregado por ObterPorIdAsync
+        // NÃO é cascateado (FK Restrict, issue #629): a trilha append-only de
+        // identificadores é preservada mesmo no soft-delete da Unidade.
         repository.Remover(unidade);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
