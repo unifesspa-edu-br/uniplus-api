@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 /// <summary>
 /// <see cref="DbContext"/> do módulo OrganizacaoInstitucional — banco
 /// <c>uniplus_organizacao</c>, naming snake_case (ADR-0054). Hospeda a
-/// agregada <see cref="AreaOrganizacional"/> e o cache de Idempotency-Key
+/// agregada <see cref="Unidade"/> e o cache de Idempotency-Key
 /// (ADR-0027) adjacente, permitindo gravação atômica em outbox.
 /// </summary>
 public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
@@ -19,8 +19,6 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
         : base(options)
     {
     }
-
-    public DbSet<AreaOrganizacional> AreasOrganizacionais => Set<AreaOrganizacional>();
 
     public DbSet<Unidade> Unidades => Set<Unidade>();
 

@@ -68,7 +68,7 @@ builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, builder.Environment);
 
 // Application + Infrastructure — registram validators, DbContext, repositórios,
-// reader cross-módulo (IAreaOrganizacionalReader) e cache invalidator.
+// readers cross-módulo (ADR-0056) e cache invalidators.
 builder.Services.AddOrganizacaoInstitucionalApplication();
 builder.Services.AddOrganizacaoInstitucionalInfrastructure();
 
