@@ -44,11 +44,23 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Histórico de identificadores — coleção owned dentro do agregado
+        // Histórico de identificadores (append-only): NÃO cascatear (issue #629).
+        // O histórico não implementa ISoftDeletable; com Cascade, remover a Unidade
+        // marcaria os históricos carregados (ObterPorIdAsync faz Include) como Deleted
+        // e — como o SoftDeleteInterceptor só converte ISoftDeletable — eles sofreriam
+        // hard-delete físico, destruindo a trilha de auditoria.
+        //
+        // ClientNoAction (e não Restrict/NoAction): com o histórico required já
+        // rastreado, Restrict/NoAction lançam "required relationship severed" ao
+        // marcar a Unidade como Deleted — ANTES de o interceptor convertê-la em
+        // soft-delete. ClientNoAction instrui o EF a não tocar nem validar os
+        // dependentes; o interceptor então converte a Unidade em UPDATE (soft-delete)
+        // e o histórico permanece intacto. A Unidade nunca é hard-deletada, logo a
+        // integridade referencial é preservada na prática (FK NO ACTION no banco).
         builder.HasMany(u => u.Historico)
             .WithOne()
             .HasForeignKey(h => h.UnidadeId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientNoAction);
 
         // Índices únicos parciais (WHERE is_deleted = false) — unicidade entre vivos
         builder.HasIndex(u => u.Slug)
