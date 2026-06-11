@@ -46,14 +46,18 @@ builder.Services.AddUniPlusOpenApi("organizacao", builder.Configuration);
 builder.Services.AddSingleton<IDomainErrorRegistration, OrganizacaoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
 
-// HATEOAS Level 1 (ADR-0029/0049) — builder de _links para AreaOrganizacionalDto.
-builder.Services.AddSingleton<IResourceLinksBuilder<AreaOrganizacionalDto>, AreaOrganizacionalLinksBuilder>();
+// HATEOAS Level 1 (ADR-0029/0049) — builders de _links.
+builder.Services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<InstituicaoDto>, InstituicaoLinksBuilder>();
 
 // Criptografia (Idempotency response cipher) + Idempotency-Key (ADR-0027).
 // AddIdempotency injeta o filter de MVC que ativa-se em endpoints com
 // [RequiresIdempotencyKey], usando o DbContext do módulo para persistir
 // entries cifradas at-rest.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
+// Cursor pagination (ADR-0026) — CursorEncoder, PageRequestModelBinder e o hook
+// que traduz falhas do binder para 400/410/422; usado por GET /api/unidades.
+builder.Services.AddCursorPagination(builder.Configuration);
 builder.Services.AddIdempotency<OrganizacaoInstitucionalDbContext>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
@@ -64,7 +68,7 @@ builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, builder.Environment);
 
 // Application + Infrastructure — registram validators, DbContext, repositórios,
-// reader cross-módulo (IAreaOrganizacionalReader) e cache invalidator.
+// readers cross-módulo (ADR-0056) e cache invalidators.
 builder.Services.AddOrganizacaoInstitucionalApplication();
 builder.Services.AddOrganizacaoInstitucionalInfrastructure();
 
@@ -79,7 +83,16 @@ builder.Services.AddDbContextMigrationsOnStartup<OrganizacaoInstitucionalDbConte
 // específico — o módulo não emite eventos Kafka em V1 (D4 do plano #447); o
 // wire-up básico permanece para que ICommandBus/IQueryBus funcionem com
 // middleware de validação e logging.
-builder.Host.UseWolverineOutboxCascading(builder.Configuration, connectionStringName: "OrganizacaoDb");
+builder.Host.UseWolverineOutboxCascading(
+    builder.Configuration,
+    connectionStringName: "OrganizacaoDb",
+    configureRouting: opts =>
+    {
+        // Wolverine escaneia o entry assembly (OrganizacaoInstitucional.API) por padrão;
+        // handlers produtivos vivem em OrganizacaoInstitucional.Application —
+        // incluir explicitamente para que os command/query handlers sejam descobertos.
+        opts.Discovery.IncludeAssembly(typeof(OrganizacaoInstitucionalApplicationServiceRegistration).Assembly);
+    });
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);

@@ -35,7 +35,5 @@ public sealed class CandidatoConfiguration : IEntityTypeConfiguration<Candidato>
         builder.Property(c => c.Telefone).HasMaxLength(20);
 
         builder.Ignore(c => c.NomeExibicao);
-
-        builder.HasQueryFilter(c => !c.IsDeleted);
     }
 }

@@ -23,7 +23,14 @@ public sealed class SoftDeleteInterceptorTests
         public override DateTimeOffset GetUtcNow() => now;
     }
 
-    private sealed class EntidadeTeste : EntityBase
+    private sealed class EntidadeTeste : SoftDeletableEntity
+    {
+        public string Nome { get; set; } = string.Empty;
+    }
+
+    // Entidade que NÃO implementa ISoftDeletable — o interceptor não deve
+    // convertê-la em soft-delete; sofre hard-delete físico (CA-06, issue #629).
+    private sealed class EntidadeNaoSoft : EntityBase
     {
         public string Nome { get; set; } = string.Empty;
     }
@@ -31,6 +38,7 @@ public sealed class SoftDeleteInterceptorTests
     private sealed class ContextoTeste(DbContextOptions<ContextoTeste> options) : DbContext(options)
     {
         public DbSet<EntidadeTeste> Entidades { get; set; } = null!;
+        public DbSet<EntidadeNaoSoft> EntidadesNaoSoft { get; set; } = null!;
     }
 
     private static ContextoTeste CriarContexto(IUserContext? userContext = null) =>
@@ -174,5 +182,38 @@ public sealed class SoftDeleteInterceptorTests
         contexto.SaveChanges();
 
         entidade.DeletedBy.Should().Be(SystemUser);
+    }
+
+    // CA-06 (issue #629): só ISoftDeletable é convertida em soft-delete.
+    // Uma entidade que deriva de EntityBase mas não implementa a interface
+    // é fisicamente removida — o interceptor não a intercepta.
+    [Fact]
+    public void SavingChanges_DadoEntidadeNaoSoftDeletableRemovida_EntaoDeveSerHardDeleteFisico()
+    {
+        using ContextoTeste contexto = CriarContexto();
+        EntidadeNaoSoft entidade = new() { Nome = "hard delete" };
+        contexto.EntidadesNaoSoft.Add(entidade);
+        contexto.SaveChanges();
+
+        contexto.EntidadesNaoSoft.Remove(entidade);
+        contexto.SaveChanges();
+
+        contexto.EntidadesNaoSoft.Find(entidade.Id).Should().BeNull(
+            "entidade sem ISoftDeletable sofre hard-delete físico (CA-06)");
+    }
+
+    [Fact]
+    public async Task SavingChangesAsync_DadoEntidadeNaoSoftDeletableRemovida_EntaoDeveSerHardDeleteFisico()
+    {
+        await using ContextoTeste contexto = CriarContexto();
+        EntidadeNaoSoft entidade = new() { Nome = "hard delete" };
+        contexto.EntidadesNaoSoft.Add(entidade);
+        await contexto.SaveChangesAsync();
+
+        contexto.EntidadesNaoSoft.Remove(entidade);
+        await contexto.SaveChangesAsync();
+
+        (await contexto.EntidadesNaoSoft.FindAsync(entidade.Id)).Should().BeNull(
+            "entidade sem ISoftDeletable sofre hard-delete físico (CA-06)");
     }
 }

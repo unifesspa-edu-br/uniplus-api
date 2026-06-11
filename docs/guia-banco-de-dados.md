@@ -188,6 +188,7 @@ Existe `ValueObjectConventions.ConfigureValueObjectConverters()` (`Infrastructur
 # 3. Gerar migration:
 dotnet ef migrations add Adiciona<Coisa> \
   --project src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure \
+  --startup-project src/<modulo>/Unifesspa.UniPlus.<Modulo>.API \
   --output-dir Persistence/Migrations \
   --context <Modulo>DbContext
 
@@ -206,15 +207,23 @@ git commit -m "feat(<modulo>): adiciona <coisa>"
 
 `MigrationHostedService<TContext>` aplica a migration no `StartAsync` do host, antes do `WolverineRuntime` iniciar (ordem garantida por fitness test — ver [ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md) e [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)). Pod restart → migration aplicada → app pronto.
 
-### Bug atual do EF tool (.NET 10)
+### `dotnet ef` exige `--startup-project` apontando para a API
 
-`dotnet ef migrations add` falha com `FileNotFoundException: System.Runtime, Version=10.0.0.0` no SDK 10.0.104 + dotnet-ef 10.0.4/10.0.5/10.0.7 (testado). Workaround temporário:
+Sem `--startup-project`, o `dotnet ef` falha com `FileNotFoundException` em assemblies de runtime versão `10.0.0.0` (`System.Runtime`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.AspNetCore.Http.Abstractions`, conforme o comando). **Não é bug do EF tool nem do .NET 10** — o design-time factory do DbContext (`<Modulo>DbContextDesignTimeFactory`) resolve dependências que vivem no projeto da API (`FrameworkReference Microsoft.AspNetCore.App`). Rodar só com `--project ...Infrastructure` executa o tool num contexto sem esse framework, e as assemblies não resolvem.
 
-- Escrever migration manualmente (espelhando o Up/Down de migrations existentes).
-- Ou rodar `dotnet ef` em container `mcr.microsoft.com/dotnet/sdk:10.0` montando o repo.
-- Acompanhar [dotnet/efcore](https://github.com/dotnet/efcore/issues) por release que corrija.
+**Sempre passar `--startup-project src/<modulo>/Unifesspa.UniPlus.<Modulo>.API`** em qualquer comando `dotnet ef` (`migrations add`, `migrations list`, `migrations has-pending-model-changes`, `dbcontext info`, etc.). Com isso roda no host, sem container e sem workaround. Verificação útil de que o snapshot está consistente com o modelo:
 
-**Convention snake_case está preparada mas não ligada no runtime** ([ADR-0054](adrs/0054-naming-convention-e-strategy-migrations.md)) — espera Story de normalização do schema (regenerar `InitialCreate` ou migration `NormalizaAuditColumnsParaSnakeCase`) para ser ativada via `UseSnakeCaseNamingConvention()` no helper. Design-time factories já invocam a convention para que migrations geradas saiam corretas.
+```bash
+dotnet ef migrations has-pending-model-changes \
+  --project src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure \
+  --startup-project src/<modulo>/Unifesspa.UniPlus.<Modulo>.API \
+  --context <Modulo>DbContext
+# Esperado: "No changes have been made to the model since the last migration."
+```
+
+> `has-pending-model-changes` opera sobre o modelo vs. snapshot e **não acessa o banco** — não exige Postgres rodando. Já `dotnet ef migrations list` tenta conectar ao banco design-time (`Host=design-time-stub`) para exibir o status de aplicação de cada migration; passe **`--no-connect`** para listar só as migrations do código sem essa tentativa. Sem a flag, a falha de conexão é inofensiva (as migrations ainda são listadas, apenas o "pending status" fica indisponível), mas `--no-connect` é o caminho limpo.
+
+**Convention snake_case ativa no runtime e no design-time** ([ADR-0054](adrs/0054-naming-convention-e-strategy-migrations.md)). Tanto `UseUniPlusNpgsqlConventions` (helper de runtime consumido por `AddXxxInfrastructure`) quanto `BuildDesignTimeOptions` chamam `UseSnakeCaseNamingConvention()`, então tabelas, colunas, índices e FKs ficam em snake_case e as migrations geradas batem com o modelo em runtime (`has-pending-model-changes` retorna "No changes"). O nome de `__EFMigrationsHistory` é pinado para não sofrer a convention, evitando drift em rollouts mistos com pods sem ela.
 
 ## 8. Forward-only revert
 

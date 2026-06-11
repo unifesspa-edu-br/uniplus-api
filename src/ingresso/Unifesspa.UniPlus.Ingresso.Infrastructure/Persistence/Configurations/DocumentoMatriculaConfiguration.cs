@@ -18,7 +18,5 @@ public sealed class DocumentoMatriculaConfiguration : IEntityTypeConfiguration<D
         builder.Property(d => d.NomeArquivo).HasMaxLength(500).IsRequired();
         builder.Property(d => d.CaminhoStorage).HasMaxLength(1000).IsRequired();
         builder.Property(d => d.MotivoRejeicao).HasMaxLength(1000);
-
-        builder.HasQueryFilter(d => !d.IsDeleted);
     }
 }

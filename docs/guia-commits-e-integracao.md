@@ -231,7 +231,7 @@ docs/0021-cache-distribuido
 
 ### PII em logs (LGPD)
 
-- O `PiiMaskingEnricher` ([ADR-0011](adrs/0011-mascaramento-de-cpf-em-logs.md)) mascara automaticamente CPF (`***.***.***-XX`) em todas as propriedades estruturadas — não há ação manual do dev no call site, mas o pipeline depende de placeholders nomeados (`{Cpf}`, `{CandidatoCpf}`) e não de concatenação de string.
+- O `PiiMaskingEnricher` ([ADR-0011](adrs/0011-mascaramento-de-cpf-em-logs.md)) mascara automaticamente CPF (`***.999.999-**`) em todas as propriedades estruturadas — não há ação manual do dev no call site, mas o pipeline depende de placeholders nomeados (`{Cpf}`, `{CandidatoCpf}`) e não de concatenação de string.
 - **Nunca logar dados pessoais identificáveis em texto livre.** Se um diff introduz log com nome completo ou e-mail, o review trava.
 
 ### Slices de referência

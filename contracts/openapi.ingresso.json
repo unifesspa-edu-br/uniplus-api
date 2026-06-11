@@ -283,7 +283,7 @@
               "null",
               "string"
             ],
-            "description": "CPF (apenas d\u00EDgitos, sem formata\u00E7\u00E3o). PII \u2014 sempre mascarar em logs (\u0027***.***.***-XX\u0027, ADR-0011)."
+            "description": "CPF (apenas d\u00EDgitos, sem formata\u00E7\u00E3o). PII \u2014 sempre mascarar em logs (\u0027***.999.999-**\u0027, ADR-0011)."
           },
           "nomeSocial": {
             "type": [

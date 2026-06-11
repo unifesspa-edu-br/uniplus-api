@@ -18,25 +18,25 @@ public sealed class PiiMaskingEnricherTests
     // ─── CA-01 ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Enrich_DadoCpfFormatadoEmScalarValue_QuandoEnricherProcessar_EntaoDeveMascararComHifen()
+    public void Enrich_DadoCpfFormatadoEmScalarValue_QuandoEnricherProcessar_EntaoDeveMascararNoPadraoInstitucional()
     {
         LogEvent evento = CriarEventoComPropriedade("CpfCandidato", "123.456.789-01");
 
         _enricher.Enrich(evento, _propertyFactory);
 
-        ValorDaPropriedade(evento, "CpfCandidato").Should().Be("***.***.***-01");
+        ValorDaPropriedade(evento, "CpfCandidato").Should().Be("***.456.789-**");
     }
 
     // ─── CA-02 ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Enrich_DadoCpfSomenteDigitos_QuandoEnricherProcessar_EntaoDeveAplicarFormatoSerpro()
+    public void Enrich_DadoCpfSomenteDigitos_QuandoEnricherProcessar_EntaoDeveAplicarFormatoCGU()
     {
         LogEvent evento = CriarEventoComPropriedade("CpfCandidato", "12345678901");
 
         _enricher.Enrich(evento, _propertyFactory);
 
-        ValorDaPropriedade(evento, "CpfCandidato").Should().Be("***.***.***-01");
+        ValorDaPropriedade(evento, "CpfCandidato").Should().Be("***.456.789-**");
     }
 
     // ─── CA-03 ─────────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ public sealed class PiiMaskingEnricherTests
         _enricher.Enrich(evento, _propertyFactory);
 
         ValorDaPropriedade(evento, "Mensagem")
-            .Should().Be("candidatos ***.***.***-01 e ***.***.***-02 homologados");
+            .Should().Be("candidatos ***.456.789-** e ***.654.321-** homologados");
     }
 
     // ─── CA-05 ─────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ public sealed class PiiMaskingEnricherTests
         _enricher.Enrich(evento, _propertyFactory);
 
         StructureValue candidatoMascarado = (StructureValue)evento.Properties["Candidato"];
-        ValorDoCampo(candidatoMascarado, "Cpf").Should().Be("***.***.***-01");
+        ValorDoCampo(candidatoMascarado, "Cpf").Should().Be("***.456.789-**");
         ValorDoCampo(candidatoMascarado, "Nome").Should().Be("João da Silva");
         candidatoMascarado.TypeTag.Should().Be("Candidato", "TypeTag deve ser preservado ao reconstruir a estrutura");
     }
@@ -102,8 +102,8 @@ public sealed class PiiMaskingEnricherTests
         _enricher.Enrich(evento, _propertyFactory);
 
         SequenceValue sequenciaMascarada = (SequenceValue)evento.Properties["CpfsHomologados"];
-        ValorDoElemento(sequenciaMascarada, 0).Should().Be("***.***.***-01");
-        ValorDoElemento(sequenciaMascarada, 1).Should().Be("***.***.***-02");
+        ValorDoElemento(sequenciaMascarada, 0).Should().Be("***.456.789-**");
+        ValorDoElemento(sequenciaMascarada, 1).Should().Be("***.654.321-**");
     }
 
     [Fact]
@@ -123,8 +123,8 @@ public sealed class PiiMaskingEnricherTests
         _enricher.Enrich(evento, _propertyFactory);
 
         SequenceValue loteMascarado = (SequenceValue)evento.Properties["Lote"];
-        ValorDoCampo((StructureValue)loteMascarado.Elements[0], "Cpf").Should().Be("***.***.***-01");
-        ValorDoCampo((StructureValue)loteMascarado.Elements[1], "Cpf").Should().Be("***.***.***-02");
+        ValorDoCampo((StructureValue)loteMascarado.Elements[0], "Cpf").Should().Be("***.456.789-**");
+        ValorDoCampo((StructureValue)loteMascarado.Elements[1], "Cpf").Should().Be("***.654.321-**");
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public sealed class PiiMaskingEnricherTests
         DictionaryValue dicionarioMascarado = (DictionaryValue)evento.Properties["CpfsPorChave"];
         dicionarioMascarado.Elements
             .Select(e => ((ScalarValue)e.Value).Value)
-            .Should().BeEquivalentTo(["***.***.***-01", "***.***.***-02"]);
+            .Should().BeEquivalentTo(["***.456.789-**", "***.654.321-**"]);
     }
 
     // ─── CA-03 complementar ────────────────────────────────────────────────
@@ -178,7 +178,7 @@ public sealed class PiiMaskingEnricherTests
         _enricher.Enrich(evento, _propertyFactory);
 
         StructureValue mascarada = (StructureValue)evento.Properties["Candidato"];
-        ValorDoCampo(mascarada, "Cpf").Should().Be("***.***.***-01");
+        ValorDoCampo(mascarada, "Cpf").Should().Be("***.456.789-**");
         ValorDoCampo(mascarada, "Curso").Should().Be("Engenharia");
     }
 
@@ -196,7 +196,7 @@ public sealed class PiiMaskingEnricherTests
 
         SequenceValue mascarada = (SequenceValue)evento.Properties["Itens"];
         ValorDoElemento(mascarada, 0).Should().Be("sem cpf aqui");
-        ValorDoElemento(mascarada, 1).Should().Be("***.***.***-01");
+        ValorDoElemento(mascarada, 1).Should().Be("***.456.789-**");
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public sealed class PiiMaskingEnricherTests
         _enricher.Enrich(evento, _propertyFactory);
 
         SequenceValue mascarada = (SequenceValue)evento.Properties["Itens"];
-        ValorDoElemento(mascarada, 0).Should().Be("***.***.***-01");
+        ValorDoElemento(mascarada, 0).Should().Be("***.456.789-**");
         ValorDoElemento(mascarada, 1).Should().Be("sem cpf aqui");
     }
 
@@ -231,7 +231,7 @@ public sealed class PiiMaskingEnricherTests
         DictionaryValue mascarada = (DictionaryValue)evento.Properties["Dados"];
         List<KeyValuePair<ScalarValue, LogEventPropertyValue>> entradas = [.. mascarada.Elements];
         ((ScalarValue)entradas[0].Value).Value.Should().Be("Engenharia");
-        ((ScalarValue)entradas[1].Value).Value.Should().Be("***.***.***-01");
+        ((ScalarValue)entradas[1].Value).Value.Should().Be("***.456.789-**");
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public sealed class PiiMaskingEnricherTests
 
         DictionaryValue mascarada = (DictionaryValue)evento.Properties["Dados"];
         List<KeyValuePair<ScalarValue, LogEventPropertyValue>> entradas = [.. mascarada.Elements];
-        ((ScalarValue)entradas[0].Value).Value.Should().Be("***.***.***-01");
+        ((ScalarValue)entradas[0].Value).Value.Should().Be("***.456.789-**");
         ((ScalarValue)entradas[1].Value).Value.Should().Be("Engenharia");
     }
 
@@ -281,7 +281,7 @@ public sealed class PiiMaskingEnricherTests
 
         _enricher.Enrich(evento, _propertyFactory);
 
-        ValorDaPropriedade(evento, "Mensagem").Should().Be("candidato cpf***.***.***-01 homologado");
+        ValorDaPropriedade(evento, "Mensagem").Should().Be("candidato cpf***.456.789-** homologado");
     }
 
     [Fact]
@@ -311,7 +311,7 @@ public sealed class PiiMaskingEnricherTests
 
         DictionaryValue mascarada = (DictionaryValue)evento.Properties["StatusLote"];
         mascarada.Elements.Select(e => ((ScalarValue)e.Key).Value)
-            .Should().BeEquivalentTo(new object[] { "***.***.***-01", "***.***.***-02" });
+            .Should().BeEquivalentTo(new object[] { "***.456.789-**", "***.654.321-**" });
         mascarada.Elements.Select(e => ((ScalarValue)e.Value).Value)
             .Should().BeEquivalentTo(new object[] { "homologado", "pendente" });
     }
@@ -329,8 +329,8 @@ public sealed class PiiMaskingEnricherTests
 
         DictionaryValue mascarada = (DictionaryValue)evento.Properties["Relacionamento"];
         KeyValuePair<ScalarValue, LogEventPropertyValue> unica = mascarada.Elements.Single();
-        unica.Key.Value.Should().Be("***.***.***-01");
-        ((ScalarValue)unica.Value).Value.Should().Be("parceiro ***.***.***-02");
+        unica.Key.Value.Should().Be("***.456.789-**");
+        ((ScalarValue)unica.Value).Value.Should().Be("parceiro ***.654.321-**");
     }
 
     [Fact]
@@ -363,7 +363,7 @@ public sealed class PiiMaskingEnricherTests
 
         DictionaryValue mascarada = (DictionaryValue)evento.Properties["StatusPorCpf"];
         KeyValuePair<ScalarValue, LogEventPropertyValue> unica = mascarada.Elements.Single();
-        unica.Key.Value.Should().Be("***.***.***-01");
+        unica.Key.Value.Should().Be("***.456.789-**");
         unica.Value.Should().BeSameAs(valorOriginal, "valor sem CPF deve preservar referência original");
     }
 
@@ -391,13 +391,13 @@ public sealed class PiiMaskingEnricherTests
     }
 
     [Theory]
-    [InlineData("123.456.789-01", "***.***.***-01")]
-    [InlineData("12345678901", "***.***.***-01")]
-    [InlineData("123.45678901", "***.***.***-01")]
-    [InlineData("123456789-01", "***.***.***-01")]
-    [InlineData("000.000.000-00", "***.***.***-00")]
-    [InlineData("999.999.999-99", "***.***.***-99")]
-    public void MascararCpf_DadoVariacoesDeFormatacao_DeveRetornarMascaraNoPadraoSerpro(string entrada, string esperado)
+    [InlineData("123.456.789-01", "***.456.789-**")]
+    [InlineData("12345678901", "***.456.789-**")]
+    [InlineData("123.45678901", "***.456.789-**")]
+    [InlineData("123456789-01", "***.456.789-**")]
+    [InlineData("000.000.000-00", "***.000.000-**")]
+    [InlineData("999.999.999-99", "***.999.999-**")]
+    public void MascararCpf_DadoVariacoesDeFormatacao_DeveRetornarMascaraNoPadraoCGU(string entrada, string esperado)
     {
         PiiMaskingEnricher.MascararCpf(entrada).Should().Be(esperado);
     }

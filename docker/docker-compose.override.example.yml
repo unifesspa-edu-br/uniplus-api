@@ -38,6 +38,9 @@ services:
         condition: service_healthy
       apicurio:
         condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -74,6 +77,9 @@ services:
         condition: service_healthy
       apicurio:
         condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -105,6 +111,9 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 10s
@@ -120,7 +129,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus_organizacao;Username=uniplus_organizacao_app;Password=${POSTGRES_PASSWORD}"
+      # role uniplus_organizacao_app provisionada em docker/init-db.sql com
+      # senha literal 'uniplus_dev' (dev only); POSTGRES_PASSWORD pertence ao
+      # super user `postgres`. Mantém credencial role-specific.
+      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus_organizacao;Username=uniplus_organizacao_app;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
       Storage__Endpoint: "minio:9000"
@@ -135,6 +147,11 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      # A API valida JWT contra o realm dev-local do Keycloak; declarar a
+      # dependência garante que o Keycloak suba junto da API e esteja pronto
+      # quando ela aceitar requisições autenticadas (admin CRUD).
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
@@ -169,6 +186,9 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]

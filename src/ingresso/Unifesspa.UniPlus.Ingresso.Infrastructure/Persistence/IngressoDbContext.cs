@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
 using Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 public sealed class IngressoDbContext : DbContext, IUnitOfWork
 {
@@ -20,6 +21,9 @@ public sealed class IngressoDbContext : DbContext, IUnitOfWork
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IngressoDbContext).Assembly);
+        // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
+        // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
+        modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
     }
 

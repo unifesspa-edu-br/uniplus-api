@@ -32,7 +32,7 @@ Antes da entrega da Story `uniplus-api#115`, o `PiiMaskingEnricher` existia regi
 
 **Escolhida:** `PiiMaskingEnricher` como `ILogEventEnricher` no pipeline Serilog, com as propriedades:
 
-- **Padrão de mascaramento** `***.***.***-XX` (SERPRO/Gov.br), preservando os dois dígitos verificadores.
+- **Padrão de mascaramento** `***.999.999-**` (CGU / padrão institucional Unifesspa — Parecer DPO 002/2026), ocultando os três primeiros dígitos e os dois dígitos verificadores e expondo os seis dígitos centrais.
 - **Detecção por regex compilada** (`[GeneratedRegex]`) com word boundaries ASCII — evita falsos positivos em timestamps/IDs longos e cobre CPFs formatados e não formatados.
 - **Aplicação recursiva** em todos os tipos de `LogEventPropertyValue` do Serilog (`ScalarValue`, `StructureValue`, `SequenceValue`, `DictionaryValue` — chaves e valores).
 - **Preservação de referência** quando nenhum CPF é encontrado — sem realocação de containers para logs sem PII (zero alocação no hot path).

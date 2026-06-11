@@ -35,13 +35,15 @@ public static class OrganizacaoInstitucionalInfrastructureRegistration
         services.AddScoped<IUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>());
 
-        services.AddScoped<IAreaOrganizacionalRepository, AreaOrganizacionalRepository>();
+        services.AddScoped<IUnidadeRepository, UnidadeRepository>();
+        services.AddScoped<IInstituicaoRepository, InstituicaoRepository>();
 
-        // Reader cross-módulo (ADR-0055/0056) + cache invalidator. Ambos Scoped:
-        // dependem de ICacheService (Scoped) e DbContext (Scoped). Singleton causaria
-        // captive dependency e exceção em Development com ValidateScopes=true.
-        services.AddScoped<IAreaOrganizacionalReader, AreaOrganizacionalReader>();
-        services.AddScoped<IAreaOrganizacionalCacheInvalidator, AreaOrganizacionalCacheInvalidator>();
+        // Readers cross-módulo (ADR-0056) + cache invalidators. Scoped porque
+        // dependem de ICacheService (Scoped) e DbContext (Scoped).
+        services.AddScoped<IUnidadeReader, UnidadeReader>();
+        services.AddScoped<IUnidadeCacheInvalidator, UnidadeCacheInvalidator>();
+        services.AddScoped<IInstituicaoReader, InstituicaoReader>();
+        services.AddScoped<IInstituicaoCacheInvalidator, InstituicaoCacheInvalidator>();
 
         return services;
     }

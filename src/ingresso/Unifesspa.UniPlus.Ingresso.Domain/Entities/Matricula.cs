@@ -4,7 +4,7 @@ using Enums;
 using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
-public sealed class Matricula : EntityBase
+public sealed class Matricula : SoftDeletableEntity
 {
     public Guid ConvocacaoId { get; private set; }
     public Guid CandidatoId { get; private set; }
