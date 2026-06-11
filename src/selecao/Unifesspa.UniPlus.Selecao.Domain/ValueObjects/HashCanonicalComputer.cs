@@ -82,11 +82,6 @@ public static class HashCanonicalComputer
     ///   corrigir typo não cria nova regra.</item>
     ///   <item><c>AtoNormativoUrl</c> — link de citação documental; mudança
     ///   de URL (DOI, link governamental) não muda a regra avaliada.</item>
-    ///   <item><c>Proprietario</c> e <c>AreasDeInteresse</c> — governança
-    ///   (ADR-0057), não conteúdo da regra; troca de dono entre áreas não
-    ///   instancia "outra" regra. Esses campos entram no snapshot forense
-    ///   (<c>ObrigatoriedadeLegalHistorico</c>) e no <c>EditalGovernanceSnapshot</c>
-    ///   sem alimentar o hash.</item>
     ///   <item>Audit fields (<c>CreatedAt/By</c>, <c>UpdatedAt/By</c>) e
     ///   <c>Hash</c>/<c>IsDeleted</c> — ruído sem semântica de regra.</item>
     /// </list>

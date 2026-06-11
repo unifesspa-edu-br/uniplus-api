@@ -8,8 +8,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Governance.Contracts;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Resolves authenticated user data from the current HTTP context.
@@ -22,18 +20,12 @@ public sealed partial class HttpUserContext : IUserContext
     private static readonly string[] EmailClaimCandidates = [ClaimTypes.Email, OidcClaims.Email];
     private static readonly string[] DirectRoleClaimTypes = [ClaimTypes.Role, KeycloakClaims.Role, KeycloakClaims.Roles];
 
-    // Convenção de roles de área (ADR-0055): `{codigo-lowercase}-admin`.
-    private const string AdminRoleSuffix = "-admin";
-    private const string PlataformaAdminRole = "plataforma" + AdminRoleSuffix;
-
-    // plataforma-admin é o bypass platform-wide (IsPlataformaAdmin); não entra
-    // em AreasAdministradas. Comparado contra o AreaCodigo já normalizado.
-    private static readonly AreaCodigo PlataformaCodigo = AreaCodigo.From("PLATAFORMA").Value!;
+    // plataforma-admin é o bypass platform-wide (IsPlataformaAdmin).
+    private const string PlataformaAdminRole = "plataforma-admin";
 
     private readonly ClaimsPrincipal? _user;
     private readonly ILogger<HttpUserContext> _logger;
     private readonly Lazy<IReadOnlyList<string>> _roles;
-    private readonly Lazy<IReadOnlyCollection<AreaCodigo>> _areasAdministradas;
     private readonly ConcurrentDictionary<string, IReadOnlyList<string>> _resourceRolesCache = new(StringComparer.Ordinal);
 
     public HttpUserContext(
@@ -46,7 +38,6 @@ public sealed partial class HttpUserContext : IUserContext
         _user = httpContextAccessor.HttpContext?.User;
         _logger = logger;
         _roles = new Lazy<IReadOnlyList<string>>(ResolveRoles);
-        _areasAdministradas = new Lazy<IReadOnlyCollection<AreaCodigo>>(ResolveAreasAdministradas);
     }
 
     public bool IsAuthenticated => _user?.Identity?.IsAuthenticated == true;
@@ -62,8 +53,6 @@ public sealed partial class HttpUserContext : IUserContext
     public string? NomeSocial => GetSingleClaimValue(UniPlusClaims.NomeSocial);
 
     public IReadOnlyList<string> Roles => _roles.Value;
-
-    public IReadOnlyCollection<AreaCodigo> AreasAdministradas => _areasAdministradas.Value;
 
     public bool IsPlataformaAdmin => HasRole(PlataformaAdminRole);
 
@@ -123,44 +112,6 @@ public sealed partial class HttpUserContext : IUserContext
             .Where(static role => !string.IsNullOrWhiteSpace(role))
             .Distinct(RoleComparer)
             .ToArray();
-
-    private HashSet<AreaCodigo> ResolveAreasAdministradas()
-    {
-        HashSet<AreaCodigo> areas = [];
-
-        foreach (string role in Roles)
-        {
-            if (!role.EndsWith(AdminRoleSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            string candidato = role[..^AdminRoleSuffix.Length];
-            if (string.IsNullOrEmpty(candidato))
-            {
-                continue;
-            }
-
-            Result<AreaCodigo> resultado = AreaCodigo.From(candidato);
-            if (resultado.IsFailure)
-            {
-                // IdP mal configurado não pode quebrar a autorização — loga e ignora.
-                LogRoleAreaInvalida(_logger, role, resultado.Error!.Message);
-                continue;
-            }
-
-            AreaCodigo codigo = resultado.Value!;
-            if (codigo == PlataformaCodigo)
-            {
-                // plataforma-admin é bypass platform-wide, exposto via IsPlataformaAdmin.
-                continue;
-            }
-
-            areas.Add(codigo);
-        }
-
-        return areas;
-    }
 
     private IEnumerable<string> EnumerateDirectRoleClaims()
     {
@@ -229,9 +180,4 @@ public sealed partial class HttpUserContext : IUserContext
         string claimName,
         string? resourceName,
         Exception exception);
-
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Role de área {Role} ignorada — código de área inválido: {Motivo}")]
-    private static partial void LogRoleAreaInvalida(ILogger logger, string role, string motivo);
 }

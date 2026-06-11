@@ -2,8 +2,6 @@ using System;
 
 using Microsoft.EntityFrameworkCore.Migrations;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-
 #nullable disable
 
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
@@ -14,13 +12,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
     /// (append-only IForensicEntity per ADR-0063), <c>edital_governance_snapshot</c>
     /// (schema apenas; preenchimento em #462) e a junction
     /// <c>obrigatoriedade_legal_areas_de_interesse</c> — primeira aplicação
-    /// do template <see cref="AreaVisibilityConfiguration{T}"/> (ADR-0060)
+    /// do template <c>AreaVisibilityConfiguration</c> (ADR-0060)
     /// em Selecao.
     /// </summary>
     /// <remarks>
     /// O exclusion constraint GIST que impede sobreposição de janelas
-    /// <c>(parent, area, valid_from..valid_to)</c> é emitido em SQL bruto via
-    /// <see cref="JunctionTableMigrationHelper.AddAreaDeInteresseExclusionConstraint"/>,
+    /// <c>(parent, area, valid_from..valid_to)</c> é emitido em SQL bruto,
     /// pois EF Core não modela <c>EXCLUDE USING GIST</c> no fluent API.
     /// A extensão <c>btree_gist</c> é provisionada explicitamente para que a
     /// migration funcione tanto em PROD/HML (idempotente) quanto em
@@ -175,11 +172,19 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
             // Exclusion constraint GIST per ADR-0060: impede janelas de
             // validade sobrepostas para o mesmo (regra, área). Não é
-            // expressável no fluent API do EF — emitido em SQL bruto via
-            // helper canônico de Infrastructure.Core. Requer btree_gist.
-            migrationBuilder.AddAreaDeInteresseExclusionConstraint(
-                junctionTable: "obrigatoriedade_legal_areas_de_interesse",
-                parentForeignKeyColumn: "obrigatoriedade_legal_id");
+            // expressável no fluent API do EF — emitido em SQL bruto.
+            // Requer btree_gist. (A junction é descartada por migration
+            // posterior — KILL do eixo de Área, Epic #600.)
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE obrigatoriedade_legal_areas_de_interesse
+                  ADD CONSTRAINT excl_obrigatoriedade_legal_areas_de_interesse_overlap
+                  EXCLUDE USING GIST (
+                    obrigatoriedade_legal_id WITH =,
+                    area_codigo WITH =,
+                    tstzrange(valid_from, valid_to, '[)') WITH &&
+                  );
+                """);
         }
 
         /// <inheritdoc />

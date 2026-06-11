@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 
 public sealed class HttpUserContextTests
@@ -222,94 +221,40 @@ public sealed class HttpUserContextTests
         context.IsAuthenticated.Should().BeFalse();
     }
 
-    // ─── AreasAdministradas + IsPlataformaAdmin (ADR-0055 / ADR-0057) ──────
+    // ─── IsPlataformaAdmin ─────────────────────────────────────────────────
 
     [Fact]
-    public void AreasAdministradas_Should_DeriveAreaCodes_FromAdminRoles()
+    public void IsPlataformaAdmin_Should_ReturnTrue_WhenPlataformaAdminRolePresent()
     {
-        HttpUserContext context = CreateContext(RealmRoles("ceps-admin", "proeg-admin"));
+        HttpUserContext context = CreateContext(RealmRoles("plataforma-admin"));
 
-        context.AreasAdministradas.Should().BeEquivalentTo(
-        [
-            AreaCodigo.From("CEPS").Value!,
-            AreaCodigo.From("PROEG").Value!,
-        ]);
-        context.IsPlataformaAdmin.Should().BeFalse();
-    }
-
-    [Fact]
-    public void AreasAdministradas_Should_ExcludePlataforma_WhilePlataformaAdminIsSurfacedSeparately()
-    {
-        // plataforma-admin é o bypass platform-wide — não polui AreasAdministradas.
-        HttpUserContext context = CreateContext(
-            RealmRoles("ceps-admin", "crca-admin", "plataforma-admin"));
-
-        context.AreasAdministradas.Should().BeEquivalentTo(
-        [
-            AreaCodigo.From("CEPS").Value!,
-            AreaCodigo.From("CRCA").Value!,
-        ]);
         context.IsPlataformaAdmin.Should().BeTrue();
     }
 
     [Fact]
-    public void AreasAdministradas_Should_IgnoreLeitorRoles()
+    public void IsPlataformaAdmin_Should_ReturnFalse_WhenRoleAbsent()
     {
-        HttpUserContext context = CreateContext(RealmRoles("ceps-leitor", "crca-admin"));
+        HttpUserContext context = CreateContext(RealmRoles("candidato"));
 
-        context.AreasAdministradas.Should().BeEquivalentTo([AreaCodigo.From("CRCA").Value!]);
-    }
-
-    [Fact]
-    public void AreasAdministradas_Should_NormalizeCase_FromRole()
-    {
-        HttpUserContext context = CreateContext(RealmRoles("CEPS-ADMIN"));
-
-        context.AreasAdministradas.Should().ContainSingle()
-            .Which.Should().Be(AreaCodigo.From("CEPS").Value!);
-    }
-
-    [Theory]
-    [InlineData("candidato", "role sem hífen não é role de área")]
-    [InlineData("1bad-admin", "código inicia por dígito — AreaCodigo.From falha")]
-    [InlineData("ceps-extra-admin", "código com hífen — AreaCodigo.From falha")]
-    [InlineData("-admin", "código vazio após remover o sufixo")]
-    public void AreasAdministradas_Should_SkipInvalidRoles_WithoutCrashing(string role, string razao)
-    {
-        HttpUserContext context = CreateContext(RealmRoles(role));
-
-        context.AreasAdministradas.Should().BeEmpty(razao);
-    }
-
-    [Fact]
-    public void AreasAdministradas_Should_BeEmpty_WhenNoRealmAccessClaim()
-    {
-        HttpUserContext context = CreateContext(new Claim("sub", "user-42"));
-
-        context.AreasAdministradas.Should().BeEmpty();
         context.IsPlataformaAdmin.Should().BeFalse();
     }
 
     [Fact]
-    public void AreasAdministradas_Should_BeEmpty_ForAnonymousUser()
+    public void IsPlataformaAdmin_Should_ReturnFalse_WhenNoRealmAccessClaim()
+    {
+        HttpUserContext context = CreateContext(new Claim("sub", "user-42"));
+
+        context.IsPlataformaAdmin.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsPlataformaAdmin_Should_ReturnFalse_ForAnonymousUser()
     {
         IHttpContextAccessor accessor = Substitute.For<IHttpContextAccessor>();
         accessor.HttpContext.Returns((HttpContext?)null);
         HttpUserContext context = new(accessor, NullLogger<HttpUserContext>.Instance);
 
-        context.AreasAdministradas.Should().BeEmpty();
         context.IsPlataformaAdmin.Should().BeFalse();
-    }
-
-    [Fact]
-    public void AreasAdministradas_Should_CacheResult_AcrossCalls()
-    {
-        HttpUserContext context = CreateContext(RealmRoles("ceps-admin"));
-
-        IReadOnlyCollection<AreaCodigo> first = context.AreasAdministradas;
-        IReadOnlyCollection<AreaCodigo> second = context.AreasAdministradas;
-
-        second.Should().BeSameAs(first, "a coleção é resolvida uma vez por request via Lazy");
     }
 
     private static Claim RealmRoles(params string[] roles) =>

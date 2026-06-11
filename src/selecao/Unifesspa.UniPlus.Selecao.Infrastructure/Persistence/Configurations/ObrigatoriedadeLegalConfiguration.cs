@@ -8,25 +8,14 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Configurations;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração EF Core da entidade <see cref="ObrigatoriedadeLegal"/> +
-/// junction <c>obrigatoriedade_legal_areas_de_interesse</c> (Story #460).
-/// Primeira aplicação do template <see cref="AreaVisibilityConfiguration{T}"/>
-/// em Selecao (ADR-0060).
+/// Configuração EF Core da entidade <see cref="ObrigatoriedadeLegal"/>
+/// (Story #460).
 /// </summary>
 /// <remarks>
-/// <para>
-/// A propriedade in-memory <see cref="ObrigatoriedadeLegal.AreasDeInteresse"/>
-/// é deliberadamente ignorada do model EF: a verdade temporal mora na
-/// junction, configurada pela base via <c>ConfigureAreaVisibility</c>. A
-/// reconciliação set ↔ junction é responsabilidade do repositório admin
-/// (#461).
-/// </para>
 /// <para>
 /// <see cref="ObrigatoriedadeLegal.Hash"/> entra como índice UNIQUE PARCIAL
 /// (apenas para linhas não soft-deleted) — Postgres consegue expressar via
@@ -38,8 +27,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class ObrigatoriedadeLegalConfiguration()
-    : AreaVisibilityConfiguration<ObrigatoriedadeLegal>("obrigatoriedade_legal")
+internal sealed class ObrigatoriedadeLegalConfiguration
+    : IEntityTypeConfiguration<ObrigatoriedadeLegal>
 {
     private const int TipoEditalCodigoMaxLength = 64;
     private const int RegraCodigoMaxLength = 128;
@@ -49,10 +38,9 @@ internal sealed class ObrigatoriedadeLegalConfiguration()
     private const int AtoNormativoUrlMaxLength = 1000;
     private const int PortariaInternaCodigoMaxLength = 128;
     private const int HashLength = 64;
-    private const int ProprietarioMaxLength = 32;
     private const int AuditUserMaxLength = 255;
 
-    public override void Configure(EntityTypeBuilder<ObrigatoriedadeLegal> builder)
+    public void Configure(EntityTypeBuilder<ObrigatoriedadeLegal> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -99,13 +87,6 @@ internal sealed class ObrigatoriedadeLegalConfiguration()
             .IsFixedLength()
             .IsRequired();
 
-        // Nullable struct: o EF aplica o ValueConverter da forma não-nullável
-        // (AreaCodigoValueConverter) transparentemente — null em Proprietario
-        // mapeia para NULL na coluna sem precisar de adaptação manual.
-        builder.Property(o => o.Proprietario)
-            .HasConversion<AreaCodigoValueConverter>()
-            .HasMaxLength(ProprietarioMaxLength);
-
         // Audit (IAuditableEntity) — preenchido pelo AuditableInterceptor.
         builder.Property(o => o.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(o => o.UpdatedBy).HasMaxLength(AuditUserMaxLength);
@@ -116,11 +97,6 @@ internal sealed class ObrigatoriedadeLegalConfiguration()
         // (255 chars) para coerência de schema e suporte a índice parcial
         // futuro se preciso.
         builder.Property(o => o.DeletedBy).HasMaxLength(AuditUserMaxLength);
-
-        // AreasDeInteresse vive na junction temporal (ADR-0060). O field
-        // backing in-memory é ignorado no model — invariante 1 do ADR-0057
-        // é responsabilidade do domínio na hora da escrita.
-        builder.Ignore(o => o.AreasDeInteresse);
 
         // CA-02 — UNIQUE parcial sobre Hash. Soft-deletes não disputam o slot,
         // permitindo recriar uma regra com hash idêntico após a desativação
@@ -143,8 +119,6 @@ internal sealed class ObrigatoriedadeLegalConfiguration()
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ux_obrigatoriedades_legais_regra_codigo_ativos");
-
-        ConfigureAreaVisibility(builder);
     }
 
     /// <summary>

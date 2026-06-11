@@ -13,9 +13,9 @@ using Outbox.Cascading;
 /// (a) wiring do controller (Route, VendorMediaType, HATEOAS),
 /// (b) shape do ProblemDetails específico para conformidade-historica 404.
 ///
-/// Testes que exigem authenticated admin context (POST/PUT/DELETE com RBAC
-/// área-scoped) ficam fora deste smoke — entram em follow-up dedicado com
-/// fixture de TestAuthHandler ajustada para popular AreasAdministradas.
+/// Testes que exigem authenticated admin context (POST/PUT/DELETE restrito a
+/// plataforma-admin) ficam em ObrigatoriedadeLegalAdminEndpointTests, com a
+/// fixture de TestAuthHandler que popula os roles do requisitante.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]

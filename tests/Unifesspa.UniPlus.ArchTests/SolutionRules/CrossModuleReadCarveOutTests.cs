@@ -19,9 +19,9 @@ using ReflectionType = System.Type;
 ///   pode depender dos namespaces <c>.Domain</c> ou <c>.Application</c> de outro módulo.</description></item>
 ///   <item><description>Dependências cross-módulo são permitidas apenas contra
 ///   <c>{Module}.Contracts</c> ou <c>Governance.Contracts</c> (ADR-0055).</description></item>
-///   <item><description><strong>Whitelist S4 do PR #500</strong>:
+///   <item><description><strong>Whitelist S4</strong>:
 ///   <c>Application.Abstractions</c> pode depender de <c>Governance.Contracts</c>
-///   (<c>AreaCodigo</c> é foundation contract usado em <c>IUserContext.AreasAdministradas</c>).</description></item>
+///   (foundation contracts cross-módulo) e do <c>Kernel</c>.</description></item>
 /// </list>
 /// </summary>
 /// <remarks>
@@ -160,10 +160,11 @@ public sealed class CrossModuleReadCarveOutTests
     [Fact(DisplayName = "R8 S4: Application.Abstractions só depende de Governance.Contracts e Kernel cross-módulo")]
     public void ApplicationAbstractions_SoDependeDeFoundationCrossModulo()
     {
-        // Application.Abstractions hospeda IUserContext.AreasAdministradas → AreaCodigo
-        // (de Governance.Contracts) e value objects do Kernel. Qualquer ref para módulo
-        // de negócio (Selecao, Ingresso, Portal, OrganizacaoInstitucional, Configuracao)
-        // viola a invariante "foundation não desce para módulos" — S4 do PR #500.
+        // Application.Abstractions é foundation cross-módulo: pode depender de
+        // Governance.Contracts e dos value objects do Kernel, mas de nada mais.
+        // Qualquer ref para módulo de negócio (Selecao, Ingresso, Portal,
+        // OrganizacaoInstitucional, Configuracao) viola a invariante
+        // "foundation não desce para módulos de negócio" — S4.
         foreach (string modulo in ModulesRoster)
         {
             string destinoPattern = $@"^Unifesspa\.UniPlus\.{modulo}(\.|$)";
@@ -224,7 +225,7 @@ public sealed class CrossModuleReadCarveOutTests
         [
             // Shared foundation
             typeof(global::Unifesspa.UniPlus.Kernel.Domain.Entities.EntityBase).Assembly,
-            typeof(global::Unifesspa.UniPlus.Governance.Contracts.AreaCodigo).Assembly,
+            typeof(global::Unifesspa.UniPlus.Governance.Contracts.UnidadeView).Assembly,
             typeof(global::Unifesspa.UniPlus.Application.Abstractions.Messaging.ICommandBus).Assembly,
             typeof(global::Unifesspa.UniPlus.Infrastructure.Core.Messaging.WolverineOutboxConfiguration).Assembly,
 
