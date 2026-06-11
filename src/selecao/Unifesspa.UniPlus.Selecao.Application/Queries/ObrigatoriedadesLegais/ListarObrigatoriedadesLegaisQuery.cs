@@ -14,5 +14,4 @@ public sealed record ListarObrigatoriedadesLegaisQuery(
     int Take,
     string? TipoEditalCodigo,
     CategoriaObrigatoriedade? Categoria,
-    string? Proprietario,
     bool Vigentes) : IQuery<ListarObrigatoriedadesLegaisResult>;

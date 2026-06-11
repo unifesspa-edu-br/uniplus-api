@@ -3,12 +3,11 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
-/// Snapshot append-only de governança (regras avaliadas + áreas) de um
+/// Snapshot append-only de governança (regras avaliadas) de um
 /// <see cref="Edital"/> no momento de <c>Edital.Publicar()</c>. Suporta a
 /// evidência forense exigida por mandados de segurança e processos
 /// administrativos — "quais regras se aplicaram quando este edital foi
-/// publicado e quem tinha visibilidade na época" (ADR-0057 §"Pattern 1",
-/// ADR-0058 §"Snapshot-on-bind").
+/// publicado" (ADR-0058 §"Snapshot-on-bind").
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,17 +18,16 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// </para>
 /// <para>
 /// <strong>Esta Story #460 cria apenas o schema vazio</strong> (CA-04). A
-/// inserção de uma linha pelo agregado <c>Edital.Publicar()</c> — leitura
-/// da <c>ConfiguracaoGovernanceProjection</c> + cópia para esta tabela —
-/// é responsabilidade da Story #462 (US-F4-04). Fronteira deliberada para
-/// manter "1 PR por Story" do Uni+.
+/// inserção de uma linha pelo agregado <c>Edital.Publicar()</c> — leitura das
+/// regras vigentes + cópia para esta tabela — é responsabilidade da Story
+/// #462 (US-F4-04). Fronteira deliberada para manter "1 PR por Story" do
+/// Uni+.
 /// </para>
 /// <para>
 /// <see cref="RegrasJson"/> guarda o array JSON com cada
 /// <c>(rule_hash, base_legal, portaria_interna, descricao, vigencia,
-/// predicado, proprietario, areas_de_interesse)</c> avaliada — independente
-/// de qualquer mutação posterior em <c>obrigatoriedades_legais</c> ou na
-/// junction de áreas, esta linha fica imutável.
+/// predicado)</c> avaliada — independente de qualquer mutação posterior em
+/// <c>obrigatoriedades_legais</c>, esta linha fica imutável.
 /// </para>
 /// </remarks>
 public sealed class EditalGovernanceSnapshot : IForensicEntity

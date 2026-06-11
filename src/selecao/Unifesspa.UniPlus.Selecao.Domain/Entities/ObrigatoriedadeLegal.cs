@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -13,27 +12,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Regra legal data-driven que valida invariantes de um <see cref="Edital"/>
-/// antes da publicação (ADR-0058). Carrega citação legal, vigência temporal,
-/// hash canônico e governança por área (ADR-0057) para suportar evidência
-/// forense em mandados de segurança e processos administrativos.
+/// antes da publicação (ADR-0058). Carrega citação legal, vigência temporal e
+/// hash canônico para suportar evidência forense em mandados de segurança e
+/// processos administrativos.
 /// </summary>
 /// <remarks>
-/// <para>
 /// A entidade encapsula o estado e os invariantes do agregado. A
 /// validação e normalização do payload de entrada é responsabilidade do
 /// <see cref="ObrigatoriedadeLegalPayloadNormalizer"/> (Domain Service),
 /// invocado pelas factories — separação de responsabilidades alinhada
 /// com SRP.
-/// </para>
-/// <para>
-/// A propriedade <see cref="AreasDeInteresse"/> reflete o snapshot in-memory
-/// do conjunto de áreas que enxergam a regra. A verdade persistida vive na
-/// junction temporal <c>obrigatoriedade_legal_areas_de_interesse</c>
-/// (ADR-0060), reconciliada pelo repositório/admin CRUD que entra em #461.
-/// Em V1 esta entidade é hidratada via factory (admin POST) e o repositório
-/// é responsável por traduzir o set para INSERTs na junction; queries de
-/// visibilidade leem a junction, não esta propriedade.
-/// </para>
 /// </remarks>
 [SuppressMessage(
     "Design",
@@ -46,7 +34,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     "CA1054:URI-like parameters should not be strings",
     Justification = "Pareado com a justificativa de CA1056 acima — factory aceita string para "
         + "preservar fidelidade do payload textual da citação normativa.")]
-public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity, IAreaScopedEntity
+public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 {
     /// <summary>
     /// Valor sentinela aceito em <see cref="TipoEditalCodigo"/> para regras
@@ -74,18 +62,6 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// </summary>
     public string Hash { get; private set; } = null!;
 
-    public AreaCodigo? Proprietario { get; private set; }
-
-    private HashSet<AreaCodigo> _areasDeInteresse = [];
-
-    /// <summary>
-    /// Snapshot in-memory do conjunto de áreas de interesse. A verdade
-    /// temporal mora na junction <c>obrigatoriedade_legal_areas_de_interesse</c>
-    /// (ADR-0060) — esta propriedade é a forma de domínio que aplica a
-    /// Invariante 1 do ADR-0057 (Proprietario ∈ AreasDeInteresse).
-    /// </summary>
-    public IReadOnlySet<AreaCodigo> AreasDeInteresse => _areasDeInteresse;
-
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
 
@@ -106,8 +82,6 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         PortariaInternaCodigo = payload.PortariaInternaCodigo;
         VigenciaInicio = payload.VigenciaInicio;
         VigenciaFim = payload.VigenciaFim;
-        Proprietario = payload.Proprietario;
-        _areasDeInteresse = [.. payload.AreasDeInteresse];
         Hash = ComputeHash();
     }
 
@@ -126,9 +100,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim = null,
         string? atoNormativoUrl = null,
-        string? portariaInternaCodigo = null,
-        AreaCodigo? proprietario = null,
-        IReadOnlySet<AreaCodigo>? areasDeInteresse = null)
+        string? portariaInternaCodigo = null)
     {
         if (predicado is null)
         {
@@ -146,9 +118,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
             atoNormativoUrl,
             portariaInternaCodigo,
             vigenciaInicio,
-            vigenciaFim,
-            proprietario,
-            areasDeInteresse);
+            vigenciaFim);
 
         return normalized.IsFailure
             ? Result<ObrigatoriedadeLegal>.Failure(normalized.Error!)
@@ -187,9 +157,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
             vigenciaInicio: DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime.Date),
             vigenciaFim: null,
             atoNormativoUrl: null,
-            portariaInternaCodigo: portariaInternaCodigo,
-            proprietario: null,
-            areasDeInteresse: null);
+            portariaInternaCodigo: portariaInternaCodigo);
     }
 
     /// <summary>
@@ -204,10 +172,8 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// opcionais) são aplicados literalmente ao estado da regra. O caller
     /// que só quer alterar um campo precisa repassar os valores atuais
     /// dos demais — sem parâmetros opcionais com default <c>null</c>, para
-    /// evitar limpeza silenciosa de <c>AtoNormativoUrl</c>,
-    /// <c>PortariaInternaCodigo</c>, <c>Proprietario</c> ou
-    /// <c>AreasDeInteresse</c> persistidos previamente (corrupção de
-    /// evidência de governance).
+    /// evitar limpeza silenciosa de <c>AtoNormativoUrl</c> ou
+    /// <c>PortariaInternaCodigo</c> persistidos previamente.
     /// </para>
     /// </remarks>
     public Result Atualizar(
@@ -220,9 +186,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim,
         string? atoNormativoUrl,
-        string? portariaInternaCodigo,
-        AreaCodigo? proprietario,
-        IReadOnlySet<AreaCodigo>? areasDeInteresse)
+        string? portariaInternaCodigo)
     {
         if (predicado is null)
         {
@@ -240,9 +204,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
             atoNormativoUrl,
             portariaInternaCodigo,
             vigenciaInicio,
-            vigenciaFim,
-            proprietario,
-            areasDeInteresse);
+            vigenciaFim);
 
         if (normalized.IsFailure)
         {
@@ -265,8 +227,6 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         PortariaInternaCodigo = payload.PortariaInternaCodigo;
         VigenciaInicio = payload.VigenciaInicio;
         VigenciaFim = payload.VigenciaFim;
-        Proprietario = payload.Proprietario;
-        _areasDeInteresse = [.. payload.AreasDeInteresse];
         Hash = ComputeHash();
     }
 

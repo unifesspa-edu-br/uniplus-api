@@ -1,9 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -18,8 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <remarks>
 /// <para>
 /// A validação aqui é a primeira linha de defesa do domínio: shape,
-/// presença, tamanho, vigência consistente, governance per ADR-0057
-/// (Invariante 1: <c>Proprietario ∈ AreasDeInteresse</c>). A validação
+/// presença, tamanho e vigência consistente. A validação
 /// de fronteira HTTP (FluentValidation) acontece antes — esta camada
 /// existe para garantir que mesmo construções diretas (factory, seeds,
 /// testes) respeitem os mesmos contratos.
@@ -58,9 +55,7 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
         string? atoNormativoUrl,
         string? portariaInternaCodigo,
         DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        AreaCodigo? proprietario,
-        IReadOnlySet<AreaCodigo>? areasDeInteresse)
+        DateOnly? vigenciaFim)
     {
         Result<string> tipoEdital = NormalizarTipoEditalCodigo(tipoEditalCodigo);
         if (tipoEdital.IsFailure)
@@ -118,13 +113,6 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
             return Result<NormalizedPayload>.Failure(vigencia.Error!);
         }
 
-        IReadOnlySet<AreaCodigo> areas = areasDeInteresse ?? (IReadOnlySet<AreaCodigo>)new HashSet<AreaCodigo>();
-        Result governanca = ValidarGovernanca(proprietario, areas);
-        if (governanca.IsFailure)
-        {
-            return Result<NormalizedPayload>.Failure(governanca.Error!);
-        }
-
         return Result<NormalizedPayload>.Success(new NormalizedPayload(
             tipoEdital.Value!,
             categoria,
@@ -134,9 +122,7 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
             ato.Value,
             portaria.Value,
             vigenciaInicio,
-            vigenciaFim,
-            proprietario,
-            areas));
+            vigenciaFim));
     }
 
     private static Result<string> NormalizarTipoEditalCodigo(string? valor) =>
@@ -234,28 +220,6 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
                 "VigenciaFim deve ser estritamente posterior a VigenciaInicio."))
             : Result.Success();
     }
-
-    /// <summary>
-    /// Invariante 1 do ADR-0057: <c>Proprietario</c> deve estar em
-    /// <c>AreasDeInteresse</c>; ambos vazios são válidos para regra global.
-    /// </summary>
-    private static Result ValidarGovernanca(AreaCodigo? proprietario, IReadOnlySet<AreaCodigo> areas)
-    {
-        if (proprietario is { } prop)
-        {
-            return areas.Count == 0 || !areas.Contains(prop)
-                ? Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.ProprietarioForaDeAreasDeInteresse",
-                    "Proprietario deve estar em AreasDeInteresse — ou ambos devem ser vazios para regra global."))
-                : Result.Success();
-        }
-
-        return areas.Count > 0
-            ? Result.Failure(new DomainError(
-                "ObrigatoriedadeLegal.ProprietarioObrigatorioComAreas",
-                "Quando AreasDeInteresse não é vazio, Proprietario é obrigatório."))
-            : Result.Success();
-    }
 }
 
 /// <summary>
@@ -281,6 +245,4 @@ public sealed record NormalizedPayload(
     string? AtoNormativoUrl,
     string? PortariaInternaCodigo,
     DateOnly VigenciaInicio,
-    DateOnly? VigenciaFim,
-    AreaCodigo? Proprietario,
-    IReadOnlySet<AreaCodigo> AreasDeInteresse);
+    DateOnly? VigenciaFim);

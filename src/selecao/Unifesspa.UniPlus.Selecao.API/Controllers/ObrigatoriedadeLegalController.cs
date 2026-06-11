@@ -21,9 +21,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Admin CRUD + leitura pública de <c>ObrigatoriedadeLegal</c>
 /// (Story #461, ADR-0058 Emenda 1). Paths path-based per ADR-0064:
 /// público sob <c>/api/selecao/obrigatoriedades-legais</c>, admin sob
-/// <c>/api/selecao/admin/obrigatoriedades-legais</c>. RBAC área-scoped
-/// (ADR-0057) é verificado pelos handlers via <c>IUserContext.AreasAdministradas</c>
-/// — controller mantém apenas a authentication gate.
+/// <c>/api/selecao/admin/obrigatoriedades-legais</c>. A regra é cross-cutting
+/// por tipo de processo (sem proprietário nem áreas de interesse); os
+/// endpoints administrativos exigem o role <c>plataforma-admin</c> (autz
+/// interina).
 /// </summary>
 [ApiController]
 [Route("api/selecao")]
@@ -68,7 +69,6 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery] string? tipoEdital,
         [FromQuery] CategoriaObrigatoriedade? categoria,
-        [FromQuery] string? proprietario,
         [FromQuery] bool vigentes = true,
         CancellationToken cancellationToken = default)
     {
@@ -80,7 +80,6 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
                 page.Limit,
                 tipoEdital,
                 categoria,
-                proprietario,
                 vigentes),
             cancellationToken).ConfigureAwait(false);
 
@@ -116,13 +115,12 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     }
 
     /// <summary>
-    /// Cria uma nova <c>ObrigatoriedadeLegal</c>. Restrito a admin
-    /// área-scoped (ADR-0057) — checagem no handler com base no
-    /// <c>Proprietario</c> do payload. <c>Idempotency-Key</c> obrigatório
-    /// (ADR-0027).
+    /// Cria uma nova <c>ObrigatoriedadeLegal</c>. Restrito ao role
+    /// <c>plataforma-admin</c> (autz interina). <c>Idempotency-Key</c>
+    /// obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/obrigatoriedades-legais")]
-    [Authorize]
+    [Authorize(Roles = "plataforma-admin")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -153,7 +151,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// repassar todos os campos. <c>Idempotency-Key</c> obrigatório.
     /// </summary>
     [HttpPut("admin/obrigatoriedades-legais/{id:guid}")]
-    [Authorize]
+    [Authorize(Roles = "plataforma-admin")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -193,7 +191,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     /// e libera o slot do <c>UNIQUE</c> parcial sobre <c>Hash</c> (ADR-0063).
     /// </summary>
     [HttpDelete("admin/obrigatoriedades-legais/{id:guid}")]
-    [Authorize]
+    [Authorize(Roles = "plataforma-admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

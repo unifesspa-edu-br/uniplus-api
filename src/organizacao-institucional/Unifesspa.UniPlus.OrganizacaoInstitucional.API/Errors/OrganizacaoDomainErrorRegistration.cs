@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
@@ -14,15 +13,6 @@ internal sealed class OrganizacaoDomainErrorRegistration : IDomainErrorRegistrat
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
-        // AreaCodigo.Invalido vem de Governance.Contracts — mapeado aqui para
-        // o wire code do módulo OrganizacaoInstitucional, com fallback ao
-        // mapping global se outros módulos precisarem.
-        new(AreaCodigo.CodigoErroInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.organizacao.area_codigo.invalido",
-                "Código de área inválido")),
-
         // ── Unidade ──────────────────────────────────────────────────────
         new(UnidadeErrorCodes.NomeObrigatorio,
             new DomainErrorMapping(

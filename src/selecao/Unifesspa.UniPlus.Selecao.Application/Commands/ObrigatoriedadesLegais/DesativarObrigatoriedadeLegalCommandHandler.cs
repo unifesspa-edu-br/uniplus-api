@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -11,9 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// Marca a regra para soft-delete via <c>SoftDeleteInterceptor</c> — o EF
 /// converte <c>EntityState.Deleted</c> em <c>Modified + IsDeleted = true</c>,
 /// e o <c>ObrigatoriedadeLegalHistoricoInterceptor</c> grava o snapshot da
-/// desativação (ADR-0058 Emenda 1 + ADR-0063). Junction temporal é
-/// preservada — os bindings continuam ativos até que o admin emita um PUT
-/// reciclando a regra com novo Hash.
+/// desativação (ADR-0058 Emenda 1 + ADR-0063).
 /// </summary>
 public static class DesativarObrigatoriedadeLegalCommandHandler
 {
@@ -21,13 +18,11 @@ public static class DesativarObrigatoriedadeLegalCommandHandler
         DesativarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
         IUnitOfWork unitOfWork,
-        IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(userContext);
 
         ObrigatoriedadeLegal? regra = await repository
             .ObterPorIdAsync(command.Id, cancellationToken)
@@ -37,12 +32,6 @@ public static class DesativarObrigatoriedadeLegalCommandHandler
             return Result.Failure(new DomainError(
                 "ObrigatoriedadeLegal.NaoEncontrada",
                 $"ObrigatoriedadeLegal {command.Id} não encontrada."));
-        }
-
-        Result authz = AreaScopedAuthorization.Autorizar(userContext, regra.Proprietario);
-        if (authz.IsFailure)
-        {
-            return authz;
         }
 
         repository.Remover(regra);

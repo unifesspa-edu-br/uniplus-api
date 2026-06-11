@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Governance.Contracts;
 
 /// <summary>
 /// Stub mínimo de <see cref="IUserContext"/> para testes de persistência da
@@ -24,6 +23,5 @@ internal sealed class StubUserContext : IUserContext
     public IReadOnlyList<string> Roles => [];
     public bool HasRole(string role) => false;
     public IReadOnlyList<string> GetResourceRoles(string resourceName) => [];
-    public IReadOnlyCollection<AreaCodigo> AreasAdministradas => [];
     public bool IsPlataformaAdmin => false;
 }
