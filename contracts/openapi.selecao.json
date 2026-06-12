@@ -647,13 +647,6 @@
             }
           },
           {
-            "name": "proprietario",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "vigentes",
             "in": "query",
             "schema": {
@@ -1127,9 +1120,7 @@
           "vigenciaInicio",
           "vigenciaFim",
           "atoNormativoUrl",
-          "portariaInternaCodigo",
-          "proprietario",
-          "areasDeInteresse"
+          "portariaInternaCodigo"
         ],
         "type": "object",
         "properties": {
@@ -1177,18 +1168,6 @@
               "null",
               "string"
             ]
-          },
-          "proprietario": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "areasDeInteresse": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },
@@ -1329,9 +1308,7 @@
           "vigenciaInicio",
           "vigenciaFim",
           "atoNormativoUrl",
-          "portariaInternaCodigo",
-          "proprietario",
-          "areasDeInteresse"
+          "portariaInternaCodigo"
         ],
         "type": "object",
         "properties": {
@@ -1375,18 +1352,6 @@
               "null",
               "string"
             ]
-          },
-          "proprietario": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "areasDeInteresse": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },
@@ -1468,8 +1433,6 @@
           "vigenciaInicio",
           "vigenciaFim",
           "hash",
-          "proprietario",
-          "areasDeInteresse",
           "isDeleted"
         ],
         "type": "object",
@@ -1521,18 +1484,6 @@
           },
           "hash": {
             "type": "string"
-          },
-          "proprietario": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "areasDeInteresse": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "isDeleted": {
             "type": "boolean"

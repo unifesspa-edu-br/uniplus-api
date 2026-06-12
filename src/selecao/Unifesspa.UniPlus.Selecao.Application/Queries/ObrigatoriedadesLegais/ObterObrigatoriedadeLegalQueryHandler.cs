@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ObrigatoriedadesLegais;
 
-using System.Collections.Generic;
-
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -10,10 +7,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based de <see cref="ObterObrigatoriedadeLegalQuery"/>.
-/// Carrega a regra (filtrada por soft-delete via query filter padrão) e
-/// hidrata <c>AreasDeInteresse</c> a partir da junction temporal — entity
-/// não tem nav property (ADR-0060), o set in-memory vem vazio após carga
-/// EF fresca.
+/// Carrega a regra (filtrada por soft-delete via query filter padrão) e mapeia
+/// para o DTO. A regra é cross-cutting por tipo de processo — sem proprietário
+/// nem áreas de interesse.
 /// </summary>
 public static class ObterObrigatoriedadeLegalQueryHandler
 {
@@ -28,15 +24,7 @@ public static class ObterObrigatoriedadeLegalQueryHandler
         ObrigatoriedadeLegal? regra = await repository
             .ObterPorIdAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
-        if (regra is null)
-        {
-            return null;
-        }
 
-        IReadOnlySet<AreaCodigo> areas = await repository
-            .ObterAreasVigentesAsync(regra.Id, cancellationToken)
-            .ConfigureAwait(false);
-
-        return ObrigatoriedadeLegalMapping.ToDto(regra, areas);
+        return regra is null ? null : ObrigatoriedadeLegalMapping.ToDto(regra);
     }
 }

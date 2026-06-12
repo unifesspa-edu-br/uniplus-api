@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -12,29 +11,23 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Governance.Contracts;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Outbox.Cascading;
 
 /// <summary>
 /// Integration tests do admin CRUD de <c>ObrigatoriedadeLegal</c>
 /// (Story #461) contra Postgres real via Testcontainers. Cobrem:
-/// happy path POST/PUT/DELETE com auth + RBAC área-scoped, validação
-/// 422, 403 quando escopo negado, 404 quando inexistente,
-/// idempotência POST, e reconciliação atômica da junction temporal.
+/// happy path POST/PUT/DELETE restrito ao role <c>plataforma-admin</c>,
+/// validação 422, 404 quando inexistente, idempotência POST e
+/// conflito de RegraCodigo duplicado.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
 public sealed class ObrigatoriedadeLegalAdminEndpointTests
 {
     private const string AdminPlataforma = "plataforma-admin";
-    private const string AdminCeps = "ceps-admin";
-    private const string AdminCrca = "crca-admin";
 
     // Predicados em Dictionary porque anonymous types não suportam keys que
     // começam com '$' (o JsonPolymorphic do PredicadoObrigatoriedade usa
@@ -48,12 +41,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
     {
         ["$tipo"] = "etapaObrigatoria",
         ["tipoEtapaCodigo"] = "ProvaObjetiva",
-    };
-
-    private static readonly Dictionary<string, object> PredicadoModalidadesACLbPpi = new(StringComparer.Ordinal)
-    {
-        ["$tipo"] = "modalidadesMinimas",
-        ["codigos"] = new[] { "AC", "LbPpi" },
     };
 
     private readonly CascadingFixture _fixture;
@@ -81,8 +68,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             vigenciaFim = (string?)null,
             atoNormativoUrl = (string?)null,
             portariaInternaCodigo = (string?)null,
-            proprietario = (string?)null,
-            areasDeInteresse = Array.Empty<string>(),
         };
 
         HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);
@@ -96,78 +81,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             ObrigatoriedadeLegal? regra = await db.ObrigatoriedadesLegais
                 .FirstOrDefaultAsync(o => o.RegraCodigo == regraCodigo);
             regra.Should().NotBeNull();
-            regra!.Proprietario.Should().BeNull();
-            regra.AreasDeInteresse.Should().BeEmpty();
-        }
-    }
-
-    [Fact(DisplayName = "POST como ceps-admin cria regra com Proprietario=CEPS e binding na junction")]
-    public async Task Criar_CepsAdmin_CriaRegraCepsComBinding()
-    {
-        using HttpClient client = ClientWithRoles(AdminCeps);
-        string regraCodigo = UniqueRegraCodigo();
-
-        object payload = new
-        {
-            tipoEditalCodigo = "*",
-            categoria = "modalidade",
-            regraCodigo,
-            predicado = PredicadoModalidadesACLbPpi,
-            descricaoHumana = "Modalidades mínimas CEPS",
-            baseLegal = "Resolução Unifesspa 414/2020",
-            vigenciaInicio = "2026-01-01",
-            proprietario = "CEPS",
-            areasDeInteresse = new[] { "CEPS" },
-        };
-
-        HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        await using SelecaoDbContext db = ResolveDbContext(scope);
-        ObrigatoriedadeLegal regra = await db.ObrigatoriedadesLegais
-            .SingleAsync(o => o.RegraCodigo == regraCodigo);
-        regra.Proprietario.Should().Be(AreaCodigo.From("CEPS").Value);
-
-        int bindings = await db.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
-            .Where(b => b.ParentId == regra.Id && b.ValidoAte == null)
-            .CountAsync();
-        bindings.Should().Be(1, "binding vigente CEPS deve ter sido inserido na junction");
-    }
-
-    [Fact(DisplayName = "POST como ceps-admin tentando criar regra PROEG retorna 403 escopo_negado")]
-    public async Task Criar_CepsAdminEscapandoEscopo_Retorna403()
-    {
-        using HttpClient client = ClientWithRoles(AdminCeps);
-        string regraCodigo = UniqueRegraCodigo();
-
-        object payload = new
-        {
-            tipoEditalCodigo = "*",
-            categoria = "outros",
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "x",
-            baseLegal = "Lei",
-            vigenciaInicio = "2026-01-01",
-            proprietario = "PROEG",
-            areasDeInteresse = new[] { "PROEG" },
-        };
-
-        HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        string body = await response.Content.ReadAsStringAsync();
-        if (!string.IsNullOrWhiteSpace(body))
-        {
-            using JsonDocument doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("type", out JsonElement typeElement))
-            {
-                typeElement.GetString()
-                    .Should().EndWith("uniplus.area.escopo_negado",
-                        "type segue pattern URI da ADR-0023 com prefixo do site");
-            }
         }
     }
 
@@ -185,8 +98,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             descricaoHumana = "x",
             baseLegal = "Lei",
             vigenciaInicio = "2026-01-01",
-            proprietario = (string?)null,
-            areasDeInteresse = Array.Empty<string>(),
         };
 
         using HttpRequestMessage request = new(HttpMethod.Post,
@@ -216,8 +127,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             descricaoHumana = "Regra idempotente",
             baseLegal = "Lei",
             vigenciaInicio = "2026-01-01",
-            proprietario = (string?)null,
-            areasDeInteresse = Array.Empty<string>(),
         };
 
         HttpResponseMessage primeira = await PostAsync(
@@ -252,8 +161,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             descricaoHumana = "Regra original",
             baseLegal = "Lei",
             vigenciaInicio = "2026-01-01",
-            proprietario = (string?)null,
-            areasDeInteresse = Array.Empty<string>(),
         };
 
         HttpResponseMessage primeira = await PostAsync(
@@ -272,8 +179,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             descricaoHumana = "Regra duplicada com outro conteúdo",
             baseLegal = "Lei 14.723/2023",
             vigenciaInicio = "2026-02-01",
-            proprietario = (string?)null,
-            areasDeInteresse = Array.Empty<string>(),
         };
 
         HttpResponseMessage segunda = await PostAsync(
@@ -306,8 +211,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             vigenciaFim = (string?)null,
             atoNormativoUrl = (string?)null,
             portariaInternaCodigo = (string?)null,
-            proprietario = (string?)null,
-            areasDeInteresse = Array.Empty<string>(),
         };
 
         HttpResponseMessage put = await PutAsync(
@@ -349,8 +252,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             vigenciaFim = (string?)null,
             atoNormativoUrl = (string?)null,
             portariaInternaCodigo = (string?)null,
-            proprietario = (string?)null,
-            areasDeInteresse = Array.Empty<string>(),
         };
 
         HttpResponseMessage response = await PutAsync(
@@ -359,43 +260,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             putPayload);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact(DisplayName = "PUT como CRCA-admin em regra CEPS retorna 403 escopo_negado")]
-    public async Task Atualizar_EscopoErrado_Retorna403()
-    {
-        using HttpClient adminPlataforma = ClientWithRoles(AdminPlataforma);
-        string regraCodigo = UniqueRegraCodigo();
-        Guid id = await SeedRegraAsync(
-            adminPlataforma,
-            regraCodigo,
-            proprietario: "CEPS",
-            areasDeInteresse: new[] { "CEPS" });
-
-        using HttpClient adminCrca = ClientWithRoles(AdminCrca);
-        object putPayload = new
-        {
-            id,
-            tipoEditalCodigo = "*",
-            categoria = "outros",
-            regraCodigo,
-            predicado = PredicadoConcorrenciaDupla,
-            descricaoHumana = "Tentativa de CRCA editar regra CEPS",
-            baseLegal = "Lei alterada",
-            vigenciaInicio = "2026-01-01",
-            vigenciaFim = (string?)null,
-            atoNormativoUrl = (string?)null,
-            portariaInternaCodigo = (string?)null,
-            proprietario = "CEPS",
-            areasDeInteresse = new[] { "CEPS" },
-        };
-
-        HttpResponseMessage response = await PutAsync(
-            adminCrca,
-            $"/api/selecao/admin/obrigatoriedades-legais/{id}",
-            putPayload);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "DELETE soft-delete retorna 204 e regra some do GET público")]
@@ -481,9 +345,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
         HttpClient client,
         string regraCodigo,
         string categoria = "outros",
-        string baseLegal = "Lei seed",
-        string? proprietario = null,
-        IReadOnlyCollection<string>? areasDeInteresse = null)
+        string baseLegal = "Lei seed")
     {
         object payload = new
         {
@@ -497,8 +359,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             vigenciaFim = (string?)null,
             atoNormativoUrl = (string?)null,
             portariaInternaCodigo = (string?)null,
-            proprietario,
-            areasDeInteresse = areasDeInteresse ?? Array.Empty<string>(),
         };
 
         HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);

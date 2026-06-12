@@ -1,10 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
-using System.Collections.Generic;
-
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -12,8 +9,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Invariantes da forma plena de <see cref="ObrigatoriedadeLegal"/> (Story
-/// #460). Cobre os critérios CA-01 (campos), CA-05 (hash recomputado pela
-/// factory) e a Invariante 1 do ADR-0057 (Proprietario ∈ AreasDeInteresse).
+/// #460). Cobre os critérios CA-01 (campos) e CA-05 (hash recomputado pela
+/// factory).
 /// </summary>
 public sealed class ObrigatoriedadeLegalCriarTests
 {
@@ -37,72 +34,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
         regra.TipoEditalCodigo.Should().Be("*");
         regra.Categoria.Should().Be(CategoriaObrigatoriedade.Etapa);
         regra.RegraCodigo.Should().Be("ETAPA_OBRIGATORIA");
-        regra.Proprietario.Should().BeNull();
-        regra.AreasDeInteresse.Should().BeEmpty();
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Criar com governance respeita Invariante 1 (Proprietario ∈ AreasDeInteresse)")]
-    public void Criar_ComGovernance_OK()
-    {
-        AreaCodigo ceps = AreaCodigo.From("CEPS").Value;
-        AreaCodigo proeg = AreaCodigo.From("PROEG").Value;
-
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,
-            categoria: CategoriaObrigatoriedade.Modalidade,
-            regraCodigo: "MODALIDADES_MINIMAS_CEPS",
-            predicado: new ModalidadesMinimas(new[] { "AC", "LbPpi" }),
-            descricaoHumana: "Modalidades mínimas para PS CEPS.",
-            baseLegal: "Resolução Unifesspa 414/2020",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            proprietario: ceps,
-            areasDeInteresse: new HashSet<AreaCodigo> { ceps, proeg });
-
-        r.IsSuccess.Should().BeTrue();
-        r.Value!.Proprietario.Should().Be(ceps);
-        r.Value!.AreasDeInteresse.Should().BeEquivalentTo(new[] { ceps, proeg });
-    }
-
-    [Fact(DisplayName = "Proprietario fora de AreasDeInteresse falha com erro do ADR-0057")]
-    public void Criar_ProprietarioForaDasAreas_Falha()
-    {
-        AreaCodigo ceps = AreaCodigo.From("CEPS").Value;
-        AreaCodigo crca = AreaCodigo.From("CRCA").Value;
-
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: "X",
-            predicado: new ConcorrenciaDuplaObrigatoria(),
-            descricaoHumana: "x",
-            baseLegal: "Lei 12.711/2012",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            proprietario: ceps,
-            areasDeInteresse: new HashSet<AreaCodigo> { crca });
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.ProprietarioForaDeAreasDeInteresse");
-    }
-
-    [Fact(DisplayName = "AreasDeInteresse sem Proprietario falha")]
-    public void Criar_AreasSemProprietario_Falha()
-    {
-        AreaCodigo ceps = AreaCodigo.From("CEPS").Value;
-
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: "X",
-            predicado: new ConcorrenciaDuplaObrigatoria(),
-            descricaoHumana: "x",
-            baseLegal: "Lei 12.711/2012",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            proprietario: null,
-            areasDeInteresse: new HashSet<AreaCodigo> { ceps });
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.ProprietarioObrigatorioComAreas");
     }
 
     [Fact(DisplayName = "VigenciaFim igual a VigenciaInicio é inválida")]
@@ -162,9 +94,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
             vigenciaInicio: new DateOnly(2026, 1, 1),
             vigenciaFim: null,
             atoNormativoUrl: null,
-            portariaInternaCodigo: null,
-            proprietario: null,
-            areasDeInteresse: null);
+            portariaInternaCodigo: null);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoObrigatorio");
@@ -229,9 +159,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
             vigenciaInicio: new DateOnly(2026, 1, 1),
             vigenciaFim: null,
             atoNormativoUrl: null,
-            portariaInternaCodigo: null,
-            proprietario: null,
-            areasDeInteresse: null);
+            portariaInternaCodigo: null);
 
         r.IsSuccess.Should().BeTrue();
         regra.Hash.Should().NotBe(hashAntes);
@@ -241,8 +169,6 @@ public sealed class ObrigatoriedadeLegalCriarTests
     [Fact(DisplayName = "Atualizar é full-replace — passar null em opcional limpa o estado anterior")]
     public void Atualizar_FullReplace_LimpaOpcionaisNaoPassados()
     {
-        AreaCodigo ceps = AreaCodigo.From("CEPS").Value;
-
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
             tipoEditalCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
@@ -253,17 +179,13 @@ public sealed class ObrigatoriedadeLegalCriarTests
             vigenciaInicio: new DateOnly(2026, 1, 1),
             vigenciaFim: new DateOnly(2027, 1, 1),
             atoNormativoUrl: "https://www.planalto.gov.br/lei",
-            portariaInternaCodigo: "PORT/2026/01",
-            proprietario: ceps,
-            areasDeInteresse: new HashSet<AreaCodigo> { ceps }).Value!;
+            portariaInternaCodigo: "PORT/2026/01").Value!;
 
         regra.AtoNormativoUrl.Should().Be("https://www.planalto.gov.br/lei");
         regra.PortariaInternaCodigo.Should().Be("PORT/2026/01");
-        regra.Proprietario.Should().Be(ceps);
 
         // Caller que NÃO repassa os opcionais aceita semântica full-replace:
-        // o estado anterior dos opcionais é apagado, e o invariante de
-        // governance proíbe AreasDeInteresse vazio com Proprietario setado.
+        // o estado anterior dos opcionais é apagado.
         Result r = regra.Atualizar(
             tipoEditalCodigo: regra.TipoEditalCodigo,
             categoria: regra.Categoria,
@@ -274,16 +196,12 @@ public sealed class ObrigatoriedadeLegalCriarTests
             vigenciaInicio: regra.VigenciaInicio,
             vigenciaFim: null,
             atoNormativoUrl: null,
-            portariaInternaCodigo: null,
-            proprietario: null,
-            areasDeInteresse: null);
+            portariaInternaCodigo: null);
 
         r.IsSuccess.Should().BeTrue();
         regra.VigenciaFim.Should().BeNull();
         regra.AtoNormativoUrl.Should().BeNull();
         regra.PortariaInternaCodigo.Should().BeNull();
-        regra.Proprietario.Should().BeNull();
-        regra.AreasDeInteresse.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Factory de retrocompatibilidade aplica defaults pragmáticos")]
@@ -302,7 +220,5 @@ public sealed class ObrigatoriedadeLegalCriarTests
         regra.TipoEditalCodigo.Should().Be(ObrigatoriedadeLegal.TipoEditalUniversal);
         regra.Categoria.Should().Be(CategoriaObrigatoriedade.Outros);
         regra.VigenciaFim.Should().BeNull();
-        regra.Proprietario.Should().BeNull();
-        regra.AreasDeInteresse.Should().BeEmpty();
     }
 }

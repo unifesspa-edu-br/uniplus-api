@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -34,6 +33,4 @@ public sealed record AtualizarObrigatoriedadeLegalCommand(
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim,
     string? AtoNormativoUrl,
-    string? PortariaInternaCodigo,
-    string? Proprietario,
-    HashSet<string> AreasDeInteresse) : ICommand<Result>;
+    string? PortariaInternaCodigo) : ICommand<Result>;

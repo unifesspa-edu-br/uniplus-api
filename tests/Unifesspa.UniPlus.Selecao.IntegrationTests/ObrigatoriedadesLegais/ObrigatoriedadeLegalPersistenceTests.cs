@@ -7,8 +7,6 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Governance.Contracts;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -96,9 +94,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
                 vigenciaInicio: tracked.VigenciaInicio,
                 vigenciaFim: tracked.VigenciaFim,
                 atoNormativoUrl: tracked.AtoNormativoUrl,
-                portariaInternaCodigo: tracked.PortariaInternaCodigo,
-                proprietario: tracked.Proprietario,
-                areasDeInteresse: tracked.AreasDeInteresse);
+                portariaInternaCodigo: tracked.PortariaInternaCodigo);
 
             await ctx.SaveChangesAsync();
         }
@@ -221,101 +217,6 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             "snapshot do soft-delete deve refletir IsDeleted=true no payload canônico");
     }
 
-    [Fact(DisplayName = "Update em DbContext fresco preserva AreasDeInteresse no snapshot (Codex #2)")]
-    public async Task Update_DbContextFresco_PreservaAreasNoSnapshot()
-    {
-        // Cenário forense: o cliente admin (#461) carrega a regra de um
-        // DbContext fresco — sem nav property para a junction, o set
-        // in-memory AreasDeInteresse fica vazio mesmo com bindings vigentes.
-        // O interceptor precisa reconciliar com a junction antes do snapshot.
-
-        AreaCodigo cepsArea = AreaCodigo.From("CEPS").Value!;
-        AreaCodigo proegArea = AreaCodigo.From("PROEG").Value!;
-
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_GOVERNANCE_SNAPSHOT",
-            predicado: new EtapaObrigatoria("ProvaObjetiva"),
-            descricaoHumana: "Regra com governance para testar snapshot.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            proprietario: cepsArea,
-            areasDeInteresse: new HashSet<AreaCodigo> { cepsArea, proegArea }).Value!;
-
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra);
-            // Persiste também os bindings vigentes — simula o que o admin
-            // CRUD de #461 vai fazer ao traduzir o set para junction.
-            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
-                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
-                    regra.Id, cepsArea, DateTimeOffset.UtcNow, AdminA));
-            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
-                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
-                    regra.Id, proegArea, DateTimeOffset.UtcNow, AdminA));
-            await ctx.SaveChangesAsync();
-        }
-
-        // Update via DbContext fresco — set in-memory vem VAZIO da carga EF.
-        // O admin CRUD (#461) terá que reidratar AreasDeInteresse da junction
-        // antes de chamar Atualizar (semântica full-replace do ADR-0058).
-        // Aqui simulamos esse passo: lemos a junction e passamos como input.
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
-                .SingleAsync(o => o.Id == regra.Id);
-
-            // Sanity: confirma que o set in-memory está vazio neste momento
-            // (regra carregada sem nav property para a junction).
-            tracked.AreasDeInteresse.Should().BeEmpty(
-                "premissa do Codex finding: EF não popula AreasDeInteresse via junction");
-
-            // Hidratação explícita das áreas a partir da junction — papel do
-            // repositório admin (#461) quando reconciliar set ↔ junction.
-            HashSet<AreaCodigo> areasHidratadas = [..
-                await ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>()
-                    .AsNoTracking()
-                    .Where(b => b.ParentId == regra.Id && b.ValidoAte == null)
-                    .Select(b => b.AreaCodigo)
-                    .ToListAsync()];
-
-            tracked.Atualizar(
-                tipoEditalCodigo: tracked.TipoEditalCodigo,
-                categoria: tracked.Categoria,
-                regraCodigo: tracked.RegraCodigo,
-                predicado: tracked.Predicado,
-                descricaoHumana: tracked.DescricaoHumana,
-                baseLegal: "Lei 14.723/2023 art.2º — Codex hydration test",
-                vigenciaInicio: tracked.VigenciaInicio,
-                vigenciaFim: tracked.VigenciaFim,
-                atoNormativoUrl: tracked.AtoNormativoUrl,
-                portariaInternaCodigo: tracked.PortariaInternaCodigo,
-                proprietario: tracked.Proprietario,
-                areasDeInteresse: areasHidratadas);
-
-            await ctx.SaveChangesAsync();
-        }
-
-        // Verifica que o snapshot do Update carregou as áreas via interceptor
-        await using SelecaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        List<ObrigatoriedadeLegalHistorico> historico = await readCtx.ObrigatoriedadeLegalHistorico
-            .Where(h => h.RegraId == regra.Id)
-            .OrderBy(h => h.SnapshotAt)
-            .ToListAsync();
-
-        historico.Should().HaveCount(2);
-
-        using JsonDocument snapshotUpdate = JsonDocument.Parse(historico[1].ConteudoJson);
-        JsonElement areas = snapshotUpdate.RootElement.GetProperty("areasDeInteresse");
-        areas.ValueKind.Should().Be(JsonValueKind.Array);
-        IReadOnlyList<string> codigos = [.. areas.EnumerateArray().Select(e => e.GetString()!)];
-
-        codigos.Should().BeEquivalentTo(new[] { "CEPS", "PROEG" },
-            "interceptor deve hidratar AreasDeInteresse da junction antes de serializar — "
-            + "snapshot vazio quebraria a evidência forense de governance (Codex finding #2)");
-    }
-
     [Fact(DisplayName = "Hash é determinístico cross-run (CA-05) — mesmo conteúdo persistido por processos diferentes")]
     public async Task Hash_DeterministicoCrossRun()
     {
@@ -346,81 +247,6 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
         persistido.Should().Be(hashCalculadoDeNovo,
             "o hash do banco precisa bater com o computado fresh — invariante de evidência forense");
-    }
-
-    [Fact(DisplayName = "Mutação junction-only gera linha de histórico (Codex P1 round 2)")]
-    public async Task JunctionOnlyMutation_GeraSnapshotMesmoComRegraUnchanged()
-    {
-        // Cenário forense: o admin (#461) reassigna visibilidade de áreas
-        // de uma regra sem alterar nenhum campo dela (proprietario, áreas
-        // são governance, não entram no hash). O EF marca a regra como
-        // Unchanged porque AreasDeInteresse é Ignore no modelo (ADR-0060).
-        // Sem o fix, esta mutação passaria sem snapshot — perdendo evidência
-        // de governance.
-
-        AreaCodigo cepsArea = AreaCodigo.From("CEPS").Value!;
-        AreaCodigo proegArea = AreaCodigo.From("PROEG").Value!;
-        AreaCodigo crcaArea = AreaCodigo.From("CRCA").Value!;
-
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_JUNCTION_ONLY",
-            predicado: new EtapaObrigatoria("ProvaObjetiva"),
-            descricaoHumana: "Regra para teste de mutação junction-only.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            proprietario: cepsArea,
-            areasDeInteresse: new HashSet<AreaCodigo> { cepsArea, proegArea }).Value!;
-
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra);
-            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
-                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
-                    regra.Id, cepsArea, DateTimeOffset.UtcNow, AdminA));
-            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
-                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
-                    regra.Id, proegArea, DateTimeOffset.UtcNow, AdminA));
-            await ctx.SaveChangesAsync();
-        }
-
-        // Apenas adiciona binding na junction — não toca na regra em si.
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
-                .SingleAsync(o => o.Id == regra.Id);
-
-            // Sanity: regra está Unchanged depois do load.
-            ctx.Entry(tracked).State.Should().Be(EntityState.Unchanged);
-
-            ctx.Set<AreaDeInteresseBinding<ObrigatoriedadeLegal>>().Add(
-                AreaDeInteresseBinding<ObrigatoriedadeLegal>.Criar(
-                    regra.Id, crcaArea, DateTimeOffset.UtcNow, AdminB));
-
-            await ctx.SaveChangesAsync();
-        }
-
-        await using SelecaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
-
-        List<ObrigatoriedadeLegalHistorico> historico = await readCtx.ObrigatoriedadeLegalHistorico
-            .Where(h => h.RegraId == regra.Id)
-            .OrderBy(h => h.SnapshotAt)
-            .ToListAsync();
-
-        historico.Should().HaveCount(2,
-            "junction-only mutation precisa gerar snapshot — sem isso a evidência "
-            + "forense de governance some quando o admin reassigna visibilidade");
-
-        historico[1].SnapshotBy.Should().Be(AdminB);
-
-        using JsonDocument snapshotJuncao = JsonDocument.Parse(historico[1].ConteudoJson);
-        JsonElement areas = snapshotJuncao.RootElement.GetProperty("areasDeInteresse");
-        IReadOnlyList<string> codigos = [.. areas.EnumerateArray().Select(e => e.GetString()!)];
-
-        codigos.Should().BeEquivalentTo(new[] { "CEPS", "PROEG", "CRCA" },
-            "snapshot deve refletir o conjunto completo de bindings vigentes "
-            + "(persistidos + tracked Added) após a reassignment de governance");
     }
 
     [Fact(DisplayName = "FK historico→regra bloqueia INSERT de histórico órfão (Codex P2)")]

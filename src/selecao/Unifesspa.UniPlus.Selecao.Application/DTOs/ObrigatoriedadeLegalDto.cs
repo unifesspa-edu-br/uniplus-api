@@ -35,8 +35,6 @@ public sealed record ObrigatoriedadeLegalDto(
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim,
     string Hash,
-    string? Proprietario,
-    IReadOnlyList<string> AreasDeInteresse,
     bool IsDeleted)
 {
     /// <summary>

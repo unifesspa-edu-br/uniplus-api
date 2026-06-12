@@ -1,20 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using System.Collections.Generic;
-
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based do <see cref="AtualizarObrigatoriedadeLegalCommand"/>.
-/// Semântica full-replace (ADR-0058 Emenda 1) + RBAC área-scoped: o caller
-/// deve administrar a área <strong>atual</strong> da regra E a área
-/// <strong>nova</strong> (impede transferência cross-área por admin não
-/// platform-wide). Reconciliação da junction temporal pelo repositório.
+/// Semântica full-replace (ADR-0058 Emenda 1): o caller deve repassar todos os
+/// campos. A regra é cross-cutting por tipo de processo — sem proprietário nem
+/// áreas de interesse.
 /// </summary>
 public static class AtualizarObrigatoriedadeLegalCommandHandler
 {
@@ -22,15 +17,11 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         AtualizarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
         IUnitOfWork unitOfWork,
-        IUserContext userContext,
-        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
         ObrigatoriedadeLegal? regra = await repository
             .ObterPorIdAsync(command.Id, cancellationToken)
@@ -40,35 +31,6 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
             return Result.Failure(new DomainError(
                 "ObrigatoriedadeLegal.NaoEncontrada",
                 $"ObrigatoriedadeLegal {command.Id} não encontrada."));
-        }
-
-        Result authzAtual = AreaScopedAuthorization.Autorizar(userContext, regra.Proprietario);
-        if (authzAtual.IsFailure)
-        {
-            return authzAtual;
-        }
-
-        Result<HashSet<AreaCodigo>> areasResult =
-            CriarObrigatoriedadeLegalCommandHandler.ConverterAreas(command.AreasDeInteresse);
-        if (areasResult.IsFailure)
-        {
-            return Result.Failure(areasResult.Error!);
-        }
-
-        Result<AreaCodigo?> proprietarioResult =
-            CriarObrigatoriedadeLegalCommandHandler.ConverterProprietario(command.Proprietario);
-        if (proprietarioResult.IsFailure)
-        {
-            return Result.Failure(proprietarioResult.Error!);
-        }
-
-        if (regra.Proprietario != proprietarioResult.Value)
-        {
-            Result authzNovo = AreaScopedAuthorization.Autorizar(userContext, proprietarioResult.Value);
-            if (authzNovo.IsFailure)
-            {
-                return authzNovo;
-            }
         }
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
@@ -92,20 +54,13 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
             vigenciaInicio: command.VigenciaInicio,
             vigenciaFim: command.VigenciaFim,
             atoNormativoUrl: command.AtoNormativoUrl,
-            portariaInternaCodigo: command.PortariaInternaCodigo,
-            proprietario: proprietarioResult.Value,
-            areasDeInteresse: areasResult.Value);
+            portariaInternaCodigo: command.PortariaInternaCodigo);
         if (atualizado.IsFailure)
         {
             return atualizado;
         }
 
-        await repository.ReconciliarBindingsAsync(
-            regra,
-            areasResult.Value!,
-            timeProvider.GetUtcNow(),
-            userContext.UserId ?? "system",
-            cancellationToken).ConfigureAwait(false);
+        repository.Atualizar(regra);
 
         try
         {

@@ -57,9 +57,5 @@ public sealed class AtualizarObrigatoriedadeLegalCommandValidator
             .Must(x => x.VigenciaFim is null || x.VigenciaFim.Value > x.VigenciaInicio)
             .WithName(nameof(AtualizarObrigatoriedadeLegalCommand.VigenciaFim))
             .WithMessage("VigenciaFim deve ser estritamente posterior a VigenciaInicio.");
-
-        RuleFor(x => x.AreasDeInteresse)
-            .NotNull()
-            .WithMessage("AreasDeInteresse é obrigatório (passe coleção vazia para regra global).");
     }
 }
