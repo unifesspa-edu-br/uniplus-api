@@ -35,14 +35,14 @@ Uni+ usa **5 bancos PostgreSQL 18 isolados** (um por módulo), no mesmo host PG 
 | `uniplus_ingresso` | `uniplus` | `IngressoDbContext` | Chamadas, Convocações, Matrículas, DocumentosMatricula |
 | `uniplus_portal` | `uniplus` | `PortalDbContext` | Vazio até primeira Story tocar entity Portal |
 | `uniplus_configuracao` | `uniplus_configuracao_app` | `ConfiguracaoDbContext` | Catálogos cross-cutting: Modalidade, NecessidadeEspecial, TipoDocumento, Endereco |
-| `uniplus_organizacao` | `uniplus_organizacao_app` | `OrganizacaoInstitucionalDbContext` (a criar — F1.S2) | AreaOrganizacional |
+| `uniplus_organizacao` | `uniplus_organizacao_app` | `OrganizacaoInstitucionalDbContext` | Unidade, Instituição |
 
 Os bancos legados (Selecao/Ingresso/Portal) compartilham o superusuário `uniplus`. Os bancos da Sprint 3 (Configuracao/Organizacao) usam **usuários `_app` dedicados, cada um dono (`OWNER`) do seu próprio banco** — o owner tem DDL completo no schema `public` (necessário a partir do PG 15, que removeu o `CREATE` implícito) e instala extensões trusted sem superusuário. Provisionamento em `docker/init-db.sql`.
 
 Extensões habilitadas:
 
 - `uuid-ossp`, `pg_trgm` — em todos os bancos de aplicação.
-- `btree_gist` — em `uniplus_selecao`, `uniplus_configuracao` e `uniplus_organizacao`: requerida pelos exclusion constraints GIST das junction tables de `AreasDeInteresse` ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)). Em dev é habilitada via `init-db.sql`; em standalone/HML/PROD, via a primeira migration de cada DbContext (idempotente, `CREATE EXTENSION IF NOT EXISTS`).
+- `btree_gist` — em `uniplus_selecao`, `uniplus_configuracao` e `uniplus_organizacao`: pré-requisito de exclusion constraints GIST em junction tables temporais ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)). A primeira aplicação (junction de áreas de interesse) foi removida no KILL do eixo de Área (Epic #600); a extensão segue provisionada — em dev via `init-db.sql`, em standalone/HML/PROD via a primeira migration de cada DbContext (idempotente, `CREATE EXTENSION IF NOT EXISTS`) — para junctions temporais futuras.
 
 Schemas usados em cada banco:
 

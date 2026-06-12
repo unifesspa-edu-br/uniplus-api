@@ -34,10 +34,11 @@ CREATE DATABASE uniplus_organizacao OWNER uniplus_organizacao_app;
 -- Extensões dos databases de aplicação:
 --   uuid-ossp  — geração de UUIDs
 --   pg_trgm    — busca por similaridade (trigram matching)
---   btree_gist — exclusion constraints GIST das junction tables de
---                AreasDeInteresse (ADR-0060). Habilitada nos bancos que
---                hospedam entidades com governança por área na Sprint 3:
---                selecao, configuracao e organizacao.
+--   btree_gist — pré-requisito de exclusion constraints GIST em junction
+--                tables temporais (ADR-0060). A junction de áreas de interesse
+--                (primeira aplicação) saiu no KILL do eixo de Área (Epic #600);
+--                a extensão segue provisionada em selecao, configuracao e
+--                organizacao para junctions temporais futuras.
 
 \c uniplus_selecao
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
