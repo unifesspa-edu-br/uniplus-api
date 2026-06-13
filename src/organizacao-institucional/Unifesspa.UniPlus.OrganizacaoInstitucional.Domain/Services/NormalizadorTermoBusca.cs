@@ -37,16 +37,10 @@ public static class NormalizadorTermoBusca
 
         string decomposto = valor.Normalize(NormalizationForm.FormD);
 
-        StringBuilder semDiacriticos = new(decomposto.Length);
-        foreach (char caractere in decomposto)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(caractere) != UnicodeCategory.NonSpacingMark)
-            {
-                semDiacriticos.Append(caractere);
-            }
-        }
+        char[] semDiacriticos = [.. decomposto.Where(caractere =>
+            CharUnicodeInfo.GetUnicodeCategory(caractere) != UnicodeCategory.NonSpacingMark)];
 
-        return semDiacriticos.ToString().ToUpperInvariant().Trim();
+        return new string(semDiacriticos).ToUpperInvariant().Trim();
     }
 
     /// <summary>
