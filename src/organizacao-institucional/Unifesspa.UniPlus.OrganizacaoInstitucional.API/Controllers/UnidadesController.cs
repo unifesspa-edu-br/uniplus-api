@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Unidades;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
 /// <summary>
 /// Endpoints públicos de leitura (<c>GET /api/unidades</c>,
@@ -36,6 +37,9 @@ public sealed class UnidadesController : ControllerBase
 {
     private const string ResourceTag = "unidades";
 
+    /// <summary>Limite defensivo de comprimento do termo de busca (cobre o Nome máximo + margem).</summary>
+    private const int BuscaMaxLength = 256;
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -56,7 +60,12 @@ public sealed class UnidadesController : ControllerBase
     /// <summary>
     /// Lista as unidades organizacionais ativas, paginadas por cursor opaco
     /// (ADR-0026). Navegação via header <c>Link</c> (RFC 5988/8288); cada item
-    /// carrega seu <c>_links.self</c> (ADR-0029 §"Coleção").
+    /// carrega seu <c>_links.self</c> (ADR-0029 §"Coleção"). Aceita filtros
+    /// opcionais (issue #640): <c>q</c> (busca textual sobre sigla, nome,
+    /// código, slug e alias, acento/caixa-insensível) e <c>tipo</c> (um ou mais
+    /// valores de <see cref="TipoUnidade"/>, ex.: <c>?tipo=3&amp;tipo=4</c>).
+    /// Os filtros viajam como query params e combinam com o cursor — o cliente
+    /// reanexa-os a cada página ao seguir o <c>cursor</c> do header <c>Link</c>.
     /// </summary>
     [HttpGet("unidades")]
     [AllowAnonymous]
@@ -68,12 +77,29 @@ public sealed class UnidadesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
+        [FromQuery(Name = "q")] string? q,
+        [FromQuery(Name = "tipo")] int[]? tipo,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
+        if (q is { Length: > BuscaMaxLength })
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Termo de busca muito longo",
+                Detail = $"O parâmetro 'q' não pode exceder {BuscaMaxLength} caracteres.",
+                Status = StatusCodes.Status400BadRequest,
+            });
+        }
+
+        if (!TentarMapearTipos(tipo, out IReadOnlyList<TipoUnidade> tipos, out IActionResult? erroTipo))
+        {
+            return erroTipo!;
+        }
+
         ListarUnidadesAtivasResult resultado = await _queryBus
-            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit), cancellationToken)
+            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit, q, tipos), cancellationToken)
             .ConfigureAwait(false);
 
         // HATEOAS Level 1 (ADR-0029 §"Coleção"): cada item carrega seu _links.self.
@@ -82,6 +108,51 @@ public sealed class UnidadesController : ControllerBase
         return await this.OkPaginatedAsync(
             comLinks, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Converte os valores numéricos do query param <c>tipo</c> em
+    /// <see cref="TipoUnidade"/>, rejeitando (400) qualquer valor que não
+    /// corresponda a um tipo definido. Deduplica e preserva a ordem. Ausência
+    /// de <c>tipo</c> resulta em lista vazia (sem filtro).
+    /// </summary>
+    private bool TentarMapearTipos(
+        int[]? valores,
+        out IReadOnlyList<TipoUnidade> tipos,
+        out IActionResult? erro)
+    {
+        if (valores is null || valores.Length == 0)
+        {
+            tipos = [];
+            erro = null;
+            return true;
+        }
+
+        List<TipoUnidade> mapeados = new(valores.Length);
+        foreach (int valor in valores)
+        {
+            var candidato = (TipoUnidade)valor;
+            if (!Enum.IsDefined(candidato) || candidato == TipoUnidade.Nenhum)
+            {
+                tipos = [];
+                erro = BadRequest(new ProblemDetails
+                {
+                    Title = "Filtro de tipo inválido",
+                    Detail = $"O valor de tipo '{valor}' não corresponde a um TipoUnidade válido.",
+                    Status = StatusCodes.Status400BadRequest,
+                });
+                return false;
+            }
+
+            if (!mapeados.Contains(candidato))
+            {
+                mapeados.Add(candidato);
+            }
+        }
+
+        tipos = mapeados;
+        erro = null;
+        return true;
     }
 
     /// <summary>

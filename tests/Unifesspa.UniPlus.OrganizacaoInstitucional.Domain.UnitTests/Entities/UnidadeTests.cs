@@ -270,4 +270,33 @@ public sealed class UnidadeTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Sigla.Should().Be("CEPS");
     }
+
+    // ── Índice de busca (issue #640) ───────────────────────────────────
+
+    [Fact(DisplayName = "Criar preenche BuscaNormalizada com os campos pesquisáveis sem acento e em maiúsculas")]
+    public void Criar_PreencheBuscaNormalizada()
+    {
+        Result<Unidade> resultado = Unidade.Criar(
+            "Faculdade de Educação", "Educação Física", Slug.From("faced").Value!,
+            "FACED", "0007", null, TipoUnidade.Faculdade, true,
+            DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.BuscaNormalizada
+            .Should().Be("FACULDADE DE EDUCACAO FACED 0007 FACED EDUCACAO FISICA");
+    }
+
+    [Fact(DisplayName = "Atualizar recomputa BuscaNormalizada a partir dos novos valores")]
+    public void Atualizar_RecomputaBuscaNormalizada()
+    {
+        Unidade unidade = CriarUnidadeValida();
+
+        Result atualizar = unidade.Atualizar(
+            "Comissão de Seleção", "Vestibular", SlugValido, "CESEL", "0002", null,
+            TipoUnidade.Coordenacao, false, null, DataInicio.AddDays(5));
+
+        atualizar.IsSuccess.Should().BeTrue();
+        unidade.BuscaNormalizada
+            .Should().Be("COMISSAO DE SELECAO CESEL 0002 CEPS VESTIBULAR");
+    }
 }

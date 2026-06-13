@@ -7,7 +7,13 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -113,5 +119,97 @@ public sealed class UnidadeEndpointTests
             new Uri($"/api/admin/unidades/{Guid.NewGuid()}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "GET /api/unidades?q= filtra server-side por sigla/nome/código/slug/alias")]
+    public async Task Listar_ComBusca_FiltraServerSide()
+    {
+        string token = Guid.NewGuid().ToString("N")[..10];
+        string siglaAlvo = $"{token}al";
+        string siglaForaDoFiltro = Guid.NewGuid().ToString("N")[..10];
+
+        await SemearUnidadeAsync(nome: "Centro Filtravel", sigla: siglaAlvo, tipo: TipoUnidade.Centro);
+        await SemearUnidadeAsync(nome: "Faculdade Sem Marca", sigla: siglaForaDoFiltro, tipo: TipoUnidade.Faculdade);
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"/api/unidades?q={token}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        IReadOnlyList<string> siglas = await LerSiglasAsync(response);
+        siglas.Should().Contain(siglaAlvo.ToUpperInvariant());
+        siglas.Should().NotContain(siglaForaDoFiltro.ToUpperInvariant());
+    }
+
+    [Fact(DisplayName = "GET /api/unidades?tipo=<inválido> retorna 400")]
+    public async Task Listar_ComTipoInvalido_Retorna400()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/unidades?tipo=999", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "GET /api/unidades preserva q/tipo no header Link (self e next)")]
+    public async Task Listar_ComFiltros_PreservaQueryParamsNoLink()
+    {
+        string token = Guid.NewGuid().ToString("N")[..10];
+        // Dois Centro com o token → com limit=1 há próxima página (rel=next).
+        await SemearUnidadeAsync(nome: $"Centro {token} Um", sigla: Guid.NewGuid().ToString("N")[..10], tipo: TipoUnidade.Centro);
+        await SemearUnidadeAsync(nome: $"Centro {token} Dois", sigla: Guid.NewGuid().ToString("N")[..10], tipo: TipoUnidade.Centro);
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"/api/unidades?q={token}&tipo=3&limit=1", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        response.Headers.TryGetValues("Link", out IEnumerable<string>? links).Should().BeTrue();
+        string link = links!.Single();
+        link.Should().Contain("rel=\"next\"", "limit=1 com 2 itens filtrados deve emitir próxima página");
+        link.Should().Contain($"q={token}", "o filtro de busca deve viajar em self e next");
+        link.Should().Contain("tipo=3", "o filtro de tipo deve viajar em self e next");
+    }
+
+    private async Task SemearUnidadeAsync(string nome, string sigla, TipoUnidade tipo)
+    {
+        string sufixo = Guid.NewGuid().ToString("N")[..8];
+        Unidade unidade = Unidade.Criar(
+            nome,
+            null,
+            Slug.From($"u-{sufixo}").Value!,
+            sigla,
+            sufixo,
+            null,
+            tipo,
+            false,
+            new DateOnly(2026, 1, 1),
+            null,
+            OrigemUnidade.CriadoNoUniPlus).Value!;
+
+        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
+        OrganizacaoInstitucionalDbContext ctx =
+            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        ctx.Unidades.Add(unidade);
+        await ctx.SaveChangesAsync();
+    }
+
+    private static async Task<IReadOnlyList<string>> LerSiglasAsync(HttpResponseMessage response)
+    {
+        string body = await response.Content.ReadAsStringAsync();
+        using JsonDocument doc = JsonDocument.Parse(body);
+        List<string> siglas = [];
+        foreach (JsonElement item in doc.RootElement.EnumerateArray())
+        {
+            if (item.TryGetProperty("sigla", out JsonElement sigla) && sigla.GetString() is { } valor)
+            {
+                siglas.Add(valor);
+            }
+        }
+
+        return siglas;
     }
 }
