@@ -97,6 +97,8 @@ public static class PaginationControllerExtensions
         return controller.Ok(items);
     }
 
+    private static readonly string[] ReservedPaginationParams = ["cursor", "limit"];
+
     private static string BuildLink(HttpRequest request, string? cursor, int? limit)
     {
         // Inclui PathBase para honrar deploys atrás de reverse proxy
@@ -109,6 +111,25 @@ public static class PaginationControllerExtensions
             parts.Add($"cursor={Uri.EscapeDataString(cursor)}");
         if (limit is { } l)
             parts.Add($"limit={l.ToString(CultureInfo.InvariantCulture)}");
+
+        // Preserva os demais query params do request (filtros como q/tipo) nos
+        // links self/next. Sem isso, seguir rel="next" numa listagem filtrada
+        // voltaria a uma página SEM filtro (RFC 5988: o link deve ser
+        // auto-suficiente). Os params de paginação já foram tratados acima e são
+        // ignorados aqui; multi-valores (ex.: tipo=3&tipo=4) são preservados.
+        foreach (KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues> param in request.Query)
+        {
+            if (ReservedPaginationParams.Contains(param.Key, StringComparer.OrdinalIgnoreCase))
+                continue;
+
+            foreach (string? value in param.Value)
+            {
+                if (value is null)
+                    continue;
+                parts.Add($"{Uri.EscapeDataString(param.Key)}={Uri.EscapeDataString(value)}");
+            }
+        }
+
         return parts.Count == 0 ? baseUrl : $"{baseUrl}?{string.Join('&', parts)}";
     }
 }
