@@ -117,13 +117,17 @@ public static class PaginationControllerExtensions
         // voltaria a uma página SEM filtro (RFC 5988: o link deve ser
         // auto-suficiente). Os params de paginação já foram tratados acima e são
         // ignorados aqui; multi-valores (ex.: tipo=3&tipo=4) são preservados.
-        foreach (KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues> param in request.Query)
-        {
-            if (ReservedPaginationParams.Contains(param.Key, StringComparer.OrdinalIgnoreCase))
-                continue;
+        IEnumerable<KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> filtros =
+            request.Query.Where(param =>
+                !ReservedPaginationParams.Contains(param.Key, StringComparer.OrdinalIgnoreCase));
 
+        foreach (KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues> param in filtros)
+        {
             foreach (string? value in param.Value)
             {
+                // Elementos de StringValues podem ser nulos; o guard de nulo aqui
+                // é o filtro de valor (não há ".Where" idiomático que estreite a
+                // anulabilidade do item para o Uri.EscapeDataString).
                 if (value is null)
                     continue;
                 parts.Add($"{Uri.EscapeDataString(param.Key)}={Uri.EscapeDataString(value)}");
