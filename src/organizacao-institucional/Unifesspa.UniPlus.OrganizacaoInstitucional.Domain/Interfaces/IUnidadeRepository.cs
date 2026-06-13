@@ -29,8 +29,15 @@ public interface IUnidadeRepository
     /// <c>Id</c> (Guid v7, ADR-0032 — ordem cronológica) e retorna até
     /// <paramref name="take"/> itens com <c>Id</c> maior que
     /// <paramref name="afterId"/> (ou a primeira janela quando <c>null</c>).
+    /// Os critérios de <paramref name="filtro"/> (busca textual + tipos) são
+    /// aplicados no read-side antes do keyset, mantendo a janela coerente sobre
+    /// o conjunto filtrado (issue #640).
     /// </summary>
-    Task<IReadOnlyList<Unidade>> ListarPaginadoAsync(Guid? afterId, int take, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Unidade>> ListarPaginadoAsync(
+        Guid? afterId,
+        int take,
+        FiltroListagemUnidades filtro,
+        CancellationToken cancellationToken);
 
     Task AdicionarAsync(Unidade unidade, CancellationToken cancellationToken);
 

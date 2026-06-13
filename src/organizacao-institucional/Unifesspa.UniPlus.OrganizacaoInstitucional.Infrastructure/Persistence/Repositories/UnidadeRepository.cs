@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
@@ -37,18 +38,41 @@ internal sealed class UnidadeRepository : IUnidadeRepository
     public async Task<IReadOnlyList<Unidade>> ListarPaginadoAsync(
         Guid? afterId,
         int take,
+        FiltroListagemUnidades filtro,
         CancellationToken cancellationToken)
     {
-        IQueryable<Unidade> query = _dbContext.Unidades
-            .AsNoTracking()
-            .OrderBy(u => u.Id);
+        ArgumentNullException.ThrowIfNull(filtro);
+
+        IQueryable<Unidade> query = _dbContext.Unidades.AsNoTracking();
+
+        if (filtro.TemBusca)
+        {
+            // Busca acento/caixa-insensível sobre o índice desnormalizado
+            // mantido pelo agregado. O termo já chega normalizado pelo handler
+            // (mesmo NormalizadorTermoBusca); ambos os lados em maiúsculas e sem
+            // diacríticos, então Contains (LIKE '%termo%') basta. Npgsql escapa
+            // os curingas do parâmetro automaticamente (issue #640).
+            string termo = filtro.TermoBuscaNormalizado!;
+            query = query.Where(u => u.BuscaNormalizada.Contains(termo));
+        }
+
+        if (filtro.TemTipos)
+        {
+            // Tipos: tipo = ANY(@tipos). EF aplica o value converter (enum→texto)
+            // aos elementos do array — Npgsql gera `tipo = ANY(...)`.
+            IReadOnlyList<TipoUnidade> tipos = filtro.Tipos;
+            query = query.Where(u => tipos.Contains(u.Tipo));
+        }
+
+        query = query.OrderBy(u => u.Id);
 
         if (afterId is { } cursor)
         {
             // Keyset coerente server-side (ADR-0026 + ADR-0032): Npgsql traduz
             // Guid.CompareTo para o operador uuid > nativo do PG — mesmo
             // comparador do OrderBy(Id). Com Guid v7, a ordem por Id reflete a
-            // criação temporal.
+            // criação temporal. Aplicado APÓS os filtros: a janela avança sobre
+            // o conjunto já filtrado.
             query = query.Where(u => u.Id.CompareTo(cursor) > 0);
         }
 
