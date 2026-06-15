@@ -71,6 +71,28 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         comAcento.Select(u => u.Id).Should().Contain(id);
     }
 
+    [Fact(DisplayName = "Curingas do LIKE (_ e %) no termo são tratados como literais, não wildcards")]
+    public async Task Busca_EscapaCuringasLike()
+    {
+        string iso = NovoToken();
+        // Pares com o MESMO comprimento: sem escape, o curinga no termo casaria
+        // o caractere/sequência divergente do par, devolvendo o registro errado.
+        Guid comUnderscore = await SeedAsync(nome: $"Alfa_{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
+        Guid soLetra = await SeedAsync(nome: $"AlfaX{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
+        Guid comPercent = await SeedAsync(nome: $"Beta%{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
+        Guid soSequencia = await SeedAsync(nome: $"BetaZZ{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
+
+        // "_" deve ser literal — sem escape casaria o "X" de AlfaX.
+        IReadOnlyList<Guid> porUnderscore = await ListarIdsAsync(FiltroDeBusca($"Alfa_{iso}"));
+        porUnderscore.Should().Contain(comUnderscore);
+        porUnderscore.Should().NotContain(soLetra, "'_' deve ser literal, não curinga de 1 caractere");
+
+        // "%" deve ser literal — sem escape casaria o "ZZ" de BetaZZ.
+        IReadOnlyList<Guid> porPercent = await ListarIdsAsync(FiltroDeBusca($"Beta%{iso}"));
+        porPercent.Should().Contain(comPercent);
+        porPercent.Should().NotContain(soSequencia, "'%' deve ser literal, não curinga de sequência");
+    }
+
     [Fact(DisplayName = "Filtro por tipo aceita um ou mais valores e combina com a busca")]
     public async Task Filtra_PorTipo_UmOuMais_ECombinaComBusca()
     {
