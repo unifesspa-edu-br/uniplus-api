@@ -252,11 +252,6 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                         .HasColumnType("character varying(100)")
                         .HasColumnName("alias");
 
-                    b.Property<string>("BuscaNormalizada")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("busca_normalizada");
-
                     b.Property<string>("Codigo")
                         .IsRequired()
                         .HasMaxLength(50)

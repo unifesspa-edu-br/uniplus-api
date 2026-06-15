@@ -4,15 +4,14 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Mappings;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Services;
 
 /// <summary>
 /// Handler convention-based de <see cref="ListarUnidadesAtivasQuery"/>:
 /// paginação keyset-based (cursor) sobre o agregado <c>Unidade</c>, ordenando
 /// pelo identificador para garantir estabilidade da janela. Solicita
 /// <c>limit + 1</c> itens para detectar a próxima página sem COUNT (ADR-0026).
-/// Aplica os filtros opcionais (busca + tipos) no read-side (issue #640),
-/// normalizando o termo de busca com o mesmo algoritmo do índice persistido.
+/// Aplica os filtros opcionais (busca + tipos) no read-side (issue #640);
+/// a normalização acento/caixa é delegada ao banco via immutable_unaccent + ILIKE.
 /// </summary>
 public static class ListarUnidadesAtivasQueryHandler
 {
@@ -24,9 +23,8 @@ public static class ListarUnidadesAtivasQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        string termoNormalizado = NormalizadorTermoBusca.Normalizar(query.Busca);
         FiltroListagemUnidades filtro = new(
-            string.IsNullOrEmpty(termoNormalizado) ? null : termoNormalizado,
+            string.IsNullOrWhiteSpace(query.Busca) ? null : query.Busca,
             query.Tipos ?? []);
 
         IReadOnlyList<Unidade> page = await repository

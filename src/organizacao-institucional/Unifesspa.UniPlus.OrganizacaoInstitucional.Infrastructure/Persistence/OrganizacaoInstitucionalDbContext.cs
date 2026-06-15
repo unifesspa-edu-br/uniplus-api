@@ -44,6 +44,14 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
         // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
         // UnidadeIdentificadorHistorico não implementa ISoftDeletable → não filtra.
         modelBuilder.AplicarFiltroGlobalSoftDelete();
+
+        // Mapeia PgFunctions.ImmutableUnaccent → immutable_unaccent(text) do banco
+        // (criada pela migration AddSearchExtensionsGin). Usada nas queries de busca
+        // textual da Unidade para remover diacríticos server-side (issue #640).
+        modelBuilder.HasDbFunction(
+            typeof(PgFunctions).GetMethod(nameof(PgFunctions.ImmutableUnaccent))!)
+            .HasName("immutable_unaccent");
+
         base.OnModelCreating(modelBuilder);
     }
 

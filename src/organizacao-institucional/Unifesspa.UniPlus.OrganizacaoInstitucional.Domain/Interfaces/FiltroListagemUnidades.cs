@@ -9,20 +9,21 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 /// keyset ordena por <c>Id</c>, a janela permanece coerente sobre o conjunto
 /// já filtrado.
 /// </summary>
-/// <param name="TermoBuscaNormalizado">
-/// Termo de busca já normalizado (acento/caixa-insensível via
-/// <c>NormalizadorTermoBusca</c>); <c>null</c> ou vazio = sem filtro textual.
+/// <param name="Termo">
+/// Termo de busca bruto do usuário; <c>null</c> ou vazio = sem filtro textual.
+/// A normalização (remoção de diacríticos e caixa) é aplicada server-side pela
+/// função <c>immutable_unaccent</c> + <c>ILIKE</c> no repositório.
 /// </param>
 /// <param name="Tipos">
 /// Tipos de unidade a incluir (OR entre si); vazio = sem filtro por tipo.
 /// </param>
-public sealed record FiltroListagemUnidades(string? TermoBuscaNormalizado, IReadOnlyList<TipoUnidade> Tipos)
+public sealed record FiltroListagemUnidades(string? Termo, IReadOnlyList<TipoUnidade> Tipos)
 {
     /// <summary>Filtro sem critérios — equivalente a listar tudo.</summary>
     public static FiltroListagemUnidades Nenhum { get; } = new(null, []);
 
     /// <summary>Indica se há termo de busca textual aplicável.</summary>
-    public bool TemBusca => !string.IsNullOrEmpty(TermoBuscaNormalizado);
+    public bool TemBusca => !string.IsNullOrWhiteSpace(Termo);
 
     /// <summary>Indica se há filtro por tipo aplicável.</summary>
     public bool TemTipos => Tipos.Count > 0;
