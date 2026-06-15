@@ -60,13 +60,19 @@ internal sealed class UnidadeRepository : IUnidadeRepository
             // dentro de uma DB function, então referenciamos a coluna via
             // EF.Property<string>(u, "Slug") — traduz para immutable_unaccent(u.slug)
             // e ainda aproveita o índice idx_unidade_slug_trgm.
-            string pattern = "%" + RemoverDiacriticos(filtro.Termo!.Trim()) + "%";
+            // Os curingas do LIKE (% _ \) no termo são escapados para serem tratados
+            // como texto literal; só os % das pontas atuam como wildcard de "contém".
+            // O escape char precisa ser passado explicitamente: a sobrecarga de 2 args
+            // do ILike no Npgsql emite ESCAPE '' (escape desligado), ignorando o \.
+            string termo = EscaparCuringasLike(RemoverDiacriticos(filtro.Termo!.Trim()));
+            string pattern = "%" + termo + "%";
+            const string escape = @"\";
             query = query.Where(u =>
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Nome), pattern) ||
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Sigla), pattern) ||
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Codigo), pattern) ||
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(EF.Property<string>(u, "Slug")), pattern) ||
-                (u.Alias != null && EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Alias), pattern)));
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Nome), pattern, escape) ||
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Sigla), pattern, escape) ||
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Codigo), pattern, escape) ||
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(EF.Property<string>(u, "Slug")), pattern, escape) ||
+                (u.Alias != null && EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Alias), pattern, escape)));
         }
 
         if (filtro.TemTipos)
@@ -188,4 +194,15 @@ internal sealed class UnidadeRepository : IUnidadeRepository
         return new string([.. decomposto.Where(c =>
             CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)]);
     }
+
+    // Escapa os curingas do LIKE/ILIKE (\ % _) para que metacaracteres digitados
+    // pelo usuário sejam comparados como texto literal, não como wildcards — sem
+    // isso, q="_" ou q="%" casaria quase qualquer registro. O escape char é a
+    // barra invertida (padrão do PostgreSQL); a barra é escapada primeiro para não
+    // duplicar as inseridas adiante em % e _.
+    private static string EscaparCuringasLike(string termo) =>
+        termo
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
 }
