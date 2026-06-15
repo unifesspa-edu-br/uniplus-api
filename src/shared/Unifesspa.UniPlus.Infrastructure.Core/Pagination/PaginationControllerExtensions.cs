@@ -123,13 +123,11 @@ public static class PaginationControllerExtensions
 
         foreach (KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues> param in filtros)
         {
-            foreach (string? value in param.Value)
+            // OfType<string> descarta os elementos nulos de StringValues e estreita
+            // o item para string não-anulável, dispensando o guard imperativo e o
+            // operador de supressão de nulidade no Uri.EscapeDataString.
+            foreach (string value in param.Value.OfType<string>())
             {
-                // Elementos de StringValues podem ser nulos; o guard de nulo aqui
-                // é o filtro de valor (não há ".Where" idiomático que estreite a
-                // anulabilidade do item para o Uri.EscapeDataString).
-                if (value is null)
-                    continue;
                 parts.Add($"{Uri.EscapeDataString(param.Key)}={Uri.EscapeDataString(value)}");
             }
         }
