@@ -105,7 +105,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0074](0074-base-legal-exigencia-1n-validacao-publicacao.md) | A base legal da exigência documental é 1:N e enforçada por uma validação de publicação | accepted | 2026-05-31 |
 | [0075](0075-snapshot-do-ato-resolvido-no-instante.md) | O snapshot que governa um ato é resolvido deterministicamente no instante do ato e gravado nele | accepted | 2026-05-31 |
 | [0076](0076-contrato-snapshot-runtime-espelha-publicacao.md) | A validação do snapshot lido em runtime reproduz, integralmente, a validação aplicada à configuração na publicação | accepted | 2026-05-31 |
-| 0077 | Identidade institucional canônica de `Unidade` (identificadores únicos, alias não-único, histórico) — **reservada**, a publicar (ver issue unifesspa-edu-br/uniplus-api#595) | reserved | — |
+| [0077](0077-identidade-institucional-canonica-de-unidade.md) | Identidade institucional canônica de `Unidade` (`Id` Guid v7 estável; `Slug`/`Sigla`/`Codigo` únicos entre vivos; `Alias` não-único; histórico de identificadores; cadastro aberto e hierárquico) — refina 0055 | accepted | 2026-06-15 |
 | [0078](0078-modelo-de-autorizacao-pbac-abac.md) | Modelo de autorização PBAC + ABAC com ponto de decisão único — supersede 0057, refina 0055 | proposed | 2026-06-02 |
 | [0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md) | Hierarquia institucional sem herança de permissão (unidades irmãs; visibilidade por escopo de auditoria explícito) — refina 0055 | proposed | 2026-06-02 |
 | [0080](0080-catalogo-declarativo-de-permissoes-e-codegen.md) | Catálogo declarativo de permissões como fonte única + geração de artefatos (codegen, fitness contra deriva) | proposed | 2026-06-02 |
@@ -118,11 +118,11 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0087](0087-banco-isolado-para-o-contexto-de-autorizacao.md) | Banco isolado para o contexto de autorização (aplica ADR-0054; referências externas por identificador via leitor) | proposed | 2026-06-02 |
 | [0088](0088-versionamento-cross-repo-do-contrato-de-permissoes.md) | Versionamento e publicação cross-repo do contrato de permissões (pacote versionado; versão fixa no frontend; validação na CI) | proposed | 2026-06-02 |
 
-> **Nota de numeração:** a `0077` está **reservada** para a identidade de `Unidade` (origem na Camada 0 de cadastros, issue #595) e ainda não tem arquivo publicado; por isso o índice salta de `0076` para `0078`. Ao adicionar uma ADR nova, use `0089+` (não reocupe a `0077`).
+> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0088` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0089+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0089`). **Não** use `ls | wc -l` — a contagem de arquivos não é confiável quando há número **reservado sem arquivo** (a `0077` está reservada). Confira a coluna de número da tabela para não reocupar uma entrada reservada.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0089`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
