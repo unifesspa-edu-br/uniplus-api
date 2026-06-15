@@ -30,12 +30,6 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.Property(u => u.Tipo).HasConversion<string>().HasMaxLength(30).IsRequired();
         builder.Property(u => u.Origem).HasConversion<string>().HasMaxLength(30).IsRequired();
 
-        // Índice de busca desnormalizado (issue #640): coluna `text` mantida pelo
-        // agregado (acento/caixa-insensível). Sem HasMaxLength — é a concatenação
-        // normalizada de nome+sigla+codigo+slug+alias. Filtro server-side via
-        // u.BuscaNormalizada.Contains(termo). Universo pequeno (dezenas) dispensa
-        // índice GIN trigram por ora; pg_trgm já está provisionado se escalar.
-        builder.Property(u => u.BuscaNormalizada).IsRequired();
         builder.Property(u => u.UnidadeAcademica).IsRequired();
         builder.Property(u => u.VigenciaInicio).IsRequired();
         builder.Property(u => u.VigenciaFim);

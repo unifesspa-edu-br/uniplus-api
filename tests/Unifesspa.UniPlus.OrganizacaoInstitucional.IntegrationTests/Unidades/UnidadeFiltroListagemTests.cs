@@ -7,7 +7,6 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Services;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repositories;
@@ -51,8 +50,7 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         Guid emAlias = await SeedAsync(nome: "Núcleo Delta", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), alias: $"{iso} regional");
         Guid semToken = await SeedAsync(nome: "Coordenação Sem Marca", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
 
-        // Termo em minúsculas (Guid "N"); o índice persistido é maiúsculo →
-        // prova a case-insensibilidade da busca.
+        // Termo em minúsculas (Guid "N") → prova a case-insensibilidade via ILIKE + immutable_unaccent.
         IReadOnlyList<Unidade> resultado = await ListarAsync(FiltroDeBusca(iso));
 
         IReadOnlyList<Guid> ids = [.. resultado.Select(u => u.Id)];
@@ -83,13 +81,13 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
 
         // Um valor (q + tipo): só o Centro.
         IReadOnlyList<Guid> umTipo = await ListarIdsAsync(
-            new FiltroListagemUnidades(Normalizar(iso), [TipoUnidade.Centro]));
+            new FiltroListagemUnidades(iso, [TipoUnidade.Centro]));
         umTipo.Should().Contain(centro);
         umTipo.Should().NotContain([faculdade, instituto]);
 
         // Dois valores (q + tipos): Centro e Faculdade, não Instituto.
         IReadOnlyList<Guid> doisTipos = await ListarIdsAsync(
-            new FiltroListagemUnidades(Normalizar(iso), [TipoUnidade.Centro, TipoUnidade.Faculdade]));
+            new FiltroListagemUnidades(iso, [TipoUnidade.Centro, TipoUnidade.Faculdade]));
         doisTipos.Should().Contain([centro, faculdade]);
         doisTipos.Should().NotContain(instituto);
 
@@ -112,7 +110,7 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         await SeedAsync(nome: $"Nucleo {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Nucleo);
         Guid c3 = await SeedAsync(nome: $"Centro Tres {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Centro);
 
-        FiltroListagemUnidades filtro = new(Normalizar(iso), [TipoUnidade.Centro]);
+        FiltroListagemUnidades filtro = new(iso, [TipoUnidade.Centro]);
 
         // Conjunto filtrado completo, ordenado por Id (referência).
         List<Guid> esperados = [.. (await ListarAsync(filtro, TakeAlto)).Select(u => u.Id)];
@@ -144,9 +142,7 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
 
     // ── Helpers ─────────────────────────────────────────────────────────
 
-    private static string Normalizar(string termo) => NormalizadorTermoBusca.Normalizar(termo);
-
-    private static FiltroListagemUnidades FiltroDeBusca(string termo) => new(Normalizar(termo), []);
+    private static FiltroListagemUnidades FiltroDeBusca(string termo) => new(termo, []);
 
     private async Task<Guid> SeedAsync(
         string nome,

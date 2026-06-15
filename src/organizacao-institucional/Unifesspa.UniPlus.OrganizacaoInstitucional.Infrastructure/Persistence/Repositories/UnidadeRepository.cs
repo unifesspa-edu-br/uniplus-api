@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repositories;
 
+using System.Globalization;
+using System.Text;
+
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -47,13 +50,23 @@ internal sealed class UnidadeRepository : IUnidadeRepository
 
         if (filtro.TemBusca)
         {
-            // Busca acento/caixa-insensível sobre o índice desnormalizado
-            // mantido pelo agregado. O termo já chega normalizado pelo handler
-            // (mesmo NormalizadorTermoBusca); ambos os lados em maiúsculas e sem
-            // diacríticos, então Contains (LIKE '%termo%') basta. Npgsql escapa
-            // os curingas do parâmetro automaticamente (issue #640).
-            string termo = filtro.TermoBuscaNormalizado!;
-            query = query.Where(u => u.BuscaNormalizada.Contains(termo));
+            // Busca acento/caixa-insensível via immutable_unaccent + ILIKE (issue #640).
+            // O termo é normalizado em C# (NFD + remoção de NonSpacingMark) e passado
+            // como parâmetro SQL simples; a função immutable_unaccent() é aplicada
+            // server-side apenas nos campos da entidade, onde os índices GIN trigram
+            // permitem que o planejador faça varredura trigrama antes do recheck ILIKE.
+            // ILIKE cuida da caixa; ambos os lados ficam sem diacríticos → acento-insensível.
+            // Slug é value object (SlugValueConverter): o EF não compõe `u.Slug.Valor`
+            // dentro de uma DB function, então referenciamos a coluna via
+            // EF.Property<string>(u, "Slug") — traduz para immutable_unaccent(u.slug)
+            // e ainda aproveita o índice idx_unidade_slug_trgm.
+            string pattern = "%" + RemoverDiacriticos(filtro.Termo!.Trim()) + "%";
+            query = query.Where(u =>
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Nome), pattern) ||
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Sigla), pattern) ||
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Codigo), pattern) ||
+                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(EF.Property<string>(u, "Slug")), pattern) ||
+                (u.Alias != null && EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Alias), pattern)));
         }
 
         if (filtro.TemTipos)
@@ -162,5 +175,17 @@ internal sealed class UnidadeRepository : IUnidadeRepository
         }
 
         return false;
+    }
+
+    // Aplica a mesma transformação que immutable_unaccent faz no banco:
+    // decompõe em NFD e descarta NonSpacingMark (diacríticos). Usado para
+    // normalizar o TERMO de busca em C# antes de montá-lo como padrão ILIKE,
+    // evitando uma chamada de DB function no lado do parâmetro. Os campos da
+    // entidade passam por immutable_unaccent() server-side via PgFunctions.
+    private static string RemoverDiacriticos(string texto)
+    {
+        string decomposto = texto.Normalize(NormalizationForm.FormD);
+        return new string([.. decomposto.Where(c =>
+            CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)]);
     }
 }

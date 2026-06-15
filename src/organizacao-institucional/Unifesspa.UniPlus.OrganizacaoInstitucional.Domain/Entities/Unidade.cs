@@ -5,7 +5,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Services;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
@@ -49,16 +48,6 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
     public DateOnly VigenciaInicio { get; private set; }
     public DateOnly? VigenciaFim { get; private set; }
     public OrigemUnidade Origem { get; private set; }
-
-    /// <summary>
-    /// Índice de busca desnormalizado (acento/caixa-insensível) sobre os campos
-    /// pesquisáveis — nome, sigla, código, slug e alias (issue #640). Mantido
-    /// pelo agregado em <see cref="Criar"/>/<see cref="Atualizar"/> via
-    /// <see cref="NormalizadorTermoBusca"/>, espelhando o <c>normalizarBusca</c>
-    /// do frontend. É projeção de leitura: não compõe o contrato de saída
-    /// (<c>UnidadeDto</c>/<c>UnidadeView</c>), só alimenta o filtro server-side.
-    /// </summary>
-    public string BuscaNormalizada { get; private set; } = string.Empty;
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -128,8 +117,6 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
                 UnidadeIdentificadorHistorico.Abrir(unidade.Id, TipoIdentificador.Alias, unidade.Alias, vigenciaInicio));
         }
 
-        unidade.AtualizarIndiceDeBusca();
-
         return Result<Unidade>.Success(unidade);
     }
 
@@ -180,14 +167,7 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         UnidadeAcademica = unidadeAcademica;
         VigenciaFim = vigenciaFim;
 
-        AtualizarIndiceDeBusca();
-
         return Result.Success();
-    }
-
-    private void AtualizarIndiceDeBusca()
-    {
-        BuscaNormalizada = NormalizadorTermoBusca.ParaIndice(Nome, Sigla, Codigo, Slug.Valor, Alias);
     }
 
     private void RenomearIdentificadorSeNecessario(
