@@ -153,6 +153,15 @@ public sealed class EffectiveGrantTests
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoInvalido);
     }
 
+    [Fact]
+    public void EffectiveGrant_GrantIdGuidVazio_Rejeita()
+    {
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, FonteGrant.Token, grantId: Guid.Empty);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantGrantIdInvalido);
+    }
+
     [Theory]
     [InlineData("unidade")]
     [InlineData("processo")]

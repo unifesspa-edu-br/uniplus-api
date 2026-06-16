@@ -99,6 +99,16 @@ public sealed class UsuarioRefTests
         resultado.Value!.UsuarioId.Should().BeNull();
     }
 
+    [Fact]
+    public void UsuarioRef_UsuarioIdGuidVazio_Rejeita()
+    {
+        // UsuarioId opcional aceita nulo, mas um Guid.Empty informado é malformado.
+        Result<UsuarioRef> resultado = UsuarioRef.From("https://sso.gov.br", "sub-123", Guid.Empty);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.UsuarioRefUsuarioIdInvalido);
+    }
+
     // ─── Igualdade por valor ───────────────────────────────────────────────
 
     [Fact]

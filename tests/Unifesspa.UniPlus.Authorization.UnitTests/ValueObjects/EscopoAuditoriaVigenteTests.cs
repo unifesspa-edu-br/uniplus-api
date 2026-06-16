@@ -42,4 +42,15 @@ public sealed class EscopoAuditoriaVigenteTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EscopoAuditoriaEscopoObrigatorio);
     }
+
+    [Fact]
+    public void EscopoAuditoriaVigente_UnidadeGuidVazio_Rejeita()
+    {
+        // null é o escopo global; um Guid.Empty informado é malformado.
+        Result<EscopoAuditoriaVigente> resultado =
+            EscopoAuditoriaVigente.From(Guid.CreateVersion7(), DateTimeOffset.UtcNow.AddDays(30), Guid.Empty);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EscopoAuditoriaUnidadeInvalida);
+    }
 }
