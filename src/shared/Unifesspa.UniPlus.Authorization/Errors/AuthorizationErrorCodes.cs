@@ -28,4 +28,14 @@ public static class AuthorizationErrorCodes
     public const string DualApprovalAprovadoresIguais = "Authorization.DualApprovalGrant.AprovadoresIguais";
     public const string DualApprovalValidadeNaoPosterior = "Authorization.DualApprovalGrant.ValidadeNaoPosterior";
     public const string DualApprovalValidadeAcimaDoLimite = "Authorization.DualApprovalGrant.ValidadeAcimaDoLimite";
+
+    public const string AuthorizationSubjectJtiObrigatorio = "Authorization.AuthorizationSubject.JtiObrigatorio";
+
+    public const string PermissionRequirementPermissaoObrigatoria = "Authorization.PermissionRequirement.PermissaoObrigatoria";
+
+    public const string ResourceContextRecursoTipoObrigatorio = "Authorization.ResourceContext.RecursoTipoObrigatorio";
+    public const string ResourceContextEscopoInvalido = "Authorization.ResourceContext.EscopoInvalido";
+
+    public const string AuthorizationRequestContextRequestIdObrigatorio = "Authorization.AuthorizationRequestContext.RequestIdObrigatorio";
+    public const string AuthorizationRequestContextOnBehalfOfInvalido = "Authorization.AuthorizationRequestContext.OnBehalfOfInvalido";
 }
