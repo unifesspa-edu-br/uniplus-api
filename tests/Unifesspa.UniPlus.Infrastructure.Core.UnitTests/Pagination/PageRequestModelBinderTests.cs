@@ -100,6 +100,93 @@ public sealed class PageRequestModelBinderTests
     }
 
     [Fact]
+    public async Task BindModelAsync_SemDirection_DefaultEhNext()
+    {
+        ModelBindingContext context = CreateContext("editais", queryString: "");
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        PageRequest page = context.Result.Model.Should().BeOfType<PageRequest>().Subject;
+        page.Direction.Should().Be(PaginationDirection.Next);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_DirectionInvalida_RetornaDirecaoInvalida()
+    {
+        ModelBindingContext context = CreateContext("editais", queryString: "?direction=foo");
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeFalse();
+        context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
+            .Should().Be(CursorBindingErrorCodes.DirecaoInvalida);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_CursorPrevComDirectionPrev_RetornaPageRequestPrev()
+    {
+        Guid expectedAfter = Guid.NewGuid();
+        ServiceProvider services = BuildServices();
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: expectedAfter.ToString(),
+            Limit: 20,
+            ResourceTag: "editais",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Prev));
+
+        ModelBindingContext context = CreateContext(
+            "editais",
+            queryString: $"?cursor={Uri.EscapeDataString(cursor)}&direction=prev",
+            servicesOverride: services);
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        PageRequest page = context.Result.Model.Should().BeOfType<PageRequest>().Subject;
+        page.AfterId.Should().Be(expectedAfter);
+        page.Direction.Should().Be(PaginationDirection.Prev);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_CursorNextNavegadoComoPrev_RetornaCursorInvalido()
+    {
+        // Integridade do par cursor+direção (ADR-0089): cursor emitido para next
+        // não pode ser reutilizado com direction=prev.
+        ServiceProvider services = BuildServices();
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        string cursorNext = await encoder.EncodeAsync(new CursorPayload(
+            After: Guid.NewGuid().ToString(),
+            Limit: 20,
+            ResourceTag: "editais",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next));
+
+        ModelBindingContext context = CreateContext(
+            "editais",
+            queryString: $"?cursor={Uri.EscapeDataString(cursorNext)}&direction=prev",
+            servicesOverride: services);
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeFalse();
+        context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
+            .Should().Be(CursorBindingErrorCodes.Invalido);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_PrevSemCursor_CoageParaNext()
+    {
+        // 'prev' sem âncora não tem sentido: a primeira página é sempre forward.
+        ModelBindingContext context = CreateContext("editais", queryString: "?direction=prev");
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        PageRequest page = context.Result.Model.Should().BeOfType<PageRequest>().Subject;
+        page.AfterId.Should().BeNull();
+        page.Direction.Should().Be(PaginationDirection.Next);
+    }
+
+    [Fact]
     public async Task BindModelAsync_CursorBase64UrlInvalido_RetornaCursorInvalido()
     {
         ModelBindingContext context = CreateContext("editais", queryString: "?cursor=@@@@");
