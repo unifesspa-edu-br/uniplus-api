@@ -139,6 +139,38 @@ public sealed class EffectiveGrantTests
         resultado.Value!.Fonte.Should().Be(FonteGrant.PermissaoExcecional);
     }
 
+    [Fact]
+    public void EffectiveGrant_ExcepcionalComEscopoGuidVazio_Rejeita()
+    {
+        // Guid.Empty não é um identificador real: a concessão excepcional não
+        // pode atravessar o boundary com escopo "informado mas vazio".
+        DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
+
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao, FonteGrant.PermissaoExcecional, escopoUnidadeId: Guid.Empty, validoAte: validade);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoInvalido);
+    }
+
+    [Theory]
+    [InlineData("unidade")]
+    [InlineData("processo")]
+    [InlineData("chamada")]
+    public void EffectiveGrant_EscopoGuidVazio_Rejeita(string escopo)
+    {
+        // Vale para qualquer fonte — um escopo Guid.Empty é sempre inválido.
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao,
+            FonteGrant.Token,
+            escopoUnidadeId: escopo == "unidade" ? Guid.Empty : null,
+            escopoProcessoId: escopo == "processo" ? Guid.Empty : null,
+            escopoChamadaId: escopo == "chamada" ? Guid.Empty : null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoInvalido);
+    }
+
     // ─── Permissão obrigatória ─────────────────────────────────────────────
 
     [Theory]
