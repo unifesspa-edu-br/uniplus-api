@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
@@ -25,17 +26,20 @@ public interface IUnidadeRepository
     Task<Unidade?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Lista unidades ativas paginadas por cursor keyset (ADR-0026): ordena por
-    /// <c>Id</c> (Guid v7, ADR-0032 — ordem cronológica) e retorna até
-    /// <paramref name="take"/> itens com <c>Id</c> maior que
-    /// <paramref name="afterId"/> (ou a primeira janela quando <c>null</c>).
-    /// Os critérios de <paramref name="filtro"/> (busca textual + tipos) são
-    /// aplicados no read-side antes do keyset, mantendo a janela coerente sobre
-    /// o conjunto filtrado (issue #640).
+    /// Lista unidades ativas paginadas por cursor keyset bidirecional (ADR-0026
+    /// + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e retorna até
+    /// <paramref name="limit"/> itens na direção <paramref name="direction"/> a
+    /// partir de <paramref name="afterId"/> (ou a primeira janela quando
+    /// <c>null</c>), sempre em ordem ascendente. Devolve também as âncoras de
+    /// <c>prev</c>/<c>next</c> (nulas quando não há aquele lado). Os critérios de
+    /// <paramref name="filtro"/> (busca textual + tipos) são aplicados no
+    /// read-side antes do keyset, mantendo a janela coerente sobre o conjunto
+    /// filtrado (issue #640).
     /// </summary>
-    Task<IReadOnlyList<Unidade>> ListarPaginadoAsync(
+    Task<(IReadOnlyList<Unidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
-        int take,
+        int limit,
+        PaginationDirection direction,
         FiltroListagemUnidades filtro,
         CancellationToken cancellationToken);
 

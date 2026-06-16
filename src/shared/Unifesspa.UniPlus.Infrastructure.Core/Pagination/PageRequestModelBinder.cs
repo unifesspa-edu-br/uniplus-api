@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// Binder de <see cref="PageRequest"/>: lê <c>cursor</c> e <c>limit</c> do
@@ -28,6 +29,7 @@ public sealed class PageRequestModelBinder : IModelBinder
 {
     private const string CursorParam = "cursor";
     private const string LimitParam = "limit";
+    private const string DirectionParam = "direction";
 
     public async Task BindModelAsync(ModelBindingContext bindingContext)
     {
@@ -49,6 +51,14 @@ public sealed class PageRequestModelBinder : IModelBinder
         {
             FailWith(bindingContext, CursorBindingErrorCodes.LimitInvalido,
                 $"O parâmetro 'limit' deve estar entre {options.LimitMin} e {options.LimitMax}.");
+            return;
+        }
+
+        // Direção (ADR-0089): 'next' (default) ou 'prev'. Valor desconhecido → 422.
+        if (!TryParseDirection(query[DirectionParam], out PaginationDirection direction))
+        {
+            FailWith(bindingContext, CursorBindingErrorCodes.DirecaoInvalida,
+                "O parâmetro 'direction' deve ser 'next' ou 'prev'.");
             return;
         }
 
@@ -75,6 +85,15 @@ public sealed class PageRequestModelBinder : IModelBinder
                 case CursorDecodeStatus.Success:
                     if (!Guid.TryParse(decoded.Payload!.After, out Guid parsedAfter)
                         || !string.Equals(decoded.Payload.ResourceTag, attribute.Resource, StringComparison.Ordinal))
+                    {
+                        FailWith(bindingContext, CursorBindingErrorCodes.Invalido, "O cursor informado é inválido.");
+                        return;
+                    }
+
+                    // Integridade do par cursor+direção (ADR-0089): um cursor
+                    // emitido para 'next' não pode ser navegado como 'prev' (e
+                    // vice-versa) — divergência é tratada como adulteração.
+                    if (decoded.Payload.Direction != direction)
                     {
                         FailWith(bindingContext, CursorBindingErrorCodes.Invalido, "O cursor informado é inválido.");
                         return;
@@ -133,7 +152,34 @@ public sealed class PageRequestModelBinder : IModelBinder
         // O keyset (afterId) é o que mantém estabilidade da janela, não o limit.
         int effectiveLimit = requestedLimit ?? cursorLimit ?? options.LimitDefault;
 
-        bindingContext.Result = ModelBindingResult.Success(new PageRequest(afterId, effectiveLimit));
+        // Primeira página (sem cursor) é sempre forward — 'prev' sem âncora não
+        // tem sentido; coage para 'next' em vez de erro.
+        PaginationDirection effectiveDirection = afterId is null ? PaginationDirection.Next : direction;
+
+        bindingContext.Result = ModelBindingResult.Success(
+            new PageRequest(afterId, effectiveLimit, effectiveDirection));
+    }
+
+    private static bool TryParseDirection(
+        Microsoft.Extensions.Primitives.StringValues raw,
+        out PaginationDirection direction)
+    {
+        direction = PaginationDirection.Next;
+
+        string? first = raw.Count == 0 ? null : raw[0];
+        if (string.IsNullOrWhiteSpace(first))
+            return true; // ausente → default Next
+
+        if (string.Equals(first, "next", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (string.Equals(first, "prev", StringComparison.OrdinalIgnoreCase))
+        {
+            direction = PaginationDirection.Prev;
+            return true;
+        }
+
+        return false; // valor informado mas inválido
     }
 
     private static int? TryParseLimit(Microsoft.Extensions.Primitives.StringValues raw)

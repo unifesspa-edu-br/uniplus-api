@@ -78,6 +78,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
             new ListarObrigatoriedadesLegaisQuery(
                 page.AfterId,
                 page.Limit,
+                page.Direction,
                 tipoEdital,
                 categoria,
                 vigentes),
@@ -85,6 +86,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
 
         return await this.OkPaginatedAsync(
             resultado.Items,
+            resultado.AnteriorAfterId,
             resultado.ProximoAfterId,
             page,
             ResourceTag,

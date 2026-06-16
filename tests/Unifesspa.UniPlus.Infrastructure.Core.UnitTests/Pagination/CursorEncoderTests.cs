@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed class CursorEncoderTests
 {
@@ -37,7 +38,8 @@ public sealed class CursorEncoderTests
     public async Task Encode_Decode_FazRoundtrip()
     {
         (CursorEncoder encoder, _) = CriarEncoder();
-        CursorPayload payload = new("01HQ...id", 20, "editais", DateTimeOffset.UtcNow.AddMinutes(10));
+        CursorPayload payload = new(
+            "01HQ...id", 20, "editais", DateTimeOffset.UtcNow.AddMinutes(10), PaginationDirection.Prev);
 
         string token = await encoder.EncodeAsync(payload);
         CursorDecodeResult resultado = await encoder.TryDecodeAsync(token);
@@ -47,13 +49,15 @@ public sealed class CursorEncoderTests
         resultado.Payload.Limit.Should().Be(payload.Limit);
         resultado.Payload.ResourceTag.Should().Be(payload.ResourceTag);
         resultado.Payload.ExpiresAt.Should().BeCloseTo(payload.ExpiresAt, TimeSpan.FromMilliseconds(1));
+        resultado.Payload.Direction.Should().Be(PaginationDirection.Prev);
     }
 
     [Fact]
     public async Task TryDecode_TokenAdulterado_RetornaInvalid()
     {
         (CursorEncoder encoder, _) = CriarEncoder();
-        CursorPayload payload = new("id", 10, "editais", DateTimeOffset.UtcNow.AddMinutes(5));
+        CursorPayload payload = new(
+            "id", 10, "editais", DateTimeOffset.UtcNow.AddMinutes(5), PaginationDirection.Next);
         string token = await encoder.EncodeAsync(payload);
 
         // Inverte um caractere central, preservando comprimento e alfabeto base64url.
@@ -72,7 +76,8 @@ public sealed class CursorEncoderTests
     {
         DateTimeOffset baseTime = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
         (CursorEncoder encoder, MutableTimeProvider time) = CriarEncoder(baseTime);
-        CursorPayload payload = new("id", 10, "editais", baseTime.AddMinutes(5));
+        CursorPayload payload = new(
+            "id", 10, "editais", baseTime.AddMinutes(5), PaginationDirection.Next);
         string token = await encoder.EncodeAsync(payload);
 
         time.Advance(TimeSpan.FromMinutes(10));

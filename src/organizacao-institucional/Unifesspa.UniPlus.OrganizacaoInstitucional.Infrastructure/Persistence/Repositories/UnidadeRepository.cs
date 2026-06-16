@@ -5,6 +5,8 @@ using System.Text;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -38,9 +40,10 @@ internal sealed class UnidadeRepository : IUnidadeRepository
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Unidade>> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<Unidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
-        int take,
+        int limit,
+        PaginationDirection direction,
         FiltroListagemUnidades filtro,
         CancellationToken cancellationToken)
     {
@@ -83,22 +86,15 @@ internal sealed class UnidadeRepository : IUnidadeRepository
             query = query.Where(u => tipos.Contains(u.Tipo));
         }
 
-        query = query.OrderBy(u => u.Id);
-
-        if (afterId is { } cursor)
-        {
-            // Keyset coerente server-side (ADR-0026 + ADR-0032): Npgsql traduz
-            // Guid.CompareTo para o operador uuid > nativo do PG — mesmo
-            // comparador do OrderBy(Id). Com Guid v7, a ordem por Id reflete a
-            // criação temporal. Aplicado APÓS os filtros: a janela avança sobre
-            // o conjunto já filtrado.
-            query = query.Where(u => u.Id.CompareTo(cursor) > 0);
-        }
-
-        return await query
-            .Take(take)
-            .ToListAsync(cancellationToken)
+        // Keyset bidirecional (ADR-0089): ordenação, âncora, probe n+1, reversão
+        // e flags ficam no helper, que opera sobre a query JÁ FILTRADA — os
+        // EXISTS do helper herdam os mesmos filtros (busca/tipos). Npgsql traduz
+        // Guid.CompareTo para o operador uuid nativo do PG (ADR-0026 + ADR-0032).
+        CursorKeysetPage<Unidade> page = await CursorKeyset
+            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
+
+        return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 
     public async Task AdicionarAsync(Unidade unidade, CancellationToken cancellationToken)

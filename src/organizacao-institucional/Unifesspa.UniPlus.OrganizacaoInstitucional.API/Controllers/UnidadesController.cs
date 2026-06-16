@@ -99,14 +99,14 @@ public sealed class UnidadesController : ControllerBase
         }
 
         ListarUnidadesAtivasResult resultado = await _queryBus
-            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit, q, tipos), cancellationToken)
+            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit, page.Direction, q, tipos), cancellationToken)
             .ConfigureAwait(false);
 
         // HATEOAS Level 1 (ADR-0029 §"Coleção"): cada item carrega seu _links.self.
         UnidadeDto[] comLinks = [.. resultado.Items.Select(u => u with { Links = _linksBuilder.Build(u) })];
 
         return await this.OkPaginatedAsync(
-            comLinks, resultado.ProximoAfterId, page, ResourceTag,
+            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

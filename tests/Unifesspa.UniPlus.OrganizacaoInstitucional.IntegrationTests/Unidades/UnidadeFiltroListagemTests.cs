@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -191,7 +192,9 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
     {
         await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
-        return await repository.ListarPaginadoAsync(afterId, take, filtro, CancellationToken.None);
+        (IReadOnlyList<Unidade> itens, _, _) = await repository
+            .ListarPaginadoAsync(afterId, take, PaginationDirection.Next, filtro, CancellationToken.None);
+        return itens;
     }
 
     private async Task<IReadOnlyList<Guid>> ListarIdsAsync(FiltroListagemUnidades filtro)

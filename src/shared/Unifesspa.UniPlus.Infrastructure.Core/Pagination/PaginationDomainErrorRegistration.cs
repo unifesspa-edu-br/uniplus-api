@@ -25,5 +25,7 @@ internal sealed class PaginationDomainErrorRegistration : IDomainErrorRegistrati
             new DomainErrorMapping(StatusCodes.Status410Gone, "uniplus.cursor.expirado", "Cursor de paginação expirado")),
         new(CursorBindingErrorCodes.LimitInvalido,
             new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cursor.limit_invalido", "Tamanho de página inválido")),
+        new(CursorBindingErrorCodes.DirecaoInvalida,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cursor.direcao_invalida", "Direção de paginação inválida")),
     ];
 }

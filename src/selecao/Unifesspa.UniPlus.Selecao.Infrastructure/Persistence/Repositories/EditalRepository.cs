@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed class EditalRepository : IEditalRepository
 {
@@ -57,28 +59,21 @@ public sealed class EditalRepository : IEditalRepository
             .ConfigureAwait(false);
     }
 
-    public async Task<IReadOnlyList<Edital>> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<Edital> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
-        int take,
+        int limit,
+        PaginationDirection direction,
         CancellationToken cancellationToken = default)
     {
-        IQueryable<Edital> query = _context.Editais
-            .AsNoTracking()
-            .OrderBy(e => e.Id);
+        // Keyset bidirecional (ADR-0089): ordenação, âncora, probe n+1, reversão
+        // e flags ficam no helper. Npgsql traduz Guid.CompareTo para o operador
+        // uuid nativo do PG; com Guid v7 (ADR-0032) a ordem por Id é cronológica.
+        IQueryable<Edital> query = _context.Editais.AsNoTracking();
 
-        if (afterId is { } cursor)
-        {
-            // Keyset coerente server-side (ADR-0026 + ADR-0032): Npgsql traduz
-            // Guid.CompareTo para o operador uuid > nativo do PG — mesmo
-            // comparador que o OrderBy(Id) acima. Com Guid v7 (ADR-0032), a
-            // ordenação por Id reflete criação temporal — clientes recebem
-            // editais em ordem cronológica natural ao paginar.
-            query = query.Where(e => e.Id.CompareTo(cursor) > 0);
-        }
-
-        return await query
-            .Take(take)
-            .ToListAsync(cancellationToken)
+        CursorKeysetPage<Edital> page = await CursorKeyset
+            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
+
+        return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 }

@@ -4,10 +4,13 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
 
 /// <summary>
 /// Resultado da <see cref="ListarUnidadesAtivasQuery"/>: lote de unidades já
-/// projetadas + identificador opcional do último item para o controller
-/// construir o cursor da próxima página (ADR-0026). Não vaza entidades de
-/// domínio.
+/// projetadas + âncoras opcionais para o controller construir os cursores de
+/// página anterior/próxima (ADR-0026 + ADR-0089). Não vaza entidades de domínio.
 /// </summary>
-/// <param name="Items">Unidades da página corrente, ordenadas pelo identificador.</param>
-/// <param name="ProximoAfterId">Id do último item da janela quando há mais páginas; <c>null</c> sinaliza fim da coleção.</param>
-public sealed record ListarUnidadesAtivasResult(IReadOnlyList<UnidadeDto> Items, Guid? ProximoAfterId);
+/// <param name="Items">Unidades da página corrente, em ordem ascendente por identificador.</param>
+/// <param name="AnteriorAfterId">Âncora para o cursor <c>prev</c> (primeiro item) quando há página anterior; <c>null</c> = início da coleção.</param>
+/// <param name="ProximoAfterId">Âncora para o cursor <c>next</c> (último item) quando há próxima página; <c>null</c> = fim da coleção.</param>
+public sealed record ListarUnidadesAtivasResult(
+    IReadOnlyList<UnidadeDto> Items,
+    Guid? AnteriorAfterId,
+    Guid? ProximoAfterId);

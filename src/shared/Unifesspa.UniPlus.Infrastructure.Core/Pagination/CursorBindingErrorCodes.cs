@@ -11,6 +11,7 @@ public static class CursorBindingErrorCodes
     public const string Invalido = "Cursor.Invalido";
     public const string Expirado = "Cursor.Expirado";
     public const string LimitInvalido = "Cursor.LimitInvalido";
+    public const string DirecaoInvalida = "Cursor.DirecaoInvalida";
 
     /// <summary>Chave em <c>HttpContext.Items</c> onde o binder publica o código do erro.</summary>
     public const string HttpContextItemKey = "__UniPlusCursorBindingError";

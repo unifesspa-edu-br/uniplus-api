@@ -5,7 +5,9 @@ using System.Linq;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -73,17 +75,19 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         _context.ObrigatoriedadesLegais.Remove(entity);
     }
 
-    public async Task<IReadOnlyList<ObrigatoriedadeLegal>> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<ObrigatoriedadeLegal> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
-        int take,
+        int limit,
+        PaginationDirection direction,
         string? tipoEditalCodigo,
         CategoriaObrigatoriedade? categoria,
         bool vigentes,
         CancellationToken cancellationToken = default)
     {
+        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia. Aplicamos
+        // só os filtros; os EXISTS de flag do helper herdam a mesma query base.
         IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais
-            .AsNoTracking()
-            .OrderBy(o => o.Id);
+            .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(tipoEditalCodigo))
         {
@@ -104,12 +108,11 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
                 && (o.VigenciaFim == null || o.VigenciaFim > hoje));
         }
 
-        if (afterId is { } cursor)
-        {
-            query = query.Where(o => o.Id.CompareTo(cursor) > 0);
-        }
+        CursorKeysetPage<ObrigatoriedadeLegal> page = await CursorKeyset
+            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+            .ConfigureAwait(false);
 
-        return await query.Take(take).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 
     public async Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoEditalAsync(

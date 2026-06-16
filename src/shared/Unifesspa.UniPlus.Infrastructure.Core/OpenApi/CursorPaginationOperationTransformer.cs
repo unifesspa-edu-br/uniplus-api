@@ -31,12 +31,13 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
 {
     private const string CursorParam = "cursor";
     private const string LimitParam = "limit";
+    private const string DirectionParam = "direction";
     private const string LinkHeader = "Link";
     private const string PageSizeHeader = "X-Page-Size";
     private const string PaginatedExtension = "x-uniplus-paginated";
     private const string OkStatus = "200";
 
-    private static readonly string[] LeakedPageRequestProperties = ["AfterId", "Limit"];
+    private static readonly string[] LeakedPageRequestProperties = ["AfterId", "Limit", "Direction"];
 
     public Task TransformAsync(
         OpenApiOperation operation,
@@ -129,6 +130,21 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
                 Format = "int32",
             },
         });
+        operation.Parameters.Add(new OpenApiParameter
+        {
+            Name = DirectionParam,
+            In = ParameterLocation.Query,
+            Required = false,
+            Description = "Direção de navegação keyset (ADR-0089): 'next' (default) avança, "
+                + "'prev' retrocede. Normalmente o cliente apenas segue o cursor opaco do "
+                + "rel=\"prev\"/rel=\"next\" do header Link — que já inclui o direction correto.",
+            Schema = new OpenApiSchema
+            {
+                Type = JsonSchemaType.String,
+                Enum = [JsonValue.Create("next")!, JsonValue.Create("prev")!],
+                Default = JsonValue.Create("next"),
+            },
+        });
     }
 
     private static void DeclareResponseHeaders(OpenApiOperation operation)
@@ -144,8 +160,9 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
         okResponse.Headers[LinkHeader] = new OpenApiHeader
         {
             Description = "Links de navegação da paginação (RFC 5988/8288). "
-                + "rel=\"self\" sempre presente; rel=\"next\" só quando há próxima página. "
-                + "Cada link carrega o cursor opaco no parâmetro `cursor` (ADR-0026).",
+                + "rel=\"self\" sempre presente; rel=\"prev\"/rel=\"next\" quando há página "
+                + "anterior/próxima (ADR-0089). Cada link carrega o cursor opaco no parâmetro "
+                + "`cursor` e o `direction` correspondente (ADR-0026).",
             Schema = new OpenApiSchema
             {
                 Type = JsonSchemaType.String,

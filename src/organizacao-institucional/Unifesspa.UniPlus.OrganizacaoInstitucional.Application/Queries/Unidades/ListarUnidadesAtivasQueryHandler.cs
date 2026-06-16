@@ -7,11 +7,12 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based de <see cref="ListarUnidadesAtivasQuery"/>:
-/// paginação keyset-based (cursor) sobre o agregado <c>Unidade</c>, ordenando
-/// pelo identificador para garantir estabilidade da janela. Solicita
-/// <c>limit + 1</c> itens para detectar a próxima página sem COUNT (ADR-0026).
-/// Aplica os filtros opcionais (busca + tipos) no read-side (issue #640);
-/// a normalização acento/caixa é delegada ao banco via immutable_unaccent + ILIKE.
+/// paginação keyset bidirecional (cursor) sobre o agregado <c>Unidade</c>
+/// (ADR-0026 + ADR-0089). A mecânica de keyset (ordenação, probe <c>n+1</c>,
+/// reversão e flags <c>prev</c>/<c>next</c> sem COUNT) vive no repositório via
+/// <c>CursorKeyset</c>; o handler apenas monta o filtro (busca + tipos, issue
+/// #640) e projeta as entidades em DTO. A normalização acento/caixa é delegada
+/// ao banco via immutable_unaccent + ILIKE.
 /// </summary>
 public static class ListarUnidadesAtivasQueryHandler
 {
@@ -27,19 +28,11 @@ public static class ListarUnidadesAtivasQueryHandler
             string.IsNullOrWhiteSpace(query.Busca) ? null : query.Busca,
             query.Tipos ?? []);
 
-        IReadOnlyList<Unidade> page = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit + 1, filtro, cancellationToken)
+        (IReadOnlyList<Unidade> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
+            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, filtro, cancellationToken)
             .ConfigureAwait(false);
 
-        // Defesa contra Limit <= 0 (config inconsistente): Take(0) devolveria
-        // array vazio e limited[^1] lançaria IndexOutOfRangeException.
-        if (page.Count > query.Limit && query.Limit > 0)
-        {
-            UnidadeDto[] limited = [.. page.Take(query.Limit).Select(u => u.ToDto())];
-            return new ListarUnidadesAtivasResult(limited, limited[^1].Id);
-        }
-
-        UnidadeDto[] items = [.. page.Select(u => u.ToDto())];
-        return new ListarUnidadesAtivasResult(items, ProximoAfterId: null);
+        UnidadeDto[] items = [.. itens.Select(u => u.ToDto())];
+        return new ListarUnidadesAtivasResult(items, anteriorAfterId, proximoAfterId);
     }
 }
