@@ -55,6 +55,13 @@ public sealed record UsuarioRef
                 "Subject do usuário é obrigatório."));
         }
 
+        if (usuarioId is { } id && id == Guid.Empty)
+        {
+            return Result<UsuarioRef>.Failure(new DomainError(
+                AuthorizationErrorCodes.UsuarioRefUsuarioIdInvalido,
+                "UsuarioId informado não pode ser Guid.Empty — use um identificador real ou nulo."));
+        }
+
         return Result<UsuarioRef>.Success(new UsuarioRef(emissor, subject, usuarioId));
     }
 }

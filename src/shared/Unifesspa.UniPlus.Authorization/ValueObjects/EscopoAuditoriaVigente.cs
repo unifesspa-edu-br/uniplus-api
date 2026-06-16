@@ -29,7 +29,9 @@ public sealed record EscopoAuditoriaVigente
 
     /// <summary>
     /// Constrói um <see cref="EscopoAuditoriaVigente"/> validado. Rejeita
-    /// escopo vazio (<see cref="Guid.Empty"/>).
+    /// escopo vazio (<see cref="Guid.Empty"/>) e <paramref name="unidadeId"/>
+    /// informado como <see cref="Guid.Empty"/> — nulo é o escopo global; um
+    /// valor informado precisa ser um identificador real.
     /// </summary>
     public static Result<EscopoAuditoriaVigente> From(Guid escopoId, DateTimeOffset validoAte, Guid? unidadeId = null)
     {
@@ -38,6 +40,13 @@ public sealed record EscopoAuditoriaVigente
             return Result<EscopoAuditoriaVigente>.Failure(new DomainError(
                 AuthorizationErrorCodes.EscopoAuditoriaEscopoObrigatorio,
                 "Identificador do escopo de auditoria é obrigatório."));
+        }
+
+        if (unidadeId is { } unidade && unidade == Guid.Empty)
+        {
+            return Result<EscopoAuditoriaVigente>.Failure(new DomainError(
+                AuthorizationErrorCodes.EscopoAuditoriaUnidadeInvalida,
+                "Unidade informada não pode ser Guid.Empty — use um identificador real ou nulo (escopo global)."));
         }
 
         return Result<EscopoAuditoriaVigente>.Success(new EscopoAuditoriaVigente(escopoId, unidadeId, validoAte));

@@ -10,13 +10,16 @@ public static class AuthorizationErrorCodes
 {
     public const string UsuarioRefEmissorObrigatorio = "Authorization.UsuarioRef.EmissorObrigatorio";
     public const string UsuarioRefSubjectObrigatorio = "Authorization.UsuarioRef.SubjectObrigatorio";
+    public const string UsuarioRefUsuarioIdInvalido = "Authorization.UsuarioRef.UsuarioIdInvalido";
 
     public const string EffectiveGrantPermissaoObrigatoria = "Authorization.EffectiveGrant.PermissaoObrigatoria";
+    public const string EffectiveGrantGrantIdInvalido = "Authorization.EffectiveGrant.GrantIdInvalido";
     public const string EffectiveGrantEscopoInvalido = "Authorization.EffectiveGrant.EscopoInvalido";
     public const string EffectiveGrantValidadeObrigatoria = "Authorization.EffectiveGrant.ValidadeObrigatoria";
     public const string EffectiveGrantEscopoExcecionalObrigatorio = "Authorization.EffectiveGrant.EscopoExcecionalObrigatorio";
 
     public const string EscopoAuditoriaEscopoObrigatorio = "Authorization.EscopoAuditoriaVigente.EscopoObrigatorio";
+    public const string EscopoAuditoriaUnidadeInvalida = "Authorization.EscopoAuditoriaVigente.UnidadeInvalida";
 
     public const string AtuacaoUnidadeObrigatoria = "Authorization.AtuacaoVigente.UnidadeObrigatoria";
 

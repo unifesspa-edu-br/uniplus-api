@@ -96,9 +96,16 @@ public sealed record EffectiveGrant
                 "Código da permissão é obrigatório."));
         }
 
-        if (EscopoVazioInformado(escopoUnidadeId)
-            || EscopoVazioInformado(escopoProcessoId)
-            || EscopoVazioInformado(escopoChamadaId))
+        if (GuidVazioInformado(grantId))
+        {
+            return Result<EffectiveGrant>.Failure(new DomainError(
+                AuthorizationErrorCodes.EffectiveGrantGrantIdInvalido,
+                "GrantId informado não pode ser Guid.Empty — use um identificador real ou nulo."));
+        }
+
+        if (GuidVazioInformado(escopoUnidadeId)
+            || GuidVazioInformado(escopoProcessoId)
+            || GuidVazioInformado(escopoChamadaId))
         {
             return Result<EffectiveGrant>.Failure(new DomainError(
                 AuthorizationErrorCodes.EffectiveGrantEscopoInvalido,
@@ -135,7 +142,7 @@ public sealed record EffectiveGrant
             concedidoPor));
     }
 
-    // Um escopo Guid é "informado mas vazio" quando vem preenchido com
+    // Um Guid opcional é "informado mas vazio" quando vem preenchido com
     // Guid.Empty — nunca um identificador real (o projeto usa Guid v7).
-    private static bool EscopoVazioInformado(Guid? escopo) => escopo is { } valor && valor == Guid.Empty;
+    private static bool GuidVazioInformado(Guid? valor) => valor is { } g && g == Guid.Empty;
 }
