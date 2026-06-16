@@ -98,4 +98,58 @@ public sealed record AuthorizationSubject
             jti,
             ColecoesSomenteLeitura.Lista(concessoesEfetivas)));
     }
+
+    // Igualdade por valor (CA-01): o Equals sintetizado pelo record compararia as
+    // coleções por referência, tornando sujeitos de conteúdo idêntico desiguais.
+    // Conjuntos comparam-se por SetEquals (sem ordem); listas por sequência. O
+    // hash acompanha: agregado independente de ordem para os conjuntos, em ordem
+    // para as listas.
+
+    /// <inheritdoc />
+    public bool Equals(AuthorizationSubject? other) =>
+        other is not null
+        && Usuario == other.Usuario
+        && MfaSatisfeito == other.MfaSatisfeito
+        && Jti == other.Jti
+        && AtuacaoAtiva == other.AtuacaoAtiva
+        && GruposOidc.SetEquals(other.GruposOidc)
+        && UnidadesAdministradas.SetEquals(other.UnidadesAdministradas)
+        && EscoposAuditoria.SequenceEqual(other.EscoposAuditoria)
+        && ConcessoesEfetivas.SequenceEqual(other.ConcessoesEfetivas);
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        HashCode hash = default;
+        hash.Add(Usuario);
+        hash.Add(MfaSatisfeito);
+        hash.Add(Jti);
+        hash.Add(AtuacaoAtiva);
+        hash.Add(HashIndependenteDeOrdem(GruposOidc));
+        hash.Add(HashIndependenteDeOrdem(UnidadesAdministradas));
+        foreach (EscopoAuditoriaVigente escopo in EscoposAuditoria)
+        {
+            hash.Add(escopo);
+        }
+
+        foreach (EffectiveGrant concessao in ConcessoesEfetivas)
+        {
+            hash.Add(concessao);
+        }
+
+        return hash.ToHashCode();
+    }
+
+    // Soma dos hashes dos elementos — independente de ordem, consistente com
+    // SetEquals (que ignora ordem). Sem cancelamento (ao contrário do XOR).
+    private static int HashIndependenteDeOrdem<T>(IReadOnlySet<T> conjunto)
+    {
+        int acumulado = 0;
+        foreach (T item in conjunto)
+        {
+            acumulado += item?.GetHashCode() ?? 0;
+        }
+
+        return acumulado;
+    }
 }
