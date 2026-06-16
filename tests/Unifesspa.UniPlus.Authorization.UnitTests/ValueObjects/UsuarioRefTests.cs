@@ -69,13 +69,25 @@ public sealed class UsuarioRefTests
     }
 
     [Fact]
-    public void UsuarioRef_NormalizaEspacosNasPontas()
+    public void UsuarioRef_PreservaEmissorESubjectVerbatim()
     {
-        Result<UsuarioRef> resultado = UsuarioRef.From("  https://sso.gov.br  ", "  sub-123  ");
+        // Claims opacos do OIDC: espaços de fronteira fazem parte do token e
+        // não podem ser normalizados — Trim aliasaria sujeitos distintos e
+        // quebraria a fidelidade da auditoria por emissor + subject.
+        Result<UsuarioRef> resultado = UsuarioRef.From(" https://sso.gov.br ", " sub-123 ");
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Emissor.Should().Be("https://sso.gov.br");
-        resultado.Value.Subject.Should().Be("sub-123");
+        resultado.Value!.Emissor.Should().Be(" https://sso.gov.br ");
+        resultado.Value.Subject.Should().Be(" sub-123 ");
+    }
+
+    [Fact]
+    public void UsuarioRef_SubjectsDiferindoPorEspaco_NaoSaoIguais()
+    {
+        UsuarioRef compacto = UsuarioRef.From("https://sso.gov.br", "sub-123").Value!;
+        UsuarioRef comEspaco = UsuarioRef.From("https://sso.gov.br", " sub-123").Value!;
+
+        comEspaco.Should().NotBe(compacto, "subjects opacos distintos não podem ser aliasados por normalização");
     }
 
     [Fact]
