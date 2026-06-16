@@ -117,8 +117,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md) | Trilha de auditoria de autorização com integridade verificável (código de autenticação com chave em cofre, rotacionável; append-only) | proposed | 2026-06-02 |
 | [0087](0087-banco-isolado-para-o-contexto-de-autorizacao.md) | Banco isolado para o contexto de autorização (aplica ADR-0054; referências externas por identificador via leitor) | proposed | 2026-06-02 |
 | [0088](0088-versionamento-cross-repo-do-contrato-de-permissoes.md) | Versionamento e publicação cross-repo do contrato de permissões (pacote versionado; versão fixa no frontend; validação na CI) | proposed | 2026-06-02 |
+| [0089](0089-navegacao-bidirecional-cursor-keyset-reverso.md) | Navegação bidirecional na paginação por cursor via keyset reverso (direction query param vinculado ao cursor; flags exatas sem COUNT) | accepted | 2026-06-16 |
 
-> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0088` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0089+`.
+> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0089` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0090+`.
 
 ## Como adicionar um novo ADR
 
