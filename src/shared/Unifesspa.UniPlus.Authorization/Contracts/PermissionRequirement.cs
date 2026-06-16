@@ -92,4 +92,41 @@ public sealed record PermissionRequirement
             ColecoesSomenteLeitura.Lista(escopoContextoObrigatorio),
             ColecoesSomenteLeitura.Lista(verificacoesDeContexto)));
     }
+
+    // Igualdade por valor (CA-01): o Equals sintetizado pelo record compararia as
+    // coleções por referência, tornando contratos de conteúdo idêntico desiguais.
+    // Compara as listas por sequência; o hash acompanha em ordem.
+
+    /// <inheritdoc />
+    public bool Equals(PermissionRequirement? other) =>
+        other is not null
+        && Permissao == other.Permissao
+        && Sensibilidade == other.Sensibilidade
+        && BaseLegalPadrao == other.BaseLegalPadrao
+        && RequerMfa == other.RequerMfa
+        && RequerDuplaAprovacao == other.RequerDuplaAprovacao
+        && EscopoContextoObrigatorio.SequenceEqual(other.EscopoContextoObrigatorio)
+        && VerificacoesDeContexto.SequenceEqual(other.VerificacoesDeContexto);
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        HashCode hash = default;
+        hash.Add(Permissao);
+        hash.Add(Sensibilidade);
+        hash.Add(BaseLegalPadrao);
+        hash.Add(RequerMfa);
+        hash.Add(RequerDuplaAprovacao);
+        foreach (string escopo in EscopoContextoObrigatorio)
+        {
+            hash.Add(escopo);
+        }
+
+        foreach (string verificacao in VerificacoesDeContexto)
+        {
+            hash.Add(verificacao);
+        }
+
+        return hash.ToHashCode();
+    }
 }
