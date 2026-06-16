@@ -71,7 +71,12 @@ public sealed record EffectiveGrant
     /// permissão vazio e concessão server-side
     /// (<see cref="FonteGrant.OidcGroupBinding"/> /
     /// <see cref="FonteGrant.PermissaoExcecional"/>) sem
-    /// <paramref name="validoAte"/>.
+    /// <paramref name="validoAte"/>. Adicionalmente, a concessão excepcional
+    /// (<see cref="FonteGrant.PermissaoExcecional"/>) exige <b>ao menos um
+    /// escopo</b> — unidade, processo, chamada ou tipo de recurso (ADR-0084):
+    /// uma concessão fora do perfil padrão nunca é global irrestrita.
+    /// <see cref="FonteGrant.Token"/> e <see cref="FonteGrant.OidcGroupBinding"/>
+    /// podem ser permissões globais, sem escopo.
     /// </summary>
     public static Result<EffectiveGrant> From(
         string? permissaoCodigo,
@@ -96,6 +101,17 @@ public sealed record EffectiveGrant
             return Result<EffectiveGrant>.Failure(new DomainError(
                 AuthorizationErrorCodes.EffectiveGrantValidadeObrigatoria,
                 "Concessão resolvida no servidor exige validade explícita (ValidoAte)."));
+        }
+
+        if (fonte is FonteGrant.PermissaoExcecional
+            && escopoUnidadeId is null
+            && escopoProcessoId is null
+            && escopoChamadaId is null
+            && string.IsNullOrWhiteSpace(recursoTipoRestricao))
+        {
+            return Result<EffectiveGrant>.Failure(new DomainError(
+                AuthorizationErrorCodes.EffectiveGrantEscopoExcecionalObrigatorio,
+                "Concessão excepcional exige ao menos um escopo (unidade, processo, chamada ou tipo de recurso)."));
         }
 
         return Result<EffectiveGrant>.Success(new EffectiveGrant(

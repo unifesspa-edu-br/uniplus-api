@@ -20,7 +20,8 @@ public sealed class EffectiveGrantTests
 
         Result<EffectiveGrant> token = EffectiveGrant.From(Permissao, FonteGrant.Token);
         Result<EffectiveGrant> oidc = EffectiveGrant.From(Permissao, FonteGrant.OidcGroupBinding, validoAte: validade);
-        Result<EffectiveGrant> excepcional = EffectiveGrant.From(Permissao, FonteGrant.PermissaoExcecional, validoAte: validade);
+        Result<EffectiveGrant> excepcional = EffectiveGrant.From(
+            Permissao, FonteGrant.PermissaoExcecional, escopoUnidadeId: Guid.CreateVersion7(), validoAte: validade);
 
         token.Value!.Fonte.Should().Be(FonteGrant.Token);
         oidc.Value!.Fonte.Should().Be(FonteGrant.OidcGroupBinding);
@@ -65,14 +66,13 @@ public sealed class EffectiveGrantTests
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantValidadeObrigatoria);
     }
 
-    [Theory]
-    [InlineData(FonteGrant.OidcGroupBinding)]
-    [InlineData(FonteGrant.PermissaoExcecional)]
-    public void EffectiveGrant_ServerSideComValidade_Aceita(FonteGrant fonte)
+    [Fact]
+    public void EffectiveGrant_OidcGroupBindingComValidadeSemEscopo_Aceita()
     {
+        // OidcGroupBinding pode representar permissão global — não exige escopo.
         DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(2);
 
-        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, fonte, validoAte: validade);
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(Permissao, FonteGrant.OidcGroupBinding, validoAte: validade);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ValidoAte.Should().Be(validade);
@@ -87,6 +87,56 @@ public sealed class EffectiveGrantTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ValidoAte.Should().BeNull();
+    }
+
+    // ─── ADR-0084: concessão excepcional exige ao menos um escopo ──────────
+
+    [Fact]
+    public void EffectiveGrant_ExcepcionalSemEscopo_Rejeita()
+    {
+        DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
+
+        Result<EffectiveGrant> resultado =
+            EffectiveGrant.From(Permissao, FonteGrant.PermissaoExcecional, validoAte: validade);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoExcecionalObrigatorio,
+            "uma concessão fora do perfil padrão nunca é global irrestrita (ADR-0084)");
+    }
+
+    [Fact]
+    public void EffectiveGrant_ExcepcionalComRecursoTipoEmBranco_Rejeita()
+    {
+        // Restrição de recurso só com espaços não conta como escopo.
+        DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
+
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao, FonteGrant.PermissaoExcecional, recursoTipoRestricao: "   ", validoAte: validade);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoExcecionalObrigatorio);
+    }
+
+    [Theory]
+    [InlineData("unidade")]
+    [InlineData("processo")]
+    [InlineData("chamada")]
+    [InlineData("recurso")]
+    public void EffectiveGrant_ExcepcionalComUmEscopo_Aceita(string escopo)
+    {
+        DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
+
+        Result<EffectiveGrant> resultado = EffectiveGrant.From(
+            Permissao,
+            FonteGrant.PermissaoExcecional,
+            escopoUnidadeId: escopo == "unidade" ? Guid.CreateVersion7() : null,
+            escopoProcessoId: escopo == "processo" ? Guid.CreateVersion7() : null,
+            escopoChamadaId: escopo == "chamada" ? Guid.CreateVersion7() : null,
+            recursoTipoRestricao: escopo == "recurso" ? "Edital" : null,
+            validoAte: validade);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Fonte.Should().Be(FonteGrant.PermissaoExcecional);
     }
 
     // ─── Permissão obrigatória ─────────────────────────────────────────────
