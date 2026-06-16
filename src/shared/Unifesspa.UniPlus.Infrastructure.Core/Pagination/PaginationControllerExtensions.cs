@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// Extensões de <see cref="ControllerBase"/> para responder coleções
@@ -26,6 +27,7 @@ public static class PaginationControllerExtensions
     public static async Task<IActionResult> OkPaginatedAsync<T>(
         this ControllerBase controller,
         IReadOnlyList<T> items,
+        Guid? prevAfterId,
         Guid? nextAfterId,
         PageRequest page,
         string resource,
@@ -43,53 +45,57 @@ public static class PaginationControllerExtensions
         TimeProvider timeProvider = services.GetRequiredService<TimeProvider>();
 
         // User-binding (ADR-0026 §"User-binding em cursores user-scoped"):
-        // recurso user-scoped popula UserId no payload com o sub do principal
-        // corrente — emissão e decode validam o mesmo binding. Resolução de
-        // IUserContext só acontece quando há próxima página A SER EMITIDA;
-        // last-page (sem cursor) não toca o DI evitando friction em testes
-        // slice-level que registram só CursorEncoder/TimeProvider.
-        string? nextCursor = null;
-        if (nextAfterId is { } proximo)
+        // recurso user-scoped vincula o sub do principal corrente ao cursor —
+        // emissão e decode validam o mesmo binding. Resolução de IUserContext só
+        // acontece quando há ALGUM cursor a emitir (prev ou next); página única
+        // sem navegação não toca o DI, evitando friction em testes slice-level
+        // que registram só CursorEncoder/TimeProvider.
+        string? userId = null;
+        if ((prevAfterId is not null || nextAfterId is not null) && requireUserBinding)
         {
-            string? userId = null;
-            if (requireUserBinding)
+            IUserContext userContext = services.GetRequiredService<IUserContext>();
+            if (!userContext.IsAuthenticated || string.IsNullOrEmpty(userContext.UserId))
             {
-                IUserContext userContext = services.GetRequiredService<IUserContext>();
-                if (!userContext.IsAuthenticated || string.IsNullOrEmpty(userContext.UserId))
-                {
-                    throw new InvalidOperationException(
-                        "OkPaginatedAsync com requireUserBinding=true exige principal autenticado. " +
-                        "Verifique se o endpoint tem [Authorize] e se o middleware de auth está antes do MVC.");
-                }
-                userId = userContext.UserId;
+                throw new InvalidOperationException(
+                    "OkPaginatedAsync com requireUserBinding=true exige principal autenticado. " +
+                    "Verifique se o endpoint tem [Authorize] e se o middleware de auth está antes do MVC.");
             }
-
-            CursorPayload payload = new(
-                After: proximo.ToString(),
-                Limit: page.Limit,
-                ResourceTag: resource,
-                ExpiresAt: timeProvider.GetUtcNow().Add(options.CursorTtl),
-                UserId: userId);
-            nextCursor = await encoder.EncodeAsync(payload, cancellationToken).ConfigureAwait(false);
+            userId = userContext.UserId;
         }
+
+        DateTimeOffset expiresAt = timeProvider.GetUtcNow().Add(options.CursorTtl);
+
+        // O cursor vincula sua direção (ADR-0089): o link prev cifra a âncora
+        // com Direction=Prev; o next, com Direction=Next. O boundary rejeita
+        // reuso com a direção trocada.
+        string? prevCursor = prevAfterId is { } anterior
+            ? await encoder.EncodeAsync(
+                new CursorPayload(anterior.ToString(), page.Limit, resource, expiresAt, PaginationDirection.Prev, userId),
+                cancellationToken).ConfigureAwait(false)
+            : null;
+
+        string? nextCursor = nextAfterId is { } proximo
+            ? await encoder.EncodeAsync(
+                new CursorPayload(proximo.ToString(), page.Limit, resource, expiresAt, PaginationDirection.Next, userId),
+                cancellationToken).ConfigureAwait(false)
+            : null;
 
         HttpRequest request = controller.Request;
         string? originalCursor = request.Query["cursor"];
+        string? originalDirection = request.Query["direction"];
         string? originalLimit = request.Query["limit"];
         int? originalLimitParsed = int.TryParse(originalLimit, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed)
             ? parsed
             : null;
 
-        // Self espelha o request original (cursor + limit como vieram).
-        // Next NÃO inclui limit: o cursor já carrega o tamanho de janela
-        // (clampado server-side no decode). Incluir ?limit=N na URL faria
-        // o validator do binder rodar primeiro e rejeitar com 422 caso a
-        // config tenha apertado LimitMax após a emissão do cursor —
-        // quebrando navegação de cursores stale que ainda estariam OK.
+        // Self espelha o request original (cursor + limit + direction como vieram).
+        // Prev/Next NÃO incluem limit (o cursor já carrega a janela, clampada no
+        // decode) e carregam a direção explícita — a navegação fica auto-suficiente
+        // (RFC 5988): o cliente segue o link opaco sem conhecer a convenção.
         PageLinks links = new(
-            Self: BuildLink(request, originalCursor, originalLimitParsed),
-            Next: nextCursor is null ? null : BuildLink(request, nextCursor, limit: null),
-            Prev: null);
+            Self: BuildLink(request, originalCursor, originalLimitParsed, originalDirection),
+            Next: nextCursor is null ? null : BuildLink(request, nextCursor, limit: null, "next"),
+            Prev: prevCursor is null ? null : BuildLink(request, prevCursor, limit: null, "prev"));
 
         controller.Response.Headers["Link"] = LinkHeaderBuilder.Build(links);
         controller.Response.Headers["X-Page-Size"] = items.Count.ToString(CultureInfo.InvariantCulture);
@@ -97,9 +103,9 @@ public static class PaginationControllerExtensions
         return controller.Ok(items);
     }
 
-    private static readonly string[] ReservedPaginationParams = ["cursor", "limit"];
+    private static readonly string[] ReservedPaginationParams = ["cursor", "limit", "direction"];
 
-    private static string BuildLink(HttpRequest request, string? cursor, int? limit)
+    private static string BuildLink(HttpRequest request, string? cursor, int? limit, string? direction)
     {
         // Inclui PathBase para honrar deploys atrás de reverse proxy
         // (Traefik, nginx, ingress) ou hosts com app.UsePathBase("/foo").
@@ -111,6 +117,8 @@ public static class PaginationControllerExtensions
             parts.Add($"cursor={Uri.EscapeDataString(cursor)}");
         if (limit is { } l)
             parts.Add($"limit={l.ToString(CultureInfo.InvariantCulture)}");
+        if (!string.IsNullOrEmpty(direction))
+            parts.Add($"direction={Uri.EscapeDataString(direction)}");
 
         // Preserva os demais query params do request (filtros como q/tipo) nos
         // links self/next. Sem isso, seguir rel="next" numa listagem filtrada

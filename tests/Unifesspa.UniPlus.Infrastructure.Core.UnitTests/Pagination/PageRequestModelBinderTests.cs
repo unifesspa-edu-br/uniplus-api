@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed class PageRequestModelBinderTests
 {
@@ -121,7 +122,7 @@ public sealed class PageRequestModelBinderTests
             After: Guid.NewGuid().ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -144,7 +145,7 @@ public sealed class PageRequestModelBinderTests
             After: "not-a-guid",
             Limit: 10,
             ResourceTag: "editais",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -168,7 +169,7 @@ public sealed class PageRequestModelBinderTests
             After: expectedAfter.ToString(),
             Limit: 50,
             ResourceTag: "editais",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -193,7 +194,7 @@ public sealed class PageRequestModelBinderTests
             After: expectedAfter.ToString(),
             Limit: 10, // do cursor
             ResourceTag: "editais",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -218,7 +219,7 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-alice"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -242,7 +243,7 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-alice"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -270,7 +271,7 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: null));
 
         DefaultModelBindingContext context = CreateContext(
@@ -294,7 +295,7 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-alice"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -320,7 +321,7 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "editais",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-someoneelse"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -342,7 +343,7 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "editais",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(-1))); // já expirado
+            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(-1))); // já expirado
 
         ModelBindingContext context = CreateContext(
             "editais",

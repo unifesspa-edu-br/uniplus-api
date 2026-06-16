@@ -71,10 +71,10 @@ public sealed class EditalController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarEditaisResult resultado = await _queryBus.Send(
-            new ListarEditaisQuery(page.AfterId, page.Limit), cancellationToken);
+            new ListarEditaisQuery(page.AfterId, page.Limit, page.Direction), cancellationToken);
 
         return await this.OkPaginatedAsync(
-            resultado.Items, resultado.ProximoAfterId, page, ResourceTag,
+            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken);
     }
 

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using System.Collections.Generic;
 
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
@@ -18,13 +19,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLegal>
 {
     /// <summary>
-    /// Lista regras paginadas com filtros admin. Ordenação estável por
-    /// <c>Id</c> (Guid v7 cronológico). <paramref name="afterId"/> aplica
-    /// keyset; <paramref name="take"/> limita a janela.
+    /// Lista regras paginadas por cursor keyset bidirecional (ADR-0026 +
+    /// ADR-0089) com filtros admin. Ordenação estável por <c>Id</c> (Guid v7
+    /// cronológico); retorna até <paramref name="limit"/> itens na direção
+    /// <paramref name="direction"/> a partir de <paramref name="afterId"/>,
+    /// sempre em ordem ascendente, com as âncoras de <c>prev</c>/<c>next</c>.
     /// </summary>
-    Task<IReadOnlyList<ObrigatoriedadeLegal>> ListarPaginadoAsync(
+    Task<(IReadOnlyList<ObrigatoriedadeLegal> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
-        int take,
+        int limit,
+        PaginationDirection direction,
         string? tipoEditalCodigo,
         CategoriaObrigatoriedade? categoria,
         bool vigentes,

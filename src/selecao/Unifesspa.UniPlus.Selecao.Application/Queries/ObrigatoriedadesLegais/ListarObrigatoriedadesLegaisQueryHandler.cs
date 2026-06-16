@@ -10,9 +10,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based de <see cref="ListarObrigatoriedadesLegaisQuery"/>.
-/// Paginação keyset por <c>Id</c> (ADR-0026 + Guid v7). Solicita
-/// <c>take + 1</c> para detectar próxima página sem COUNT — mesma estratégia
-/// do <c>ListarEditaisQueryHandler</c>.
+/// Paginação keyset bidirecional por <c>Id</c> (ADR-0026 + ADR-0089 + Guid v7).
+/// A mecânica de keyset (probe <c>n+1</c>, reversão, flags sem COUNT) vive no
+/// repositório via <c>CursorKeyset</c>; o handler apenas projeta em DTO.
 /// </summary>
 public static class ListarObrigatoriedadesLegaisQueryHandler
 {
@@ -24,28 +24,19 @@ public static class ListarObrigatoriedadesLegaisQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        IReadOnlyList<ObrigatoriedadeLegal> page = await repository.ListarPaginadoAsync(
-            query.AfterId,
-            query.Take + 1,
-            query.TipoEditalCodigo,
-            query.Categoria,
-            query.Vigentes,
-            cancellationToken).ConfigureAwait(false);
-
-        if (page.Count == 0)
-        {
-            return new ListarObrigatoriedadesLegaisResult([], ProximoAfterId: null);
-        }
-
-        bool temProxima = page.Count > query.Take && query.Take > 0;
-        IReadOnlyList<ObrigatoriedadeLegal> visiveis = temProxima
-            ? [.. page.Take(query.Take)]
-            : page;
+        (IReadOnlyList<ObrigatoriedadeLegal> itens, Guid? anteriorAfterId, Guid? proximoAfterId) =
+            await repository.ListarPaginadoAsync(
+                query.AfterId,
+                query.Limit,
+                query.Direction,
+                query.TipoEditalCodigo,
+                query.Categoria,
+                query.Vigentes,
+                cancellationToken).ConfigureAwait(false);
 
         ObrigatoriedadeLegalDto[] items =
-            [.. visiveis.Select(ObrigatoriedadeLegalMapping.ToDto)];
+            [.. itens.Select(ObrigatoriedadeLegalMapping.ToDto)];
 
-        Guid? proximo = temProxima ? items[^1].Id : null;
-        return new ListarObrigatoriedadesLegaisResult(items, proximo);
+        return new ListarObrigatoriedadesLegaisResult(items, anteriorAfterId, proximoAfterId);
     }
 }

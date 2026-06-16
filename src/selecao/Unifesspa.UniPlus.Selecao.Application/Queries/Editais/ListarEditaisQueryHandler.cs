@@ -6,10 +6,10 @@ using Domain.Interfaces;
 
 /// <summary>
 /// Handler convention-based de <see cref="ListarEditaisQuery"/>: paginação
-/// keyset-based (cursor) sobre o agregado <c>Edital</c>, ordenando pelo
-/// identificador para garantir estabilidade da janela. Solicita
-/// <c>limit + 1</c> itens para detectar a existência de próxima página sem
-/// precisar de COUNT, conforme ADR-0026.
+/// keyset bidirecional (cursor) sobre o agregado <c>Edital</c> (ADR-0026 +
+/// ADR-0089). A mecânica de keyset (ordenação, probe <c>n+1</c>, reversão e
+/// flags <c>prev</c>/<c>next</c> sem COUNT) vive no repositório via
+/// <c>CursorKeyset</c>; o handler apenas projeta as entidades em DTO.
 /// </summary>
 public static class ListarEditaisQueryHandler
 {
@@ -21,22 +21,12 @@ public static class ListarEditaisQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(editalRepository);
 
-        IReadOnlyList<Edital> page = await editalRepository
-            .ListarPaginadoAsync(query.AfterId, query.Limit + 1, cancellationToken)
+        (IReadOnlyList<Edital> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await editalRepository
+            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
-        // Defesa contra Limit <= 0 (config inconsistente que escapou aos
-        // validators): Take(0) devolveria array vazio e limited[^1] lançaria
-        // IndexOutOfRangeException, virando 500 numa listagem normal.
-        if (page.Count > query.Limit && query.Limit > 0)
-        {
-            EditalDto[] limited = [.. page.Take(query.Limit).Select(Project)];
-            Guid proximo = limited[^1].Id;
-            return new ListarEditaisResult(limited, proximo);
-        }
-
-        EditalDto[] items = [.. page.Select(Project)];
-        return new ListarEditaisResult(items, ProximoAfterId: null);
+        EditalDto[] items = [.. itens.Select(Project)];
+        return new ListarEditaisResult(items, anteriorAfterId, proximoAfterId);
     }
 
     private static EditalDto Project(Edital edital) => new(
