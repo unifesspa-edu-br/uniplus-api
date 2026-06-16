@@ -32,7 +32,12 @@ public sealed record UsuarioRef
 
     /// <summary>
     /// Constrói uma <see cref="UsuarioRef"/> validada. Rejeita emissor ou
-    /// sujeito vazios.
+    /// sujeito em branco e, fora isso, armazena ambos os claims
+    /// <b>verbatim</b>: emissor e subject são tokens opacos do OIDC e a
+    /// identidade (incluindo a dupla aprovação e a auditoria) é comparada por
+    /// emissor + subject. Normalizar com <c>Trim</c> aliasaria sujeitos
+    /// distintos (<c>" abc"</c> vs <c>"abc"</c>) e quebraria a correspondência
+    /// com o token original.
     /// </summary>
     public static Result<UsuarioRef> From(string? emissor, string? subject, Guid? usuarioId = null)
     {
@@ -50,6 +55,6 @@ public sealed record UsuarioRef
                 "Subject do usuário é obrigatório."));
         }
 
-        return Result<UsuarioRef>.Success(new UsuarioRef(emissor.Trim(), subject.Trim(), usuarioId));
+        return Result<UsuarioRef>.Success(new UsuarioRef(emissor, subject, usuarioId));
     }
 }
