@@ -13,6 +13,7 @@ public static class AuthorizationErrorCodes
 
     public const string EffectiveGrantPermissaoObrigatoria = "Authorization.EffectiveGrant.PermissaoObrigatoria";
     public const string EffectiveGrantValidadeObrigatoria = "Authorization.EffectiveGrant.ValidadeObrigatoria";
+    public const string EffectiveGrantEscopoExcecionalObrigatorio = "Authorization.EffectiveGrant.EscopoExcecionalObrigatorio";
 
     public const string EscopoAuditoriaEscopoObrigatorio = "Authorization.EscopoAuditoriaVigente.EscopoObrigatorio";
 
