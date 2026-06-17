@@ -83,4 +83,26 @@ public sealed class CidadeFaixaCep : EntityBase
 
         return Result<CidadeFaixaCep>.Success(faixa);
     }
+
+    /// <summary>
+    /// Reaplica os dados de uma release sobre a faixa já existente (upsert in place do
+    /// ETL por chave natural <c>(cidade_id, cep_inicial, cep_final)</c>), preservando
+    /// <see cref="EntityBase.Id"/>. A chave natural não muda — só a proveniência.
+    /// </summary>
+    public Result Atualizar(string versaoDataset, bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.CidadeFaixaCepVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) da faixa de CEP é obrigatória."));
+        }
+
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }

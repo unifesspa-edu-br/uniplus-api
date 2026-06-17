@@ -108,4 +108,50 @@ public sealed class EstadoIndicador : EntityBase
 
         return Result<EstadoIndicador>.Success(indicador);
     }
+
+    /// <summary>
+    /// Reaplica os indicadores de uma release sobre o satélite já existente (upsert
+    /// in place do ETL), preservando <see cref="EntityBase.Id"/> e o vínculo
+    /// <see cref="EstadoId"/>. Valida o mínimo <strong>antes</strong> de mutar.
+    /// </summary>
+    public Result Atualizar(
+        string? gentilico,
+        string? governador,
+        decimal? areaKm2,
+        int? populacaoResidente2022,
+        decimal? densidadeDemografica,
+        int? matriculasEnsinoFundamental2023,
+        decimal? idh,
+        decimal? receitasBrutas,
+        decimal? despesasBrutas,
+        int? rendimentoMensalPerCapita,
+        int? totalVeiculos2023,
+        string versaoDataset,
+        bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.EstadoIndicadorVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) do indicador de Estado é obrigatória."));
+        }
+
+        Gentilico = GeoTexto.NormalizarOpcional(gentilico);
+        Governador = GeoTexto.NormalizarOpcional(governador);
+        AreaKm2 = areaKm2;
+        PopulacaoResidente2022 = populacaoResidente2022;
+        DensidadeDemografica = densidadeDemografica;
+        MatriculasEnsinoFundamental2023 = matriculasEnsinoFundamental2023;
+        Idh = idh;
+        ReceitasBrutas = receitasBrutas;
+        DespesasBrutas = despesasBrutas;
+        RendimentoMensalPerCapita = rendimentoMensalPerCapita;
+        TotalVeiculos2023 = totalVeiculos2023;
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }

@@ -156,4 +156,79 @@ public sealed class Cidade : EntityBase
 
         return Result<Cidade>.Success(cidade);
     }
+
+    /// <summary>
+    /// Reaplica os dados de uma release sobre um Município já existente (upsert in
+    /// place do ETL), preservando <see cref="EntityBase.Id"/> (referenciado por
+    /// Indicador/faixas e por outros módulos via código IBGE) e a chave natural
+    /// <see cref="CodigoIbge"/>. Os campos territoriais são reaplicados juntos
+    /// (a fonte os agrega por código IBGE antes da chamada). Valida o mínimo
+    /// <strong>antes</strong> de mutar — em falha, o estado não é tocado.
+    /// </summary>
+    public Result Atualizar(
+        Guid estadoId,
+        string uf,
+        string nome,
+        string? nomeNormalizado,
+        string? ddd,
+        decimal? latitude,
+        decimal? longitude,
+        Point? coordenada,
+        string? mesorregiaoCodigo,
+        string? mesorregiaoNome,
+        string? microrregiaoCodigo,
+        string? microrregiaoNome,
+        string? regiaoIntermediariaCodigo,
+        string? regiaoIntermediariaNome,
+        string? regiaoImediataCodigo,
+        string? regiaoImediataNome,
+        string versaoDataset,
+        bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(uf);
+        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (estadoId == Guid.Empty)
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.CidadeEstadoObrigatorio,
+                "Estado da Cidade é obrigatório."));
+        }
+
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.CidadeNomeObrigatorio,
+                "Nome da Cidade é obrigatório."));
+        }
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.CidadeVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) da Cidade é obrigatória."));
+        }
+
+        EstadoId = estadoId;
+        Uf = GeoTexto.NormalizarChaveMaiuscula(uf);
+        Nome = nome.Trim();
+        NomeNormalizado = GeoTexto.NormalizarBuscaOpcional(nomeNormalizado);
+        Ddd = GeoTexto.NormalizarOpcional(ddd);
+        Latitude = latitude;
+        Longitude = longitude;
+        Coordenada = coordenada;
+        MesorregiaoCodigo = GeoTexto.NormalizarOpcional(mesorregiaoCodigo);
+        MesorregiaoNome = GeoTexto.NormalizarOpcional(mesorregiaoNome);
+        MicrorregiaoCodigo = GeoTexto.NormalizarOpcional(microrregiaoCodigo);
+        MicrorregiaoNome = GeoTexto.NormalizarOpcional(microrregiaoNome);
+        RegiaoIntermediariaCodigo = GeoTexto.NormalizarOpcional(regiaoIntermediariaCodigo);
+        RegiaoIntermediariaNome = GeoTexto.NormalizarOpcional(regiaoIntermediariaNome);
+        RegiaoImediataCodigo = GeoTexto.NormalizarOpcional(regiaoImediataCodigo);
+        RegiaoImediataNome = GeoTexto.NormalizarOpcional(regiaoImediataNome);
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }
