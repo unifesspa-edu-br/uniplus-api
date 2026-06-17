@@ -69,4 +69,22 @@ public static class GeoReferenceDataErrorCodes
     public const string BairroFaixaCepInicialObrigatorio = "BairroFaixaCep.CepInicialObrigatorio";
     public const string BairroFaixaCepFinalObrigatorio = "BairroFaixaCep.CepFinalObrigatorio";
     public const string BairroFaixaCepVersaoDatasetObrigatoria = "BairroFaixaCep.VersaoDatasetObrigatoria";
+
+    // Logradouro
+    public const string LogradouroCepObrigatorio = "Logradouro.CepObrigatorio";
+    public const string LogradouroNomeObrigatorio = "Logradouro.NomeObrigatorio";
+    public const string LogradouroNomeNormalizadoObrigatorio = "Logradouro.NomeNormalizadoObrigatorio";
+    public const string LogradouroCidadeObrigatoria = "Logradouro.CidadeObrigatoria";
+    public const string LogradouroVersaoDatasetObrigatoria = "Logradouro.VersaoDatasetObrigatoria";
+
+    // Complemento de Logradouro (por CEP, sem FK a logradouro)
+    public const string LogradouroComplementoCepObrigatorio = "LogradouroComplemento.CepObrigatorio";
+    public const string LogradouroComplementoObrigatorio = "LogradouroComplemento.ComplementoObrigatorio";
+    public const string LogradouroComplementoNormalizadoObrigatorio = "LogradouroComplemento.NormalizadoObrigatorio";
+    public const string LogradouroComplementoVersaoDatasetObrigatoria = "LogradouroComplemento.VersaoDatasetObrigatoria";
+
+    // CEP de grande usuário
+    public const string CepGrandeUsuarioCepObrigatorio = "CepGrandeUsuario.CepObrigatorio";
+    public const string CepGrandeUsuarioNomeObrigatorio = "CepGrandeUsuario.NomeObrigatorio";
+    public const string CepGrandeUsuarioVersaoDatasetObrigatoria = "CepGrandeUsuario.VersaoDatasetObrigatoria";
 }

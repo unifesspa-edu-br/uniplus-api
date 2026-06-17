@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 internal static class GeoTestKeys
 {
     private static int _codigoSeq = 1_000_000;
+    private static int _cepSeq;
 
     /// <summary>
     /// Sufixo único (hex). Usa a porção <strong>aleatória</strong> do Guid v7 (32
@@ -35,6 +36,10 @@ internal static class GeoTestKeys
     /// <summary>Código IBGE único de 7 dígitos (contador atômico — garante unicidade entre chamadas).</summary>
     public static string CodigoIbge() =>
         Interlocked.Increment(ref _codigoSeq).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>CEP único de 8 dígitos (contador atômico).</summary>
+    public static string Cep() =>
+        (10_000_000 + Interlocked.Increment(ref _cepSeq)).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>Desempacota um <see cref="Result{T}"/> de factory, falhando o teste com a mensagem de erro.</summary>
     public static T Ok<T>(Result<T> resultado)

@@ -59,6 +59,33 @@ public sealed class GeoSchemaDdlTests
         indexDef!.Should().Contain("USING gist", "a coordenada precisa de índice GIST (ADR-0091)");
     }
 
+    [Fact(DisplayName = "Logradouro: ix_logradouro_coordenada é GIST e ix_logradouro_nome_trgm é GIN trigram")]
+    public async Task IndicesLogradouro_GistETrgm()
+    {
+        string? gist = await ObterIndexDefAsync("ix_logradouro_coordenada");
+        gist.Should().NotBeNull();
+        gist!.Should().Contain("USING gist");
+
+        string? trgm = await ObterIndexDefAsync("ix_logradouro_nome_trgm");
+        trgm.Should().NotBeNull();
+        trgm!.Should().Contain("USING gin");
+        trgm.Should().Contain("gin_trgm_ops");
+    }
+
+    [Fact(DisplayName = "Logradouro: ix_logradouro_natural é UNIQUE e cep NÃO é único isoladamente")]
+    public async Task Logradouro_CepNaoUnico_ChaveCompostaUnica()
+    {
+        string? natural = await ObterIndexDefAsync("ix_logradouro_natural");
+        natural.Should().NotBeNull();
+        natural!.Should().Contain("UNIQUE", "a chave de upsert (cep, nome_normalizado, cidade_id) é única");
+        natural.Should().Contain("cep");
+        natural.Should().Contain("nome_normalizado");
+
+        // Não deve existir índice único só sobre cep (CEP geral cobre vários logradouros).
+        long unicosSoCep = await ContarIndicesUnicosSomenteCepAsync();
+        unicosSoCep.Should().Be(0, "cep isolado não pode ser único na tabela logradouro");
+    }
+
     [Fact(DisplayName = "extensão pg_trgm está instalada (sustenta o índice trigram)")]
     public async Task ExtensaoPgTrgm_Instalada()
     {
@@ -94,5 +121,23 @@ public sealed class GeoSchemaDdlTests
 
         object? result = await command.ExecuteScalarAsync();
         return result as string;
+    }
+
+    private async Task<long> ContarIndicesUnicosSomenteCepAsync()
+    {
+        await using GeoDbContext context = _fixture.CreateDbContext();
+        DbConnection connection = context.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        await using DbCommand command = connection.CreateCommand();
+        // Índice UNIQUE cujo conjunto de colunas é exatamente "(cep)" — a vírgula em
+        // "(cep, ..." de um índice composto não casa com "(cep)".
+        command.CommandText =
+            "SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'logradouro' "
+            + "AND indexdef ILIKE '%UNIQUE%' AND indexdef ILIKE '%(cep)%';";
+        return Convert.ToInt64(await command.ExecuteScalarAsync(), System.Globalization.CultureInfo.InvariantCulture);
     }
 }
