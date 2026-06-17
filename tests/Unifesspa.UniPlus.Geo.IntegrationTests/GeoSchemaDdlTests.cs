@@ -49,6 +49,16 @@ public sealed class GeoSchemaDdlTests
         trgm.Should().Contain("gin_trgm_ops", "o opclass trigram precisa estar presente (extensão pg_trgm)");
     }
 
+    [Theory(DisplayName = "índices de coordenada de Distrito/Bairro são GIST")]
+    [InlineData("ix_distrito_coordenada")]
+    [InlineData("ix_bairro_coordenada")]
+    public async Task IndicesCoordenadaDistritoBairro_UsamGist(string indexName)
+    {
+        string? indexDef = await ObterIndexDefAsync(indexName);
+        indexDef.Should().NotBeNull($"o índice espacial {indexName} deve existir");
+        indexDef!.Should().Contain("USING gist", "a coordenada precisa de índice GIST (ADR-0091)");
+    }
+
     [Fact(DisplayName = "extensão pg_trgm está instalada (sustenta o índice trigram)")]
     public async Task ExtensaoPgTrgm_Instalada()
     {

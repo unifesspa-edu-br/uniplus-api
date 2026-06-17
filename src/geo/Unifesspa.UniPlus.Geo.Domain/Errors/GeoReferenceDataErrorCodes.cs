@@ -45,4 +45,28 @@ public static class GeoReferenceDataErrorCodes
     public const string CidadeFaixaCepInicialObrigatorio = "CidadeFaixaCep.CepInicialObrigatorio";
     public const string CidadeFaixaCepFinalObrigatorio = "CidadeFaixaCep.CepFinalObrigatorio";
     public const string CidadeFaixaCepVersaoDatasetObrigatoria = "CidadeFaixaCep.VersaoDatasetObrigatoria";
+
+    // Distrito
+    public const string DistritoCidadeObrigatoria = "Distrito.CidadeObrigatoria";
+    public const string DistritoNomeObrigatorio = "Distrito.NomeObrigatorio";
+    public const string DistritoNomeNormalizadoObrigatorio = "Distrito.NomeNormalizadoObrigatorio";
+    public const string DistritoVersaoDatasetObrigatoria = "Distrito.VersaoDatasetObrigatoria";
+
+    // Faixa de CEP de Distrito
+    public const string DistritoFaixaCepDistritoObrigatorio = "DistritoFaixaCep.DistritoObrigatorio";
+    public const string DistritoFaixaCepInicialObrigatorio = "DistritoFaixaCep.CepInicialObrigatorio";
+    public const string DistritoFaixaCepFinalObrigatorio = "DistritoFaixaCep.CepFinalObrigatorio";
+    public const string DistritoFaixaCepVersaoDatasetObrigatoria = "DistritoFaixaCep.VersaoDatasetObrigatoria";
+
+    // Bairro
+    public const string BairroCidadeObrigatoria = "Bairro.CidadeObrigatoria";
+    public const string BairroNomeObrigatorio = "Bairro.NomeObrigatorio";
+    public const string BairroNomeNormalizadoObrigatorio = "Bairro.NomeNormalizadoObrigatorio";
+    public const string BairroVersaoDatasetObrigatoria = "Bairro.VersaoDatasetObrigatoria";
+
+    // Faixa de CEP de Bairro
+    public const string BairroFaixaCepBairroObrigatorio = "BairroFaixaCep.BairroObrigatorio";
+    public const string BairroFaixaCepInicialObrigatorio = "BairroFaixaCep.CepInicialObrigatorio";
+    public const string BairroFaixaCepFinalObrigatorio = "BairroFaixaCep.CepFinalObrigatorio";
+    public const string BairroFaixaCepVersaoDatasetObrigatoria = "BairroFaixaCep.VersaoDatasetObrigatoria";
 }
