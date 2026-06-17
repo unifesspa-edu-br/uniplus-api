@@ -428,7 +428,7 @@ namespace Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Migrations
 
                     b.Property<decimal?>("Escolarizacao6a14")
                         .HasColumnType("numeric")
-                        .HasColumnName("escolarizacao6a14");
+                        .HasColumnName("escolarizacao_6_a_14");
 
                     b.Property<string>("Gentilico")
                         .HasColumnType("text")

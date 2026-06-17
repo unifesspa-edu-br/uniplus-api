@@ -15,12 +15,12 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// entidades derivam de <c>EntityBase</c> puro.
 /// </summary>
 /// <remarks>
-/// Hospeda a hierarquia de localidade DNE+IBGE (<see cref="Pais"/> →
-/// <see cref="Estado"/> → … com seus satélites de indicadores e faixas de CEP) e
-/// o <c>idempotency_cache</c> (entries cifradas at-rest). A entidade-sonda
-/// transitória da fundação foi substituída pelas entidades reais. As demais
-/// entidades de localidade (Cidade, Distrito, Bairro, Logradouro) entram nas
-/// Stories seguintes da Feature de domínio.
+/// Hospeda a hierarquia de localidade DNE+IBGE completa (<see cref="Pais"/> →
+/// <see cref="Estado"/> → <see cref="Cidade"/> → {<see cref="Distrito"/>,
+/// <see cref="Bairro"/>} → <see cref="Logradouro"/>, com satélites de indicadores,
+/// faixas de CEP, complementos e CEPs de grande usuário) e o <c>idempotency_cache</c>
+/// (entries cifradas at-rest). A entidade-sonda transitória da fundação foi
+/// substituída pelas entidades reais.
 /// </remarks>
 public sealed class GeoDbContext : DbContext, IUnitOfWork
 {
