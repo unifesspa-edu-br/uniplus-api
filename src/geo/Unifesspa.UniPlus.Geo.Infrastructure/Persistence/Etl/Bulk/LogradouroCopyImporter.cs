@@ -197,21 +197,55 @@ internal sealed partial class LogradouroCopyImporter
 
         await ExecutarAsync(conexao, CriarStagingLogradouro, cancellationToken).ConfigureAwait(false);
 
-        long staged = await CopiarEmLotesAsync(
-            conexao,
-            CopyLogradouro,
-            ProjetarLogradourosAsync(fonte, resolucao, contador, cancellationToken),
-            EscreverLogradouroAsync,
-            agora,
-            "logradouro",
-            cancellationToken).ConfigureAwait(false);
-
-        await MergearContandoAsync(conexao, contador, "logradouro", MergeLogradouro, staged, agora, cancellationToken).ConfigureAwait(false);
-        await ExecutarAsync(conexao, "DROP TABLE IF EXISTS logradouro_staging;", cancellationToken).ConfigureAwait(false);
-
-        if (modo == ModoCarga.Inicial)
+        bool concluido = false;
+        try
         {
-            await RecriarIndicesPesadosAsync(conexao, cancellationToken).ConfigureAwait(false);
+            long staged = await CopiarEmLotesAsync(
+                conexao,
+                CopyLogradouro,
+                ProjetarLogradourosAsync(fonte, resolucao, contador, cancellationToken),
+                EscreverLogradouroAsync,
+                agora,
+                "logradouro",
+                cancellationToken).ConfigureAwait(false);
+
+            await MergearContandoAsync(conexao, contador, "logradouro", MergeLogradouro, staged, agora, cancellationToken).ConfigureAwait(false);
+            await ExecutarAsync(conexao, "DROP TABLE IF EXISTS logradouro_staging;", cancellationToken).ConfigureAwait(false);
+            concluido = true;
+        }
+        finally
+        {
+            // No modo Inicial os índices pesados foram dropados antes do COPY. Recria-os
+            // sempre — mesmo em falha/cancelamento do bulk — para a tabela nunca ficar sem
+            // gin_trgm/GIST (degradaria o lookup/autocomplete até um rerun). No caminho de
+            // falha a recriação é best-effort (com token não-cancelável e sem mascarar a
+            // exceção original); rerun do Inicial continua sendo a recuperação canônica.
+            if (modo == ModoCarga.Inicial)
+            {
+                if (concluido)
+                {
+                    await RecriarIndicesPesadosAsync(conexao, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await RecriarIndicesPesadosBestEffortAsync(conexao).ConfigureAwait(false);
+                }
+            }
+        }
+    }
+
+    private async Task RecriarIndicesPesadosBestEffortAsync(NpgsqlConnection conexao)
+    {
+        try
+        {
+            // CancellationToken.None: a recuperação roda mesmo se o cancelamento foi a causa
+            // da falha — caso contrário a tabela ficaria sem índices.
+            await RecriarIndicesPesadosAsync(conexao, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is NpgsqlException or InvalidOperationException or TimeoutException)
+        {
+            // Não mascara a exceção original do bulk; o rerun do Inicial recria os índices.
+            LogRecriacaoIndicesFalhou(_logger, ex);
         }
     }
 
@@ -531,4 +565,7 @@ internal sealed partial class LogradouroCopyImporter
 
     [LoggerMessage(Level = LogLevel.Information, Message = "ETL Geo: COPY {Tabela} — {LinhasAcumuladas} linhas enviadas ao staging.")]
     private static partial void LogLoteConcluido(ILogger logger, string tabela, long linhasAcumuladas);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "ETL Geo: falha ao recriar índices pesados de logradouro após carga inicial abortada — reexecute o modo Inicial para restaurá-los.")]
+    private static partial void LogRecriacaoIndicesFalhou(ILogger logger, Exception excecao);
 }
