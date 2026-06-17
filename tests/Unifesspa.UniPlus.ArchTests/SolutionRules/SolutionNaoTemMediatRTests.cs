@@ -79,6 +79,11 @@ public sealed class SolutionNaoTemMediatRTests
             typeof(Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
             typeof(Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
             typeof(Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
+            typeof(Geo.Domain.GeoDomainAssemblyMarker).Assembly,
+            typeof(Geo.Application.GeoApplicationAssemblyMarker).Assembly,
+            typeof(Geo.Contracts.GeoContractsAssemblyMarker).Assembly,
+            typeof(Geo.Infrastructure.Persistence.GeoDbContext).Assembly,
+            typeof(Geo.API.GeoApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();

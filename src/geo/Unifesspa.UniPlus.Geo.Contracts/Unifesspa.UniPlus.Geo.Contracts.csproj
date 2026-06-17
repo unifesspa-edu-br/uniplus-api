@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contracts próprio do módulo Geo. O consumo cross-módulo de localidades é
+    feito por composição no cliente (front envia codigo_ibge + display cache),
+    sem Reader/HTTP cross-módulo (ADR-0090) — por isso este projeto fica apenas
+    com o marker em V1. DTOs públicos, se necessários, entram nas Stories de API.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

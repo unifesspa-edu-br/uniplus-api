@@ -34,4 +34,7 @@ public static class UniPlusServiceNames
 
     /// <summary>Módulo Configuracao — API que hospeda catálogos cross-cutting área-scoped (Modalidade, NecessidadeEspecial, …).</summary>
     public const string Configuracao = "uniplus-configuracao";
+
+    /// <summary>Módulo Geo — API de localidades, endereçamento e georreferência nacional (PostGIS).</summary>
+    public const string Geo = "uniplus-geo";
 }

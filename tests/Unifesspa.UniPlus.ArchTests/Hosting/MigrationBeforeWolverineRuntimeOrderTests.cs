@@ -14,12 +14,13 @@ using Microsoft.Extensions.Options;
 using Unifesspa.UniPlus.Ingresso.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Unifesspa.UniPlus.Configuracao.API;
+using Unifesspa.UniPlus.Geo.API;
 using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Selecao.API;
 
 /// <summary>
 /// Fitness test (uniplus-api#419) que trava a invariante de ordem dos
-/// <see cref="IHostedService"/> nos 5 entry points (Selecao/Ingresso/Portal/Organizacao/Configuracao):
+/// <see cref="IHostedService"/> nos 6 entry points (Selecao/Ingresso/Portal/Organizacao/Configuracao/Geo):
 /// <c>MigrationHostedService&lt;TContext&gt;</c> precisa ser registrado antes
 /// do <c>WolverineRuntime</c> para que o schema EF do domínio esteja aplicado
 /// quando o Wolverine começar a processar envelopes que tocam tabelas do módulo.
@@ -60,7 +61,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
     public static TheoryData<string> EntryPointKeys =>
         new(MigrationOrderFixture.RegisteredKeys);
 
-    [Theory(DisplayName = "MigrationHostedService precede WolverineRuntime no IServiceCollection (5 entry points)")]
+    [Theory(DisplayName = "MigrationHostedService precede WolverineRuntime no IServiceCollection (6 entry points)")]
     [MemberData(nameof(EntryPointKeys))]
     public void MigrationRegistradaAntesDeWolverineRuntime(string entryPointKey)
     {
@@ -118,9 +119,10 @@ public sealed class MigrationOrderFixture : IDisposable
     public const string PortalKey = "Portal";
     public const string OrganizacaoKey = "OrganizacaoInstitucional";
     public const string ConfiguracaoKey = "Configuracao";
+    public const string GeoKey = "Geo";
 
     public static IReadOnlyCollection<string> RegisteredKeys { get; } =
-        [SelecaoKey, IngressoKey, PortalKey, OrganizacaoKey, ConfiguracaoKey];
+        [SelecaoKey, IngressoKey, PortalKey, OrganizacaoKey, ConfiguracaoKey, GeoKey];
 
     /// <summary>
     /// Env vars sintéticas aplicadas process-wide via static ctor. Replica o
@@ -149,6 +151,9 @@ public sealed class MigrationOrderFixture : IDisposable
         Environment.SetEnvironmentVariable(
             "ConnectionStrings__ConfiguracaoDb",
             "Host=fitness-not-real;Database=fake;Username=u;Password=p");
+        Environment.SetEnvironmentVariable(
+            "ConnectionStrings__GeoDb",
+            "Host=fitness-not-real;Database=fake;Username=u;Password=p");
 
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
         Environment.SetEnvironmentVariable("Kafka__BootstrapServers", " ");
@@ -163,6 +168,7 @@ public sealed class MigrationOrderFixture : IDisposable
     private readonly CapturingFactory<PortalApiAssemblyMarker> _portalFactory = new();
     private readonly CapturingFactory<OrganizacaoApiAssemblyMarker> _organizacaoFactory = new();
     private readonly CapturingFactory<ConfiguracaoApiAssemblyMarker> _configuracaoFactory = new();
+    private readonly CapturingFactory<GeoApiAssemblyMarker> _geoFactory = new();
 
     public IReadOnlyList<ServiceDescriptor> GetCapturedSnapshot(string entryPointKey) => entryPointKey switch
     {
@@ -171,6 +177,7 @@ public sealed class MigrationOrderFixture : IDisposable
         PortalKey => _portalFactory.CapturedSnapshot,
         OrganizacaoKey => _organizacaoFactory.CapturedSnapshot,
         ConfiguracaoKey => _configuracaoFactory.CapturedSnapshot,
+        GeoKey => _geoFactory.CapturedSnapshot,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
@@ -181,6 +188,7 @@ public sealed class MigrationOrderFixture : IDisposable
         PortalKey => _portalFactory.Services,
         OrganizacaoKey => _organizacaoFactory.Services,
         ConfiguracaoKey => _configuracaoFactory.Services,
+        GeoKey => _geoFactory.Services,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
@@ -191,6 +199,7 @@ public sealed class MigrationOrderFixture : IDisposable
         _portalFactory.Dispose();
         _organizacaoFactory.Dispose();
         _configuracaoFactory.Dispose();
+        _geoFactory.Dispose();
     }
 }
 
