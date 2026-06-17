@@ -55,9 +55,11 @@ internal static class GeoTestKeys
     public static void DeveSerViolacaoUnique(Exception excecao, string constraintEsperada)
     {
         excecao.Should().BeOfType<DbUpdateException>();
-        PostgresException? pg = excecao.InnerException as PostgresException;
-        pg.Should().NotBeNull("a causa deve ser uma PostgresException");
-        pg!.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation, "deve ser unique_violation (23505)");
+        // BeOfType().Which devolve o subject já tipado e não-nulo — evita o cast com
+        // `as` + null-forgiving (deref possivelmente nulo).
+        PostgresException pg = excecao.InnerException.Should()
+            .BeOfType<PostgresException>("a causa deve ser uma PostgresException").Which;
+        pg.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation, "deve ser unique_violation (23505)");
         pg.ConstraintName.Should().Be(constraintEsperada);
     }
 }
