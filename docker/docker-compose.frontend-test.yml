@@ -30,10 +30,11 @@
 #   npx nx serve selecao       -> http://localhost:4200  (via gateway :5000)
 #   npx nx serve configuracao  -> http://localhost:4203  (direto na organizacao-api :5263)
 #
-# Obs.: `ingresso` (:4201) e `portal` (:4202) sobem, mas ainda não estão
-# validados aqui — a allowlist de CORS das APIs não inclui essas origins (e o
-# gateway :5000 só roteia as rotas de Seleção). Para habilitá-los, adicione a
-# origin ao CORS (e, no caso do que usa o gateway, a rota no traefik/dynamic.yml).
+# Obs.: `ingresso` (:4201) e `portal` (:4202) sobem com o realm já realinhado
+# (acima), mas ainda NÃO estão validados aqui: a allowlist de CORS das APIs não
+# inclui essas origins e o gateway :5000 só roteia as rotas de Seleção. Para
+# habilitá-los, inclua a origin (:4201/:4202) no CORS da API e, para quem usa o
+# gateway, adicione a rota no traefik/dynamic.yml.
 services:
   traefik:
     image: traefik:v3.3
@@ -69,5 +70,9 @@ services:
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
 
   configuracao-api:
+    environment:
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+
+  portal-api:
     environment:
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
