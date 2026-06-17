@@ -35,6 +35,8 @@ public sealed class GeoPostgisFixture : IAsyncLifetime
         .WithPassword("uniplus_test")
         .Build();
 
+    private string? _connectionStringEnvVarPrevio;
+    private string? _kafkaEnvVarPrevio;
     private GeoApiFactory? _factory;
 
     public string ConnectionString => _postgres.GetConnectionString();
@@ -46,19 +48,33 @@ public sealed class GeoPostgisFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        // Env vars lidas pelo WebApplicationBuilder a tempo (ConfigureAppConfiguration
-        // chegaria tarde para a connection string lazy do DbContext/Wolverine).
-        // Kafka em " " (whitespace, não string.Empty) desliga o transporte mantendo
-        // a queue PG — string.Empty removeria a env var em alguns runtimes.
-        Environment.SetEnvironmentVariable(ConnectionStringEnvVar, ConnectionString);
-        Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
+        // Captura os valores prévios para restaurar no DisposeAsync — as env vars são
+        // process-wide e não podem vazar para outras coleções no mesmo processo.
+        _connectionStringEnvVarPrevio = Environment.GetEnvironmentVariable(ConnectionStringEnvVar);
+        _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
 
-        // Aplica o schema (extensão postgis + tabela-sonda + idempotency_cache).
-        // Como superusuário do container, o CREATE EXTENSION postgis cria de fato.
-        await using GeoDbContext context = CreateDbContext();
-        await context.Database.MigrateAsync().ConfigureAwait(false);
+        try
+        {
+            // Env vars lidas pelo WebApplicationBuilder a tempo (ConfigureAppConfiguration
+            // chegaria tarde para a connection string lazy do DbContext/Wolverine).
+            // Kafka em " " (whitespace, não string.Empty) desliga o transporte mantendo
+            // a queue PG — string.Empty removeria a env var em alguns runtimes.
+            Environment.SetEnvironmentVariable(ConnectionStringEnvVar, ConnectionString);
+            Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
 
-        _factory = new GeoApiFactory();
+            // Aplica o schema (extensão postgis + tabela-sonda + idempotency_cache).
+            // Como superusuário do container, o CREATE EXTENSION postgis cria de fato.
+            await using GeoDbContext context = CreateDbContext();
+            await context.Database.MigrateAsync().ConfigureAwait(false);
+
+            _factory = new GeoApiFactory();
+        }
+        catch
+        {
+            Environment.SetEnvironmentVariable(ConnectionStringEnvVar, _connectionStringEnvVarPrevio);
+            Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, _kafkaEnvVarPrevio);
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
@@ -67,6 +83,9 @@ public sealed class GeoPostgisFixture : IAsyncLifetime
         {
             await _factory.DisposeAsync().ConfigureAwait(false);
         }
+
+        Environment.SetEnvironmentVariable(ConnectionStringEnvVar, _connectionStringEnvVarPrevio);
+        Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, _kafkaEnvVarPrevio);
 
         await _postgres.DisposeAsync().ConfigureAwait(false);
     }
