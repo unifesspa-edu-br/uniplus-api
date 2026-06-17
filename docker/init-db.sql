@@ -31,6 +31,17 @@ CREATE DATABASE uniplus_configuracao OWNER uniplus_configuracao_app;
 CREATE ROLE uniplus_organizacao_app LOGIN PASSWORD 'uniplus_dev';
 CREATE DATABASE uniplus_organizacao OWNER uniplus_organizacao_app;
 
+-- Módulo Geo (Epic Geo) — banco isolado read-mostly com PostGIS (ADR-0090/0091).
+-- A extensão `postgis` NÃO é trusted (exige superusuário para criar). Por isso é
+-- criada AQUI, no init-db, que roda como superusuário (POSTGRES_USER). A migration
+-- do Geo (rodada na subida da API pelo usuário não-superusuário `uniplus_geo_app`)
+-- também emite `CREATE EXTENSION IF NOT EXISTS postgis` — que é no-op seguro
+-- quando a extensão já existe (o `IF NOT EXISTS` retorna cedo, antes do check de
+-- privilégio). Em Testcontainers (sem este init-db) a conexão é superusuário, então
+-- a migration cria de fato. Ver ADR-0091.
+CREATE ROLE uniplus_geo_app LOGIN PASSWORD 'uniplus_dev';
+CREATE DATABASE uniplus_geo OWNER uniplus_geo_app;
+
 -- Extensões dos databases de aplicação:
 --   uuid-ossp  — geração de UUIDs
 --   pg_trgm    — busca por similaridade (trigram matching)
@@ -67,3 +78,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+\c uniplus_geo
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+-- PostGIS: georreferência nacional do Geo (ADR-0091). Criada pelo superusuário
+-- do init-db; é o pré-requisito do tipo geography(Point,4326) da migration.
+CREATE EXTENSION IF NOT EXISTS postgis;

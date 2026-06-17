@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:18
+    # Imagem PostGIS (superset de postgres:18) — estreia do eixo geoespacial do
+    # módulo Geo (ADR-0091). Mantém todas as extensões já usadas pelos demais
+    # bancos (pg_trgm, unaccent, btree_gist, uuid-ossp) sem regressão.
+    image: postgis/postgis:18-3.6
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}

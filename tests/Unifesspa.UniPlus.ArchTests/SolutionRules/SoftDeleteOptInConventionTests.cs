@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -23,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// <list type="bullet">
 /// <item>CA-01: <see cref="EntityBase"/> não declara membros de soft-delete;</item>
 /// <item>CA-07: a convenção <c>AplicarFiltroGlobalSoftDelete</c> aplica o filtro
-/// <c>!IsDeleted</c> a toda entidade <see cref="ISoftDeletable"/> dos cinco
+/// <c>!IsDeleted</c> a toda entidade <see cref="ISoftDeletable"/> dos seis
 /// DbContexts e a nenhuma outra; nenhuma entidade não-soft mapeia a coluna
 /// <c>is_deleted</c>.</item>
 /// </list>
@@ -50,7 +51,7 @@ public sealed class SoftDeleteOptInConventionTests
             "SoftDeletableEntity estende EntityBase (soft-delete é opt-in sobre a identidade)");
     }
 
-    [Fact(DisplayName = "CA-07: convenção aplica soft-delete a toda ISoftDeletable e a nenhuma outra (5 DbContexts)")]
+    [Fact(DisplayName = "CA-07: convenção aplica soft-delete a toda ISoftDeletable e a nenhuma outra (6 DbContexts)")]
     public void Convencao_SoftDelete_OptIn_Invariante()
     {
         List<string> violacoes = [];
@@ -123,6 +124,7 @@ public sealed class SoftDeleteOptInConventionTests
         yield return Criar<PortalDbContext>();
         yield return Criar<OrganizacaoInstitucionalDbContext>();
         yield return Criar<ConfiguracaoDbContext>();
+        yield return CriarGeo();
     }
 
     private static TContext Criar<TContext>()
@@ -133,5 +135,23 @@ public sealed class SoftDeleteOptInConventionTests
             .Options;
 
         return (TContext)Activator.CreateInstance(typeof(TContext), options)!;
+    }
+
+    // GeoDbContext usa NetTopologySuite (geography(Point,4326), ADR-0091). O
+    // provider InMemory não conhece o tipo NTS Point e falharia ao materializar o
+    // modelo, então o modelo do Geo é construído com Npgsql + UseNetTopologySuite.
+    // O model building é offline (sem conexão) — idêntico ao caminho design-time
+    // do `dotnet ef`; a connection string sintética nunca é aberta aqui, pois o
+    // teste só inspeciona `contexto.Model`.
+    private static GeoDbContext CriarGeo()
+    {
+        DbContextOptions<GeoDbContext> options = new DbContextOptionsBuilder<GeoDbContext>()
+            .UseNpgsql(
+                "Host=fitness-not-real;Database=fake;Username=u;Password=p",
+                npgsql => npgsql.UseNetTopologySuite())
+            .UseSnakeCaseNamingConvention()
+            .Options;
+
+        return new GeoDbContext(options);
     }
 }

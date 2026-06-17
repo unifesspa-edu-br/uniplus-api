@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- NetTopologySuite (core, provider-agnostic) fornece o tipo geométrico
+         Point usado pela entidade-sonda. O mapeamento para geography(Point,4326)
+         é responsabilidade da Infrastructure (Npgsql NTS); o Domain depende
+         apenas da biblioteca de geometria, não do provider. -->
+    <PackageReference Include="NetTopologySuite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

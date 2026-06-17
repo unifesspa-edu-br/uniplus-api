@@ -24,6 +24,13 @@
     <Project Path="src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Unifesspa.UniPlus.Configuracao.Domain.csproj" />
     <Project Path="src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/geo/">
+    <Project Path="src/geo/Unifesspa.UniPlus.Geo.API/Unifesspa.UniPlus.Geo.API.csproj" />
+    <Project Path="src/geo/Unifesspa.UniPlus.Geo.Application/Unifesspa.UniPlus.Geo.Application.csproj" />
+    <Project Path="src/geo/Unifesspa.UniPlus.Geo.Contracts/Unifesspa.UniPlus.Geo.Contracts.csproj" />
+    <Project Path="src/geo/Unifesspa.UniPlus.Geo.Domain/Unifesspa.UniPlus.Geo.Domain.csproj" />
+    <Project Path="src/geo/Unifesspa.UniPlus.Geo.Infrastructure/Unifesspa.UniPlus.Geo.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/portal/">
     <Project Path="src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj" />
     <Project Path="src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
@@ -54,5 +61,6 @@
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Geo.IntegrationTests/Unifesspa.UniPlus.Geo.IntegrationTests.csproj" />
   </Folder>
 </Solution>

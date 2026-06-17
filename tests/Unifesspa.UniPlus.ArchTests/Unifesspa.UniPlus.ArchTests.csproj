@@ -43,6 +43,11 @@
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Contracts/Unifesspa.UniPlus.Configuracao.Contracts.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.API/Unifesspa.UniPlus.Configuracao.API.csproj" />
+    <ProjectReference Include="../../src/geo/Unifesspa.UniPlus.Geo.Domain/Unifesspa.UniPlus.Geo.Domain.csproj" />
+    <ProjectReference Include="../../src/geo/Unifesspa.UniPlus.Geo.Application/Unifesspa.UniPlus.Geo.Application.csproj" />
+    <ProjectReference Include="../../src/geo/Unifesspa.UniPlus.Geo.Contracts/Unifesspa.UniPlus.Geo.Contracts.csproj" />
+    <ProjectReference Include="../../src/geo/Unifesspa.UniPlus.Geo.Infrastructure/Unifesspa.UniPlus.Geo.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/geo/Unifesspa.UniPlus.Geo.API/Unifesspa.UniPlus.Geo.API.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
   </ItemGroup>
 

@@ -25,13 +25,14 @@ using ReflectionType = System.Type;
 /// </list>
 /// </summary>
 /// <remarks>
-/// <para>Roster real dos 5 módulos cobertos:
+/// <para>Roster real dos 6 módulos cobertos:
 /// <list type="bullet">
 ///   <item><description>Selecao (4 layers — Domain, Application, Infrastructure, API)</description></item>
 ///   <item><description>Ingresso (3 layers — sem Application separada, handlers em Infrastructure)</description></item>
 ///   <item><description>Portal (3 layers — sem Application separada)</description></item>
 ///   <item><description>OrganizacaoInstitucional (4 layers)</description></item>
 ///   <item><description>Configuracao (5 layers — inclui Contracts próprio)</description></item>
+///   <item><description>Geo (5 layers — inclui Contracts próprio; banco isolado com PostGIS)</description></item>
 /// </list>
 /// Quando um novo módulo entrar, adicionar ao <see cref="ModulesRoster"/> com os
 /// namespace prefixes dele.</para>
@@ -53,6 +54,7 @@ public sealed class CrossModuleReadCarveOutTests
         "Portal",
         "OrganizacaoInstitucional",
         "Configuracao",
+        "Geo",
     ];
 
     private static readonly Architecture SolutionArchitecture = LoadSolutionArchitecture();
@@ -108,6 +110,7 @@ public sealed class CrossModuleReadCarveOutTests
             ("Portal", typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly),
             ("OrganizacaoInstitucional", typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly),
             ("Configuracao", typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly),
+            ("Geo", typeof(global::Unifesspa.UniPlus.Geo.API.GeoApiAssemblyMarker).Assembly),
         ];
 
         List<string> violations = [];
@@ -257,6 +260,13 @@ public sealed class CrossModuleReadCarveOutTests
             typeof(global::Unifesspa.UniPlus.Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
+
+            // Geo
+            typeof(global::Unifesspa.UniPlus.Geo.Domain.GeoDomainAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Geo.Application.GeoApplicationAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Geo.Contracts.GeoContractsAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Geo.Infrastructure.Persistence.GeoDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Geo.API.GeoApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();

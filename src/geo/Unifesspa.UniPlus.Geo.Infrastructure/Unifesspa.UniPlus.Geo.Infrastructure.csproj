@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Plugin NetTopologySuite do Npgsql — ativa o.UseNetTopologySuite() e o
+         mapeamento de Point para geography(Point,4326) (ADR-0091). -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Geo.Application\Unifesspa.UniPlus.Geo.Application.csproj" />
+  </ItemGroup>
+
+</Project>
