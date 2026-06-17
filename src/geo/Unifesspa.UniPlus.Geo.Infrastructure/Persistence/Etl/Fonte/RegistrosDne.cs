@@ -93,3 +93,68 @@ internal sealed record CidadeFaixaCru(
     string? CodigoIbge,
     string? FaixaIni,
     string? FaixaFim);
+
+// ----------------------------------------------------------------------------
+// Folhas da hierarquia (Story #673): Distrito, Bairro, Logradouro e satélites.
+// Os ids da fonte são int4 (não varchar) — instáveis entre releases, usados só
+// para resolver as FKs intra-release para Guid (ADR-0054); o domínio nunca os
+// adota como identidade.
+// ----------------------------------------------------------------------------
+
+/// <summary>Mapa <c>id_cidade</c> (int4, PK da fonte) → <c>cidade_ibge</c> — resolve a FK <c>cidade_id</c> para Guid.</summary>
+internal sealed record CidadeIdCru(
+    int? IdCidade,
+    string? CodigoIbge);
+
+/// <summary>Distrito (fonte <c>distrito</c>): PK <c>id_distrito</c>; FK <c>cidade_id</c> (int4); chave natural de upsert <c>(cidade, nome_sem_acento)</c>.</summary>
+internal sealed record DistritoCru(
+    int? IdDistrito,
+    string? Nome,
+    string? NomeSemAcento,
+    int? CidadeIdDne,
+    string? Uf,
+    string? Latitude,
+    string? Longitude);
+
+/// <summary>Bairro (fonte <c>bairro</c>): PK <c>id_bairro</c>; FK <c>cidade_id</c> (int4); chave natural de upsert <c>(cidade, nome_sem_acento)</c>.</summary>
+internal sealed record BairroCru(
+    int? IdBairro,
+    string? Nome,
+    string? NomeSemAcento,
+    int? CidadeIdDne,
+    string? Uf,
+    string? Latitude,
+    string? Longitude);
+
+/// <summary>Faixa de CEP de Distrito/Bairro (fontes <c>distrito_faixa</c>/<c>bairro_faixa</c>): vínculo pelo id int4 do pai.</summary>
+internal sealed record FaixaLocalidadeCru(
+    int? IdPaiDne,
+    string? FaixaIni,
+    string? FaixaFim);
+
+/// <summary>CEP exclusivo de grande usuário (fonte <c>log_grande_usuario</c>): sem cidade/UF.</summary>
+internal sealed record CepGrandeUsuarioCru(
+    string? Cep,
+    string? Nome,
+    string? NomeSemAcento);
+
+/// <summary>Complemento por CEP (fonte <c>log_complemento</c>): sem FK a logradouro.</summary>
+internal sealed record LogradouroComplementoCru(
+    string? Cep,
+    string? Complemento,
+    string? ComplementoSemAcento);
+
+/// <summary>Logradouro (fonte <c>logradouro</c>, ~1,4M linhas): FK <c>cidade_id</c> (obrigatória) e <c>distrito_id</c>/<c>bairro_id</c> (int4 opcionais, NULL frequente); <c>cep_ativo</c> 'S'/'N'.</summary>
+internal sealed record LogradouroCru(
+    string? Cep,
+    string? Tipo,
+    string? Nome,
+    string? NomeCompleto,
+    string? NomeSemAcento,
+    int? BairroIdDne,
+    int? DistritoIdDne,
+    int? CidadeIdDne,
+    string? Uf,
+    string? Latitude,
+    string? Longitude,
+    string? CepAtivo);

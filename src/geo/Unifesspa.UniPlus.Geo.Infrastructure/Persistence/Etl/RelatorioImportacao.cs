@@ -80,6 +80,15 @@ internal sealed class ContadorTabela
 
     public void ContarAtualizado() => Atualizados++;
 
+    /// <summary>Registra um lote de inserções (caminho COPY/merge, onde o split vem de uma contagem agregada, não linha-a-linha).</summary>
+    public void ContarInseridos(int quantidade) => Inseridos += quantidade;
+
+    /// <summary>Registra um lote de atualizações (caminho COPY/merge).</summary>
+    public void ContarAtualizados(int quantidade) => Atualizados += quantidade;
+
+    /// <summary>Registra um lote de duplicatas intra-fonte removidas (dedup via DISTINCT ON no merge).</summary>
+    public void ContarDuplicados(int quantidade) => Duplicados += quantidade;
+
     public void ContarIgnoradoSemChave() => IgnoradosSemChave++;
 
     public void ContarOrfao(string amostra)
