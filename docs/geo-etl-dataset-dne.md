@@ -50,4 +50,11 @@ A política de *stale* (marcar `vigente=false` as chaves ausentes na nova releas
 
 ## Parse tolerante (anti-frágil)
 
-A fonte é toda `varchar` e traz `'-'`/vazio para dado ausente (≈27% dos municípios em `mortalidade_infantil`). Toda métrica externa é `nullable` e degrada para `null` sem abortar a carga — só chave natural e `nome` são obrigatórios. Cada degradação é registrada (sem PII — métricas IBGE públicas) num **relatório de validação** com contadores por tabela (lidos/inseridos/atualizados/órfãos/duplicados/degradados) e amostras para auditoria. A carga só aborta por falha de infraestrutura (conexão/transação), com **rollback total** (transação única).
+A fonte é toda `varchar` e traz `'-'`/vazio para dado ausente (≈27% dos municípios em `mortalidade_infantil`). Toda métrica externa é `nullable` e degrada para `null` sem abortar a carga — só chave natural e `nome` são obrigatórios.
+
+Tipos do domínio por natureza da coluna (a fonte não os distingue):
+
+- **Identificadores → `string`** (preservam zeros à esquerda, sem aritmética): `codigo_ibge`, `cep`/`cep_inicial`/`cep_final`, `ddd`, `uf`/siglas.
+- **Métricas inteiras → `int?`**: `populacao_residente(_2022)`, `matriculas_ensino_fundamental_2023`, `rendimento_mensal_per_capita`, `total_veiculos_2023` (chegam inteiros na fonte real, ex.: `'1095'`, `'350273'`).
+- **Métricas fracionárias / monetárias → `decimal?`**: `area_territorial_km2`, `densidade_demografica`, `idh`, `escolarizacao_6_a_14_anos`, `mortalidade_infantil`, `receitas`/`despesas` (≈bilhões), `pib_per_capita`. Sempre `InvariantCulture` (ponto decimal); vírgula é **rejeitada** (não vira separador de milhar).
+- **`'S'`/`'N'` → `bool`**; **`aniversario` (`DD/MM`) → `string`** (não é data); **lat/long → `geography(Point,4326)`** com validação de domínio (`[-90,90]`/`[-180,180]`). Cada degradação é registrada (sem PII — métricas IBGE públicas) num **relatório de validação** com contadores por tabela (lidos/inseridos/atualizados/órfãos/duplicados/degradados) e amostras para auditoria. A carga só aborta por falha de infraestrutura (conexão/transação), com **rollback total** (transação única).
