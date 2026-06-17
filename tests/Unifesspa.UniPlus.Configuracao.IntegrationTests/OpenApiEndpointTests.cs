@@ -85,12 +85,15 @@ public sealed class OpenApiEndpointTests : IClassFixture<ConfiguracaoApiFactory>
             throw new ArgumentException("Caminho deve ser relativo à raiz do repositório.", nameof(relative));
 
         string? current = AppContext.BaseDirectory;
-        while (current is not null && !File.Exists(Path.Combine(current, "UniPlus.slnx")))
+        while (current is not null && !File.Exists(Path.Join(current, "UniPlus.slnx")))
             current = Path.GetDirectoryName(current);
 
         if (current is null)
             throw new DirectoryNotFoundException("UniPlus.slnx não encontrado a partir de AppContext.BaseDirectory.");
 
-        return Path.Combine(current, relative);
+        // Path.Join (não Combine): concatena sem a semântica de descartar o
+        // primeiro segmento quando o segundo é enraizado — o caminho relativo já
+        // é validado acima, então a junção é sempre raiz-do-repo + relativo.
+        return Path.Join(current, relative);
     }
 }
