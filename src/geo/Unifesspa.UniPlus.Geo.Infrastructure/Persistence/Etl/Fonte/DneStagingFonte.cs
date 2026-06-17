@@ -159,13 +159,17 @@ internal sealed class DneStagingFonte : IGeoFonteDados
     // o sufixo é literal de código; não há entrada de usuário no nome da tabela.
     private string Tabela(string sufixo) => $"\"{_schema}\".\"tbl_cep_{Versao}_n_{sufixo}\"";
 
+    // As colunas projetadas pela fonte são todas text/varchar na DNE — GetString evita
+    // o boxing de GetValue().ToString() (relevante no volume dos logradouros, #673).
     private static string? Texto(DbDataReader leitor, int ordinal) =>
-        leitor.IsDBNull(ordinal) ? null : leitor.GetValue(ordinal)?.ToString();
+        leitor.IsDBNull(ordinal) ? null : leitor.GetString(ordinal);
 
     private static bool VersaoValida(string versao) =>
         versao.Length == 6 && versao.All(char.IsAsciiDigit);
 
     private static bool IdentificadorValido(string identificador) =>
-        (char.IsAsciiLetter(identificador[0]) || identificador[0] == '_')
+        // PostgreSQL trunca identificadores em 63 bytes — defesa em profundidade.
+        identificador.Length is >= 1 and <= 63
+        && (char.IsAsciiLetter(identificador[0]) || identificador[0] == '_')
         && identificador.All(c => char.IsAsciiLetterOrDigit(c) || c == '_');
 }

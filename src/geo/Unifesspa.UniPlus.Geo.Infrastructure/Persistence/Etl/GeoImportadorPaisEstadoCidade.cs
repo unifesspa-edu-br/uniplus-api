@@ -51,9 +51,19 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
         await using (transacao.ConfigureAwait(false))
         {
             Guid brasilId = await ImportarPaisAsync(fonte, relatorio, cancellationToken).ConfigureAwait(false);
+            if (brasilId == Guid.Empty)
+            {
+                // País-âncora (Brasil) ausente no dataset: sem ele estados/cidades
+                // ficariam órfãos e a carga retornaria verde-vazia, indistinguível de
+                // uma base legitimamente vazia. Sinaliza explicitamente o caso.
+                LogBrasilAusente(_logger, fonte.Versao);
+            }
 
+            // Agrega os indicadores contando lidos/sem-chave/duplicados no próprio
+            // contador da tabela — o relatório reflete o total da fonte, não só os
+            // registros com chave (a agregação não pode descartar em silêncio).
             Dictionary<string, EstadoIndicadorCru> indicadoresEstado =
-                await AgregarPorChaveAsync(fonte.LerEstadoIndicadoresAsync(cancellationToken), i => ChaveSigla(i.Uf)).ConfigureAwait(false);
+                await AgregarContandoAsync(fonte.LerEstadoIndicadoresAsync(cancellationToken), i => ChaveSigla(i.Uf), relatorio.Tabela("estado_indicador")).ConfigureAwait(false);
 
             Dictionary<string, Guid> estadosPorUf =
                 await ImportarEstadosAsync(fonte, brasilId, indicadoresEstado, relatorio, cancellationToken).ConfigureAwait(false);
@@ -65,7 +75,10 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
 
             Dictionary<string, Guid> cidadesPorCodigo =
                 await ImportarCidadesAsync(fonte, estadosPorUf, territorios, relatorio, cancellationToken).ConfigureAwait(false);
-            await ImportarCidadeIndicadoresAsync(fonte, cidadesPorCodigo, fonte.Versao, relatorio, cancellationToken).ConfigureAwait(false);
+
+            Dictionary<string, CidadeIndicadorCru> indicadoresCidade =
+                await AgregarContandoAsync(fonte.LerCidadeIndicadoresAsync(cancellationToken), i => ChaveCodigo(i.CodigoIbge), relatorio.Tabela("cidade_indicador")).ConfigureAwait(false);
+            await ImportarCidadeIndicadoresAsync(cidadesPorCodigo, indicadoresCidade, fonte.Versao, relatorio, cancellationToken).ConfigureAwait(false);
             await ImportarCidadeFaixasAsync(fonte, cidadesPorCodigo, fonte.Versao, relatorio, cancellationToken).ConfigureAwait(false);
 
             await transacao.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -192,9 +205,10 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
         Dictionary<Guid, EstadoIndicador> existentes =
             await _contexto.EstadoIndicadores.ToDictionaryAsync(i => i.EstadoId, cancellationToken).ConfigureAwait(false);
 
+        // Lidos/sem-chave/duplicados já foram contados na agregação (AgregarContandoAsync);
+        // aqui só resta resolver órfão (UF sem estado carregado) e o upsert.
         foreach ((string uf, EstadoIndicadorCru cru) in indicadores)
         {
-            contador.ContarLido();
             if (!estadosPorUf.TryGetValue(uf, out Guid estadoId))
             {
                 contador.ContarOrfao(uf);
@@ -352,21 +366,19 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
     }
 
     private async Task ImportarCidadeIndicadoresAsync(
-        IGeoFonteDados fonte,
         Dictionary<string, Guid> cidadesPorCodigo,
+        Dictionary<string, CidadeIndicadorCru> indicadores,
         string versao,
         RelatorioImportacao relatorio,
         CancellationToken cancellationToken)
     {
         ContadorTabela contador = relatorio.Tabela("cidade_indicador");
-        Dictionary<string, CidadeIndicadorCru> porCodigo =
-            await AgregarPorChaveAsync(fonte.LerCidadeIndicadoresAsync(cancellationToken), i => ChaveCodigo(i.CodigoIbge)).ConfigureAwait(false);
         Dictionary<Guid, CidadeIndicador> existentes =
             await _contexto.CidadeIndicadores.ToDictionaryAsync(i => i.CidadeId, cancellationToken).ConfigureAwait(false);
 
-        foreach ((string codigo, CidadeIndicadorCru cru) in porCodigo)
+        // Lidos/sem-chave/duplicados contados na agregação; aqui só órfão + upsert.
+        foreach ((string codigo, CidadeIndicadorCru cru) in indicadores)
         {
-            contador.ContarLido();
             if (!cidadesPorCodigo.TryGetValue(codigo, out Guid cidadeId))
             {
                 contador.ContarOrfao(codigo);
@@ -521,6 +533,35 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
         return mapa;
     }
 
+    // Como AgregarPorChaveAsync, mas registra no contador da tabela tudo o que a fonte
+    // trouxe (lidos), o que foi descartado por chave ausente e as chaves repetidas
+    // (last-wins) — para o relatório não subestimar os "lidos" dos níveis agregados.
+    private static async Task<Dictionary<string, T>> AgregarContandoAsync<T>(
+        IAsyncEnumerable<T> fonte,
+        Func<T, string?> chave,
+        ContadorTabela contador)
+    {
+        Dictionary<string, T> mapa = new(StringComparer.Ordinal);
+        await foreach (T item in fonte.ConfigureAwait(false))
+        {
+            contador.ContarLido();
+            string? k = chave(item);
+            if (k is null)
+            {
+                contador.ContarIgnoradoSemChave();
+                continue;
+            }
+
+            if (!mapa.TryAdd(k, item))
+            {
+                contador.ContarDuplicado(k); // last-wins
+                mapa[k] = item;
+            }
+        }
+
+        return mapa;
+    }
+
     // Parse tolerante de métrica IBGE que registra a degradação ('-'/vazio/inválido →
     // null) no relatório para auditoria. Sem PII — métricas socioeconômicas públicas.
     private static decimal? MetricaDecimal(string? cru, string coluna, ContadorTabela contador)
@@ -561,6 +602,9 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
 
     [LoggerMessage(Level = LogLevel.Information, Message = "ETL Geo: carga iniciada (versão {Versao}).")]
     private static partial void LogCargaIniciada(ILogger logger, string versao);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: país-âncora 'BRA' ausente no dataset da versão {Versao} — nenhum estado/cidade será carregado.")]
+    private static partial void LogBrasilAusente(ILogger logger, string versao);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "ETL Geo: tabela {Tabela} concluída (lidos={Lidos}, inseridos={Inseridos}, atualizados={Atualizados}).")]
     private static partial void LogTabelaConcluida(ILogger logger, string tabela, int lidos, int inseridos, int atualizados);
