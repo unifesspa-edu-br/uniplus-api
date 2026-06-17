@@ -39,6 +39,7 @@ public sealed class OpenApiSharedSchemasInSyncTests
         "openapi.selecao.json",
         "openapi.ingresso.json",
         "openapi.organizacao.json",
+        "openapi.configuracao.json",
         "openapi.geo.json",
     ];
 

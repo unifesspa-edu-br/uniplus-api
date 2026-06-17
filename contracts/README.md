@@ -7,6 +7,7 @@ Specs OpenAPI 3.1 versionados como **fonte de verdade do contrato V1** da `unipl
 - `openapi.selecao.json` — spec do módulo Seleção (endpoints `/api/editais`, `/api/auth/me`, `/api/profile/me`).
 - `openapi.ingresso.json` — spec do módulo Ingresso (stub atual; endpoints próprios chegam em sprints posteriores).
 - `openapi.organizacao.json` — spec do módulo Organização Institucional (Instituição e Unidades, incluindo as variantes administrativas `/api/admin/*`). Áreas Organizacionais ficam fora do contrato — em aposentadoria (issue #625), o controller foi removido.
+- `openapi.configuracao.json` — spec do módulo Configuração (Campus e Local de Oferta, incluindo as variantes administrativas `/api/admin/*`). A Cidade é referenciada por código IBGE + display cache (ADR-0090) — não há endpoint de cidade aqui.
 
 ## Como o spec é gerado
 
@@ -28,6 +29,7 @@ A integração `OpenApiEndpointTests` nos módulos com baseline (`tests/Unifessp
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Ingresso.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
+UPDATE_OPENAPI_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.Configuracao.IntegrationTests --filter "FullyQualifiedName~SpecRuntime"
 ```
 
 Os arquivos `contracts/openapi.{selecao,ingresso,organizacao}.json` são reescritos. **Revise o diff** (`git diff contracts/`) e só commit se a mudança for intencional. PRs que mudam controllers sem regerar o baseline falham CI.
