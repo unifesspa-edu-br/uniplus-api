@@ -78,7 +78,7 @@ internal static class DadosDne
         new(uf, nome, NomeSemAcento: nome, regiao, capital, faixaIni, faixaFim, latitude, longitude);
 
     public static EstadoIndicadorCru EstadoIndicador(
-        string uf,
+        string? uf,
         string? codigoIbge,
         string? idh = null,
         string? populacao = null,
