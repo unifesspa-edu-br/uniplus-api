@@ -79,7 +79,17 @@ public sealed class GeoPostgisFixture : IAsyncLifetime
     {
         DbContextOptions<GeoDbContext> options =
             new DbContextOptionsBuilder<GeoDbContext>()
-                .UseNpgsql(ConnectionString, npgsql => npgsql.UseNetTopologySuite())
+                .UseNpgsql(ConnectionString, npgsql =>
+                {
+                    npgsql.UseNetTopologySuite();
+                    // Mesmas convenções de migrations da produção (UseUniPlusNpgsqlConventions):
+                    // sem este pin, a UseSnakeCaseNamingConvention poderia gravar a história
+                    // numa tabela snake-cased divergente da `__EFMigrationsHistory` usada pelo
+                    // host (AddGeoInfrastructure), fazendo a migration de startup ver a inicial
+                    // como pendente e tentar recriar as tabelas (42P07).
+                    npgsql.MigrationsAssembly(typeof(GeoDbContext).Assembly.FullName);
+                    npgsql.MigrationsHistoryTable("__EFMigrationsHistory");
+                })
                 .UseSnakeCaseNamingConvention()
                 .AddInterceptors(
                     new SoftDeleteInterceptor(TimeProvider.System, userContext: null),
