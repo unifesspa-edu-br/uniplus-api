@@ -13,4 +13,11 @@
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- O ETL (Infrastructure) reusa a normalização canônica GeoTexto para compor as
+         chaves naturais de upsert idênticas às gravadas pelas factories do domínio
+         (#673) — fonte única de verdade, sem duplicar o trim/lowercase. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Geo.Infrastructure" />
+  </ItemGroup>
+
 </Project>

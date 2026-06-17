@@ -117,4 +117,69 @@ public sealed class Distrito : EntityBase
 
         return Result<Distrito>.Success(distrito);
     }
+
+    /// <summary>
+    /// Reaplica os dados de uma release sobre um Distrito já existente (upsert in place
+    /// do ETL), preservando <see cref="EntityBase.Id"/> (referenciado por faixas e por
+    /// <see cref="Logradouro"/>) e a chave natural <c>(cidade_id, nome_normalizado)</c>.
+    /// Valida o mínimo <strong>antes</strong> de mutar — em falha, o estado não é tocado.
+    /// </summary>
+    public Result Atualizar(
+        Guid cidadeId,
+        string uf,
+        string nome,
+        string nomeNormalizado,
+        decimal? latitude,
+        decimal? longitude,
+        Point? coordenada,
+        string? idOrigemDne,
+        string versaoDataset,
+        bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(uf);
+        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(nomeNormalizado);
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (cidadeId == Guid.Empty)
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.DistritoCidadeObrigatoria,
+                "Cidade do Distrito é obrigatória."));
+        }
+
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.DistritoNomeObrigatorio,
+                "Nome do Distrito é obrigatório."));
+        }
+
+        if (string.IsNullOrWhiteSpace(nomeNormalizado))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.DistritoNomeNormalizadoObrigatorio,
+                "Nome normalizado do Distrito é obrigatório (compõe a chave natural)."));
+        }
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.DistritoVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) do Distrito é obrigatória."));
+        }
+
+        CidadeId = cidadeId;
+        Uf = GeoTexto.NormalizarChaveMaiuscula(uf);
+        Nome = nome.Trim();
+        NomeNormalizado = GeoTexto.NormalizarTexto(nomeNormalizado);
+        Latitude = latitude;
+        Longitude = longitude;
+        Coordenada = coordenada;
+        IdOrigemDne = GeoTexto.NormalizarOpcional(idOrigemDne);
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }
