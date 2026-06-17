@@ -11,4 +11,10 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Configuracao.Application\Unifesspa.UniPlus.Configuracao.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Expõe internals (ex.: CampusRepository) aos testes de integração —
+         mesmo padrão de Infrastructure.Core e OrganizacaoInstitucional. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Configuracao.IntegrationTests" />
+  </ItemGroup>
+
 </Project>
