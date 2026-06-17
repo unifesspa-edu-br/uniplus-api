@@ -50,6 +50,18 @@ public sealed class GeoDbContext : DbContext, IUnitOfWork
     /// <summary>Faixas de CEP por Cidade.</summary>
     public DbSet<CidadeFaixaCep> CidadeFaixasCep => Set<CidadeFaixaCep>();
 
+    /// <summary>Distritos situados numa Cidade (sem código IBGE; chave natural cidade+nome).</summary>
+    public DbSet<Distrito> Distritos => Set<Distrito>();
+
+    /// <summary>Faixas de CEP por Distrito.</summary>
+    public DbSet<DistritoFaixaCep> DistritoFaixasCep => Set<DistritoFaixaCep>();
+
+    /// <summary>Bairros situados numa Cidade (sem código IBGE; chave natural cidade+nome).</summary>
+    public DbSet<Bairro> Bairros => Set<Bairro>();
+
+    /// <summary>Faixas de CEP por Bairro.</summary>
+    public DbSet<BairroFaixaCep> BairroFaixasCep => Set<BairroFaixaCep>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
