@@ -118,12 +118,15 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0087](0087-banco-isolado-para-o-contexto-de-autorizacao.md) | Banco isolado para o contexto de autorização (aplica ADR-0054; referências externas por identificador via leitor) | proposed | 2026-06-02 |
 | [0088](0088-versionamento-cross-repo-do-contrato-de-permissoes.md) | Versionamento e publicação cross-repo do contrato de permissões (pacote versionado; versão fixa no frontend; validação na CI) | proposed | 2026-06-02 |
 | [0089](0089-navegacao-bidirecional-cursor-keyset-reverso.md) | Navegação bidirecional na paginação por cursor via keyset reverso (direction query param vinculado ao cursor; flags exatas sem COUNT) | accepted | 2026-06-16 |
+| [0090](0090-modulo-geo-localidades.md) | Módulo Geo como bounded context dedicado de localidades | accepted | 2026-06-17 |
+| [0091](0091-postgis-georreferencia-nts.md) | PostGIS e NetTopologySuite como mecanismo de georreferência | accepted | 2026-06-17 |
+| [0092](0092-etl-carga-dne-reference-data.md) | Reference data do Geo sem soft-delete, recarregado por upsert | accepted | 2026-06-17 |
 
-> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0089` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0090+`.
+> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0092` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0093+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0089`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0092`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
