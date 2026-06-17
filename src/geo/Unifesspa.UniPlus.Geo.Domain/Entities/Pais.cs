@@ -111,4 +111,50 @@ public sealed class Pais : EntityBase
 
         return Result<Pais>.Success(pais);
     }
+
+    /// <summary>
+    /// Reaplica os dados de uma release sobre um País já existente (upsert in place
+    /// do ETL), preservando <see cref="EntityBase.Id"/> e a chave natural
+    /// <see cref="SiglaIso"/>. Valida o mínimo <strong>antes</strong> de mutar — em
+    /// falha, o estado da entidade não é tocado (atomicidade da mutação).
+    /// </summary>
+    public Result Atualizar(
+        string sigla,
+        string nome,
+        string? codigoBcb,
+        string? codigoRfb,
+        string? codigoSped,
+        string? codigoSiscomex,
+        string versaoDataset,
+        bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(sigla);
+        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.PaisNomeObrigatorio,
+                "Nome do País é obrigatório."));
+        }
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.PaisVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) do País é obrigatória."));
+        }
+
+        Sigla = GeoTexto.NormalizarChaveMaiuscula(sigla);
+        Nome = nome.Trim();
+        CodigoBcb = GeoTexto.NormalizarOpcional(codigoBcb);
+        CodigoRfb = GeoTexto.NormalizarOpcional(codigoRfb);
+        CodigoSped = GeoTexto.NormalizarOpcional(codigoSped);
+        CodigoSiscomex = GeoTexto.NormalizarOpcional(codigoSiscomex);
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }

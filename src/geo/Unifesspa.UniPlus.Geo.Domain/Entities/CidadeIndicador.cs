@@ -113,4 +113,52 @@ public sealed class CidadeIndicador : EntityBase
 
         return Result<CidadeIndicador>.Success(indicador);
     }
+
+    /// <summary>
+    /// Reaplica os indicadores de uma release sobre o satélite já existente (upsert
+    /// in place do ETL), preservando <see cref="EntityBase.Id"/> e o vínculo
+    /// <see cref="CidadeId"/>. Valida o mínimo <strong>antes</strong> de mutar.
+    /// </summary>
+    public Result Atualizar(
+        string? gentilico,
+        string? prefeito,
+        decimal? areaKm2,
+        int? populacaoResidente,
+        decimal? densidadeDemografica,
+        decimal? escolarizacao6a14,
+        decimal? idh,
+        decimal? mortalidadeInfantil,
+        decimal? receitas,
+        decimal? despesas,
+        decimal? pibPerCapita,
+        string? aniversario,
+        string versaoDataset,
+        bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.CidadeIndicadorVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) do indicador de Cidade é obrigatória."));
+        }
+
+        Gentilico = GeoTexto.NormalizarOpcional(gentilico);
+        Prefeito = GeoTexto.NormalizarOpcional(prefeito);
+        AreaKm2 = areaKm2;
+        PopulacaoResidente = populacaoResidente;
+        DensidadeDemografica = densidadeDemografica;
+        Escolarizacao6a14 = escolarizacao6a14;
+        Idh = idh;
+        MortalidadeInfantil = mortalidadeInfantil;
+        Receitas = receitas;
+        Despesas = despesas;
+        PibPerCapita = pibPerCapita;
+        Aniversario = GeoTexto.NormalizarOpcional(aniversario);
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }

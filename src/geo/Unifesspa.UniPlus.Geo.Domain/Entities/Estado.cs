@@ -136,4 +136,66 @@ public sealed class Estado : EntityBase
 
         return Result<Estado>.Success(estado);
     }
+
+    /// <summary>
+    /// Reaplica os dados de uma release sobre um Estado já existente (upsert in place
+    /// do ETL), preservando <see cref="EntityBase.Id"/> (referenciado por
+    /// Cidade/Indicador/faixas) e a chave natural <see cref="Uf"/>. Valida o mínimo
+    /// <strong>antes</strong> de mutar — em falha, o estado não é tocado.
+    /// </summary>
+    public Result Atualizar(
+        Guid paisId,
+        string nome,
+        string? nomeNormalizado,
+        string? regiao,
+        string? capital,
+        string? codigoIbge,
+        decimal? latitude,
+        decimal? longitude,
+        Point? coordenada,
+        string? cepInicial,
+        string? cepFinal,
+        string versaoDataset,
+        bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (paisId == Guid.Empty)
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.EstadoPaisObrigatorio,
+                "País do Estado é obrigatório."));
+        }
+
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.EstadoNomeObrigatorio,
+                "Nome do Estado é obrigatório."));
+        }
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.EstadoVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) do Estado é obrigatória."));
+        }
+
+        PaisId = paisId;
+        Nome = nome.Trim();
+        NomeNormalizado = GeoTexto.NormalizarBuscaOpcional(nomeNormalizado);
+        Regiao = GeoTexto.NormalizarOpcional(regiao);
+        Capital = GeoTexto.NormalizarOpcional(capital);
+        CodigoIbge = GeoTexto.NormalizarOpcional(codigoIbge);
+        Latitude = latitude;
+        Longitude = longitude;
+        Coordenada = coordenada;
+        CepInicial = GeoTexto.NormalizarOpcional(cepInicial);
+        CepFinal = GeoTexto.NormalizarOpcional(cepFinal);
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }
