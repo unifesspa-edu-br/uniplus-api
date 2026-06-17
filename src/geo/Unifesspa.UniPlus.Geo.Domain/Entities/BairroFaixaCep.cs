@@ -80,4 +80,26 @@ public sealed class BairroFaixaCep : EntityBase
 
         return Result<BairroFaixaCep>.Success(faixa);
     }
+
+    /// <summary>
+    /// Reaplica a proveniência de uma release sobre uma faixa já existente (upsert in
+    /// place do ETL), preservando <see cref="EntityBase.Id"/> e a chave natural
+    /// <c>(bairro_id, cep_inicial, cep_final)</c>. Valida antes de mutar.
+    /// </summary>
+    public Result Atualizar(string versaoDataset, bool vigente = true)
+    {
+        ArgumentNullException.ThrowIfNull(versaoDataset);
+
+        if (string.IsNullOrWhiteSpace(versaoDataset))
+        {
+            return Result.Failure(new DomainError(
+                GeoReferenceDataErrorCodes.BairroFaixaCepVersaoDatasetObrigatoria,
+                "Versão do dataset (proveniência) da faixa de CEP é obrigatória."));
+        }
+
+        VersaoDataset = versaoDataset.Trim();
+        Vigente = vigente;
+
+        return Result.Success();
+    }
 }
