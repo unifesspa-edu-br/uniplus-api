@@ -14,4 +14,10 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Geo.Application\Unifesspa.UniPlus.Geo.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Expõe internals (ETL: importador, fonte, parse) aos testes de integração —
+         mesmo padrão dos demais módulos. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Geo.IntegrationTests" />
+  </ItemGroup>
+
 </Project>
