@@ -74,7 +74,7 @@ public sealed class CepGrandeUsuario : EntityBase
         {
             Cep = cep.Trim(),
             Nome = nome.Trim(),
-            NomeNormalizado = GeoTexto.NormalizarOpcional(nomeNormalizado),
+            NomeNormalizado = GeoTexto.NormalizarBuscaOpcional(nomeNormalizado),
             VersaoDataset = versaoDataset.Trim(),
             Vigente = vigente,
         };

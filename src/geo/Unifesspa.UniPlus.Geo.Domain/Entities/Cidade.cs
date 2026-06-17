@@ -137,7 +137,7 @@ public sealed class Cidade : EntityBase
             Uf = GeoTexto.NormalizarChaveMaiuscula(uf),
             CodigoIbge = codigoIbge.Trim(),
             Nome = nome.Trim(),
-            NomeNormalizado = GeoTexto.NormalizarOpcional(nomeNormalizado),
+            NomeNormalizado = GeoTexto.NormalizarBuscaOpcional(nomeNormalizado),
             Ddd = GeoTexto.NormalizarOpcional(ddd),
             Latitude = latitude,
             Longitude = longitude,
