@@ -62,6 +62,15 @@ public sealed class GeoDbContext : DbContext, IUnitOfWork
     /// <summary>Faixas de CEP por Bairro.</summary>
     public DbSet<BairroFaixaCep> BairroFaixasCep => Set<BairroFaixaCep>();
 
+    /// <summary>Logradouros (entrada por CEP; ~1,4M linhas) — folha da hierarquia.</summary>
+    public DbSet<Logradouro> Logradouros => Set<Logradouro>();
+
+    /// <summary>Complementos de endereçamento por CEP (lado par/ímpar, faixa), sem FK a logradouro.</summary>
+    public DbSet<LogradouroComplemento> LogradouroComplementos => Set<LogradouroComplemento>();
+
+    /// <summary>CEPs exclusivos de grandes usuários (órgãos/empresas).</summary>
+    public DbSet<CepGrandeUsuario> CepGrandesUsuarios => Set<CepGrandeUsuario>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
