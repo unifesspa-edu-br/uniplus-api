@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Geo.Domain;
 
 /// <summary>
-/// Marker para carregadores de assembly (ArchUnitNET, fixtures). As entidades
-/// reais de localidades (Pais, Estado, Cidade, …) entram nas Stories de domínio
-/// do Epic Geo. Em V1 o Domain hospeda apenas a entidade-sonda transitória
-/// (<see cref="Entities.PontoReferenciaSonda"/>) que valida o mapeamento PostGIS.
+/// Marker para carregadores de assembly (ArchUnitNET, fixtures). O Domain hospeda
+/// a hierarquia de localidade DNE+IBGE (<see cref="Entities.Pais"/> →
+/// <see cref="Entities.Estado"/> → … com satélites de indicadores e faixas de CEP).
+/// A entidade-sonda transitória da fundação foi substituída pelas entidades reais.
 /// </summary>
 public sealed class GeoDomainAssemblyMarker
 {
