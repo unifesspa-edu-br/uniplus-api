@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
@@ -11,7 +12,9 @@ using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Configuracao.API.Errors;
+using Unifesspa.UniPlus.Configuracao.API.Hateoas;
 using Unifesspa.UniPlus.Configuracao.Application;
+using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Infrastructure;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
@@ -28,12 +31,19 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Enums em wire format como nome camelCase (ex.: "poloEad", não 4) — mesmo
+        // contrato do módulo Seleção. Sem isso, payload admin com enum como string
+        // vira 400 e o TipoLocalOferta sairia como inteiro mágico.
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
     });
 
-// Minimal API endpoints use a separate JSON options pipeline.
+// Minimal API endpoints use a separate JSON options pipeline; manter em sincronia.
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.Converters.Add(
+        new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -43,10 +53,17 @@ builder.Services.AddUniPlusOpenApi("configuracao", builder.Configuration);
 builder.Services.AddSingleton<IDomainErrorRegistration, ConfiguracaoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
 
+// HATEOAS Level 1 (ADR-0029) — builders de _links dos cadastros (UNI-REQ #587).
+builder.Services.AddSingleton<IResourceLinksBuilder<CampusDto>, CampusLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<LocalOfertaDto>, LocalOfertaLinksBuilder>();
+
 // Idempotency-Key (ADR-0027) + criptografia para entries at-rest. Filter global
-// se ativa apenas em endpoints com [RequiresIdempotencyKey] — controllers admin
-// entram em F2.
+// se ativa apenas em endpoints com [RequiresIdempotencyKey] — os controllers
+// admin de Campus/LocalOferta o exigem.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
+// Cursor pagination (ADR-0026) — CursorEncoder, PageRequestModelBinder e o hook
+// que traduz falhas do binder para 400/410/422; usado pelos GET de listagem.
+builder.Services.AddCursorPagination(builder.Configuration);
 builder.Services.AddIdempotency<ConfiguracaoDbContext>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
@@ -65,10 +82,15 @@ builder.Services.AddConfiguracaoInfrastructure();
 // cobre os 5 entry points com a regra.
 builder.Services.AddDbContextMigrationsOnStartup<ConfiguracaoDbContext>();
 
-// Wolverine como backbone CQRS/messaging (ADR-0003/0004/0005). Sem roteamento
-// específico em V1 — eventos de catálogo (Modalidade*Event, etc.) entram em F2
-// para invalidar cache cross-pod do reader (PG queue intra-módulo per ADR-0044).
-builder.Host.UseWolverineOutboxCascading(builder.Configuration, connectionStringName: "ConfiguracaoDb");
+// Wolverine como backbone CQRS/messaging (ADR-0003/0004/0005). Os command/query
+// handlers de Campus/LocalOferta vivem em Configuracao.Application — incluir o
+// assembly explicitamente para que o Wolverine os descubra (o scan default é só
+// o entry assembly da API). Sem roteamento Kafka em V1.
+builder.Host.UseWolverineOutboxCascading(
+    builder.Configuration,
+    connectionStringName: "ConfiguracaoDb",
+    configureRouting: opts =>
+        opts.Discovery.IncludeAssembly(typeof(ConfiguracaoApplicationServiceRegistration).Assembly));
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
