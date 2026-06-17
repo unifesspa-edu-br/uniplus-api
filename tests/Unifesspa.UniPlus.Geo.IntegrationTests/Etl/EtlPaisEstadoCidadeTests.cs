@@ -60,6 +60,27 @@ public sealed class EtlPaisEstadoCidadeTests
         (await leitura.EstadoFaixasCep.CountAsync()).Should().Be(2);
         (await leitura.CidadeIndicadores.CountAsync()).Should().Be(2);
         (await leitura.CidadeFaixasCep.CountAsync()).Should().Be(1);
+
+        // Métrica IBGE decimal/inteira não-nula carregada com InvariantCulture (ponto
+        // decimal) — pega um eventual erro de tipo/cultura que a degradação não cobre.
+        EstadoIndicador indicadorPara = await leitura.EstadoIndicadores.SingleAsync(i => i.EstadoId == para.Id);
+        indicadorPara.Idh.Should().Be(0.69m);
+        indicadorPara.ReceitasBrutas.Should().Be(52747856526.44m);
+        indicadorPara.PopulacaoResidente2022.Should().Be(8120131);
+    }
+
+    [Fact(DisplayName = "Relatório: indicador sem chave natural na fonte é contado em Lidos e IgnoradosSemChave (não some na agregação)")]
+    public async Task RelatorioIndicador_ContaDescartePorChaveAusente()
+    {
+        await LimparAsync();
+        FonteEmMemoria fonte = FonteCompleta();
+        fonte.EstadoIndicadores.Add(DadosDne.EstadoIndicador(uf: null, codigoIbge: "99")); // chave nula
+
+        RelatorioImportacao relatorio = await ExecutarAsync(fonte);
+
+        // 2 com UF (PA, SP) + 1 sem UF = 3 lidos; o sem-UF é contado como ignorado.
+        relatorio.Tabelas["estado_indicador"].Lidos.Should().Be(3);
+        relatorio.Tabelas["estado_indicador"].IgnoradosSemChave.Should().BeGreaterThanOrEqualTo(1);
     }
 
     [Fact(DisplayName = "CA-05: apenas o registro BRA é carregado, mesmo com países estrangeiros na fonte")]
