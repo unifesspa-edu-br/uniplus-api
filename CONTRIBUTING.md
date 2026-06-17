@@ -61,7 +61,19 @@ as APIs ao realm `unifesspa`, o sintoma é:
 >   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
 >   -d '{"accessTokenLifespan":1800}'
 > ```
-> Usuário de teste com role `plataforma-admin`: `admin` / `E2eTest!123`.
+> **Usuário de teste** com role `plataforma-admin`: `admin`. A senha **semeada**
+> no realm-export (`docker/keycloak/realm-export.json`) é `Changeme!123` e está
+> marcada como **temporária** — no primeiro login o Keycloak exige a troca. Para
+> uma senha fixa e conhecida (`E2eTest!123`, a usada pelos testes E2E), rode a
+> suíte E2E uma vez (o `auth-setup` reseta a senha) **ou** redefina via Keycloak
+> Admin API:
+> ```bash
+> ADMIN_ID=$(curl -s "http://localhost:8080/admin/realms/unifesspa/users?username=admin&exact=true" \
+>   -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+> curl -s -X PUT "http://localhost:8080/admin/realms/unifesspa/users/$ADMIN_ID/reset-password" \
+>   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+>   -d '{"type":"password","value":"E2eTest!123","temporary":false}'
+> ```
 
 ---
 

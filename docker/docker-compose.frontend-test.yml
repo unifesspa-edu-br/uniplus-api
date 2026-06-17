@@ -1,5 +1,6 @@
-# Override de DESENVOLVIMENTO para testar os frontends (selecao, configuracao,
-# ingresso, ...) contra as APIs conteinerizadas — SEM editar código do frontend.
+# Override de DESENVOLVIMENTO para testar frontends do `uniplus-web` (hoje
+# validados: `selecao` e `configuracao`) contra as APIs conteinerizadas — SEM
+# editar código do frontend.
 #
 # Faz duas coisas:
 #   1. Realinha o `Auth__Authority` de TODAS as APIs de módulo ao realm
@@ -9,8 +10,10 @@
 #      scripts de smoke). Sem isso, endpoints autenticados rejeitam o token com
 #      401 e o frontend entra em loop de re-login; o GET de lista é
 #      `[AllowAnonymous]`, então retorna 200 e MASCARA o problema. Issuer
-#      canonicalizado por KC_HOSTNAME. CORS p/ localhost:42xx já vem do
-#      appsettings.Development.json de cada API.
+#      canonicalizado por KC_HOSTNAME. O CORS de dev já cobre `configuracao`
+#      (:4203, na organizacao-api) e `selecao` (:4200) no appsettings.Development
+#      .json; `ingresso` (:4201) e `portal` (:4202) ainda NÃO estão na allowlist
+#      de CORS — testá-los exige adicionar a origin antes.
 #   2. Sobe um Traefik na :5000 que roteia por path-prefix (ADR-0064) e reescreve
 #      /api/editais -> /api/selecao/editais (ver traefik/dynamic.yml) — necessário
 #      apenas para o frontend `selecao`, cujo runtime-config usa um único
@@ -26,7 +29,11 @@
 # Depois, em uniplus-web:
 #   npx nx serve selecao       -> http://localhost:4200  (via gateway :5000)
 #   npx nx serve configuracao  -> http://localhost:4203  (direto na organizacao-api :5263)
-#   npx nx serve ingresso      -> http://localhost:4201  (direto na ingresso-api)
+#
+# Obs.: `ingresso` (:4201) e `portal` (:4202) sobem, mas ainda não estão
+# validados aqui — a allowlist de CORS das APIs não inclui essas origins (e o
+# gateway :5000 só roteia as rotas de Seleção). Para habilitá-los, adicione a
+# origin ao CORS (e, no caso do que usa o gateway, a rota no traefik/dynamic.yml).
 services:
   traefik:
     image: traefik:v3.3
