@@ -11,6 +11,8 @@ using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Fonte;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Parsing;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.GeoEtlUpsert;
+
 /// <summary>
 /// Importa o topo da hierarquia do Geo — País (só Brasil), Estado (+indicador
 /// +faixas) e Cidade (+territorial embutido, +indicador, +faixas) — a partir do
@@ -468,100 +470,6 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
         LogTabelaConcluida(_logger, "cidade_faixa", contador.Lidos, contador.Inseridos, contador.Atualizados);
     }
 
-    // Upsert por chave natural com dedup intra-fonte: chaves repetidas na própria
-    // carga não disparam unique violation — a 2ª ocorrência atualiza a entidade já
-    // vista (last-wins) e conta como duplicada. Retorna a entidade (para resolver FK)
-    // ou null em falha de validação do domínio.
-    private static T? Upsert<T>(
-        string chave,
-        Dictionary<string, T> jaVistas,
-        Dictionary<string, T> existentes,
-        Func<Result<T>> criar,
-        Func<T, Result> atualizar,
-        DbSet<T> dbSet,
-        ContadorTabela contador)
-        where T : class
-    {
-        if (jaVistas.TryGetValue(chave, out T? jaVista))
-        {
-            contador.ContarDuplicado(chave);
-            Result reatualizacao = atualizar(jaVista);
-            return reatualizacao.IsSuccess ? jaVista : null;
-        }
-
-        if (existentes.TryGetValue(chave, out T? existente))
-        {
-            Result atualizacao = atualizar(existente);
-            if (atualizacao.IsFailure)
-            {
-                contador.ContarIgnoradoSemChave();
-                return null;
-            }
-
-            jaVistas[chave] = existente;
-            contador.ContarAtualizado();
-            return existente;
-        }
-
-        Result<T> criado = criar();
-        if (criado.IsFailure)
-        {
-            contador.ContarIgnoradoSemChave();
-            return null;
-        }
-
-        dbSet.Add(criado.Value!);
-        jaVistas[chave] = criado.Value!;
-        contador.ContarInserido();
-        return criado.Value;
-    }
-
-    private static async Task<Dictionary<string, T>> AgregarPorChaveAsync<T>(
-        IAsyncEnumerable<T> fonte,
-        Func<T, string?> chave)
-    {
-        Dictionary<string, T> mapa = new(StringComparer.Ordinal);
-        await foreach (T item in fonte.ConfigureAwait(false))
-        {
-            string? k = chave(item);
-            if (k is not null)
-            {
-                mapa[k] = item; // last-wins
-            }
-        }
-
-        return mapa;
-    }
-
-    // Como AgregarPorChaveAsync, mas registra no contador da tabela tudo o que a fonte
-    // trouxe (lidos), o que foi descartado por chave ausente e as chaves repetidas
-    // (last-wins) — para o relatório não subestimar os "lidos" dos níveis agregados.
-    private static async Task<Dictionary<string, T>> AgregarContandoAsync<T>(
-        IAsyncEnumerable<T> fonte,
-        Func<T, string?> chave,
-        ContadorTabela contador)
-    {
-        Dictionary<string, T> mapa = new(StringComparer.Ordinal);
-        await foreach (T item in fonte.ConfigureAwait(false))
-        {
-            contador.ContarLido();
-            string? k = chave(item);
-            if (k is null)
-            {
-                contador.ContarIgnoradoSemChave();
-                continue;
-            }
-
-            if (!mapa.TryAdd(k, item))
-            {
-                contador.ContarDuplicado(k); // last-wins
-                mapa[k] = item;
-            }
-        }
-
-        return mapa;
-    }
-
     // Parse tolerante de métrica IBGE que registra a degradação ('-'/vazio/inválido →
     // null) no relatório para auditoria. Sem PII — métricas socioeconômicas públicas.
     private static decimal? MetricaDecimal(string? cru, string coluna, ContadorTabela contador)
@@ -585,17 +493,6 @@ internal sealed partial class GeoImportadorPaisEstadoCidade : IGeoImportador
 
         return valor;
     }
-
-    private static string? ChaveSigla(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim().ToUpperInvariant();
-
-    private static string? ChaveCodigo(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
-
-    // Chave natural composta de uma faixa de CEP: pai (Guid) + limites. Casa com a
-    // UNIQUE (estado_id|cidade_id, cep_inicial, cep_final) para o upsert idempotente.
-    private static string ChaveFaixa(Guid pai, string cepInicial, string cepFinal) =>
-        $"{pai:N}|{cepInicial}|{cepFinal}";
 
     private static int Total(RelatorioImportacao relatorio, Func<ContadorTabela, int> seletor) =>
         relatorio.Tabelas.Values.Sum(seletor);

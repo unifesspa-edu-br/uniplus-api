@@ -125,6 +125,61 @@ internal sealed class DneStagingFonte : IGeoFonteDados
             static r => new CidadeFaixaCru(Texto(r, 0), Texto(r, 1), Texto(r, 2)),
             cancellationToken);
 
+    public IAsyncEnumerable<CidadeIdCru> LerCidadeIdsAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"SELECT id_cidade, cidade_ibge FROM {Tabela("cidade")}",
+            static r => new CidadeIdCru(Inteiro(r, 0), Texto(r, 1)),
+            cancellationToken);
+
+    public IAsyncEnumerable<DistritoCru> LerDistritosAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"SELECT id_distrito, distrito, distrito_sem_acento, cidade_id, estado, latitude, longitude FROM {Tabela("distrito")}",
+            static r => new DistritoCru(Inteiro(r, 0), Texto(r, 1), Texto(r, 2), Inteiro(r, 3), Texto(r, 4), Texto(r, 5), Texto(r, 6)),
+            cancellationToken);
+
+    public IAsyncEnumerable<FaixaLocalidadeCru> LerDistritoFaixasAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"SELECT id_distrito, faixa_ini, faixa_fim FROM {Tabela("distrito_faixa")}",
+            static r => new FaixaLocalidadeCru(Inteiro(r, 0), Texto(r, 1), Texto(r, 2)),
+            cancellationToken);
+
+    public IAsyncEnumerable<BairroCru> LerBairrosAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"SELECT id_bairro, bairro, bairro_sem_acento, cidade_id, estado, latitude, longitude FROM {Tabela("bairro")}",
+            static r => new BairroCru(Inteiro(r, 0), Texto(r, 1), Texto(r, 2), Inteiro(r, 3), Texto(r, 4), Texto(r, 5), Texto(r, 6)),
+            cancellationToken);
+
+    public IAsyncEnumerable<FaixaLocalidadeCru> LerBairroFaixasAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"SELECT id_bairro, faixa_ini, faixa_fim FROM {Tabela("bairro_faixa")}",
+            static r => new FaixaLocalidadeCru(Inteiro(r, 0), Texto(r, 1), Texto(r, 2)),
+            cancellationToken);
+
+    public IAsyncEnumerable<CepGrandeUsuarioCru> LerCepGrandesUsuariosAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"SELECT cep, grandes_usuarios, grandes_usuarios_sem_acento FROM {Tabela("log_grande_usuario")}",
+            static r => new CepGrandeUsuarioCru(Texto(r, 0), Texto(r, 1), Texto(r, 2)),
+            cancellationToken);
+
+    public IAsyncEnumerable<LogradouroComplementoCru> LerLogradouroComplementosAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"SELECT cep, complemento, complemento_sem_acento FROM {Tabela("log_complemento")}",
+            static r => new LogradouroComplementoCru(Texto(r, 0), Texto(r, 1), Texto(r, 2)),
+            cancellationToken);
+
+    public IAsyncEnumerable<LogradouroCru> LerLogradourosAsync(CancellationToken cancellationToken) =>
+        ConsultarAsync(
+            $"""
+             SELECT cep, tipo, nome_logradouro, logradouro, bairro_id, distrito_id, cidade_id,
+                    estado, nome_logradouro_sem_acento, latitude, longitude, cep_ativo
+             FROM {Tabela("logradouro")}
+             """,
+            static r => new LogradouroCru(
+                Texto(r, 0), Texto(r, 1), Texto(r, 2), Texto(r, 3), Texto(r, 8),
+                Inteiro(r, 4), Inteiro(r, 5), Inteiro(r, 6),
+                Texto(r, 7), Texto(r, 9), Texto(r, 10), Texto(r, 11)),
+            cancellationToken);
+
     [SuppressMessage(
         "Security",
         "CA2100:Review SQL queries for security vulnerabilities",
@@ -163,6 +218,12 @@ internal sealed class DneStagingFonte : IGeoFonteDados
     // o boxing de GetValue().ToString() (relevante no volume dos logradouros, #673).
     private static string? Texto(DbDataReader leitor, int ordinal) =>
         leitor.IsDBNull(ordinal) ? null : leitor.GetString(ordinal);
+
+    // Ids da fonte (id_cidade/id_distrito/id_bairro e as FKs cidade_id/distrito_id/
+    // bairro_id) são int4 — diferente do projeto da #672 (text-only). Lê como int,
+    // NULL → null (FK opcional do logradouro chega nula com frequência, #673).
+    private static int? Inteiro(DbDataReader leitor, int ordinal) =>
+        leitor.IsDBNull(ordinal) ? null : leitor.GetInt32(ordinal);
 
     private static bool VersaoValida(string versao) =>
         versao.Length == 6 && versao.All(char.IsAsciiDigit);

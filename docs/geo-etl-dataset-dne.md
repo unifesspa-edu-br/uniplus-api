@@ -38,6 +38,40 @@ done
 
 > Ajuste o `search_path`/schema conforme o gerador do dump. O importador espera as tabelas `tbl_cep_{versao}_n_*` no schema configurado (`dne_staging` por padrão).
 
+## Carga em lote das folhas — Distrito, Bairro e Logradouro (Story #673)
+
+As folhas da hierarquia (`distrito`/`bairro` + faixas, `cep_grande_usuario`, `logradouro_complemento` e os ~1,4M `logradouro`) entram por um pipeline próprio (`GeoImportadorLocalidades`), porque o volume e a criação de índices inviabilizam a transação única do topo (País/Estado/Cidade). O pipeline tem duas fases que **commitam separadamente**:
+
+1. **Upsert (`GeoImportadorDistritoBairro`)** — `distrito`/`bairro` (+faixas) e `cep_grande_usuario`, por chave natural, numa transação. Esta fase também **resolve as FKs**: monta os dicionários `id_cidade → Cidade.Id (Guid)` (via JOIN do staging com o domínio pelo código IBGE) e `id_distrito`/`id_bairro → Guid` (os ids da DNE são as PKs da fonte, únicos dentro de uma release; homônimos em cidades distintas viram entidades distintas).
+2. **COPY em lote (`LogradouroCopyImporter`)** — `logradouro_complemento` e `logradouro`, via COPY binário streamado.
+
+### Estratégia de bulk (COPY → staging → merge)
+
+Para os dois modos de carga, a estratégia é idêntica e idempotente:
+
+```
+COPY binário streamado ─▶ tabela TEMP de staging (sem constraints)
+        │
+        ▼
+INSERT ... SELECT DISTINCT ON (chave natural) ... ON CONFLICT DO UPDATE  ─▶  tabela final
+        │
+        ▼
+DROP da tabela de staging
+```
+
+- **COPY binário** (`NpgsqlBinaryImporter`) em lotes, com leitura **em streaming** do staging-DB — uso de memória estável mesmo nos 1,4M logradouros. A coordenada é escrita como `geography(Point,4326)` por um `NpgsqlDataSource` com NetTopologySuite em modo **`geographyAsDefault`**.
+- **Dedup intra-fonte** via `DISTINCT ON (chave natural) ... ORDER BY ..., _ord DESC` (last-wins, `_ord` é um `bigserial` preenchido na ordem do COPY) — evita o erro do Postgres "ON CONFLICT cannot affect row a second time".
+- **Idempotência** via `ON CONFLICT (chave natural) DO UPDATE`: preserva `id` (Guid v7) e `created_at`, carimba `updated_at` e reativa `vigente = true`. A chave de `logradouro` é `(cep, nome_normalizado, cidade_id)`; a de `logradouro_complemento`, `(cep, complemento_normalizado)`.
+- **Auditoria sem interceptor**: como o COPY/merge ignoram o `AuditableInterceptor`, o `created_at` é carimbado pelo `TimeProvider` (no insert) e o `updated_at` só no `DO UPDATE` — tudo num único instante por carga.
+
+### Índices pesados (`logradouro`) e `CREATE INDEX CONCURRENTLY`
+
+No modo **`Inicial`** (base nova), a tabela `logradouro` é truncada e os índices pesados (`gin_trgm` em `nome_normalizado`, GIST em `coordenada`) são **dropados antes do COPY** e **recriados depois** via `CREATE INDEX CONCURRENTLY` — carregar com esses índices ligados degrada muito o COPY. `CONCURRENTLY` **não pode** rodar dentro de transação, então a recriação acontece numa conexão em **autocommit** (sem `BeginTransaction`), na mesma conexão física do COPY. Um `DROP INDEX IF EXISTS` precede cada `CREATE` para limpar índices `INVALID` deixados por uma recriação anterior abortada.
+
+No modo **`Recarga`** os índices permanecem (a tabela já está populada); só o merge `ON CONFLICT` roda. A política de *stale* (`vigente = false` para chaves ausentes na nova release) continua sendo da Story de atualização periódica (#674).
+
+> O `logradouro_complemento` não é truncado no modo `Inicial` (só o `logradouro`, pela otimização de índices): seu merge `ON CONFLICT` já é idempotente e a remoção de registros que somem entre releases é tratada pela política de *stale* (#674), não por TRUNCATE.
+
 ## Recarga periódica (releases mensais)
 
 A DNE é atualizada mensalmente. Para aplicar uma nova release (ex.: `202602`):
