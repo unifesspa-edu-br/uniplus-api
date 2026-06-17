@@ -100,6 +100,34 @@ public sealed class DistritoBairroPersistenceTests
         }
     }
 
+    [Fact(DisplayName = "CA-02: chave natural é caixa-insensível por canonicalização (Centro==centro)")]
+    public async Task Distrito_NomeNormalizado_CaixaInsensivel_Rejeita()
+    {
+        CidadeSeed seed = NovaCidade();
+        Cidade cidade = seed.Cidade;
+
+        // nome_normalizado em caixas diferentes — a factory canonicaliza para minúsculas,
+        // então ambos colidem na chave natural.
+        Distrito maiusculo = GeoTestKeys.Ok(Distrito.Importar(cidade.Id, "SP", "Centro", "CENTRO", null, null, null, "1", VersaoDataset));
+        Distrito minusculo = GeoTestKeys.Ok(Distrito.Importar(cidade.Id, "SP", "Centro", "centro", null, null, null, "2", VersaoDataset));
+
+        maiusculo.NomeNormalizado.Should().Be(minusculo.NomeNormalizado, "a factory canonicaliza nome_normalizado em minúsculas");
+
+        await using (GeoDbContext ctx = _fixture.CreateDbContext())
+        {
+            seed.Adicionar(ctx);
+            ctx.Distritos.Add(maiusculo);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (GeoDbContext ctx = _fixture.CreateDbContext())
+        {
+            ctx.Distritos.Add(minusculo);
+            Exception excecao = (await ((Func<Task>)(() => ctx.SaveChangesAsync())).Should().ThrowAsync<DbUpdateException>()).Which;
+            GeoTestKeys.DeveSerViolacaoUnique(excecao, "ix_distrito_cidade_nome");
+        }
+    }
+
     [Fact(DisplayName = "CA-03: id_origem_dne não é identidade — só (cidade+nome) define a unicidade")]
     public async Task IdOrigemDne_NaoIdentidade()
     {

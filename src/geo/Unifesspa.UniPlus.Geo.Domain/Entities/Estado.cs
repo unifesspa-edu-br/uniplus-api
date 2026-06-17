@@ -121,7 +121,7 @@ public sealed class Estado : EntityBase
             PaisId = paisId,
             Uf = GeoTexto.NormalizarChaveMaiuscula(uf),
             Nome = nome.Trim(),
-            NomeNormalizado = GeoTexto.NormalizarOpcional(nomeNormalizado),
+            NomeNormalizado = GeoTexto.NormalizarBuscaOpcional(nomeNormalizado),
             Regiao = GeoTexto.NormalizarOpcional(regiao),
             Capital = GeoTexto.NormalizarOpcional(capital),
             CodigoIbge = GeoTexto.NormalizarOpcional(codigoIbge),
