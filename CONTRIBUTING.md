@@ -25,6 +25,44 @@ docker compose up -d
 
 Isso inicia: PostgreSQL 18, Redis, Kafka (KRaft), MinIO e Keycloak (dev mode).
 
+### Testar um frontend contra as APIs conteinerizadas
+
+Para rodar um app do `uniplus-web` (ex.: `configuracao`, `selecao`) contra estas
+APIs, **suba a stack com o override `frontend-test`**:
+
+```bash
+docker compose -f docker-compose.yml \
+               -f docker-compose.override.yml \
+               -f docker-compose.frontend-test.yml up -d
+```
+
+Depois, em `uniplus-web`: `npx nx serve configuracao` (→ :4203) ou
+`npx nx serve selecao` (→ :4200, via gateway Traefik :5000).
+
+**Por que o override é obrigatório.** O `docker-compose.override.yml` configura
+as APIs com `Auth__Authority` apontando para o realm **`unifesspa-dev-local`**
+(usado por scripts de smoke), enquanto os frontends autenticam no realm
+**`unifesspa`** (clients `*-web`). Sem o `frontend-test.yml`, que realinha todas
+as APIs ao realm `unifesspa`, o sintoma é:
+
+- `GET` de listas funciona (são `[AllowAnonymous]` — retornam 200 e **mascaram**
+  o problema), mas
+- **toda mutação** (POST/PUT/DELETE) responde **401** e o frontend entra em
+  **loop de re-login** (o `authErrorInterceptor` redireciona ao Keycloak).
+
+> **Sessões manuais longas (opcional):** o `accessTokenLifespan` do realm é 300s
+> por padrão; refreshes frequentes podem atrapalhar testes interativos. Para
+> ampliar para 30 min durante o teste:
+> ```bash
+> TOKEN=$(curl -s http://localhost:8080/realms/master/protocol/openid-connect/token \
+>   -d grant_type=password -d client_id=admin-cli -d username=admin -d password=admin \
+>   | jq -r .access_token)
+> curl -s -X PUT http://localhost:8080/admin/realms/unifesspa \
+>   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+>   -d '{"accessTokenLifespan":1800}'
+> ```
+> Usuário de teste com role `plataforma-admin`: `admin` / `E2eTest!123`.
+
 ---
 
 ## Estrutura do projeto

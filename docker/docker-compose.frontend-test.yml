@@ -1,21 +1,32 @@
-# Gateway de DESENVOLVIMENTO para testar o frontend `selecao` (npx nx serve selecao)
-# contra as APIs conteinerizadas — SEM editar código do frontend.
+# Override de DESENVOLVIMENTO para testar os frontends (selecao, configuracao,
+# ingresso, ...) contra as APIs conteinerizadas — SEM editar código do frontend.
 #
-# O runtime-config do selecao usa um único `apiUrl=http://localhost:5000` e chama
-# /api/editais... (path pré-ADR-0064). Este arquivo:
-#   1. Sobe um Traefik na :5000 que roteia por path-prefix (ADR-0064) e reescreve
-#      /api/editais -> /api/selecao/editais (ver traefik/dynamic.yml).
-#   2. Realinha o Auth__Authority da selecao-api ao realm `unifesspa` (o realm em
-#      que o frontend autentica), em vez do `unifesspa-dev-local` do override
-#      (esse é usado por scripts de smoke). CORS p/ localhost:4200 já vem do
-#      appsettings.Development.json da API.
+# Faz duas coisas:
+#   1. Realinha o `Auth__Authority` de TODAS as APIs de módulo ao realm
+#      `unifesspa` — o realm em que os frontends autenticam (clients `*-web`,
+#      que emitem aud=uniplus via o client scope default `uniplus-profile`) —
+#      em vez do `unifesspa-dev-local` do docker-compose.override.yml (usado por
+#      scripts de smoke). Sem isso, endpoints autenticados rejeitam o token com
+#      401 e o frontend entra em loop de re-login; o GET de lista é
+#      `[AllowAnonymous]`, então retorna 200 e MASCARA o problema. Issuer
+#      canonicalizado por KC_HOSTNAME. CORS p/ localhost:42xx já vem do
+#      appsettings.Development.json de cada API.
+#   2. Sobe um Traefik na :5000 que roteia por path-prefix (ADR-0064) e reescreve
+#      /api/editais -> /api/selecao/editais (ver traefik/dynamic.yml) — necessário
+#      apenas para o frontend `selecao`, cujo runtime-config usa um único
+#      `apiUrl=http://localhost:5000` (path pré-ADR-0064). Os demais apps falam
+#      direto com a porta da API (ex.: `configuracao` -> organizacao-api :5263) e
+#      NÃO dependem do Traefik.
 #
 # Uso:
 #   docker compose -f docker-compose.yml \
 #                  -f docker-compose.override.yml \
 #                  -f docker-compose.frontend-test.yml up -d
 #
-# Depois: cd ../../uniplus-web && npx nx serve selecao  ->  http://localhost:4200
+# Depois, em uniplus-web:
+#   npx nx serve selecao       -> http://localhost:4200  (via gateway :5000)
+#   npx nx serve configuracao  -> http://localhost:4203  (direto na organizacao-api :5263)
+#   npx nx serve ingresso      -> http://localhost:4201  (direto na ingresso-api)
 services:
   traefik:
     image: traefik:v3.3
@@ -36,9 +47,20 @@ services:
       selecao-api:
         condition: service_healthy
 
+  # Todas as APIs de módulo passam a validar o realm `unifesspa` (o que os
+  # frontends usam), substituindo o `unifesspa-dev-local` do override.
   selecao-api:
     environment:
-      # O frontend `selecao` autentica no realm `unifesspa` (client selecao-web),
-      # que emite aud=uniplus via o client scope default `uniplus-profile`. A API
-      # precisa validar ESSE realm. Issuer canonicalizado por KC_HOSTNAME.
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+
+  ingresso-api:
+    environment:
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+
+  organizacao-api:
+    environment:
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+
+  configuracao-api:
+    environment:
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"

@@ -171,6 +171,12 @@ docker compose -f docker/docker-compose.yml up -d
 # APIs em modo desenvolvimento
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d
 
+# Testar um FRONTEND (uniplus-web) contra estas APIs: adicionar o override frontend-test,
+# que realinha o Auth__Authority de TODAS as APIs ao realm `unifesspa` (o override base usa
+# `unifesspa-dev-local`, que faz toda mutação responder 401 + loop de re-login no front;
+# GET de lista é [AllowAnonymous] e mascara). Ver CONTRIBUTING.md §"Testar um frontend".
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml -f docker/docker-compose.frontend-test.yml up -d
+
 # Migrations EF Core — ver CONTRIBUTING.md §Entity Framework + docs/guia-banco-de-dados.md (ADR-0054).
 dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --context SelecaoDbContext --output-dir Persistence/Migrations
 ```
