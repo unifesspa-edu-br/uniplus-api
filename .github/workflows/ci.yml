@@ -80,7 +80,8 @@ jobs:
             --fail-severity=error \
             contracts/openapi.selecao.json \
             contracts/openapi.ingresso.json \
-            contracts/openapi.organizacao.json
+            contracts/openapi.organizacao.json \
+            contracts/openapi.geo.json
 
   forbidden-deps:
     name: Forbidden dependencies
