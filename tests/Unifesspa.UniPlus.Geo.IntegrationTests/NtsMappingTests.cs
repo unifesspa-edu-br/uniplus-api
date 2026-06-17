@@ -60,9 +60,9 @@ public sealed class NtsMappingTests
 
     private static string? TipoColunaDeCoordenada(GeoDbContext context)
     {
-        IEntityType entityType = context.Model.FindEntityType(typeof(PontoReferenciaSonda))
-            ?? throw new InvalidOperationException("PontoReferenciaSonda ausente no modelo do GeoDbContext.");
-        IProperty coordenada = entityType.FindProperty(nameof(PontoReferenciaSonda.Coordenada))
+        IEntityType entityType = context.Model.FindEntityType(typeof(Estado))
+            ?? throw new InvalidOperationException("Estado ausente no modelo do GeoDbContext.");
+        IProperty coordenada = entityType.FindProperty(nameof(Estado.Coordenada))
             ?? throw new InvalidOperationException("Propriedade Coordenada ausente no modelo.");
 
         return coordenada.GetColumnType();

@@ -15,10 +15,12 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// entidades derivam de <c>EntityBase</c> puro.
 /// </summary>
 /// <remarks>
-/// Em V1 hospeda a entidade-sonda transitória
-/// (<see cref="PontoReferenciaSonda"/>, removida na Story de entidades reais) e
-/// <c>idempotency_cache</c> (entries cifradas at-rest). As entidades de
-/// localidade (Pais, Estado, Cidade, …) entram nas Stories de domínio do Epic.
+/// Hospeda a hierarquia de localidade DNE+IBGE (<see cref="Pais"/> →
+/// <see cref="Estado"/> → … com seus satélites de indicadores e faixas de CEP) e
+/// o <c>idempotency_cache</c> (entries cifradas at-rest). A entidade-sonda
+/// transitória da fundação foi substituída pelas entidades reais. As demais
+/// entidades de localidade (Cidade, Distrito, Bairro, Logradouro) entram nas
+/// Stories seguintes da Feature de domínio.
 /// </remarks>
 public sealed class GeoDbContext : DbContext, IUnitOfWork
 {
@@ -27,8 +29,17 @@ public sealed class GeoDbContext : DbContext, IUnitOfWork
     {
     }
 
-    /// <summary>Sonda transitória que valida o mapeamento PostGIS fim-a-fim (ADR-0091).</summary>
-    public DbSet<PontoReferenciaSonda> PontosReferenciaSonda => Set<PontoReferenciaSonda>();
+    /// <summary>Países (carga só do Brasil em produção) — topo da hierarquia (ADR-0090).</summary>
+    public DbSet<Pais> Paises => Set<Pais>();
+
+    /// <summary>Unidades federativas (UF), situadas num País.</summary>
+    public DbSet<Estado> Estados => Set<Estado>();
+
+    /// <summary>Satélite socioeconômico IBGE de cada Estado (1:1).</summary>
+    public DbSet<EstadoIndicador> EstadoIndicadores => Set<EstadoIndicador>();
+
+    /// <summary>Faixas de CEP por Estado (capital/interior).</summary>
+    public DbSet<EstadoFaixaCep> EstadoFaixasCep => Set<EstadoFaixaCep>();
 
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
