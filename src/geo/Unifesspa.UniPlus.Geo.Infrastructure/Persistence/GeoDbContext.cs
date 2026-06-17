@@ -41,6 +41,15 @@ public sealed class GeoDbContext : DbContext, IUnitOfWork
     /// <summary>Faixas de CEP por Estado (capital/interior).</summary>
     public DbSet<EstadoFaixaCep> EstadoFaixasCep => Set<EstadoFaixaCep>();
 
+    /// <summary>Municípios (eixo central do Geo, referenciado por código IBGE).</summary>
+    public DbSet<Cidade> Cidades => Set<Cidade>();
+
+    /// <summary>Satélite socioeconômico IBGE de cada Cidade (1:1).</summary>
+    public DbSet<CidadeIndicador> CidadeIndicadores => Set<CidadeIndicador>();
+
+    /// <summary>Faixas de CEP por Cidade.</summary>
+    public DbSet<CidadeFaixaCep> CidadeFaixasCep => Set<CidadeFaixaCep>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
@@ -50,6 +59,15 @@ public sealed class GeoDbContext : DbContext, IUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+
+        // pg_trgm sustenta os índices trigram (gin_trgm_ops) de busca acento-
+        // insensível em nome_normalizado (Cidade/Logradouro, F4). Extensão trusted
+        // (criável por usuário não-superusuário); a migration emite
+        // CREATE EXTENSION IF NOT EXISTS — no-op em produção (init-db já a cria),
+        // criada de fato no Postgres efêmero dos testes. postgis é adicionada
+        // automaticamente pelo plugin NetTopologySuite (ADR-0091).
+        modelBuilder.HasPostgresExtension("pg_trgm");
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(GeoDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);

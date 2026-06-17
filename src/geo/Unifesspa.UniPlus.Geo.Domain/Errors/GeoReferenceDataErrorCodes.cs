@@ -29,4 +29,20 @@ public static class GeoReferenceDataErrorCodes
     public const string EstadoFaixaCepInicialObrigatorio = "EstadoFaixaCep.CepInicialObrigatorio";
     public const string EstadoFaixaCepFinalObrigatorio = "EstadoFaixaCep.CepFinalObrigatorio";
     public const string EstadoFaixaCepVersaoDatasetObrigatoria = "EstadoFaixaCep.VersaoDatasetObrigatoria";
+
+    // Cidade
+    public const string CidadeEstadoObrigatorio = "Cidade.EstadoObrigatorio";
+    public const string CidadeCodigoIbgeObrigatorio = "Cidade.CodigoIbgeObrigatorio";
+    public const string CidadeNomeObrigatorio = "Cidade.NomeObrigatorio";
+    public const string CidadeVersaoDatasetObrigatoria = "Cidade.VersaoDatasetObrigatoria";
+
+    // Indicador de Cidade (satélite 1:1)
+    public const string CidadeIndicadorCidadeObrigatoria = "CidadeIndicador.CidadeObrigatoria";
+    public const string CidadeIndicadorVersaoDatasetObrigatoria = "CidadeIndicador.VersaoDatasetObrigatoria";
+
+    // Faixa de CEP de Cidade
+    public const string CidadeFaixaCepCidadeObrigatoria = "CidadeFaixaCep.CidadeObrigatoria";
+    public const string CidadeFaixaCepInicialObrigatorio = "CidadeFaixaCep.CepInicialObrigatorio";
+    public const string CidadeFaixaCepFinalObrigatorio = "CidadeFaixaCep.CepFinalObrigatorio";
+    public const string CidadeFaixaCepVersaoDatasetObrigatoria = "CidadeFaixaCep.VersaoDatasetObrigatoria";
 }
