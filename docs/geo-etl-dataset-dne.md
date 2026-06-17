@@ -4,7 +4,9 @@ Guia operacional da carga de reference data do módulo `Geo` (localidades, ender
 
 ## Estratégia: schema de staging + SELECT streamado
 
-O dataset DNE é distribuído como **15 dumps SQL** (um por tabela, `tbl_cep_{versao}_n_*`, todas as colunas `varchar`; a maior — `logradouro` — tem ~1,4M linhas / ~382 MB). Esses dumps **não são versionados** neste repositório: a base DNE é proprietária (Correios) e exige licença institucional.
+O dataset DNE é distribuído como **15 dumps SQL** (um por tabela, `tbl_cep_{versao}_n_*`; a maior — `logradouro` — tem ~1,4M linhas / ~382 MB). Esses dumps **não são versionados** neste repositório: a base DNE é proprietária (Correios) e exige licença institucional.
+
+As colunas **descritivas** são `varchar` (nomes, siglas, métricas, lat/long como texto — daí o parse tolerante); os **identificadores** das folhas são `int4`: as PKs da fonte (`id_cidade`, `id_distrito`, `id_bairro`) e as FKs internas (`cidade_id`, `distrito_id`, `bairro_id`). O ETL os lê com o acessor tipado (`GetInt32`/`IsDBNull`) e os traduz para os Guid intra-banco; o domínio nunca adota esses inteiros como identidade.
 
 A ingestão segue dois passos desacoplados:
 
