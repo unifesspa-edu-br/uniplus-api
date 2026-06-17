@@ -90,7 +90,7 @@ namespace Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Migrations
                     area_km2 = table.Column<decimal>(type: "numeric", nullable: true),
                     populacao_residente = table.Column<int>(type: "integer", nullable: true),
                     densidade_demografica = table.Column<decimal>(type: "numeric", nullable: true),
-                    escolarizacao6a14 = table.Column<decimal>(type: "numeric", nullable: true),
+                    escolarizacao_6_a_14 = table.Column<decimal>(type: "numeric", nullable: true),
                     idh = table.Column<decimal>(type: "numeric", nullable: true),
                     mortalidade_infantil = table.Column<decimal>(type: "numeric", nullable: true),
                     receitas = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),

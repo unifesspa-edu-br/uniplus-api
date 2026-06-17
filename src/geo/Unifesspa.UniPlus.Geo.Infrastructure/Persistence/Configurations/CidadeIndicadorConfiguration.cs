@@ -29,6 +29,10 @@ internal sealed class CidadeIndicadorConfiguration : IEntityTypeConfiguration<Ci
         builder.Property(i => i.Receitas).HasPrecision(18, 2);
         builder.Property(i => i.Despesas).HasPrecision(18, 2);
 
+        // Nome explícito com separadores — o snake_case automático geraria
+        // `escolarizacao6a14` (dígitos colados), ambíguo para ETL/SQL.
+        builder.Property(i => i.Escolarizacao6a14).HasColumnName("escolarizacao_6_a_14");
+
         builder.HasOne<Cidade>()
             .WithOne()
             .HasForeignKey<CidadeIndicador>(i => i.CidadeId)
