@@ -29,6 +29,22 @@ internal sealed class FonteEmMemoria : IGeoFonteDados
 
     public List<CidadeFaixaCru> CidadeFaixas { get; } = [];
 
+    public List<CidadeIdCru> CidadeIds { get; } = [];
+
+    public List<DistritoCru> Distritos { get; } = [];
+
+    public List<FaixaLocalidadeCru> DistritoFaixas { get; } = [];
+
+    public List<BairroCru> Bairros { get; } = [];
+
+    public List<FaixaLocalidadeCru> BairroFaixas { get; } = [];
+
+    public List<CepGrandeUsuarioCru> CepGrandesUsuarios { get; } = [];
+
+    public List<LogradouroComplementoCru> LogradouroComplementos { get; } = [];
+
+    public List<LogradouroCru> Logradouros { get; } = [];
+
     public IAsyncEnumerable<PaisCru> LerPaisesAsync(CancellationToken cancellationToken) => ParaAsync(Paises, cancellationToken);
 
     public IAsyncEnumerable<EstadoCru> LerEstadosAsync(CancellationToken cancellationToken) => ParaAsync(Estados, cancellationToken);
@@ -44,6 +60,22 @@ internal sealed class FonteEmMemoria : IGeoFonteDados
     public IAsyncEnumerable<CidadeIndicadorCru> LerCidadeIndicadoresAsync(CancellationToken cancellationToken) => ParaAsync(CidadeIndicadores, cancellationToken);
 
     public IAsyncEnumerable<CidadeFaixaCru> LerCidadeFaixasAsync(CancellationToken cancellationToken) => ParaAsync(CidadeFaixas, cancellationToken);
+
+    public IAsyncEnumerable<CidadeIdCru> LerCidadeIdsAsync(CancellationToken cancellationToken) => ParaAsync(CidadeIds, cancellationToken);
+
+    public IAsyncEnumerable<DistritoCru> LerDistritosAsync(CancellationToken cancellationToken) => ParaAsync(Distritos, cancellationToken);
+
+    public IAsyncEnumerable<FaixaLocalidadeCru> LerDistritoFaixasAsync(CancellationToken cancellationToken) => ParaAsync(DistritoFaixas, cancellationToken);
+
+    public IAsyncEnumerable<BairroCru> LerBairrosAsync(CancellationToken cancellationToken) => ParaAsync(Bairros, cancellationToken);
+
+    public IAsyncEnumerable<FaixaLocalidadeCru> LerBairroFaixasAsync(CancellationToken cancellationToken) => ParaAsync(BairroFaixas, cancellationToken);
+
+    public IAsyncEnumerable<CepGrandeUsuarioCru> LerCepGrandesUsuariosAsync(CancellationToken cancellationToken) => ParaAsync(CepGrandesUsuarios, cancellationToken);
+
+    public IAsyncEnumerable<LogradouroComplementoCru> LerLogradouroComplementosAsync(CancellationToken cancellationToken) => ParaAsync(LogradouroComplementos, cancellationToken);
+
+    public IAsyncEnumerable<LogradouroCru> LerLogradourosAsync(CancellationToken cancellationToken) => ParaAsync(Logradouros, cancellationToken);
 
     private static async IAsyncEnumerable<T> ParaAsync<T>(IEnumerable<T> itens, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -117,6 +149,53 @@ internal static class DadosDne
 
     public static CidadeFaixaCru CidadeFaixa(string codigoIbge, string faixaIni, string faixaFim) =>
         new(codigoIbge, faixaIni, faixaFim);
+
+    public static CidadeIdCru CidadeId(int idCidade, string codigoIbge) =>
+        new(idCidade, codigoIbge);
+
+    public static DistritoCru Distrito(
+        int idDistrito,
+        string nome,
+        int cidadeIdDne,
+        string uf = "PA",
+        string? nomeSemAcento = null,
+        string? latitude = null,
+        string? longitude = null) =>
+        new(idDistrito, nome, nomeSemAcento ?? nome, cidadeIdDne, uf, latitude, longitude);
+
+    public static BairroCru Bairro(
+        int idBairro,
+        string nome,
+        int cidadeIdDne,
+        string uf = "PA",
+        string? nomeSemAcento = null,
+        string? latitude = null,
+        string? longitude = null) =>
+        new(idBairro, nome, nomeSemAcento ?? nome, cidadeIdDne, uf, latitude, longitude);
+
+    public static FaixaLocalidadeCru Faixa(int idPaiDne, string faixaIni, string faixaFim) =>
+        new(idPaiDne, faixaIni, faixaFim);
+
+    public static CepGrandeUsuarioCru GrandeUsuario(string cep, string nome, string? nomeSemAcento = null) =>
+        new(cep, nome, nomeSemAcento ?? nome);
+
+    public static LogradouroComplementoCru Complemento(string cep, string complemento, string? complementoSemAcento = null) =>
+        new(cep, complemento, complementoSemAcento ?? complemento);
+
+    public static LogradouroCru Logradouro(
+        string cep,
+        string nome,
+        int cidadeIdDne,
+        string uf = "PA",
+        string? tipo = null,
+        string? nomeCompleto = null,
+        string? nomeSemAcento = null,
+        int? bairroIdDne = null,
+        int? distritoIdDne = null,
+        string? latitude = null,
+        string? longitude = null,
+        string cepAtivo = "S") =>
+        new(cep, tipo, nome, nomeCompleto, nomeSemAcento ?? nome, bairroIdDne, distritoIdDne, cidadeIdDne, uf, latitude, longitude, cepAtivo);
 }
 
 /// <summary>
@@ -150,6 +229,22 @@ internal sealed class FonteComFalhaNasCidades : IGeoFonteDados
     public IAsyncEnumerable<CidadeIndicadorCru> LerCidadeIndicadoresAsync(CancellationToken cancellationToken) => _interna.LerCidadeIndicadoresAsync(cancellationToken);
 
     public IAsyncEnumerable<CidadeFaixaCru> LerCidadeFaixasAsync(CancellationToken cancellationToken) => _interna.LerCidadeFaixasAsync(cancellationToken);
+
+    public IAsyncEnumerable<CidadeIdCru> LerCidadeIdsAsync(CancellationToken cancellationToken) => _interna.LerCidadeIdsAsync(cancellationToken);
+
+    public IAsyncEnumerable<DistritoCru> LerDistritosAsync(CancellationToken cancellationToken) => _interna.LerDistritosAsync(cancellationToken);
+
+    public IAsyncEnumerable<FaixaLocalidadeCru> LerDistritoFaixasAsync(CancellationToken cancellationToken) => _interna.LerDistritoFaixasAsync(cancellationToken);
+
+    public IAsyncEnumerable<BairroCru> LerBairrosAsync(CancellationToken cancellationToken) => _interna.LerBairrosAsync(cancellationToken);
+
+    public IAsyncEnumerable<FaixaLocalidadeCru> LerBairroFaixasAsync(CancellationToken cancellationToken) => _interna.LerBairroFaixasAsync(cancellationToken);
+
+    public IAsyncEnumerable<CepGrandeUsuarioCru> LerCepGrandesUsuariosAsync(CancellationToken cancellationToken) => _interna.LerCepGrandesUsuariosAsync(cancellationToken);
+
+    public IAsyncEnumerable<LogradouroComplementoCru> LerLogradouroComplementosAsync(CancellationToken cancellationToken) => _interna.LerLogradouroComplementosAsync(cancellationToken);
+
+    public IAsyncEnumerable<LogradouroCru> LerLogradourosAsync(CancellationToken cancellationToken) => _interna.LerLogradourosAsync(cancellationToken);
 
     private static async IAsyncEnumerable<CidadeCru> Falhar()
     {

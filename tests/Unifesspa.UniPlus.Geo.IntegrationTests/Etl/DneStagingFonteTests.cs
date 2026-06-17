@@ -72,6 +72,25 @@ public sealed class DneStagingFonteTests
         indicador.MortalidadeInfantil.Should().BeNull(); // '-' no staging degradou para null
     }
 
+    [Fact(DisplayName = "Folhas: lê id_cidade/cidade_id como int e distrito_id NULL do logradouro (≠ projeção text-only da #672)")]
+    public async Task LeFolhas_MapeiaIntENull()
+    {
+        await CriarStagingAsync();
+        await CriarStagingFolhasAsync();
+        DneStagingFonte fonte = new(_fixture.ConnectionString, Versao);
+
+        List<CidadeIdCru> ids = await ColetarAsync(fonte.LerCidadeIdsAsync);
+        ids.Should().ContainSingle(c => c.IdCidade == 1 && c.CodigoIbge == CodigoMaraba);
+
+        List<DistritoCru> distritos = await ColetarAsync(fonte.LerDistritosAsync);
+        distritos.Should().ContainSingle(d => d.IdDistrito == 10 && d.CidadeIdDne == 1 && d.Nome == "Cidade Nova");
+
+        List<LogradouroCru> logradouros = await ColetarAsync(fonte.LerLogradourosAsync);
+        logradouros.Should().HaveCount(2);
+        logradouros.Should().ContainSingle(l => l.Cep == "68500000" && l.DistritoIdDne == 10 && l.CidadeIdDne == 1 && l.CepAtivo == "S");
+        logradouros.Should().ContainSingle(l => l.Cep == "68500001" && l.DistritoIdDne == null); // distrito_id NULL preservado
+    }
+
     [Theory(DisplayName = "Versão fora do formato AAAAMM é rejeitada no construtor (anti-injeção)")]
     [InlineData("abc")]
     [InlineData("2026")]
@@ -116,6 +135,15 @@ public sealed class DneStagingFonteTests
         await ctx.Database.ExecuteSqlRawAsync(StagingSql);
     }
 
+    // Tabelas folha (Story #673) anexadas ao schema já criado por CriarStagingAsync —
+    // ids int4 e uma linha de logradouro com distrito_id NULL para exercitar a leitura
+    // de inteiro/nulo (≠ projeção text-only da #672).
+    private async Task CriarStagingFolhasAsync()
+    {
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        await ctx.Database.ExecuteSqlRawAsync(StagingFolhasSql);
+    }
+
     // Schema de staging reduzido: só as colunas que a DneStagingFonte projeta, com
     // dados mínimos consistentes (Brasil + Pará + Marabá; mortalidade '-' para o parse
     // tolerante). Recriado a cada teste (DROP CASCADE) para isolamento.
@@ -148,9 +176,9 @@ public sealed class DneStagingFonteTests
         INSERT INTO dne_staging."tbl_cep_202601_n_estado_faixa" VALUES ('PA','Pará','66000000','68899999');
 
         CREATE TABLE dne_staging."tbl_cep_202601_n_cidade" (
-            cidade_ibge text, cidade text, cidade_sem_acento text, estado text, ddd text, latitude text, longitude text);
+            id_cidade int, cidade_ibge text, cidade text, cidade_sem_acento text, estado text, ddd text, latitude text, longitude text);
         INSERT INTO dne_staging."tbl_cep_202601_n_cidade" VALUES
-            ('1500402','Marabá','Maraba','PA','94','-5.36867','-49.11731');
+            (1,'1500402','Marabá','Maraba','PA','94','-5.36867','-49.11731');
 
         CREATE TABLE dne_staging."tbl_cep_202601_n_cidade_ibge_territorio" (
             cidade_ibge text, mesorregiao text, mesorregiao_nome text, microrregiao text, microrregiao_nome text,
@@ -170,5 +198,20 @@ public sealed class DneStagingFonteTests
         CREATE TABLE dne_staging."tbl_cep_202601_n_cidade_faixa" (
             cidade_ibge text, faixa_ini text, faixa_fim text);
         INSERT INTO dne_staging."tbl_cep_202601_n_cidade_faixa" VALUES ('1500402','68500000','68519999');
+        """;
+
+    private const string StagingFolhasSql = """
+        CREATE TABLE dne_staging."tbl_cep_202601_n_distrito" (
+            id_distrito int, distrito text, distrito_sem_acento text, cidade_id int, estado text, latitude text, longitude text);
+        INSERT INTO dne_staging."tbl_cep_202601_n_distrito" VALUES
+            (10,'Cidade Nova','Cidade Nova',1,'PA','-5.36','-49.11');
+
+        CREATE TABLE dne_staging."tbl_cep_202601_n_logradouro" (
+            cep text, tipo text, nome_logradouro text, logradouro text, bairro_id int, distrito_id int, cidade_id int,
+            estado text, tipo_sem_acento text, nome_logradouro_sem_acento text, logradouro_sem_acento text,
+            latitude text, longitude text, cep_ativo text);
+        INSERT INTO dne_staging."tbl_cep_202601_n_logradouro" VALUES
+            ('68500000','Rua','A','Rua A',NULL,10,1,'PA','Rua','A','Rua A','-5.36','-49.11','S'),
+            ('68500001','Rua','B','Rua B',NULL,NULL,1,'PA','Rua','B','Rua B',NULL,NULL,'N');
         """;
 }
