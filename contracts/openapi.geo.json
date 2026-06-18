@@ -162,6 +162,75 @@
         }
       }
     },
+    "/api/cep/{cep}": {
+      "get": {
+        "tags": [
+          "Cep"
+        ],
+        "parameters": [
+          {
+            "name": "cep",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CepResolvidoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CepResolvidoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CepResolvidoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cidades": {
       "get": {
         "tags": [
@@ -798,6 +867,159 @@
           }
         }
       },
+      "CandidatoLogradouroDto": {
+        "required": [
+          "tipo",
+          "logradouro",
+          "bairro",
+          "distrito",
+          "latitude",
+          "longitude"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "logradouro": {
+            "type": "string"
+          },
+          "bairro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "distrito": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "CepResolvidoDto": {
+        "required": [
+          "cep",
+          "tipo",
+          "logradouro",
+          "complemento",
+          "bairro",
+          "distrito",
+          "cidade",
+          "codigoIbge",
+          "uf",
+          "latitude",
+          "longitude",
+          "nivelResolucao",
+          "origem"
+        ],
+        "type": "object",
+        "properties": {
+          "cep": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "logradouro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "complemento": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bairro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "distrito": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidade": {
+            "type": "string"
+          },
+          "codigoIbge": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "nivelResolucao": {
+            "type": "string"
+          },
+          "origem": {
+            "type": "string"
+          },
+          "alternativos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidatoLogradouroDto"
+            }
+          },
+          "_links": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "CidadeDetalheDto": {
         "required": [
           "id",
@@ -1396,6 +1618,9 @@
     },
     {
       "name": "_smoke"
+    },
+    {
+      "name": "Cep"
     },
     {
       "name": "Cidades"

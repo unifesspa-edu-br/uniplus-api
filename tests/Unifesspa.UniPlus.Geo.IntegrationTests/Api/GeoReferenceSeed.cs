@@ -27,11 +27,18 @@ internal static partial class GeoReferenceSeed
         return client.GetAsync(new Uri(rota, UriKind.RelativeOrAbsolute));
     }
 
-    /// <summary>Limpa toda a hierarquia Geo (TRUNCATE pais CASCADE derruba estado/cidade/indicador/faixas).</summary>
+    /// <summary>
+    /// Limpa toda a hierarquia Geo. <c>TRUNCATE pais CASCADE</c> derruba
+    /// estado/cidade/indicador/faixas/logradouro (ligados por FK); <c>cep_grande_usuario</c>
+    /// e <c>logradouro_complemento</c> não têm FK para a hierarquia (são atributos do
+    /// CEP), então entram explicitamente no TRUNCATE — senão acumulam entre testes
+    /// seriais e furam os índices UNIQUE de CEP.
+    /// </summary>
     public static async Task LimparAsync(GeoPostgisFixture fixture)
     {
         await using GeoDbContext ctx = fixture.CreateDbContext();
-        await ctx.Database.ExecuteSqlRawAsync("TRUNCATE TABLE pais CASCADE");
+        await ctx.Database.ExecuteSqlRawAsync(
+            "TRUNCATE TABLE pais, cep_grande_usuario, logradouro_complemento CASCADE");
     }
 
     public static Pais NovoBrasil() =>
@@ -71,6 +78,45 @@ internal static partial class GeoReferenceSeed
             null, mesorregiaoNome, null, microrregiaoNome,
             null, regiaoIntermediariaNome, null, regiaoImediataNome,
             Versao, vigente));
+
+    public static Distrito NovoDistrito(Guid cidadeId, string uf, string nome, bool vigente = true) =>
+        GeoTestKeys.Ok(Distrito.Importar(
+            cidadeId, uf, nome, Normalizar(nome), null, null, null, null, Versao, vigente));
+
+    public static Bairro NovoBairro(Guid cidadeId, string uf, string nome, bool vigente = true) =>
+        GeoTestKeys.Ok(Bairro.Importar(
+            cidadeId, uf, nome, Normalizar(nome), null, null, null, null, Versao, vigente));
+
+    public static Logradouro NovoLogradouro(
+        Guid cidadeId,
+        string uf,
+        string cep,
+        string nome,
+        string? tipo = null,
+        Guid? distritoId = null,
+        Guid? bairroId = null,
+        decimal? latitude = null,
+        decimal? longitude = null,
+        string? nomeNormalizado = null,
+        bool vigente = true) =>
+        GeoTestKeys.Ok(Logradouro.Importar(
+            cep, tipo, nome, null, nomeNormalizado ?? Normalizar(nome), cidadeId,
+            distritoId, bairroId, uf, latitude, longitude, null, true, Versao, vigente));
+
+    public static LogradouroComplemento NovoComplemento(string cep, string complemento, bool vigente = true) =>
+        GeoTestKeys.Ok(LogradouroComplemento.Importar(cep, complemento, Normalizar(complemento), Versao, vigente));
+
+    public static CepGrandeUsuario NovoGrandeUsuario(string cep, string nome, bool vigente = true) =>
+        GeoTestKeys.Ok(CepGrandeUsuario.Importar(cep, nome, Normalizar(nome), Versao, vigente));
+
+    public static CidadeFaixaCep NovaCidadeFaixa(Guid cidadeId, string cepInicial, string cepFinal, bool vigente = true) =>
+        GeoTestKeys.Ok(CidadeFaixaCep.Importar(cidadeId, cepInicial, cepFinal, Versao, vigente));
+
+    public static BairroFaixaCep NovaBairroFaixa(Guid bairroId, string cepInicial, string cepFinal, bool vigente = true) =>
+        GeoTestKeys.Ok(BairroFaixaCep.Importar(bairroId, cepInicial, cepFinal, Versao, vigente));
+
+    public static DistritoFaixaCep NovaDistritoFaixa(Guid distritoId, string cepInicial, string cepFinal, bool vigente = true) =>
+        GeoTestKeys.Ok(DistritoFaixaCep.Importar(distritoId, cepInicial, cepFinal, Versao, vigente));
 
     public static CidadeIndicador NovoIndicador(
         Guid cidadeId,
