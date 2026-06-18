@@ -212,6 +212,20 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
             RelatorioImportacao relTopo = await _importadorTopo.ImportarAsync(fonte, cancellationToken).ConfigureAwait(false);
             RelatorioImportacao relFolhas = await _importadorFolhas.ImportarAsync(fonte, modo, cancellationToken).ConfigureAwait(false);
 
+            // Guarda de release vazia/sem âncora: se a topo não persistiu nenhuma cidade
+            // (staging não restaurado, sem o país-âncora BRA, ou sem cidades), prosseguir numa
+            // recarga marcaria TODA a base existente como vigente=false e selaria uma versão
+            // vazia, reportando sucesso. Falha explícita antes de qualquer stale/conclusão — os
+            // importadores não commitaram nada, então a base permanece intacta.
+            ContadorTabela cidade = relTopo.Tabela("cidade");
+            if (cidade.Inseridos + cidade.Atualizados == 0)
+            {
+                await MarcarFalhaAsync(execucao, "Release vazia ou sem âncora (BRA/cidades) — carga recusada.", CancellationToken.None).ConfigureAwait(false);
+                _metricas.RegistrarFalha(versao, _relogio.GetElapsedTime(inicio).TotalMilliseconds);
+                LogReleaseVazia(_logger, execucaoId, versao);
+                return;
+            }
+
             // A partir daqui os importadores já commitaram os dados — a finalização (stale +
             // conclusão + selo) roda com CancellationToken.None para deixar um estado terminal
             // consistente: um cancelamento de shutdown não pode gravar Concluída sem selar o
@@ -430,6 +444,9 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: carga {ExecucaoId} interrompida por cancelamento/desligamento (versão {Versao}).")]
     private static partial void LogCancelada(ILogger logger, Guid execucaoId, string versao);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "ETL Geo: carga {ExecucaoId} recusada — release {Versao} vazia ou sem âncora (nenhuma cidade aplicada).")]
+    private static partial void LogReleaseVazia(ILogger logger, Guid execucaoId, string versao);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: falha ao selar a versão vigente {Versao} no cache (best-effort; carga já concluída).")]
     private static partial void LogFalhaSeloCache(ILogger logger, string versao, Exception excecao);
