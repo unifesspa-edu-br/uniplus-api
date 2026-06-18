@@ -89,6 +89,14 @@ public sealed class DneStagingFonteTests
         logradouros.Should().HaveCount(2);
         logradouros.Should().ContainSingle(l => l.Cep == "68500000" && l.DistritoIdDne == 10 && l.CidadeIdDne == 1 && l.CepAtivo == "S");
         logradouros.Should().ContainSingle(l => l.Cep == "68500001" && l.DistritoIdDne == null); // distrito_id NULL preservado
+
+        // As faixas referenciam o pai pela coluna id_distrito/id_bairro (PK da fonte na
+        // própria tabela de faixa), não distrito_id/bairro_id — lê o schema real.
+        List<FaixaLocalidadeCru> distritoFaixas = await ColetarAsync(fonte.LerDistritoFaixasAsync);
+        distritoFaixas.Should().ContainSingle(f => f.IdPaiDne == 10 && f.FaixaIni == "68500000" && f.FaixaFim == "68519999");
+
+        List<FaixaLocalidadeCru> bairroFaixas = await ColetarAsync(fonte.LerBairroFaixasAsync);
+        bairroFaixas.Should().ContainSingle(f => f.IdPaiDne == 100 && f.FaixaIni == "68500000" && f.FaixaFim == "68509999");
     }
 
     [Theory(DisplayName = "Versão fora do formato AAAAMM é rejeitada no construtor (anti-injeção)")]
@@ -205,6 +213,14 @@ public sealed class DneStagingFonteTests
             id_distrito int, distrito text, distrito_sem_acento text, cidade_id int, estado text, latitude text, longitude text);
         INSERT INTO dne_staging."tbl_cep_202601_n_distrito" VALUES
             (10,'Cidade Nova','Cidade Nova',1,'PA','-5.36','-49.11');
+
+        CREATE TABLE dne_staging."tbl_cep_202601_n_distrito_faixa" (
+            id_distrito int, faixa_ini text, faixa_fim text);
+        INSERT INTO dne_staging."tbl_cep_202601_n_distrito_faixa" VALUES (10,'68500000','68519999');
+
+        CREATE TABLE dne_staging."tbl_cep_202601_n_bairro_faixa" (
+            id_bairro int, faixa_ini text, faixa_fim text);
+        INSERT INTO dne_staging."tbl_cep_202601_n_bairro_faixa" VALUES (100,'68500000','68509999');
 
         CREATE TABLE dne_staging."tbl_cep_202601_n_logradouro" (
             cep text, tipo text, nome_logradouro text, logradouro text, bairro_id int, distrito_id int, cidade_id int,
