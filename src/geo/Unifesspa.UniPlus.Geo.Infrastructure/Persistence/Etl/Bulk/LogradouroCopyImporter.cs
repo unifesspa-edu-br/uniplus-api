@@ -186,20 +186,27 @@ internal sealed partial class LogradouroCopyImporter
     {
         ContadorTabela contador = relatorio.Tabela("logradouro");
 
-        // Modo Inicial: base limpa + índices pesados fora do caminho do COPY (acelera a
-        // carga). TRUNCATE torna a reexecução do Inicial idempotente (sem violar a UNIQUE
-        // por estado parcial de uma execução anterior).
+        // Modo Inicial: base limpa para COPY rápido. TRUNCATE torna a reexecução do
+        // Inicial idempotente (sem violar a UNIQUE por estado parcial anterior). Fica
+        // fora do try: se falhar, nenhum índice foi dropado ainda, nada a recuperar.
         if (modo == ModoCarga.Inicial)
         {
             await ExecutarAsync(conexao, "TRUNCATE TABLE logradouro;", cancellationToken).ConfigureAwait(false);
-            await DroparIndicesPesadosAsync(conexao, cancellationToken).ConfigureAwait(false);
         }
-
-        await ExecutarAsync(conexao, CriarStagingLogradouro, cancellationToken).ConfigureAwait(false);
 
         bool concluido = false;
         try
         {
+            // Drop dos índices pesados e criação do staging DENTRO do try: como rodam em
+            // autocommit, um drop já é permanente; qualquer falha a partir daqui (entre os
+            // dois drops, na criação do staging, no COPY/merge) cai no finally que recria.
+            if (modo == ModoCarga.Inicial)
+            {
+                await DroparIndicesPesadosAsync(conexao, cancellationToken).ConfigureAwait(false);
+            }
+
+            await ExecutarAsync(conexao, CriarStagingLogradouro, cancellationToken).ConfigureAwait(false);
+
             long staged = await CopiarEmLotesAsync(
                 conexao,
                 CopyLogradouro,
@@ -215,7 +222,7 @@ internal sealed partial class LogradouroCopyImporter
         }
         finally
         {
-            // No modo Inicial os índices pesados foram dropados antes do COPY. Recria-os
+            // No modo Inicial os índices pesados são dropados dentro do try. Recria-os
             // sempre — mesmo em falha/cancelamento do bulk — para a tabela nunca ficar sem
             // gin_trgm/GIST (degradaria o lookup/autocomplete até um rerun). No caminho de
             // falha a recriação é best-effort (com token não-cancelável e sem mascarar a
