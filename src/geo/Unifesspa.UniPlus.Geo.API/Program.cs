@@ -68,6 +68,11 @@ builder.Services.AddGeoInfrastructure();
 // HATEOAS Level 1 (ADR-0029) do registro de execução do ETL (#674).
 builder.Services.AddSingleton<IResourceLinksBuilder<ImportacaoGeoDto>, ImportacaoGeoLinksBuilder>();
 
+// HATEOAS Level 1 (ADR-0029) das leituras de reference data (#675): Estado e Cidade.
+builder.Services.AddSingleton<IResourceLinksBuilder<EstadoDto>, EstadoLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<CidadeResumoDto>, CidadeResumoLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<CidadeDetalheDto>, CidadeDetalheLinksBuilder>();
+
 // Migrations EF Core aplicadas no host StartAsync via IHostedService.
 // Registrado ANTES de UseWolverineOutboxCascading + AddWolverineMessaging
 // (invariante #419) — fitness MigrationBeforeWolverineRuntimeOrderTests cobre

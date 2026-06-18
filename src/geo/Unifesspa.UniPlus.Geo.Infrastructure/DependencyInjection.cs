@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Bulk;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Fonte;
+using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Readers;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
@@ -40,6 +41,11 @@ public static class GeoInfrastructureRegistration
 
         services.AddScoped<IUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<GeoDbContext>());
+
+        // Readers read-side da API pública de reference data (Story #675): listagem
+        // por cursor + detalhe por chave natural. Só expõem o que vigente (ADR-0092).
+        services.AddScoped<IEstadoReader, EstadoReader>();
+        services.AddScoped<ICidadeReader, CidadeReader>();
 
         // ETL DNE (ADR-0092) — serviços de carga de reference data. O gatilho (seed
         // dev / endpoint admin) e a fonte concreta de produção entram na Story #674.
