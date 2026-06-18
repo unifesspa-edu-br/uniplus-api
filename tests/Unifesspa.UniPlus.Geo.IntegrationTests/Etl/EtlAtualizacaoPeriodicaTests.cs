@@ -147,6 +147,27 @@ public sealed class EtlAtualizacaoPeriodicaTests
         await cache.DidNotReceive().InvalidarAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Robustez: cache indisponível ao selar (ex.: Redis fora resolvido pelo Lazy) não reverte a carga já concluída")]
+    public async Task SeloComCacheIndisponivel_NaoFalhaCarga()
+    {
+        await LimparAsync();
+        FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal)
+        {
+            ["202601"] = FonteCompleta("202601"),
+        });
+        // Lazy que lança ao resolver — simula o IConnectionMultiplexer.Connect falhando no .Value.
+        Lazy<IGeoCepCacheInvalidador> cacheQuebrado = new(() => throw new InvalidOperationException("Redis fora do ar"));
+
+        Guid id = await CriarExecucaoAsync("202601");
+        Func<Task> acao = () => ExecutarComLazyAsync(id, fonteFactory, cacheQuebrado);
+
+        await acao.Should().NotThrowAsync();
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        GeoImportacaoExecucao execucao = await leitura.ImportacaoExecucoes.SingleAsync(e => e.Id == id);
+        execucao.Status.Should().Be(StatusImportacao.Concluida, "falha de cache ao selar é best-effort, não pode reverter a carga");
+    }
+
     private async Task<Guid> CriarExecucaoAsync(string versao)
     {
         await using GeoDbContext ctx = _fixture.CreateDbContext();
@@ -158,18 +179,21 @@ public sealed class EtlAtualizacaoPeriodicaTests
         return execucao.Id;
     }
 
-    private async Task ExecutarAsync(Guid execucaoId, IGeoFonteDadosFactory fonteFactory, IGeoCepCacheInvalidador cache)
+    private Task ExecutarAsync(Guid execucaoId, IGeoFonteDadosFactory fonteFactory, IGeoCepCacheInvalidador cache) =>
+        ExecutarComLazyAsync(execucaoId, fonteFactory, new Lazy<IGeoCepCacheInvalidador>(() => cache));
+
+    private async Task ExecutarComLazyAsync(Guid execucaoId, IGeoFonteDadosFactory fonteFactory, Lazy<IGeoCepCacheInvalidador> cacheLazy)
     {
         await using GeoDbContext ctx = _fixture.CreateDbContext();
         using GeoEtlMetrics metricas = new();
-        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cache, metricas);
+        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas);
         await orquestrador.ExecutarAsync(execucaoId, CancellationToken.None);
     }
 
     private GeoEtlOrquestrador CriarOrquestrador(
         GeoDbContext ctx,
         IGeoFonteDadosFactory fonteFactory,
-        IGeoCepCacheInvalidador cache,
+        Lazy<IGeoCepCacheInvalidador> cacheLazy,
         GeoEtlMetrics metricas)
     {
         IConfiguration configuracao = new ConfigurationBuilder()
@@ -186,7 +210,7 @@ public sealed class EtlAtualizacaoPeriodicaTests
             topo,
             folhas,
             fonteFactory,
-            new Lazy<IGeoCepCacheInvalidador>(() => cache),
+            cacheLazy,
             new GeoImportacaoFila(),
             metricas,
             TimeProvider.System,

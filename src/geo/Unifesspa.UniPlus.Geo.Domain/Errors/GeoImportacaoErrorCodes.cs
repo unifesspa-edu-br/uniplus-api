@@ -22,6 +22,9 @@ public static class GeoImportacaoErrorCodes
     /// <summary>A carga foi registrada mas não pôde ser enfileirada (serviço em desligamento → 503).</summary>
     public const string NaoEnfileirada = "GeoImportacao.NaoEnfileirada";
 
+    /// <summary>Versão anterior à última já aplicada — aplicar rebaixaria os dados (→ 422).</summary>
+    public const string VersaoNaoProgressiva = "GeoImportacao.VersaoNaoProgressiva";
+
     /// <summary>Transição de estado inválida (ex.: concluir uma execução que não está em andamento).</summary>
     public const string TransicaoInvalida = "GeoImportacao.TransicaoInvalida";
 }

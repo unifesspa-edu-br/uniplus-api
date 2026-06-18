@@ -85,6 +85,25 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         }
 
         GeoImportacaoExecucao execucao = criacao.Value!;
+
+        // Guarda de versão progressiva: recusa aplicar uma release anterior à última
+        // concluída — aplicá-la rebaixaria o versao_dataset das linhas presentes e misturaria
+        // datasets (a política de stale pressupõe versões não-decrescentes). Reaplicar a mesma
+        // versão é permitido (idempotente). Comparação ordinal == numérica para AAAAMM fixo.
+        string? ultimaConcluida = await _contexto.Set<GeoImportacaoExecucao>()
+            .Where(e => e.Status == StatusImportacao.Concluida)
+            .Select(e => e.VersaoDataset)
+            .OrderByDescending(v => v)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (ultimaConcluida is not null && string.CompareOrdinal(execucao.VersaoDataset, ultimaConcluida) < 0)
+        {
+            LogVersaoNaoProgressiva(_logger, execucao.VersaoDataset, ultimaConcluida);
+            return Result<Guid>.Failure(new DomainError(
+                GeoImportacaoErrorCodes.VersaoNaoProgressiva,
+                $"A versão {execucao.VersaoDataset} é anterior à última aplicada ({ultimaConcluida})."));
+        }
+
         _contexto.Set<GeoImportacaoExecucao>().Add(execucao);
 
         try
@@ -179,12 +198,9 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
 
             await _contexto.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            // Só após a conclusão estar persistida: sela a versão vigente do cache de CEP
-            // (best-effort). Usa CancellationToken.None de propósito: a execução já está
-            // Concluída no banco, então o selo não pode ser abortado por um cancelamento de
-            // shutdown — senão o cache ficaria na versão antiga sem que a reconciliação o
-            // retentasse. O .Value resolve a cadeia Redis aqui (worker), não no disparo.
-            await _cacheInvalidador.Value.InvalidarAsync(versao, CancellationToken.None).ConfigureAwait(false);
+            // Só após a conclusão estar persistida: sela a versão vigente do cache de CEP,
+            // de forma totalmente best-effort (ver SelarCacheVigenteAsync).
+            await SelarCacheVigenteAsync(versao).ConfigureAwait(false);
 
             _metricas.RegistrarConclusao(versao, duracaoMs, relatorio.Inseridos + relatorio.Atualizados, relatorio.Degradados);
             LogConcluida(_logger, execucaoId, versao, relatorio.Inseridos, relatorio.Atualizados, relatorio.Degradados);
@@ -226,6 +242,27 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
             LogFalhaPersistir(_logger, execucao.Id, excecao);
+        }
+    }
+
+    // Selo do cache totalmente best-effort: o .Value resolve a cadeia Redis (o Connect do
+    // IConnectionMultiplexer pode lançar se o Redis estiver fora) FORA do catch interno do
+    // invalidador, então o try aqui também o cobre. A execução já está Concluída no banco —
+    // uma falha de cache/Redis não pode reverter o sucesso nem marcar falsa falha. Usa None:
+    // a conclusão já está commitada e o selo não deve ser abortado por cancelamento.
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Selo de cache best-effort após carga concluída: Redis/cache fora (inclusive no Connect resolvido pelo Lazy) não pode escalar para o caminho de falha.")]
+    private async Task SelarCacheVigenteAsync(string versao)
+    {
+        try
+        {
+            await _cacheInvalidador.Value.InvalidarAsync(versao, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception excecao)
+        {
+            LogFalhaSeloCache(_logger, versao, excecao);
         }
     }
 
@@ -326,6 +363,12 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: carga {ExecucaoId} interrompida por cancelamento/desligamento (versão {Versao}).")]
     private static partial void LogCancelada(ILogger logger, Guid execucaoId, string versao);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: falha ao selar a versão vigente {Versao} no cache (best-effort; carga já concluída).")]
+    private static partial void LogFalhaSeloCache(ILogger logger, string versao, Exception excecao);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: disparo recusado — versão {Versao} anterior à última aplicada {UltimaVersao}.")]
+    private static partial void LogVersaoNaoProgressiva(ILogger logger, string versao, string ultimaVersao);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: transição inesperada na execução {ExecucaoId} ({Codigo}).")]
     private static partial void LogTransicaoInesperada(ILogger logger, Guid execucaoId, string codigo);
