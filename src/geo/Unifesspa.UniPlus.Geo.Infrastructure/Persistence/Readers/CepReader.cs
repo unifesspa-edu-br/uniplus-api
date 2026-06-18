@@ -88,9 +88,9 @@ internal sealed class CepReader : ICepReader
             .ConfigureAwait(false);
         string? complemento = complementos.Count == 1 ? complementos[0] : null;
 
-        IReadOnlyList<CandidatoLogradouroDto> alternativos = [.. linhas
+        IReadOnlyList<LogradouroAlternativoDto> alternativos = [.. linhas
             .Skip(1)
-            .Select(l => new CandidatoLogradouroDto(l.Tipo, l.Nome, l.BairroNome, l.DistritoNome, l.Latitude, l.Longitude))];
+            .Select(l => new LogradouroAlternativoDto(l.Tipo, l.Nome, l.BairroNome, l.DistritoNome, l.Latitude, l.Longitude))];
 
         return new CepResolvidoDto(
             Cep: cep,
