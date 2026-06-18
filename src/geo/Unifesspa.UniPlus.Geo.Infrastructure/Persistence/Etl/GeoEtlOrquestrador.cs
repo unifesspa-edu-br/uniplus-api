@@ -228,6 +228,20 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
 
             RelatorioImportacao relFolhas = await _importadorFolhas.ImportarAsync(fonte, modo, cancellationToken).ConfigureAwait(false);
 
+            // Guarda de folhas vazias — antes do stale: se nenhum logradouro foi aplicado, o
+            // dump das tabelas-folha (CEP/logradouro) está incompleto. Numa recarga, o stale
+            // marcaria TODOS os logradouros existentes vigente=false, quebrando o lookup de CEP
+            // (o coração do módulo) até um rerun. DNE sempre traz logradouros; zero = dump
+            // corrompido — falha antes de qualquer stale/conclusão.
+            ContadorTabela logradouro = relFolhas.Tabela("logradouro");
+            if (logradouro.Inseridos + logradouro.Atualizados == 0)
+            {
+                await MarcarFalhaAsync(execucao, "Tabelas-folha (logradouro) vazias — carga recusada.", CancellationToken.None).ConfigureAwait(false);
+                _metricas.RegistrarFalha(versao, _relogio.GetElapsedTime(inicio).TotalMilliseconds);
+                LogFolhasVazias(_logger, execucaoId, versao);
+                return;
+            }
+
             // A partir daqui os importadores já commitaram os dados — a finalização (stale +
             // conclusão + selo) roda com CancellationToken.None para deixar um estado terminal
             // consistente: um cancelamento de shutdown não pode gravar Concluída sem selar o
@@ -449,6 +463,9 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
 
     [LoggerMessage(Level = LogLevel.Error, Message = "ETL Geo: carga {ExecucaoId} recusada — release {Versao} vazia ou sem âncora (nenhuma cidade aplicada).")]
     private static partial void LogReleaseVazia(ILogger logger, Guid execucaoId, string versao);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "ETL Geo: carga {ExecucaoId} recusada — release {Versao} com tabelas-folha vazias (nenhum logradouro aplicado).")]
+    private static partial void LogFolhasVazias(ILogger logger, Guid execucaoId, string versao);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: falha ao selar a versão vigente {Versao} no cache (best-effort; carga já concluída).")]
     private static partial void LogFalhaSeloCache(ILogger logger, string versao, Exception excecao);
