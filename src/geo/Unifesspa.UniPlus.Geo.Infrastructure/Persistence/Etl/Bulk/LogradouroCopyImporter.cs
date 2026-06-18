@@ -224,14 +224,17 @@ internal sealed partial class LogradouroCopyImporter
         {
             // No modo Inicial os índices pesados são dropados dentro do try. Recria-os
             // sempre — mesmo em falha/cancelamento do bulk — para a tabela nunca ficar sem
-            // gin_trgm/GIST (degradaria o lookup/autocomplete até um rerun). No caminho de
-            // falha a recriação é best-effort (com token não-cancelável e sem mascarar a
-            // exceção original); rerun do Inicial continua sendo a recuperação canônica.
+            // gin_trgm/GIST (degradaria o lookup/autocomplete até um rerun). Em ambos os
+            // caminhos a recriação roda com CancellationToken.None: cada índice é dropado
+            // logo antes de ser recriado, então interromper no meio deixaria a tabela sem
+            // um índice pesado — concluir é o estado correto. No sucesso os erros propagam;
+            // na falha são best-effort (sem mascarar a exceção original do bulk). Rerun do
+            // Inicial continua sendo a recuperação canônica.
             if (modo == ModoCarga.Inicial)
             {
                 if (concluido)
                 {
-                    await RecriarIndicesPesadosAsync(conexao, cancellationToken).ConfigureAwait(false);
+                    await RecriarIndicesPesadosAsync(conexao, CancellationToken.None).ConfigureAwait(false);
                 }
                 else
                 {
