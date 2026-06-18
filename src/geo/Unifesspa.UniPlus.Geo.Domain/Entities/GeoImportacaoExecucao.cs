@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Geo.Domain.Entities;
 
+using System.Linq;
+
 using Unifesspa.UniPlus.Geo.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -138,17 +140,9 @@ public sealed class GeoImportacaoExecucao : EntityBase
     // versões é lexicográfica (válida porque o comprimento é fixo).
     private static bool EhVersaoValida(string versao)
     {
-        if (versao.Length != 6)
+        if (versao.Length != 6 || !versao.All(char.IsAsciiDigit))
         {
             return false;
-        }
-
-        foreach (char c in versao)
-        {
-            if (!char.IsAsciiDigit(c))
-            {
-                return false;
-            }
         }
 
         int mes = ((versao[4] - '0') * 10) + (versao[5] - '0');

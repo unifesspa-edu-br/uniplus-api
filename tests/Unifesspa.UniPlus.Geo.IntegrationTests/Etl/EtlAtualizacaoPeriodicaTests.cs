@@ -129,6 +129,24 @@ public sealed class EtlAtualizacaoPeriodicaTests
         await cache.DidNotReceive().InvalidarAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Robustez: cancelamento/desligamento durante a carga marca a execução Falhou (libera o índice) e não sela o cache")]
+    public async Task Cancelamento_MarcaFalhou_E_NaoSelaCache()
+    {
+        await LimparAsync();
+        IGeoCepCacheInvalidador cache = Substitute.For<IGeoCepCacheInvalidador>();
+        FonteFactoryCancelada fonteFactory = new();
+
+        Guid id = await CriarExecucaoAsync("202601");
+        Func<Task> acao = () => ExecutarAsync(id, fonteFactory, cache);
+
+        await acao.Should().ThrowAsync<OperationCanceledException>();
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        GeoImportacaoExecucao execucao = await leitura.ImportacaoExecucoes.SingleAsync(e => e.Id == id);
+        execucao.Status.Should().Be(StatusImportacao.Falhou, "a instância dona marca terminal já, não deixa EmAndamento bloqueando");
+        await cache.DidNotReceive().InvalidarAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
     private async Task<Guid> CriarExecucaoAsync(string versao)
     {
         await using GeoDbContext ctx = _fixture.CreateDbContext();
@@ -168,7 +186,7 @@ public sealed class EtlAtualizacaoPeriodicaTests
             topo,
             folhas,
             fonteFactory,
-            cache,
+            new Lazy<IGeoCepCacheInvalidador>(() => cache),
             new GeoImportacaoFila(),
             metricas,
             TimeProvider.System,
@@ -231,5 +249,12 @@ public sealed class EtlAtualizacaoPeriodicaTests
         }
 
         public IGeoFonteDados Criar(string versao) => _porVersao[versao];
+    }
+
+    // Simula cancelamento (shutdown) no meio da carga: o orquestrador deve marcar a execução
+    // terminal e repropagar o OperationCanceledException.
+    private sealed class FonteFactoryCancelada : IGeoFonteDadosFactory
+    {
+        public IGeoFonteDados Criar(string versao) => throw new OperationCanceledException();
     }
 }

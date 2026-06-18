@@ -32,7 +32,12 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
     private readonly IGeoImportador _importadorTopo;
     private readonly IGeoImportadorLocalidades _importadorFolhas;
     private readonly IGeoFonteDadosFactory _fonteFactory;
-    private readonly IGeoCepCacheInvalidador _cacheInvalidador;
+
+    // Lazy de propósito: o invalidador resolve a cadeia Redis (IConnectionMultiplexer
+    // conecta na construção). Só o ExecutarAsync (worker) usa o cache; manter Lazy evita
+    // que o disparo/consulta (IniciarAsync/ObterAsync, caminho do endpoint) dependam do
+    // Redis estar de pé — a borda continua respondendo 202/409/404 mesmo com cache fora.
+    private readonly Lazy<IGeoCepCacheInvalidador> _cacheInvalidador;
     private readonly IGeoImportacaoFila _fila;
     private readonly GeoEtlMetrics _metricas;
     private readonly TimeProvider _relogio;
@@ -43,7 +48,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         IGeoImportador importadorTopo,
         IGeoImportadorLocalidades importadorFolhas,
         IGeoFonteDadosFactory fonteFactory,
-        IGeoCepCacheInvalidador cacheInvalidador,
+        Lazy<IGeoCepCacheInvalidador> cacheInvalidador,
         IGeoImportacaoFila fila,
         GeoEtlMetrics metricas,
         TimeProvider relogio,
@@ -175,12 +180,26 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
             await _contexto.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
             // Só após a conclusão estar persistida: sela a versão vigente do cache de CEP
-            // (best-effort). Se o SaveChanges acima falhasse, o cache não apontaria para uma
-            // versão cuja execução não foi confirmada como Concluída.
-            await _cacheInvalidador.InvalidarAsync(versao, cancellationToken).ConfigureAwait(false);
+            // (best-effort). Usa CancellationToken.None de propósito: a execução já está
+            // Concluída no banco, então o selo não pode ser abortado por um cancelamento de
+            // shutdown — senão o cache ficaria na versão antiga sem que a reconciliação o
+            // retentasse. O .Value resolve a cadeia Redis aqui (worker), não no disparo.
+            await _cacheInvalidador.Value.InvalidarAsync(versao, CancellationToken.None).ConfigureAwait(false);
 
             _metricas.RegistrarConclusao(versao, duracaoMs, relatorio.Inseridos + relatorio.Atualizados, relatorio.Degradados);
             LogConcluida(_logger, execucaoId, versao, relatorio.Inseridos, relatorio.Atualizados, relatorio.Degradados);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelamento/desligamento durante a carga: esta instância é dona desta execução
+            // e sabe que foi interrompida — marca-a terminal já (libera o índice único parcial),
+            // em vez de deixá-la EmAndamento bloqueando disparos até a reconciliação por idade.
+            // Persiste com None (o token de operação já está cancelado) e repropaga para o worker
+            // tratar o shutdown.
+            await MarcarFalhaAsync(execucao, "Carga interrompida (cancelamento/desligamento).", relatorioJson: null, CancellationToken.None).ConfigureAwait(false);
+            _metricas.RegistrarFalha(versao, _relogio.GetElapsedTime(inicio).TotalMilliseconds);
+            LogCancelada(_logger, execucaoId, versao);
+            throw;
         }
         catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
@@ -304,6 +323,9 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
 
     [LoggerMessage(Level = LogLevel.Error, Message = "ETL Geo: carga {ExecucaoId} falhou (versão {Versao}).")]
     private static partial void LogFalhou(ILogger logger, Guid execucaoId, string versao, Exception excecao);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: carga {ExecucaoId} interrompida por cancelamento/desligamento (versão {Versao}).")]
+    private static partial void LogCancelada(ILogger logger, Guid execucaoId, string versao);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "ETL Geo: transição inesperada na execução {ExecucaoId} ({Codigo}).")]
     private static partial void LogTransicaoInesperada(ILogger logger, Guid execucaoId, string codigo);

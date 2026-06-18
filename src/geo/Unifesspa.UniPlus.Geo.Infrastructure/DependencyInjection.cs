@@ -61,6 +61,9 @@ public static class GeoInfrastructureRegistration
         services.AddSingleton<IGeoImportacaoFila, GeoImportacaoFila>();
         services.AddSingleton<IGeoFonteDadosFactory, DneStagingFonteFactory>();
         services.AddScoped<IGeoCepCacheInvalidador, RedisGeoCepCacheInvalidador>();
+        // Lazy para o orquestrador: difere a resolução da cadeia Redis (IConnectionMultiplexer
+        // conecta na construção) até o momento de selar — só no worker, nunca no disparo.
+        services.AddScoped(sp => new Lazy<IGeoCepCacheInvalidador>(sp.GetRequiredService<IGeoCepCacheInvalidador>));
         services.AddSingleton<GeoEtlMetrics>();
 
         return services;
