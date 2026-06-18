@@ -15,10 +15,10 @@ name: Publish Images
 # Sem `latest`, sem `main` — ArgoCD pina semver, devs usam compose local
 # com build-by-context.
 #
-# Imagens publicadas:
-#   - ghcr.io/<owner>/uniplus-api-selecao
-#   - ghcr.io/<owner>/uniplus-api-ingresso
-#   - ghcr.io/<owner>/uniplus-api-portal
+# Imagens publicadas: uma por docker/Dockerfile.<módulo>, com a matriz
+# derivada pelo job `discover` (mesma fonte de verdade do trivy.yml):
+#   - ghcr.io/<owner>/uniplus-api-<módulo>
+# Hoje: selecao, ingresso, portal, organizacao, configuracao.
 #
 # Multi-arch: cada tag acima é publicada como manifest list cobrindo
 #   - linux/amd64  (cluster legacy GRU/E5)
@@ -48,18 +48,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  discover:
+    name: Descobrir módulos (Dockerfiles)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      modules: ${{ steps.list.outputs.modules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Listar módulos a partir de docker/Dockerfile.*
+        id: list
+        # Fonte única de verdade: cada docker/Dockerfile.<módulo> vira um item
+        # da matriz `publish`, idêntico ao discover do trivy.yml. Nascer um
+        # Dockerfile novo já o publica, sem editar este workflow nem manter
+        # sincronia manual com o scan Trivy (CA-04 da issue #630).
+        run: |
+          set -euo pipefail
+          modules=$(ls docker/Dockerfile.* | sed 's#.*Dockerfile\.##' | sort | jq -R . | jq -cs .)
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+          echo "Módulos descobertos: $modules"
+
   publish:
     name: Publish ${{ matrix.module }}
+    needs: discover
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     strategy:
       fail-fast: false
       matrix:
-        module:
-          - selecao
-          - ingresso
-          - portal
+        # Matriz derivada de docker/Dockerfile.* pelo job `discover` — mesma
+        # fonte de verdade do trivy.yml. Sem lista hard-coded para sincronizar.
+        module: ${{ fromJSON(needs.discover.outputs.modules) }}
 
     steps:
       - name: Checkout
