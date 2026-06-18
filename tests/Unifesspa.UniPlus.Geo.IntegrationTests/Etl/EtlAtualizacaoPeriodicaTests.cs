@@ -173,6 +173,33 @@ public sealed class EtlAtualizacaoPeriodicaTests
         execucao.Status.Should().Be(StatusImportacao.Concluida, "falha de cache ao selar é best-effort, não pode reverter a carga");
     }
 
+    [Fact(DisplayName = "Integridade: recarga com release vazia/sem âncora falha e NÃO marca a base existente como obsoleta")]
+    public async Task RecargaVazia_Falha_SemMarcarStale()
+    {
+        await LimparAsync();
+        IGeoCepCacheInvalidador cache = Substitute.For<IGeoCepCacheInvalidador>();
+        FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal)
+        {
+            ["202601"] = FonteCompleta("202601"),
+            ["202602"] = new FonteEmMemoria { Versao = "202602" }, // staging vazio (não restaurado)
+        });
+
+        Guid id1 = await CriarExecucaoAsync("202601");
+        await ExecutarAsync(id1, fonteFactory, cache);
+
+        Guid id2 = await CriarExecucaoAsync("202602");
+        await ExecutarAsync(id2, fonteFactory, cache);
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        GeoImportacaoExecucao exec2 = await leitura.ImportacaoExecucoes.SingleAsync(e => e.Id == id2);
+        exec2.Status.Should().Be(StatusImportacao.Falhou, "uma release vazia não pode concluir");
+
+        Cidade maraba = await leitura.Cidades.SingleAsync(c => c.CodigoIbge == Maraba);
+        maraba.Vigente.Should().BeTrue("a release vazia não pode marcar a base existente como obsoleta");
+        maraba.VersaoDataset.Should().Be("202601");
+        await cache.DidNotReceive().InvalidarAsync("202602", Arg.Any<CancellationToken>());
+    }
+
     private async Task<Guid> CriarExecucaoAsync(string versao)
     {
         await using GeoDbContext ctx = _fixture.CreateDbContext();
