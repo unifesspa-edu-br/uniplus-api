@@ -93,15 +93,10 @@ internal static partial class GeoReferenceSeed
         }
 
         string header = string.Join(", ", values);
-        foreach (Match match in LinkHeaderRegex().Matches(header))
-        {
-            if (string.Equals(match.Groups["rel"].Value, rel, StringComparison.Ordinal))
-            {
-                return match.Groups["url"].Value;
-            }
-        }
-
-        return null;
+        return LinkHeaderRegex().Matches(header)
+            .Where(match => string.Equals(match.Groups["rel"].Value, rel, StringComparison.Ordinal))
+            .Select(match => match.Groups["url"].Value)
+            .FirstOrDefault();
     }
 
     // Remove os diacríticos (como a fonte faz em *_sem_acento). O ToLower fica por
