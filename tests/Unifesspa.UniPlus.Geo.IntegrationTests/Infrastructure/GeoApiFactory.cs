@@ -37,5 +37,9 @@ public sealed class GeoApiFactory : ApiFactoryBase<Program>
         // Worker do ETL desligado: o disparo (POST) cria o registro EmAndamento e
         // retorna 202 sem que a carga real rode — torna 202/409 determinísticos (#674).
         new("Geo:Etl:WorkerHabilitado", "false"),
+        // Redis vazio: o lookup de CEP (#676) degrada para o banco de forma rápida e
+        // determinística (sem o connect lento ao localhost:6379 do appsettings.Development).
+        // O comportamento de cache-aside é coberto pelos testes de unidade do CepResolver.
+        new("Redis:ConnectionString", string.Empty),
     ];
 }

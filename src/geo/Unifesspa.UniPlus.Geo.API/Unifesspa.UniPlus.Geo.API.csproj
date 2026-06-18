@@ -12,4 +12,9 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Geo.Infrastructure\Unifesspa.UniPlus.Geo.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Permite testar helpers de boundary internos (ex.: CepValido) sem expô-los publicamente. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Geo.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

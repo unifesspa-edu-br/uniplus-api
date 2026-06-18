@@ -8,12 +8,14 @@ using Microsoft.Extensions.Hosting;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Geo.Application.Abstractions;
 using Unifesspa.UniPlus.Geo.Infrastructure.Caching;
+using Unifesspa.UniPlus.Geo.Infrastructure.Cep;
 using Unifesspa.UniPlus.Geo.Infrastructure.Observability;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Bulk;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Fonte;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Readers;
+using Unifesspa.UniPlus.Infrastructure.Core.Caching;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
@@ -46,6 +48,15 @@ public static class GeoInfrastructureRegistration
         // por cursor + detalhe por chave natural. Só expõem o que vigente (ADR-0092).
         services.AddScoped<IEstadoReader, EstadoReader>();
         services.AddScoped<ICidadeReader, CidadeReader>();
+
+        // Lookup de CEP (Story #676): reader da cascata (logradouro → grande usuário →
+        // faixa) + resolver com cache-aside por selo de versão (ADR-0090/0092). O
+        // Lazy<ICacheService> difere o Connect do Redis para o resolver degradar ao
+        // banco quando o cache está fora (espelha o Lazy do ETL, #674).
+        services.AddScoped<ICepReader, CepReader>();
+        services.AddScoped<ICepResolver, CepResolver>();
+        services.AddOptions<GeoCepCacheOptions>();
+        services.AddScoped(sp => new Lazy<ICacheService>(sp.GetRequiredService<ICacheService>));
 
         // ETL DNE (ADR-0092) — serviços de carga de reference data. O gatilho (seed
         // dev / endpoint admin) e a fonte concreta de produção entram na Story #674.

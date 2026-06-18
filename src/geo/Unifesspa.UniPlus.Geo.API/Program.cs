@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Geo.API.Hateoas;
 using Unifesspa.UniPlus.Geo.Application;
 using Unifesspa.UniPlus.Geo.Application.DTOs;
 using Unifesspa.UniPlus.Geo.Infrastructure;
+using Unifesspa.UniPlus.Geo.Infrastructure.Cep;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 
@@ -72,6 +73,13 @@ builder.Services.AddSingleton<IResourceLinksBuilder<ImportacaoGeoDto>, Importaca
 builder.Services.AddSingleton<IResourceLinksBuilder<EstadoDto>, EstadoLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<CidadeResumoDto>, CidadeResumoLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<CidadeDetalheDto>, CidadeDetalheLinksBuilder>();
+
+// HATEOAS Level 1 (ADR-0029) do lookup de CEP (#676): _links para cidade e estado.
+builder.Services.AddSingleton<IResourceLinksBuilder<CepResolvidoDto>, CepResolvidoLinksBuilder>();
+
+// TTL configurável do cache-aside de CEP (#676) — default 24h (GeoCepCacheOptions).
+builder.Services.Configure<GeoCepCacheOptions>(
+    builder.Configuration.GetSection(GeoCepCacheOptions.SectionName));
 
 // Migrations EF Core aplicadas no host StartAsync via IHostedService.
 // Registrado ANTES de UseWolverineOutboxCascading + AddWolverineMessaging
