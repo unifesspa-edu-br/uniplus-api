@@ -28,13 +28,20 @@ public sealed class Logradouro : EntityBase
     /// <summary>Tipo do logradouro (ex.: "Rua", "Praça"), quando informado.</summary>
     public string? Tipo { get; private set; }
 
-    /// <summary>Nome do logradouro (origem <c>nome_logradouro</c>).</summary>
+    /// <summary>Nome do logradouro, sem o tipo (origem <c>nome_logradouro</c>, ex.: "A").</summary>
     public string Nome { get; private set; } = string.Empty;
 
-    /// <summary>Texto completo do logradouro (origem <c>logradouro</c>), quando informado.</summary>
+    /// <summary>Texto completo do logradouro com o tipo (origem <c>logradouro</c>, ex.: "Rua A"), quando informado.</summary>
     public string? NomeCompleto { get; private set; }
 
-    /// <summary>Nome sem acentos (origem <c>*_sem_acento</c>) — compõe a chave de upsert; não nulo.</summary>
+    /// <summary>
+    /// <strong>Texto completo</strong> sem acentos, em caixa-baixa (origem
+    /// <c>logradouro_sem_acento</c>, ex.: "rua a") — é a coluna de busca (autocomplete por
+    /// tipo + nome, índice trigram) e compõe a chave de upsert; não nulo. Diverge de
+    /// Distrito/Bairro (que guardam o nome sem o tipo) porque o logradouro tem o tipo numa
+    /// coluna à parte: incluí-lo aqui torna a busca útil e endurece a chave contra a
+    /// colisão de CEP-geral (#707).
+    /// </summary>
     public string NomeNormalizado { get; private set; } = string.Empty;
 
     /// <summary>FK intra-banco para a <see cref="Cidade"/> (obrigatória, ADR-0054).</summary>

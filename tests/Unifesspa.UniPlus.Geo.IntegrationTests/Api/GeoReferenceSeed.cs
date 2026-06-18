@@ -112,10 +112,11 @@ internal static partial class GeoReferenceSeed
         decimal? longitude = null,
         string? nomeNormalizado = null,
         bool vigente = true) =>
-        // Espelha o ETL real (#673): NomeNormalizado vem de nome_logradouro_sem_acento
-        // — o NOME, sem o tipo. NomeCompleto (origem logradouro) carrega o texto cheio.
+        // Espelha o ETL real (#673 + #707): Nome é o nome sem o tipo; NomeCompleto (origem
+        // logradouro) carrega o texto cheio; NomeNormalizado vem de logradouro_sem_acento —
+        // o TEXTO COMPLETO sem acento (tipo + nome), coluna de busca e chave de upsert.
         GeoTestKeys.Ok(Logradouro.Importar(
-            cep, tipo, nome, nomeCompleto, nomeNormalizado ?? Normalizar(nome), cidadeId,
+            cep, tipo, nome, nomeCompleto, nomeNormalizado ?? Normalizar(nomeCompleto ?? nome), cidadeId,
             distritoId, bairroId, uf, latitude, longitude, null, true, Versao, vigente));
 
     public static LogradouroComplemento NovoComplemento(string cep, string complemento, bool vigente = true) =>

@@ -144,13 +144,20 @@ internal sealed record LogradouroComplementoCru(
     string? Complemento,
     string? ComplementoSemAcento);
 
-/// <summary>Logradouro (fonte <c>logradouro</c>, ~1,4M linhas): FK <c>cidade_id</c> (obrigatória) e <c>distrito_id</c>/<c>bairro_id</c> (int4 opcionais, NULL frequente); <c>cep_ativo</c> 'S'/'N'.</summary>
+/// <summary>
+/// Logradouro (fonte <c>logradouro</c>, ~1,4M linhas): FK <c>cidade_id</c> (obrigatória)
+/// e <c>distrito_id</c>/<c>bairro_id</c> (int4 opcionais, NULL frequente); <c>cep_ativo</c>
+/// 'S'/'N'. <see cref="LogradouroSemAcento"/> é o <strong>texto completo</strong> sem acento
+/// (origem <c>logradouro_sem_acento</c>, ex.: "rua a") — distinto do nome sem o tipo
+/// (<c>nome_logradouro_sem_acento</c>, ex.: "a"); é ele que alimenta a busca e a chave de
+/// upsert (#707, opção A).
+/// </summary>
 internal sealed record LogradouroCru(
     string? Cep,
     string? Tipo,
     string? Nome,
     string? NomeCompleto,
-    string? NomeSemAcento,
+    string? LogradouroSemAcento,
     int? BairroIdDne,
     int? DistritoIdDne,
     int? CidadeIdDne,

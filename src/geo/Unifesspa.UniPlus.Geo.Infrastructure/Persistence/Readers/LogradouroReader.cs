@@ -42,25 +42,60 @@ internal sealed class LogradouroReader : ILogradouroReader
             return (false, [], null, null);
         }
 
-        IQueryable<Logradouro> query = _dbContext.Logradouros
+        IQueryable<Logradouro> escopoCidade = _dbContext.Logradouros
             .AsNoTracking()
             .Where(l => l.Vigente && l.CidadeId == cidadeId);
 
-        if (!string.IsNullOrWhiteSpace(busca))
-        {
-            string pattern = BuscaTextualNormalizada.CriarPadraoContem(busca);
-            query = query.Where(l =>
-                EF.Functions.ILike(l.NomeNormalizado, pattern, BuscaTextualNormalizada.Escape));
-        }
+        return string.IsNullOrWhiteSpace(busca)
+            ? await ListarNavegandoAsync(escopoCidade, afterId, limit, direction, cancellationToken).ConfigureAwait(false)
+            : await BuscarPorRelevanciaAsync(escopoCidade, busca, limit, cancellationToken).ConfigureAwait(false);
+    }
 
+    // Navegação (sem busca): lista da cidade paginada por cursor keyset bidirecional
+    // (ADR-0089), ordenada por Id.
+    private async Task<(bool, IReadOnlyList<LogradouroComBairro>, Guid?, Guid?)> ListarNavegandoAsync(
+        IQueryable<Logradouro> escopoCidade,
+        Guid? afterId,
+        int limit,
+        PaginationDirection direction,
+        CancellationToken cancellationToken)
+    {
         CursorKeysetPage<Logradouro> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+            .ApplyAsync(escopoCidade, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         IReadOnlyList<LogradouroComBairro> itens = await EnriquecerComBairroAsync(page.Items, cancellationToken)
             .ConfigureAwait(false);
 
         return (true, itens, page.PrevAfterId, page.NextAfterId);
+    }
+
+    // Autocomplete (com busca): filtra por texto completo (ILIKE contém, índice trigram) e
+    // ordena por relevância (similaridade trigram) — o uso real é digitar e escolher entre
+    // os mais relevantes. O ranking por similaridade é incompatível com o keyset por Id
+    // (ADR-0089), então retorna o top-N sem âncoras de paginação (sem prev/next): a
+    // navegação profunda não faz sentido para autocomplete.
+    private async Task<(bool, IReadOnlyList<LogradouroComBairro>, Guid?, Guid?)> BuscarPorRelevanciaAsync(
+        IQueryable<Logradouro> escopoCidade,
+        string busca,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        string termo = BuscaTextualNormalizada.Normalizar(busca);
+        string pattern = BuscaTextualNormalizada.CriarPadraoContem(busca);
+
+        List<Logradouro> rankeados = await escopoCidade
+            .Where(l => EF.Functions.ILike(l.NomeNormalizado, pattern, BuscaTextualNormalizada.Escape))
+            .OrderByDescending(l => EF.Functions.TrigramsSimilarity(l.NomeNormalizado, termo))
+            .ThenBy(l => l.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        IReadOnlyList<LogradouroComBairro> itens = await EnriquecerComBairroAsync(rankeados, cancellationToken)
+            .ConfigureAwait(false);
+
+        return (true, itens, null, null);
     }
 
     private async Task<IReadOnlyList<LogradouroComBairro>> EnriquecerComBairroAsync(

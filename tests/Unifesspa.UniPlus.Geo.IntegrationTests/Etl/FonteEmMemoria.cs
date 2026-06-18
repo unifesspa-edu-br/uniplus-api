@@ -189,13 +189,15 @@ internal static class DadosDne
         string uf = "PA",
         string? tipo = null,
         string? nomeCompleto = null,
-        string? nomeSemAcento = null,
+        string? logradouroSemAcento = null,
         int? bairroIdDne = null,
         int? distritoIdDne = null,
         string? latitude = null,
         string? longitude = null,
         string cepAtivo = "S") =>
-        new(cep, tipo, nome, nomeCompleto, nomeSemAcento ?? nome, bairroIdDne, distritoIdDne, cidadeIdDne, uf, latitude, longitude, cepAtivo);
+        // logradouro_sem_acento = texto completo sem acento (#707); na ausência, cai para o
+        // texto completo cru e depois o nome (a entidade canonicaliza a caixa).
+        new(cep, tipo, nome, nomeCompleto, logradouroSemAcento ?? nomeCompleto ?? nome, bairroIdDne, distritoIdDne, cidadeIdDne, uf, latitude, longitude, cepAtivo);
 }
 
 /// <summary>

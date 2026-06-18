@@ -89,8 +89,8 @@ public sealed class CidadeHierarquiaEndpointTests
         await SemearAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        // A busca corre sobre NomeNormalizado (= nome sem o tipo, como o ETL grava),
-        // então casa pelo NOME do logradouro acento/caixa-insensível: "sé" → "Sé".
+        // A busca corre sobre NomeNormalizado (= texto completo sem acento, #707), então
+        // casa por qualquer parte do logradouro acento/caixa-insensível: "sé" → "Praça da Sé".
         using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(
             client, "/api/cidades/3550308/logradouros?q=s%C3%A9&limit=100");
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -111,14 +111,57 @@ public sealed class CidadeHierarquiaEndpointTests
         links.GetProperty("cep").GetString().Should().Be("/api/cep/01001000");
         links.GetProperty("collection").GetString().Should().Be("/api/cidades/3550308/logradouros");
         links.TryGetProperty("self", out _).Should().BeFalse();
+    }
 
-        // Limitação conhecida (rastreada em #707): a busca não casa o TIPO ("Praça"),
-        // que vive em coluna separada e não compõe NomeNormalizado. Quando #707 entregar
-        // a busca por texto completo + ranking por similaridade, este assert deve mudar.
+    [Fact(DisplayName = "CA-03 (#707): busca casa o TIPO do logradouro ('praça' → 'Praça da Sé'), escopada à cidade")]
+    public async Task Logradouros_Autocomplete_PorTipo()
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // "praça" vive na coluna tipo, mas compõe o texto completo de NomeNormalizado (#707):
+        // a busca por tipo passa a casar — e fica escopada a São Paulo (Marabá tem "Praça
+        // São Félix", que não vaza).
         using HttpResponseMessage porTipo = await GeoReferenceSeed.Obter(
             client, "/api/cidades/3550308/logradouros?q=pra%C3%A7a&limit=100");
         porTipo.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await LerArrayAsync(porTipo)).GetArrayLength().Should().Be(0);
+
+        JsonElement itens = await LerArrayAsync(porTipo);
+        itens.GetArrayLength().Should().Be(1);
+        itens.EnumerateArray().Single().GetProperty("nomeCompleto").GetString().Should().Be("Praça da Sé");
+    }
+
+    [Fact(DisplayName = "CA-03 (#707): busca por texto completo 'praça da sé' (tipo + nome) encontra 'Praça da Sé'")]
+    public async Task Logradouros_Autocomplete_PorTextoCompleto()
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(
+            client, $"/api/cidades/3550308/logradouros?q={Uri.EscapeDataString("praça da sé")}&limit=100");
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        JsonElement itens = await LerArrayAsync(resposta);
+        itens.GetArrayLength().Should().Be(1);
+        itens.EnumerateArray().Single().GetProperty("nomeCompleto").GetString().Should().Be("Praça da Sé");
+    }
+
+    [Fact(DisplayName = "CA-03 (#707): resultados ordenados por relevância (similaridade), não por Id")]
+    public async Task Logradouros_Autocomplete_OrdenadoPorRelevancia()
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // "Rua das Flores" e "Rua das Flores e Jardins" casam ambos "rua das flores"; o de
+        // texto exato (similaridade máxima) precede o mais longo, independentemente do Id.
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(
+            client, $"/api/cidades/3550308/logradouros?q={Uri.EscapeDataString("rua das flores")}&limit=100");
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        JsonElement itens = await LerArrayAsync(resposta);
+        List<string> nomesCompletos =
+            [.. itens.EnumerateArray().Select(i => i.GetProperty("nomeCompleto").GetString()!)];
+        nomesCompletos.Should().Equal("Rua das Flores", "Rua das Flores e Jardins");
     }
 
     [Fact(DisplayName = "CA-04: cidade inexistente retorna 404; cidade existente sem filhos do filtro retorna 200 vazio")]
@@ -231,9 +274,10 @@ public sealed class CidadeHierarquiaEndpointTests
             cidadeSp.Id, "SP", "Saúde", latitude: -23.61811m, longitude: -46.63878m);
         Bairro cidadeNova = GeoReferenceSeed.NovoBairro(maraba.Id, "PA", "Cidade Nova");
 
-        // Espelha o ETL real (#673): nome_logradouro NÃO inclui o tipo; o texto cheio
-        // (com o tipo) vive em nome_completo. A busca atual roda sobre NomeNormalizado
-        // (= nome sem tipo), então casa por NOME — busca por tipo/texto-completo é #707.
+        // Espelha o ETL real (#673 + #707): nome_logradouro NÃO inclui o tipo; o texto
+        // cheio (com o tipo) vive em nome_completo, e NomeNormalizado (coluna de busca)
+        // guarda o texto completo sem acento. A busca casa por tipo + nome e ordena por
+        // relevância (similaridade).
         Logradouro pracaSe = GeoReferenceSeed.NovoLogradouro(
             cidadeSp.Id, "SP", "01001000", "Sé", tipo: "Praça", nomeCompleto: "Praça da Sé", bairroId: se.Id);
         Logradouro ruaSantaCecilia = GeoReferenceSeed.NovoLogradouro(
@@ -241,12 +285,19 @@ public sealed class CidadeHierarquiaEndpointTests
         Logradouro pracaMaraba = GeoReferenceSeed.NovoLogradouro(
             maraba.Id, "PA", "68500010", "São Félix", tipo: "Praça", nomeCompleto: "Praça São Félix", bairroId: cidadeNova.Id);
 
+        // Dois logradouros que casam o mesmo termo ("rua das flores") com relevâncias
+        // distintas — o de texto exato precede o mais longo no ranking por similaridade.
+        Logradouro ruaFlores = GeoReferenceSeed.NovoLogradouro(
+            cidadeSp.Id, "SP", "01230000", "das Flores", tipo: "Rua", nomeCompleto: "Rua das Flores", bairroId: santaCecilia.Id);
+        Logradouro ruaFloresJardins = GeoReferenceSeed.NovoLogradouro(
+            cidadeSp.Id, "SP", "01231000", "das Flores e Jardins", tipo: "Rua", nomeCompleto: "Rua das Flores e Jardins", bairroId: santaCecilia.Id);
+
         ctx.Paises.Add(brasil);
         ctx.Estados.AddRange(saoPaulo, para);
         ctx.Cidades.AddRange(cidadeSp, maraba);
         ctx.Distritos.AddRange(seDistrito, pinheirosDistrito, novaMaraba);
         ctx.Bairros.AddRange(se, santaCecilia, saude, cidadeNova);
-        ctx.Logradouros.AddRange(pracaSe, ruaSantaCecilia, pracaMaraba);
+        ctx.Logradouros.AddRange(pracaSe, ruaSantaCecilia, pracaMaraba, ruaFlores, ruaFloresJardins);
         await ctx.SaveChangesAsync();
     }
 

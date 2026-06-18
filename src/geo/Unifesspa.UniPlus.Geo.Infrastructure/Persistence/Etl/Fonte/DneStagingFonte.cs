@@ -169,9 +169,11 @@ internal sealed class DneStagingFonte : IGeoFonteDados
 
     public IAsyncEnumerable<LogradouroCru> LerLogradourosAsync(CancellationToken cancellationToken) =>
         ConsultarAsync(
+            // Coluna de busca/chave = logradouro_sem_acento (texto completo, ex.: "rua a"),
+            // não nome_logradouro_sem_acento (o nome sem o tipo, ex.: "a") — #707, opção A.
             $"""
              SELECT cep, tipo, nome_logradouro, logradouro, bairro_id, distrito_id, cidade_id,
-                    estado, nome_logradouro_sem_acento, latitude, longitude, cep_ativo
+                    estado, logradouro_sem_acento, latitude, longitude, cep_ativo
              FROM {Tabela("logradouro")}
              """,
             static r => new LogradouroCru(
