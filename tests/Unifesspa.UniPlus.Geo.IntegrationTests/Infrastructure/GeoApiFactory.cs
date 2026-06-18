@@ -34,5 +34,8 @@ public sealed class GeoApiFactory : ApiFactoryBase<Program>
     [
         new("Auth:Authority", "http://localhost/test-realm"),
         new("Auth:Audience", "uniplus"),
+        // Worker do ETL desligado: o disparo (POST) cria o registro EmAndamento e
+        // retorna 202 sem que a carga real rode — torna 202/409 determinísticos (#674).
+        new("Geo:Etl:WorkerHabilitado", "false"),
     ];
 }
