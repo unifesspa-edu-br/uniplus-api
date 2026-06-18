@@ -23,6 +23,13 @@ public static class ObterCidadePorCodigoIbgeQueryHandler
             .ObterDetalhePorCodigoIbgeAsync(query.CodigoIbge, cancellationToken)
             .ConfigureAwait(false);
 
-        return dados?.Cidade.ToDetalheDto(dados.Indicador);
+        // Guard explícito: município inexistente → null (404 no controller). Evita o
+        // null-conditional encadeado, que a análise estática lê como possível deref nulo.
+        if (dados is null)
+        {
+            return null;
+        }
+
+        return dados.Cidade.ToDetalheDto(dados.Indicador);
     }
 }
