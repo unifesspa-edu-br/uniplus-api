@@ -9,7 +9,7 @@ public interface ICacheService
     /// <summary>
     /// Tenta adquirir um lease curto sobre <paramref name="chave"/> (pattern
     /// <c>SET NX EX</c>) para coordenar populadores concorrentes em cache miss
-    /// — stampede protection (ADR-0056 §"Carve-out read-side").
+    /// — stampede protection (ADR-0056 §"Desmembramento cross-módulo read-side").
     /// </summary>
     /// <param name="chave">Identificador do lease (convenção: <c>{recurso}:lease</c>).</param>
     /// <param name="ttl">Janela máxima de retenção do lease — protege contra leak por crash do caller.</param>

@@ -13,7 +13,7 @@ using ReflectionAssembly = System.Reflection.Assembly;
 using ReflectionType = System.Type;
 
 /// <summary>
-/// Fitness test <strong>R8</strong> da ADR-0056 — carve-out read-side cross-módulo:
+/// Fitness test <strong>R8</strong> da ADR-0056 — isolamento de leitura cross-módulo:
 /// <list type="bullet">
 ///   <item><description>Nenhum projeto de módulo (Domain/Application/Infrastructure/API)
 ///   pode depender dos namespaces <c>.Domain</c> ou <c>.Application</c> de outro módulo.</description></item>
@@ -41,7 +41,7 @@ using ReflectionType = System.Type;
 /// pegar dependências de tipos (uso real) — ProjectReference sem uso não é dep
 /// arquitetural; uso de tipo é.</para>
 /// </remarks>
-public sealed class CrossModuleReadCarveOutTests
+public sealed class CrossModuleReadIsolationTests
 {
     /// <summary>
     /// Roster dos módulos da plataforma. Cada entrada é o namespace raiz; as
