@@ -90,18 +90,22 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         // concluída — aplicá-la rebaixaria o versao_dataset das linhas presentes e misturaria
         // datasets (a política de stale pressupõe versões não-decrescentes). Reaplicar a mesma
         // versão é permitido (idempotente). Comparação ordinal == numérica para AAAAMM fixo.
-        string? ultimaConcluida = await _contexto.Set<GeoImportacaoExecucao>()
-            .Where(e => e.Status == StatusImportacao.Concluida)
+        // Considera Concluída E Falhou: uma carga que falhou numa versão mais nova pode ter
+        // commitado dados parciais (as folhas commitam em fases), então voltar a uma versão
+        // anterior misturaria datasets. Após uma falha, o caminho são é reaplicar a mesma
+        // versão (ou mais nova), nunca regredir.
+        string? ultimaAplicada = await _contexto.Set<GeoImportacaoExecucao>()
+            .Where(e => e.Status == StatusImportacao.Concluida || e.Status == StatusImportacao.Falhou)
             .Select(e => e.VersaoDataset)
             .OrderByDescending(v => v)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
-        if (ultimaConcluida is not null && string.CompareOrdinal(execucao.VersaoDataset, ultimaConcluida) < 0)
+        if (ultimaAplicada is not null && string.CompareOrdinal(execucao.VersaoDataset, ultimaAplicada) < 0)
         {
-            LogVersaoNaoProgressiva(_logger, execucao.VersaoDataset, ultimaConcluida);
+            LogVersaoNaoProgressiva(_logger, execucao.VersaoDataset, ultimaAplicada);
             return Result<Guid>.Failure(new DomainError(
                 GeoImportacaoErrorCodes.VersaoNaoProgressiva,
-                $"A versão {execucao.VersaoDataset} é anterior à última aplicada ({ultimaConcluida})."));
+                $"A versão {execucao.VersaoDataset} é anterior à última aplicada ({ultimaAplicada})."));
         }
 
         _contexto.Set<GeoImportacaoExecucao>().Add(execucao);
@@ -179,11 +183,16 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
             RelatorioImportacao relTopo = await _importadorTopo.ImportarAsync(fonte, cancellationToken).ConfigureAwait(false);
             RelatorioImportacao relFolhas = await _importadorFolhas.ImportarAsync(fonte, modo, cancellationToken).ConfigureAwait(false);
 
+            // A partir daqui os importadores já commitaram os dados — a finalização (stale +
+            // conclusão + selo) roda com CancellationToken.None para deixar um estado terminal
+            // consistente: um cancelamento de shutdown não pode gravar Concluída sem selar o
+            // cache nem interromper a marcação de stale no meio.
+
             // Política de stale: só na recarga (a inicial parte de base vazia). Marca
             // vigente=false nas linhas não revistas nesta versão (versao_dataset anterior).
             if (modo == ModoCarga.Recarga)
             {
-                await GeoStaleMarker.MarcarStaleAsync(_contexto, versao, _relogio.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+                await GeoStaleMarker.MarcarStaleAsync(_contexto, versao, _relogio.GetUtcNow(), CancellationToken.None).ConfigureAwait(false);
             }
 
             RelatorioImportacaoDto relatorio = CombinarRelatorios(versao, relTopo, relFolhas);
@@ -196,7 +205,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
                 LogTransicaoInesperada(_logger, execucaoId, conclusao.Error!.Code);
             }
 
-            await _contexto.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await _contexto.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
 
             // Só após a conclusão estar persistida: sela a versão vigente do cache de CEP,
             // de forma totalmente best-effort (ver SelarCacheVigenteAsync).
@@ -260,7 +269,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         {
             await _cacheInvalidador.Value.InvalidarAsync(versao, CancellationToken.None).ConfigureAwait(false);
         }
-        catch (Exception excecao)
+        catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
             LogFalhaSeloCache(_logger, versao, excecao);
         }
