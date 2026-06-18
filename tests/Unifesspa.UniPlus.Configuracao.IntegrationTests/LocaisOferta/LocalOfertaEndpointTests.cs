@@ -80,6 +80,43 @@ public sealed class LocalOfertaEndpointTests
         doc.RootElement.GetProperty("cidadeCodigoIbge").GetString().Should().Be("1504208");
     }
 
+    [Fact(DisplayName = "POST /api/admin/locais-oferta com campus responsável existente cria (201) — FK satisfeita")]
+    public async Task Criar_ComCampusExistente_Retorna201()
+    {
+        // Cria primeiro o campus, depois um local apontando para ele (FK intra-banco).
+        var campusBody = new
+        {
+            sigla = $"C{Guid.NewGuid().ToString("N")[..6]}",
+            nome = "Campus Responsável",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criarCampus = await EnviarPostAdmin(client, "/api/admin/campi", campusBody);
+        criarCampus.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid campusId = await criarCampus.Content.ReadFromJsonAsync<Guid>();
+
+        var localBody = new
+        {
+            tipo = CamelCase(TipoLocalOferta.CursoForaDeSede),
+            campusResponsavelId = campusId,
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        HttpResponseMessage criarLocal = await EnviarPostAdmin(client, "/api/admin/locais-oferta", localBody);
+        criarLocal.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid localId = await criarLocal.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/locais-oferta/{localId}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("campusResponsavelId").GetGuid().Should().Be(campusId);
+    }
+
     [Fact(DisplayName = "POST /api/admin/locais-oferta com campus responsável inexistente retorna 422")]
     public async Task Criar_CampusInexistente_Retorna422()
     {
