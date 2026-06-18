@@ -48,6 +48,9 @@ public static class GeoInfrastructureRegistration
         // por cursor + detalhe por chave natural. Só expõem o que vigente (ADR-0092).
         services.AddScoped<IEstadoReader, EstadoReader>();
         services.AddScoped<ICidadeReader, CidadeReader>();
+        services.AddScoped<IDistritoReader, DistritoReader>();
+        services.AddScoped<IBairroReader, BairroReader>();
+        services.AddScoped<ILogradouroReader, LogradouroReader>();
 
         // Lookup de CEP (Story #676): reader da cascata (logradouro → grande usuário →
         // faixa) + resolver com cache-aside por selo de versão (ADR-0090/0092). O

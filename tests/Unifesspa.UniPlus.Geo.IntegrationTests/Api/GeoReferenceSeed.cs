@@ -79,13 +79,25 @@ internal static partial class GeoReferenceSeed
             null, regiaoIntermediariaNome, null, regiaoImediataNome,
             Versao, vigente));
 
-    public static Distrito NovoDistrito(Guid cidadeId, string uf, string nome, bool vigente = true) =>
+    public static Distrito NovoDistrito(
+        Guid cidadeId,
+        string uf,
+        string nome,
+        decimal? latitude = null,
+        decimal? longitude = null,
+        bool vigente = true) =>
         GeoTestKeys.Ok(Distrito.Importar(
-            cidadeId, uf, nome, Normalizar(nome), null, null, null, null, Versao, vigente));
+            cidadeId, uf, nome, Normalizar(nome), latitude, longitude, null, null, Versao, vigente));
 
-    public static Bairro NovoBairro(Guid cidadeId, string uf, string nome, bool vigente = true) =>
+    public static Bairro NovoBairro(
+        Guid cidadeId,
+        string uf,
+        string nome,
+        decimal? latitude = null,
+        decimal? longitude = null,
+        bool vigente = true) =>
         GeoTestKeys.Ok(Bairro.Importar(
-            cidadeId, uf, nome, Normalizar(nome), null, null, null, null, Versao, vigente));
+            cidadeId, uf, nome, Normalizar(nome), latitude, longitude, null, null, Versao, vigente));
 
     public static Logradouro NovoLogradouro(
         Guid cidadeId,
@@ -93,14 +105,17 @@ internal static partial class GeoReferenceSeed
         string cep,
         string nome,
         string? tipo = null,
+        string? nomeCompleto = null,
         Guid? distritoId = null,
         Guid? bairroId = null,
         decimal? latitude = null,
         decimal? longitude = null,
         string? nomeNormalizado = null,
         bool vigente = true) =>
+        // Espelha o ETL real (#673): NomeNormalizado vem de nome_logradouro_sem_acento
+        // — o NOME, sem o tipo. NomeCompleto (origem logradouro) carrega o texto cheio.
         GeoTestKeys.Ok(Logradouro.Importar(
-            cep, tipo, nome, null, nomeNormalizado ?? Normalizar(nome), cidadeId,
+            cep, tipo, nome, nomeCompleto, nomeNormalizado ?? Normalizar(nome), cidadeId,
             distritoId, bairroId, uf, latitude, longitude, null, true, Versao, vigente));
 
     public static LogradouroComplemento NovoComplemento(string cep, string complemento, bool vigente = true) =>

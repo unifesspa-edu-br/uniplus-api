@@ -13,14 +13,9 @@ using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 /// Builder de <c>_links</c> hypermedia (HATEOAS Level 1, ADR-0029) para
 /// <see cref="CidadeDetalheDto"/>. Relações: <c>self</c>
 /// (<c>GET /api/cidades/{codigoIbge}</c>), <c>estado</c>
-/// (<c>GET /api/estados/{uf}</c>) e <c>collection</c> (<c>GET /api/cidades</c>).
+/// (<c>GET /api/estados/{uf}</c>), <c>collection</c> (<c>GET /api/cidades</c>) e
+/// coleções descendentes da cidade.
 /// </summary>
-/// <remarks>
-/// As relações <c>distritos</c> e <c>bairros</c> (endpoints de hierarquia/autocomplete)
-/// ficam fora desta fatia: seus endpoints só existem na Story irmã da F4. Emitir
-/// <c>_links</c> para rotas inexistentes violaria a ADR-0029 (links devem ser
-/// navegáveis — resolveriam 404). Entram quando os endpoints forem entregues.
-/// </remarks>
 [SuppressMessage(
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
@@ -28,6 +23,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 internal sealed class CidadeDetalheLinksBuilder : IResourceLinksBuilder<CidadeDetalheDto>
 {
     private static readonly string CidadesControllerNome = GeoLinkPathResolver.ControllerName(nameof(Controllers.CidadesController));
+    private static readonly string HierarquiaControllerNome = GeoLinkPathResolver.ControllerName(nameof(CidadeHierarquiaController));
     private static readonly string EstadosControllerNome = GeoLinkPathResolver.ControllerName(nameof(Controllers.EstadosController));
 
     private readonly LinkGenerator _linkGenerator;
@@ -56,12 +52,24 @@ internal sealed class CidadeDetalheLinksBuilder : IResourceLinksBuilder<CidadeDe
         string collection = GeoLinkPathResolver.Resolver(
             _linkGenerator, httpContext, nameof(Controllers.CidadesController.Listar),
             CidadesControllerNome, values: null);
+        string distritos = GeoLinkPathResolver.Resolver(
+            _linkGenerator, httpContext, nameof(CidadeHierarquiaController.ListarDistritos),
+            HierarquiaControllerNome, new { codigoIbge = dto.CodigoIbge });
+        string bairros = GeoLinkPathResolver.Resolver(
+            _linkGenerator, httpContext, nameof(CidadeHierarquiaController.ListarBairros),
+            HierarquiaControllerNome, new { codigoIbge = dto.CodigoIbge });
+        string logradouros = GeoLinkPathResolver.Resolver(
+            _linkGenerator, httpContext, nameof(CidadeHierarquiaController.ListarLogradouros),
+            HierarquiaControllerNome, new { codigoIbge = dto.CodigoIbge });
 
         return new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["self"] = self,
             ["estado"] = estado,
             ["collection"] = collection,
+            ["distritos"] = distritos,
+            ["bairros"] = bairros,
+            ["logradouros"] = logradouros,
         };
     }
 }
