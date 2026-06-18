@@ -7,9 +7,12 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Geo.Domain.Entities;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl;
+using Unifesspa.UniPlus.Geo.IntegrationTests.Etl;
 using Unifesspa.UniPlus.Geo.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -148,6 +151,19 @@ public sealed class GeoImportacoesEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    [Fact(DisplayName = "CA-03: versão anterior aos dados já carregados (sem histórico de execução) é recusada com 409")]
+    public async Task Disparar_VersaoAnteriorAosDados_SemHistorico_Retorna409()
+    {
+        await LimparExecucoesAsync();
+        await SemearCidadeAsync("202602");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage requisicao = RequisicaoDisparo("202601", admin: true);
+        using HttpResponseMessage resposta = await client.SendAsync(requisicao);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
     private static HttpRequestMessage RequisicaoDisparo(string versao, bool admin)
     {
         HttpRequestMessage requisicao = new(HttpMethod.Post, Rota) { Content = CorpoJson(versao) };
@@ -174,6 +190,24 @@ public sealed class GeoImportacoesEndpointTests
     private async Task LimparExecucoesAsync()
     {
         await using GeoDbContext ctx = _fixture.CreateDbContext();
-        await ctx.Database.ExecuteSqlRawAsync("TRUNCATE TABLE geo_importacao_execucao");
+        // Trunca também o reference data: a guarda de versão progressiva lê max(cidade.versao),
+        // que seria poluído por outros testes da coleção (que carregam cidades).
+        await ctx.Database.ExecuteSqlRawAsync(
+            "TRUNCATE TABLE pais, logradouro_complemento, cep_grande_usuario, geo_importacao_execucao CASCADE");
+    }
+
+    // Carrega uma cidade na versão informada (topo do ETL) — para exercitar a guarda de versão
+    // a partir do reference data, sem nenhum histórico de execução.
+    private async Task SemearCidadeAsync(string versao)
+    {
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        FonteEmMemoria fonte = new() { Versao = versao };
+        fonte.Paises.Add(DadosDne.Pais("BRA", "Brasil", "BR"));
+        fonte.Estados.Add(DadosDne.Estado("PA", "Pará"));
+        fonte.EstadoIndicadores.Add(DadosDne.EstadoIndicador("PA", "15"));
+        fonte.Cidades.Add(DadosDne.Cidade("1500402", "Marabá", "PA"));
+
+        GeoImportadorPaisEstadoCidade importador = new(ctx, NullLogger<GeoImportadorPaisEstadoCidade>.Instance);
+        await importador.ImportarAsync(fonte, CancellationToken.None);
     }
 }

@@ -108,16 +108,23 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         // concluída — aplicá-la rebaixaria o versao_dataset das linhas presentes e misturaria
         // datasets (a política de stale pressupõe versões não-decrescentes). Reaplicar a mesma
         // versão é permitido (idempotente). Comparação ordinal == numérica para AAAAMM fixo.
-        // Considera Concluída E Falhou: uma carga que falhou numa versão mais nova pode ter
-        // commitado dados parciais (as folhas commitam em fases), então voltar a uma versão
-        // anterior misturaria datasets. Após uma falha, o caminho são é reaplicar a mesma
-        // versão (ou mais nova), nunca regredir.
-        string? ultimaAplicada = await _contexto.Set<GeoImportacaoExecucao>()
-            .Where(e => e.Status == StatusImportacao.Concluida || e.Status == StatusImportacao.Falhou)
-            .Select(e => e.VersaoDataset)
-            .OrderByDescending(v => v)
-            .FirstOrDefaultAsync(cancellationToken)
+        // Guarda de versão progressiva: recusa aplicar uma release anterior à mais nova já
+        // presente. O baseline vem de duas fontes para cobrir todos os casos:
+        //  - os próprios dados (max(versao_dataset) das cidades): cobre um deploy novo sobre
+        //    uma base já carregada (#672/#673) sem histórico de execução, e dados parciais de
+        //    uma carga que falhou após commitar (as folhas commitam em fases);
+        //  - o histórico de execuções terminais: cobre uma falha cujo topo deu rollback (sem
+        //    dado novo persistido), mas cuja versão já foi atentada.
+        // Reaplicar a mesma versão é permitido (idempotente). Comparação ordinal == numérica
+        // para AAAAMM de comprimento fixo.
+        string? versaoDados = await _contexto.Cidades
+            .MaxAsync(c => (string?)c.VersaoDataset, cancellationToken)
             .ConfigureAwait(false);
+        string? versaoHistorico = await _contexto.Set<GeoImportacaoExecucao>()
+            .Where(e => e.Status == StatusImportacao.Concluida || e.Status == StatusImportacao.Falhou)
+            .MaxAsync(e => (string?)e.VersaoDataset, cancellationToken)
+            .ConfigureAwait(false);
+        string? ultimaAplicada = MaiorVersao(versaoDados, versaoHistorico);
         if (ultimaAplicada is not null && string.CompareOrdinal(execucao.VersaoDataset, ultimaAplicada) < 0)
         {
             LogVersaoNaoProgressiva(_logger, execucao.VersaoDataset, ultimaAplicada);
@@ -153,7 +160,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         }
         catch (ChannelClosedException ex)
         {
-            await MarcarFalhaAsync(execucao, "Serviço em desligamento; carga não enfileirada.", relatorioJson: null, CancellationToken.None).ConfigureAwait(false);
+            await MarcarFalhaAsync(execucao, "Serviço em desligamento; carga não enfileirada.", CancellationToken.None).ConfigureAwait(false);
             LogNaoEnfileirada(_logger, execucao.Id, ex);
             return Result<Guid>.Failure(new DomainError(
                 GeoImportacaoErrorCodes.NaoEnfileirada,
@@ -178,8 +185,12 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
 
     public async Task ExecutarAsync(Guid execucaoId, CancellationToken cancellationToken)
     {
+        // Lookup inicial com None: um cancelamento de shutdown aqui não pode escapar antes do
+        // try (que marca a execução Falhou) — senão a linha ficaria EmAndamento bloqueando
+        // disparos até a reconciliação por idade. O cancelamento passa a ser observado no
+        // AnyAsync/importadores dentro do try.
         GeoImportacaoExecucao? execucao = await _contexto.Set<GeoImportacaoExecucao>()
-            .FirstOrDefaultAsync(e => e.Id == execucaoId, cancellationToken)
+            .FirstOrDefaultAsync(e => e.Id == execucaoId, CancellationToken.None)
             .ConfigureAwait(false);
 
         if (execucao is null || execucao.Status != StatusImportacao.EmAndamento)
@@ -239,7 +250,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
             // em vez de deixá-la EmAndamento bloqueando disparos até a reconciliação por idade.
             // Persiste com None (o token de operação já está cancelado) e repropaga para o worker
             // tratar o shutdown.
-            await MarcarFalhaAsync(execucao, "Carga interrompida (cancelamento/desligamento).", relatorioJson: null, CancellationToken.None).ConfigureAwait(false);
+            await MarcarFalhaAsync(execucao, "Carga interrompida (cancelamento/desligamento).", CancellationToken.None).ConfigureAwait(false);
             _metricas.RegistrarFalha(versao, _relogio.GetElapsedTime(inicio).TotalMilliseconds);
             LogCancelada(_logger, execucaoId, versao);
             throw;
@@ -248,7 +259,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         {
             double duracaoMs = _relogio.GetElapsedTime(inicio).TotalMilliseconds;
             // Mensagem genérica persistida (sem detalhe de infra/PII); a exceção vai ao log.
-            await MarcarFalhaAsync(execucao, "Falha na carga do ETL DNE.", relatorioJson: null, CancellationToken.None).ConfigureAwait(false);
+            await MarcarFalhaAsync(execucao, "Falha na carga do ETL DNE.", CancellationToken.None).ConfigureAwait(false);
             _metricas.RegistrarFalha(versao, duracaoMs);
             LogFalhou(_logger, execucaoId, versao, excecao);
         }
@@ -258,13 +269,26 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         "Design",
         "CA1031:Do not catch general exception types",
         Justification = "Persistir o estado de falha é best-effort à beira do worker; um erro aqui não pode escalar (a carga já terminou).")]
-    private async Task MarcarFalhaAsync(GeoImportacaoExecucao execucao, string mensagem, string? relatorioJson, CancellationToken cancellationToken)
+    private async Task MarcarFalhaAsync(GeoImportacaoExecucao execucao, string mensagem, CancellationToken cancellationToken)
     {
-        // Falhar é idempotente: se a execução já saiu de EmAndamento, retorna failure e nada muda.
-        execucao.Falhar(_relogio.GetUtcNow(), mensagem, relatorioJson);
+        // ExecuteUpdate direto, filtrando status = EmAndamento no banco — NÃO muta/flusha a
+        // entidade rastreada. Crítico quando o commit da conclusão falhou: a entidade está
+        // Concluída in-memory, mas a linha continua EmAndamento no banco; um SaveChanges aqui
+        // persistiria Concluída sem selar o cache. O filtro pelo estado real evita isso e é
+        // idempotente (0 linhas se a execução já não está EmAndamento).
+        DateTimeOffset agora = _relogio.GetUtcNow();
         try
         {
-            await _contexto.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await _contexto.Set<GeoImportacaoExecucao>()
+                .Where(e => e.Id == execucao.Id && e.Status == StatusImportacao.EmAndamento)
+                .ExecuteUpdateAsync(
+                    s => s
+                        .SetProperty(e => e.Status, StatusImportacao.Falhou)
+                        .SetProperty(e => e.ConcluidoEm, agora)
+                        .SetProperty(e => e.Mensagem, mensagem)
+                        .SetProperty(e => e.UpdatedAt, agora),
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
@@ -291,6 +315,22 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         {
             LogFalhaSeloCache(_logger, versao, excecao);
         }
+    }
+
+    // Maior das duas versões AAAAMM (ordinal == numérica), tolerando nulos.
+    private static string? MaiorVersao(string? a, string? b)
+    {
+        if (a is null)
+        {
+            return b;
+        }
+
+        if (b is null)
+        {
+            return a;
+        }
+
+        return string.CompareOrdinal(a, b) >= 0 ? a : b;
     }
 
     private static bool EhViolacaoUnica(DbUpdateException ex) =>
