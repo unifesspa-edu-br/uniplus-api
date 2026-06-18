@@ -178,10 +178,18 @@ public sealed class EtlAtualizacaoPeriodicaTests
     {
         await LimparAsync();
         IGeoCepCacheInvalidador cache = Substitute.For<IGeoCepCacheInvalidador>();
+
+        // Staging corrompido: topo sem cidades, mas com uma folha (logradouro) referenciando
+        // uma cidade existente. A guarda deve abortar ANTES das folhas, então "Rua Nova" não
+        // pode ser commitada.
+        FonteEmMemoria recargaCorrompida = new() { Versao = "202602" };
+        recargaCorrompida.CidadeIds.Add(DadosDne.CidadeId(1, Maraba));
+        recargaCorrompida.Logradouros.Add(DadosDne.Logradouro("68500999", "Rua Nova", 1));
+
         FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal)
         {
             ["202601"] = FonteCompleta("202601"),
-            ["202602"] = new FonteEmMemoria { Versao = "202602" }, // staging vazio (não restaurado)
+            ["202602"] = recargaCorrompida,
         });
 
         Guid id1 = await CriarExecucaoAsync("202601");
@@ -192,11 +200,13 @@ public sealed class EtlAtualizacaoPeriodicaTests
 
         await using GeoDbContext leitura = _fixture.CreateDbContext();
         GeoImportacaoExecucao exec2 = await leitura.ImportacaoExecucoes.SingleAsync(e => e.Id == id2);
-        exec2.Status.Should().Be(StatusImportacao.Falhou, "uma release vazia não pode concluir");
+        exec2.Status.Should().Be(StatusImportacao.Falhou, "uma release vazia/sem âncora não pode concluir");
 
         Cidade maraba = await leitura.Cidades.SingleAsync(c => c.CodigoIbge == Maraba);
         maraba.Vigente.Should().BeTrue("a release vazia não pode marcar a base existente como obsoleta");
         maraba.VersaoDataset.Should().Be("202601");
+        (await leitura.Logradouros.AnyAsync(l => l.Nome == "Rua Nova")).Should()
+            .BeFalse("as folhas não podem rodar quando a topo não trouxe cidades");
         await cache.DidNotReceive().InvalidarAsync("202602", Arg.Any<CancellationToken>());
     }
 

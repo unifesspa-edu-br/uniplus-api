@@ -210,13 +210,13 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
             IGeoFonteDados fonte = _fonteFactory.Criar(versao);
 
             RelatorioImportacao relTopo = await _importadorTopo.ImportarAsync(fonte, cancellationToken).ConfigureAwait(false);
-            RelatorioImportacao relFolhas = await _importadorFolhas.ImportarAsync(fonte, modo, cancellationToken).ConfigureAwait(false);
 
-            // Guarda de release vazia/sem âncora: se a topo não persistiu nenhuma cidade
-            // (staging não restaurado, sem o país-âncora BRA, ou sem cidades), prosseguir numa
-            // recarga marcaria TODA a base existente como vigente=false e selaria uma versão
-            // vazia, reportando sucesso. Falha explícita antes de qualquer stale/conclusão — os
-            // importadores não commitaram nada, então a base permanece intacta.
+            // Guarda de release vazia/sem âncora — ANTES das folhas: se a topo não persistiu
+            // nenhuma cidade (staging não restaurado, sem o país-âncora BRA, ou sem cidades),
+            // abortar já. Rodar as folhas marcaria logradouros/complementos com a nova versão
+            // (resolvendo cidade_id pelas cidades existentes) e a recarga marcaria TODA a base
+            // existente como vigente=false, selando uma versão vazia. A topo é transação única;
+            // com zero cidades ela não publicou release, então a base permanece intacta.
             ContadorTabela cidade = relTopo.Tabela("cidade");
             if (cidade.Inseridos + cidade.Atualizados == 0)
             {
@@ -225,6 +225,8 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
                 LogReleaseVazia(_logger, execucaoId, versao);
                 return;
             }
+
+            RelatorioImportacao relFolhas = await _importadorFolhas.ImportarAsync(fonte, modo, cancellationToken).ConfigureAwait(false);
 
             // A partir daqui os importadores já commitaram os dados — a finalização (stale +
             // conclusão + selo) roda com CancellationToken.None para deixar um estado terminal
