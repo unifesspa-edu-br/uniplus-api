@@ -135,9 +135,10 @@ public static class ReferenciaCidadeGeo
     }
 
     /// <summary>
-    /// Predicado conveniente (sem alocar <see cref="DomainError"/>) para uso em
+    /// Predicado conveniente (sem propagar <see cref="DomainError"/>) para uso em
     /// validators FluentValidation: indica se a referência tem formato e UF
-    /// coerentes.
+    /// coerentes. No caminho de falha o <see cref="Validar"/> subjacente ainda
+    /// instancia o erro, que é descartado aqui.
     /// </summary>
     public static bool EhValida(string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf) =>
         Validar(cidadeCodigoIbge, cidadeNome, cidadeUf).IsSuccess;
