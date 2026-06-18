@@ -8,6 +8,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Geo.Domain.Entities;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Geo.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -102,6 +103,26 @@ public sealed class GeoImportacoesEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using HttpRequestMessage requisicao = RequisicaoDisparo(versao, admin: true);
+        using HttpResponseMessage resposta = await client.SendAsync(requisicao);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "CA-03: versão anterior à última release concluída é recusada com 422 (não rebaixa o dataset)")]
+    public async Task Disparar_VersaoAnteriorAUltimaConcluida_Retorna422()
+    {
+        await LimparExecucoesAsync();
+        await using (GeoDbContext ctx = _fixture.CreateDbContext())
+        {
+            GeoImportacaoExecucao concluida = GeoImportacaoExecucao
+                .Iniciar("202602", "teste", TimeProvider.System.GetUtcNow()).Value!;
+            concluida.Concluir(TimeProvider.System.GetUtcNow(), "{}", "ok");
+            ctx.ImportacaoExecucoes.Add(concluida);
+            await ctx.SaveChangesAsync();
+        }
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage requisicao = RequisicaoDisparo("202601", admin: true);
         using HttpResponseMessage resposta = await client.SendAsync(requisicao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);

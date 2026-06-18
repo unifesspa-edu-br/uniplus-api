@@ -50,6 +50,12 @@ internal sealed class GeoDomainErrorRegistration : IDomainErrorRegistration
                 "uniplus.geo.importacao.nao_enfileirada",
                 "Não foi possível enfileirar a importação (serviço em desligamento)")),
 
+        new(GeoImportacaoErrorCodes.VersaoNaoProgressiva,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.geo.importacao.versao_nao_progressiva",
+                "A versão informada é anterior à última release já aplicada")),
+
         new(GeoImportacaoErrorCodes.TransicaoInvalida,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
