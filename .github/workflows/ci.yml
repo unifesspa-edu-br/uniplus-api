@@ -74,14 +74,25 @@ jobs:
         # Pin de versão evita regressões surpresa: novas regras `recommended`
         # ou mudanças de severity em releases minor podem bloquear PRs sem
         # mudança de código. Atualizar manualmente após validação local.
+        #
+        # A lista de contratos é descoberta por glob (contracts/openapi.*.json),
+        # não hard-coded: um contrato novo entra no lint sem editar este
+        # workflow (issue #696, mesmo padrão da matriz derivada da #630). A
+        # guarda abaixo falha se o glob não casar nada — evita "verde por
+        # vacuidade", em que o step passaria sem ter lintado nenhum arquivo.
         run: |
+          set -euo pipefail
+          shopt -s nullglob
+          contracts=(contracts/openapi.*.json)
+          if [ ${#contracts[@]} -eq 0 ]; then
+            echo "::error::Nenhum contrato encontrado em contracts/openapi.*.json"
+            exit 1
+          fi
+          echo "Lintando ${#contracts[@]} contrato(s): ${contracts[*]}"
           npx --yes @stoplight/spectral-cli@6.15.0 lint \
             --ruleset tools/spectral/.spectral.yaml \
             --fail-severity=error \
-            contracts/openapi.selecao.json \
-            contracts/openapi.ingresso.json \
-            contracts/openapi.organizacao.json \
-            contracts/openapi.geo.json
+            "${contracts[@]}"
 
   forbidden-deps:
     name: Forbidden dependencies
