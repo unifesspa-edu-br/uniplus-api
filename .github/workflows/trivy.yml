@@ -2,7 +2,8 @@ name: Trivy
 
 # Varredura de vulnerabilidades (issue #24, ADR-0015 — "Snyk / Trivy"):
 #   1. `trivy fs` — dependências NuGet declaradas + lock files
-#   2. `trivy image` — vulnerabilidades das imagens Docker dos 3 módulos
+#   2. `trivy image` — vulnerabilidades das imagens Docker de cada módulo
+#      (matriz derivada de docker/Dockerfile.* pelo job `discover`)
 #
 # Resultados em SARIF alimentam a aba Security do GitHub via upload-sarif
 # (mesmo padrão do codeql.yml). Initial mode: alerta (não-bloqueante) —
@@ -41,6 +42,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  discover:
+    name: Descobrir módulos (Dockerfiles)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      modules: ${{ steps.list.outputs.modules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Listar módulos a partir de docker/Dockerfile.*
+        id: list
+        # Fonte única de verdade: cada docker/Dockerfile.<módulo> vira um item
+        # da matriz `trivy-image`. Elimina o drift por construção — nascer um
+        # Dockerfile novo já o inclui no scan, sem editar este workflow nem
+        # manter sincronia manual com publish-images.yml (CA-04 da issue #630).
+        run: |
+          set -euo pipefail
+          modules=$(ls docker/Dockerfile.* | sed 's#.*Dockerfile\.##' | sort | jq -R . | jq -cs .)
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+          echo "Módulos descobertos: $modules"
+
   trivy-fs:
     name: Trivy filesystem (NuGet + config)
     runs-on: ubuntu-latest
@@ -86,23 +111,22 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-fs.sarif
-          # `category` separa os resultados na aba Security entre os 4 scans
-          # (fs + 3 imagens), evitando que findings sobrescrevam uns aos outros.
+          # `category` separa os resultados na aba Security entre os scans
+          # (fs + uma imagem por módulo), evitando que findings se sobrescrevam.
           category: trivy-fs
 
   trivy-image:
     name: Trivy image (${{ matrix.module }})
+    needs: discover
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        # Mesmos 3 módulos do publish-images.yml. Mantém o set sincronizado
-        # — se um Dockerfile.X novo nascer, atualizar ambos.
-        module:
-          - selecao
-          - ingresso
-          - portal
+        # Matriz derivada de docker/Dockerfile.* pelo job `discover` — mesma
+        # fonte de verdade do publish-images.yml. Sem lista hard-coded para
+        # manter sincronizada (CA-04 da issue #630).
+        module: ${{ fromJSON(needs.discover.outputs.modules) }}
 
     steps:
       - name: Checkout
