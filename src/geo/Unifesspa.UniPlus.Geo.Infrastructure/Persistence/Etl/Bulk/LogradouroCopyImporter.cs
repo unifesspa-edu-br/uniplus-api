@@ -301,9 +301,13 @@ internal sealed partial class LogradouroCopyImporter
             Guid? distritoGuid = ResolverCoerente(resolucao.DistritosPorIdDne, cru.DistritoIdDne, cidadeGuid, contador);
             Guid? bairroGuid = ResolverCoerente(resolucao.BairrosPorIdDne, cru.BairroIdDne, cidadeGuid, contador);
 
-            decimal? latitude = LimitarGrau(ParseTolerante.ParaDecimal(cru.Latitude), 90m);
-            decimal? longitude = LimitarGrau(ParseTolerante.ParaDecimal(cru.Longitude), 180m);
+            // Parse único: deriva lat/lon decimais do Point já validado (PontoFactory
+            // limita a ±90/±180), evitando parsear o texto duas vezes (×~1,4M) e duplicar
+            // a regra do domínio geográfico — e a derivação mantém lat/lon dentro do
+            // numeric(9,6) por construção.
             Point? coordenada = PontoFactory.Criar(cru.Latitude, cru.Longitude);
+            decimal? latitude = coordenada is null ? null : (decimal)coordenada.Y;
+            decimal? longitude = coordenada is null ? null : (decimal)coordenada.X;
 
             Result<Logradouro> resultado = Logradouro.Importar(
                 cru.Cep ?? string.Empty,
@@ -508,12 +512,6 @@ internal sealed partial class LogradouroCopyImporter
 
         return resolvida.Id;
     }
-
-    // Mantém o grau dentro do domínio geográfico (±limite) — fora disso vira null,
-    // coerente com PontoFactory (que anula a coordenada) e evitando overflow do
-    // numeric(9,6) por dado sujo.
-    private static decimal? LimitarGrau(decimal? valor, decimal limite) =>
-        valor is decimal v && v >= -limite && v <= limite ? v : null;
 
     private static async Task EscreverTextoAsync(NpgsqlBinaryImporter importer, string? valor, CancellationToken cancellationToken)
     {
