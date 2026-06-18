@@ -867,58 +867,6 @@
           }
         }
       },
-      "CandidatoLogradouroDto": {
-        "required": [
-          "tipo",
-          "logradouro",
-          "bairro",
-          "distrito",
-          "latitude",
-          "longitude"
-        ],
-        "type": "object",
-        "properties": {
-          "tipo": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "logradouro": {
-            "type": "string"
-          },
-          "bairro": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "distrito": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "latitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "longitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          }
-        }
-      },
       "CepResolvidoDto": {
         "required": [
           "cep",
@@ -1006,7 +954,7 @@
           "alternativos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CandidatoLogradouroDto"
+              "$ref": "#/components/schemas/LogradouroAlternativoDto"
             }
           },
           "_links": {
@@ -1366,6 +1314,58 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "LogradouroAlternativoDto": {
+        "required": [
+          "tipo",
+          "logradouro",
+          "bairro",
+          "distrito",
+          "latitude",
+          "longitude"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "logradouro": {
+            "type": "string"
+          },
+          "bairro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "distrito": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },

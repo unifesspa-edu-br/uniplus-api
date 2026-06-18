@@ -39,7 +39,7 @@ public sealed record CepResolvidoDto(
     /// ou quando a resolução é por faixa/grande usuário. O primário fica nos campos
     /// de topo; os demais aqui, na mesma ordem de desempate estável.
     /// </summary>
-    public IReadOnlyList<CandidatoLogradouroDto> Alternativos { get; init; } = [];
+    public IReadOnlyList<LogradouroAlternativoDto> Alternativos { get; init; } = [];
 
     [JsonPropertyName("_links")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
