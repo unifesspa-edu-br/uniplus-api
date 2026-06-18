@@ -187,9 +187,12 @@ internal sealed class GeoImportadorDistritoBairro
                 continue;
             }
 
-            decimal? latitude = ParseTolerante.ParaDecimal(cru.Lat);
-            decimal? longitude = ParseTolerante.ParaDecimal(cru.Lon);
+            // Deriva lat/lon do Point já validado (PontoFactory limita a ±90/±180): evita
+            // persistir coordenada fora do domínio ou estourar o numeric(9,6) por dado
+            // sujo (ex.: 91 / 1234.5) — mesma estratégia do COPY de logradouro.
             Point? coordenada = PontoFactory.Criar(cru.Lat, cru.Lon);
+            decimal? latitude = coordenada is null ? null : (decimal)coordenada.Y;
+            decimal? longitude = coordenada is null ? null : (decimal)coordenada.X;
             string nome = cru.Nome ?? string.Empty;
             string uf = cru.Uf ?? string.Empty;
             string? idOrigemDne = cru.IdDne?.ToString(System.Globalization.CultureInfo.InvariantCulture);
