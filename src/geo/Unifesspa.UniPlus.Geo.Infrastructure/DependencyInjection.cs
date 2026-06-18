@@ -1,12 +1,18 @@
 namespace Unifesspa.UniPlus.Geo.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Geo.Application.Abstractions;
+using Unifesspa.UniPlus.Geo.Infrastructure.Caching;
+using Unifesspa.UniPlus.Geo.Infrastructure.Observability;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Bulk;
+using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Fonte;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
@@ -45,6 +51,53 @@ public static class GeoInfrastructureRegistration
         services.AddScoped<GeoImportadorDistritoBairro>();
         services.AddScoped<LogradouroCopyImporter>();
         services.AddScoped<IGeoImportadorLocalidades, GeoImportadorLocalidades>();
+
+        // Atualização periódica (#674): orquestrador (uma instância scoped por escopo,
+        // exposta às duas portas — API e worker), fila in-process, fonte por versão,
+        // invalidação do cache de CEP por selo de versão e métricas do ETL.
+        services.AddScoped<GeoEtlOrquestrador>();
+        services.AddScoped<IGeoImportacaoService>(sp => sp.GetRequiredService<GeoEtlOrquestrador>());
+        services.AddScoped<IGeoImportacaoExecutor>(sp => sp.GetRequiredService<GeoEtlOrquestrador>());
+        services.AddSingleton<IGeoImportacaoFila, GeoImportacaoFila>();
+        services.AddSingleton<IGeoFonteDadosFactory, DneStagingFonteFactory>();
+        services.AddScoped<IGeoCepCacheInvalidador, RedisGeoCepCacheInvalidador>();
+        services.AddSingleton<GeoEtlMetrics>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registra os gatilhos hospedados do ETL (#674): o <c>BackgroundService</c> que
+    /// executa as cargas enfileiradas e o seed de desenvolvimento. <strong>Deve ser
+    /// chamado no Program APÓS <c>AddDbContextMigrationsOnStartup&lt;GeoDbContext&gt;()</c></strong>
+    /// — como <c>HostOptions.ServicesStartConcurrently</c> é <see langword="false"/>, a
+    /// ordem de registro é a ordem de start, e tanto o seed quanto a reconciliação do
+    /// worker tocam o banco (a tabela precisa já existir).
+    /// </summary>
+    public static IServiceCollection AddGeoEtlGatilhos(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        services.AddOptions<EtlOpcoes>().Bind(configuration.GetSection(EtlOpcoes.SectionName));
+
+        EtlOpcoes opcoes = configuration.GetSection(EtlOpcoes.SectionName).Get<EtlOpcoes>() ?? new EtlOpcoes();
+
+        if (opcoes.WorkerHabilitado)
+        {
+            services.AddHostedService<GeoImportacaoBackgroundService>();
+        }
+
+        // Seed só em Development e com a flag ligada (default off) — os testes rodam como
+        // Development mas não ligam a flag, então nunca semeiam.
+        if (environment.IsDevelopment() && opcoes.SeedHabilitado)
+        {
+            services.AddHostedService<GeoSeedHostedService>();
+        }
 
         return services;
     }

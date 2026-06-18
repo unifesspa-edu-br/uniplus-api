@@ -11,9 +11,12 @@ using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Geo.API.Errors;
+using Unifesspa.UniPlus.Geo.API.Hateoas;
 using Unifesspa.UniPlus.Geo.Application;
+using Unifesspa.UniPlus.Geo.Application.DTOs;
 using Unifesspa.UniPlus.Geo.Infrastructure;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -62,11 +65,21 @@ builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, bu
 builder.Services.AddGeoApplication();
 builder.Services.AddGeoInfrastructure();
 
+// HATEOAS Level 1 (ADR-0029) do registro de execução do ETL (#674).
+builder.Services.AddSingleton<IResourceLinksBuilder<ImportacaoGeoDto>, ImportacaoGeoLinksBuilder>();
+
 // Migrations EF Core aplicadas no host StartAsync via IHostedService.
 // Registrado ANTES de UseWolverineOutboxCascading + AddWolverineMessaging
 // (invariante #419) — fitness MigrationBeforeWolverineRuntimeOrderTests cobre
 // os entry points com a regra.
 builder.Services.AddDbContextMigrationsOnStartup<GeoDbContext>();
+
+// Gatilhos hospedados do ETL periódico (#674): worker que executa as cargas
+// enfileiradas + seed de dev. Registrado APÓS as migrations de propósito — seed e
+// reconciliação do worker tocam o banco, que precisa já ter a tabela
+// geo_importacao_execucao (ServicesStartConcurrently=false ⇒ ordem de start = ordem
+// de registro). Mantém-se antes do Wolverine, coerente com o invariante de ordem.
+builder.Services.AddGeoEtlGatilhos(builder.Configuration, builder.Environment);
 
 // Wolverine como backbone CQRS/messaging (ADR-0003/0004/0005). Sem roteamento
 // específico em V1 — handlers de localidade entram nas Stories de API; o
