@@ -37,7 +37,7 @@ Há ainda a pergunta de **como** os demais módulos consomem localidades: por le
 **Escolhida:** "B — módulo `Geo` dedicado com banco isolado, consumido por composição no cliente", porque aplica o isolamento por contexto da ADR-0054 a um contexto transversal e elimina acoplamento de runtime desnecessário.
 
 - O `Geo` é um **bounded context próprio**: solution de 5 projetos (Clean Architecture) e banco isolado `uniplus_geo` (ADR-0054), **read-mostly**.
-- O **consumo cross-módulo é por composição no cliente**: o front envia o identificador estável da localidade (ex.: código IBGE do município) e um *display cache* já resolvido; o backend do módulo consumidor persiste o **snapshot** necessário (congelamento por edital, RN08). **Não** há leitor read-side nem chamada HTTP cross-módulo do Geo em V1 — o que mantém o módulo `Geo` fora do caminho crítico de runtime dos demais módulos e satisfaz o carve-out cross-módulo (fitness `CrossModuleReadCarveOutTests`, ao qual o `Geo` é adicionado).
+- O **consumo cross-módulo é por composição no cliente**: o front envia o identificador estável da localidade (ex.: código IBGE do município) e um *display cache* já resolvido; o backend do módulo consumidor persiste o **snapshot** necessário (congelamento por edital, RN08). **Não** há leitor read-side nem chamada HTTP cross-módulo do Geo em V1 — o que mantém o módulo `Geo` fora do caminho crítico de runtime dos demais módulos e satisfaz o isolamento de leitura cross-módulo (fitness `CrossModuleReadIsolationTests`, ao qual o `Geo` é adicionado).
 - Referências a entidades de **outros contextos** não cruzam por chave estrangeira (ADR-0054); o Geo é dono apenas de localidades.
 
 ## Consequências
@@ -59,7 +59,7 @@ Há ainda a pergunta de **como** os demais módulos consomem localidades: por le
 
 ## Confirmação
 
-- **Fitness test**: o `Geo` está no roster de `CrossModuleReadCarveOutTests` e nenhum módulo depende de `Geo.Domain`/`Geo.Application`; o `Geo` não expõe leitor read-side consumido por outro módulo em V1.
+- **Fitness test**: o `Geo` está no roster de `CrossModuleReadIsolationTests` e nenhum módulo depende de `Geo.Domain`/`Geo.Application`; o `Geo` não expõe leitor read-side consumido por outro módulo em V1.
 - **Teste de migração**: o banco `uniplus_geo` é criado e migrado isoladamente.
 
 ## Prós e contras das opções
