@@ -210,6 +210,42 @@ public sealed class EtlAtualizacaoPeriodicaTests
         await cache.DidNotReceive().InvalidarAsync("202602", Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Integridade: recarga com cidades mas sem logradouros (dump-folha vazio) falha e NÃO marca o CEP existente como obsoleto")]
+    public async Task RecargaSemLogradouros_Falha_PreservaLookup()
+    {
+        await LimparAsync();
+        IGeoCepCacheInvalidador cache = Substitute.For<IGeoCepCacheInvalidador>();
+
+        // Topo restaurado (cidades), mas dump das tabelas-folha vazio (sem logradouros).
+        FonteEmMemoria folhasVazias = new() { Versao = "202602" };
+        folhasVazias.Paises.Add(DadosDne.Pais("BRA", "Brasil", "BR"));
+        folhasVazias.Estados.Add(DadosDne.Estado("PA", "Pará", capital: "Belém", faixaIni: "66000000", faixaFim: "68899999"));
+        folhasVazias.EstadoIndicadores.Add(DadosDne.EstadoIndicador("PA", "15"));
+        folhasVazias.Cidades.Add(DadosDne.Cidade(Maraba, "Marabá", "PA", ddd: "94"));
+        folhasVazias.CidadeIds.Add(DadosDne.CidadeId(1, Maraba));
+
+        FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal)
+        {
+            ["202601"] = FonteCompleta("202601"),
+            ["202602"] = folhasVazias,
+        });
+
+        Guid id1 = await CriarExecucaoAsync("202601");
+        await ExecutarAsync(id1, fonteFactory, cache);
+
+        Guid id2 = await CriarExecucaoAsync("202602");
+        await ExecutarAsync(id2, fonteFactory, cache);
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        GeoImportacaoExecucao exec2 = await leitura.ImportacaoExecucoes.SingleAsync(e => e.Id == id2);
+        exec2.Status.Should().Be(StatusImportacao.Falhou, "uma release sem logradouros não pode concluir");
+
+        Logradouro ruaA = await leitura.Logradouros.SingleAsync(l => l.Cep == CepMaraba);
+        ruaA.Vigente.Should().BeTrue("a release sem logradouros não pode marcar o CEP existente como obsoleto");
+        ruaA.VersaoDataset.Should().Be("202601");
+        await cache.DidNotReceive().InvalidarAsync("202602", Arg.Any<CancellationToken>());
+    }
+
     private async Task<Guid> CriarExecucaoAsync(string versao)
     {
         await using GeoDbContext ctx = _fixture.CreateDbContext();
