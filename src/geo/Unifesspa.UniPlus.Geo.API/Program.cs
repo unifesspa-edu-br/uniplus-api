@@ -73,6 +73,9 @@ builder.Services.AddSingleton<IResourceLinksBuilder<ImportacaoGeoDto>, Importaca
 builder.Services.AddSingleton<IResourceLinksBuilder<EstadoDto>, EstadoLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<CidadeResumoDto>, CidadeResumoLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<CidadeDetalheDto>, CidadeDetalheLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<DistritoDto>, DistritoLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<BairroDto>, BairroLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<LogradouroResumoDto>, LogradouroResumoLinksBuilder>();
 
 // HATEOAS Level 1 (ADR-0029) do lookup de CEP (#676): _links para cidade e estado.
 builder.Services.AddSingleton<IResourceLinksBuilder<CepResolvidoDto>, CepResolvidoLinksBuilder>();

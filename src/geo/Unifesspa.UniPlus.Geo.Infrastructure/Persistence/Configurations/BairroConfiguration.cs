@@ -38,7 +38,10 @@ internal sealed class BairroConfiguration : IEntityTypeConfiguration<Bairro>
             .HasForeignKey(b => b.CidadeId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Chave natural única (cidade + nome). cidade_id à esquerda cobre a FK.
+        // Chave natural única (cidade + nome). cidade_id à esquerda cobre a FK e
+        // também restringe o autocomplete de bairro antes do ILIKE. Diferente de
+        // logradouro, o volume por cidade é baixo, então não há índice trigram
+        // dedicado para bairro.nome_normalizado nesta fatia.
         builder.HasIndex(b => new { b.CidadeId, b.NomeNormalizado })
             .IsUnique()
             .HasDatabaseName("ix_bairro_cidade_nome");
