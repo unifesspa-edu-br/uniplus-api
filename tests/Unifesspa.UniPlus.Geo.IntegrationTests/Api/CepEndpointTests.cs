@@ -147,6 +147,26 @@ public sealed class CepEndpointTests
         raiz.GetProperty("nivelResolucao").GetString().Should().Be("bairro");
     }
 
+    [Fact(DisplayName = "CA-03: faixa de distrito (sem bairro cobrindo) eleva o nível para distrito")]
+    public async Task Cep_ResolvePorFaixaDistrito()
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // 68508100 está na faixa de cidade (Marabá) e na faixa de distrito (Nova Marabá),
+        // mas NÃO na faixa de bairro (68507000-68507999) → resolve no nível distrito.
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client, "/api/cep/68508100");
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement raiz = doc.RootElement;
+        raiz.GetProperty("cidade").GetString().Should().Be("Marabá");
+        raiz.GetProperty("distrito").GetString().Should().Be("Nova Marabá");
+        raiz.GetProperty("bairro").ValueKind.Should().Be(JsonValueKind.Null);
+        raiz.GetProperty("origem").GetString().Should().Be("faixa-distrito");
+        raiz.GetProperty("nivelResolucao").GetString().Should().Be("distrito");
+    }
+
     [Fact(DisplayName = "CA-04: CEP de grande usuário traz nome + cidade/UF da faixa CEP")]
     public async Task Cep_ResolveGrandeUsuario_CidadeDaFaixa()
     {
@@ -244,6 +264,7 @@ public sealed class CepEndpointTests
         Bairro belaVista = GeoReferenceSeed.NovoBairro(cidadeSp.Id, "SP", "Bela Vista");
         Bairro jardimPaulista = GeoReferenceSeed.NovoBairro(cidadeSp.Id, "SP", "Jardim Paulista");
         Bairro cidadeNova = GeoReferenceSeed.NovoBairro(maraba.Id, "PA", "Cidade Nova");
+        Distrito novaMaraba = GeoReferenceSeed.NovoDistrito(maraba.Id, "PA", "Nova Marabá");
 
         // (1) CEP de logradouro único (CA-01) + 1 complemento.
         Logradouro praca = GeoReferenceSeed.NovoLogradouro(
@@ -267,10 +288,12 @@ public sealed class CepEndpointTests
         Logradouro stale = GeoReferenceSeed.NovoLogradouro(
             cidadeSp.Id, "SP", "30000000", "Rua Obsoleta", vigente: false);
 
-        // (3) Faixas de CEP.
+        // (3) Faixas de CEP. Bairro e distrito têm faixas disjuntas dentro de Marabá:
+        // 68507xxx → bairro Cidade Nova; 68508xxx → distrito Nova Marabá (sem bairro).
         CidadeFaixaCep faixaSp = GeoReferenceSeed.NovaCidadeFaixa(cidadeSp.Id, "01000000", "01099999");
         CidadeFaixaCep faixaMaraba = GeoReferenceSeed.NovaCidadeFaixa(maraba.Id, "68500000", "68599999");
         BairroFaixaCep faixaCidadeNova = GeoReferenceSeed.NovaBairroFaixa(cidadeNova.Id, "68507000", "68507999");
+        DistritoFaixaCep faixaNovaMaraba = GeoReferenceSeed.NovaDistritoFaixa(novaMaraba.Id, "68508000", "68508999");
 
         // (4) Grande usuário (sem logradouro próprio; cidade vem da faixa SP).
         CepGrandeUsuario grandeUsuario = GeoReferenceSeed.NovoGrandeUsuario("01051900", "Banco do Brasil Agência Centro");
@@ -279,10 +302,12 @@ public sealed class CepEndpointTests
         ctx.Estados.AddRange(saoPaulo, para);
         ctx.Cidades.AddRange(cidadeSp, maraba);
         ctx.Bairros.AddRange(se, belaVista, jardimPaulista, cidadeNova);
+        ctx.Distritos.Add(novaMaraba);
         ctx.Logradouros.AddRange(praca, rua, avPaulista, alSantos, stale);
         ctx.LogradouroComplementos.AddRange(complementoPraca, comp1, comp2);
         ctx.CidadeFaixasCep.AddRange(faixaSp, faixaMaraba);
         ctx.BairroFaixasCep.Add(faixaCidadeNova);
+        ctx.DistritoFaixasCep.Add(faixaNovaMaraba);
         ctx.CepGrandesUsuarios.Add(grandeUsuario);
         await ctx.SaveChangesAsync();
     }
