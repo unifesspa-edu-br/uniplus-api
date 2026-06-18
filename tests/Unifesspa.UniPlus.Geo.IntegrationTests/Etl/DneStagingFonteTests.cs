@@ -90,6 +90,10 @@ public sealed class DneStagingFonteTests
         logradouros.Should().ContainSingle(l => l.Cep == "68500000" && l.DistritoIdDne == 10 && l.CidadeIdDne == 1 && l.CepAtivo == "S");
         logradouros.Should().ContainSingle(l => l.Cep == "68500001" && l.DistritoIdDne == null); // distrito_id NULL preservado
 
+        // #707: a fonte projeta o TEXTO COMPLETO sem acento (logradouro_sem_acento, "Rua A"),
+        // não o nome sem o tipo (nome_logradouro, "A") — é ele que alimenta a busca e a chave.
+        logradouros.Should().ContainSingle(l => l.Cep == "68500000" && l.Nome == "A" && l.LogradouroSemAcento == "Rua A");
+
         // As faixas referenciam o pai pela coluna id_distrito/id_bairro (PK da fonte na
         // própria tabela de faixa), não distrito_id/bairro_id — lê o schema real.
         List<FaixaLocalidadeCru> distritoFaixas = await ColetarAsync(fonte.LerDistritoFaixasAsync);

@@ -14,7 +14,10 @@ using Unifesspa.UniPlus.Geo.Domain.Entities;
 /// lookup por CEP (F4) — por isso não há índice standalone de <c>cep</c> (seria
 /// redundante numa tabela desse volume). FK intra-banco para <c>cidade</c>
 /// (obrigatória) e <c>distrito</c>/<c>bairro</c> (opcionais); coordenada GIST e
-/// trigram em <c>nome_normalizado</c> (ADR-0091).
+/// trigram em <c>nome_normalizado</c> (ADR-0091). <c>nome_normalizado</c> guarda o
+/// <strong>texto completo</strong> sem acento (tipo + nome): serve o autocomplete por
+/// texto completo e distingue logradouros homônimos sob o mesmo CEP-geral na chave de
+/// upsert (#707).
 /// </summary>
 /// <remarks>
 /// <para><strong>Coerência hierárquica:</strong> distrito/bairro são FKs simples e

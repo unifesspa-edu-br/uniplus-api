@@ -134,9 +134,12 @@ public sealed partial class CidadeHierarquiaController : ControllerBase
     }
 
     /// <summary>
-    /// Lista logradouros vigentes de uma Cidade vigente, com busca textual opcional
-    /// por <paramref name="q"/> e paginação por cursor opaco. O uso principal é
-    /// autocomplete de endereço quando o usuário não sabe o CEP.
+    /// Lista logradouros vigentes de uma Cidade vigente. Sem <paramref name="q"/>, é a
+    /// lista navegável da cidade paginada por cursor opaco bidirecional. Com
+    /// <paramref name="q"/>, é o autocomplete de endereço (quando o usuário não sabe o
+    /// CEP): casa o termo contra o texto completo do logradouro (tipo + nome) e ordena por
+    /// relevância (similaridade), retornando o top-N — sem <c>prev</c>/<c>next</c>, pois o
+    /// ranking por relevância não compõe o keyset por Id (ADR-0089).
     /// </summary>
     [HttpGet("cidades/{codigoIbge}/logradouros")]
     [AllowAnonymous]

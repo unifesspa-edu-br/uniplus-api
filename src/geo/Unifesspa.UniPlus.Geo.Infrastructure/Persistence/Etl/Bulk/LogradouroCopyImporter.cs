@@ -319,12 +319,17 @@ internal sealed partial class LogradouroCopyImporter
             decimal? latitude = coordenada is null ? null : (decimal)coordenada.Y;
             decimal? longitude = coordenada is null ? null : (decimal)coordenada.X;
 
+            // nome_normalizado = texto completo sem acento (tipo + nome), que alimenta a
+            // busca por texto completo e endurece a chave de upsert contra a colisão de
+            // CEP-geral (#707, opção A). Fallback para o texto completo cru e depois o nome
+            // quando a fonte não traz logradouro_sem_acento (raro; a entidade canonicaliza
+            // a caixa, mas não remove acentos — coerente com o comportamento anterior).
             Result<Logradouro> resultado = Logradouro.Importar(
                 cru.Cep ?? string.Empty,
                 cru.Tipo,
                 cru.Nome ?? string.Empty,
                 cru.NomeCompleto,
-                cru.NomeSemAcento ?? cru.Nome ?? string.Empty,
+                cru.LogradouroSemAcento ?? cru.NomeCompleto ?? cru.Nome ?? string.Empty,
                 cidadeGuid,
                 distritoGuid,
                 bairroGuid,

@@ -93,6 +93,31 @@ public sealed class EtlLocalidadesTests
         (await leitura.Logradouros.CountAsync(l => l.Cep == "68500000")).Should().Be(2);
     }
 
+    [Fact(DisplayName = "CA-05 (#707): logradouros homônimos sob o mesmo CEP-geral coexistem — o texto completo distingue a chave de upsert")]
+    public async Task CepGeral_HomonimosPorTipo_CoexistemPorTextoCompleto()
+    {
+        await PrepararTopoAsync(FonteCompleta());
+        FonteEmMemoria fonte = FonteCompleta();
+        fonte.Logradouros.Clear();
+
+        // Mesmo CEP-geral, mesmo nome sem o tipo ("das Flores"); só o tipo — logo, o texto
+        // completo — difere. Com a antiga chave name-only um seria descartado pelo DISTINCT ON;
+        // com o texto completo (nome_normalizado) ambos coexistem.
+        fonte.Logradouros.Add(DadosDne.Logradouro(
+            "68500500", "das Flores", IdCidadeMaraba, tipo: "Rua",
+            nomeCompleto: "Rua das Flores", logradouroSemAcento: "rua das flores"));
+        fonte.Logradouros.Add(DadosDne.Logradouro(
+            "68500500", "das Flores", IdCidadeMaraba, tipo: "Travessa",
+            nomeCompleto: "Travessa das Flores", logradouroSemAcento: "travessa das flores"));
+
+        await ExecutarLocalidadesAsync(fonte, ModoCarga.Inicial);
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        List<Logradouro> doCep = await leitura.Logradouros.Where(l => l.Cep == "68500500").ToListAsync();
+        doCep.Should().HaveCount(2);
+        doCep.Select(l => l.NomeNormalizado).Should().BeEquivalentTo(["rua das flores", "travessa das flores"]);
+    }
+
     [Fact(DisplayName = "CA-05: logradouro com cidade órfã é descartado e contado; distrito_id nulo é aceito")]
     public async Task LogradouroOrfao_Descartado()
     {
