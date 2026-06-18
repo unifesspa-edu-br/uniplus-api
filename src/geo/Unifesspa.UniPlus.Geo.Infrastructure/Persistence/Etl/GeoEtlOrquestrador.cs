@@ -22,11 +22,29 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// garante uma carga por vez (índice único parcial → 409), executa os importadores de
 /// topo (#672) e folhas (#673) em segundo plano, aplica a política de stale na recarga,
 /// sela a versão vigente do cache de CEP e persiste status + relatório (sem PII). É
-/// serviço transacional de Infrastructure — não um command Wolverine (ADR-0092).
+/// serviço de Infrastructure — não um command Wolverine (ADR-0092).
 /// </summary>
+/// <remarks>
+/// O <strong>registro</strong> de execução é gravado de forma transacional, mas a
+/// <strong>carga</strong> não é atômica entre fases: topo, folhas (COPY com transação
+/// própria), os UPDATEs de stale (autocommit por tabela) e a conclusão commitam em
+/// separado. Um crash no meio deixa o dataset em estado parcial (versões mistas) — isso é
+/// <strong>tolerado por design</strong>: a carga é idempotente por reaplicação (upsert por
+/// chave natural), e a guarda de versão progressiva força reaplicar a mesma versão (ou mais
+/// nova) para reconciliar. Transação única sobre milhões de linhas seria impraticável.
+/// </remarks>
 internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoImportacaoExecutor
 {
     private const string PostgresUniqueViolation = "23505";
+
+    // Amostras de divergência já vêm limitadas da fonte (ContadorTabela); o cap aqui mantém
+    // o limite explícito e consistente ao montar (ParaDto) e mesclar (Somar) o DTO.
+    private const int MaxAmostrasPorTabela = 25;
+
+    // Formato do relatorio_json persistido: camelCase, alinhado ao wire format da API
+    // (ConfigureHttpJsonOptions) — round-trip consistente e jsonb consultável no mesmo padrão.
+    private static readonly JsonSerializerOptions RelatorioJsonOptions =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     private readonly GeoDbContext _contexto;
     private readonly IGeoImportador _importadorTopo;
@@ -196,7 +214,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
             }
 
             RelatorioImportacaoDto relatorio = CombinarRelatorios(versao, relTopo, relFolhas);
-            string relatorioJson = JsonSerializer.Serialize(relatorio);
+            string relatorioJson = JsonSerializer.Serialize(relatorio, RelatorioJsonOptions);
             double duracaoMs = _relogio.GetElapsedTime(inicio).TotalMilliseconds;
 
             Result conclusao = execucao.Concluir(_relogio.GetUtcNow(), relatorioJson, ResumoConclusao(relatorio, modo));
@@ -282,7 +300,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
     {
         RelatorioImportacaoDto? relatorio = execucao.RelatorioJson is null
             ? null
-            : JsonSerializer.Deserialize<RelatorioImportacaoDto>(execucao.RelatorioJson);
+            : JsonSerializer.Deserialize<RelatorioImportacaoDto>(execucao.RelatorioJson, RelatorioJsonOptions);
 
         return new ImportacaoGeoDto(
             execucao.Id,
@@ -324,15 +342,15 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
     }
 
     private static TabelaImportacaoDto ParaDto(string nome, ContadorTabela c) =>
-        new(nome, c.Lidos, c.Inseridos, c.Atualizados, c.IgnoradosSemChave, c.Orfaos, c.Duplicados, c.ParsesDegradados, [.. c.Amostras]);
+        new(nome, c.Lidos, c.Inseridos, c.Atualizados, c.IgnoradosSemChave, c.Orfaos, c.Duplicados, c.ParsesDegradados,
+            [.. c.Amostras.Take(MaxAmostrasPorTabela)]);
 
     private static TabelaImportacaoDto Somar(TabelaImportacaoDto a, ContadorTabela c)
     {
-        const int MaxAmostras = 25;
         List<string> amostras = [.. a.Amostras];
         foreach (string amostra in c.Amostras)
         {
-            if (amostras.Count >= MaxAmostras)
+            if (amostras.Count >= MaxAmostrasPorTabela)
             {
                 break;
             }

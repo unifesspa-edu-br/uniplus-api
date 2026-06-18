@@ -108,8 +108,8 @@ public sealed class GeoImportacoesEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
-    [Fact(DisplayName = "CA-03: versão anterior à última release concluída é recusada com 422 (não rebaixa o dataset)")]
-    public async Task Disparar_VersaoAnteriorAUltimaConcluida_Retorna422()
+    [Fact(DisplayName = "CA-03: versão anterior à última release concluída é recusada com 409 (não rebaixa o dataset)")]
+    public async Task Disparar_VersaoAnteriorAUltimaConcluida_Retorna409()
     {
         await LimparExecucoesAsync();
         await using (GeoDbContext ctx = _fixture.CreateDbContext())
@@ -125,11 +125,11 @@ public sealed class GeoImportacoesEndpointTests
         using HttpRequestMessage requisicao = RequisicaoDisparo("202601", admin: true);
         using HttpResponseMessage resposta = await client.SendAsync(requisicao);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    [Fact(DisplayName = "CA-03: versão anterior a uma release que falhou (pode ter dados parciais) também é recusada com 422")]
-    public async Task Disparar_VersaoAnteriorAUltimaFalha_Retorna422()
+    [Fact(DisplayName = "CA-03: versão anterior a uma release que falhou (pode ter dados parciais) também é recusada com 409")]
+    public async Task Disparar_VersaoAnteriorAUltimaFalha_Retorna409()
     {
         await LimparExecucoesAsync();
         await using (GeoDbContext ctx = _fixture.CreateDbContext())
@@ -145,7 +145,7 @@ public sealed class GeoImportacoesEndpointTests
         using HttpRequestMessage requisicao = RequisicaoDisparo("202601", admin: true);
         using HttpResponseMessage resposta = await client.SendAsync(requisicao);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     private static HttpRequestMessage RequisicaoDisparo(string versao, bool admin)

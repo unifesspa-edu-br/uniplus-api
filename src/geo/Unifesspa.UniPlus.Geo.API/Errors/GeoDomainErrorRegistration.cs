@@ -52,7 +52,7 @@ internal sealed class GeoDomainErrorRegistration : IDomainErrorRegistration
 
         new(GeoImportacaoErrorCodes.VersaoNaoProgressiva,
             new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
+                StatusCodes.Status409Conflict,
                 "uniplus.geo.importacao.versao_nao_progressiva",
                 "A versão informada é anterior à última release já aplicada")),
 

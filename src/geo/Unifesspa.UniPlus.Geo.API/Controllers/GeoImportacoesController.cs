@@ -61,6 +61,7 @@ public sealed class GeoImportacoesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Disparar(
         [FromBody] DispararImportacaoRequest request,
@@ -82,8 +83,11 @@ public sealed class GeoImportacoesController : ControllerBase
         ImportacaoGeoDto? dto = await _servico.ObterAsync(resultado.Value, cancellationToken).ConfigureAwait(false);
         if (dto is null)
         {
-            // A execução acabou de ser registrada; ausência aqui seria um erro interno.
-            return Accepted();
+            // A execução acabou de ser registrada (mesmo contexto); não recuperá-la é uma
+            // inconsistência interna — 500 explícito, não um 202 degradado sem corpo/Location.
+            return Problem(
+                title: "Falha ao recuperar a execução recém-registrada.",
+                statusCode: StatusCodes.Status500InternalServerError);
         }
 
         ImportacaoGeoDto comLinks = dto with { Links = _linksBuilder.Build(dto) };
