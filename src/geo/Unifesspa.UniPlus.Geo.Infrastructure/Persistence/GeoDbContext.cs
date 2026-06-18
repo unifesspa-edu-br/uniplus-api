@@ -71,6 +71,9 @@ public sealed class GeoDbContext : DbContext, IUnitOfWork
     /// <summary>CEPs exclusivos de grandes usuários (órgãos/empresas).</summary>
     public DbSet<CepGrandeUsuario> CepGrandesUsuarios => Set<CepGrandeUsuario>();
 
+    /// <summary>Trilha de execuções do ETL DNE — versão, quem disparou, status e relatório (Story #674).</summary>
+    public DbSet<GeoImportacaoExecucao> ImportacaoExecucoes => Set<GeoImportacaoExecucao>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
