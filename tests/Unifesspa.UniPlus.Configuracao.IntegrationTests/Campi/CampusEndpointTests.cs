@@ -67,6 +67,31 @@ public sealed class CampusEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact(DisplayName = "POST /api/admin/campi autenticado sem role plataforma-admin retorna 403")]
+    public async Task Criar_SemRoleAdmin_Retorna403()
+    {
+        var body = new
+        {
+            sigla = $"C{Guid.NewGuid().ToString("N")[..6]}",
+            nome = "Campus Sem Permissão",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/admin/campi", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "candidato"); // role insuficiente
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(body);
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+            "a policy [Authorize(Roles = \"plataforma-admin\")] nega um principal autenticado sem o role");
+    }
+
     [Fact(DisplayName = "POST /api/admin/campi sem Idempotency-Key retorna 400")]
     public async Task Criar_SemIdempotencyKey_Retorna400()
     {
