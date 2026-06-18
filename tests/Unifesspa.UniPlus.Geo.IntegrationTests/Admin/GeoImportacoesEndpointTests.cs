@@ -128,6 +128,26 @@ public sealed class GeoImportacoesEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "CA-03: versão anterior a uma release que falhou (pode ter dados parciais) também é recusada com 422")]
+    public async Task Disparar_VersaoAnteriorAUltimaFalha_Retorna422()
+    {
+        await LimparExecucoesAsync();
+        await using (GeoDbContext ctx = _fixture.CreateDbContext())
+        {
+            GeoImportacaoExecucao falhou = GeoImportacaoExecucao
+                .Iniciar("202602", "teste", TimeProvider.System.GetUtcNow()).Value!;
+            falhou.Falhar(TimeProvider.System.GetUtcNow(), "falha parcial nas folhas");
+            ctx.ImportacaoExecucoes.Add(falhou);
+            await ctx.SaveChangesAsync();
+        }
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage requisicao = RequisicaoDisparo("202601", admin: true);
+        using HttpResponseMessage resposta = await client.SendAsync(requisicao);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
     private static HttpRequestMessage RequisicaoDisparo(string versao, bool admin)
     {
         HttpRequestMessage requisicao = new(HttpMethod.Post, Rota) { Content = CorpoJson(versao) };
