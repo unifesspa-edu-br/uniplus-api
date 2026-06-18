@@ -35,6 +35,9 @@ public sealed class EtlAtualizacaoPeriodicaTests
     private const string CepMaraba = "68500000";
     private const string CepSaoPaulo = "01000000";
 
+    private static readonly JsonSerializerOptions RelatorioJsonCamelCase =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     private readonly GeoPostgisFixture _fixture;
 
     public EtlAtualizacaoPeriodicaTests(GeoPostgisFixture fixture)
@@ -101,7 +104,9 @@ public sealed class EtlAtualizacaoPeriodicaTests
         execucao.DisparadoPor.Should().Be("teste");
         execucao.RelatorioJson.Should().NotBeNullOrWhiteSpace();
 
-        RelatorioImportacaoDto? relatorio = JsonSerializer.Deserialize<RelatorioImportacaoDto>(execucao.RelatorioJson!);
+        // O relatorio_json é persistido em camelCase (alinhado ao wire da API); lê no mesmo formato.
+        RelatorioImportacaoDto? relatorio = JsonSerializer.Deserialize<RelatorioImportacaoDto>(
+            execucao.RelatorioJson!, RelatorioJsonCamelCase);
         relatorio.Should().NotBeNull();
         relatorio!.VersaoDataset.Should().Be("202601");
         relatorio.Tabelas.Should().Contain(t => t.Tabela == "cidade" && t.Inseridos >= 2);

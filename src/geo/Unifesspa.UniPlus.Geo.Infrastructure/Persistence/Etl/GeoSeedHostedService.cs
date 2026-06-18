@@ -65,7 +65,7 @@ internal sealed partial class GeoSeedHostedService : IHostedService
 
         if (resultado.IsSuccess)
         {
-            LogSeedDisparado(_logger, _opcoes.VersaoSeed, resultado.Value);
+            LogSeedDisparado(_logger, resultado.Value, _opcoes.VersaoSeed);
         }
         else
         {
@@ -82,7 +82,7 @@ internal sealed partial class GeoSeedHostedService : IHostedService
     private static partial void LogBasePopulada(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Seed do Geo: carga {ExecucaoId} disparada para a versão {Versao}.")]
-    private static partial void LogSeedDisparado(ILogger logger, string versao, Guid execucaoId);
+    private static partial void LogSeedDisparado(ILogger logger, Guid execucaoId, string versao);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Seed do Geo: carga da versão {Versao} não disparada ({Codigo}).")]
     private static partial void LogSeedNaoDisparado(ILogger logger, string versao, string codigo);

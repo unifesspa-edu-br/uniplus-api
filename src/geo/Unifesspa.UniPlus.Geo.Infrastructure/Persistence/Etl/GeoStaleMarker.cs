@@ -14,6 +14,12 @@ using Npgsql;
 /// logradouro retirado). A comparação <c>versao_dataset &lt; @versao</c> é lexicográfica,
 /// válida porque o formato AAAAMM tem comprimento fixo.
 /// </summary>
+/// <remarks>
+/// O predicado pressupõe versões <strong>não-decrescentes</strong>: aplicar uma release
+/// anterior à última já aplicada deixaria linhas órfãs de uma versão mais nova
+/// (<c>versao_dataset</c> maior) sem serem marcadas. Essa regressão é barrada antes, no
+/// disparo (guarda de versão progressiva em <c>GeoEtlOrquestrador.IniciarAsync</c>).
+/// </remarks>
 internal static class GeoStaleMarker
 {
     // As 14 tabelas de reference data com proveniência (versao_dataset/vigente). É uma

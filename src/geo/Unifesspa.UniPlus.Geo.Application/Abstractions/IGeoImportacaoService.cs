@@ -5,8 +5,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Porta da API para o ETL de atualização periódica do Geo (Story #674). O ETL é um
-/// serviço transacional de Infrastructure (ADR-0092), não um command Wolverine — não
-/// há regra de negócio nem evento de domínio, é carga de reference data autoritativo.
+/// serviço de Infrastructure (ADR-0092), não um command Wolverine — não há regra de
+/// negócio nem evento de domínio, é carga de reference data autoritativo.
 /// Esta porta expõe à borda apenas o <strong>disparo</strong> e o
 /// <strong>acompanhamento</strong>; a execução pesada roda em segundo plano.
 /// </summary>
