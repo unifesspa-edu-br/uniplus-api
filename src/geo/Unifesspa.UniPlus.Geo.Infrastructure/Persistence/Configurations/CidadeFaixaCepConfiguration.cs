@@ -41,6 +41,14 @@ internal sealed class CidadeFaixaCepConfiguration : IEntityTypeConfiguration<Cid
             .IsUnique()
             .HasDatabaseName("ix_cidade_faixa_cep_natural");
 
+        // Índice de range parcial para o caminho frio do lookup de CEP (#704): o
+        // predicado global por CEP (cep_inicial <= @cep AND cep_final >= @cep) não casa
+        // com o índice natural parent-first (cidade_id à esquerda). B-tree
+        // (cep_inicial, cep_final) só sobre linhas vigentes — o lookup filtra vigente.
+        builder.HasIndex(f => new { f.CepInicial, f.CepFinal })
+            .HasFilter("vigente")
+            .HasDatabaseName("ix_cidade_faixa_cep_range");
+
         builder.ConfigurarProveniencia(f => f.VersaoDataset, f => f.Vigente);
         builder.HasIndex(f => f.VersaoDataset)
             .HasDatabaseName("ix_cidade_faixa_cep_versao_dataset");

@@ -86,6 +86,24 @@ public sealed class GeoSchemaDdlTests
         unicosSoCep.Should().Be(0, "cep isolado não pode ser único na tabela logradouro");
     }
 
+    [Theory(DisplayName = "#704: índice de range das faixas de CEP é B-tree parcial sobre (cep_inicial, cep_final) WHERE vigente")]
+    [InlineData("ix_cidade_faixa_cep_range")]
+    [InlineData("ix_bairro_faixa_cep_range")]
+    [InlineData("ix_distrito_faixa_cep_range")]
+    public async Task IndicesRangeFaixaCep_ParciaisSobreCep(string indexName)
+    {
+        string? indexDef = await ObterIndexDefAsync(indexName);
+
+        indexDef.Should().NotBeNull($"o índice de range {indexName} deve existir (caminho frio do lookup, #704)");
+        indexDef!.Should().Contain("cep_inicial", "o range parte de cep_inicial (predicado cep_inicial <= @cep)");
+        indexDef.Should().Contain("cep_final");
+        // Parcial: o lookup só consulta faixas vigentes. O Postgres pode renderizar o
+        // predicado como "WHERE vigente" ou "WHERE (vigente)".
+        indexDef.Should().Contain("WHERE", "o índice é parcial");
+        indexDef.Should().Contain("vigente", "o predicado parcial filtra vigente");
+        indexDef.Should().Contain("USING btree", "o range usa B-tree, não GiST");
+    }
+
     [Fact(DisplayName = "extensão pg_trgm está instalada (sustenta o índice trigram)")]
     public async Task ExtensaoPgTrgm_Instalada()
     {

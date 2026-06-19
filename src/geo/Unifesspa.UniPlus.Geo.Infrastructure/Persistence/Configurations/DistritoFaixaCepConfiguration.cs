@@ -38,6 +38,12 @@ internal sealed class DistritoFaixaCepConfiguration : IEntityTypeConfiguration<D
             .IsUnique()
             .HasDatabaseName("ix_distrito_faixa_cep_natural");
 
+        // Índice de range parcial para o caminho frio do lookup de CEP (#704) — ver
+        // CidadeFaixaCepConfiguration. B-tree (cep_inicial, cep_final) só sobre vigentes.
+        builder.HasIndex(f => new { f.CepInicial, f.CepFinal })
+            .HasFilter("vigente")
+            .HasDatabaseName("ix_distrito_faixa_cep_range");
+
         builder.ConfigurarProveniencia(f => f.VersaoDataset, f => f.Vigente);
         builder.HasIndex(f => f.VersaoDataset)
             .HasDatabaseName("ix_distrito_faixa_cep_versao_dataset");
