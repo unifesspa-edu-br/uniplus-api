@@ -35,6 +35,13 @@ public sealed class Cidade : EntityBase
     /// <summary>Nome sem acentos (origem <c>cidade_sem_acento</c>) — base do autocomplete (F4).</summary>
     public string? NomeNormalizado { get; private set; }
 
+    /// <summary>
+    /// Chave técnica gerada pelo banco para ordenação alfabética server-side. Usa
+    /// <see cref="NomeNormalizado"/> quando presente e fallback normalizado de
+    /// <see cref="Nome"/> quando a fonte não trouxe a coluna de busca.
+    /// </summary>
+    public string NomeOrdenacao { get; private set; } = string.Empty;
+
     public string? Ddd { get; private set; }
 
     public decimal? Latitude { get; private set; }

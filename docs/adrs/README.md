@@ -123,7 +123,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0092](0092-etl-carga-dne-reference-data.md) | Reference data do Geo sem soft-delete, recarregado por upsert | accepted | 2026-06-17 |
 | [0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) | Rate-limiting de endpoints públicos de reference data na borda (gateway), não no app | accepted | 2026-06-19 |
 | [0094](0094-keyset-ordenado-via-mr-sob-cursor-opaco.md) | Ordenação keyset na API via biblioteca de seek sob cursor opaco | accepted | 2026-06-19 |
-| [0095](0095-chave-de-ordenacao-keyset-nao-nula.md) | Chave de ordenação keyset não-nula via coalesce | accepted | 2026-06-19 |
+| [0095](0095-chave-de-ordenacao-keyset-nao-nula.md) | Chave de ordenação keyset não-nula via coluna gerada | accepted | 2026-06-19 |
 
 > **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0095` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0096+`.
 

@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <!-- Motor de seek keyset multi-coluna (ADR-0094) — base do helper de cursor
          ordenado, reutilizável por qualquer módulo. O analyzer transitivo é removido pelo
-         target RemoverMrKeysetAnalyzer abaixo (CS9057 no SDK das imagens Docker). -->
+         target RemoverMrKeysetAnalyzer global em Directory.Build.props (CS9057 no SDK das imagens Docker). -->
     <PackageReference Include="MR.EntityFrameworkCore.KeysetPagination" />
     <PackageReference Include="Minio" />
     <PackageReference Include="Npgsql" />
@@ -45,18 +45,5 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Unifesspa.UniPlus.Infrastructure.Core.UnitTests" />
   </ItemGroup>
-
-  <!-- O analyzer transitivo da MR (MR.EntityFrameworkCore.KeysetPagination.Analyzers)
-       referencia um Roslyn (5.3) mais novo que o do SDK das imagens Docker (5.0), emitindo
-       CS9057 que vira erro sob TreatWarningsAsErrors no publish. ExcludeAssets não corta o
-       analyzer por vir transitivamente; removê-lo do ItemGroup Analyzer antes da compilação
-       é determinístico. Só o motor de runtime importa; a regra de chave não-nula (ADR-0095)
-       é garantida por design + testes, não pelo analyzer. -->
-  <Target Name="RemoverMrKeysetAnalyzer" BeforeTargets="CoreCompile">
-    <ItemGroup>
-      <Analyzer Remove="@(Analyzer)"
-                Condition="$([System.String]::Copy('%(Analyzer.Identity)').Contains('MR.EntityFrameworkCore.KeysetPagination'))" />
-    </ItemGroup>
-  </Target>
 
 </Project>

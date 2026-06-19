@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Readers;
 
 using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.EntityFrameworkCore;
 
 using MR.EntityFrameworkCore.KeysetPagination;
@@ -69,15 +70,15 @@ internal sealed class CidadeReader : ICidadeReader
                 EF.Functions.ILike(c.NomeNormalizado, pattern, BuscaTextualNormalizada.Escape));
         }
 
-        // Keyset ordenado por nome (ADR-0094) sobre a query JÁ filtrada — ordenação,
+        // Keyset ordenado por nome_ordenacao (ADR-0094/0095) sobre a query JÁ filtrada — ordenação,
         // âncora (sort key + Id), reversão e flags ficam no helper; os EXISTS herdam o
-        // WHERE. Coalesce não-nulo na sort key (ADR-0095).
+        // WHERE. A chave de ordenação é gerada no banco com fallback normalizado de Nome.
         KeysetOrdenadoPage<Cidade> page = await KeysetOrdenadoCursor
             .ApplyAsync(
                 query,
-                b => b.Ascending(c => c.NomeNormalizado ?? string.Empty).Ascending(c => c.Id),
-                c => c.NomeNormalizado ?? string.Empty,
-                static (sortKey, id) => new { NomeNormalizado = sortKey, Id = id },
+                b => b.Ascending(c => c.NomeOrdenacao).Ascending(c => c.Id),
+                c => c.NomeOrdenacao,
+                static (sortKey, id) => new { NomeOrdenacao = sortKey, Id = id },
                 afterSortKey,
                 afterId,
                 limit,

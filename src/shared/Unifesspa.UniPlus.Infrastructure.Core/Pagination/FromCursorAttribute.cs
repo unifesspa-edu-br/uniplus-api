@@ -32,4 +32,11 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
     /// ADR-0026). Default <c>false</c> (recurso público).
     /// </summary>
     public bool RequireUserBinding { get; init; }
+
+    /// <summary>
+    /// Quando <c>true</c>, cursores de continuação precisam trazer
+    /// <see cref="CursorPayload.SortKey"/>. Use em recursos com keyset ordenado
+    /// multi-coluna, nos quais a âncora é o par <c>(SortKey, Id)</c>.
+    /// </summary>
+    public bool RequireSortKey { get; init; }
 }

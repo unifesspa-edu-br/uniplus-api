@@ -32,13 +32,13 @@ public sealed class CidadesEndpointTests
         await SemearAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpResponseMessage soPara = await GeoReferenceSeed.Obter(client,"/api/cidades?uf=PA&limit=100");
+        using HttpResponseMessage soPara = await GeoReferenceSeed.Obter(client, "/api/cidades?uf=PA&limit=100");
         soPara.StatusCode.Should().Be(HttpStatusCode.OK);
         JsonElement itensPa = await LerArrayAsync(soPara);
         itensPa.EnumerateArray().Select(c => c.GetProperty("uf").GetString())
             .Should().OnlyContain(uf => uf == "PA").And.HaveCountGreaterThan(1);
 
-        using HttpResponseMessage inexistente = await GeoReferenceSeed.Obter(client,"/api/cidades?uf=ZZ&limit=100");
+        using HttpResponseMessage inexistente = await GeoReferenceSeed.Obter(client, "/api/cidades?uf=ZZ&limit=100");
         inexistente.StatusCode.Should().Be(HttpStatusCode.OK);
         (await LerArrayAsync(inexistente)).GetArrayLength().Should().Be(0);
     }
@@ -52,7 +52,7 @@ public sealed class CidadesEndpointTests
         await SemearAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client,$"/api/cidades?q={Uri.EscapeDataString(termo)}&limit=100");
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client, $"/api/cidades?q={Uri.EscapeDataString(termo)}&limit=100");
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
 
         JsonElement itens = await LerArrayAsync(resposta);
@@ -68,7 +68,7 @@ public sealed class CidadesEndpointTests
 
         // 'a' casa Marabá e Parauapebas (PA); Óbidos (PA, "obidos") NÃO casa.
         // limit=1 força paginação — exercita o filtro em cada página seguida.
-        using HttpResponseMessage pagina1 = await GeoReferenceSeed.Obter(client,"/api/cidades?uf=PA&q=a&limit=1");
+        using HttpResponseMessage pagina1 = await GeoReferenceSeed.Obter(client, "/api/cidades?uf=PA&q=a&limit=1");
         pagina1.StatusCode.Should().Be(HttpStatusCode.OK);
 
         string? proximo = GeoReferenceSeed.ExtrairLink(pagina1, "next");
@@ -109,6 +109,38 @@ public sealed class CidadesEndpointTests
 
         // Ordem por nome_normalizado: maraba < obidos < parauapebas < sao paulo.
         nomes.Should().Equal("Marabá", "Óbidos", "Parauapebas", "São Paulo");
+    }
+
+    [Fact(DisplayName = "#700: cidade sem nome_normalizado ordena pelo fallback normalizado de nome")]
+    public async Task Cidades_Ordenacao_NomeNormalizadoNulo_UsaFallbackDeNome()
+    {
+        await GeoReferenceSeed.LimparAsync(_fixture);
+        await using (GeoDbContext ctx = _fixture.CreateDbContext())
+        {
+            Pais brasil = GeoReferenceSeed.NovoBrasil();
+            Estado para = GeoReferenceSeed.NovoEstado(brasil.Id, "PA", "Pará");
+            Cidade acara = GeoReferenceSeed.NovaCidade(para.Id, "PA", "1500800", "Acará", nomeNormalizado: "");
+            Cidade belem = GeoReferenceSeed.NovaCidade(para.Id, "PA", "1501402", "Belém", nomeNormalizado: "belem");
+            Cidade zzz = GeoReferenceSeed.NovaCidade(para.Id, "PA", "1599998", "Zzz", nomeNormalizado: "");
+            ctx.Paises.Add(brasil);
+            ctx.Estados.Add(para);
+            ctx.Cidades.AddRange(acara, belem, zzz);
+            await ctx.SaveChangesAsync();
+        }
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        List<string> nomes = [];
+        string? proximo = "/api/cidades?limit=1";
+        while (proximo is not null)
+        {
+            using HttpResponseMessage pagina = await GeoReferenceSeed.Obter(client, proximo);
+            pagina.StatusCode.Should().Be(HttpStatusCode.OK);
+            nomes.AddRange(LerNomes(await LerArrayAsync(pagina)));
+            proximo = GeoReferenceSeed.ExtrairLink(pagina, "next");
+        }
+
+        nomes.Should().Equal("Acará", "Belém", "Zzz");
     }
 
     [Fact(DisplayName = "#700: cidades homônimas (mesmo nome, UFs distintas) têm ordem estável por desempate de Id")]
@@ -176,7 +208,7 @@ public sealed class CidadesEndpointTests
         await SemearAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client,"/api/cidades/1500402");
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client, "/api/cidades/1500402");
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
@@ -213,7 +245,7 @@ public sealed class CidadesEndpointTests
         }
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client,"/api/cidades/1500701");
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client, "/api/cidades/1500701");
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
@@ -227,7 +259,7 @@ public sealed class CidadesEndpointTests
         await SemearAsync();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client,"/api/cidades/9999999");
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client, "/api/cidades/9999999");
         resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -239,7 +271,7 @@ public sealed class CidadesEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client,rota);
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client, rota);
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -266,7 +298,7 @@ public sealed class CidadesEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
 
         string termoLongo = new('a', 257);
-        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client,$"/api/cidades?q={termoLongo}");
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(client, $"/api/cidades?q={termoLongo}");
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -288,10 +320,10 @@ public sealed class CidadesEndpointTests
 
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpResponseMessage busca = await GeoReferenceSeed.Obter(client,"/api/cidades?q=acara&limit=100");
+        using HttpResponseMessage busca = await GeoReferenceSeed.Obter(client, "/api/cidades?q=acara&limit=100");
         (await LerArrayAsync(busca)).GetArrayLength().Should().Be(0, "ILIKE sobre coluna NULL não casa");
 
-        using HttpResponseMessage semFiltro = await GeoReferenceSeed.Obter(client,"/api/cidades?limit=100");
+        using HttpResponseMessage semFiltro = await GeoReferenceSeed.Obter(client, "/api/cidades?limit=100");
         (await LerArrayAsync(semFiltro)).EnumerateArray()
             .Select(c => c.GetProperty("codigoIbge").GetString())
             .Should().Contain("1500800", "sem filtro a cidade aparece normalmente");
@@ -315,12 +347,12 @@ public sealed class CidadesEndpointTests
 
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        using HttpResponseMessage lista = await GeoReferenceSeed.Obter(client,"/api/cidades?limit=100");
+        using HttpResponseMessage lista = await GeoReferenceSeed.Obter(client, "/api/cidades?limit=100");
         (await LerArrayAsync(lista)).EnumerateArray()
             .Select(c => c.GetProperty("codigoIbge").GetString())
             .Should().Contain("1500402").And.NotContain("1599999");
 
-        using HttpResponseMessage detalhe = await GeoReferenceSeed.Obter(client,"/api/cidades/1599999");
+        using HttpResponseMessage detalhe = await GeoReferenceSeed.Obter(client, "/api/cidades/1599999");
         detalhe.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 

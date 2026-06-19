@@ -7,9 +7,8 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
-using Infrastructure;
-
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Geo.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Verifica o DDL físico que a persistência de entidades sozinha não prova: o
@@ -104,20 +103,33 @@ public sealed class GeoSchemaDdlTests
         indexDef.Should().Contain("USING btree", "o range usa B-tree, não GiST");
     }
 
-    [Theory(DisplayName = "#700: índice de ordenação alfabética é B-tree funcional sobre (COALESCE(nome_normalizado,''), id)")]
+    [Theory(DisplayName = "#700: coluna nome_ordenacao é gerada por nome_normalizado com fallback em nome")]
+    [InlineData("estado")]
+    [InlineData("cidade")]
+    public async Task ColunaOrdenacaoAlfabetica_GeradaComFallbackDeNome(string tabela)
+    {
+        (string isGenerated, string expression) = await ObterColunaGeradaAsync(tabela, "nome_ordenacao");
+
+        isGenerated.Should().Be("ALWAYS", "nome_ordenacao deve ser uma coluna gerada pelo banco");
+        expression.Should().Contain("nome_normalizado");
+        expression.Should().Contain("nome");
+        expression.Should().Contain("translate", "o fallback do nome público remove acentos como o ETL");
+        expression.Should().Contain("lower", "a chave de ordenação deve ser caixa-insensível");
+    }
+
+    [Theory(DisplayName = "#700: índice de ordenação alfabética é B-tree sobre (nome_ordenacao, id)")]
     [InlineData("ix_estado_nome_ordenacao", "estado")]
     [InlineData("ix_cidade_nome_ordenacao", "cidade")]
-    public async Task IndiceOrdenacaoAlfabetica_FuncionalSobreCoalesce(string indexName, string tabela)
+    public async Task IndiceOrdenacaoAlfabetica_SobreNomeOrdenacao(string indexName, string tabela)
     {
         string? indexDef = await ObterIndexDefAsync(indexName);
 
         indexDef.Should().NotBeNull($"o índice de ordenação {indexName} deve existir (#700/ADR-0094)");
         indexDef!.Should().Contain($"ON public.{tabela}");
         indexDef.Should().Contain("USING btree", "a ordenação por nome usa B-tree (não GiST/GIN)");
-        // Casa com o ORDER BY gerado pela MR: COALESCE(nome_normalizado, ''), id.
-        indexDef.Should().Contain("COALESCE", "o índice é funcional sobre a mesma expressão coalescida do ORDER BY (ADR-0095)");
-        indexDef.Should().Contain("nome_normalizado");
+        indexDef.Should().Contain("nome_ordenacao", "o índice casa com o ORDER BY do keyset ordenado");
         indexDef.Should().Contain("id");
+        indexDef.Should().NotContain("COALESCE", "o fallback vive na coluna gerada, não em cada seek");
     }
 
     [Fact(DisplayName = "extensão pg_trgm está instalada (sustenta o índice trigram)")]
@@ -155,6 +167,41 @@ public sealed class GeoSchemaDdlTests
 
         object? result = await command.ExecuteScalarAsync();
         return result as string;
+    }
+
+    private async Task<(string IsGenerated, string Expression)> ObterColunaGeradaAsync(string tabela, string coluna)
+    {
+        await using GeoDbContext context = _fixture.CreateDbContext();
+        DbConnection connection = context.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT is_generated, generation_expression
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = @tabela
+              AND column_name = @coluna;
+            """;
+        DbParameter tabelaParam = command.CreateParameter();
+        tabelaParam.ParameterName = "tabela";
+        tabelaParam.Value = tabela;
+        command.Parameters.Add(tabelaParam);
+
+        DbParameter colunaParam = command.CreateParameter();
+        colunaParam.ParameterName = "coluna";
+        colunaParam.Value = coluna;
+        command.Parameters.Add(colunaParam);
+
+        await using DbDataReader reader = await command.ExecuteReaderAsync();
+        bool found = await reader.ReadAsync();
+        found.Should().BeTrue($"a coluna {tabela}.{coluna} deve existir");
+
+        return (reader.GetString(0), reader.GetString(1));
     }
 
     private async Task<long> ContarIndicesUnicosSomenteCepAsync()

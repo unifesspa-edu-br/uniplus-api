@@ -28,6 +28,9 @@ internal sealed class EstadoConfiguration : IEntityTypeConfiguration<Estado>
 
         builder.Property(e => e.Uf).IsRequired();
         builder.Property(e => e.Nome).IsRequired();
+        builder.Property(e => e.NomeOrdenacao)
+            .IsRequired()
+            .HasComputedColumnSql(NomeOrdenacaoSql.Expression, stored: true);
         builder.Property(e => e.Latitude).HasPrecision(9, 6);
         builder.Property(e => e.Longitude).HasPrecision(9, 6);
         builder.ConfigurarCoordenada(e => e.Coordenada);

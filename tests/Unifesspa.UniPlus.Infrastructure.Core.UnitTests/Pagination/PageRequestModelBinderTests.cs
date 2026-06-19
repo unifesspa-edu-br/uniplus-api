@@ -4,8 +4,6 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
-using NSubstitute;
-
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -16,6 +14,8 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+
+using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
@@ -209,7 +209,8 @@ public sealed class PageRequestModelBinderTests
             After: Guid.NewGuid().ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -232,7 +233,8 @@ public sealed class PageRequestModelBinderTests
             After: "not-a-guid",
             Limit: 10,
             ResourceTag: "editais",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -256,7 +258,8 @@ public sealed class PageRequestModelBinderTests
             After: expectedAfter.ToString(),
             Limit: 50,
             ResourceTag: "editais",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -272,6 +275,58 @@ public sealed class PageRequestModelBinderTests
     }
 
     [Fact]
+    public async Task BindModelAsync_RequireSortKey_CursorSemSortKey_RetornaCursorInvalido()
+    {
+        ServiceProvider services = BuildServices();
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: Guid.NewGuid().ToString(),
+            Limit: 20,
+            ResourceTag: "cidades",
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+
+        ModelBindingContext context = CreateContext(
+            "cidades",
+            queryString: $"?cursor={Uri.EscapeDataString(cursor)}",
+            servicesOverride: services,
+            methodName: nameof(TestActions.OrderedAction));
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        context.Result.IsModelSet.Should().BeFalse();
+        context.HttpContext.Items[CursorBindingErrorCodes.HttpContextItemKey]
+            .Should().Be(CursorBindingErrorCodes.Invalido);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_RequireSortKey_CursorComSortKey_RetornaPageRequest()
+    {
+        Guid expectedAfter = Guid.NewGuid();
+        ServiceProvider services = BuildServices();
+        CursorEncoder encoder = services.GetRequiredService<CursorEncoder>();
+        string cursor = await encoder.EncodeAsync(new CursorPayload(
+            After: expectedAfter.ToString(),
+            Limit: 20,
+            ResourceTag: "cidades",
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            SortKey: "maraba"));
+
+        ModelBindingContext context = CreateContext(
+            "cidades",
+            queryString: $"?cursor={Uri.EscapeDataString(cursor)}",
+            servicesOverride: services,
+            methodName: nameof(TestActions.OrderedAction));
+
+        await new PageRequestModelBinder().BindModelAsync(context);
+
+        PageRequest page = context.Result.Model.Should().BeOfType<PageRequest>().Subject;
+        page.AfterId.Should().Be(expectedAfter);
+        page.AfterSortKey.Should().Be("maraba");
+    }
+
+    [Fact]
     public async Task BindModelAsync_QueryStringLimitVenceCursorLimit()
     {
         Guid expectedAfter = Guid.NewGuid();
@@ -281,7 +336,8 @@ public sealed class PageRequestModelBinderTests
             After: expectedAfter.ToString(),
             Limit: 10, // do cursor
             ResourceTag: "editais",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10)));
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -306,7 +362,8 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-alice"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -330,7 +387,8 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-alice"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -358,7 +416,8 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: null));
 
         DefaultModelBindingContext context = CreateContext(
@@ -382,7 +441,8 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "inscricoes",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-alice"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -408,7 +468,8 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "editais",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
             UserId: "user-someoneelse"));
 
         DefaultModelBindingContext context = CreateContext(
@@ -430,7 +491,8 @@ public sealed class PageRequestModelBinderTests
             After: afterId.ToString(),
             Limit: 10,
             ResourceTag: "editais",
-            Direction: PaginationDirection.Next,            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(-1))); // já expirado
+            Direction: PaginationDirection.Next,
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(-1))); // já expirado
 
         ModelBindingContext context = CreateContext(
             "editais",
@@ -534,6 +596,12 @@ public sealed class PageRequestModelBinderTests
 
         internal static void UserScopedAction(
             [FromCursor("inscricoes", RequireUserBinding = true)] PageRequest page)
+        {
+            _ = page;
+        }
+
+        internal static void OrderedAction(
+            [FromCursor("cidades", RequireSortKey = true)] PageRequest page)
         {
             _ = page;
         }
