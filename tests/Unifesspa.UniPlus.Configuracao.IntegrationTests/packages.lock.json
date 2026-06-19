@@ -78,9 +78,9 @@
       },
       "WolverineFx": {
         "type": "Direct",
-        "requested": "[5.39.0, )",
-        "resolved": "5.39.0",
-        "contentHash": "x1aXrnxRcezLioZnesFLgGZO0BINqI4tKxiS411iaZw/z/JVtoJ575IZML4FvEBjMkFBPirrSF3hkuveL4i2sQ==",
+        "requested": "[5.39.5, )",
+        "resolved": "5.39.5",
+        "contentHash": "rnyz+ZConabOTi/U8N7UQAOaMc9P03hHyFrXZ6///6X0qtsHQ+VKDZtHe87AZJmY7By2w9As9puY6/jGCg5ZCA==",
         "dependencies": {
           "JasperFx": "1.31.0",
           "JasperFx.Events": "1.36.0",
@@ -1108,11 +1108,11 @@
       },
       "WolverineFx.RDBMS": {
         "type": "Transitive",
-        "resolved": "5.39.0",
-        "contentHash": "qLwcwCaQzkbcJpX3MFftHDLVXDTUFl+8XRFwLDZPwLHAf4FeRfRE/u/eOnrWyrQ/sv189WDZx5UmoEdxnRynTw==",
+        "resolved": "5.39.5",
+        "contentHash": "j/gViP6Dk07oiGhb0q4kCTpMcYkp0RDcfhRcjZAIprLFnK4sIHPNVtLmCKT08/8JFVKQHhtkvaHA32LoUOFacw==",
         "dependencies": {
           "Weasel.Core": "8.15.1",
-          "WolverineFx": "5.39.0"
+          "WolverineFx": "5.39.5"
         }
       },
       "xunit.abstractions": {
@@ -1172,7 +1172,7 @@
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Configuracao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Configuracao.Infrastructure": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.39.0, )"
+          "WolverineFx.Postgresql": "[5.39.5, )"
         }
       },
       "unifesspa.uniplus.configuracao.application": {
@@ -1208,7 +1208,11 @@
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.7, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.1, )",
           "Unifesspa.UniPlus.Configuracao.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )"
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "WolverineFx": "[5.39.5, )",
+          "WolverineFx.EntityFrameworkCore": "[5.39.5, )",
+          "WolverineFx.Kafka": "[5.39.5, )",
+          "WolverineFx.Postgresql": "[5.39.5, )"
         }
       },
       "unifesspa.uniplus.governance.contracts": {
@@ -1245,10 +1249,10 @@
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "VaultSharp": "[1.17.5.1, )",
-          "WolverineFx": "[5.39.0, )",
-          "WolverineFx.EntityFrameworkCore": "[5.39.0, )",
-          "WolverineFx.Kafka": "[5.39.0, )",
-          "WolverineFx.Postgresql": "[5.39.0, )"
+          "WolverineFx": "[5.39.5, )",
+          "WolverineFx.EntityFrameworkCore": "[5.39.5, )",
+          "WolverineFx.Kafka": "[5.39.5, )",
+          "WolverineFx.Postgresql": "[5.39.5, )"
         }
       },
       "unifesspa.uniplus.integrationtests.fixtures": {
@@ -1258,7 +1262,7 @@
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.7, )",
           "Testcontainers": "[4.11.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "WolverineFx": "[5.39.0, )",
+          "WolverineFx": "[5.39.5, )",
           "xunit": "[2.9.3, )"
         }
       },
@@ -1558,36 +1562,36 @@
       },
       "WolverineFx.EntityFrameworkCore": {
         "type": "CentralTransitive",
-        "requested": "[5.39.0, )",
-        "resolved": "5.39.0",
-        "contentHash": "xD31lMm3aud+YL2WVy9xTEKWEOt2F4a6sYBYlRLNzgSECZUnG/1vWwCivmxMQy3YraSjB9cfqRchRTKqtN9lfA==",
+        "requested": "[5.39.5, )",
+        "resolved": "5.39.5",
+        "contentHash": "HW0f2XTA05OkhogwnKT3vWOVaI6NzE5RUxrn3pRVda7bKKuhUIPP5yi5Wql5tI+/nelaBpkNsB94+4hnpRwgeg==",
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "10.0.2",
           "Microsoft.EntityFrameworkCore.Design": "10.0.2",
           "Microsoft.EntityFrameworkCore.Relational": "10.0.2",
           "Weasel.EntityFrameworkCore": "8.15.1",
-          "WolverineFx.RDBMS": "5.39.0"
+          "WolverineFx.RDBMS": "5.39.5"
         }
       },
       "WolverineFx.Kafka": {
         "type": "CentralTransitive",
-        "requested": "[5.39.0, )",
-        "resolved": "5.39.0",
-        "contentHash": "FqtGEBFPT7MCWmJXCPfLZqd7LzOTpL1pO2BVHVmu2tioQajAIqsngIekUYMVlxSEoIRj3/DCLKV0gbtq1fkf/A==",
+        "requested": "[5.39.5, )",
+        "resolved": "5.39.5",
+        "contentHash": "6QT36/IJNiAQxkbj2bEU+QI1ckOZtRbH5ppfsTpa2iQjI72hgLs8JfBKh0xzNrenGMcNMZRoBwrwaz2/dM/28A==",
         "dependencies": {
           "Confluent.SchemaRegistry.Serdes.Avro": "2.14.0",
           "Confluent.SchemaRegistry.Serdes.Json": "2.14.0",
-          "WolverineFx": "5.39.0"
+          "WolverineFx": "5.39.5"
         }
       },
       "WolverineFx.Postgresql": {
         "type": "CentralTransitive",
-        "requested": "[5.39.0, )",
-        "resolved": "5.39.0",
-        "contentHash": "lwKbD6hdg2sSmX+kNMfqSp6LCY8iO8s21qhn0ZxcUUx7pxMzZHC42uRxU79UPHUxTVG4QJ+lZmkHFPaz6vGBow==",
+        "requested": "[5.39.5, )",
+        "resolved": "5.39.5",
+        "contentHash": "/ApeWn+4dpLLXvmTzCspKxXHdh5WTrn01Y3YG/p3IxCLtbn2EmkBOIM2Kvu3xHVvY8sV/mMPi4NpplFDY9PZfA==",
         "dependencies": {
           "Weasel.Postgresql": "8.15.1",
-          "WolverineFx.RDBMS": "5.39.0"
+          "WolverineFx.RDBMS": "5.39.5"
         }
       }
     }
