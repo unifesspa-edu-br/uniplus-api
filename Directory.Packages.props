@@ -45,7 +45,9 @@
     <PackageVersion Include="StackExchange.Redis" Version="2.12.14" />
 
     <!-- Paginação keyset (ADR-0094) — motor de seek SQL multi-coluna sob o cursor opaco
-         do projeto (ADR-0026). MIT, nativo .NET 10 / EF Core 10. -->
+         do projeto (ADR-0026). MIT, nativo .NET 10 / EF Core 10. O analyzer transitivo
+         (.Analyzers) é removido no Infrastructure.Core.csproj — exige um Roslyn mais novo
+         que o do SDK das imagens Docker e quebraria o publish (CS9057). -->
     <PackageVersion Include="MR.EntityFrameworkCore.KeysetPagination" Version="1.6.0" />
 
     <!-- Storage -->
