@@ -23,4 +23,12 @@ public sealed class GeoProximidadeOptions
 
     /// <summary>Teto do top-N. <c>limit</c> acima deste valor é truncado (não é erro).</summary>
     public int LimitMax { get; set; } = 200;
+
+    /// <summary>
+    /// Limites coerentes: teto de raio positivo, top-N de ao menos 1 e default no
+    /// intervalo <c>[1, LimitMax]</c>. Usado na validação fail-fast no boot (config
+    /// inválida como <c>LimitMax=0</c> faria <c>Take(limit)</c> esvaziar buscas válidas).
+    /// </summary>
+    public bool LimitesValidos() =>
+        RaioMaxKm > 0 && LimitMax >= 1 && LimitPadrao >= 1 && LimitPadrao <= LimitMax;
 }
