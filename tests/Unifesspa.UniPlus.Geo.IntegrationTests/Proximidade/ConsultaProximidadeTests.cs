@@ -112,4 +112,29 @@ public sealed class ConsultaProximidadeTests
         ConsultaProximidade.TentarCriar(90, 180, Opcoes.RaioMaxKm, null, Opcoes, out _, out _).Should().BeTrue();
         ConsultaProximidade.TentarCriar(-90, -180, Opcoes.RaioMaxKm, null, Opcoes, out _, out _).Should().BeTrue();
     }
+
+    [Fact(DisplayName = "Options: defaults são válidos (validação fail-fast no boot)")]
+    public void Options_Defaults_SaoValidos()
+    {
+        new GeoProximidadeOptions().LimitesValidos().Should().BeTrue();
+    }
+
+    // Parâmetros: (raioMaxKm, limitPadrao, limitMax).
+    [Theory(DisplayName = "Options: configuração inválida é rejeitada (RaioMaxKm/LimitMax/LimitPadrao)")]
+    [InlineData(0, 50, 200)]      // RaioMaxKm = 0
+    [InlineData(-1, 50, 200)]     // RaioMaxKm < 0
+    [InlineData(500, 50, 0)]      // LimitMax < 1
+    [InlineData(500, 0, 200)]     // LimitPadrao < 1
+    [InlineData(500, 300, 200)]   // LimitPadrao > LimitMax
+    public void Options_Invalida_Rejeitada(double raioMaxKm, int limitPadrao, int limitMax)
+    {
+        GeoProximidadeOptions opcoes = new()
+        {
+            RaioMaxKm = raioMaxKm,
+            LimitPadrao = limitPadrao,
+            LimitMax = limitMax,
+        };
+
+        opcoes.LimitesValidos().Should().BeFalse();
+    }
 }

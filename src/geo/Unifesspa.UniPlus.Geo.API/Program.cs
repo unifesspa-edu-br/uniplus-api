@@ -95,8 +95,14 @@ builder.Services.AddSingleton<IResourceLinksBuilder<CepResolvidoDto>, CepResolvi
 // configuráveis via seção Geo:Proximidade (GeoProximidadeOptions), com defaults.
 builder.Services.AddSingleton<IResourceLinksBuilder<CidadeProximaDto>, CidadeProximaLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<LogradouroProximoDto>, LogradouroProximoLinksBuilder>();
-builder.Services.Configure<GeoProximidadeOptions>(
-    builder.Configuration.GetSection(GeoProximidadeOptions.SectionName));
+// Validação fail-fast dos limites: config inválida (ex.: LimitMax=0) faria
+// Take(limit) receber 0 e esvaziar buscas válidas — falha no boot, não em runtime.
+builder.Services.AddOptions<GeoProximidadeOptions>()
+    .Bind(builder.Configuration.GetSection(GeoProximidadeOptions.SectionName))
+    .Validate(
+        static o => o.LimitesValidos(),
+        "Geo:Proximidade — RaioMaxKm > 0, LimitMax >= 1 e 1 <= LimitPadrao <= LimitMax.")
+    .ValidateOnStart();
 
 // TTL configurável do cache-aside de CEP (#676) — default 24h (GeoCepCacheOptions).
 builder.Services.Configure<GeoCepCacheOptions>(
