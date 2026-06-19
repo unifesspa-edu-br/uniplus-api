@@ -122,12 +122,14 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0091](0091-postgis-georreferencia-nts.md) | PostGIS e NetTopologySuite como mecanismo de georreferência | accepted | 2026-06-17 |
 | [0092](0092-etl-carga-dne-reference-data.md) | Reference data do Geo sem soft-delete, recarregado por upsert | accepted | 2026-06-17 |
 | [0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) | Rate-limiting de endpoints públicos de reference data na borda (gateway), não no app | accepted | 2026-06-19 |
+| [0094](0094-keyset-ordenado-via-mr-sob-cursor-opaco.md) | Ordenação keyset na API via biblioteca de seek sob cursor opaco | accepted | 2026-06-19 |
+| [0095](0095-chave-de-ordenacao-keyset-nao-nula.md) | Chave de ordenação keyset não-nula via coalesce | accepted | 2026-06-19 |
 
-> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0093` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0094+`.
+> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0095` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0096+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0093`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0095`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
