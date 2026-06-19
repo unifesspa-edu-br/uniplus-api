@@ -107,6 +107,9 @@ builder.Services.AddOptions<GeoProximidadeOptions>()
 // TTL configurável do cache-aside de CEP (#676) — default 24h (GeoCepCacheOptions).
 builder.Services.Configure<GeoCepCacheOptions>(
     builder.Configuration.GetSection(GeoCepCacheOptions.SectionName));
+// Teto de fan-out de logradouros do reader de CEP (#705) — default 50 (GeoCepLookupOptions).
+builder.Services.Configure<GeoCepLookupOptions>(
+    builder.Configuration.GetSection(GeoCepLookupOptions.SectionName));
 
 // Migrations EF Core aplicadas no host StartAsync via IHostedService.
 // Registrado ANTES de UseWolverineOutboxCascading + AddWolverineMessaging
