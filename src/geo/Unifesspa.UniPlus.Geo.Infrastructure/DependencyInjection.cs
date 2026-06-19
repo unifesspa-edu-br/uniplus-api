@@ -52,6 +52,10 @@ public static class GeoInfrastructureRegistration
         services.AddScoped<IBairroReader, BairroReader>();
         services.AddScoped<ILogradouroReader, LogradouroReader>();
 
+        // Proximidade geoespacial (Story #678): filtro ST_DWithin (índice GIST) +
+        // ordenação ST_Distance sobre geography (ADR-0091). Só reference data vigente.
+        services.AddScoped<IGeoProximidadeReader, GeoProximidadeReader>();
+
         // Lookup de CEP (Story #676): reader da cascata (logradouro → grande usuário →
         // faixa) + resolver com cache-aside por selo de versão (ADR-0090/0092). O
         // Lazy<ICacheService> difere o Connect do Redis para o resolver degradar ao

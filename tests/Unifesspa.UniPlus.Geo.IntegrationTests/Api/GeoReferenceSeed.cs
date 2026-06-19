@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 
 using Microsoft.EntityFrameworkCore;
 
+using NetTopologySuite.Geometries;
+
 using Unifesspa.UniPlus.Geo.Domain.Entities;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Geo.IntegrationTests.Infrastructure;
@@ -71,10 +73,11 @@ internal static partial class GeoReferenceSeed
         string? microrregiaoNome = null,
         string? regiaoIntermediariaNome = null,
         string? regiaoImediataNome = null,
+        Point? coordenada = null,
         bool vigente = true) =>
         GeoTestKeys.Ok(Cidade.Importar(
             estadoId, uf, codigoIbge, nome,
-            nomeNormalizado ?? Normalizar(nome), ddd, latitude, longitude, null,
+            nomeNormalizado ?? Normalizar(nome), ddd, latitude, longitude, coordenada,
             null, mesorregiaoNome, null, microrregiaoNome,
             null, regiaoIntermediariaNome, null, regiaoImediataNome,
             Versao, vigente));
@@ -111,13 +114,14 @@ internal static partial class GeoReferenceSeed
         decimal? latitude = null,
         decimal? longitude = null,
         string? nomeNormalizado = null,
+        Point? coordenada = null,
         bool vigente = true) =>
         // Espelha o ETL real (#673 + #707): Nome é o nome sem o tipo; NomeCompleto (origem
         // logradouro) carrega o texto cheio; NomeNormalizado vem de logradouro_sem_acento —
         // o TEXTO COMPLETO sem acento (tipo + nome), coluna de busca e chave de upsert.
         GeoTestKeys.Ok(Logradouro.Importar(
             cep, tipo, nome, nomeCompleto, nomeNormalizado ?? Normalizar(nomeCompleto ?? nome), cidadeId,
-            distritoId, bairroId, uf, latitude, longitude, null, true, Versao, vigente));
+            distritoId, bairroId, uf, latitude, longitude, coordenada, true, Versao, vigente));
 
     public static LogradouroComplemento NovoComplemento(string cep, string complemento, bool vigente = true) =>
         GeoTestKeys.Ok(LogradouroComplemento.Importar(cep, complemento, Normalizar(complemento), Versao, vigente));
