@@ -307,6 +307,43 @@ public sealed class EtlAtualizacaoPeriodicaTests
         execucao.Mensagem.Should().Contain("desligamento");
     }
 
+    [Fact(DisplayName = "#692: wiring fila → worker → executor — o disparo enfileirado é consumido e executado em segundo plano até concluir")]
+    public async Task Wiring_FilaWorkerExecutor_ProcessaAteConcluir()
+    {
+        await LimparAsync();
+        Guid id = await CriarExecucaoAsync("202601");
+
+        FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal)
+        {
+            ["202601"] = FonteCompleta("202601"),
+        });
+
+        GeoImportacaoFila fila = new();
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        using GeoEtlMetrics metricas = new();
+        Lazy<IGeoCepCacheInvalidador> cacheLazy = new(() => Substitute.For<IGeoCepCacheInvalidador>());
+        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas, fila);
+
+        // O worker resolve IGeoImportacaoExecutor de um escopo novo por item; aqui o scope
+        // factory devolve este decorator, que sinaliza quando a carga termina.
+        ExecutorComSinal executor = new(orquestrador);
+        using GeoImportacaoBackgroundService worker = CriarWorker(fila, executor);
+
+        await fila.EnfileirarAsync(id, CancellationToken.None);
+        await worker.StartAsync(CancellationToken.None);
+
+        // Espera determinística (sem Sleep): o sinal dispara no finally do ExecutarAsync, após
+        // a carga concluir. WaitAsync limita o tempo para não pendurar o CI se o wiring quebrar.
+        await executor.Concluido.WaitAsync(TimeSpan.FromSeconds(30));
+
+        await worker.StopAsync(CancellationToken.None);
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        GeoImportacaoExecucao execucao = await leitura.ImportacaoExecucoes.SingleAsync(e => e.Id == id);
+        execucao.Status.Should().Be(StatusImportacao.Concluida, "o worker consumiu a fila e o executor rodou a carga até concluir");
+        execucao.ConcluidoEm.Should().NotBeNull();
+    }
+
     private static GeoImportacaoBackgroundService CriarWorker(IGeoImportacaoFila fila, IGeoImportacaoExecutor executor)
     {
         // Scope factory mínimo: o dreno do StopAsync resolve IGeoImportacaoExecutor do escopo.
@@ -436,5 +473,35 @@ public sealed class EtlAtualizacaoPeriodicaTests
     private sealed class FonteFactoryCancelada : IGeoFonteDadosFactory
     {
         public IGeoFonteDados Criar(string versao) => throw new OperationCanceledException();
+    }
+
+    // Decora o executor sinalizando o fim de ExecutarAsync — permite ao teste do wiring
+    // (#692) aguardar a execução em segundo plano de forma determinística, sem Sleep.
+    private sealed class ExecutorComSinal : IGeoImportacaoExecutor
+    {
+        private readonly IGeoImportacaoExecutor _interno;
+        private readonly TaskCompletionSource _concluido = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ExecutorComSinal(IGeoImportacaoExecutor interno)
+        {
+            _interno = interno;
+        }
+
+        public Task Concluido => _concluido.Task;
+
+        public async Task ExecutarAsync(Guid execucaoId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _interno.ExecutarAsync(execucaoId, cancellationToken);
+            }
+            finally
+            {
+                _concluido.TrySetResult();
+            }
+        }
+
+        public Task MarcarInterrompidaNoDesligamentoAsync(Guid execucaoId, CancellationToken cancellationToken) =>
+            _interno.MarcarInterrompidaNoDesligamentoAsync(execucaoId, cancellationToken);
     }
 }
