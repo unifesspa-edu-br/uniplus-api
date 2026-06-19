@@ -188,6 +188,34 @@ public sealed class ProximidadeEndpointTests
         nomesInv.Should().NotContain("Marabá");
     }
 
+    [Fact(DisplayName = "Contrato: lat/long/raioKm são required no OpenAPI; limit é opcional")]
+    public async Task Contrato_ParametrosObrigatorios_MarcadosRequired()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage spec = await GeoReferenceSeed.Obter(client, "/openapi/geo.json");
+        spec.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using JsonDocument doc = JsonDocument.Parse(await spec.Content.ReadAsStringAsync());
+        JsonElement parametros = doc.RootElement
+            .GetProperty("paths")
+            .GetProperty("/api/cidades/proximas")
+            .GetProperty("get")
+            .GetProperty("parameters");
+
+        Dictionary<string, bool> required = [];
+        foreach (JsonElement p in parametros.EnumerateArray())
+        {
+            string nome = p.GetProperty("name").GetString()!;
+            required[nome] = p.TryGetProperty("required", out JsonElement r) && r.GetBoolean();
+        }
+
+        required["lat"].Should().BeTrue();
+        required["long"].Should().BeTrue();
+        required["raioKm"].Should().BeTrue();
+        required["limit"].Should().BeFalse("limit tem default — permanece opcional");
+    }
+
     private static Point Ponto(decimal latitude, decimal longitude) =>
         new((double)longitude, (double)latitude) { SRID = 4326 };
 

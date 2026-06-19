@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.OpenApi;
+
 using Serilog;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
@@ -13,6 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Geo.API.Errors;
 using Unifesspa.UniPlus.Geo.API.Formatting;
 using Unifesspa.UniPlus.Geo.API.Hateoas;
+using Unifesspa.UniPlus.Geo.API.OpenApi;
 using Unifesspa.UniPlus.Geo.Application;
 using Unifesspa.UniPlus.Geo.Application.DTOs;
 using Unifesspa.UniPlus.Geo.Infrastructure;
@@ -44,6 +47,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 // OpenAPI 3.1 (ADR-0030) — spec em /openapi/geo.json.
 builder.Services.AddUniPlusOpenApi("geo", builder.Configuration);
+// Marca lat/long/raioKm da proximidade (#678) como required no contrato — são
+// validados em runtime (400 se ausentes), mas como query params double? o
+// ApiExplorer os descreveria como opcionais. AddOpenApi para o mesmo documento é
+// aditivo: anexa o transformer ao pipeline do doc "geo".
+builder.Services.AddOpenApi("geo", options =>
+    options.AddOperationTransformer<ProximidadeRequiredParametrosTransformer>());
 
 builder.Services.AddSingleton<IDomainErrorRegistration, GeoDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();

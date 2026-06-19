@@ -1279,6 +1279,7 @@
           {
             "name": "lat",
             "in": "query",
+            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
               "type": [
@@ -1291,6 +1292,7 @@
           {
             "name": "long",
             "in": "query",
+            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
               "type": [
@@ -1303,6 +1305,7 @@
           {
             "name": "raioKm",
             "in": "query",
+            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
               "type": [
@@ -1387,6 +1390,7 @@
           {
             "name": "lat",
             "in": "query",
+            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
               "type": [
@@ -1399,6 +1403,7 @@
           {
             "name": "long",
             "in": "query",
+            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
               "type": [
@@ -1411,6 +1416,7 @@
           {
             "name": "raioKm",
             "in": "query",
+            "required": true,
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?(?:[eE][\u002B-]?\\d\u002B)?$",
               "type": [
