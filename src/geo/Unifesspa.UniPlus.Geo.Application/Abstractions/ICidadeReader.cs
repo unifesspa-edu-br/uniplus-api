@@ -12,11 +12,14 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 public interface ICidadeReader
 {
     /// <summary>
-    /// Lista as Cidades vigentes paginadas por keyset bidirecional sobre <c>Id</c>
-    /// (ADR-0026 + ADR-0089), aplicando o <paramref name="filtro"/> (UF + busca
-    /// textual). Os <c>EXISTS</c> do keyset herdam o mesmo <c>WHERE</c> filtrado.
+    /// Lista as Cidades vigentes paginadas por keyset bidirecional ordenado
+    /// alfabeticamente por nome (<c>nome_normalizado</c> + <c>Id</c> de desempate,
+    /// ADR-0094 + ADR-0089), aplicando o <paramref name="filtro"/> (UF + busca
+    /// textual). Os <c>EXISTS</c> do keyset herdam o mesmo <c>WHERE</c> filtrado. A
+    /// âncora é a tupla <c>(SortKey, Id)</c>.
     /// </summary>
-    Task<(IReadOnlyList<Cidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<Cidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

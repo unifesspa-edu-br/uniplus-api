@@ -8,9 +8,9 @@ using Unifesspa.UniPlus.Geo.Domain.Entities;
 /// <summary>
 /// Handler convention-based de <see cref="ListarCidadesQuery"/>: monta o
 /// <see cref="FiltroListagemCidades"/> (UF + busca) e delega ao reader a paginação
-/// keyset bidirecional sobre <c>Cidade</c>. A normalização acento/caixa da busca é
-/// feita no reader (termo normalizado no app + <c>ILIKE</c> sobre
-/// <c>nome_normalizado</c>). Projeta as entidades vigentes em DTO de resumo.
+/// keyset bidirecional ordenada por nome sobre <c>Cidade</c>. A normalização
+/// acento/caixa da busca é feita no reader (termo normalizado no app + <c>ILIKE</c>
+/// sobre <c>nome_normalizado</c>). Projeta as entidades vigentes em DTO de resumo.
 /// </summary>
 public static class ListarCidadesQueryHandler
 {
@@ -26,11 +26,11 @@ public static class ListarCidadesQueryHandler
             string.IsNullOrWhiteSpace(query.Uf) ? null : query.Uf,
             string.IsNullOrWhiteSpace(query.Busca) ? null : query.Busca);
 
-        (IReadOnlyList<Cidade> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await reader
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, filtro, cancellationToken)
+        (IReadOnlyList<Cidade> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await reader
+            .ListarPaginadoAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, filtro, cancellationToken)
             .ConfigureAwait(false);
 
         CidadeResumoDto[] items = [.. itens.Select(c => c.ToResumoDto())];
-        return new ListarCidadesResult(items, anteriorAfterId, proximoAfterId);
+        return new ListarCidadesResult(items, anterior, proximo);
     }
 }

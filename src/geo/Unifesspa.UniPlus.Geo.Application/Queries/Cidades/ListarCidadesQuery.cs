@@ -9,12 +9,14 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <paramref name="Busca"/> (acento/caixa-insensível). Os parâmetros já chegam
 /// decodificados — o controller decifra o cursor no boundary (ADR-0031).
 /// </summary>
-/// <param name="AfterId">Âncora da página; <see langword="null"/> retorna a primeira janela.</param>
+/// <param name="AfterSortKey">Chave de ordenação (nome) da âncora; par com <paramref name="AfterId"/> (ADR-0094).</param>
+/// <param name="AfterId">Id de desempate da âncora; <see langword="null"/> retorna a primeira janela.</param>
 /// <param name="Limit">Tamanho máximo da página.</param>
 /// <param name="Direction">Direção de navegação (<c>Next</c>/<c>Prev</c>).</param>
 /// <param name="Uf">Filtro por UF; <see langword="null"/>/vazio = sem filtro.</param>
 /// <param name="Busca">Termo de busca sobre o nome; <see langword="null"/>/vazio = sem filtro.</param>
 public sealed record ListarCidadesQuery(
+    string? AfterSortKey,
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,

@@ -104,6 +104,22 @@ public sealed class GeoSchemaDdlTests
         indexDef.Should().Contain("USING btree", "o range usa B-tree, não GiST");
     }
 
+    [Theory(DisplayName = "#700: índice de ordenação alfabética é B-tree funcional sobre (COALESCE(nome_normalizado,''), id)")]
+    [InlineData("ix_estado_nome_ordenacao", "estado")]
+    [InlineData("ix_cidade_nome_ordenacao", "cidade")]
+    public async Task IndiceOrdenacaoAlfabetica_FuncionalSobreCoalesce(string indexName, string tabela)
+    {
+        string? indexDef = await ObterIndexDefAsync(indexName);
+
+        indexDef.Should().NotBeNull($"o índice de ordenação {indexName} deve existir (#700/ADR-0094)");
+        indexDef!.Should().Contain($"ON public.{tabela}");
+        indexDef.Should().Contain("USING btree", "a ordenação por nome usa B-tree (não GiST/GIN)");
+        // Casa com o ORDER BY gerado pela MR: COALESCE(nome_normalizado, ''), id.
+        indexDef.Should().Contain("COALESCE", "o índice é funcional sobre a mesma expressão coalescida do ORDER BY (ADR-0095)");
+        indexDef.Should().Contain("nome_normalizado");
+        indexDef.Should().Contain("id");
+    }
+
     [Fact(DisplayName = "extensão pg_trgm está instalada (sustenta o índice trigram)")]
     public async Task ExtensaoPgTrgm_Instalada()
     {

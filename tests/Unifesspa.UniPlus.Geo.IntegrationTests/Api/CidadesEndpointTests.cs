@@ -91,6 +91,69 @@ public sealed class CidadesEndpointTests
         nomes.Should().NotContain("Óbidos");
     }
 
+    [Fact(DisplayName = "#700: lista de cidades vem ordenada alfabeticamente por nome, estável ao paginar")]
+    public async Task Cidades_OrdenadasAlfabeticamente()
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        List<string> nomes = [];
+        string? proximo = "/api/cidades?limit=2";
+        while (proximo is not null)
+        {
+            using HttpResponseMessage pagina = await GeoReferenceSeed.Obter(client, proximo);
+            pagina.StatusCode.Should().Be(HttpStatusCode.OK);
+            nomes.AddRange(LerNomes(await LerArrayAsync(pagina)));
+            proximo = GeoReferenceSeed.ExtrairLink(pagina, "next");
+        }
+
+        // Ordem por nome_normalizado: maraba < obidos < parauapebas < sao paulo.
+        nomes.Should().Equal("Marabá", "Óbidos", "Parauapebas", "São Paulo");
+    }
+
+    [Fact(DisplayName = "#700: cidades homônimas (mesmo nome, UFs distintas) têm ordem estável por desempate de Id")]
+    public async Task Cidades_Homonimas_OrdemEstavel()
+    {
+        await GeoReferenceSeed.LimparAsync(_fixture);
+        await using (GeoDbContext ctx = _fixture.CreateDbContext())
+        {
+            Pais brasil = GeoReferenceSeed.NovoBrasil();
+            Estado pe = GeoReferenceSeed.NovoEstado(brasil.Id, "PE", "Pernambuco");
+            Estado ms = GeoReferenceSeed.NovoEstado(brasil.Id, "MS", "Mato Grosso do Sul");
+            Cidade bonitoPe = GeoReferenceSeed.NovaCidade(pe.Id, "PE", "2602605", "Bonito", nomeNormalizado: "bonito");
+            Cidade bonitoMs = GeoReferenceSeed.NovaCidade(ms.Id, "MS", "5002209", "Bonito", nomeNormalizado: "bonito");
+            ctx.Paises.Add(brasil);
+            ctx.Estados.AddRange(pe, ms);
+            ctx.Cidades.AddRange(bonitoPe, bonitoMs);
+            await ctx.SaveChangesAsync();
+        }
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        async Task<List<string>> ColetarCodigosAsync()
+        {
+            List<string> codigos = [];
+            // limit=1 força paginar ENTRE os homônimos — exercita o desempate por Id no cursor.
+            string? proximo = "/api/cidades?limit=1";
+            while (proximo is not null)
+            {
+                using HttpResponseMessage pagina = await GeoReferenceSeed.Obter(client, proximo);
+                pagina.StatusCode.Should().Be(HttpStatusCode.OK);
+                JsonElement itens = await LerArrayAsync(pagina);
+                codigos.AddRange(itens.EnumerateArray().Select(c => c.GetProperty("codigoIbge").GetString()!));
+                proximo = GeoReferenceSeed.ExtrairLink(pagina, "next");
+            }
+
+            return codigos;
+        }
+
+        List<string> primeira = await ColetarCodigosAsync();
+        List<string> segunda = await ColetarCodigosAsync();
+
+        primeira.Should().HaveCount(2).And.OnlyHaveUniqueItems();
+        segunda.Should().Equal(primeira, "homônimos são desempatados por Id de forma estável entre execuções");
+    }
+
     [Theory(DisplayName = "Segurança ILIKE: metacaractere de busca é tratado como literal (não casa tudo)")]
     [InlineData("%")]
     [InlineData("_")]

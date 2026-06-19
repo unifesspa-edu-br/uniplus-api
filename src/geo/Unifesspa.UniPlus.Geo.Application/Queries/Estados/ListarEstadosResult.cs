@@ -9,5 +9,5 @@ using Unifesspa.UniPlus.Geo.Application.DTOs;
 /// </summary>
 public sealed record ListarEstadosResult(
     IReadOnlyList<EstadoDto> Items,
-    Guid? AnteriorAfterId,
-    Guid? ProximoAfterId);
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo);
