@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Geo.API.Errors;
+using Unifesspa.UniPlus.Geo.API.Formatting;
 using Unifesspa.UniPlus.Geo.API.Hateoas;
 using Unifesspa.UniPlus.Geo.Application;
 using Unifesspa.UniPlus.Geo.Application.DTOs;
@@ -79,6 +80,14 @@ builder.Services.AddSingleton<IResourceLinksBuilder<LogradouroResumoDto>, Lograd
 
 // HATEOAS Level 1 (ADR-0029) do lookup de CEP (#676): _links para cidade e estado.
 builder.Services.AddSingleton<IResourceLinksBuilder<CepResolvidoDto>, CepResolvidoLinksBuilder>();
+
+// HATEOAS Level 1 (ADR-0029) da proximidade geoespacial (#678): _links para cidade
+// (e CEP no caso de logradouro). Limites (teto de raio, default/teto de top-N)
+// configuráveis via seção Geo:Proximidade (GeoProximidadeOptions), com defaults.
+builder.Services.AddSingleton<IResourceLinksBuilder<CidadeProximaDto>, CidadeProximaLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<LogradouroProximoDto>, LogradouroProximoLinksBuilder>();
+builder.Services.Configure<GeoProximidadeOptions>(
+    builder.Configuration.GetSection(GeoProximidadeOptions.SectionName));
 
 // TTL configurável do cache-aside de CEP (#676) — default 24h (GeoCepCacheOptions).
 builder.Services.Configure<GeoCepCacheOptions>(
