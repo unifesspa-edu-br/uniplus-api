@@ -98,12 +98,14 @@ public static class GeoInfrastructureRegistration
     }
 
     /// <summary>
-    /// Registra os gatilhos hospedados do ETL (#674): o <c>BackgroundService</c> que
-    /// executa as cargas enfileiradas e o seed de desenvolvimento. <strong>Deve ser
-    /// chamado no Program APÓS <c>AddDbContextMigrationsOnStartup&lt;GeoDbContext&gt;()</c></strong>
-    /// — como <c>HostOptions.ServicesStartConcurrently</c> é <see langword="false"/>, a
-    /// ordem de registro é a ordem de start, e tanto o seed quanto a reconciliação do
-    /// worker tocam o banco (a tabela precisa já existir).
+    /// Registra os gatilhos hospedados do ETL (#674): a reconciliação de órfãs no startup
+    /// (#695), o <c>BackgroundService</c> que executa as cargas enfileiradas e o seed de
+    /// desenvolvimento. <strong>Deve ser chamado no Program APÓS
+    /// <c>AddDbContextMigrationsOnStartup&lt;GeoDbContext&gt;()</c></strong> — como
+    /// <c>HostOptions.ServicesStartConcurrently</c> é <see langword="false"/>, a ordem de
+    /// registro é a ordem de start: migrations → reconciliação → worker → seed. A
+    /// reconciliação (cujo <c>StartAsync</c> é aguardado) conclui antes de o seed/HTTP
+    /// aceitarem disparos, e tanto ela quanto o seed tocam o banco (a tabela precisa já existir).
     /// </summary>
     public static IServiceCollection AddGeoEtlGatilhos(
         this IServiceCollection services,
@@ -120,6 +122,10 @@ public static class GeoInfrastructureRegistration
 
         if (opcoes.WorkerHabilitado)
         {
+            // Reconciliação de órfãs ANTES do worker e do seed (#695): hosted service cujo
+            // StartAsync é aguardado pelo host, liberando o índice único parcial de execuções
+            // EmAndamento abandonadas antes que qualquer disparo possa colidir nele.
+            services.AddHostedService<GeoReconciliacaoStartupHostedService>();
             services.AddHostedService<GeoImportacaoBackgroundService>();
         }
 
