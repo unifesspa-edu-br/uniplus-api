@@ -64,6 +64,7 @@ public sealed class PageRequestModelBinder : IModelBinder
 
         Guid? afterId = null;
         int? cursorLimit = null;
+        string? afterSortKey = null;
 
         string? rawCursor = query[CursorParam];
         if (!string.IsNullOrWhiteSpace(rawCursor))
@@ -137,6 +138,9 @@ public sealed class PageRequestModelBinder : IModelBinder
                     }
 
                     afterId = parsedAfter;
+                    // Chave de ordenação da âncora (keyset ordenado, ADR-0094); null em
+                    // recursos paginados por Id, que ignoram o campo.
+                    afterSortKey = decoded.Payload.SortKey;
                     // Limit do cursor é "memória" do tamanho de janela; clampado se a
                     // config global apertou o range desde a emissão.
                     cursorLimit = Math.Clamp(decoded.Payload.Limit, options.LimitMin, options.LimitMax);
@@ -157,7 +161,7 @@ public sealed class PageRequestModelBinder : IModelBinder
         PaginationDirection effectiveDirection = afterId is null ? PaginationDirection.Next : direction;
 
         bindingContext.Result = ModelBindingResult.Success(
-            new PageRequest(afterId, effectiveLimit, effectiveDirection));
+            new PageRequest(afterId, effectiveLimit, effectiveDirection, afterSortKey));
     }
 
     private static bool TryParseDirection(

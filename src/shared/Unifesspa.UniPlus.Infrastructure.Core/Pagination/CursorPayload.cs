@@ -27,10 +27,18 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// cliente A não consegue replay de cursor emitido para cliente B (ADR-0026
 /// §"User-binding em cursores user-scoped").
 /// </param>
+/// <param name="SortKey">
+/// Chave de ordenação serializada da âncora, para keyset multi-coluna ordenado
+/// (ADR-0094): a continuação é a tupla <c>(SortKey, After)</c> — <see cref="After"/>
+/// permanece o <c>Id</c> de desempate. <c>null</c> em cursores keyset por <c>Id</c>
+/// (a maioria dos recursos) — a ausência é o caminho legado, sem ordenação. Nunca PII
+/// (a sort key é dado público de reference data, ex.: nome de cidade; ADR-0019).
+/// </param>
 public sealed record CursorPayload(
     string After,
     int Limit,
     string ResourceTag,
     DateTimeOffset ExpiresAt,
     PaginationDirection Direction,
-    string? UserId = null);
+    string? UserId = null,
+    string? SortKey = null);

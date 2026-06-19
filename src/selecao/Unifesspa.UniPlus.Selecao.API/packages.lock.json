@@ -694,6 +694,11 @@
           "System.CodeDom": "6.0.0"
         }
       },
+      "MR.EntityFrameworkCore.KeysetPagination.Analyzers": {
+        "type": "Transitive",
+        "resolved": "1.6.0",
+        "contentHash": "uMUw8PKG8C5chT3Yu5bPIsSZIBSLhvSwVOM02jQ8P6ZOwaDg/l+AsYHccom1lG9/ye85N0ZPbHTcbpXHs42O0A=="
+      },
       "Namotion.Reflection": {
         "type": "Transitive",
         "resolved": "3.1.1",
@@ -1003,6 +1008,7 @@
           "Confluent.SchemaRegistry": "[2.14.0, )",
           "EFCore.NamingConventions": "[10.0.1, )",
           "FluentValidation": "[12.1.1, )",
+          "MR.EntityFrameworkCore.KeysetPagination": "[1.6.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.7, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
           "Microsoft.EntityFrameworkCore": "[10.0.7, )",
@@ -1195,6 +1201,16 @@
           "Microsoft.Extensions.Logging": "9.0.4",
           "System.IO.Hashing": "9.0.4",
           "System.Reactive": "6.0.1"
+        }
+      },
+      "MR.EntityFrameworkCore.KeysetPagination": {
+        "type": "CentralTransitive",
+        "requested": "[1.6.0, )",
+        "resolved": "1.6.0",
+        "contentHash": "ExtupgJJ4Jq5HzZSbQAKf3oIQxk0jDGNsAriCDE3JcNom6wSBVUCqK9JiBjY5i+w4T+HBjOUMxGrTUke18FPKg==",
+        "dependencies": {
+          "MR.EntityFrameworkCore.KeysetPagination.Analyzers": "1.6.0",
+          "Microsoft.EntityFrameworkCore": "10.0.0"
         }
       },
       "NetTopologySuite": {
