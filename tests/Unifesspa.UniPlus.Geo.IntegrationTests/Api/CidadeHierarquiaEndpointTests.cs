@@ -164,6 +164,60 @@ public sealed class CidadeHierarquiaEndpointTests
         nomesCompletos.Should().Equal("Rua das Flores", "Rua das Flores e Jardins");
     }
 
+    [Theory(DisplayName = "CA-08 (#709): autocomplete tolera abreviação de tipo ('av') e ordem das palavras")]
+    [InlineData("av paulista")]        // abreviação de tipo (prefixo "av" → "avenida")
+    [InlineData("paulista avenida")]   // palavras fora de ordem
+    public async Task Logradouros_Autocomplete_AbreviacaoEOrdem(string termo)
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // word_similarity (#709) casa o termo contra o texto completo independentemente de
+        // abreviação ou ordem; o ILIKE da #707 rejeitaria ambos. A match esperada fica no
+        // topo do ranking (word_similarity DESC, similarity DESC).
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(
+            client, $"/api/cidades/3550308/logradouros?q={Uri.EscapeDataString(termo)}&limit=100");
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        JsonElement itens = await LerArrayAsync(resposta);
+        itens.EnumerateArray().First().GetProperty("nomeCompleto").GetString().Should().Be("Avenida Paulista");
+    }
+
+    [Fact(DisplayName = "CA-08 (#709): autocomplete tolera abreviação que não é prefixo ('pca' → 'Praça')")]
+    public async Task Logradouros_Autocomplete_AbreviacaoNaoPrefixo()
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // "pca" não é prefixo de "praça": só o word_similarity (trigram) casa; FTS-prefix e
+        // ILIKE falhariam. Confirma a escolha do spike (#709).
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(
+            client, $"/api/cidades/3550308/logradouros?q={Uri.EscapeDataString("pca da se")}&limit=100");
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        JsonElement itens = await LerArrayAsync(resposta);
+        itens.EnumerateArray().First().GetProperty("nomeCompleto").GetString().Should().Be("Praça da Sé");
+    }
+
+    [Fact(DisplayName = "CA-08 (#709): autocomplete tolera pequeno erro de digitação (recall)")]
+    public async Task Logradouros_Autocomplete_Typo()
+    {
+        await SemearAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // O typo ("paulysta") ainda recupera o logradouro. Asserção de recall (Contains),
+        // não de ranking: em datasets grandes o typo pode ficar fora do topo — limitação
+        // aceita e documentada (#709).
+        using HttpResponseMessage resposta = await GeoReferenceSeed.Obter(
+            client, $"/api/cidades/3550308/logradouros?q={Uri.EscapeDataString("avenida paulysta")}&limit=100");
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        JsonElement itens = await LerArrayAsync(resposta);
+        itens.EnumerateArray()
+            .Select(i => i.GetProperty("nomeCompleto").GetString())
+            .Should().Contain("Avenida Paulista");
+    }
+
     [Fact(DisplayName = "CA-04: cidade inexistente retorna 404; cidade existente sem filhos do filtro retorna 200 vazio")]
     public async Task Hierarquia_CidadeInexistente_404_EFiltroVazio_200()
     {
@@ -292,12 +346,19 @@ public sealed class CidadeHierarquiaEndpointTests
         Logradouro ruaFloresJardins = GeoReferenceSeed.NovoLogradouro(
             cidadeSp.Id, "SP", "01231000", "das Flores e Jardins", tipo: "Rua", nomeCompleto: "Rua das Flores e Jardins", bairroId: santaCecilia.Id);
 
+        // Uma avenida sustenta os casos da #709 (abreviação de tipo "av" e ordem das
+        // palavras) sem interferir nas contagens estritas dos casos da #707 (validado
+        // contra o DNE real: word_similarity 0.6 não casa "avenida paulista" com os termos
+        // "se"/"praca"/"rua das flores").
+        Logradouro avenidaPaulista = GeoReferenceSeed.NovoLogradouro(
+            cidadeSp.Id, "SP", "01310100", "Paulista", tipo: "Avenida", nomeCompleto: "Avenida Paulista", bairroId: santaCecilia.Id);
+
         ctx.Paises.Add(brasil);
         ctx.Estados.AddRange(saoPaulo, para);
         ctx.Cidades.AddRange(cidadeSp, maraba);
         ctx.Distritos.AddRange(seDistrito, pinheirosDistrito, novaMaraba);
         ctx.Bairros.AddRange(se, santaCecilia, saude, cidadeNova);
-        ctx.Logradouros.AddRange(pracaSe, ruaSantaCecilia, pracaMaraba, ruaFlores, ruaFloresJardins);
+        ctx.Logradouros.AddRange(pracaSe, ruaSantaCecilia, pracaMaraba, ruaFlores, ruaFloresJardins, avenidaPaulista);
         await ctx.SaveChangesAsync();
     }
 
