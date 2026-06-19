@@ -22,9 +22,10 @@ public static class PaginationControllerExtensions
     /// Devolve <see cref="StatusCodes.Status200OK"/> com os <paramref name="items"/>
     /// como array JSON; encoda o cursor da próxima página quando
     /// <paramref name="nextAfterId"/> não é <c>null</c>; popula
-    /// <c>Link</c> e <c>X-Page-Size</c>.
+    /// <c>Link</c> e <c>X-Page-Size</c>. Variante keyset por <c>Id</c> (a maioria dos
+    /// recursos) — a âncora do cursor é só o <c>Id</c>.
     /// </summary>
-    public static async Task<IActionResult> OkPaginatedAsync<T>(
+    public static Task<IActionResult> OkPaginatedAsync<T>(
         this ControllerBase controller,
         IReadOnlyList<T> items,
         Guid? prevAfterId,
@@ -33,6 +34,45 @@ public static class PaginationControllerExtensions
         string resource,
         bool requireUserBinding = false,
         CancellationToken cancellationToken = default)
+    {
+        CursorAncora? prev = prevAfterId is { } anterior ? new CursorAncora(anterior.ToString(), SortKey: null) : null;
+        CursorAncora? next = nextAfterId is { } proximo ? new CursorAncora(proximo.ToString(), SortKey: null) : null;
+        return OkPaginatedCoreAsync(controller, items, prev, next, page, resource, requireUserBinding, cancellationToken);
+    }
+
+    /// <summary>
+    /// Variante para keyset multi-coluna ordenado (ADR-0094): cada âncora carrega a
+    /// chave de ordenação <strong>e</strong> o <c>Id</c> de desempate, serializados no
+    /// payload opaco. A camada de cursor (AES-GCM, TTL, user-binding, Link) é a mesma.
+    /// </summary>
+    public static Task<IActionResult> OkPaginatedOrdenadoAsync<T>(
+        this ControllerBase controller,
+        IReadOnlyList<T> items,
+        (string SortKey, Guid Id)? prev,
+        (string SortKey, Guid Id)? next,
+        PageRequest page,
+        string resource,
+        bool requireUserBinding = false,
+        CancellationToken cancellationToken = default)
+    {
+        CursorAncora? prevAncora = prev is { } p ? new CursorAncora(p.Id.ToString(), p.SortKey) : null;
+        CursorAncora? nextAncora = next is { } n ? new CursorAncora(n.Id.ToString(), n.SortKey) : null;
+        return OkPaginatedCoreAsync(controller, items, prevAncora, nextAncora, page, resource, requireUserBinding, cancellationToken);
+    }
+
+    // Âncora de continuação serializada no cursor: After = Id (sempre), SortKey
+    // presente apenas no keyset ordenado (ADR-0094).
+    private readonly record struct CursorAncora(string After, string? SortKey);
+
+    private static async Task<IActionResult> OkPaginatedCoreAsync<T>(
+        ControllerBase controller,
+        IReadOnlyList<T> items,
+        CursorAncora? prev,
+        CursorAncora? next,
+        PageRequest page,
+        string resource,
+        bool requireUserBinding,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(controller);
         ArgumentNullException.ThrowIfNull(items);
@@ -51,7 +91,7 @@ public static class PaginationControllerExtensions
         // sem navegação não toca o DI, evitando friction em testes slice-level
         // que registram só CursorEncoder/TimeProvider.
         string? userId = null;
-        if ((prevAfterId is not null || nextAfterId is not null) && requireUserBinding)
+        if ((prev is not null || next is not null) && requireUserBinding)
         {
             IUserContext userContext = services.GetRequiredService<IUserContext>();
             if (!userContext.IsAuthenticated || string.IsNullOrEmpty(userContext.UserId))
@@ -67,16 +107,16 @@ public static class PaginationControllerExtensions
 
         // O cursor vincula sua direção (ADR-0089): o link prev cifra a âncora
         // com Direction=Prev; o next, com Direction=Next. O boundary rejeita
-        // reuso com a direção trocada.
-        string? prevCursor = prevAfterId is { } anterior
+        // reuso com a direção trocada. SortKey só viaja no keyset ordenado (ADR-0094).
+        string? prevCursor = prev is { } anterior
             ? await encoder.EncodeAsync(
-                new CursorPayload(anterior.ToString(), page.Limit, resource, expiresAt, PaginationDirection.Prev, userId),
+                new CursorPayload(anterior.After, page.Limit, resource, expiresAt, PaginationDirection.Prev, userId, anterior.SortKey),
                 cancellationToken).ConfigureAwait(false)
             : null;
 
-        string? nextCursor = nextAfterId is { } proximo
+        string? nextCursor = next is { } proximo
             ? await encoder.EncodeAsync(
-                new CursorPayload(proximo.ToString(), page.Limit, resource, expiresAt, PaginationDirection.Next, userId),
+                new CursorPayload(proximo.After, page.Limit, resource, expiresAt, PaginationDirection.Next, userId, proximo.SortKey),
                 cancellationToken).ConfigureAwait(false)
             : null;
 

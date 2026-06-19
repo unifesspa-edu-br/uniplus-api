@@ -15,8 +15,8 @@ using Pagination;
 /// paginação por cursor opaco (ADR-0026). O <see cref="FromCursorAttribute"/>
 /// herda de <c>ModelBinderAttribute</c> com <c>BindingSource = Query</c>, fazendo
 /// o ApiExplorer descrever o tipo <see cref="PageRequest"/> (record com
-/// <c>AfterId</c> + <c>Limit</c>) como query bag — vazando o shape interno
-/// pós-decode em vez do contrato wire (<c>cursor</c> + <c>limit</c>).
+/// <c>AfterId</c> + <c>Limit</c> + <c>AfterSortKey</c>) como query bag — vazando o
+/// shape interno pós-decode em vez do contrato wire (<c>cursor</c> + <c>limit</c>).
 /// <para>
 /// Este transformer detecta operações com <see cref="FromCursorAttribute"/> e:
 /// </para>
@@ -37,7 +37,7 @@ public sealed class CursorPaginationOperationTransformer : IOpenApiOperationTran
     private const string PaginatedExtension = "x-uniplus-paginated";
     private const string OkStatus = "200";
 
-    private static readonly string[] LeakedPageRequestProperties = ["AfterId", "Limit", "Direction"];
+    private static readonly string[] LeakedPageRequestProperties = ["AfterId", "Limit", "Direction", "AfterSortKey"];
 
     public Task TransformAsync(
         OpenApiOperation operation,

@@ -44,6 +44,10 @@
     <!-- Caching -->
     <PackageVersion Include="StackExchange.Redis" Version="2.12.14" />
 
+    <!-- Paginação keyset (ADR-0094) — motor de seek SQL multi-coluna sob o cursor opaco
+         do projeto (ADR-0026). MIT, nativo .NET 10 / EF Core 10. -->
+    <PackageVersion Include="MR.EntityFrameworkCore.KeysetPagination" Version="1.6.0" />
+
     <!-- Storage -->
     <PackageVersion Include="Minio" Version="7.0.0" />
 

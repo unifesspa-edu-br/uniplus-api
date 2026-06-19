@@ -92,6 +92,16 @@
           "System.Reactive": "6.0.1"
         }
       },
+      "MR.EntityFrameworkCore.KeysetPagination": {
+        "type": "Direct",
+        "requested": "[1.6.0, )",
+        "resolved": "1.6.0",
+        "contentHash": "ExtupgJJ4Jq5HzZSbQAKf3oIQxk0jDGNsAriCDE3JcNom6wSBVUCqK9JiBjY5i+w4T+HBjOUMxGrTUke18FPKg==",
+        "dependencies": {
+          "MR.EntityFrameworkCore.KeysetPagination.Analyzers": "1.6.0",
+          "Microsoft.EntityFrameworkCore": "10.0.0"
+        }
+      },
       "Npgsql": {
         "type": "Direct",
         "requested": "[10.0.2, )",
@@ -911,6 +921,11 @@
         "dependencies": {
           "System.CodeDom": "6.0.0"
         }
+      },
+      "MR.EntityFrameworkCore.KeysetPagination.Analyzers": {
+        "type": "Transitive",
+        "resolved": "1.6.0",
+        "contentHash": "uMUw8PKG8C5chT3Yu5bPIsSZIBSLhvSwVOM02jQ8P6ZOwaDg/l+AsYHccom1lG9/ye85N0ZPbHTcbpXHs42O0A=="
       },
       "Namotion.Reflection": {
         "type": "Transitive",
