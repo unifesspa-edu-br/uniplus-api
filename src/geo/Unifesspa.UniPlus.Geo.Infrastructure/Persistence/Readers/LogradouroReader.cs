@@ -92,18 +92,22 @@ internal sealed class LogradouroReader : ILogradouroReader
         CancellationToken cancellationToken)
     {
         string termo = BuscaTextualNormalizada.Normalizar(busca);
-        List<Logradouro> rankeados;
 
         // O filtro `<%` decide o match comparando pg_trgm.word_similarity_threshold, lido
         // em tempo de execução. SET LOCAL o fixa em 0.6 (default do PostgreSQL; calibrado
         // contra o DNE real na #709 — mantém a match esperada em 1º com baixo volume de
         // falsos positivos) de forma transação-local: determinístico, sem depender da
-        // config global do servidor e sem vazar para a conexão devolvida ao pool. Exige
-        // transação explícita — SET LOCAL só vale dentro de um bloco de transação,
-        // compartilhado com o SELECT seguinte.
-        IDbContextTransaction transacao = await _dbContext.Database
-            .BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        await using (transacao.ConfigureAwait(false))
+        // config global do servidor e sem vazar para a conexão devolvida ao pool. SET LOCAL
+        // exige um bloco de transação. No caminho de query atual o handler não roda sob
+        // transação ambiente (verificado nos testes de integração, que sobem o runtime
+        // Wolverine real), então abre a sua própria; se uma transação ambiente já existir,
+        // reaproveita-a sem assumir seu ciclo de vida — evita abrir uma transação aninhada
+        // e blinda contra mudança futura no pipeline.
+        IDbContextTransaction? ambiente = _dbContext.Database.CurrentTransaction;
+        IDbContextTransaction transacao = ambiente
+            ?? await _dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        List<Logradouro> rankeados;
+        try
         {
             // String literal constante (sem interpolação) — não dispara o EF1002.
             await _dbContext.Database
@@ -119,7 +123,19 @@ internal sealed class LogradouroReader : ILogradouroReader
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            await transacao.CommitAsync(cancellationToken).ConfigureAwait(false);
+            // Commita/descarta apenas a transação que este método abriu; uma ambiente é
+            // de responsabilidade de quem a iniciou.
+            if (ambiente is null)
+            {
+                await transacao.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            if (ambiente is null)
+            {
+                await transacao.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         IReadOnlyList<LogradouroComBairro> itens = await EnriquecerComBairroAsync(rankeados, cancellationToken)
