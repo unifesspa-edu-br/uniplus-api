@@ -12,4 +12,14 @@ public sealed class GeoCepCacheOptions
 
     /// <summary>TTL das entradas <c>geo:cep:v{versao}:{cep}</c> no Redis (default 24h).</summary>
     public TimeSpan Ttl { get; init; } = TimeSpan.FromHours(24);
+
+    /// <summary>
+    /// TTL da memoização em processo do selo de versão vigente (#703, default 15s). O
+    /// selo só muda em re-selagem do ETL (#674), evento raríssimo, então memoizá-lo
+    /// reduz o hot path (cache hit) de 2 round-trips ao Redis (selo + entrada) para 1
+    /// (só a entrada). Janela de staleness: após uma re-selagem, a versão anterior do
+    /// cache pode ser servida por até este TTL. <c>TimeSpan.Zero</c> (ou negativo)
+    /// desliga a memoização — o selo é relido a cada request.
+    /// </summary>
+    public TimeSpan SeloTtl { get; init; } = TimeSpan.FromSeconds(15);
 }
