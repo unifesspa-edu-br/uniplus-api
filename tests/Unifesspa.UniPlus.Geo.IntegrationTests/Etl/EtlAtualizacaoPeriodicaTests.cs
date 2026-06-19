@@ -14,12 +14,14 @@ using NSubstitute;
 using Unifesspa.UniPlus.Geo.Application.Abstractions;
 using Unifesspa.UniPlus.Geo.Application.DTOs;
 using Unifesspa.UniPlus.Geo.Domain.Entities;
+using Unifesspa.UniPlus.Geo.Domain.Errors;
 using Unifesspa.UniPlus.Geo.Infrastructure.Observability;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Bulk;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Etl.Fonte;
 using Unifesspa.UniPlus.Geo.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Atualização periódica do ETL (Story #674) sobre Postgres+PostGIS real: orquestra os
@@ -260,7 +262,7 @@ public sealed class EtlAtualizacaoPeriodicaTests
         using GeoEtlMetrics metricas = new();
         FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal));
         Lazy<IGeoCepCacheInvalidador> cacheLazy = new(() => Substitute.For<IGeoCepCacheInvalidador>());
-        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas);
+        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas, new GeoImportacaoFila());
 
         using GeoImportacaoBackgroundService worker = CriarWorker(fila, orquestrador);
 
@@ -276,6 +278,33 @@ public sealed class EtlAtualizacaoPeriodicaTests
         // Índice único parcial liberado: um novo disparo (mesma versão) não colide na UNIQUE.
         Guid novo = await CriarExecucaoAsync("202601");
         novo.Should().NotBeEmpty();
+    }
+
+    [Fact(DisplayName = "#691: disparo com a fila fechada (serviço em desligamento) retorna NaoEnfileirada e marca a execução Falhou")]
+    public async Task Disparo_ComFilaFechada_RetornaNaoEnfileirada_E_MarcaFalhou()
+    {
+        await LimparAsync();
+        FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal));
+
+        // Writer completado: o próximo EnfileirarAsync lança ChannelClosedException — o caminho
+        // que o endpoint admin mapeia para 503 (serviço em desligamento).
+        GeoImportacaoFila fila = new();
+        fila.Completar();
+
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        using GeoEtlMetrics metricas = new();
+        Lazy<IGeoCepCacheInvalidador> cacheLazy = new(() => Substitute.For<IGeoCepCacheInvalidador>());
+        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas, fila);
+
+        Result<Guid> resultado = await orquestrador.IniciarAsync("202601", "teste", CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(GeoImportacaoErrorCodes.NaoEnfileirada);
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        GeoImportacaoExecucao execucao = await leitura.ImportacaoExecucoes.SingleAsync(e => e.VersaoDataset == "202601");
+        execucao.Status.Should().Be(StatusImportacao.Falhou, "registrada mas não enfileirada: marcada Falhou para não bloquear o índice único parcial");
+        execucao.Mensagem.Should().Contain("desligamento");
     }
 
     private static GeoImportacaoBackgroundService CriarWorker(IGeoImportacaoFila fila, IGeoImportacaoExecutor executor)
@@ -312,7 +341,7 @@ public sealed class EtlAtualizacaoPeriodicaTests
     {
         await using GeoDbContext ctx = _fixture.CreateDbContext();
         using GeoEtlMetrics metricas = new();
-        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas);
+        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas, new GeoImportacaoFila());
         await orquestrador.ExecutarAsync(execucaoId, CancellationToken.None);
     }
 
@@ -320,7 +349,8 @@ public sealed class EtlAtualizacaoPeriodicaTests
         GeoDbContext ctx,
         IGeoFonteDadosFactory fonteFactory,
         Lazy<IGeoCepCacheInvalidador> cacheLazy,
-        GeoEtlMetrics metricas)
+        GeoEtlMetrics metricas,
+        IGeoImportacaoFila fila)
     {
         IConfiguration configuracao = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:GeoDb"] = _fixture.ConnectionString })
@@ -337,7 +367,7 @@ public sealed class EtlAtualizacaoPeriodicaTests
             folhas,
             fonteFactory,
             cacheLazy,
-            new GeoImportacaoFila(),
+            fila,
             metricas,
             TimeProvider.System,
             NullLogger<GeoEtlOrquestrador>.Instance);
