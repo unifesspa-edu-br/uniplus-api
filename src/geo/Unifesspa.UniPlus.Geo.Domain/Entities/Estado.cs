@@ -31,6 +31,13 @@ public sealed class Estado : EntityBase
     /// <summary>Nome sem acentos (origem <c>*_sem_acento</c> da DNE) — acelera busca futura.</summary>
     public string? NomeNormalizado { get; private set; }
 
+    /// <summary>
+    /// Chave técnica gerada pelo banco para ordenação alfabética server-side. Usa
+    /// <see cref="NomeNormalizado"/> quando presente e fallback normalizado de
+    /// <see cref="Nome"/> quando a fonte não trouxe a coluna de busca.
+    /// </summary>
+    public string NomeOrdenacao { get; private set; } = string.Empty;
+
     public string? Regiao { get; private set; }
 
     public string? Capital { get; private set; }

@@ -137,6 +137,16 @@ public sealed class PageRequestModelBinder : IModelBinder
                         }
                     }
 
+                    // Keyset ordenado multi-coluna (ADR-0094): o cursor de
+                    // continuação precisa carregar a âncora completa
+                    // (SortKey, Id). Cursor legado/forjado só com Id não pode
+                    // degradar para "primeira página" silenciosamente.
+                    if (attribute.RequireSortKey && string.IsNullOrWhiteSpace(decoded.Payload.SortKey))
+                    {
+                        FailWith(bindingContext, CursorBindingErrorCodes.Invalido, "O cursor informado é inválido.");
+                        return;
+                    }
+
                     afterId = parsedAfter;
                     // Chave de ordenação da âncora (keyset ordenado, ADR-0094); null em
                     // recursos paginados por Id, que ignoram o campo.

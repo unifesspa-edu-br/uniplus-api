@@ -10,4 +10,19 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
+
+  <!-- O analyzer transitivo da MR (MR.EntityFrameworkCore.KeysetPagination.Analyzers,
+       ADR-0094) referencia um Roslyn (5.3) mais novo que o do SDK das imagens Docker (5.0),
+       emitindo CS9057 que vira erro sob TreatWarningsAsErrors no publish. O analyzer flui
+       transitivamente a TODOS os projetos que (direta ou indiretamente) referenciam a MR, e
+       ExcludeAssets não o corta — então o target é global aqui (Directory.Build.props),
+       removendo-o do ItemGroup Analyzer antes da compilação em qualquer projeto. Só o motor
+       de runtime da MR importa; a regra de chave não-nula (ADR-0095) é garantida por design
+       + testes, não pelo analyzer. -->
+  <Target Name="RemoverMrKeysetAnalyzer" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"
+                Condition="$([System.String]::Copy('%(Analyzer.Identity)').Contains('MR.EntityFrameworkCore.KeysetPagination'))" />
+    </ItemGroup>
+  </Target>
 </Project>

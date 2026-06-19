@@ -44,13 +44,13 @@ internal sealed class EstadoReader : IEstadoReader
             .AsNoTracking()
             .Where(e => e.Vigente);
 
-        // Keyset ordenado por nome (coalesce não-nulo, ADR-0095) + Id de desempate.
+        // Keyset ordenado por nome_ordenacao (não-nulo, ADR-0095) + Id de desempate.
         KeysetOrdenadoPage<Estado> page = await KeysetOrdenadoCursor
             .ApplyAsync(
                 query,
-                b => b.Ascending(e => e.NomeNormalizado ?? string.Empty).Ascending(e => e.Id),
-                e => e.NomeNormalizado ?? string.Empty,
-                static (sortKey, id) => new { NomeNormalizado = sortKey, Id = id },
+                b => b.Ascending(e => e.NomeOrdenacao).Ascending(e => e.Id),
+                e => e.NomeOrdenacao,
+                static (sortKey, id) => new { NomeOrdenacao = sortKey, Id = id },
                 afterSortKey,
                 afterId,
                 limit,

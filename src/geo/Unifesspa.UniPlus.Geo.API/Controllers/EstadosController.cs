@@ -52,7 +52,7 @@ public sealed partial class EstadosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag)] PageRequest page,
+        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);

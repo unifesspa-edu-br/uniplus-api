@@ -31,6 +31,9 @@ internal sealed class CidadeConfiguration : IEntityTypeConfiguration<Cidade>
         builder.Property(c => c.Uf).IsRequired();
         builder.Property(c => c.CodigoIbge).IsRequired();
         builder.Property(c => c.Nome).IsRequired();
+        builder.Property(c => c.NomeOrdenacao)
+            .IsRequired()
+            .HasComputedColumnSql(NomeOrdenacaoSql.Expression, stored: true);
         builder.Property(c => c.Latitude).HasPrecision(9, 6);
         builder.Property(c => c.Longitude).HasPrecision(9, 6);
         builder.ConfigurarCoordenada(c => c.Coordenada);
