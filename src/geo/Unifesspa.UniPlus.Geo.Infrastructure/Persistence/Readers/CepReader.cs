@@ -3,9 +3,12 @@ namespace Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Readers;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Geo.Application.Abstractions;
 using Unifesspa.UniPlus.Geo.Application.DTOs;
+using Unifesspa.UniPlus.Geo.Infrastructure.Cep;
 
 /// <summary>
 /// Resolve um CEP pela cascata determinística (ADR-0090) sobre o
@@ -21,14 +24,21 @@ using Unifesspa.UniPlus.Geo.Application.DTOs;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em GeoInfrastructureRegistration.")]
-internal sealed class CepReader : ICepReader
+internal sealed partial class CepReader : ICepReader
 {
     private readonly GeoDbContext _dbContext;
+    private readonly int _tetoLogradouros;
+    private readonly ILogger<CepReader> _logger;
 
-    public CepReader(GeoDbContext dbContext)
+    public CepReader(GeoDbContext dbContext, IOptions<GeoCepLookupOptions> opcoes, ILogger<CepReader> logger)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
+        ArgumentNullException.ThrowIfNull(opcoes);
+        ArgumentNullException.ThrowIfNull(logger);
         _dbContext = dbContext;
+        // Teto < 1 esvaziaria o lookup (Take(0) → null para CEP válido); clamp defensivo.
+        _tetoLogradouros = Math.Max(1, opcoes.Value.MaxLogradourosPorCep);
+        _logger = logger;
     }
 
     public async Task<CepResolvidoDto?> ResolverAsync(string cep, CancellationToken cancellationToken)
@@ -40,9 +50,12 @@ internal sealed class CepReader : ICepReader
             ?? await ResolverPorFaixaAsync(cep, cancellationToken).ConfigureAwait(false);
     }
 
-    // (1) Logradouro pelo CEP. CEP não é único: retorna TODOS, ordenados pela chave de
-    // desempate estável (nome_normalizado, distrito_id, bairro_id, Id) — o Id (Guid v7)
-    // é o tie-breaker final, garantindo o mesmo primário/ordem entre execuções.
+    // (1) Logradouro pelo CEP. CEP não é único: retorna os logradouros ordenados pela
+    // chave de desempate estável (nome_normalizado, distrito_id, bairro_id, Id) — o Id
+    // (Guid v7) é o tie-breaker final, garantindo o mesmo primário/ordem entre execuções.
+    // A materialização é limitada ao teto defensivo (#705): um CEP patológico (anomalia
+    // da fonte) não materializa milhares de linhas num endpoint anônimo. Probe n+1 para
+    // distinguir truncamento real de cardinalidade igual ao teto.
     private async Task<CepResolvidoDto?> ResolverPorLogradouroAsync(string cep, CancellationToken cancellationToken)
     {
         List<CepLogradouroLinha> linhas = await (
@@ -66,12 +79,20 @@ internal sealed class CepReader : ICepReader
                     .Where(b => b.Vigente && b.Id == l.BairroId)
                     .Select(b => (string?)b.Nome)
                     .FirstOrDefault()))
+            .Take(_tetoLogradouros + 1)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         if (linhas.Count == 0)
         {
             return null;
+        }
+
+        // Probe excedeu o teto → trunca o extra e sinaliza (não mascara a anomalia).
+        if (linhas.Count > _tetoLogradouros)
+        {
+            linhas.RemoveAt(linhas.Count - 1);
+            LogFanOutTruncado(_logger, cep, _tetoLogradouros);
         }
 
         CepLogradouroLinha primario = linhas[0];
@@ -254,4 +275,9 @@ internal sealed class CepReader : ICepReader
         string Uf,
         decimal? Latitude,
         decimal? Longitude);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Geo: lookup de CEP {Cep} truncou o fan-out de logradouros no teto de {Teto} — possível anomalia da fonte DNE.")]
+    private static partial void LogFanOutTruncado(ILogger logger, string cep, int teto);
 }

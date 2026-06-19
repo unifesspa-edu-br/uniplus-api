@@ -63,6 +63,7 @@ public static class GeoInfrastructureRegistration
         services.AddScoped<ICepReader, CepReader>();
         services.AddScoped<ICepResolver, CepResolver>();
         services.AddOptions<GeoCepCacheOptions>();
+        services.AddOptions<GeoCepLookupOptions>();
         services.AddScoped(sp => new Lazy<ICacheService>(sp.GetRequiredService<ICacheService>));
 
         // ETL DNE (ADR-0092) — serviços de carga de reference data. O gatilho (seed

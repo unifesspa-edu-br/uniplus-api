@@ -7,8 +7,14 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using Unifesspa.UniPlus.Geo.Application.DTOs;
 using Unifesspa.UniPlus.Geo.Domain.Entities;
+using Unifesspa.UniPlus.Geo.Infrastructure.Cep;
 using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Readers;
 using Unifesspa.UniPlus.Geo.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -248,6 +254,61 @@ public sealed class CepEndpointTests
         resp200.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Fact(DisplayName = "#705: fan-out acima do teto trunca os logradouros e loga aviso, sem erro")]
+    public async Task Cep_FanOutAcimaDoTeto_TruncaELoga()
+    {
+        await SemearAsync();
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        FakeLogger<CepReader> logger = new();
+        // 01310100 tem 2 logradouros (CA-02); teto 1 força truncamento determinístico.
+        CepReader reader = new(
+            ctx,
+            Options.Create(new GeoCepLookupOptions { MaxLogradourosPorCep = 1 }),
+            logger);
+
+        CepResolvidoDto? resolvido = await reader.ResolverAsync("01310100", CancellationToken.None);
+
+        resolvido.Should().NotBeNull();
+        // Desempate estável: "alameda santos" < "avenida paulista" → primário Alameda Santos.
+        resolvido!.Logradouro.Should().Be("Alameda Santos");
+        resolvido.Alternativos.Should().BeEmpty("o teto 1 trunca o segundo logradouro");
+        logger.Entradas.Should().ContainSingle(e => e.Level == LogLevel.Warning);
+    }
+
+    [Fact(DisplayName = "#705: fan-out abaixo do teto não trunca nem loga")]
+    public async Task Cep_FanOutAbaixoDoTeto_NaoTrunca()
+    {
+        await SemearAsync();
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        FakeLogger<CepReader> logger = new();
+        CepReader reader = new(
+            ctx,
+            Options.Create(new GeoCepLookupOptions { MaxLogradourosPorCep = 50 }),
+            logger);
+
+        CepResolvidoDto? resolvido = await reader.ResolverAsync("01310100", CancellationToken.None);
+
+        resolvido.Should().NotBeNull();
+        resolvido!.Alternativos.Should().ContainSingle("os 2 logradouros cabem no teto");
+        logger.Entradas.Should().NotContain(e => e.Level == LogLevel.Warning);
+    }
+
+    [Fact(DisplayName = "#705: teto < 1 é tratado como 1 (clamp defensivo), sem esvaziar o lookup")]
+    public async Task Cep_TetoInvalido_ClampParaUm()
+    {
+        await SemearAsync();
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        CepReader reader = new(
+            ctx,
+            Options.Create(new GeoCepLookupOptions { MaxLogradourosPorCep = 0 }),
+            new FakeLogger<CepReader>());
+
+        CepResolvidoDto? resolvido = await reader.ResolverAsync("01310100", CancellationToken.None);
+
+        resolvido.Should().NotBeNull("teto 0 seria Take(0) → null; o clamp para 1 preserva a resolução");
+        resolvido!.Logradouro.Should().Be("Alameda Santos");
+    }
+
     private async Task SemearAsync()
     {
         await GeoReferenceSeed.LimparAsync(_fixture);
@@ -310,5 +371,26 @@ public sealed class CepEndpointTests
         ctx.DistritoFaixasCep.Add(faixaNovaMaraba);
         ctx.CepGrandesUsuarios.Add(grandeUsuario);
         await ctx.SaveChangesAsync();
+    }
+
+    // Captura entradas de log para afirmar o aviso de truncamento (#705).
+    private sealed class FakeLogger<T> : ILogger<T>
+    {
+        public List<(LogLevel Level, string Message)> Entradas { get; } = [];
+
+        IDisposable? ILogger.BeginScope<TState>(TState state) => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            ArgumentNullException.ThrowIfNull(formatter);
+            Entradas.Add((logLevel, formatter(state, exception)));
+        }
     }
 }
