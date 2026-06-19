@@ -13,11 +13,13 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 public interface IEstadoReader
 {
     /// <summary>
-    /// Lista os Estados vigentes paginados por keyset bidirecional sobre <c>Id</c>
-    /// (ADR-0026 + ADR-0089). Retorna as âncoras para o controller emitir os
-    /// cursores <c>prev</c>/<c>next</c>.
+    /// Lista os Estados vigentes paginados por keyset bidirecional ordenado
+    /// alfabeticamente por nome (<c>nome_normalizado</c> + <c>Id</c> de desempate,
+    /// ADR-0094 + ADR-0089). A âncora é a tupla <c>(SortKey, Id)</c>; retorna as
+    /// âncoras <c>Anterior</c>/<c>Proximo</c> para o controller emitir os cursores.
     /// </summary>
-    Task<(IReadOnlyList<Estado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<Estado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

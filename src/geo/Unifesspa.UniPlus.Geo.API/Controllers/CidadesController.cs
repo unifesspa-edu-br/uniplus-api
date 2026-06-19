@@ -80,14 +80,14 @@ public sealed partial class CidadesController : ControllerBase
         }
 
         ListarCidadesResult resultado = await _queryBus
-            .Send(new ListarCidadesQuery(page.AfterId, page.Limit, page.Direction, uf, q), cancellationToken)
+            .Send(new ListarCidadesQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction, uf, q), cancellationToken)
             .ConfigureAwait(false);
 
         // HATEOAS Level 1 (ADR-0029 §"Coleção"): cada item carrega seu _links.self.
         CidadeResumoDto[] comLinks = [.. resultado.Items.Select(c => c with { Links = _resumoLinks.Build(c) })];
 
-        return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+        return await this.OkPaginatedOrdenadoAsync(
+            comLinks, resultado.Anterior, resultado.Proximo, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

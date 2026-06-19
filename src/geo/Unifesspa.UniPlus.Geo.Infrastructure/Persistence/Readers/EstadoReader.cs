@@ -4,6 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 
+using MR.EntityFrameworkCore.KeysetPagination;
+
 using Unifesspa.UniPlus.Geo.Application.Abstractions;
 using Unifesspa.UniPlus.Geo.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
@@ -12,9 +14,10 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <summary>
 /// Leitor read-side de <see cref="Estado"/> sobre o <see cref="GeoDbContext"/>.
 /// Só expõe reference data vigente (<c>vigente=true</c>, ADR-0092) — linhas stale
-/// do ETL não vazam na API pública. Listagem por keyset bidirecional
-/// (<see cref="CursorKeyset"/>); os <c>EXISTS</c> do keyset herdam o filtro de
-/// vigência por operarem sobre a mesma query base.
+/// do ETL não vazam na API pública. Listagem por keyset bidirecional ordenado
+/// alfabeticamente por nome (<see cref="KeysetOrdenadoCursor"/>, ADR-0094); os
+/// <c>EXISTS</c> do keyset herdam o filtro de vigência por operarem sobre a mesma
+/// query base.
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -30,7 +33,8 @@ internal sealed class EstadoReader : IEstadoReader
         _dbContext = dbContext;
     }
 
-    public async Task<(IReadOnlyList<Estado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<Estado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -40,11 +44,21 @@ internal sealed class EstadoReader : IEstadoReader
             .AsNoTracking()
             .Where(e => e.Vigente);
 
-        CursorKeysetPage<Estado> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        // Keyset ordenado por nome (coalesce não-nulo, ADR-0095) + Id de desempate.
+        KeysetOrdenadoPage<Estado> page = await KeysetOrdenadoCursor
+            .ApplyAsync(
+                query,
+                b => b.Ascending(e => e.NomeNormalizado ?? string.Empty).Ascending(e => e.Id),
+                e => e.NomeNormalizado ?? string.Empty,
+                static (sortKey, id) => new { NomeNormalizado = sortKey, Id = id },
+                afterSortKey,
+                afterId,
+                limit,
+                direction,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Anterior, page.Proximo);
     }
 
     public Task<Estado?> ObterPorUfAsync(string uf, CancellationToken cancellationToken)

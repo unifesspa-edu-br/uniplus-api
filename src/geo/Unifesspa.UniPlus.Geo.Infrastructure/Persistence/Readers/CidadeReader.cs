@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Geo.Infrastructure.Persistence.Readers;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
+using MR.EntityFrameworkCore.KeysetPagination;
+
 using Unifesspa.UniPlus.Geo.Application.Abstractions;
 using Unifesspa.UniPlus.Geo.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
@@ -11,8 +13,9 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <summary>
 /// Leitor read-side de <see cref="Cidade"/> sobre o <see cref="GeoDbContext"/>.
 /// Só expõe reference data vigente (ADR-0092). Listagem por keyset bidirecional
-/// (<see cref="CursorKeyset"/>) com filtro por UF e busca textual acento/caixa-
-/// insensível sobre <c>nome_normalizado</c> (índice trigram <c>gin_trgm_ops</c>).
+/// ordenado alfabeticamente por nome (<see cref="KeysetOrdenadoCursor"/>, ADR-0094)
+/// com filtro por UF e busca textual acento/caixa-insensível sobre
+/// <c>nome_normalizado</c> (índice trigram <c>gin_trgm_ops</c>).
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -28,7 +31,8 @@ internal sealed class CidadeReader : ICidadeReader
         _dbContext = dbContext;
     }
 
-    public async Task<(IReadOnlyList<Cidade> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<Cidade> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -65,13 +69,23 @@ internal sealed class CidadeReader : ICidadeReader
                 EF.Functions.ILike(c.NomeNormalizado, pattern, BuscaTextualNormalizada.Escape));
         }
 
-        // Keyset bidirecional (ADR-0089) sobre a query JÁ filtrada — ordenação,
-        // âncora, probe n+1, reversão e flags ficam no helper; os EXISTS herdam o WHERE.
-        CursorKeysetPage<Cidade> page = await CursorKeyset
-            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
+        // Keyset ordenado por nome (ADR-0094) sobre a query JÁ filtrada — ordenação,
+        // âncora (sort key + Id), reversão e flags ficam no helper; os EXISTS herdam o
+        // WHERE. Coalesce não-nulo na sort key (ADR-0095).
+        KeysetOrdenadoPage<Cidade> page = await KeysetOrdenadoCursor
+            .ApplyAsync(
+                query,
+                b => b.Ascending(c => c.NomeNormalizado ?? string.Empty).Ascending(c => c.Id),
+                c => c.NomeNormalizado ?? string.Empty,
+                static (sortKey, id) => new { NomeNormalizado = sortKey, Id = id },
+                afterSortKey,
+                afterId,
+                limit,
+                direction,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Anterior, page.Proximo);
     }
 
     public async Task<CidadeComIndicador?> ObterDetalhePorCodigoIbgeAsync(

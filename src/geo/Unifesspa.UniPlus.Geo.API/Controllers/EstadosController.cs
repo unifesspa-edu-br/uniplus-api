@@ -58,14 +58,14 @@ public sealed partial class EstadosController : ControllerBase
         ArgumentNullException.ThrowIfNull(page);
 
         ListarEstadosResult resultado = await _queryBus
-            .Send(new ListarEstadosQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarEstadosQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         // HATEOAS Level 1 (ADR-0029 §"Coleção"): cada item carrega seu _links.self.
         EstadoDto[] comLinks = [.. resultado.Items.Select(e => e with { Links = _linksBuilder.Build(e) })];
 
-        return await this.OkPaginatedAsync(
-            comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+        return await this.OkPaginatedOrdenadoAsync(
+            comLinks, resultado.Anterior, resultado.Proximo, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
