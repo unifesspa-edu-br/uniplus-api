@@ -88,10 +88,10 @@ internal sealed partial class GeoImportacaoBackgroundService : BackgroundService
             return;
         }
 
-        await FalharPendentesAsync(pendentes).ConfigureAwait(false);
+        await FalharPendentesAsync(pendentes, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task FalharPendentesAsync(IReadOnlyList<Guid> pendentes)
+    private async Task FalharPendentesAsync(IReadOnlyList<Guid> pendentes, CancellationToken cancellationToken)
     {
         try
         {
@@ -100,14 +100,19 @@ internal sealed partial class GeoImportacaoBackgroundService : BackgroundService
 
             foreach (Guid execucaoId in pendentes)
             {
-                // CancellationToken.None: o token de shutdown já está cancelado; este dreno
-                // precisa concluir para deixar as linhas num estado terminal consistente.
-                await executor.MarcarInterrompidaNoDesligamentoAsync(execucaoId, CancellationToken.None).ConfigureAwait(false);
+                // Honra o token de desligamento do host: se o timeout de shutdown estourar
+                // (ex.: banco lento), o dreno cede em vez de prender o processo. A
+                // reconciliação por idade reclama qualquer execução não marcada (rede de
+                // segurança), então ceder aqui não deixa a linha presa além do limite.
+                cancellationToken.ThrowIfCancellationRequested();
+                await executor.MarcarInterrompidaNoDesligamentoAsync(execucaoId, cancellationToken).ConfigureAwait(false);
                 LogInterrompidaNoDesligamento(_logger, execucaoId);
             }
         }
-#pragma warning disable CA1031 // Dreno best-effort no desligamento: uma falha aqui não pode impedir o host de parar; a reconciliação por idade ainda reclama a linha.
-        catch (Exception excecao)
+        // Cancelamento (timeout de shutdown) é esperado — não é falha de dreno; propaga
+        // silenciosamente. Outras exceções são best-effort: logam sem impedir o host de parar.
+#pragma warning disable CA1031 // Dreno best-effort no desligamento; a reconciliação por idade ainda reclama a linha.
+        catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
             LogErroDrenarFila(_logger, excecao);
         }
