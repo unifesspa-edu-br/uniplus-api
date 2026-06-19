@@ -20,6 +20,21 @@ using Unifesspa.UniPlus.Geo.Infrastructure.Cep;
 /// <item>nada casa → <see langword="null"/> (404 no controller).</item>
 /// </list>
 /// </summary>
+/// <remarks>
+/// <para><strong>Invariante 8 dígitos zero-padded (#704):</strong> o predicado de range
+/// das faixas (<c>cep_inicial &lt;= @cep AND cep_final &gt;= @cep</c>) usa a comparação
+/// lexicográfica de string nativa do Postgres. Ela só equivale à comparação
+/// <em>numérica</em> de CEP porque os três lados (o CEP de entrada e os limites das
+/// faixas) são <strong>exatamente 8 dígitos com zero à esquerda</strong>. Para o CEP de
+/// entrada, isso é garantido por <c>CepValido</c> no boundary (ADR-0031); para os limites,
+/// pela carga do ETL (ADR-0092). Um CEP de comprimento diferente quebraria a ordenação
+/// lexicográfica (ex.: <c>"9" &gt; "10"</c>) — por isso o boundary é a única porta.</para>
+/// <para><strong>Dependência de nomes físicos:</strong> os <c>FromSqlInterpolated</c> das
+/// faixas fixam os nomes físicos de tabela/coluna (<c>cidade_faixa_cep</c>,
+/// <c>cep_inicial</c>, ...) em SQL cru — fora do alcance do mapeamento EF. Um rename de
+/// tabela/coluna no mapeamento <strong>quebra em runtime</strong>, sem aviso de
+/// compilação. Ao renomear, atualizar também estes literais.</para>
+/// </remarks>
 [SuppressMessage(
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
