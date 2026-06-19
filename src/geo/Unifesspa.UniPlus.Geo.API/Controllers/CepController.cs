@@ -18,6 +18,11 @@ using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 /// um endereço estruturado (logradouro/faixa/grande usuário). CEP é dado estável →
 /// cache Redis com TTL longo (cache-aside no resolver). Ver ADR-0090.
 /// </summary>
+/// <remarks>
+/// Rate-limiting deste endpoint anônimo é aplicado na <strong>borda</strong>
+/// (gateway/Traefik), não no app — defesa em profundidade uniforme para todos os
+/// endpoints públicos de reference data; controle no app fica adiado (ADR-0093).
+/// </remarks>
 [ApiController]
 [Route("api")]
 [SuppressMessage(

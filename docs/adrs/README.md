@@ -121,12 +121,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0090](0090-modulo-geo-localidades.md) | Módulo Geo como bounded context dedicado de localidades | accepted | 2026-06-17 |
 | [0091](0091-postgis-georreferencia-nts.md) | PostGIS e NetTopologySuite como mecanismo de georreferência | accepted | 2026-06-17 |
 | [0092](0092-etl-carga-dne-reference-data.md) | Reference data do Geo sem soft-delete, recarregado por upsert | accepted | 2026-06-17 |
+| [0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) | Rate-limiting de endpoints públicos de reference data na borda (gateway), não no app | accepted | 2026-06-19 |
 
-> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0092` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0093+`.
+> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0093` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0094+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0092`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0093`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
