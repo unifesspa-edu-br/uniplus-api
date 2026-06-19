@@ -104,7 +104,8 @@ builder.Services.AddOptions<GeoProximidadeOptions>()
         "Geo:Proximidade — RaioMaxKm > 0, LimitMax >= 1 e 1 <= LimitPadrao <= LimitMax.")
     .ValidateOnStart();
 
-// TTL configurável do cache-aside de CEP (#676) — default 24h (GeoCepCacheOptions).
+// TTL configurável do cache-aside de CEP (#676) — default 24h; também a memoização
+// em processo do selo de versão (#703, SeloTtl default 15s). Ambos em GeoCepCacheOptions.
 builder.Services.Configure<GeoCepCacheOptions>(
     builder.Configuration.GetSection(GeoCepCacheOptions.SectionName));
 // Teto de fan-out de logradouros do reader de CEP (#705) — default 50 (GeoCepLookupOptions).

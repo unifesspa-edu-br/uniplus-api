@@ -65,6 +65,9 @@ public static class GeoInfrastructureRegistration
         services.AddOptions<GeoCepCacheOptions>();
         services.AddOptions<GeoCepLookupOptions>();
         services.AddScoped(sp => new Lazy<ICacheService>(sp.GetRequiredService<ICacheService>));
+        // Memoização em processo do selo de versão vigente do cache de CEP (#703):
+        // 1 round-trip ao Redis no hot path em vez de 2. AddMemoryCache é idempotente.
+        services.AddMemoryCache();
 
         // ETL DNE (ADR-0092) — serviços de carga de reference data. O gatilho (seed
         // dev / endpoint admin) e a fonte concreta de produção entram na Story #674.

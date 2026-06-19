@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Geo.Infrastructure.Cep;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -31,24 +32,38 @@ using Unifesspa.UniPlus.Infrastructure.Core.Caching;
     Justification = "Instanciada via DI em GeoInfrastructureRegistration.")]
 internal sealed partial class CepResolver : ICepResolver
 {
+    // Chave da memoização em processo do selo de versão vigente (#703). Única (um selo
+    // global por instância de cache em memória), distinta das chaves de CEP do Redis.
+    private const string ChaveMemoSelo = "geo:cep:selo-vigente-memo";
+
     private readonly Lazy<ICacheService> _cache;
     private readonly ICepReader _reader;
+    private readonly IMemoryCache _memoria;
+    private readonly TimeProvider _relogio;
     private readonly TimeSpan _ttl;
+    private readonly TimeSpan _seloTtl;
     private readonly ILogger<CepResolver> _logger;
 
     public CepResolver(
         Lazy<ICacheService> cache,
         ICepReader reader,
+        IMemoryCache memoria,
+        TimeProvider relogio,
         IOptions<GeoCepCacheOptions> opcoes,
         ILogger<CepResolver> logger)
     {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(memoria);
+        ArgumentNullException.ThrowIfNull(relogio);
         ArgumentNullException.ThrowIfNull(opcoes);
         ArgumentNullException.ThrowIfNull(logger);
         _cache = cache;
         _reader = reader;
+        _memoria = memoria;
+        _relogio = relogio;
         _ttl = opcoes.Value.Ttl;
+        _seloTtl = opcoes.Value.SeloTtl;
         _logger = logger;
     }
 
@@ -100,17 +115,50 @@ internal sealed partial class CepResolver : ICepResolver
         }
     }
 
-    // Lê o selo de versão vigente e compõe a chave versionada. Sem selo (ETL ainda
+    // Compõe a chave versionada a partir do selo de versão vigente. Sem selo (ETL ainda
     // não selou) → null: não há chave determinística, segue direto ao banco sem cachear.
     private async Task<string?> ResolverChaveAsync(ICacheService cache, string cep, CancellationToken cancellationToken)
     {
+        string? selo = await ObterSeloVigenteAsync(cache, cancellationToken).ConfigureAwait(false);
+        return string.IsNullOrWhiteSpace(selo) ? null : $"geo:cep:v{selo}:{cep}";
+    }
+
+    // Memoiza o selo em processo (IMemoryCache) por uma janela curta (SeloTtl, #703): o
+    // selo só muda em re-selagem do ETL (#674), então no hot path o lookup faz 1
+    // round-trip ao Redis (a entrada) em vez de 2 (selo + entrada). A expiração é
+    // governada pelo TimeProvider injetado (testável); a expiração do IMemoryCache é a
+    // rede de segurança contra leak de memória. Só um selo presente é memoizado — a
+    // ausência (bootstrap antes da 1ª selagem) é relida a cada request até selar.
+    private async Task<string?> ObterSeloVigenteAsync(ICacheService cache, CancellationToken cancellationToken)
+    {
+        DateTimeOffset agora = _relogio.GetUtcNow();
+        if (_memoria.TryGetValue(ChaveMemoSelo, out SeloMemoizado? memo)
+            && memo is not null
+            && agora < memo.ExpiraEm)
+        {
+            return memo.Valor;
+        }
+
+        string? selo = await LerSeloDoCacheAsync(cache, cancellationToken).ConfigureAwait(false);
+
+        if (_seloTtl > TimeSpan.Zero && !string.IsNullOrWhiteSpace(selo))
+        {
+            _memoria.Set(
+                ChaveMemoSelo,
+                new SeloMemoizado(selo, agora + _seloTtl),
+                new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = _seloTtl });
+        }
+
+        return selo;
+    }
+
+    private async Task<string?> LerSeloDoCacheAsync(ICacheService cache, CancellationToken cancellationToken)
+    {
         try
         {
-            string? selo = await cache
+            return await cache
                 .ObterAsync<string>(RedisGeoCepCacheInvalidador.ChaveSeloVersaoVigente, cancellationToken)
                 .ConfigureAwait(false);
-
-            return string.IsNullOrWhiteSpace(selo) ? null : $"geo:cep:v{selo}:{cep}";
         }
         catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
@@ -118,6 +166,9 @@ internal sealed partial class CepResolver : ICepResolver
             return null;
         }
     }
+
+    // Selo memoizado + instante de expiração (governado pelo TimeProvider).
+    private sealed record SeloMemoizado(string Valor, DateTimeOffset ExpiraEm);
 
     private async Task<CepResolvidoDto?> TentarLerCacheAsync(ICacheService cache, string chave, CancellationToken cancellationToken)
     {
