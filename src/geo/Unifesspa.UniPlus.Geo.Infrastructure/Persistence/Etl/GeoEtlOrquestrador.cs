@@ -295,11 +295,20 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         }
     }
 
+    // Drenagem de desligamento (#694): marca Falhou uma execução enfileirada e não
+    // processada. Reusa o ExecuteUpdate idempotente filtrado por status = EmAndamento — só
+    // afeta a linha se ela ainda não terminou, liberando o índice único parcial.
+    public Task MarcarInterrompidaNoDesligamentoAsync(Guid execucaoId, CancellationToken cancellationToken) =>
+        MarcarFalhaPorIdAsync(execucaoId, "Carga interrompida no desligamento do worker.", cancellationToken);
+
+    private Task MarcarFalhaAsync(GeoImportacaoExecucao execucao, string mensagem, CancellationToken cancellationToken) =>
+        MarcarFalhaPorIdAsync(execucao.Id, mensagem, cancellationToken);
+
     [SuppressMessage(
         "Design",
         "CA1031:Do not catch general exception types",
         Justification = "Persistir o estado de falha é best-effort à beira do worker; um erro aqui não pode escalar (a carga já terminou).")]
-    private async Task MarcarFalhaAsync(GeoImportacaoExecucao execucao, string mensagem, CancellationToken cancellationToken)
+    private async Task MarcarFalhaPorIdAsync(Guid execucaoId, string mensagem, CancellationToken cancellationToken)
     {
         // ExecuteUpdate direto, filtrando status = EmAndamento no banco — NÃO muta/flusha a
         // entidade rastreada. Crítico quando o commit da conclusão falhou: a entidade está
@@ -310,7 +319,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         try
         {
             await _contexto.Set<GeoImportacaoExecucao>()
-                .Where(e => e.Id == execucao.Id && e.Status == StatusImportacao.EmAndamento)
+                .Where(e => e.Id == execucaoId && e.Status == StatusImportacao.EmAndamento)
                 .ExecuteUpdateAsync(
                     s => s
                         .SetProperty(e => e.Status, StatusImportacao.Falhou)
@@ -322,7 +331,7 @@ internal sealed partial class GeoEtlOrquestrador : IGeoImportacaoService, IGeoIm
         }
         catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
-            LogFalhaPersistir(_logger, execucao.Id, excecao);
+            LogFalhaPersistir(_logger, execucaoId, excecao);
         }
     }
 

@@ -15,4 +15,12 @@ internal interface IGeoImportacaoExecutor
     /// <c>Falhou</c> e registra a métrica/log.
     /// </summary>
     Task ExecutarAsync(Guid execucaoId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Marca como <c>Falhou</c> uma execução enfileirada que não chegou a ser processada
+    /// antes do desligamento do worker (#694). Idempotente — só afeta a linha se ainda
+    /// estiver <c>EmAndamento</c>, liberando o índice único parcial para novos disparos
+    /// (senão a reconciliação por idade só a reclamaria após o limite de abandono).
+    /// </summary>
+    Task MarcarInterrompidaNoDesligamentoAsync(Guid execucaoId, CancellationToken cancellationToken);
 }
