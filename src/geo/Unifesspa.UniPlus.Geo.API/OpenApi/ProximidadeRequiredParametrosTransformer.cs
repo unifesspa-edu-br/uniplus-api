@@ -39,14 +39,14 @@ internal sealed class ProximidadeRequiredParametrosTransformer : IOpenApiOperati
             return Task.CompletedTask;
         }
 
-        foreach (IOpenApiParameter parametro in operation.Parameters)
+        IEnumerable<OpenApiParameter> obrigatorios = operation.Parameters
+            .OfType<OpenApiParameter>()
+            .Where(p => p.In == ParameterLocation.Query
+                     && ParametrosObrigatorios.Contains(p.Name, StringComparer.Ordinal));
+
+        foreach (OpenApiParameter parametro in obrigatorios)
         {
-            if (parametro is OpenApiParameter concreto
-                && concreto.In == ParameterLocation.Query
-                && ParametrosObrigatorios.Contains(concreto.Name, StringComparer.Ordinal))
-            {
-                concreto.Required = true;
-            }
+            parametro.Required = true;
         }
 
         return Task.CompletedTask;
