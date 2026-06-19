@@ -6,7 +6,9 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
@@ -244,6 +246,55 @@ public sealed class EtlAtualizacaoPeriodicaTests
         ruaA.Vigente.Should().BeTrue("a release sem logradouros não pode marcar o CEP existente como obsoleto");
         ruaA.VersaoDataset.Should().Be("202601");
         await cache.DidNotReceive().InvalidarAsync("202602", Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "#694: desligamento drena a fila e marca execuções enfileiradas como Falhou, liberando novos disparos")]
+    public async Task Desligamento_DrenaFila_MarcaEnfileiradasFalhou()
+    {
+        await LimparAsync();
+        Guid id = await CriarExecucaoAsync("202601"); // EmAndamento, nunca processada pelo worker
+
+        GeoImportacaoFila fila = new();
+        await fila.EnfileirarAsync(id, CancellationToken.None);
+
+        await using GeoDbContext ctx = _fixture.CreateDbContext();
+        using GeoEtlMetrics metricas = new();
+        FonteFactoryFake fonteFactory = new(new Dictionary<string, IGeoFonteDados>(StringComparer.Ordinal));
+        Lazy<IGeoCepCacheInvalidador> cacheLazy = new(() => Substitute.For<IGeoCepCacheInvalidador>());
+        GeoEtlOrquestrador orquestrador = CriarOrquestrador(ctx, fonteFactory, cacheLazy, metricas);
+
+        using GeoImportacaoBackgroundService worker = CriarWorker(fila, orquestrador);
+
+        // Sem StartAsync: base.StopAsync retorna cedo (executeTask null) e o dreno roda —
+        // simula o item enfileirado na janela imediatamente anterior ao shutdown.
+        await worker.StopAsync(CancellationToken.None);
+
+        await using GeoDbContext leitura = _fixture.CreateDbContext();
+        GeoImportacaoExecucao execucao = await leitura.ImportacaoExecucoes.SingleAsync(e => e.Id == id);
+        execucao.Status.Should().Be(StatusImportacao.Falhou, "a execução enfileirada e não processada é falhada no desligamento");
+        execucao.Mensagem.Should().Contain("desligamento");
+
+        // Índice único parcial liberado: um novo disparo (mesma versão) não colide na UNIQUE.
+        Guid novo = await CriarExecucaoAsync("202601");
+        novo.Should().NotBeEmpty();
+    }
+
+    private static GeoImportacaoBackgroundService CriarWorker(IGeoImportacaoFila fila, IGeoImportacaoExecutor executor)
+    {
+        // Scope factory mínimo: o dreno do StopAsync resolve IGeoImportacaoExecutor do escopo.
+        IServiceProvider sp = Substitute.For<IServiceProvider>();
+        sp.GetService(typeof(IGeoImportacaoExecutor)).Returns(executor);
+        IServiceScope escopo = Substitute.For<IServiceScope>();
+        escopo.ServiceProvider.Returns(sp);
+        IServiceScopeFactory scopeFactory = Substitute.For<IServiceScopeFactory>();
+        scopeFactory.CreateScope().Returns(escopo);
+
+        return new GeoImportacaoBackgroundService(
+            scopeFactory,
+            fila,
+            TimeProvider.System,
+            Options.Create(new EtlOpcoes()),
+            NullLogger<GeoImportacaoBackgroundService>.Instance);
     }
 
     private async Task<Guid> CriarExecucaoAsync(string versao)

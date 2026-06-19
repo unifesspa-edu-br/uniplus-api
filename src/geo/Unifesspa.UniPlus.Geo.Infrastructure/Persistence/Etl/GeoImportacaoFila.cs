@@ -19,6 +19,20 @@ internal interface IGeoImportacaoFila
 
     /// <summary>Sequência das execuções enfileiradas, em ordem de chegada.</summary>
     IAsyncEnumerable<Guid> LerAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fecha o writer: novos <see cref="EnfileirarAsync"/> passam a lançar
+    /// <c>ChannelClosedException</c> (tratado em <c>IniciarAsync</c> como falha), evitando
+    /// corrida com a drenagem de desligamento (#694). Idempotente.
+    /// </summary>
+    void Completar();
+
+    /// <summary>
+    /// Drena de forma não-bloqueante (<c>TryRead</c>) os Ids ainda na fila — usado no
+    /// desligamento do worker (#694) para marcar como falha as execuções enfileiradas e
+    /// não processadas, liberando o índice único parcial.
+    /// </summary>
+    IReadOnlyList<Guid> DrenarRestante();
 }
 
 /// <inheritdoc />
@@ -38,4 +52,17 @@ internal sealed class GeoImportacaoFila : IGeoImportacaoFila
 
     public IAsyncEnumerable<Guid> LerAsync(CancellationToken cancellationToken) =>
         _canal.Reader.ReadAllAsync(cancellationToken);
+
+    public void Completar() => _canal.Writer.TryComplete();
+
+    public IReadOnlyList<Guid> DrenarRestante()
+    {
+        List<Guid> restante = [];
+        while (_canal.Reader.TryRead(out Guid execucaoId))
+        {
+            restante.Add(execucaoId);
+        }
+
+        return restante;
+    }
 }
