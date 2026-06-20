@@ -61,6 +61,34 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         persistida.UpdatedBy.Should().BeNull("apenas criação — sem update ainda");
     }
 
+    [Fact(DisplayName = "Insert persiste a referência de cidade do Geo e faz round-trip do trio + display cache (#686)")]
+    public async Task Insert_ComReferenciaDeCidade_RoundTrip()
+    {
+        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await LimparInstituicoesAsync(fresh);
+
+        DateTimeOffset carimbo = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        Instituicao instituicao = NovaInstituicao(
+            "9002", "INS-GEO",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
+            cidadeOrigem: "geo-api", cidadeDisplayAtualizadoEm: carimbo);
+
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Instituicoes.Add(instituicao);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
+
+        persistida.CidadeCodigoIbge.Should().Be("1504208");
+        persistida.CidadeNome.Should().Be("Marabá");
+        persistida.CidadeUf.Should().Be("PA");
+        persistida.CidadeOrigem.Should().Be("geo-api");
+        persistida.CidadeDisplayAtualizadoEm.Should().Be(carimbo);
+    }
+
     [Fact(DisplayName = "Índice único parcial rejeita uma segunda Instituição viva (singleton — CA-02)")]
     public async Task Singleton_SegundaInstituicaoVivaRejeitada()
     {
@@ -229,7 +257,15 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         await ctx.Database.ExecuteSqlRawAsync("DELETE FROM instituicao");
     }
 
-    private static Instituicao NovaInstituicao(string codigoEmec, string sigla, Guid? unidadeRaizId = null) =>
+    private static Instituicao NovaInstituicao(
+        string codigoEmec,
+        string sigla,
+        Guid? unidadeRaizId = null,
+        string? cidadeCodigoIbge = null,
+        string? cidadeNome = null,
+        string? cidadeUf = null,
+        string? cidadeOrigem = null,
+        DateTimeOffset? cidadeDisplayAtualizadoEm = null) =>
         Instituicao.Criar(
             codigoEmec,
             $"Instituição {sigla}",
@@ -246,7 +282,11 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             igc: null,
             website: null,
             enderecoSede: null,
-            municipioSede: null,
+            cidadeCodigoIbge,
+            cidadeNome,
+            cidadeUf,
+            cidadeOrigem,
+            cidadeDisplayAtualizadoEm,
             unidadeRaizId).Value!;
 
     private static Unidade NovaReitoria(string slug, string sigla, string codigo) =>

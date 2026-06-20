@@ -23,7 +23,11 @@ public sealed record InstituicaoDto(
     string? Igc,
     string? Website,
     string? EnderecoSede,
-    string? MunicipioSede,
+    string? CidadeCodigoIbge,
+    string? CidadeNome,
+    string? CidadeUf,
+    string? CidadeOrigem,
+    DateTimeOffset? CidadeDisplayAtualizadoEm,
     Guid? UnidadeRaizId,
     DateTimeOffset CriadoEm)
 {

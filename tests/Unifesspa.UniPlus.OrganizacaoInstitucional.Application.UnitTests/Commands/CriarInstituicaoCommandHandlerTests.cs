@@ -32,7 +32,9 @@ public sealed class CriarInstituicaoCommandHandlerTests
         Igc: null,
         Website: null,
         EnderecoSede: null,
-        MunicipioSede: null,
+        CidadeCodigoIbge: null,
+        CidadeNome: null,
+        CidadeUf: null,
         unidadeRaizId);
 
     private static Unidade NovaUnidade(TipoUnidade tipo) =>
@@ -50,7 +52,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
 
         Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(), repo, unidadeRepo, uow, cache, CancellationToken.None);
+            CommandValido(), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.Should().NotBeEmpty();
@@ -69,7 +71,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(true);
 
         Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(), repo, unidadeRepo, uow, cache, CancellationToken.None);
+            CommandValido(), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.JaExisteInstituicaoViva);
@@ -89,7 +91,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
         unidadeRepo.ObterPorIdParaLeituraAsync(raizId, Arg.Any<CancellationToken>()).Returns((Unidade?)null);
 
         Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(raizId), repo, unidadeRepo, uow, cache, CancellationToken.None);
+            CommandValido(raizId), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.UnidadeRaizNaoEncontrada);
@@ -108,7 +110,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
         unidadeRepo.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(centro);
 
         Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(Guid.CreateVersion7()), repo, unidadeRepo, uow, cache, CancellationToken.None);
+            CommandValido(Guid.CreateVersion7()), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.UnidadeRaizNaoEhReitoria);
@@ -127,7 +129,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
         unidadeRepo.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(reitoria);
 
         Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(reitoria.Id), repo, unidadeRepo, uow, cache, CancellationToken.None);
+            CommandValido(reitoria.Id), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         await repo.Received(1).AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>());
@@ -144,7 +146,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
         CriarInstituicaoCommand command = CommandValido() with { CodigoEmec = "" };
 
         Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            command, repo, unidadeRepo, uow, cache, CancellationToken.None);
+            command, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.CodigoEmecObrigatorio);

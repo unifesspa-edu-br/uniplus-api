@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -39,7 +40,18 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         builder.Property(i => i.Igc).HasMaxLength(100);
         builder.Property(i => i.Website).HasMaxLength(255);
         builder.Property(i => i.EnderecoSede).HasMaxLength(500);
-        builder.Property(i => i.MunicipioSede).HasMaxLength(100);
+
+        // Referência de cidade do Geo (ADR-0090): código + display cache, opcional
+        // (all-or-nothing), sem FK cross-banco para uniplus_geo.
+        builder.Property(i => i.CidadeCodigoIbge)
+            .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)
+            .IsFixedLength();
+        builder.Property(i => i.CidadeNome).HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength);
+        builder.Property(i => i.CidadeUf)
+            .HasMaxLength(ReferenciaCidadeGeo.UfLength)
+            .IsFixedLength();
+        builder.Property(i => i.CidadeOrigem).HasMaxLength(ReferenciaCidadeGeo.OrigemMaxLength);
+        builder.Property(i => i.CidadeDisplayAtualizadoEm);
 
         // Auditoria (IAuditableEntity)
         builder.Property(i => i.CreatedBy).HasMaxLength(255);
@@ -71,5 +83,9 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ix_instituicao_singleton_vivo");
+
+        // Índice de relatório/filtro pela cidade da sede (ADR-0090).
+        builder.HasIndex(i => i.CidadeCodigoIbge)
+            .HasDatabaseName("ix_instituicao_cidade_codigo_ibge");
     }
 }

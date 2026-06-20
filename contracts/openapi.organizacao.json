@@ -1008,7 +1008,9 @@
           "igc",
           "website",
           "enderecoSede",
-          "municipioSede",
+          "cidadeCodigoIbge",
+          "cidadeNome",
+          "cidadeUf",
           "unidadeRaizId"
         ],
         "type": "object",
@@ -1092,7 +1094,19 @@
               "string"
             ]
           },
-          "municipioSede": {
+          "cidadeCodigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
             "type": [
               "null",
               "string"
@@ -1229,7 +1243,9 @@
           "igc",
           "website",
           "enderecoSede",
-          "municipioSede",
+          "cidadeCodigoIbge",
+          "cidadeNome",
+          "cidadeUf",
           "unidadeRaizId"
         ],
         "type": "object",
@@ -1309,7 +1325,19 @@
               "string"
             ]
           },
-          "municipioSede": {
+          "cidadeCodigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
             "type": [
               "null",
               "string"
@@ -1409,7 +1437,11 @@
           "igc",
           "website",
           "enderecoSede",
-          "municipioSede",
+          "cidadeCodigoIbge",
+          "cidadeNome",
+          "cidadeUf",
+          "cidadeOrigem",
+          "cidadeDisplayAtualizadoEm",
           "unidadeRaizId",
           "criadoEm"
         ],
@@ -1494,11 +1526,36 @@
               "string"
             ]
           },
-          "municipioSede": {
+          "cidadeCodigoIbge": {
             "type": [
               "null",
               "string"
             ]
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeOrigem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeDisplayAtualizadoEm": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "unidadeRaizId": {
             "type": [

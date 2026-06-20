@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
@@ -230,5 +231,36 @@ internal sealed class OrganizacaoDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.organizacao.instituicao.unidade_raiz_nao_eh_reitoria",
                 "A unidade informada como raiz da instituição deve ser do tipo reitoria")),
+
+        // ── Referência de cidade do Geo (sede da Instituição) ─────────────
+        new(CidadeReferenciaErrorCodes.CodigoIbgeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.cidade_referencia.codigo_ibge_obrigatorio",
+                "Código IBGE da cidade é obrigatório")),
+
+        new(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.cidade_referencia.codigo_ibge_formato_invalido",
+                "Código IBGE da cidade em formato inválido")),
+
+        new(CidadeReferenciaErrorCodes.UfObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.cidade_referencia.uf_obrigatoria",
+                "UF da cidade é obrigatória")),
+
+        new(CidadeReferenciaErrorCodes.UfIncoerente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.cidade_referencia.uf_incoerente",
+                "UF informada incompatível com o prefixo do código IBGE")),
+
+        new(CidadeReferenciaErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.cidade_referencia.nome_obrigatorio",
+                "Nome da cidade é obrigatório")),
     ];
 }
