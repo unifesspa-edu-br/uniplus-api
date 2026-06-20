@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;

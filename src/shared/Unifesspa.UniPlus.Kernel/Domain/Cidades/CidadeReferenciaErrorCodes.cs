@@ -1,9 +1,10 @@
-namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
+namespace Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 /// <summary>
 /// Códigos de erro da validação da referência de cidade do Geo (ADR-0090):
-/// compartilhados por <c>Campus</c> e <c>LocalOferta</c>, que guardam
-/// <c>cidade_codigo_ibge</c> + display cache em vez de uma FK cross-banco.
+/// compartilhados por qualquer módulo que guarde <c>cidade_codigo_ibge</c> +
+/// display cache em vez de uma FK cross-banco (ex.: <c>Campus</c>/
+/// <c>LocalOferta</c> em Configuração, <c>Instituicao</c> em Organização).
 /// A validação é apenas de formato + coerência de UF (sem dígito verificador,
 /// sem consultar o Geo).
 /// </summary>

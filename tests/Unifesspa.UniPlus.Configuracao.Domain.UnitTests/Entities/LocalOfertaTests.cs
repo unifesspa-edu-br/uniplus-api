@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
