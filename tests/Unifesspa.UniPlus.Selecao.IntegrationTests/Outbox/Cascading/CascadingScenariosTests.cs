@@ -54,7 +54,13 @@ public sealed class CascadingScenariosTests
         DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
         collector.Clear();
 
-        Result<NumeroEdital> numeroResult = NumeroEdital.Criar(numero: 80, ano: 2026);
+        // Ano reservado (2099) p/ os cenários V8/V9: o DomainEventCollector é um singleton
+        // compartilhado por toda a coleção e os testes-irmãos (EditalEndpointTests,
+        // PublicarEditalEndpointTests) sorteiam o numero por um contador % 9999 + 1 SEMPRE no
+        // ano 2026 — podendo emitir o mesmo (numero, ano) destes cenários e contaminar o coletor
+        // (e o LIKE de envelopes) de forma assíncrona. Fixar o ano fora dessa faixa torna o par
+        // (numero, ano) exclusivo destes testes e a verificação determinística (#718).
+        Result<NumeroEdital> numeroResult = NumeroEdital.Criar(numero: 80, ano: 2099);
         numeroResult.IsSuccess.Should().BeTrue();
         NumeroEdital numero = numeroResult.Value!;
 
@@ -97,7 +103,10 @@ public sealed class CascadingScenariosTests
         IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
 
-        Result<NumeroEdital> numeroResult = NumeroEdital.Criar(numero: 89, ano: 2026);
+        // Ano reservado (2099) — ver V8: isola (numero, ano) do contador % 9999 dos testes-irmãos
+        // (que rodam no ano 2026), garantindo que nenhum evento alheio com este par contamine o
+        // coletor singleton durante a janela de verificação de ausência abaixo (#718).
+        Result<NumeroEdital> numeroResult = NumeroEdital.Criar(numero: 89, ano: 2099);
         numeroResult.IsSuccess.Should().BeTrue();
         NumeroEdital numero = numeroResult.Value!;
 
@@ -126,7 +135,8 @@ public sealed class CascadingScenariosTests
             numero,
             TimeSpan.FromSeconds(3));
         evento.Should().BeNull(
-            "sem envelope no outbox, o listener não tem o que entregar — collector permanece vazio para esse numero");
+            "sem envelope no outbox o listener não tem o que entregar e, como o par (numero, ano) é " +
+            "exclusivo deste cenário, nenhum evento alheio pode preencher o coletor — a ausência é determinística");
     }
 
     internal static async Task<EditalPublicadoEvent?> EsperarEventoAsync(

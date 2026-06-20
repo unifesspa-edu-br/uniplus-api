@@ -72,6 +72,38 @@ public sealed class OtelCollectorContainerFixture : IAsyncLifetime
         return string.Concat(logs.Stdout, logs.Stderr);
     }
 
+    /// <summary>
+    /// Faz polling de <see cref="GetLogsAsync"/> até que todos os <paramref name="tokensEsperados"/>
+    /// apareçam no output do Collector, ou até esgotar <paramref name="timeout"/> (default 10s).
+    /// Substitui a espera fixa pós-<c>ForceFlush</c>: o exporter <c>debug</c> grava em stderr de
+    /// forma assíncrona ao flush, então um delay fixo curto é flaky em runners lentos (#718).
+    /// Retorna o último output lido — sob timeout, as asserts do chamador ainda produzem mensagem
+    /// de falha útil apontando o token ausente.
+    /// </summary>
+    public async Task<string> WaitForLogsContainingAsync(
+        IReadOnlyCollection<string> tokensEsperados,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(tokensEsperados);
+
+        TimeSpan limite = timeout ?? TimeSpan.FromSeconds(10);
+        DateTimeOffset deadline = DateTimeOffset.UtcNow + limite;
+
+        while (true)
+        {
+            string output = await GetLogsAsync().ConfigureAwait(false);
+            bool todosPresentes = tokensEsperados.All(
+                token => output.Contains(token, StringComparison.Ordinal));
+
+            if (todosPresentes || DateTimeOffset.UtcNow >= deadline)
+            {
+                return output;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
+        }
+    }
+
     public Task InitializeAsync() => _container.StartAsync();
 
     public async Task DisposeAsync() =>
