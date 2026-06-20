@@ -143,6 +143,18 @@ public sealed class InstituicaoTests
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.UfIncoerente);
     }
 
+    [Fact(DisplayName = "Criar com nome de cidade acima do limite retorna erro de domínio (422), não estoura na persistência")]
+    public void Criar_ComCidadeNomeMuitoLongo_RetornaNomeTamanho()
+    {
+        string nomeLongo = new('A', ReferenciaCidadeGeo.NomeMaxLength + 1);
+
+        Result<Instituicao> resultado = CriarValida(
+            cidadeCodigoIbge: "1504208", cidadeNome: nomeLongo, cidadeUf: "PA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeTamanho);
+    }
+
     [Fact(DisplayName = "Atualizar com campos válidos altera o estado regulatório e o vínculo")]
     public void Atualizar_ComCamposValidos_AlteraEstado()
     {
