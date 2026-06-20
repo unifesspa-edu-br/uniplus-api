@@ -81,6 +81,27 @@ public sealed class ReferenciaCidadeGeoTests
         resultado.Error!.Code.Should().Be(esperado);
     }
 
+    [Fact(DisplayName = "Nome acima do tamanho máximo é rejeitado por formato (evita 500 no SaveChanges)")]
+    public void Validar_NomeMuitoLongo_Rejeita()
+    {
+        string nomeLongo = new('A', ReferenciaCidadeGeo.NomeMaxLength + 1);
+
+        Result resultado = ReferenciaCidadeGeo.Validar("1504208", nomeLongo, "PA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeTamanho);
+    }
+
+    [Fact(DisplayName = "Nome exatamente no tamanho máximo é aceito (limite inclusivo)")]
+    public void Validar_NomeNoLimite_Aceita()
+    {
+        string nomeNoLimite = new('A', ReferenciaCidadeGeo.NomeMaxLength);
+
+        Result resultado = ReferenciaCidadeGeo.Validar("1504208", nomeNoLimite, "PA");
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "EhValida é o predicado equivalente a Validar().IsSuccess")]
     public void EhValida_EspelhaValidar()
     {

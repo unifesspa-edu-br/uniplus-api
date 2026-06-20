@@ -100,6 +100,13 @@ public static class ReferenciaCidadeGeo
                 "Nome da cidade é obrigatório."));
         }
 
+        if (cidadeNome.Trim().Length > NomeMaxLength)
+        {
+            return Result.Failure(new DomainError(
+                CidadeReferenciaErrorCodes.NomeTamanho,
+                $"Nome da cidade deve ter no máximo {NomeMaxLength} caracteres."));
+        }
+
         if (string.IsNullOrWhiteSpace(cidadeUf))
         {
             return Result.Failure(new DomainError(

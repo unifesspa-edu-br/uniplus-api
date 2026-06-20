@@ -262,5 +262,11 @@ internal sealed class OrganizacaoDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.organizacao.cidade_referencia.nome_obrigatorio",
                 "Nome da cidade é obrigatório")),
+
+        new(CidadeReferenciaErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.cidade_referencia.nome_tamanho",
+                "Nome da cidade excede o tamanho máximo")),
     ];
 }
