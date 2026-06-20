@@ -36,9 +36,13 @@ public sealed class MinioContainerFixture : IAsyncLifetime
             .WithCommand("server", "/data", "--console-address", $":{ConsolePort}")
             .WithWaitStrategy(
                 Wait.ForUnixContainer()
+                    // /minio/health/ready (não /live): live só confirma que o processo subiu, mas a
+                    // object layer pode ainda não servir a API S3 — ListBucketsAsync intermitente
+                    // retornava Unhealthy logo após o start (corrida liveness x readiness, #718).
+                    // O probe de readiness só passa quando o servidor já atende requisições.
                     .UntilHttpRequestIsSucceeded(r => r
                         .ForPort(ApiPort)
-                        .ForPath("/minio/health/live")))
+                        .ForPath("/minio/health/ready")))
             .Build();
     }
 
