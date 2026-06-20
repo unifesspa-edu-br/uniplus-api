@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -27,6 +28,13 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// <c>UnidadeRaizId</c> — FK intra-banco (ADR-0054). A conferência de que a
 /// Unidade referenciada é viva e do tipo reitoria é responsabilidade do handler
 /// (via repositório); esta entidade recebe o Id já validado.</para>
+/// <para>O município da sede é uma <strong>referência de cidade do Geo</strong>
+/// (ADR-0090): <c>CidadeCodigoIbge</c> (código IBGE de 7 dígitos) + display cache
+/// (<c>CidadeNome</c>, <c>CidadeUf</c>), preenchido pelo frontend via composição
+/// no cliente — sem FK cross-banco nem chamada ao Geo. É <strong>opcional</strong>
+/// (all-or-nothing): ou o trio completo e coerente, ou ausente por completo. O
+/// <c>EnderecoSede</c> (logradouro) permanece texto livre — o Geo não modela
+/// endereço pontual.</para>
 /// </remarks>
 public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
 {
@@ -54,7 +62,15 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     public string? Igc { get; private set; }
     public string? Website { get; private set; }
     public string? EnderecoSede { get; private set; }
-    public string? MunicipioSede { get; private set; }
+
+    // Referência de cidade do Geo (ADR-0090) — código + display cache, opcional
+    // (all-or-nothing). Substitui o antigo MunicipioSede texto livre.
+    public string? CidadeCodigoIbge { get; private set; }
+    public string? CidadeNome { get; private set; }
+    public string? CidadeUf { get; private set; }
+    public string? CidadeOrigem { get; private set; }
+    public DateTimeOffset? CidadeDisplayAtualizadoEm { get; private set; }
+
     public Guid? UnidadeRaizId { get; private set; }
 
     /// <summary>
@@ -75,9 +91,13 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria a Instituição. Valida apenas formato e domínio local — o invariante
-    /// singleton (no máximo uma viva) e a conferência do tipo da Unidade raiz são
-    /// responsabilidade do handler chamador (dependem do repositório).
+    /// Cria a Instituição. Valida apenas formato e domínio local (incluindo a
+    /// referência de cidade opcional via <see cref="ReferenciaCidadeGeo"/>) — o
+    /// invariante singleton (no máximo uma viva) e a conferência do tipo da
+    /// Unidade raiz são responsabilidade do handler chamador (dependem do
+    /// repositório). A proveniência/frescura do display cache
+    /// (<paramref name="cidadeOrigem"/>, <paramref name="cidadeDisplayAtualizadoEm"/>)
+    /// é carimbada server-side pelo handler (ADR-0090).
     /// </summary>
     public static Result<Instituicao> Criar(
         string codigoEmec,
@@ -95,7 +115,11 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? igc,
         string? website,
         string? enderecoSede,
-        string? municipioSede,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
+        string? cidadeOrigem,
+        DateTimeOffset? cidadeDisplayAtualizadoEm,
         Guid? unidadeRaizId)
     {
         ArgumentNullException.ThrowIfNull(codigoEmec);
@@ -107,7 +131,8 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         Result validacao = ValidarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede, municipioSede);
+            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
+            cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
             return Result<Instituicao>.Failure(validacao.Error!);
@@ -118,14 +143,16 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
             atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
-            municipioSede, unidadeRaizId);
+            cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
+            unidadeRaizId);
 
         return Result<Instituicao>.Success(instituicao);
     }
 
     /// <summary>
     /// Atualiza os dados regulatórios e o vínculo com a reitoria. A conferência
-    /// do tipo da Unidade raiz informada é responsabilidade do handler.
+    /// do tipo da Unidade raiz informada é responsabilidade do handler, assim
+    /// como o carimbo da proveniência/frescura do display cache da cidade.
     /// </summary>
     public Result Atualizar(
         string codigoEmec,
@@ -143,7 +170,11 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? igc,
         string? website,
         string? enderecoSede,
-        string? municipioSede,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
+        string? cidadeOrigem,
+        DateTimeOffset? cidadeDisplayAtualizadoEm,
         Guid? unidadeRaizId)
     {
         ArgumentNullException.ThrowIfNull(codigoEmec);
@@ -155,7 +186,8 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         Result validacao = ValidarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede, municipioSede);
+            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
+            cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
             return validacao;
@@ -165,7 +197,8 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
             atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
-            municipioSede, unidadeRaizId);
+            cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
+            unidadeRaizId);
 
         return Result.Success();
     }
@@ -186,7 +219,11 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? igc,
         string? website,
         string? enderecoSede,
-        string? municipioSede,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
+        string? cidadeOrigem,
+        DateTimeOffset? cidadeDisplayAtualizadoEm,
         Guid? unidadeRaizId)
     {
         CodigoEmec = codigoEmec.Trim();
@@ -204,8 +241,30 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         Igc = NormalizarOpcional(igc);
         Website = NormalizarOpcional(website);
         EnderecoSede = NormalizarOpcional(enderecoSede);
-        MunicipioSede = NormalizarOpcional(municipioSede);
+        AplicarReferenciaCidade(
+            cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm);
         UnidadeRaizId = unidadeRaizId;
+    }
+
+    /// <summary>
+    /// Normaliza a referência de cidade já validada (all-or-nothing): com cidade
+    /// presente grava o trio normalizado (UF em caixa alta) + display cache; sem
+    /// cidade, zera os cinco campos. O gate canônico é o código IBGE — a validação
+    /// garante que, se qualquer fragmento veio, o trio completo veio.
+    /// </summary>
+    private void AplicarReferenciaCidade(
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
+        string? cidadeOrigem,
+        DateTimeOffset? cidadeDisplayAtualizadoEm)
+    {
+        bool temCidade = !string.IsNullOrWhiteSpace(cidadeCodigoIbge);
+        CidadeCodigoIbge = temCidade ? cidadeCodigoIbge!.Trim() : null;
+        CidadeNome = temCidade ? cidadeNome!.Trim() : null;
+        CidadeUf = temCidade ? cidadeUf!.Trim().ToUpperInvariant() : null;
+        CidadeOrigem = temCidade ? NormalizarOpcional(cidadeOrigem) : null;
+        CidadeDisplayAtualizadoEm = temCidade ? cidadeDisplayAtualizadoEm : null;
     }
 
     private static string? NormalizarOpcional(string? valor)
@@ -234,7 +293,9 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? igc,
         string? website,
         string? enderecoSede,
-        string? municipioSede)
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf)
     {
         if (string.IsNullOrWhiteSpace(codigoEmec))
         {
@@ -306,9 +367,36 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
                 $"Categoria administrativa deve ter no máximo {CategoriaAdministrativaMaxLength} caracteres."));
         }
 
+        Result cidade = ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+        if (cidade.IsFailure)
+        {
+            return cidade;
+        }
+
         return ValidarOpcionais(
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede, municipioSede);
+            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede);
+    }
+
+    /// <summary>
+    /// Valida a referência de cidade do Geo (ADR-0090) como opcional
+    /// <strong>all-or-nothing</strong>: ausente por completo é válido; qualquer
+    /// fragmento presente exige o trio (código IBGE + nome + UF) com formato e
+    /// coerência de UF — delegado ao <see cref="ReferenciaCidadeGeo"/>, que
+    /// reporta o campo faltante quando o preenchimento é parcial.
+    /// </summary>
+    private static Result ValidarReferenciaCidade(
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf)
+    {
+        bool algumPresente = !string.IsNullOrWhiteSpace(cidadeCodigoIbge)
+            || !string.IsNullOrWhiteSpace(cidadeNome)
+            || !string.IsNullOrWhiteSpace(cidadeUf);
+
+        return algumPresente
+            ? ReferenciaCidadeGeo.Validar(cidadeCodigoIbge, cidadeNome, cidadeUf)
+            : Result.Success();
     }
 
     private static Result ValidarOpcionais(
@@ -321,8 +409,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? conceitoInstitucional,
         string? igc,
         string? website,
-        string? enderecoSede,
-        string? municipioSede)
+        string? enderecoSede)
     {
         (string? valor, int max)[] opcionais =
         [
@@ -336,7 +423,6 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             (igc, CampoOpcionalCurtoMaxLength),
             (website, CampoOpcionalMedioMaxLength),
             (enderecoSede, CampoOpcionalLongoMaxLength),
-            (municipioSede, CampoOpcionalCurtoMaxLength),
         ];
 
         foreach ((string? valor, int max) in opcionais)

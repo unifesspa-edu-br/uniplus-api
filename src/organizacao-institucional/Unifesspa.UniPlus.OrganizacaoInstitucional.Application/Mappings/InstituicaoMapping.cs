@@ -26,7 +26,11 @@ public static class InstituicaoMapping
             instituicao.Igc,
             instituicao.Website,
             instituicao.EnderecoSede,
-            instituicao.MunicipioSede,
+            instituicao.CidadeCodigoIbge,
+            instituicao.CidadeNome,
+            instituicao.CidadeUf,
+            instituicao.CidadeOrigem,
+            instituicao.CidadeDisplayAtualizadoEm,
             instituicao.UnidadeRaizId,
             instituicao.CreatedAt);
     }
@@ -42,7 +46,9 @@ public static class InstituicaoMapping
             instituicao.Cnpj,
             instituicao.OrganizacaoAcademica,
             instituicao.CategoriaAdministrativa,
-            instituicao.MunicipioSede,
+            instituicao.CidadeCodigoIbge,
+            instituicao.CidadeNome,
+            instituicao.CidadeUf,
             instituicao.UnidadeRaizId);
     }
 }

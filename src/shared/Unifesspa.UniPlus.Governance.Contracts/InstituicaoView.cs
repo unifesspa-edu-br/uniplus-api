@@ -14,7 +14,9 @@ namespace Unifesspa.UniPlus.Governance.Contracts;
 /// <param name="Cnpj">CNPJ da pessoa jurídica, ou <see langword="null"/> se não informado.</param>
 /// <param name="OrganizacaoAcademica">Classificação e-MEC de organização acadêmica.</param>
 /// <param name="CategoriaAdministrativa">Classificação e-MEC de categoria administrativa.</param>
-/// <param name="MunicipioSede">Município da sede, ou <see langword="null"/> se não informado.</param>
+/// <param name="CidadeCodigoIbge">Código IBGE (7 dígitos) do município da sede, ou <see langword="null"/> se não informado. Referência de cidade do Geo (ADR-0090) — composição no cliente, sem FK cross-banco.</param>
+/// <param name="CidadeNome">Nome do município da sede (display cache), ou <see langword="null"/> se não informado.</param>
+/// <param name="CidadeUf">UF do município da sede (display cache), ou <see langword="null"/> se não informado.</param>
 /// <param name="UnidadeRaizId">Id da Unidade raiz (reitoria), ou <see langword="null"/> se ainda não vinculada.</param>
 public sealed record InstituicaoView(
     Guid Id,
@@ -24,5 +26,7 @@ public sealed record InstituicaoView(
     string? Cnpj,
     string OrganizacaoAcademica,
     string CategoriaAdministrativa,
-    string? MunicipioSede,
+    string? CidadeCodigoIbge,
+    string? CidadeNome,
+    string? CidadeUf,
     Guid? UnidadeRaizId);

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -30,6 +31,7 @@ public static class CriarInstituicaoCommandHandler
         IUnidadeRepository unidadeRepository,
         IUnitOfWork unitOfWork,
         IInstituicaoCacheInvalidator cacheInvalidator,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -37,6 +39,7 @@ public static class CriarInstituicaoCommandHandler
         ArgumentNullException.ThrowIfNull(unidadeRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(cacheInvalidator);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         if (await repository.ExisteAlgumaVivaAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -52,6 +55,12 @@ public static class CriarInstituicaoCommandHandler
         {
             return Result<Guid>.Failure(vinculoInvalido);
         }
+
+        // Carimbo server-side do display cache da cidade (ADR-0090): com cidade
+        // informada, proveniência geo-api + instante atual; sem cidade, ambos nulos.
+        bool temCidade = !string.IsNullOrWhiteSpace(command.CidadeCodigoIbge);
+        string? cidadeOrigem = temCidade ? ReferenciaCidadeGeo.OrigemGeoApi : null;
+        DateTimeOffset? cidadeAtualizadoEm = temCidade ? timeProvider.GetUtcNow() : null;
 
         Result<Instituicao> instituicaoResult = Instituicao.Criar(
             command.CodigoEmec,
@@ -69,7 +78,11 @@ public static class CriarInstituicaoCommandHandler
             command.Igc,
             command.Website,
             command.EnderecoSede,
-            command.MunicipioSede,
+            command.CidadeCodigoIbge,
+            command.CidadeNome,
+            command.CidadeUf,
+            cidadeOrigem,
+            cidadeAtualizadoEm,
             command.UnidadeRaizId);
 
         if (instituicaoResult.IsFailure)

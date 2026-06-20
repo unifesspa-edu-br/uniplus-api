@@ -17,7 +17,10 @@ public sealed class RemoverInstituicaoCommandHandlerTests
     private static Instituicao InstituicaoExistente() =>
         Instituicao.Criar(
             "3990", "Universidade Federal do Sul e Sudeste do Pará", "Unifesspa", "Universidade", "Pública Federal",
-            null, null, null, null, null, null, null, null, null, null, null, null).Value!;
+            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null, atoCredenciamento: null,
+            atoRecredenciamento: null, conceitoInstitucional: null, igc: null, website: null, enderecoSede: null,
+            cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null, cidadeOrigem: null,
+            cidadeDisplayAtualizadoEm: null, unidadeRaizId: null).Value!;
 
     [Fact(DisplayName = "Handle com Instituição existente faz soft-delete e invalida cache (CA-05)")]
     public async Task Handle_ComInstituicaoExistente_RemoveEInvalidaCache()

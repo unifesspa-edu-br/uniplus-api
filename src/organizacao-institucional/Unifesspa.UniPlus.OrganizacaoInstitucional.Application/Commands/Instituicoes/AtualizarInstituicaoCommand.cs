@@ -5,7 +5,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Edita os dados regulatórios e o vínculo com a reitoria da Instituição
-/// existente.
+/// existente. A referência de cidade da sede é opcional (all-or-nothing): o trio
+/// <c>CidadeCodigoIbge</c>/<c>CidadeNome</c>/<c>CidadeUf</c> viaja no payload; a
+/// proveniência/frescura do display cache é recarimbada server-side pelo handler
+/// apenas quando o trio muda (ADR-0090).
 /// </summary>
 public sealed record AtualizarInstituicaoCommand(
     Guid Id,
@@ -24,5 +27,7 @@ public sealed record AtualizarInstituicaoCommand(
     string? Igc,
     string? Website,
     string? EnderecoSede,
-    string? MunicipioSede,
+    string? CidadeCodigoIbge,
+    string? CidadeNome,
+    string? CidadeUf,
     Guid? UnidadeRaizId) : ICommand<Result>;

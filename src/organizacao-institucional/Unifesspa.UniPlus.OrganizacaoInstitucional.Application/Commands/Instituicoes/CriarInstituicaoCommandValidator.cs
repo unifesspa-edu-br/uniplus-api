@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instit
 
 using FluentValidation;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+
 /// <summary>
 /// Validação de formato dos campos da criação da Instituição (CA-03). As regras
 /// que dependem do banco — singleton (CA-02) e tipo da Unidade raiz (CA-04) —
@@ -34,5 +36,14 @@ public sealed class CriarInstituicaoCommandValidator : AbstractValidator<CriarIn
         RuleFor(x => x.Website)
             .MaximumLength(255).WithMessage("Website deve ter no máximo 255 caracteres.")
             .When(x => x.Website is not null);
+
+        // Referência de cidade do Geo (ADR-0090): opcional all-or-nothing — só
+        // valida quando algum fragmento do trio veio; aí exige o trio coerente.
+        RuleFor(x => x)
+            .Must(x => ReferenciaCidadeGeo.EhValida(x.CidadeCodigoIbge, x.CidadeNome, x.CidadeUf))
+            .WithMessage("Referência de cidade inválida: informe o trio código IBGE (7 dígitos), nome e UF, com prefixo de UF coerente.")
+            .When(x => !string.IsNullOrWhiteSpace(x.CidadeCodigoIbge)
+                || !string.IsNullOrWhiteSpace(x.CidadeNome)
+                || !string.IsNullOrWhiteSpace(x.CidadeUf));
     }
 }
