@@ -19,8 +19,10 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// <summary>
 /// Endpoint admin de disparo/acompanhamento do ETL (Story #674, CA-02/CA-06) contra a
 /// API real. O worker fica desligado (<c>GeoApiFactory</c>), então o disparo registra a
-/// execução EmAndamento e responde 202 sem rodar a carga — tornando 202/409
-/// determinísticos. Autorização por role <c>plataforma-admin</c> (401/403).
+/// execução EmAndamento e responde 202 sem rodar a carga. O conflito de concorrência
+/// (CA-06) é exercitado a partir de uma execução EmAndamento semeada diretamente — não da
+/// corrida contra a conclusão de uma primeira carga (#718) — tornando o 409 determinístico.
+/// Autorização por role <c>plataforma-admin</c> (401/403).
 /// </summary>
 [Collection(GeoPostgisCollection.Name)]
 public sealed class GeoImportacoesEndpointTests
@@ -81,19 +83,30 @@ public sealed class GeoImportacoesEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "CA-06: com uma carga em andamento, um segundo disparo retorna 409 (sem Idempotency-Key)")]
+    [Fact(DisplayName = "CA-06: com uma carga em andamento, um novo disparo retorna 409 (sem Idempotency-Key)")]
     public async Task Disparar_ComCargaEmAndamento_Retorna409()
     {
         await LimparExecucoesAsync();
+
+        // Estado "em andamento" determinístico: semeia diretamente uma execução EmAndamento
+        // (mesmo padrão dos cenários CA-03), em vez de disparar uma primeira carga e depender de
+        // "vencer a corrida" contra a sua conclusão antes do segundo disparo (#718). O índice
+        // único parcial (status = 0) garante que, enquanto essa linha existir, qualquer novo
+        // disparo colida na UNIQUE (23505) e vire 409 — sem nenhuma dependência de timing.
+        // O caminho real "disparo → 202 + execução EmAndamento registrada" já é coberto por CA-02.
+        await using (GeoDbContext ctx = _fixture.CreateDbContext())
+        {
+            GeoImportacaoExecucao emAndamento = GeoImportacaoExecucao
+                .Iniciar("202601", "teste", TimeProvider.System.GetUtcNow()).Value!;
+            ctx.ImportacaoExecucoes.Add(emAndamento);
+            await ctx.SaveChangesAsync();
+        }
+
         using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage disparo = RequisicaoDisparo("202602", admin: true);
+        using HttpResponseMessage resposta = await client.SendAsync(disparo);
 
-        using HttpRequestMessage disparo1 = RequisicaoDisparo("202601", admin: true);
-        using HttpResponseMessage primeira = await client.SendAsync(disparo1);
-        primeira.StatusCode.Should().Be(HttpStatusCode.Accepted);
-
-        using HttpRequestMessage disparo2 = RequisicaoDisparo("202602", admin: true);
-        using HttpResponseMessage segunda = await client.SendAsync(disparo2);
-        segunda.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        resposta.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Theory(DisplayName = "CA-02: versão fora do formato AAAAMM (ou ausente) é rejeitada na borda com 422")]

@@ -64,12 +64,11 @@ public sealed class OpenTelemetryWiringTests(OtelCollectorContainerFixture colle
             // handshake + envio em runners CI mais lentos.
             tracerProvider!.ForceFlush(timeoutMilliseconds: 5_000).Should().BeTrue();
 
-            // Buffer extra (200ms) para o Collector processar o batch recebido e
-            // emitir no exporter debug. Heurística: na prática 50ms basta, 200ms
-            // dá folga sem aumentar tempo do teste materialmente.
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
-
-            string collectorOutput = await collector.GetLogsAsync();
+            // O Collector grava no exporter debug de forma assíncrona ao ForceFlush; em vez de um
+            // delay fixo curto (flaky em runners lentos, #718), faz polling até os tokens
+            // esperados aparecerem no output — ou retorna o que houver, p/ uma falha legível.
+            string collectorOutput = await collector.WaitForLogsContainingAsync(
+                ["ResourceSpans", ServiceName, "test-wiring-span", OpenTelemetryConfiguration.ServiceNamespaceResourceValue]);
 
             collectorOutput.Should().Contain("ResourceSpans", because: "o exporter debug do Collector escreve o nome do tipo OTLP recebido em stderr");
             collectorOutput.Should().Contain(ServiceName, because: $"o Resource attribute service.name precisa chegar até o Collector — confirma que ConfigureResource(...AddService(\"{ServiceName}\")) está wired");
@@ -120,11 +119,10 @@ public sealed class OpenTelemetryWiringTests(OtelCollectorContainerFixture colle
             // + envio em runners CI mais lentos.
             meterProvider!.ForceFlush(timeoutMilliseconds: 5_000).Should().BeTrue();
 
-            // Buffer extra (200ms) para o Collector processar o batch e emitir no
-            // exporter debug. Heurística: na prática 50ms basta, 200ms dá folga.
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
-
-            string collectorOutput = await collector.GetLogsAsync();
+            // Polling até os tokens chegarem ao exporter debug (escrita assíncrona ao ForceFlush),
+            // no lugar de um delay fixo curto sujeito a flakiness em runners lentos (#718).
+            string collectorOutput = await collector.WaitForLogsContainingAsync(
+                ["test.wiring.counter", "ResourceMetrics", ServiceName]);
 
             // Instrumento específico criado neste teste — assert discriminante real de
             // AddMeter(nomeServico). ResourceMetrics pode ser satisfeito por runtime
