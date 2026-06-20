@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(

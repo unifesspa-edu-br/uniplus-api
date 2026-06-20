@@ -1,16 +1,16 @@
-namespace Unifesspa.UniPlus.Configuracao.Domain.Cidades;
+namespace Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 using System.Collections.Frozen;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Validação server-side da referência de cidade do módulo <c>Geo</c>
-/// (ADR-0090). <c>Campus</c> e <c>LocalOferta</c> guardam
-/// <c>cidade_codigo_ibge</c> (código IBGE de 7 dígitos) + display cache
-/// (<c>cidade_nome</c>, <c>cidade_uf</c>) preenchido pelo frontend a partir da
-/// API do Geo — composição no cliente, sem FK cross-banco nem chamada ao Geo.
+/// (ADR-0090). Entidades de outros módulos (<c>Campus</c>, <c>LocalOferta</c>,
+/// <c>Instituicao</c>) guardam <c>cidade_codigo_ibge</c> (código IBGE de 7
+/// dígitos) + display cache (<c>cidade_nome</c>, <c>cidade_uf</c>) preenchido
+/// pelo frontend a partir da API do Geo — composição no cliente, sem FK
+/// cross-banco nem chamada ao Geo.
 /// </summary>
 /// <remarks>
 /// <para>A validação é apenas de <strong>formato</strong>: 7 dígitos numéricos,

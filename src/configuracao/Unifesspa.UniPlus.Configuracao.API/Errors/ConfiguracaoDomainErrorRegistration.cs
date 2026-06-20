@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 /// <summary>
 /// Registry de mapeamentos de erros de domínio do Configuracao para wire codes

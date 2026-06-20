@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
 
 using FluentValidation;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 public sealed class CriarCampusCommandValidator : AbstractValidator<CriarCampusCommand>
 {

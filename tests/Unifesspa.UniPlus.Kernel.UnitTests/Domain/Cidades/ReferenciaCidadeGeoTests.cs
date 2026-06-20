@@ -1,15 +1,15 @@
-namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Cidades;
+namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.Cidades;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Configuracao.Domain.Cidades;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// CA-03 (#587): validação de formato + coerência de UF do
 /// <c>cidade_codigo_ibge</c>, server-side, sem consultar o Geo nem validar
-/// dígito verificador.
+/// dígito verificador. Referência de cidade compartilhada (ADR-0090), promovida
+/// ao Kernel para consumo cross-módulo (Configuração e Organização).
 /// </summary>
 public sealed class ReferenciaCidadeGeoTests
 {
