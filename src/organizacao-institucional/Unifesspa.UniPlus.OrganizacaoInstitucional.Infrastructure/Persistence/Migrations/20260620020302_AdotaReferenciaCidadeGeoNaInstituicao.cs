@@ -11,6 +11,12 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Sem backfill: municipio_sede era texto livre (apenas o nome do
+            // município), sem código IBGE nem UF — não há como derivar a referência
+            // estruturada cidade_codigo_ibge sem geocodificação não confiável. A
+            // composição no cliente (ADR-0090) passa a ser a fonte da cidade daqui
+            // pra frente. Em fase de scaffolding não há dado semeado em
+            // municipio_sede a preservar; a coluna é descartada.
             migrationBuilder.DropColumn(
                 name: "municipio_sede",
                 table: "instituicao");
@@ -60,36 +66,12 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "ix_instituicao_cidade_codigo_ibge",
-                table: "instituicao");
-
-            migrationBuilder.DropColumn(
-                name: "cidade_codigo_ibge",
-                table: "instituicao");
-
-            migrationBuilder.DropColumn(
-                name: "cidade_display_atualizado_em",
-                table: "instituicao");
-
-            migrationBuilder.DropColumn(
-                name: "cidade_nome",
-                table: "instituicao");
-
-            migrationBuilder.DropColumn(
-                name: "cidade_origem",
-                table: "instituicao");
-
-            migrationBuilder.DropColumn(
-                name: "cidade_uf",
-                table: "instituicao");
-
-            migrationBuilder.AddColumn<string>(
-                name: "municipio_sede",
-                table: "instituicao",
-                type: "character varying(100)",
-                maxLength: 100,
-                nullable: true);
+            // Forward-only per ADR-0054 §J: nova migration "Reverte..." é o
+            // mecanismo canônico de revert. Dropar as colunas cidade_* aqui
+            // destruiria a referência de cidade capturada e recriaria um
+            // municipio_sede vazio — perda silenciosa de dado num
+            // `database update <baseline>`, caminho proibido.
+            throw new NotSupportedException("Forward-only migration per ADR-0054 §J.");
         }
     }
 }
