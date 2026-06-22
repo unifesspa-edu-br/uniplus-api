@@ -20,10 +20,16 @@ public sealed record Percentual
 
     private Percentual(decimal valor) => Valor = valor;
 
+    /// <summary>Escala decimal persistida (<c>numeric(5,2)</c>).</summary>
+    private const int Escala = 2;
+
     /// <summary>
     /// Cria um <see cref="Percentual"/> validando o intervalo fechado
     /// [<see cref="Minimo"/>, <see cref="Maximo"/>]. Valor fora da faixa
-    /// retorna falha de domínio; os limites 0 e 100 são aceitos.
+    /// retorna falha de domínio; os limites 0 e 100 são aceitos. O valor é
+    /// arredondado para a escala persistida (2 casas, banker's rounding) na
+    /// origem — espelhando <c>NotaFinal</c> — para que o validado case com o
+    /// persistido em <c>numeric(5,2)</c> sem divergência até o reload.
     /// </summary>
     public static Result<Percentual> Criar(decimal valor)
     {
@@ -34,7 +40,7 @@ public sealed record Percentual
                 $"Percentual deve estar entre {Minimo} e {Maximo}."));
         }
 
-        return Result<Percentual>.Success(new Percentual(valor));
+        return Result<Percentual>.Success(new Percentual(Math.Round(valor, Escala, MidpointRounding.ToEven)));
     }
 
     /// <summary>Indica se <paramref name="valor"/> está no intervalo válido, sem alocar.</summary>
