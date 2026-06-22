@@ -28,7 +28,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
         Instituicao.Criar(
             "3990", "Universidade Federal do Sul e Sudeste do Pará", "Unifesspa", "Universidade", "Pública Federal",
             cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null, atoCredenciamento: null,
-            atoRecredenciamento: null, conceitoInstitucional: null, igc: null, website: null, enderecoSede: null,
+            atoRecredenciamento: null, conceitoInstitucional: null, igc: null, website: null, endereco: null,
             cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm, unidadeRaizId: null).Value!;
 
     private static AtualizarInstituicaoCommand CommandValido(
@@ -39,7 +39,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
         string? cidadeUf = null) => new(
         id, "3990", "Universidade Federal do Sul e Sudeste do Pará", "Unifesspa", "Universidade", "Pública Federal",
         Cnpj: null, Mantenedora: null, CodigoMantenedoraEmec: null, Situacao: null, AtoCredenciamento: null,
-        AtoRecredenciamento: null, ConceitoInstitucional: null, Igc: null, Website: null, EnderecoSede: null,
+        AtoRecredenciamento: null, ConceitoInstitucional: null, Igc: null, Website: null, Endereco: null,
         CidadeCodigoIbge: cidadeCodigoIbge, CidadeNome: cidadeNome, CidadeUf: cidadeUf, unidadeRaizId);
 
     private static Unidade NovaUnidade(TipoUnidade tipo) =>

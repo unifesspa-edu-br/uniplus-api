@@ -25,12 +25,10 @@ public static class InstituicaoMapping
             instituicao.ConceitoInstitucional,
             instituicao.Igc,
             instituicao.Website,
-            instituicao.EnderecoSede,
-            instituicao.CidadeCodigoIbge,
-            instituicao.CidadeNome,
-            instituicao.CidadeUf,
-            instituicao.CidadeOrigem,
-            instituicao.CidadeDisplayAtualizadoEm,
+            EnderecoGeoMapping.ParaCidadeDto(
+                instituicao.CidadeCodigoIbge, instituicao.CidadeNome, instituicao.CidadeUf,
+                instituicao.CidadeOrigem, instituicao.CidadeDisplayAtualizadoEm),
+            instituicao.Endereco.ToDto(),
             instituicao.UnidadeRaizId,
             instituicao.CreatedAt);
     }

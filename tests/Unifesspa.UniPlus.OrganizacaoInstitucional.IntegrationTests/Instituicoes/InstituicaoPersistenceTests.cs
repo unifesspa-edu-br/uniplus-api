@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
@@ -248,6 +249,74 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             .Should().BeFalse("nenhuma Instituição referencia uma Unidade aleatória");
     }
 
+    [Fact(DisplayName = "CA-01/CA-07: Insert com endereço estruturado faz round-trip das colunas owned")]
+    public async Task Insert_ComEndereco_RoundTrip()
+    {
+        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await LimparInstituicoesAsync(fresh);
+
+        Instituicao instituicao = NovaInstituicao(
+            "9600", "INS-END",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
+            cidadeOrigem: "geo-api", endereco: EnderecoCoerente());
+
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Instituicoes.Add(instituicao);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
+
+        persistida.Endereco.Should().NotBeNull();
+        persistida.Endereco!.Cep.Should().Be("68507590");
+        persistida.Endereco.CidadeCodigoIbge.Should().Be("1504208");
+    }
+
+    [Fact(DisplayName = "Owned type opcional: Instituição sem endereço materializa Endereco nulo")]
+    public async Task Insert_SemEndereco_MaterializaNulo()
+    {
+        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await LimparInstituicoesAsync(fresh);
+
+        Instituicao instituicao = NovaInstituicao("9601", "INS-SEM-END");
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Instituicoes.Add(instituicao);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
+
+        persistida.Endereco.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "CA-04: CHECK de coerência rejeita UPDATE cru com cidade do endereço divergente")]
+    public async Task CheckCoerencia_RejeitaUpdateCruIncoerente()
+    {
+        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await LimparInstituicoesAsync(fresh);
+
+        Instituicao instituicao = NovaInstituicao(
+            "9602", "INS-CK",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
+            cidadeOrigem: "geo-api", endereco: EnderecoCoerente());
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Instituicoes.Add(instituicao);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE instituicao SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {instituicao.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_instituicao_endereco_cidade_coerente impede divergência cidade↔CEP");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────
 
     private static async Task LimparInstituicoesAsync(OrganizacaoInstitucionalDbContext ctx)
@@ -265,7 +334,8 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         string? cidadeNome = null,
         string? cidadeUf = null,
         string? cidadeOrigem = null,
-        DateTimeOffset? cidadeDisplayAtualizadoEm = null) =>
+        DateTimeOffset? cidadeDisplayAtualizadoEm = null,
+        ReferenciaEnderecoGeo? endereco = null) =>
         Instituicao.Criar(
             codigoEmec,
             $"Instituição {sigla}",
@@ -281,13 +351,20 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             conceitoInstitucional: null,
             igc: null,
             website: null,
-            enderecoSede: null,
+            endereco,
             cidadeCodigoIbge,
             cidadeNome,
             cidadeUf,
             cidadeOrigem,
             cidadeDisplayAtualizadoEm,
             unidadeRaizId).Value!;
+
+    private static ReferenciaEnderecoGeo EnderecoCoerente() =>
+        ReferenciaEnderecoGeo.Criar(
+            "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
+            "1504208", "Marabá", "PA", -5.3m, -49.1m,
+            NivelResolucaoEndereco.Logradouro, "logradouro",
+            new DateTimeOffset(2026, 6, 22, 17, 10, 0, TimeSpan.Zero)).Value!;
 
     private static Unidade NovaReitoria(string slug, string sigla, string codigo) =>
         Unidade.Criar(

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
@@ -16,6 +17,14 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// </summary>
 public sealed class InstituicaoTests
 {
+    private static readonly DateTimeOffset Agora = new(2026, 6, 22, 17, 10, 0, TimeSpan.Zero);
+
+    private static ReferenciaEnderecoGeo Endereco(string cidadeCodigoIbge = "1504208", string cidadeUf = "PA") =>
+        ReferenciaEnderecoGeo.Criar(
+            "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
+            cidadeCodigoIbge, "Marabá", cidadeUf, -5.3m, -49.1m,
+            NivelResolucaoEndereco.Logradouro, "logradouro", Agora).Value!;
+
     private static Result<Instituicao> CriarValida(
         string codigoEmec = "3990",
         string nome = "Universidade Federal do Sul e Sudeste do Pará",
@@ -25,6 +34,7 @@ public sealed class InstituicaoTests
         string? cidadeCodigoIbge = null,
         string? cidadeNome = null,
         string? cidadeUf = null,
+        ReferenciaEnderecoGeo? endereco = null,
         Guid? unidadeRaizId = null) =>
         Instituicao.Criar(
             codigoEmec,
@@ -41,7 +51,7 @@ public sealed class InstituicaoTests
             conceitoInstitucional: null,
             igc: null,
             website: null,
-            enderecoSede: null,
+            endereco,
             cidadeCodigoIbge,
             cidadeNome,
             cidadeUf,
@@ -91,7 +101,7 @@ public sealed class InstituicaoTests
             "  3990  ", "  Universidade  ", "  Unifesspa  ", "  Universidade  ", "  Pública Federal  ",
             cnpj: "   ", mantenedora: "  Fundação  ", codigoMantenedoraEmec: null, situacao: null,
             atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
-            website: null, enderecoSede: "  Rua A, 100  ",
+            website: null, endereco: null,
             cidadeCodigoIbge: "1504208", cidadeNome: "  Marabá  ", cidadeUf: "pa",
             cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
 
@@ -101,7 +111,6 @@ public sealed class InstituicaoTests
         instituicao.Nome.Should().Be("Universidade");
         instituicao.Cnpj.Should().BeNull("string só com espaços vira null");
         instituicao.Mantenedora.Should().Be("Fundação");
-        instituicao.EnderecoSede.Should().Be("Rua A, 100");
         instituicao.CidadeCodigoIbge.Should().Be("1504208");
         instituicao.CidadeNome.Should().Be("Marabá");
         instituicao.CidadeUf.Should().Be("PA", "a UF é normalizada para caixa alta");
@@ -165,7 +174,7 @@ public sealed class InstituicaoTests
             "4000", "Universidade Federal Renomeada", "UFR", "Universidade", "Pública Federal",
             cnpj: "12.345.678/0001-99", mantenedora: null, codigoMantenedoraEmec: null, situacao: "Credenciada",
             atoCredenciamento: "Portaria 123", atoRecredenciamento: null, conceitoInstitucional: "4", igc: "4",
-            website: "https://unifesspa.edu.br", enderecoSede: null,
+            website: "https://unifesspa.edu.br", endereco: null,
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
             cidadeOrigem: ReferenciaCidadeGeo.OrigemGeoApi, cidadeDisplayAtualizadoEm: null, unidadeRaizId: novaRaiz);
 
@@ -187,12 +196,42 @@ public sealed class InstituicaoTests
             "3990", "", "Unifesspa", "Universidade", "Pública Federal",
             cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
             atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
-            website: null, enderecoSede: null,
+            website: null, endereco: null,
             cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null,
             cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.NomeObrigatorio);
         instituicao.Nome.Should().Be("Universidade Federal do Sul e Sudeste do Pará");
+    }
+
+    [Fact(DisplayName = "Criar com endereço estruturado + cidade coerente persiste o endereço")]
+    public void Criar_ComEnderecoECidadeCoerente_PersisteEndereco()
+    {
+        Result<Instituicao> resultado = CriarValida(
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA", endereco: Endereco());
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Endereco!.Cep.Should().Be("68507590");
+    }
+
+    [Fact(DisplayName = "Criar com endereço mas sem cidade da sede falha (CA-04: cidade obrigatória com endereço)")]
+    public void Criar_ComEnderecoSemCidade_RetornaCidadeObrigatoria()
+    {
+        Result<Instituicao> resultado = CriarValida(endereco: Endereco());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco);
+    }
+
+    [Fact(DisplayName = "Criar com endereço de cidade incoerente com a cidade da sede falha (CA-04)")]
+    public void Criar_ComEnderecoCidadeIncoerente_RetornaCidadeIncoerente()
+    {
+        Result<Instituicao> resultado = CriarValida(
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
+            endereco: Endereco(cidadeCodigoIbge: "1501402"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeIncoerente);
     }
 }

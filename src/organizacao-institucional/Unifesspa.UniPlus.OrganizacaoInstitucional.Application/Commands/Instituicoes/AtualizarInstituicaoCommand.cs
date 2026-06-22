@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instit
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 
 /// <summary>
 /// Edita os dados regulatórios e o vínculo com a reitoria da Instituição
@@ -26,7 +27,7 @@ public sealed record AtualizarInstituicaoCommand(
     string? ConceitoInstitucional,
     string? Igc,
     string? Website,
-    string? EnderecoSede,
+    EnderecoGeoInput? Endereco,
     string? CidadeCodigoIbge,
     string? CidadeNome,
     string? CidadeUf,

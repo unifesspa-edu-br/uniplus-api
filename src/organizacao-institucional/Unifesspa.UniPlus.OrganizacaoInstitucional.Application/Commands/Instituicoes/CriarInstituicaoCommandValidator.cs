@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instit
 using FluentValidation;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 
 /// <summary>
 /// Validação de formato dos campos da criação da Instituição (CA-03). As regras
@@ -45,5 +46,7 @@ public sealed class CriarInstituicaoCommandValidator : AbstractValidator<CriarIn
             .When(x => !string.IsNullOrWhiteSpace(x.CidadeCodigoIbge)
                 || !string.IsNullOrWhiteSpace(x.CidadeNome)
                 || !string.IsNullOrWhiteSpace(x.CidadeUf));
+
+        this.RegrasDeEndereco(x => x.Endereco, x => x.CidadeCodigoIbge, x => x.CidadeUf);
     }
 }

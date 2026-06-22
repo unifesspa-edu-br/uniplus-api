@@ -1007,7 +1007,7 @@
           "conceitoInstitucional",
           "igc",
           "website",
-          "enderecoSede",
+          "endereco",
           "cidadeCodigoIbge",
           "cidadeNome",
           "cidadeUf",
@@ -1088,10 +1088,14 @@
               "string"
             ]
           },
-          "enderecoSede": {
-            "type": [
-              "null",
-              "string"
+          "endereco": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EnderecoGeoInput"
+              }
             ]
           },
           "cidadeCodigoIbge": {
@@ -1226,6 +1230,66 @@
           }
         }
       },
+      "CidadeReferenciaDto": {
+        "required": [
+          "codigoIbge",
+          "nome",
+          "uf"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "origem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayAtualizadoEm": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "CidadeReferenciaInput": {
+        "required": [
+          "codigoIbge",
+          "nome",
+          "uf"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "uf": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CriarInstituicaoCommand": {
         "required": [
           "codigoEmec",
@@ -1242,7 +1306,7 @@
           "conceitoInstitucional",
           "igc",
           "website",
-          "enderecoSede",
+          "endereco",
           "cidadeCodigoIbge",
           "cidadeNome",
           "cidadeUf",
@@ -1319,10 +1383,14 @@
               "string"
             ]
           },
-          "enderecoSede": {
-            "type": [
-              "null",
-              "string"
+          "endereco": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EnderecoGeoInput"
+              }
             ]
           },
           "cidadeCodigoIbge": {
@@ -1415,6 +1483,186 @@
           }
         }
       },
+      "EnderecoGeoDto": {
+        "required": [
+          "cep",
+          "logradouro",
+          "numero",
+          "complemento",
+          "bairro",
+          "distrito",
+          "cidade",
+          "latitude",
+          "longitude",
+          "nivelResolucao",
+          "origem",
+          "displayAtualizadoEm"
+        ],
+        "type": "object",
+        "properties": {
+          "cep": {
+            "type": "string"
+          },
+          "logradouro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "numero": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "complemento": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bairro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "distrito": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidade": {
+            "$ref": "#/components/schemas/CidadeReferenciaDto"
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "nivelResolucao": {
+            "type": "string"
+          },
+          "origem": {
+            "type": "string"
+          },
+          "displayAtualizadoEm": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "EnderecoGeoInput": {
+        "required": [
+          "cep",
+          "logradouro",
+          "numero",
+          "complemento",
+          "bairro",
+          "distrito",
+          "cidade",
+          "latitude",
+          "longitude",
+          "nivelResolucao",
+          "origem"
+        ],
+        "type": "object",
+        "properties": {
+          "cep": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "logradouro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "numero": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "complemento": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bairro": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "distrito": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CidadeReferenciaInput"
+              }
+            ]
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "nivelResolucao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "origem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "IFormFile": {
         "type": "string",
         "format": "binary"
@@ -1436,12 +1684,8 @@
           "conceitoInstitucional",
           "igc",
           "website",
-          "enderecoSede",
-          "cidadeCodigoIbge",
-          "cidadeNome",
-          "cidadeUf",
-          "cidadeOrigem",
-          "cidadeDisplayAtualizadoEm",
+          "cidade",
+          "endereco",
           "unidadeRaizId",
           "criadoEm"
         ],
@@ -1520,42 +1764,25 @@
               "string"
             ]
           },
-          "enderecoSede": {
-            "type": [
-              "null",
-              "string"
+          "cidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CidadeReferenciaDto"
+              }
             ]
           },
-          "cidadeCodigoIbge": {
-            "type": [
-              "null",
-              "string"
+          "endereco": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EnderecoGeoDto"
+              }
             ]
-          },
-          "cidadeNome": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "cidadeUf": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "cidadeOrigem": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "cidadeDisplayAtualizadoEm": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
           },
           "unidadeRaizId": {
             "type": [

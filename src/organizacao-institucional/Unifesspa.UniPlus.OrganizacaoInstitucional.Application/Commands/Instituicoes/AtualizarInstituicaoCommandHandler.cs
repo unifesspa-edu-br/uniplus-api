@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instit
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -48,14 +50,23 @@ public static class AtualizarInstituicaoCommandHandler
         // cidade efetivamente muda — assim cidade_display_atualizado_em rastreia a
         // última reconciliação da cidade, não qualquer edição de outro campo. Sem
         // cidade no payload, ambos zeram (a entidade também zera o trio).
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
         bool temCidade = !string.IsNullOrWhiteSpace(command.CidadeCodigoIbge);
         bool cidadeMudou = CidadeReferenciaMudou(command, instituicao);
         string? cidadeOrigem = temCidade
             ? (cidadeMudou ? ReferenciaCidadeGeo.OrigemGeoApi : instituicao.CidadeOrigem)
             : null;
         DateTimeOffset? cidadeAtualizadoEm = temCidade
-            ? (cidadeMudou ? timeProvider.GetUtcNow() : instituicao.CidadeDisplayAtualizadoEm)
+            ? (cidadeMudou ? agora : instituicao.CidadeDisplayAtualizadoEm)
             : null;
+
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, instituicao.Endereco, agora);
+        if (enderecoErro is not null)
+        {
+            return Result.Failure(enderecoErro);
+        }
 
         Result atualizarResult = instituicao.Atualizar(
             command.CodigoEmec,
@@ -72,7 +83,7 @@ public static class AtualizarInstituicaoCommandHandler
             command.ConceitoInstitucional,
             command.Igc,
             command.Website,
-            command.EnderecoSede,
+            endereco,
             command.CidadeCodigoIbge,
             command.CidadeNome,
             command.CidadeUf,
