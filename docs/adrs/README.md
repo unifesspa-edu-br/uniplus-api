@@ -124,8 +124,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0093](0093-rate-limiting-na-borda-para-reference-data-publico.md) | Rate-limiting de endpoints públicos de reference data na borda (gateway), não no app | accepted | 2026-06-19 |
 | [0094](0094-keyset-ordenado-via-mr-sob-cursor-opaco.md) | Ordenação keyset na API via biblioteca de seek sob cursor opaco | accepted | 2026-06-19 |
 | [0095](0095-chave-de-ordenacao-keyset-nao-nula.md) | Chave de ordenação keyset não-nula via coluna gerada | accepted | 2026-06-19 |
+| [0096](0096-endereco-como-referencia-estruturada-ao-geo.md) | Endereço de entidades institucionais como referência estruturada ao Geo | accepted | 2026-06-22 |
 
-> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0095` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0096+`.
+> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0096` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0097+`.
 
 ## Como adicionar um novo ADR
 
