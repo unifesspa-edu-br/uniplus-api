@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -34,6 +36,15 @@ public static class CriarCampusCommandHandler
                 $"Já existe um Campus vivo com a sigla '{command.Sigla}'."));
         }
 
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, existente: null, agora);
+        if (enderecoErro is not null)
+        {
+            return Result<Guid>.Failure(enderecoErro);
+        }
+
         Result<Campus> campusResult = Campus.Criar(
             command.Sigla,
             command.Nome,
@@ -41,11 +52,8 @@ public static class CriarCampusCommandHandler
             command.CidadeNome,
             command.CidadeUf,
             ReferenciaCidadeGeo.OrigemGeoApi,
-            timeProvider.GetUtcNow(),
-            command.Endereco,
-            command.Cep,
-            command.Latitude,
-            command.Longitude,
+            agora,
+            endereco,
             command.CodigoEmec);
 
         if (campusResult.IsFailure)

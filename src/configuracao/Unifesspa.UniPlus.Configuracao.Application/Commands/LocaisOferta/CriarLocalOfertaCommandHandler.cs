@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -36,6 +38,15 @@ public static class CriarLocalOfertaCommandHandler
                 "O Campus responsável informado não foi encontrado."));
         }
 
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, existente: null, agora);
+        if (enderecoErro is not null)
+        {
+            return Result<Guid>.Failure(enderecoErro);
+        }
+
         Result<LocalOferta> localResult = LocalOferta.Criar(
             command.Tipo,
             command.CampusResponsavelId,
@@ -43,8 +54,8 @@ public static class CriarLocalOfertaCommandHandler
             command.CidadeNome,
             command.CidadeUf,
             ReferenciaCidadeGeo.OrigemGeoApi,
-            timeProvider.GetUtcNow(),
-            command.Endereco,
+            agora,
+            endereco,
             command.CodigoEmec);
 
         if (localResult.IsFailure)

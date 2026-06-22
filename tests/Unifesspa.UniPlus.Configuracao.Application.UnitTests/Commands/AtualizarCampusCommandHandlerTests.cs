@@ -6,9 +6,11 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class AtualizarCampusCommandHandlerTests
@@ -18,10 +20,15 @@ public sealed class AtualizarCampusCommandHandlerTests
     private readonly ICampusRepository _repository = Substitute.For<ICampusRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private static Campus CampusExistente() =>
+    private static Campus CampusExistente(ReferenciaEnderecoGeo? endereco = null) =>
         Campus.Criar(
             "CAMar", "Campus Marabá", "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm, null, null, null, null, null).Value!;
+            ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm, endereco, null).Value!;
+
+    private static EnderecoGeoInput EnderecoInput() =>
+        new("68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
+            new CidadeReferenciaInput("1504208", "Marabá", "PA"),
+            -5.3m, -49.1m, NivelResolucaoEndereco.Logradouro, "logradouro");
 
     [Fact(DisplayName = "S4: PUT sem mudar a cidade preserva cidade_display_atualizado_em")]
     public async Task Handle_CidadeInalterada_PreservaCarimboDeCidade()
@@ -32,7 +39,7 @@ public sealed class AtualizarCampusCommandHandlerTests
         // Muda só o nome do campus; o trio de cidade permanece igual.
         AtualizarCampusCommand comando = new(
             campus.Id, "CAMar", "Campus Marabá Renomeado", "1504208", "Marabá", "PA",
-            null, null, null, null, null);
+            null, null);
 
         Result resultado = await AtualizarCampusCommandHandler.Handle(
             comando, _repository, _unitOfWork, TimeProvider.System, CancellationToken.None);
@@ -51,7 +58,7 @@ public sealed class AtualizarCampusCommandHandlerTests
 
         AtualizarCampusCommand comando = new(
             campus.Id, "CAMar", "Campus Marabá", "1501402", "Belém", "PA",
-            null, null, null, null, null);
+            null, null);
 
         Result resultado = await AtualizarCampusCommandHandler.Handle(
             comando, _repository, _unitOfWork, TimeProvider.System, CancellationToken.None);
@@ -61,5 +68,26 @@ public sealed class AtualizarCampusCommandHandlerTests
         campus.CidadeDisplayAtualizadoEm.Should().NotBe(CidadeCarimbadaEm,
             "a cidade mudou, então o carimbo é renovado a partir do TimeProvider");
         campus.CidadeOrigem.Should().Be(ReferenciaCidadeGeo.OrigemGeoApi);
+    }
+
+    [Fact(DisplayName = "Endereço inalterado preserva o instante do display cache do endereço")]
+    public async Task Handle_EnderecoInalterado_PreservaCarimboDeEndereco()
+    {
+        DateTimeOffset enderecoCarimbadoEm = new(2026, 2, 2, 0, 0, 0, TimeSpan.Zero);
+        ReferenciaEnderecoGeo enderecoExistente = EnderecoInput().ParaReferencia(enderecoCarimbadoEm).Value!;
+        Campus campus = CampusExistente(enderecoExistente);
+        _repository.ObterPorIdAsync(campus.Id, Arg.Any<CancellationToken>()).Returns(campus);
+
+        // Mesmo conteúdo de endereço, só muda o nome do campus.
+        AtualizarCampusCommand comando = new(
+            campus.Id, "CAMar", "Campus Marabá Renomeado", "1504208", "Marabá", "PA",
+            EnderecoInput(), null);
+
+        Result resultado = await AtualizarCampusCommandHandler.Handle(
+            comando, _repository, _unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        campus.Endereco!.DisplayAtualizadoEm.Should().Be(enderecoCarimbadoEm,
+            "o conteúdo do endereço não mudou, então o carimbo de frescura é preservado");
     }
 }

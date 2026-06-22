@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using FluentValidation;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 public sealed class CriarLocalOfertaCommandValidator : AbstractValidator<CriarLocalOfertaCommand>
@@ -29,9 +30,7 @@ public sealed class CriarLocalOfertaCommandValidator : AbstractValidator<CriarLo
                 && !string.IsNullOrWhiteSpace(x.CidadeNome)
                 && !string.IsNullOrWhiteSpace(x.CidadeUf));
 
-        RuleFor(x => x.Endereco)
-            .MaximumLength(500).WithMessage("Endereço do Local de Oferta deve ter no máximo 500 caracteres.")
-            .When(x => x.Endereco is not null);
+        this.RegrasDeEndereco(x => x.Endereco, x => x.CidadeCodigoIbge, x => x.CidadeUf);
 
         RuleFor(x => x.CodigoEmec)
             .MaximumLength(20).WithMessage("Código e-MEC do Local de Oferta deve ter no máximo 20 caracteres.")

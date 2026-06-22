@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -35,7 +36,7 @@ public sealed class LocalOfertaPersistenceTests
     {
         Campus campus = Campus.Criar(
             "LOFCAM", "Campus Local", "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null, null, null, null).Value!;
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
@@ -44,7 +45,7 @@ public sealed class LocalOfertaPersistenceTests
 
         LocalOferta local = LocalOferta.Criar(
             TipoLocalOferta.PoloEad, campus.Id, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, "Rua das Flores", "55555").Value!;
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, "55555").Value!;
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -80,6 +81,32 @@ public sealed class LocalOfertaPersistenceTests
         LocalOferta persistido = await readCtx.LocaisOferta.SingleAsync(l => l.Id == local.Id);
 
         persistido.CampusResponsavelId.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "CA-01/CA-07: criar LocalOferta com endereço estruturado faz round-trip das colunas owned")]
+    public async Task Insert_ComEndereco_RoundTrip()
+    {
+        ReferenciaEnderecoGeo endereco = ReferenciaEnderecoGeo.Criar(
+            "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
+            "1504208", "Marabá", "PA", -5.3m, -49.1m,
+            NivelResolucaoEndereco.Logradouro, "logradouro", Agora).Value!;
+
+        LocalOferta local = LocalOferta.Criar(
+            TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, endereco, null).Value!;
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.LocaisOferta.Add(local);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        LocalOferta persistido = await readCtx.LocaisOferta.SingleAsync(l => l.Id == local.Id);
+
+        persistido.Endereco.Should().NotBeNull();
+        persistido.Endereco!.Cep.Should().Be("68507590");
+        persistido.Endereco.CidadeCodigoIbge.Should().Be("1504208");
     }
 
     [Fact(DisplayName = "FK campus_responsavel_id inexistente é rejeitada pelo banco")]

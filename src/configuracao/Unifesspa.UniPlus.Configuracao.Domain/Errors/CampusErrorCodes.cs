@@ -7,10 +7,6 @@ public static class CampusErrorCodes
     public const string SiglaJaExiste = "Campus.SiglaJaExiste";
     public const string NomeObrigatorio = "Campus.NomeObrigatorio";
     public const string NomeTamanho = "Campus.NomeTamanho";
-    public const string EnderecoTamanho = "Campus.EnderecoTamanho";
-    public const string CepInvalido = "Campus.CepInvalido";
-    public const string LatitudeForaDeFaixa = "Campus.LatitudeForaDeFaixa";
-    public const string LongitudeForaDeFaixa = "Campus.LongitudeForaDeFaixa";
     public const string CodigoEmecTamanho = "Campus.CodigoEmecTamanho";
     public const string NaoEncontrado = "Campus.NaoEncontrado";
     public const string RemocaoBloqueadaPorLocalOferta = "Campus.RemocaoBloqueadaPorLocalOferta";

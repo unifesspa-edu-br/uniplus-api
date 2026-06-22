@@ -5,54 +5,55 @@ using AwesomeAssertions;
 using FluentValidation.Results;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 
 /// <summary>
-/// S2 (#587): o validator antecipa formato de CEP e coordenadas (além de
-/// sigla/nome/cidade), mantendo a fronteira de validação simétrica com o domínio.
+/// CA-03/CA-04 (#726): o validator antecipa o formato do endereço estruturado e a
+/// coerência cidade↔CEP (além de sigla/nome/cidade), mantendo a fronteira de
+/// validação simétrica com o domínio.
 /// </summary>
 public sealed class CampusValidatorTests
 {
     private readonly CriarCampusCommandValidator _validator = new();
 
     private static CriarCampusCommand Base() =>
-        new("CAMar", "Campus Marabá", "1504208", "Marabá", "PA", null, null, null, null, null);
+        new("CAMar", "Campus Marabá", "1504208", "Marabá", "PA", null, null);
 
-    [Fact(DisplayName = "Comando válido passa no validator")]
-    public void Valido_Passa()
+    private static EnderecoGeoInput EnderecoValido(string cidadeCodigoIbge = "1504208", string? cep = "68507590") =>
+        new(cep, "Folha 31", "s/n", null, "Nova Marabá", null,
+            new CidadeReferenciaInput(cidadeCodigoIbge, "Marabá", "PA"),
+            -5.3m, -49.1m, NivelResolucaoEndereco.Logradouro, "logradouro");
+
+    [Fact(DisplayName = "Comando sem endereço passa no validator")]
+    public void SemEndereco_Passa()
     {
-        _validator.Validate(Base() with { Cep = "68507590", Latitude = -5.3m, Longitude = -49.1m })
-            .IsValid.Should().BeTrue();
+        _validator.Validate(Base()).IsValid.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "CEP em formato inválido é rejeitado pelo validator")]
+    [Fact(DisplayName = "Comando com endereço estruturado válido passa")]
+    public void EnderecoValido_Passa()
+    {
+        _validator.Validate(Base() with { Endereco = EnderecoValido() }).IsValid.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "Endereço com CEP em formato inválido é rejeitado")]
     [InlineData("6850-759")]
     [InlineData("123")]
     [InlineData("abcdefgh")]
-    public void CepInvalido_Rejeita(string cep)
+    public void EnderecoCepInvalido_Rejeita(string cep)
     {
-        ValidationResult resultado = _validator.Validate(Base() with { Cep = cep });
+        ValidationResult resultado = _validator.Validate(Base() with { Endereco = EnderecoValido(cep: cep) });
 
         resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarCampusCommand.Cep));
     }
 
-    [Fact(DisplayName = "CEP ausente é aceito (campo opcional)")]
-    public void CepAusente_Aceita()
-    {
-        _validator.Validate(Base() with { Cep = null }).IsValid.Should().BeTrue();
-    }
-
-    [Theory(DisplayName = "Coordenada fora de faixa é rejeitada pelo validator")]
-    [InlineData(-90.1, 0, nameof(CriarCampusCommand.Latitude))]
-    [InlineData(90.1, 0, nameof(CriarCampusCommand.Latitude))]
-    [InlineData(0, -180.1, nameof(CriarCampusCommand.Longitude))]
-    [InlineData(0, 180.1, nameof(CriarCampusCommand.Longitude))]
-    public void CoordenadaForaDeFaixa_Rejeita(double latitude, double longitude, string propriedade)
+    [Fact(DisplayName = "Endereço com cidade incoerente com a cidade do campus é rejeitado (CA-04)")]
+    public void EnderecoCidadeIncoerente_Rejeita()
     {
         ValidationResult resultado = _validator.Validate(
-            Base() with { Latitude = (decimal)latitude, Longitude = (decimal)longitude });
+            Base() with { Endereco = EnderecoValido(cidadeCodigoIbge: "1501402") });
 
         resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == propriedade);
     }
 }

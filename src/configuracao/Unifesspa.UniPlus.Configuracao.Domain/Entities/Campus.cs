@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -17,6 +18,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>A <c>Sigla</c> é única entre campi vivos (não soft-deleted); a
 /// unicidade é validada pelo handler antes da factory e reforçada por índice
 /// único parcial de banco (<c>WHERE is_deleted = false</c>).</para>
+/// <para>O <see cref="Endereco"/> é uma referência de endereço estruturado ao
+/// Geo via CEP, opcional (<see cref="ReferenciaEnderecoGeo"/>, ADR-0096) — sucede
+/// o antigo trio texto-livre <c>Endereco</c>/<c>Cep</c>/coordenada. Quando
+/// presente, seu snapshot de cidade deve ser coerente com a referência de cidade
+/// do campus (CA-04).</para>
 /// <para>O congelamento (snapshot RN08) é responsabilidade do Processo Seletivo
 /// (módulo Selecao, ADR-0061) — não há colunas de snapshot aqui.</para>
 /// </remarks>
@@ -26,13 +32,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
     private const int SiglaMaxLength = 20;
     private const int NomeMinLength = 2;
     private const int NomeMaxLength = 200;
-    private const int EnderecoMaxLength = 500;
-    private const int CepLength = 8;
     private const int CodigoEmecMaxLength = 20;
-    private const decimal LatitudeMin = -90m;
-    private const decimal LatitudeMax = 90m;
-    private const decimal LongitudeMin = -180m;
-    private const decimal LongitudeMax = 180m;
 
     public string Sigla { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
@@ -44,10 +44,9 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
     public string? CidadeOrigem { get; private set; }
     public DateTimeOffset? CidadeDisplayAtualizadoEm { get; private set; }
 
-    public string? Endereco { get; private set; }
-    public string? Cep { get; private set; }
-    public decimal? Latitude { get; private set; }
-    public decimal? Longitude { get; private set; }
+    // Endereço estruturado ao Geo via CEP (ADR-0096) — opcional, owned type.
+    public ReferenciaEnderecoGeo? Endereco { get; private set; }
+
     public string? CodigoEmec { get; private set; }
 
     public string? CreatedBy { get; private set; }
@@ -60,8 +59,10 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// Cria um novo Campus. Valida formato e domínio local (incluindo a
-    /// referência de cidade via <see cref="ReferenciaCidadeGeo"/>). A unicidade
-    /// de <paramref name="sigla"/> entre campi vivos é responsabilidade do handler.
+    /// referência de cidade via <see cref="ReferenciaCidadeGeo"/> e a coerência
+    /// cidade↔endereço). A unicidade de <paramref name="sigla"/> entre campi
+    /// vivos é responsabilidade do handler. O <paramref name="endereco"/> já
+    /// chega validado (construído pelo handler via <see cref="ReferenciaEnderecoGeo.Criar"/>).
     /// </summary>
     public static Result<Campus> Criar(
         string sigla,
@@ -71,10 +72,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         string cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
-        string? endereco,
-        string? cep,
-        decimal? latitude,
-        decimal? longitude,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         ArgumentNullException.ThrowIfNull(sigla);
@@ -83,8 +81,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         ArgumentNullException.ThrowIfNull(cidadeNome);
         ArgumentNullException.ThrowIfNull(cidadeUf);
 
-        Result validacao = ValidarCampos(
-            sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, cep, latitude, longitude, codigoEmec);
+        Result validacao = ValidarCampos(sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, codigoEmec);
         if (validacao.IsFailure)
         {
             return Result<Campus>.Failure(validacao.Error!);
@@ -93,7 +90,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         var campus = new Campus();
         campus.AplicarCampos(
             sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
-            endereco, cep, latitude, longitude, codigoEmec);
+            endereco, codigoEmec);
 
         return Result<Campus>.Success(campus);
     }
@@ -110,10 +107,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         string cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
-        string? endereco,
-        string? cep,
-        decimal? latitude,
-        decimal? longitude,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         ArgumentNullException.ThrowIfNull(sigla);
@@ -122,8 +116,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         ArgumentNullException.ThrowIfNull(cidadeNome);
         ArgumentNullException.ThrowIfNull(cidadeUf);
 
-        Result validacao = ValidarCampos(
-            sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, cep, latitude, longitude, codigoEmec);
+        Result validacao = ValidarCampos(sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, codigoEmec);
         if (validacao.IsFailure)
         {
             return validacao;
@@ -131,7 +124,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
 
         AplicarCampos(
             sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
-            endereco, cep, latitude, longitude, codigoEmec);
+            endereco, codigoEmec);
 
         return Result.Success();
     }
@@ -144,10 +137,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         string cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
-        string? endereco,
-        string? cep,
-        decimal? latitude,
-        decimal? longitude,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         Sigla = sigla.Trim().ToUpperInvariant();
@@ -157,10 +147,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         CidadeUf = cidadeUf.Trim().ToUpperInvariant();
         CidadeOrigem = NormalizarOpcional(cidadeOrigem);
         CidadeDisplayAtualizadoEm = cidadeDisplayAtualizadoEm;
-        Endereco = NormalizarOpcional(endereco);
-        Cep = NormalizarOpcional(cep);
-        Latitude = latitude;
-        Longitude = longitude;
+        Endereco = endereco;
         CodigoEmec = NormalizarOpcional(codigoEmec);
     }
 
@@ -173,10 +160,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         string cidadeCodigoIbge,
         string cidadeNome,
         string cidadeUf,
-        string? endereco,
-        string? cep,
-        decimal? latitude,
-        decimal? longitude,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         if (string.IsNullOrWhiteSpace(sigla))
@@ -213,36 +197,13 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
             return cidade;
         }
 
-        if (endereco is not null && endereco.Trim().Length > EnderecoMaxLength)
+        // CA-04: o snapshot de cidade do endereço deve coincidir com a referência
+        // de cidade do campus (que aqui é sempre obrigatória).
+        Result coerencia = ReferenciaEnderecoGeo.ValidarCoerencia(
+            endereco?.CidadeCodigoIbge, endereco?.CidadeUf, cidadeCodigoIbge, cidadeUf);
+        if (coerencia.IsFailure)
         {
-            return Result.Failure(new DomainError(
-                CampusErrorCodes.EnderecoTamanho,
-                $"Endereço do Campus deve ter no máximo {EnderecoMaxLength} caracteres."));
-        }
-
-        if (!string.IsNullOrWhiteSpace(cep))
-        {
-            string cepNormalizado = cep.Trim();
-            if (cepNormalizado.Length != CepLength || !cepNormalizado.All(char.IsAsciiDigit))
-            {
-                return Result.Failure(new DomainError(
-                    CampusErrorCodes.CepInvalido,
-                    $"CEP do Campus deve ter exatamente {CepLength} dígitos numéricos."));
-            }
-        }
-
-        if (latitude is { } lat && lat is < LatitudeMin or > LatitudeMax)
-        {
-            return Result.Failure(new DomainError(
-                CampusErrorCodes.LatitudeForaDeFaixa,
-                $"Latitude deve estar entre {LatitudeMin} e {LatitudeMax}."));
-        }
-
-        if (longitude is { } lon && lon is < LongitudeMin or > LongitudeMax)
-        {
-            return Result.Failure(new DomainError(
-                CampusErrorCodes.LongitudeForaDeFaixa,
-                $"Longitude deve estar entre {LongitudeMin} e {LongitudeMax}."));
+            return coerencia;
         }
 
         if (codigoEmec is not null && codigoEmec.Trim().Length > CodigoEmecMaxLength)

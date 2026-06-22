@@ -12,15 +12,10 @@ public static class CampusMapping
             campus.Id,
             campus.Sigla,
             campus.Nome,
-            campus.CidadeCodigoIbge,
-            campus.CidadeNome,
-            campus.CidadeUf,
-            campus.CidadeOrigem,
-            campus.CidadeDisplayAtualizadoEm,
-            campus.Endereco,
-            campus.Cep,
-            campus.Latitude,
-            campus.Longitude,
+            EnderecoGeoMapping.ParaCidadeDto(
+                campus.CidadeCodigoIbge, campus.CidadeNome, campus.CidadeUf,
+                campus.CidadeOrigem, campus.CidadeDisplayAtualizadoEm),
+            campus.Endereco.ToDto(),
             campus.CodigoEmec,
             campus.CreatedAt);
     }
