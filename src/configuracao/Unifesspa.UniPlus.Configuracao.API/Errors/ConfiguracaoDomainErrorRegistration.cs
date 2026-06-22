@@ -167,5 +167,48 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.local_oferta.remocao_bloqueada_por_oferta_curso",
                 "Não é possível remover um local de oferta referenciado por oferta de curso ativa")),
+
+        // ── Referência de reserva demográfica (UNI-REQ-0065) ──────────────
+        new(ReferenciaReservaDemograficaErrorCodes.CensoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.referencia_reserva_demografica.censo_obrigatorio",
+                "Censo de referência é obrigatório")),
+
+        new(ReferenciaReservaDemograficaErrorCodes.CensoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.referencia_reserva_demografica.censo_tamanho",
+                "Tamanho do Censo de referência inválido")),
+
+        new(ReferenciaReservaDemograficaErrorCodes.CensoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.referencia_reserva_demografica.censo_ja_existe",
+                "Já existe uma referência ativa para este Censo")),
+
+        new(ReferenciaReservaDemograficaErrorCodes.PercentualForaDeFaixa,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.referencia_reserva_demografica.percentual_fora_de_faixa",
+                "Percentual fora do intervalo válido (0 a 100)")),
+
+        new(ReferenciaReservaDemograficaErrorCodes.BaseLegalObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.referencia_reserva_demografica.base_legal_obrigatoria",
+                "Base legal é obrigatória")),
+
+        new(ReferenciaReservaDemograficaErrorCodes.BaseLegalTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.referencia_reserva_demografica.base_legal_tamanho",
+                "Tamanho da base legal inválido")),
+
+        new(ReferenciaReservaDemograficaErrorCodes.NaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.referencia_reserva_demografica.nao_encontrada",
+                "Referência de reserva demográfica não encontrada")),
     ];
 }

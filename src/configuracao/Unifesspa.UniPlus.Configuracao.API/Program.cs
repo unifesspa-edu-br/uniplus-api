@@ -56,6 +56,7 @@ builder.Services.AddDomainErrorMapper();
 // HATEOAS Level 1 (ADR-0029) — builders de _links dos cadastros (UNI-REQ #587).
 builder.Services.AddSingleton<IResourceLinksBuilder<CampusDto>, CampusLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<LocalOfertaDto>, LocalOfertaLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<ReferenciaReservaDemograficaDto>, ReferenciaReservaDemograficaLinksBuilder>();
 
 // Idempotency-Key (ADR-0027) + criptografia para entries at-rest. Filter global
 // se ativa apenas em endpoints com [RequiresIdempotencyKey] — os controllers
