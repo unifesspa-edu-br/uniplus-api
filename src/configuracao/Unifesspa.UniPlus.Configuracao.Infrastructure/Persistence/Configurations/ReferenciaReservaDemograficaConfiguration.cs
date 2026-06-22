@@ -43,19 +43,18 @@ internal sealed class ReferenciaReservaDemograficaConfiguration
 
         // Percentual é value object — persistido por valor como numeric(5,2).
         // A reconstrução confia no CHECK de banco (0–100), por isso usa Value!.
+        // Os nomes de coluna (ppi_percentual, ...) vêm da convenção snake_case
+        // global — alinhado ao CampusConfiguration, sem HasColumnName explícito.
         builder.Property(r => r.PpiPercentual)
             .HasConversion(p => p.Valor, v => Percentual.Criar(v).Value!)
-            .HasColumnName("ppi_percentual")
             .HasPrecision(5, 2)
             .IsRequired();
         builder.Property(r => r.QuilombolaPercentual)
             .HasConversion(p => p.Valor, v => Percentual.Criar(v).Value!)
-            .HasColumnName("quilombola_percentual")
             .HasPrecision(5, 2)
             .IsRequired();
         builder.Property(r => r.PcdPercentual)
             .HasConversion(p => p.Valor, v => Percentual.Criar(v).Value!)
-            .HasColumnName("pcd_percentual")
             .HasPrecision(5, 2)
             .IsRequired();
 
