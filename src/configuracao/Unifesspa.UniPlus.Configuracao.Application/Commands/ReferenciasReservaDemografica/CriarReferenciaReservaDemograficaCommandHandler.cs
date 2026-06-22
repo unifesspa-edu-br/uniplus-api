@@ -44,7 +44,23 @@ public static class CriarReferenciaReservaDemograficaCommandHandler
 
         ReferenciaReservaDemografica referencia = referenciaResult.Value!;
         await repository.AdicionarAsync(referencia, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
+            && UniqueConstraintViolation.IsCensoConflict(constraint))
+        {
+            // Corrida entre CensoExisteEntreLivosAsync e o INSERT (check-then-act): o
+            // índice único parcial dispara 23505 e viramos o mesmo CensoJaExiste do
+            // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
+            // virar 500 no middleware global. O filtro do `when` garante que outras
+            // exceções propagam intactas.
+            return Result<Guid>.Failure(new DomainError(
+                ReferenciaReservaDemograficaErrorCodes.CensoJaExiste,
+                $"Já existe uma Referência de reserva demográfica viva para o Censo '{command.CensoReferencia}'."));
+        }
 
         return Result<Guid>.Success(referencia.Id);
     }

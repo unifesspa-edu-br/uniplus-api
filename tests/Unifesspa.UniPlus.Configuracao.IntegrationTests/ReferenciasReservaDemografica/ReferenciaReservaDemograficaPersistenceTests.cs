@@ -79,8 +79,13 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>()
-            .WithInnerException(typeof(Npgsql.PostgresException));
+        // Trava as constantes que o handler usa para traduzir a corrida concorrente
+        // (UniqueConstraintViolation.GetViolatedConstraint/IsCensoConflict) em
+        // CensoJaExiste/409: SqlState 23505 + nome do índice único parcial.
+        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
+        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
+        pg.SqlState.Should().Be("23505");
+        pg.ConstraintName.Should().Be("ix_referencia_reserva_demografica_censo_vivo");
     }
 
     [Fact(DisplayName = "CA-05: soft-delete preserva a trilha e liberta o slot da UNIQUE parcial de Censo")]
