@@ -28,7 +28,12 @@ public static class AtualizarReferenciaReservaDemograficaCommandHandler
                 "Referência de reserva demográfica não encontrada."));
         }
 
-        // O Censo é a chave de negócio única entre vivos — só checa colisão quando muda.
+        // O Censo é mutável de propósito (decisão do P.O., #593): não precisa ser
+        // imutável porque o Processo Seletivo congela o Censo + percentuais por valor
+        // no snapshot de publicação (ADR-0061) — editar a fonte viva não retroage sobre
+        // nada já publicado. Diferente do `codigo` da Modalidade (#589), que é imutável
+        // por participar do hash de publicação (RN08). Como é a chave de negócio única
+        // entre vivos, só checamos colisão quando o Censo muda.
         if (!string.Equals(command.CensoReferencia.Trim(), referencia.CensoReferencia, StringComparison.OrdinalIgnoreCase)
             && await repository.CensoExisteEntreLivosAsync(command.CensoReferencia, command.Id, cancellationToken).ConfigureAwait(false))
         {
