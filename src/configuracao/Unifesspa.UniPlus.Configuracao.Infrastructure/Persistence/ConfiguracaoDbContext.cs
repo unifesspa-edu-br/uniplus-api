@@ -26,6 +26,8 @@ public sealed class ConfiguracaoDbContext : DbContext, IUnitOfWork
 
     public DbSet<LocalOferta> LocaisOferta => Set<LocalOferta>();
 
+    public DbSet<ReferenciaReservaDemografica> ReferenciasReservaDemografica => Set<ReferenciaReservaDemografica>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
