@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instit
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 
 /// <summary>
 /// Cria a Instituição singleton. Rejeitado se já existe uma Instituição viva
@@ -26,7 +27,7 @@ public sealed record CriarInstituicaoCommand(
     string? ConceitoInstitucional,
     string? Igc,
     string? Website,
-    string? EnderecoSede,
+    EnderecoGeoInput? Endereco,
     string? CidadeCodigoIbge,
     string? CidadeNome,
     string? CidadeUf,

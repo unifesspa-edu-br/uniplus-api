@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instit
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
@@ -56,11 +58,20 @@ public static class CriarInstituicaoCommandHandler
             return Result<Guid>.Failure(vinculoInvalido);
         }
 
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
         // Carimbo server-side do display cache da cidade (ADR-0090): com cidade
         // informada, proveniência geo-api + instante atual; sem cidade, ambos nulos.
         bool temCidade = !string.IsNullOrWhiteSpace(command.CidadeCodigoIbge);
         string? cidadeOrigem = temCidade ? ReferenciaCidadeGeo.OrigemGeoApi : null;
-        DateTimeOffset? cidadeAtualizadoEm = temCidade ? timeProvider.GetUtcNow() : null;
+        DateTimeOffset? cidadeAtualizadoEm = temCidade ? agora : null;
+
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, existente: null, agora);
+        if (enderecoErro is not null)
+        {
+            return Result<Guid>.Failure(enderecoErro);
+        }
 
         Result<Instituicao> instituicaoResult = Instituicao.Criar(
             command.CodigoEmec,
@@ -77,7 +88,7 @@ public static class CriarInstituicaoCommandHandler
             command.ConceitoInstitucional,
             command.Igc,
             command.Website,
-            command.EnderecoSede,
+            endereco,
             command.CidadeCodigoIbge,
             command.CidadeNome,
             command.CidadeUf,

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
@@ -22,7 +23,16 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         // Instituições vivas (uma true, uma false) passariam. Com o CHECK, a coluna
         // só admite true, então o índice único parcial garante de fato o singleton.
         builder.ToTable("instituicao", t =>
-            t.HasCheckConstraint("ck_instituicao_singleton_sentinela", "registro_vivo_sentinela = true"));
+        {
+            t.HasCheckConstraint("ck_instituicao_singleton_sentinela", "registro_vivo_sentinela = true");
+
+            // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe — a cidade
+            // da sede é opcional, mas quando há endereço o domínio garante a cidade
+            // presente; o CHECK barra divergência de código IBGE/UF.
+            t.HasCheckConstraint(
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("instituicao"),
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql);
+        });
         builder.HasKey(i => i.Id);
 
         builder.Property(i => i.CodigoEmec).HasMaxLength(20).IsRequired();
@@ -39,7 +49,6 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         builder.Property(i => i.ConceitoInstitucional).HasMaxLength(100);
         builder.Property(i => i.Igc).HasMaxLength(100);
         builder.Property(i => i.Website).HasMaxLength(255);
-        builder.Property(i => i.EnderecoSede).HasMaxLength(500);
 
         // Referência de cidade do Geo (ADR-0090): código + display cache, opcional
         // (all-or-nothing), sem FK cross-banco para uniplus_geo.
@@ -52,6 +61,10 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             .IsFixedLength();
         builder.Property(i => i.CidadeOrigem).HasMaxLength(ReferenciaCidadeGeo.OrigemMaxLength);
         builder.Property(i => i.CidadeDisplayAtualizadoEm);
+
+        // Endereço estruturado ao Geo via CEP (ADR-0096): owned type opcional.
+        builder.OwnsOne(i => i.Endereco, EnderecoGeoOwnedConfiguration.Configure);
+        builder.Navigation(i => i.Endereco).IsRequired(false);
 
         // Auditoria (IAuditableEntity)
         builder.Property(i => i.CreatedBy).HasMaxLength(255);

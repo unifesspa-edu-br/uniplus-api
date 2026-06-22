@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -32,9 +33,12 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 /// (ADR-0090): <c>CidadeCodigoIbge</c> (código IBGE de 7 dígitos) + display cache
 /// (<c>CidadeNome</c>, <c>CidadeUf</c>), preenchido pelo frontend via composição
 /// no cliente — sem FK cross-banco nem chamada ao Geo. É <strong>opcional</strong>
-/// (all-or-nothing): ou o trio completo e coerente, ou ausente por completo. O
-/// <c>EnderecoSede</c> (logradouro) permanece texto livre — o Geo não modela
-/// endereço pontual.</para>
+/// (all-or-nothing): ou o trio completo e coerente, ou ausente por completo.</para>
+/// <para>O <see cref="Endereco"/> da sede é uma referência de endereço estruturado
+/// ao Geo via CEP (<see cref="ReferenciaEnderecoGeo"/>, ADR-0096), opcional —
+/// sucede o antigo <c>EnderecoSede</c> texto livre. O Geo <strong>modela</strong>
+/// endereço pontual (lookup de CEP #676, busca de logradouro #707); quando há
+/// endereço, a referência de cidade da sede é obrigatória e coerente com ele (CA-04).</para>
 /// </remarks>
 public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
 {
@@ -61,7 +65,6 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     public string? ConceitoInstitucional { get; private set; }
     public string? Igc { get; private set; }
     public string? Website { get; private set; }
-    public string? EnderecoSede { get; private set; }
 
     // Referência de cidade do Geo (ADR-0090) — código + display cache, opcional
     // (all-or-nothing). Substitui o antigo MunicipioSede texto livre.
@@ -70,6 +73,11 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     public string? CidadeUf { get; private set; }
     public string? CidadeOrigem { get; private set; }
     public DateTimeOffset? CidadeDisplayAtualizadoEm { get; private set; }
+
+    // Endereço estruturado ao Geo via CEP (ADR-0096) — opcional, owned type.
+    // Sucede o antigo EnderecoSede texto livre. Quando presente, exige a cidade
+    // da sede preenchida e coerente.
+    public ReferenciaEnderecoGeo? Endereco { get; private set; }
 
     public Guid? UnidadeRaizId { get; private set; }
 
@@ -114,7 +122,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? conceitoInstitucional,
         string? igc,
         string? website,
-        string? enderecoSede,
+        ReferenciaEnderecoGeo? endereco,
         string? cidadeCodigoIbge,
         string? cidadeNome,
         string? cidadeUf,
@@ -131,7 +139,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         Result validacao = ValidarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
+            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
             cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
@@ -142,7 +150,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         instituicao.AplicarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
+            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
             cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
             unidadeRaizId);
 
@@ -169,7 +177,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? conceitoInstitucional,
         string? igc,
         string? website,
-        string? enderecoSede,
+        ReferenciaEnderecoGeo? endereco,
         string? cidadeCodigoIbge,
         string? cidadeNome,
         string? cidadeUf,
@@ -186,7 +194,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         Result validacao = ValidarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
+            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
             cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
@@ -196,7 +204,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         AplicarCampos(
             codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede,
+            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
             cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
             unidadeRaizId);
 
@@ -218,7 +226,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? conceitoInstitucional,
         string? igc,
         string? website,
-        string? enderecoSede,
+        ReferenciaEnderecoGeo? endereco,
         string? cidadeCodigoIbge,
         string? cidadeNome,
         string? cidadeUf,
@@ -240,7 +248,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         ConceitoInstitucional = NormalizarOpcional(conceitoInstitucional);
         Igc = NormalizarOpcional(igc);
         Website = NormalizarOpcional(website);
-        EnderecoSede = NormalizarOpcional(enderecoSede);
+        Endereco = endereco;
         AplicarReferenciaCidade(
             cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm);
         UnidadeRaizId = unidadeRaizId;
@@ -292,7 +300,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? conceitoInstitucional,
         string? igc,
         string? website,
-        string? enderecoSede,
+        ReferenciaEnderecoGeo? endereco,
         string? cidadeCodigoIbge,
         string? cidadeNome,
         string? cidadeUf)
@@ -373,9 +381,43 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             return cidade;
         }
 
+        Result enderecoCoerente = ValidarCoerenciaEndereco(endereco, cidadeCodigoIbge, cidadeUf);
+        if (enderecoCoerente.IsFailure)
+        {
+            return enderecoCoerente;
+        }
+
         return ValidarOpcionais(
             cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, enderecoSede);
+            atoRecredenciamento, conceitoInstitucional, igc, website);
+    }
+
+    /// <summary>
+    /// Como a cidade da sede é opcional all-or-nothing mas o CEP sempre resolve a
+    /// uma cidade, um endereço presente exige a referência de cidade da sede
+    /// preenchida (CA-08/CA-04) e coerente com o snapshot de cidade do endereço —
+    /// preservando a consistência do <c>InstituicaoView</c> cross-módulo, que
+    /// expõe a cidade da sede.
+    /// </summary>
+    private static Result ValidarCoerenciaEndereco(
+        ReferenciaEnderecoGeo? endereco,
+        string? cidadeCodigoIbge,
+        string? cidadeUf)
+    {
+        if (endereco is null)
+        {
+            return Result.Success();
+        }
+
+        if (string.IsNullOrWhiteSpace(cidadeCodigoIbge))
+        {
+            return Result.Failure(new DomainError(
+                EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco,
+                "A cidade da sede é obrigatória quando há endereço estruturado."));
+        }
+
+        return ReferenciaEnderecoGeo.ValidarCoerencia(
+            endereco.CidadeCodigoIbge, endereco.CidadeUf, cidadeCodigoIbge, cidadeUf);
     }
 
     /// <summary>
@@ -408,8 +450,7 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
         string? atoRecredenciamento,
         string? conceitoInstitucional,
         string? igc,
-        string? website,
-        string? enderecoSede)
+        string? website)
     {
         (string? valor, int max)[] opcionais =
         [
@@ -422,7 +463,6 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
             (conceitoInstitucional, CampoOpcionalCurtoMaxLength),
             (igc, CampoOpcionalCurtoMaxLength),
             (website, CampoOpcionalMedioMaxLength),
-            (enderecoSede, CampoOpcionalLongoMaxLength),
         ];
 
         foreach ((string? valor, int max) in opcionais)

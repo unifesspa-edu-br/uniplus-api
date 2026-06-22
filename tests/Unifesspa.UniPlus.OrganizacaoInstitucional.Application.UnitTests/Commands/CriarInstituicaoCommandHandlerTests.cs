@@ -5,8 +5,10 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -31,11 +33,16 @@ public sealed class CriarInstituicaoCommandHandlerTests
         ConceitoInstitucional: null,
         Igc: null,
         Website: null,
-        EnderecoSede: null,
+        Endereco: null,
         CidadeCodigoIbge: null,
         CidadeNome: null,
         CidadeUf: null,
         unidadeRaizId);
+
+    private static EnderecoGeoInput EnderecoInput() =>
+        new("68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
+            new CidadeReferenciaInput("1504208", "Marabá", "PA"),
+            -5.3m, -49.1m, NivelResolucaoEndereco.Logradouro, "logradouro");
 
     private static Unidade NovaUnidade(TipoUnidade tipo) =>
         Unidade.Criar(
@@ -151,5 +158,52 @@ public sealed class CriarInstituicaoCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.CodigoEmecObrigatorio);
         await repo.DidNotReceive().AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle com endereço + cidade coerente constrói e persiste o endereço")]
+    public async Task Handle_ComEndereco_PersisteEndereco()
+    {
+        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
+        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
+        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
+
+        Instituicao? capturada = null;
+        await repo.AdicionarAsync(Arg.Do<Instituicao>(i => capturada = i), Arg.Any<CancellationToken>());
+
+        CriarInstituicaoCommand command = CommandValido() with
+        {
+            CidadeCodigoIbge = "1504208",
+            CidadeNome = "Marabá",
+            CidadeUf = "PA",
+            Endereco = EnderecoInput(),
+        };
+
+        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
+            command, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        capturada!.Endereco.Should().NotBeNull();
+        capturada.Endereco!.Cep.Should().Be("68507590");
+    }
+
+    [Fact(DisplayName = "Handle com endereço mas sem cidade da sede retorna CidadeObrigatoriaComEndereco (CA-04)")]
+    public async Task Handle_ComEnderecoSemCidade_RetornaErro()
+    {
+        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
+        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
+        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
+
+        CriarInstituicaoCommand command = CommandValido() with { Endereco = EnderecoInput() };
+
+        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
+            command, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco);
+        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

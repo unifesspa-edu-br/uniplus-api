@@ -18,7 +18,7 @@ public sealed class RemoverInstituicaoCommandHandlerTests
         Instituicao.Criar(
             "3990", "Universidade Federal do Sul e Sudeste do Pará", "Unifesspa", "Universidade", "Pública Federal",
             cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null, atoCredenciamento: null,
-            atoRecredenciamento: null, conceitoInstitucional: null, igc: null, website: null, enderecoSede: null,
+            atoRecredenciamento: null, conceitoInstitucional: null, igc: null, website: null, endereco: null,
             cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null, cidadeOrigem: null,
             cidadeDisplayAtualizadoEm: null, unidadeRaizId: null).Value!;
 

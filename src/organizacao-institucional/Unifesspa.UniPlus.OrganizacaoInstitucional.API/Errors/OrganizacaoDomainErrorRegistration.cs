@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
@@ -268,5 +269,96 @@ internal sealed class OrganizacaoDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.organizacao.cidade_referencia.nome_tamanho",
                 "Nome da cidade excede o tamanho máximo")),
+
+        // ── Referência de endereço estruturado ao Geo (ADR-0096) ──────────
+        new(EnderecoReferenciaErrorCodes.CepObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.cep_obrigatorio",
+                "CEP do endereço é obrigatório")),
+
+        new(EnderecoReferenciaErrorCodes.CepFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.cep_formato_invalido",
+                "CEP do endereço em formato inválido")),
+
+        new(EnderecoReferenciaErrorCodes.LogradouroTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.logradouro_tamanho",
+                "Logradouro do endereço excede o tamanho máximo")),
+
+        new(EnderecoReferenciaErrorCodes.NumeroTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.numero_tamanho",
+                "Número do endereço excede o tamanho máximo")),
+
+        new(EnderecoReferenciaErrorCodes.ComplementoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.complemento_tamanho",
+                "Complemento do endereço excede o tamanho máximo")),
+
+        new(EnderecoReferenciaErrorCodes.BairroTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.bairro_tamanho",
+                "Bairro do endereço excede o tamanho máximo")),
+
+        new(EnderecoReferenciaErrorCodes.DistritoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.distrito_tamanho",
+                "Distrito do endereço excede o tamanho máximo")),
+
+        new(EnderecoReferenciaErrorCodes.NivelResolucaoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.nivel_resolucao_obrigatorio",
+                "Nível de resolução do endereço é obrigatório")),
+
+        new(EnderecoReferenciaErrorCodes.NivelResolucaoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.nivel_resolucao_invalido",
+                "Nível de resolução do endereço inválido")),
+
+        new(EnderecoReferenciaErrorCodes.OrigemObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.origem_obrigatoria",
+                "Origem da resolução do endereço é obrigatória")),
+
+        new(EnderecoReferenciaErrorCodes.OrigemTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.origem_tamanho",
+                "Origem da resolução do endereço excede o tamanho máximo")),
+
+        new(EnderecoReferenciaErrorCodes.LatitudeForaDeFaixa,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.latitude_fora_de_faixa",
+                "Latitude do endereço fora da faixa válida")),
+
+        new(EnderecoReferenciaErrorCodes.LongitudeForaDeFaixa,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.longitude_fora_de_faixa",
+                "Longitude do endereço fora da faixa válida")),
+
+        new(EnderecoReferenciaErrorCodes.CidadeIncoerente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.cidade_incoerente",
+                "Cidade do endereço incoerente com a cidade informada")),
+
+        new(EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.organizacao.endereco_referencia.cidade_obrigatoria_com_endereco",
+                "Cidade da sede é obrigatória quando há endereço estruturado")),
     ];
 }
