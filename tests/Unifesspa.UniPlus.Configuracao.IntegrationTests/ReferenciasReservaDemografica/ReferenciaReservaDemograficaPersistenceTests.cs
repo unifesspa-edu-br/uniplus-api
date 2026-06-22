@@ -128,6 +128,46 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
             "o CHECK ppi_percentual <= 100 impede o INSERT direto");
     }
 
+    [Fact(DisplayName = "Reader.ListarVivasAsync ordena por Censo e exclui soft-deleted")]
+    public async Task ListarVivas_OrdenaPorCensoEExcluiSoftDeleted()
+    {
+        // Prefixo único por execução: o banco é compartilhado na collection, então
+        // filtramos o resultado às linhas deste teste para asserções determinísticas.
+        string prefixo = Guid.NewGuid().ToString("N")[..12];
+        string censoA = $"{prefixo}-a";
+        string censoB = $"{prefixo}-b";
+        string censoExcluido = $"{prefixo}-d";
+
+        // Insere fora de ordem (B antes de A) para provar a ordenação do reader.
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.ReferenciasReservaDemografica.Add(Nova(censoB, 60m, 2m, 6m));
+            ctx.ReferenciasReservaDemografica.Add(Nova(censoA, 50m, 1m, 5m));
+            ctx.ReferenciasReservaDemografica.Add(Nova(censoExcluido, 40m, 1m, 4m));
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            ReferenciaReservaDemografica aExcluir = await ctx.ReferenciasReservaDemografica
+                .SingleAsync(r => r.CensoReferencia == censoExcluido);
+            ctx.ReferenciasReservaDemografica.Remove(aExcluir);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new ReferenciaReservaDemograficaReader(readCtx);
+        IReadOnlyList<ReferenciaReservaDemograficaView> todas = await reader.ListarVivasAsync();
+
+        string[] meus = [.. todas
+            .Select(v => v.CensoReferencia)
+            .Where(c => c.StartsWith(prefixo, StringComparison.Ordinal))];
+
+        // O reader ordena por CensoReferencia ascendente e exclui o soft-deleted:
+        // exatamente [censoA, censoB], nessa ordem (inserimos B antes de A).
+        meus.Should().Equal([censoA, censoB]);
+    }
+
     private static ReferenciaReservaDemografica Nova(string censo, decimal ppi, decimal quilombola, decimal pcd) =>
         ReferenciaReservaDemografica.Criar(censo, ppi, quilombola, pcd, BaseLegal).Value!;
 }
