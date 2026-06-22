@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -16,13 +17,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// cache (ADR-0090), sem FK cross-banco.
 /// </summary>
 /// <remarks>
-/// O congelamento (snapshot RN08) é responsabilidade do Processo Seletivo
+/// <para>O <see cref="Endereco"/> é uma referência de endereço estruturado ao
+/// Geo via CEP, opcional (<see cref="ReferenciaEnderecoGeo"/>, ADR-0096) — sucede
+/// o antigo <c>Endereco</c> texto-livre. Quando presente, seu snapshot de cidade
+/// deve coincidir com a referência de cidade do local (CA-04).</para>
+/// <para>O congelamento (snapshot RN08) é responsabilidade do Processo Seletivo
 /// (módulo Selecao, via oferta de curso congelada — ADR-0061); não há colunas
-/// de snapshot aqui.
+/// de snapshot aqui.</para>
 /// </remarks>
 public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
 {
-    private const int EnderecoMaxLength = 500;
     private const int CodigoEmecMaxLength = 20;
 
     public TipoLocalOferta Tipo { get; private set; }
@@ -35,7 +39,9 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
     public string? CidadeOrigem { get; private set; }
     public DateTimeOffset? CidadeDisplayAtualizadoEm { get; private set; }
 
-    public string? Endereco { get; private set; }
+    // Endereço estruturado ao Geo via CEP (ADR-0096) — opcional, owned type.
+    public ReferenciaEnderecoGeo? Endereco { get; private set; }
+
     public string? CodigoEmec { get; private set; }
 
     public string? CreatedBy { get; private set; }
@@ -47,9 +53,10 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria um novo Local de Oferta. Valida formato e domínio local (tipo +
-    /// referência de cidade). A existência do campus responsável (quando
-    /// informado) é responsabilidade do handler.
+    /// Cria um novo Local de Oferta. Valida formato e domínio local (tipo,
+    /// referência de cidade e coerência cidade↔endereço). A existência do campus
+    /// responsável (quando informado) é responsabilidade do handler. O
+    /// <paramref name="endereco"/> já chega validado.
     /// </summary>
     public static Result<LocalOferta> Criar(
         TipoLocalOferta tipo,
@@ -59,7 +66,7 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
         string cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
-        string? endereco,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         ArgumentNullException.ThrowIfNull(cidadeCodigoIbge);
@@ -92,7 +99,7 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
         string cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
-        string? endereco,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         ArgumentNullException.ThrowIfNull(cidadeCodigoIbge);
@@ -120,7 +127,7 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
         string cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
-        string? endereco,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         Tipo = tipo;
@@ -130,7 +137,7 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
         CidadeUf = cidadeUf.Trim().ToUpperInvariant();
         CidadeOrigem = NormalizarOpcional(cidadeOrigem);
         CidadeDisplayAtualizadoEm = cidadeDisplayAtualizadoEm;
-        Endereco = NormalizarOpcional(endereco);
+        Endereco = endereco;
         CodigoEmec = NormalizarOpcional(codigoEmec);
     }
 
@@ -142,7 +149,7 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
         string cidadeCodigoIbge,
         string cidadeNome,
         string cidadeUf,
-        string? endereco,
+        ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
         if (!Enum.IsDefined(tipo) || tipo == TipoLocalOferta.Nenhum)
@@ -158,11 +165,13 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
             return cidade;
         }
 
-        if (endereco is not null && endereco.Trim().Length > EnderecoMaxLength)
+        // CA-04: o snapshot de cidade do endereço deve coincidir com a referência
+        // de cidade do local (que aqui é sempre obrigatória).
+        Result coerencia = ReferenciaEnderecoGeo.ValidarCoerencia(
+            endereco?.CidadeCodigoIbge, endereco?.CidadeUf, cidadeCodigoIbge, cidadeUf);
+        if (coerencia.IsFailure)
         {
-            return Result.Failure(new DomainError(
-                LocalOfertaErrorCodes.EnderecoTamanho,
-                $"Endereço do Local de Oferta deve ter no máximo {EnderecoMaxLength} caracteres."));
+            return coerencia;
         }
 
         if (codigoEmec is not null && codigoEmec.Trim().Length > CodigoEmecMaxLength)

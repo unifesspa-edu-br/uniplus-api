@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed record AtualizarCampusCommand(
@@ -10,8 +11,5 @@ public sealed record AtualizarCampusCommand(
     string CidadeCodigoIbge,
     string CidadeNome,
     string CidadeUf,
-    string? Endereco,
-    string? Cep,
-    decimal? Latitude,
-    decimal? Longitude,
+    EnderecoGeoInput? Endereco,
     string? CodigoEmec) : ICommand<Result>;

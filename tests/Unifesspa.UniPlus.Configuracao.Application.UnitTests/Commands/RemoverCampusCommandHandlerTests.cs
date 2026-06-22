@@ -21,7 +21,7 @@ public sealed class RemoverCampusCommandHandlerTests
     private static Campus NovoCampus() =>
         Campus.Criar(
             "CAMar", "Campus Marabá", "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, DateTimeOffset.UnixEpoch, null, null, null, null, null).Value!;
+            ReferenciaCidadeGeo.OrigemGeoApi, DateTimeOffset.UnixEpoch, null, null).Value!;
 
     [Fact(DisplayName = "Campus inexistente retorna 404 (NaoEncontrado)")]
     public async Task Handle_NaoEncontrado_Retorna404()

@@ -12,12 +12,10 @@ public static class LocalOfertaMapping
             local.Id,
             local.Tipo,
             local.CampusResponsavelId,
-            local.CidadeCodigoIbge,
-            local.CidadeNome,
-            local.CidadeUf,
-            local.CidadeOrigem,
-            local.CidadeDisplayAtualizadoEm,
-            local.Endereco,
+            EnderecoGeoMapping.ParaCidadeDto(
+                local.CidadeCodigoIbge, local.CidadeNome, local.CidadeUf,
+                local.CidadeOrigem, local.CidadeDisplayAtualizadoEm),
+            local.Endereco.ToDto(),
             local.CodigoEmec,
             local.CreatedAt);
     }

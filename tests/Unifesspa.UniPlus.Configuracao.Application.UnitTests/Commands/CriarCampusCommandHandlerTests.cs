@@ -6,10 +6,12 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class CriarCampusCommandHandlerTests
@@ -18,7 +20,12 @@ public sealed class CriarCampusCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarCampusCommand ComandoValido() =>
-        new("CAMar", "Campus Marabá", "1504208", "Marabá", "PA", null, null, null, null, null);
+        new("CAMar", "Campus Marabá", "1504208", "Marabá", "PA", null, null);
+
+    private static EnderecoGeoInput EnderecoValido(string cidadeCodigoIbge = "1504208", string cidadeUf = "PA") =>
+        new("68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
+            new CidadeReferenciaInput(cidadeCodigoIbge, "Marabá", cidadeUf),
+            -5.3m, -49.1m, NivelResolucaoEndereco.Logradouro, "logradouro");
 
     [Fact(DisplayName = "Cria o campus, persiste e retorna o Id")]
     public async Task Handle_SiglaLivre_CriaEPersiste()
@@ -62,6 +69,46 @@ public sealed class CriarCampusCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Endereço estruturado é construído e persistido com o campus")]
+    public async Task Handle_ComEndereco_PersisteEnderecoEstruturado()
+    {
+        _repository.SiglaExisteEntreLivosAsync("CAMar", null, Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        Campus? capturado = null;
+        await _repository.AdicionarAsync(Arg.Do<Campus>(c => capturado = c), Arg.Any<CancellationToken>());
+
+        CriarCampusCommand comando = ComandoValido() with { Endereco = EnderecoValido() };
+
+        Result<Guid> resultado = await CriarCampusCommandHandler.Handle(
+            comando, _repository, _unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        capturado!.Endereco.Should().NotBeNull();
+        capturado.Endereco!.Cep.Should().Be("68507590");
+        capturado.Endereco.CidadeCodigoIbge.Should().Be("1504208");
+    }
+
+    [Fact(DisplayName = "Endereço com cidade incoerente com a cidade do campus propaga erro sem persistir")]
+    public async Task Handle_EnderecoCidadeIncoerente_RetornaErro()
+    {
+        _repository.SiglaExisteEntreLivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        // Cidade do endereço (Belém/1501402) diverge da cidade do campus (Marabá/1504208).
+        CriarCampusCommand comando = ComandoValido() with
+        {
+            Endereco = EnderecoValido(cidadeCodigoIbge: "1501402"),
+        };
+
+        Result<Guid> resultado = await CriarCampusCommandHandler.Handle(
+            comando, _repository, _unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeIncoerente);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

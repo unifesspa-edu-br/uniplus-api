@@ -77,7 +77,7 @@ public sealed class LocalOfertaEndpointTests
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("tipo").GetString().Should().Be(CamelCase(TipoLocalOferta.PoloEad));
-        doc.RootElement.GetProperty("cidadeCodigoIbge").GetString().Should().Be("1504208");
+        doc.RootElement.GetProperty("cidade").GetProperty("codigoIbge").GetString().Should().Be("1504208");
     }
 
     [Fact(DisplayName = "POST /api/admin/locais-oferta com campus responsável existente cria (201) — FK satisfeita")]

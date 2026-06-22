@@ -131,11 +131,76 @@ public sealed class CampusEndpointTests
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
-        root.GetProperty("cidadeCodigoIbge").GetString().Should().Be("1504208");
-        root.GetProperty("cidadeNome").GetString().Should().Be("Marabá");
-        root.GetProperty("cidadeUf").GetString().Should().Be("PA");
-        root.GetProperty("cidadeOrigem").GetString().Should().Be("geo-api");
+        JsonElement cidade = root.GetProperty("cidade");
+        cidade.GetProperty("codigoIbge").GetString().Should().Be("1504208");
+        cidade.GetProperty("nome").GetString().Should().Be("Marabá");
+        cidade.GetProperty("uf").GetString().Should().Be("PA");
+        cidade.GetProperty("origem").GetString().Should().Be("geo-api");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    [Fact(DisplayName = "CA-02: POST com endereço aninhado retorna endereco estruturado no GET")]
+    public async Task Criar_ComEnderecoAninhado_RetornaEnderecoNoGet()
+    {
+        string sigla = $"C{Guid.NewGuid().ToString("N")[..6]}";
+        var body = new
+        {
+            sigla,
+            nome = "Campus com Endereço",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+            endereco = new
+            {
+                cep = "68507590",
+                logradouro = "Folha 31, Quadra 7",
+                numero = "s/n",
+                bairro = "Nova Marabá",
+                cidade = new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" },
+                latitude = -5.368m,
+                longitude = -49.118m,
+                nivelResolucao = "logradouro",
+                origem = "logradouro",
+            },
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/admin/campi", body);
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/campi/{id}", UriKind.Relative));
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        JsonElement endereco = doc.RootElement.GetProperty("endereco");
+        endereco.GetProperty("cep").GetString().Should().Be("68507590");
+        endereco.GetProperty("logradouro").GetString().Should().Be("Folha 31, Quadra 7");
+        endereco.GetProperty("cidade").GetProperty("codigoIbge").GetString().Should().Be("1504208");
+        endereco.GetProperty("nivelResolucao").GetString().Should().Be("logradouro");
+    }
+
+    [Fact(DisplayName = "CA-04: POST com endereço de cidade incoerente retorna 422")]
+    public async Task Criar_EnderecoCidadeIncoerente_Retorna422()
+    {
+        var body = new
+        {
+            sigla = $"C{Guid.NewGuid().ToString("N")[..6]}",
+            nome = "Campus Incoerente",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+            endereco = new
+            {
+                cep = "66000000",
+                cidade = new { codigoIbge = "1501402", nome = "Belém", uf = "PA" },
+                nivelResolucao = "cidade",
+                origem = "faixa-cidade",
+            },
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/admin/campi", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact(DisplayName = "CA-03: POST /api/admin/campi com código IBGE malformado retorna 422 sem consultar o Geo")]

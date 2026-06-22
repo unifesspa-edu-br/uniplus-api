@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -174,8 +175,74 @@ public sealed class CampusPersistenceTests
             "a FK campus_responsavel_id com RESTRICT impede o DELETE físico do campus referenciado");
     }
 
-    private static Campus NovoCampus(string sigla, string nome, string codigoIbge, string cidadeNome, string uf) =>
+    [Fact(DisplayName = "CA-01/CA-07: criar Campus com endereço estruturado faz round-trip das colunas owned")]
+    public async Task Insert_ComEndereco_RoundTrip()
+    {
+        Campus campus = NovoCampus("ENDCAM", "Campus Endereço", "1504208", "Marabá", "PA", EnderecoCoerente());
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Campi.Add(campus);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        Campus persistido = await readCtx.Campi.SingleAsync(c => c.Id == campus.Id);
+
+        persistido.Endereco.Should().NotBeNull();
+        persistido.Endereco!.Cep.Should().Be("68507590");
+        persistido.Endereco.Logradouro.Should().Be("Folha 31");
+        persistido.Endereco.CidadeCodigoIbge.Should().Be("1504208");
+        persistido.Endereco.NivelResolucao.Should().Be(NivelResolucaoEndereco.Logradouro);
+        persistido.Endereco.DisplayAtualizadoEm.Should().Be(Agora);
+    }
+
+    [Fact(DisplayName = "Owned type opcional: Campus sem endereço materializa Endereco nulo (sem endereço fantasma)")]
+    public async Task Insert_SemEndereco_MaterializaNulo()
+    {
+        Campus campus = NovoCampus("NOENDR", "Campus Sem Endereço", "1504208", "Marabá", "PA");
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Campi.Add(campus);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        Campus persistido = await readCtx.Campi.SingleAsync(c => c.Id == campus.Id);
+
+        persistido.Endereco.Should().BeNull("todas as colunas endereco_* nulas ⇒ owned type ausente");
+    }
+
+    [Fact(DisplayName = "CA-04: CHECK de coerência cidade↔CEP rejeita UPDATE cru com cidade do endereço divergente")]
+    public async Task CheckCoerencia_RejeitaUpdateCruIncoerente()
+    {
+        Campus campus = NovoCampus("CKCOER", "Campus Coerência", "1504208", "Marabá", "PA", EnderecoCoerente());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Campi.Add(campus);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Diverge o snapshot de cidade do endereço (Belém) da cidade do campus (Marabá).
+        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE campus SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {campus.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_campus_endereco_cidade_coerente impede divergência cidade↔CEP");
+    }
+
+    private static ReferenciaEnderecoGeo EnderecoCoerente() =>
+        ReferenciaEnderecoGeo.Criar(
+            "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
+            "1504208", "Marabá", "PA", -5.3m, -49.1m,
+            NivelResolucaoEndereco.Logradouro, "logradouro", Agora).Value!;
+
+    private static Campus NovoCampus(
+        string sigla, string nome, string codigoIbge, string cidadeNome, string uf,
+        ReferenciaEnderecoGeo? endereco = null) =>
         Campus.Criar(
             sigla, nome, codigoIbge, cidadeNome, uf,
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null, null, null, null).Value!;
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, endereco, null).Value!;
 }

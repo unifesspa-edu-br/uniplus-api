@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public static class AtualizarLocalOfertaCommandHandler
@@ -40,11 +42,20 @@ public static class AtualizarLocalOfertaCommandHandler
                 "O Campus responsável informado não foi encontrado."));
         }
 
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
         // Só recarimba a proveniência/frescura do display cache quando o trio de
         // cidade efetivamente muda (mesma semântica do Campus).
         bool cidadeMudou = CidadeReferenciaMudou(command, local);
         string? cidadeOrigem = cidadeMudou ? ReferenciaCidadeGeo.OrigemGeoApi : local.CidadeOrigem;
-        DateTimeOffset? cidadeAtualizadoEm = cidadeMudou ? timeProvider.GetUtcNow() : local.CidadeDisplayAtualizadoEm;
+        DateTimeOffset? cidadeAtualizadoEm = cidadeMudou ? agora : local.CidadeDisplayAtualizadoEm;
+
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, local.Endereco, agora);
+        if (enderecoErro is not null)
+        {
+            return Result.Failure(enderecoErro);
+        }
 
         Result atualizarResult = local.Atualizar(
             command.Tipo,
@@ -54,7 +65,7 @@ public static class AtualizarLocalOfertaCommandHandler
             command.CidadeUf,
             cidadeOrigem,
             cidadeAtualizadoEm,
-            command.Endereco,
+            endereco,
             command.CodigoEmec);
 
         if (atualizarResult.IsFailure)

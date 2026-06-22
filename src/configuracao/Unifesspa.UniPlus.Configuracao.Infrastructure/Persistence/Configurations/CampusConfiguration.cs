@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -16,7 +17,11 @@ internal sealed class CampusConfiguration : IEntityTypeConfiguration<Campus>
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("campus");
+        // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe — ver
+        // EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql.
+        builder.ToTable("campus", t => t.HasCheckConstraint(
+            EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("campus"),
+            EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql));
         builder.HasKey(c => c.Id);
 
         builder.Property(c => c.Sigla).HasMaxLength(20).IsRequired();
@@ -36,11 +41,11 @@ internal sealed class CampusConfiguration : IEntityTypeConfiguration<Campus>
         builder.Property(c => c.CidadeOrigem).HasMaxLength(ReferenciaCidadeGeo.OrigemMaxLength);
         builder.Property(c => c.CidadeDisplayAtualizadoEm);
 
-        builder.Property(c => c.Endereco).HasMaxLength(500);
-        builder.Property(c => c.Cep).HasMaxLength(8).IsFixedLength();
-        builder.Property(c => c.Latitude).HasPrecision(9, 6);
-        builder.Property(c => c.Longitude).HasPrecision(9, 6);
         builder.Property(c => c.CodigoEmec).HasMaxLength(20);
+
+        // Endereço estruturado ao Geo via CEP (ADR-0096): owned type opcional.
+        builder.OwnsOne(c => c.Endereco, EnderecoGeoOwnedConfiguration.Configure);
+        builder.Navigation(c => c.Endereco).IsRequired(false);
 
         // Auditoria (IAuditableEntity)
         builder.Property(c => c.CreatedBy).HasMaxLength(255);

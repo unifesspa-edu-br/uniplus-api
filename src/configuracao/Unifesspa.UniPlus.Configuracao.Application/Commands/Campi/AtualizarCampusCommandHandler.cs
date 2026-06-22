@@ -2,9 +2,11 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public static class AtualizarCampusCommandHandler
@@ -39,12 +41,21 @@ public static class AtualizarCampusCommandHandler
                 $"Já existe um Campus vivo com a sigla '{command.Sigla}'."));
         }
 
+        DateTimeOffset agora = timeProvider.GetUtcNow();
+
         // Só recarimba a proveniência/frescura do display cache quando o trio de
         // cidade efetivamente muda — assim cidade_display_atualizado_em rastreia a
         // última reconciliação da cidade, não qualquer edição de outro campo.
         bool cidadeMudou = CidadeReferenciaMudou(command, campus);
         string? cidadeOrigem = cidadeMudou ? ReferenciaCidadeGeo.OrigemGeoApi : campus.CidadeOrigem;
-        DateTimeOffset? cidadeAtualizadoEm = cidadeMudou ? timeProvider.GetUtcNow() : campus.CidadeDisplayAtualizadoEm;
+        DateTimeOffset? cidadeAtualizadoEm = cidadeMudou ? agora : campus.CidadeDisplayAtualizadoEm;
+
+        (DomainError? enderecoErro, ReferenciaEnderecoGeo? endereco) =
+            EnderecoGeoInputMapping.Resolver(command.Endereco, campus.Endereco, agora);
+        if (enderecoErro is not null)
+        {
+            return Result.Failure(enderecoErro);
+        }
 
         Result atualizarResult = campus.Atualizar(
             command.Sigla,
@@ -54,10 +65,7 @@ public static class AtualizarCampusCommandHandler
             command.CidadeUf,
             cidadeOrigem,
             cidadeAtualizadoEm,
-            command.Endereco,
-            command.Cep,
-            command.Latitude,
-            command.Longitude,
+            endereco,
             command.CodigoEmec);
 
         if (atualizarResult.IsFailure)
