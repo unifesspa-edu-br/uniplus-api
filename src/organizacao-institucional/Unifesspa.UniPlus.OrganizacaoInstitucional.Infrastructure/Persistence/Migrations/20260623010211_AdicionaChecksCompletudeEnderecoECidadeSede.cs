@@ -19,7 +19,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
             migrationBuilder.AddCheckConstraint(
                 name: "ck_instituicao_endereco_completo",
                 table: "instituicao",
-                sql: "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
+                sql: "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
         }
 
         /// <inheritdoc />
