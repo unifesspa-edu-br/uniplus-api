@@ -233,6 +233,26 @@ public sealed class CampusPersistenceTests
             "o CHECK ck_campus_endereco_cidade_coerente impede divergência cidade↔CEP");
     }
 
+    [Fact(DisplayName = "CA-04: CHECK NULL-safe rejeita UF do endereço nula com código IBGE batendo")]
+    public async Task CheckCoerencia_RejeitaUfNulaComCodigoBatendo()
+    {
+        Campus campus = NovoCampus("CKUFNL", "Campus UF Nula", "1504208", "Marabá", "PA", EnderecoCoerente());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Campi.Add(campus);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Código IBGE do endereço ainda bate, mas a UF vira nula — sem o ramo
+        // IS NOT NULL no CHECK, a comparação viraria UNKNOWN e passaria.
+        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE campus SET endereco_cidade_uf = NULL WHERE id = {campus.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK NULL-safe rejeita UF nula no endereço quando há código IBGE coincidente");
+    }
+
     private static ReferenciaEnderecoGeo EnderecoCoerente() =>
         ReferenciaEnderecoGeo.Criar(
             "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,

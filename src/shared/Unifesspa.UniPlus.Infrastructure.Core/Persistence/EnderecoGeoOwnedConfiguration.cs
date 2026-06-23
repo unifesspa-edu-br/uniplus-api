@@ -29,7 +29,7 @@ public static class EnderecoGeoOwnedConfiguration
     /// </summary>
     public const string CoerenciaCidadeCheckSql =
         "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR "
-        + "(endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf = cidade_uf)";
+        + "(endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)";
 
     /// <summary>
     /// Configura as colunas do endereço estruturado. CEP, cidade, nível de
