@@ -42,6 +42,18 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             t.HasCheckConstraint(
                 "ck_instituicao_cidade_obrigatoria_com_endereco",
                 "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
+
+            // Completude all-or-nothing dos campos obrigatórios do endereço (owned type).
+            t.HasCheckConstraint(
+                EnderecoGeoOwnedConfiguration.CompletudeCheckName("instituicao"),
+                EnderecoGeoOwnedConfiguration.CompletudeCheckSql);
+
+            // Trio de cidade da sede all-or-nothing (opcional): espelha no banco a
+            // regra de domínio — ou o trio completo, ou ausente por completo.
+            t.HasCheckConstraint(
+                "ck_instituicao_cidade_completa",
+                "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) "
+                + "OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
         });
         builder.HasKey(i => i.Id);
 

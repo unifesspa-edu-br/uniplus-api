@@ -253,6 +253,27 @@ public sealed class CampusPersistenceTests
             "o CHECK NULL-safe rejeita UF nula no endereço quando há código IBGE coincidente");
     }
 
+    [Fact(DisplayName = "Completude: CHECK rejeita UPDATE cru que deixa só endereco_cep preenchido")]
+    public async Task CheckCompletude_RejeitaCepSemRestante()
+    {
+        Campus campus = NovoCampus("CKCOMP", "Campus Completude", "1504208", "Marabá", "PA");
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Campi.Add(campus);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Define só o CEP — sem cidade/nível/origem do owned type. O sentinela de
+        // presença (endereco_cep) ficaria não-nulo e o EF materializaria um endereço
+        // parcial. O CHECK de completude (all-or-nothing) rejeita.
+        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE campus SET endereco_cep = '68507590' WHERE id = {campus.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_campus_endereco_completo exige todos os campos obrigatórios do endereço");
+    }
+
     private static ReferenciaEnderecoGeo EnderecoCoerente() =>
         ReferenciaEnderecoGeo.Criar(
             "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,

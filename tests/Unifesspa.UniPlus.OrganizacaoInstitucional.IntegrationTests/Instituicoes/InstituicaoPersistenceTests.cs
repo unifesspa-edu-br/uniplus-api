@@ -343,6 +343,31 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             "o CHECK ck_instituicao_cidade_obrigatoria_com_endereco exige cidade da sede quando há endereço");
     }
 
+    [Fact(DisplayName = "Completude: CHECK rejeita UPDATE cru que deixa o trio de cidade da sede parcial")]
+    public async Task CheckCidadeCompleta_RejeitaTrioParcial()
+    {
+        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await LimparInstituicoesAsync(fresh);
+
+        Instituicao instituicao = NovaInstituicao(
+            "9604", "INS-TRIO",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA", cidadeOrigem: "geo-api");
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Instituicoes.Add(instituicao);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Zera só o nome da cidade, deixando código/UF — trio parcial. O domínio
+        // trata a cidade como all-or-nothing; o CHECK protege a escrita crua.
+        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE instituicao SET cidade_nome = NULL WHERE id = {instituicao.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_instituicao_cidade_completa exige o trio de cidade completo ou ausente");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────
 
     private static async Task LimparInstituicoesAsync(OrganizacaoInstitucionalDbContext ctx)

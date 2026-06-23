@@ -19,9 +19,15 @@ internal sealed class CampusConfiguration : IEntityTypeConfiguration<Campus>
 
         // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe — ver
         // EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql.
-        builder.ToTable("campus", t => t.HasCheckConstraint(
-            EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("campus"),
-            EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql));
+        builder.ToTable("campus", t =>
+        {
+            t.HasCheckConstraint(
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("campus"),
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql);
+            t.HasCheckConstraint(
+                EnderecoGeoOwnedConfiguration.CompletudeCheckName("campus"),
+                EnderecoGeoOwnedConfiguration.CompletudeCheckSql);
+        });
         builder.HasKey(c => c.Id);
 
         builder.Property(c => c.Sigla).HasMaxLength(20).IsRequired();
