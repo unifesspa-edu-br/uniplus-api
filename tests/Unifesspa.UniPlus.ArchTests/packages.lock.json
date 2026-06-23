@@ -820,12 +820,12 @@
       },
       "Npgsql.NetTopologySuite": {
         "type": "Transitive",
-        "resolved": "10.0.2",
-        "contentHash": "WNM5ZHATFj0dSMJ/4vlbgMWBgP0ElMwsGiHR0PwzwflNS+IXbX8xxNZyLp4veCLcr5tDCWwMh9Lw7nwUxWkzvg==",
+        "resolved": "10.0.3",
+        "contentHash": "roOLWX0vokdN5cdRAwOfCWqhGFztsj2PYcvmFsPBoaSdwkboSkviaOu6hxjcX/+xAKUWUS4Al6VmwNlRQzun4g==",
         "dependencies": {
           "NetTopologySuite": "2.6.0",
           "NetTopologySuite.IO.PostGIS": "2.1.0",
-          "Npgsql": "10.0.2"
+          "Npgsql": "10.0.3"
         }
       },
       "OpenTelemetry": {
@@ -1212,7 +1212,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.9, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.9, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": "[10.0.1, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": "[10.0.2, )",
           "Unifesspa.UniPlus.Geo.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )"
         }
@@ -1582,12 +1582,12 @@
       },
       "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": {
         "type": "CentralTransitive",
-        "requested": "[10.0.1, )",
-        "resolved": "10.0.1",
-        "contentHash": "Fcx8k5cSF7cGeXMeguLwyV+wTcKbmhojCse2WBXfHlEQNXILpI1My7H6rvPT8n3fI4TxZiYq/LWO2vVGBD3FHA==",
+        "requested": "[10.0.2, )",
+        "resolved": "10.0.2",
+        "contentHash": "Ur2U0g90MlGNviptHCknfnu/AiJVUbTT0S6GcSXYEpyH+fcjxyaR6GBw8Ul1cjQCQ9lLmB9Gwh5hsc8ghAwz7g==",
         "dependencies": {
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.1",
-          "Npgsql.NetTopologySuite": "10.0.2"
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.2",
+          "Npgsql.NetTopologySuite": "10.0.3"
         }
       },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
