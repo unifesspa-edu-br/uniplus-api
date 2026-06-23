@@ -18,9 +18,15 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
         ArgumentNullException.ThrowIfNull(builder);
 
         // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe.
-        builder.ToTable("local_oferta", t => t.HasCheckConstraint(
-            EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("local_oferta"),
-            EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql));
+        builder.ToTable("local_oferta", t =>
+        {
+            t.HasCheckConstraint(
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("local_oferta"),
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql);
+            t.HasCheckConstraint(
+                EnderecoGeoOwnedConfiguration.CompletudeCheckName("local_oferta"),
+                EnderecoGeoOwnedConfiguration.CompletudeCheckSql);
+        });
         builder.HasKey(l => l.Id);
 
         builder.Property(l => l.Tipo).HasConversion<string>().HasMaxLength(30).IsRequired();

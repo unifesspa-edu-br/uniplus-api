@@ -32,6 +32,27 @@ public static class EnderecoGeoOwnedConfiguration
         + "(endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)";
 
     /// <summary>
+    /// Nome do CHECK de completude do endereço por tabela: garante a regra
+    /// all-or-nothing dos campos <strong>obrigatórios</strong> do owned type.
+    /// </summary>
+    public static string CompletudeCheckName(string tabela) =>
+        $"ck_{tabela}_endereco_completo";
+
+    /// <summary>
+    /// Expressão SQL all-or-nothing dos campos obrigatórios do endereço: ou todos
+    /// nulos (endereço ausente) ou todos presentes. Espelha no banco a regra do VO
+    /// (CEP, cidade, nível de resolução e origem obrigatórios quando há endereço) —
+    /// impede que escritas cruas deixem o owned type parcial: o
+    /// <c>endereco_cep</c> é o sentinela de presença, então uma linha com CEP mas
+    /// cidade/nível/origem nulos seria materializada incoerente pelo EF.
+    /// </summary>
+    public const string CompletudeCheckSql =
+        "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL "
+        + "AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL) "
+        + "OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL "
+        + "AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)";
+
+    /// <summary>
     /// Configura as colunas do endereço estruturado. CEP, cidade, nível de
     /// resolução e origem são <c>required</c> no dependente — EF os usa como
     /// sentinela de presença do owned type opcional (sem endereço ⇒
