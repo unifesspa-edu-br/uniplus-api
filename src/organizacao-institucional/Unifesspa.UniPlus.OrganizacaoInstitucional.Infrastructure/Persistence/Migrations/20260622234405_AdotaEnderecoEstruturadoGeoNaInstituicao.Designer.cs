@@ -258,6 +258,8 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 
                     b.ToTable("instituicao", null, t =>
                         {
+                            t.HasCheckConstraint("ck_instituicao_cidade_obrigatoria_com_endereco", "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
+
                             t.HasCheckConstraint("ck_instituicao_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
 
                             t.HasCheckConstraint("ck_instituicao_singleton_sentinela", "registro_vivo_sentinela = true");

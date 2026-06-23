@@ -317,6 +317,32 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             "o CHECK ck_instituicao_endereco_cidade_coerente impede divergência cidade↔CEP");
     }
 
+    [Fact(DisplayName = "CA-04: CHECK rejeita UPDATE cru que zera a cidade da sede mantendo o endereço")]
+    public async Task CheckCidadeObrigatoria_RejeitaEnderecoSemCidade()
+    {
+        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await LimparInstituicoesAsync(fresh);
+
+        Instituicao instituicao = NovaInstituicao(
+            "9603", "INS-OBR",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
+            cidadeOrigem: "geo-api", endereco: EnderecoCoerente());
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Instituicoes.Add(instituicao);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Zera a cidade da sede mantendo o endereço (endereco_cep não-nulo) — o
+        // domínio recusa (CidadeObrigatoriaComEndereco); o CHECK protege escrita crua.
+        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE instituicao SET cidade_codigo_ibge = NULL, cidade_nome = NULL, cidade_uf = NULL WHERE id = {instituicao.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_instituicao_cidade_obrigatoria_com_endereco exige cidade da sede quando há endereço");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────
 
     private static async Task LimparInstituicoesAsync(OrganizacaoInstitucionalDbContext ctx)
