@@ -19,20 +19,47 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 name: "endereco",
                 table: "campus");
 
-            migrationBuilder.RenameColumn(
+            // Descarta cep/latitude/longitude "pelados" do Campus (em vez de
+            // renomeá-los para endereco_*): um cep isolado, sem o trio de cidade /
+            // nivel_resolucao / origem do owned type, deixaria endereco_cep não-nulo
+            // (sentinela de presença) e o EF materializaria um endereço PARCIAL e
+            // incoerente. Sem produção (scaffolding, ADR-0096 §detalhes-4), o dado
+            // dev/seed é descartado e o endereço estruturado recomeça vazio.
+            migrationBuilder.DropColumn(
                 name: "longitude",
-                table: "campus",
-                newName: "endereco_longitude");
+                table: "campus");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "latitude",
-                table: "campus",
-                newName: "endereco_latitude");
+                table: "campus");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "cep",
+                table: "campus");
+
+            migrationBuilder.AddColumn<string>(
+                name: "endereco_cep",
                 table: "campus",
-                newName: "endereco_cep");
+                type: "character(8)",
+                fixedLength: true,
+                maxLength: 8,
+                nullable: true);
+
+            migrationBuilder.AddColumn<decimal>(
+                name: "endereco_latitude",
+                table: "campus",
+                type: "numeric(9,6)",
+                precision: 9,
+                scale: 6,
+                nullable: true);
+
+            migrationBuilder.AddColumn<decimal>(
+                name: "endereco_longitude",
+                table: "campus",
+                type: "numeric(9,6)",
+                precision: 9,
+                scale: 6,
+                nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "endereco_bairro",
