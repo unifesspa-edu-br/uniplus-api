@@ -274,6 +274,27 @@ public sealed class CampusPersistenceTests
             "o CHECK ck_campus_endereco_completo exige todos os campos obrigatórios do endereço");
     }
 
+    [Fact(DisplayName = "Completude: CHECK rejeita UPDATE cru que preenche só um campo opcional do endereço")]
+    public async Task CheckCompletude_RejeitaOpcionalSemObrigatorios()
+    {
+        Campus campus = NovoCampus("CKOPC", "Campus Opcional", "1504208", "Marabá", "PA");
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Campi.Add(campus);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Preenche só um campo opcional (logradouro), sem CEP nem os obrigatórios —
+        // fragmento que ficaria oculto (endereco_cep nulo ⇒ owned ausente). O CHECK
+        // all-or-nothing (que inclui as colunas opcionais no ramo "ausente") rejeita.
+        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE campus SET endereco_logradouro = 'Rua Fantasma' WHERE id = {campus.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_campus_endereco_completo rejeita fragmentos opcionais sem o endereço completo");
+    }
+
     private static ReferenciaEnderecoGeo EnderecoCoerente() =>
         ReferenciaEnderecoGeo.Criar(
             "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
