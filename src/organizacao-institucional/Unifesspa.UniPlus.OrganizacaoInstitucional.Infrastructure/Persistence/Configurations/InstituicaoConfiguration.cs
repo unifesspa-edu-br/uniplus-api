@@ -32,6 +32,16 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             t.HasCheckConstraint(
                 EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("instituicao"),
                 EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql);
+
+            // Espelha no banco a invariante de domínio "endereço presente ⇒ cidade
+            // da sede presente" (CidadeObrigatoriaComEndereco): como a cidade da sede
+            // é opcional all-or-nothing, sem este guard uma escrita crua poderia
+            // gravar endereço (endereco_cep não-nulo, o sentinela de presença) com
+            // cidade_codigo_ibge nulo. Em Campus/LocalOferta a cidade é NOT NULL, então
+            // a invariante já vale estruturalmente e este CHECK é específico da Instituicao.
+            t.HasCheckConstraint(
+                "ck_instituicao_cidade_obrigatoria_com_endereco",
+                "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
         });
         builder.HasKey(i => i.Id);
 
