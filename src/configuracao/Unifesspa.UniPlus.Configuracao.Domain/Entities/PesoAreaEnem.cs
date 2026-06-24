@@ -147,7 +147,7 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         decimal pesoCienciasHumanas,
         decimal pesoLinguagens,
         decimal pesoMatematica,
-        decimal? corteRedacao,
+        decimal corteRedacao,
         string baseLegal)
     {
         ArgumentNullException.ThrowIfNull(baseLegal);

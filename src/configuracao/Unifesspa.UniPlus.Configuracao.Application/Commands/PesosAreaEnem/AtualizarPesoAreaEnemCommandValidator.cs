@@ -19,8 +19,7 @@ public sealed class AtualizarPesoAreaEnemCommandValidator
         RuleFor(x => x.PesoMatematica).InclusiveBetween(0m, PesoAreaEnem.PesoMaximo).WithMessage($"O peso de matemática deve estar entre 0 e {PesoAreaEnem.PesoMaximo}.");
 
         RuleFor(x => x.CorteRedacao)
-            .InclusiveBetween(0m, PesoAreaEnem.CorteRedacaoMaximo).WithMessage($"Corte de redação deve estar entre 0 e {PesoAreaEnem.CorteRedacaoMaximo}.")
-            .When(x => x.CorteRedacao.HasValue);
+            .InclusiveBetween(0m, PesoAreaEnem.CorteRedacaoMaximo).WithMessage($"Corte de redação deve estar entre 0 e {PesoAreaEnem.CorteRedacaoMaximo}.");
 
         RuleFor(x => x.BaseLegal)
             .NotEmpty().WithMessage("Base legal é obrigatória.")
