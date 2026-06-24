@@ -35,11 +35,24 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
     /// <summary>Escala persistida dos pesos (<c>numeric(4,2)</c>).</summary>
     private const int EscalaPeso = 2;
 
-    /// <summary>Escala persistida do corte de redação (<c>numeric(6,3)</c>).</summary>
+    /// <summary>Escala persistida do corte de redação (<c>numeric(7,3)</c>).</summary>
     private const int EscalaCorte = 3;
 
     /// <summary>Corte de redação padrão (Res. 805/2024, Anexo I) assumido quando omitido.</summary>
     public const decimal CorteRedacaoPadrao = 400m;
+
+    /// <summary>
+    /// Teto de cada peso de área — limite da precisão persistida (<c>numeric(4,2)</c>).
+    /// Um valor acima disso estouraria a coluna; o guard transforma o overflow num
+    /// erro de domínio (422) em vez de 500.
+    /// </summary>
+    public const decimal PesoMaximo = 99.99m;
+
+    /// <summary>
+    /// Nota máxima da redação do ENEM (escala 0–1000) — teto do corte de redação.
+    /// Acima disso o corte não tem sentido e estouraria a coluna persistida.
+    /// </summary>
+    public const decimal CorteRedacaoMaximo = 1000m;
 
     public string Resolucao { get; private set; } = string.Empty;
     public GrupoCurso GrupoCurso { get; private set; } = null!;
@@ -202,6 +215,13 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
                 "Corte de redação não pode ser negativo."));
         }
 
+        if (corte > CorteRedacaoMaximo)
+        {
+            return Result<decimal>.Failure(new DomainError(
+                PesoAreaEnemErrorCodes.CorteRedacaoExcedeMaximo,
+                $"Corte de redação não pode exceder {CorteRedacaoMaximo} (nota máxima da redação do ENEM)."));
+        }
+
         if (string.IsNullOrWhiteSpace(baseLegal))
         {
             return Result<decimal>.Failure(new DomainError(
@@ -220,11 +240,16 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
     }
 
     private static DomainError? ValidarPeso(decimal valor, string area) =>
-        valor < 0
-            ? new DomainError(
+        valor switch
+        {
+            < 0 => new DomainError(
                 PesoAreaEnemErrorCodes.PesoNegativo,
-                $"O peso de {area} não pode ser negativo.")
-            : null;
+                $"O peso de {area} não pode ser negativo."),
+            _ when valor > PesoMaximo => new DomainError(
+                PesoAreaEnemErrorCodes.PesoExcedeMaximo,
+                $"O peso de {area} não pode exceder {PesoMaximo}."),
+            _ => null,
+        };
 
     private static decimal Arredondar(decimal valor, int escala) =>
         Math.Round(valor, escala, MidpointRounding.ToEven);

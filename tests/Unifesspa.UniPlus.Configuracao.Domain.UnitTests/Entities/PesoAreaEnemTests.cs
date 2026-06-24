@@ -113,6 +113,56 @@ public sealed class PesoAreaEnemTests
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.CorteRedacaoNegativo);
     }
 
+    [Fact(DisplayName = "Criar com corte de redação no máximo (1000) é aceito")]
+    public void Criar_CorteNoMaximo_Aceita()
+    {
+        PesoAreaEnem peso = Criar(corte: PesoAreaEnem.CorteRedacaoMaximo).Value!;
+
+        peso.CorteRedacao.Should().Be(1000m);
+    }
+
+    [Fact(DisplayName = "Criar com corte de redação acima do máximo (>1000) falha em vez de estourar a coluna")]
+    public void Criar_CorteAcimaDoMaximo_Falha()
+    {
+        Result<PesoAreaEnem> resultado = Criar(corte: 1000.001m);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.CorteRedacaoExcedeMaximo);
+    }
+
+    [Theory(DisplayName = "Criar com peso acima do teto persistível falha em vez de estourar numeric(4,2)")]
+    [InlineData(100.00, 1, 1, 1, 1)]
+    [InlineData(1, 1, 1, 1, 100.00)]
+    public void Criar_PesoAcimaDoMaximo_Falha(decimal redacao, decimal cn, decimal ch, decimal lc, decimal mt)
+    {
+        Result<PesoAreaEnem> resultado = Criar(redacao: redacao, cn: cn, ch: ch, lc: lc, mt: mt);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.PesoExcedeMaximo);
+    }
+
+    [Fact(DisplayName = "Atualizar com corte acima do máximo falha")]
+    public void Atualizar_CorteAcimaDoMaximo_Falha()
+    {
+        PesoAreaEnem peso = Criar().Value!;
+
+        Result resultado = peso.Atualizar(1.50m, 1.00m, 1.00m, 1.00m, 2.00m, 1000.001m, BaseLegal);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.CorteRedacaoExcedeMaximo);
+    }
+
+    [Fact(DisplayName = "Atualizar com peso acima do máximo falha")]
+    public void Atualizar_PesoAcimaDoMaximo_Falha()
+    {
+        PesoAreaEnem peso = Criar().Value!;
+
+        Result resultado = peso.Atualizar(100.00m, 1.00m, 1.00m, 1.00m, 2.00m, 400m, BaseLegal);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.PesoExcedeMaximo);
+    }
+
     [Theory(DisplayName = "Criar sem base legal falha")]
     [InlineData("")]
     [InlineData("   ")]

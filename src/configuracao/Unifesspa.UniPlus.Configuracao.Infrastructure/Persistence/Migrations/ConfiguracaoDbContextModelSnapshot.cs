@@ -237,8 +237,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                     b.Property<decimal>("CorteRedacao")
                         .ValueGeneratedOnAdd()
-                        .HasPrecision(6, 3)
-                        .HasColumnType("numeric(6,3)")
+                        .HasPrecision(7, 3)
+                        .HasColumnType("numeric(7,3)")
                         .HasDefaultValue(400m)
                         .HasColumnName("corte_redacao");
 
@@ -319,7 +319,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("peso_area_enem", null, t =>
                         {
-                            t.HasCheckConstraint("ck_peso_area_enem_corte_redacao", "corte_redacao >= 0");
+                            t.HasCheckConstraint("ck_peso_area_enem_corte_redacao", "corte_redacao >= 0 AND corte_redacao <= 1000");
 
                             t.HasCheckConstraint("ck_peso_area_enem_grupo_curso", "grupo_curso IN ('Tecnológica', 'Humanística I', 'Humanística II', 'Saúde e Biológicas')");
 
