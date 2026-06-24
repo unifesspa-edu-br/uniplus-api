@@ -15,5 +15,5 @@ public sealed record AtualizarPesoAreaEnemCommand(
     decimal PesoCienciasHumanas,
     decimal PesoLinguagens,
     decimal PesoMatematica,
-    decimal? CorteRedacao,
-    string BaseLegal) : ICommand<Result>;
+    string BaseLegal,
+    decimal? CorteRedacao = null) : ICommand<Result>;

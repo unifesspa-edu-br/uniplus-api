@@ -195,6 +195,23 @@ public sealed class PesoAreaEnemPersistenceTests
         persistida.CorteRedacao.Should().Be(1000m);
     }
 
+    [Fact(DisplayName = "Corte de redação 0 explícito via EF persiste 0 — o DEFAULT 400 do banco não sobrescreve")]
+    public async Task CorteRedacaoZero_ViaEf_NaoEhSobrescritoPeloDefault()
+    {
+        string resolucao = ResolucaoUnica();
+        PesoAreaEnem peso = Nova(resolucao, corte: 0m);
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+        persistida.CorteRedacao.Should().Be(0m);
+    }
+
     [Fact(DisplayName = "CHECK de banco rejeita corte de redação acima de 1000 via SQL cru")]
     public async Task Check_RejeitaCorteAcimaDoMaximoViaSqlCru()
     {

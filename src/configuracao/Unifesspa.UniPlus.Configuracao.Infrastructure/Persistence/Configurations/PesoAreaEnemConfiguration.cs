@@ -66,9 +66,15 @@ internal sealed class PesoAreaEnemConfiguration
         builder.Property(p => p.PesoCienciasHumanas).HasPrecision(4, 2).IsRequired();
         builder.Property(p => p.PesoLinguagens).HasPrecision(4, 2).IsRequired();
         builder.Property(p => p.PesoMatematica).HasPrecision(4, 2).IsRequired();
+        // DEFAULT 400 no banco (Anexo I) só para inserts crus que omitem a coluna.
+        // ValueGeneratedNever força o EF a SEMPRE enviar o valor da propriedade,
+        // inclusive 0m (corte "sem eliminação"): sem isso, HasDefaultValue marca a
+        // coluna como store-generated e o EF omite o valor quando ele é o default do
+        // CLR (0m), fazendo o banco gravar 400 e sobrescrever silenciosamente o corte.
         builder.Property(p => p.CorteRedacao)
             .HasPrecision(7, 3)
             .HasDefaultValue(PesoAreaEnem.CorteRedacaoPadrao)
+            .ValueGeneratedNever()
             .IsRequired();
 
         builder.Property(p => p.BaseLegal).HasMaxLength(BaseLegalMaxLength).IsRequired();

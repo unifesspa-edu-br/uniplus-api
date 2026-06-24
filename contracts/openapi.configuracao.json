@@ -2147,7 +2147,6 @@
           "pesoCienciasHumanas",
           "pesoLinguagens",
           "pesoMatematica",
-          "corteRedacao",
           "baseLegal"
         ],
         "type": "object",
@@ -2196,6 +2195,9 @@
             ],
             "format": "double"
           },
+          "baseLegal": {
+            "type": "string"
+          },
           "corteRedacao": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
@@ -2204,9 +2206,6 @@
               "string"
             ],
             "format": "double"
-          },
-          "baseLegal": {
-            "type": "string"
           }
         }
       },
@@ -2516,7 +2515,6 @@
           "pesoCienciasHumanas",
           "pesoLinguagens",
           "pesoMatematica",
-          "corteRedacao",
           "baseLegal"
         ],
         "type": "object",
@@ -2567,6 +2565,9 @@
             ],
             "format": "double"
           },
+          "baseLegal": {
+            "type": "string"
+          },
           "corteRedacao": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
@@ -2575,9 +2576,6 @@
               "string"
             ],
             "format": "double"
-          },
-          "baseLegal": {
-            "type": "string"
           }
         }
       },
