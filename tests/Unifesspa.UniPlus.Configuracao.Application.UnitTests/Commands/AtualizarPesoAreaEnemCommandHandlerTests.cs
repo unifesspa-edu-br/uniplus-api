@@ -22,8 +22,8 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
     private static PesoAreaEnem Existente() =>
         PesoAreaEnem.Criar("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, 400m, BaseLegal).Value!;
 
-    private static AtualizarPesoAreaEnemCommand Comando(Guid id, decimal mt = 3.00m, decimal? corte = 450.000m) =>
-        new(id, 2.00m, 1.50m, 1.50m, 1.50m, mt, BaseLegal, corte);
+    private static AtualizarPesoAreaEnemCommand Comando(Guid id, decimal mt = 3.00m, decimal corte = 450.000m) =>
+        new(id, 2.00m, 1.50m, 1.50m, 1.50m, mt, corte, BaseLegal);
 
     [Fact(DisplayName = "Linha inexistente retorna NaoEncontrado")]
     public async Task Handle_NaoEncontrado_RetornaErro()
