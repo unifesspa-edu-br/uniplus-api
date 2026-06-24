@@ -57,6 +57,7 @@ builder.Services.AddDomainErrorMapper();
 builder.Services.AddSingleton<IResourceLinksBuilder<CampusDto>, CampusLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<LocalOfertaDto>, LocalOfertaLinksBuilder>();
 builder.Services.AddSingleton<IResourceLinksBuilder<ReferenciaReservaDemograficaDto>, ReferenciaReservaDemograficaLinksBuilder>();
+builder.Services.AddSingleton<IResourceLinksBuilder<PesoAreaEnemDto>, PesoAreaEnemLinksBuilder>();
 
 // Idempotency-Key (ADR-0027) + criptografia para entries at-rest. Filter global
 // se ativa apenas em endpoints com [RequiresIdempotencyKey] — os controllers

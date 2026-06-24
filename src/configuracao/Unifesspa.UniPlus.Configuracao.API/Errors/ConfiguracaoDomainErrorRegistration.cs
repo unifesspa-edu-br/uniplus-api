@@ -272,5 +272,60 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.referencia_reserva_demografica.nao_encontrada",
                 "Referência de reserva demográfica não encontrada")),
+
+        // ── Pesos do ENEM por grupo de área (UNI-REQ-0066) ────────────────
+        new(PesoAreaEnemErrorCodes.ResolucaoObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.resolucao_obrigatoria",
+                "Resolução é obrigatória")),
+
+        new(PesoAreaEnemErrorCodes.ResolucaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.resolucao_tamanho",
+                "Tamanho da resolução inválido")),
+
+        new(PesoAreaEnemErrorCodes.GrupoCursoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.grupo_curso_invalido",
+                "Grupo de curso fora do domínio de grupos de área do ENEM")),
+
+        new(PesoAreaEnemErrorCodes.ParJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.peso_area_enem.par_ja_existe",
+                "Já existe uma linha de pesos ativa para esta resolução e grupo de curso")),
+
+        new(PesoAreaEnemErrorCodes.PesoNegativo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.peso_negativo",
+                "Peso de área não pode ser negativo")),
+
+        new(PesoAreaEnemErrorCodes.CorteRedacaoNegativo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.corte_redacao_negativo",
+                "Corte de redação não pode ser negativo")),
+
+        new(PesoAreaEnemErrorCodes.BaseLegalObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.base_legal_obrigatoria",
+                "Base legal é obrigatória")),
+
+        new(PesoAreaEnemErrorCodes.BaseLegalTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.base_legal_tamanho",
+                "Tamanho da base legal inválido")),
+
+        new(PesoAreaEnemErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.peso_area_enem.nao_encontrado",
+                "Linha de pesos do ENEM não encontrada")),
     ];
 }
