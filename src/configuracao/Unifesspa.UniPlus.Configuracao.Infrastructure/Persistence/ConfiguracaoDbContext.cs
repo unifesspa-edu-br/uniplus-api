@@ -28,6 +28,8 @@ public sealed class ConfiguracaoDbContext : DbContext, IUnitOfWork
 
     public DbSet<ReferenciaReservaDemografica> ReferenciasReservaDemografica => Set<ReferenciaReservaDemografica>();
 
+    public DbSet<PesoAreaEnem> PesosAreaEnem => Set<PesoAreaEnem>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
