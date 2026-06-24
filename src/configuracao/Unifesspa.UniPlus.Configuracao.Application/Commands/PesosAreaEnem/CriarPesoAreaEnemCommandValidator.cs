@@ -23,8 +23,8 @@ public sealed class CriarPesoAreaEnemCommandValidator
         RuleFor(x => x.PesoLinguagens).GreaterThanOrEqualTo(0).WithMessage("O peso de linguagens e códigos não pode ser negativo.");
         RuleFor(x => x.PesoMatematica).GreaterThanOrEqualTo(0).WithMessage("O peso de matemática não pode ser negativo.");
 
-        RuleFor(x => x.CorteRedacao!.Value)
-            .GreaterThanOrEqualTo(0).WithMessage("Corte de redação não pode ser negativo.")
+        RuleFor(x => x.CorteRedacao)
+            .GreaterThanOrEqualTo(0m).WithMessage("Corte de redação não pode ser negativo.")
             .When(x => x.CorteRedacao.HasValue);
 
         RuleFor(x => x.BaseLegal)
