@@ -35,9 +35,11 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ICampusRepository, CampusRepository>();
         services.AddScoped<ILocalOfertaRepository, LocalOfertaRepository>();
         services.AddScoped<IReferenciaReservaDemograficaRepository, ReferenciaReservaDemograficaRepository>();
+        services.AddScoped<IPesoAreaEnemRepository, PesoAreaEnemRepository>();
 
-        // Reader cross-módulo (ADR-0056) da Referência de reserva demográfica.
+        // Readers cross-módulo (ADR-0056).
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
+        services.AddScoped<IPesoAreaEnemReader, PesoAreaEnemReader>();
 
         return services;
     }
