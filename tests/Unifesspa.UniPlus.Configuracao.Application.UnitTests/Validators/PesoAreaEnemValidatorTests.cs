@@ -17,7 +17,7 @@ public sealed class PesoAreaEnemValidatorTests
     private readonly CriarPesoAreaEnemCommandValidator _validator = new();
 
     private static CriarPesoAreaEnemCommand Base() =>
-        new("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, 400m, "Res. 805/2024 Anexo I");
+        new("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, "Res. 805/2024 Anexo I", 400m);
 
     [Fact(DisplayName = "Comando válido passa no validator")]
     public void Valido_Passa()

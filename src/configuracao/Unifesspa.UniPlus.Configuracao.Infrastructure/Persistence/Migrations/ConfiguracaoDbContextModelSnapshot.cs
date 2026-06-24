@@ -236,7 +236,6 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnName("base_legal");
 
                     b.Property<decimal>("CorteRedacao")
-                        .ValueGeneratedOnAdd()
                         .HasPrecision(7, 3)
                         .HasColumnType("numeric(7,3)")
                         .HasDefaultValue(400m)

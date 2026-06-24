@@ -18,7 +18,7 @@ public sealed class CriarPesoAreaEnemCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarPesoAreaEnemCommand ComandoValido() =>
-        new("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, 400m, "Res. 805/2024 Anexo I");
+        new("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, "Res. 805/2024 Anexo I", 400m);
 
     [Fact(DisplayName = "Cria a linha de pesos, persiste e retorna o Id")]
     public async Task Handle_ParLivre_CriaEPersiste()
