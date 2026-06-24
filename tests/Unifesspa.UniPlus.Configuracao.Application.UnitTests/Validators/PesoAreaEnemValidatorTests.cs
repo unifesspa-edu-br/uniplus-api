@@ -84,6 +84,30 @@ public sealed class PesoAreaEnemValidatorTests
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarPesoAreaEnemCommand.CorteRedacao));
     }
 
+    [Fact(DisplayName = "Corte de redação acima do máximo (>1000) é rejeitado")]
+    public void CorteAcimaDoMaximo_Rejeita()
+    {
+        ValidationResult resultado = _validator.Validate(Base() with { CorteRedacao = 1000.001m });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarPesoAreaEnemCommand.CorteRedacao));
+    }
+
+    [Fact(DisplayName = "Corte de redação no máximo (1000) é aceito")]
+    public void CorteNoMaximo_Passa()
+    {
+        _validator.Validate(Base() with { CorteRedacao = 1000m }).IsValid.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Peso acima do teto persistível é rejeitado")]
+    public void PesoAcimaDoMaximo_Rejeita()
+    {
+        ValidationResult resultado = _validator.Validate(Base() with { PesoMatematica = 100m });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarPesoAreaEnemCommand.PesoMatematica));
+    }
+
     [Fact(DisplayName = "Peso zero é aceito")]
     public void PesoZero_Aceita()
     {

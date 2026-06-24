@@ -178,6 +178,35 @@ public sealed class PesoAreaEnemPersistenceTests
         persistida.CorteRedacao.Should().Be(400m);
     }
 
+    [Fact(DisplayName = "Corte de redação no máximo (1000) persiste — numeric(7,3) acomoda a nota máxima do ENEM")]
+    public async Task CorteRedacaoMaximo_Persiste()
+    {
+        string resolucao = ResolucaoUnica();
+        PesoAreaEnem peso = Nova(resolucao, corte: PesoAreaEnem.CorteRedacaoMaximo);
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.PesosAreaEnem.Add(peso);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
+        persistida.CorteRedacao.Should().Be(1000m);
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita corte de redação acima de 1000 via SQL cru")]
+    public async Task Check_RejeitaCorteAcimaDoMaximoViaSqlCru()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
+            $"INSERT INTO peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {1000.001m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK corte_redacao <= 1000 impede o INSERT direto");
+    }
+
     [Fact(DisplayName = "Reader.ListarVivasAsync ordena por resolução e exclui soft-deleted")]
     public async Task ListarVivas_OrdenaPorResolucaoEExcluiSoftDeleted()
     {

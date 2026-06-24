@@ -23,7 +23,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     peso_ciencias_humanas = table.Column<decimal>(type: "numeric(4,2)", precision: 4, scale: 2, nullable: false),
                     peso_linguagens = table.Column<decimal>(type: "numeric(4,2)", precision: 4, scale: 2, nullable: false),
                     peso_matematica = table.Column<decimal>(type: "numeric(4,2)", precision: 4, scale: 2, nullable: false),
-                    corte_redacao = table.Column<decimal>(type: "numeric(6,3)", precision: 6, scale: 3, nullable: false, defaultValue: 400m),
+                    corte_redacao = table.Column<decimal>(type: "numeric(7,3)", precision: 7, scale: 3, nullable: false, defaultValue: 400m),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
@@ -36,7 +36,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_peso_area_enem", x => x.id);
-                    table.CheckConstraint("ck_peso_area_enem_corte_redacao", "corte_redacao >= 0");
+                    table.CheckConstraint("ck_peso_area_enem_corte_redacao", "corte_redacao >= 0 AND corte_redacao <= 1000");
                     table.CheckConstraint("ck_peso_area_enem_grupo_curso", "grupo_curso IN ('Tecnológica', 'Humanística I', 'Humanística II', 'Saúde e Biológicas')");
                     table.CheckConstraint("ck_peso_area_enem_peso_ciencias_humanas", "peso_ciencias_humanas >= 0");
                     table.CheckConstraint("ck_peso_area_enem_peso_ciencias_natureza", "peso_ciencias_natureza >= 0");

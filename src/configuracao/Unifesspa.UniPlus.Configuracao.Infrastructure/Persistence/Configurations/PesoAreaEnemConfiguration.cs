@@ -36,7 +36,10 @@ internal sealed class PesoAreaEnemConfiguration
                 t.HasCheckConstraint("ck_peso_area_enem_peso_ciencias_humanas", "peso_ciencias_humanas >= 0");
                 t.HasCheckConstraint("ck_peso_area_enem_peso_linguagens", "peso_linguagens >= 0");
                 t.HasCheckConstraint("ck_peso_area_enem_peso_matematica", "peso_matematica >= 0");
-                t.HasCheckConstraint("ck_peso_area_enem_corte_redacao", "corte_redacao >= 0");
+
+                // Corte de redação na faixa válida da nota do ENEM (0–1000). O teto
+                // também impede o overflow da coluna numeric(7,3) por insert fora do app.
+                t.HasCheckConstraint("ck_peso_area_enem_corte_redacao", "corte_redacao >= 0 AND corte_redacao <= 1000");
             });
 
         builder.HasKey(p => p.Id);
@@ -53,16 +56,18 @@ internal sealed class PesoAreaEnemConfiguration
             .HasMaxLength(GrupoCursoMaxLength)
             .IsRequired();
 
-        // Cinco pesos numeric(4,2) e corte de redação numeric(6,3) — com DEFAULT 400
-        // no banco (Anexo I) para inserts fora do fluxo da aplicação; a factory do
-        // agregado já resolve o padrão quando o corte é omitido no command.
+        // Cinco pesos numeric(4,2) e corte de redação numeric(7,3) — escala 3 com 4
+        // dígitos inteiros para acomodar a nota máxima da redação do ENEM (1000),
+        // que não cabe em numeric(6,3). DEFAULT 400 no banco (Anexo I) para inserts
+        // fora do fluxo da aplicação; a factory do agregado já resolve o padrão
+        // quando o corte é omitido no command.
         builder.Property(p => p.PesoRedacao).HasPrecision(4, 2).IsRequired();
         builder.Property(p => p.PesoCienciasNatureza).HasPrecision(4, 2).IsRequired();
         builder.Property(p => p.PesoCienciasHumanas).HasPrecision(4, 2).IsRequired();
         builder.Property(p => p.PesoLinguagens).HasPrecision(4, 2).IsRequired();
         builder.Property(p => p.PesoMatematica).HasPrecision(4, 2).IsRequired();
         builder.Property(p => p.CorteRedacao)
-            .HasPrecision(6, 3)
+            .HasPrecision(7, 3)
             .HasDefaultValue(PesoAreaEnem.CorteRedacaoPadrao)
             .IsRequired();
 
