@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
-internal sealed class CampusRepository : ICampusRepository
+public sealed class CampusRepository : ICampusRepository
 {
     private readonly ConfiguracaoDbContext _dbContext;
 
@@ -64,6 +64,8 @@ internal sealed class CampusRepository : ICampusRepository
 
     public Task<bool> SiglaExisteEntreLivosAsync(string sigla, Guid? excluirId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(sigla);
+
         // Espelha a normalização do agregado (Trim + ToUpperInvariant) para que
         // " camar " case com o "CAMAR" persistido.
         string siglaNorm = sigla.Trim().ToUpperInvariant();

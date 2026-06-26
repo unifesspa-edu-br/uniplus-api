@@ -173,7 +173,7 @@
               { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "body": { "mode": "raw", "raw": "{\"codigoEmec\":\"3990\",\"nome\":\"Universidade Federal do Sul e Sudeste do Pará\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\",\"municipioSede\":\"Marabá\"}" },
+            "body": { "mode": "raw", "raw": "{\"codigoEmec\":\"3990\",\"nome\":\"Universidade Federal do Sul e Sudeste do Pará\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\",\"cidadeCodigoIbge\":\"1504208\",\"cidadeNome\":\"Marabá\",\"cidadeUf\":\"PA\"}" },
             "url": "{{base_url}}/api/organizacao/admin/instituicao"
           }
         },
@@ -184,7 +184,7 @@
               "pm.test('200 OK', () => pm.response.to.have.status(200));",
               "pm.test('vendor MIME instituicao.v1', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.uniplus.instituicao.v1+json'));",
               "const j = pm.response.json();",
-              "pm.test('dados corretos', () => { pm.expect(j.codigoEmec).to.eql('3990'); pm.expect(j.sigla).to.eql('Unifesspa'); pm.expect(j.municipioSede).to.eql('Marabá'); });",
+              "pm.test('dados corretos', () => { pm.expect(j.codigoEmec).to.eql('3990'); pm.expect(j.sigla).to.eql('Unifesspa'); pm.expect(j.cidade.codigoIbge).to.eql('1504208'); pm.expect(j.cidade.nome).to.eql('Marabá'); pm.expect(j.cidade.uf).to.eql('PA'); });",
               "pm.test('HATEOAS _links.self', () => pm.expect(j._links.self).to.eql('/api/organizacao/instituicao'));"
             ] } }
           ],
@@ -227,7 +227,7 @@
               { "key": "Idempotency-Key", "value": "{{$guid}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
-            "body": { "mode": "raw", "raw": "{\"id\":\"{{instituicao_id}}\",\"codigoEmec\":\"3990\",\"nome\":\"Universidade Federal do Sul e Sudeste do Pará\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\",\"situacao\":\"Credenciada\",\"municipioSede\":\"Marabá\"}" },
+            "body": { "mode": "raw", "raw": "{\"id\":\"{{instituicao_id}}\",\"codigoEmec\":\"3990\",\"nome\":\"Universidade Federal do Sul e Sudeste do Pará\",\"sigla\":\"Unifesspa\",\"organizacaoAcademica\":\"Universidade\",\"categoriaAdministrativa\":\"Pública Federal\",\"situacao\":\"Credenciada\",\"cidadeCodigoIbge\":\"1504208\",\"cidadeNome\":\"Marabá\",\"cidadeUf\":\"PA\"}" },
             "url": "{{base_url}}/api/organizacao/admin/instituicao/{{instituicao_id}}"
           }
         },
@@ -236,7 +236,8 @@
           "event": [
             { "listen": "test", "script": { "type": "text/javascript", "exec": [
               "pm.test('200 OK', () => pm.response.to.have.status(200));",
-              "pm.test('situacao atualizada', () => pm.expect(pm.response.json().situacao).to.eql('Credenciada'));"
+              "pm.test('situacao atualizada', () => pm.expect(pm.response.json().situacao).to.eql('Credenciada'));",
+              "pm.test('cidade persistida no update', () => { const c = pm.response.json().cidade; pm.expect(c.codigoIbge).to.eql('1504208'); pm.expect(c.nome).to.eql('Marabá'); pm.expect(c.uf).to.eql('PA'); });"
             ] } }
           ],
           "request": {

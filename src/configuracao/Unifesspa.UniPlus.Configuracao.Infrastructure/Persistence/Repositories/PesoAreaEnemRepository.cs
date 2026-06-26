@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
-internal sealed class PesoAreaEnemRepository : IPesoAreaEnemRepository
+public sealed class PesoAreaEnemRepository : IPesoAreaEnemRepository
 {
     private readonly ConfiguracaoDbContext _dbContext;
 
@@ -68,6 +68,9 @@ internal sealed class PesoAreaEnemRepository : IPesoAreaEnemRepository
         Guid? excluirId,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(resolucao);
+        ArgumentNullException.ThrowIfNull(grupoCurso);
+
         // Um grupo fora do domínio nunca tem linha viva — evita query desnecessária
         // e garante que a comparação use o valor canônico normalizado (Trim).
         Result<GrupoCurso> grupoResult = GrupoCurso.Criar(grupoCurso);
