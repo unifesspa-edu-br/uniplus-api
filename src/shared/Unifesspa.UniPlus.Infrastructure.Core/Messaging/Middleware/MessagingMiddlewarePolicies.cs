@@ -1,17 +1,23 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.Middleware;
 
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 using Wolverine;
+using Wolverine.FluentValidation;
 using Wolverine.Runtime.Handlers;
 
 /// <summary>
 /// Política de aplicação dos middlewares CQRS canônicos do UniPlus
-/// (<see cref="WolverineValidationMiddleware"/> e
-/// <see cref="WolverineLoggingMiddleware"/>) — registrados apenas em chains
-/// cujo tipo de mensagem implemente <see cref="ICommand{TResponse}"/> ou
-/// <see cref="IQuery{TResponse}"/>. Mensagens internas do Wolverine (envelopes
-/// de outbox, agent commands, system messages) não passam por esse pipeline.
+/// (<see cref="WolverineLoggingMiddleware"/> + validação FluentValidation
+/// idiomática via <c>UseFluentValidation</c>). O logging é registrado apenas em
+/// chains cujo tipo de mensagem implemente <see cref="ICommand{TResponse}"/> ou
+/// <see cref="IQuery{TResponse}"/>; a validação é aplicada pelo Wolverine a toda
+/// chain que tenha um <see cref="FluentValidation.IValidator{T}"/> registrado
+/// (no UniPlus, somente commands/queries têm validator). Mensagens internas do
+/// Wolverine (envelopes de outbox, agent commands, system messages) não passam
+/// por logging nem têm validator, então ficam fora desse pipeline.
 /// </summary>
 public static class MessagingMiddlewarePolicies
 {
@@ -25,11 +31,32 @@ public static class MessagingMiddlewarePolicies
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        // Sobrecarga não-genérica: ambas as classes são static (não podem servir
-        // de argumento de tipo) — Wolverine descobre os métodos [WolverineBefore]/
-        // [WolverineFinally] via reflection sobre o Type passado.
+        // Logging estruturado do pipeline CQRS. Sobrecarga não-genérica: a classe é
+        // static (não pode servir de argumento de tipo) — Wolverine descobre os
+        // métodos [WolverineBefore]/[WolverineFinally] via reflection sobre o Type.
+        // Registrado ANTES da validação para que "Processando {RequestName}" saia
+        // antes de uma eventual ValidationException curto-circuitar a chain.
         options.Policies.AddMiddleware(typeof(WolverineLoggingMiddleware), IsCommandOrQueryChain);
-        options.Policies.AddMiddleware(typeof(WolverineValidationMiddleware), IsCommandOrQueryChain);
+
+        // Failure action PII-safe: lança ValidationException SÓ com as falhas de
+        // regra, sem serializar o command na mensagem. Registrado ANTES de
+        // UseFluentValidation (que usa TryAddSingleton para o default
+        // FailureAction<T> — `new ValidationException($"Validation failure on:
+        // {message}", failures)`, cujo {message}.ToString() de um record vazaria
+        // PII no log via GlobalExceptionMiddleware). Preserva o comportamento do
+        // antigo WolverineValidationMiddleware. Ver PiiSafeValidationFailureAction.
+        options.Services.TryAddSingleton(typeof(IFailureAction<>), typeof(PiiSafeValidationFailureAction<>));
+
+        // Validação FluentValidation idiomática do Wolverine: gera middleware
+        // tipado por mensagem (IValidator<T> / IEnumerable<IValidator<T>> injetados
+        // pelo codegen, sem service location de IServiceProvider) — forward-compat
+        // com a ServiceLocationPolicy.NotAllowed que vira default no Wolverine 6.0.
+        // Lança a mesma FluentValidation.ValidationException, mapeada como 422 pelo
+        // GlobalExceptionMiddleware. ExplicitRegistration: os validators continuam
+        // vindo dos AddValidatorsFromAssembly de cada módulo (o pacote não
+        // redescobre nem re-registra). Aplica-se só a chains com validator — no
+        // UniPlus, exclusivamente commands/queries.
+        options.UseFluentValidation(RegistrationBehavior.ExplicitRegistration);
     }
 
     /// <summary>
