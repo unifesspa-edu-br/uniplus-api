@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Uni+ — Organização API",
-    "description": "Coleção de testes HTTP da API de Organização (módulo OrganizacaoInstitucional). Exercita o ciclo de vida completo da Instituição singleton (#585) — autenticação plataforma-admin via Keycloak (realm unifesspa-dev-local), Idempotency-Key (ADR-0027), vendor MIME por recurso (ADR-0028), ProblemDetails RFC 9457 (ADR-0023/0024), HATEOAS Level 1 (ADR-0029/0049) e soft-delete. Roda contra o stack local (organizacao-api em :5263). Auto-contida e re-executável (limpa o estado no início e ao final).",
+    "description": "Coleção de testes HTTP da API de Organização (módulo OrganizacaoInstitucional). Exercita o ciclo de vida completo da Instituição singleton (#585) — autenticação plataforma-admin via Keycloak (realm unifesspa-dev-local), Idempotency-Key (ADR-0027), vendor MIME por recurso (ADR-0028), ProblemDetails RFC 9457 (ADR-0023/0024), HATEOAS Level 1 (ADR-0029/0049) e soft-delete. Roda contra o stack local (API UniPlus (monólito) em :5200). Auto-contida e re-executável (limpa o estado no início e ao final).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [

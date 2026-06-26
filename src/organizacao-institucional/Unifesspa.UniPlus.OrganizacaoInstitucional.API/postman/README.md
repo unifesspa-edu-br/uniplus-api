@@ -13,17 +13,19 @@ vida completo da **Instituição** singleton (issue #585) e um smoke de **Unidad
 
 ## Pré-condições
 
-A `organizacao-api` declara dependência de Postgres, Redis, Kafka e **Keycloak**,
-então subir a API já traz tudo que a coleção precisa (o token sai do Keycloak):
+Com a topologia de 3 APIs, o módulo Organização é servido pela **API UniPlus**
+(o monólito modular, serviço `uniplus-api`), que declara dependência de Postgres,
+Redis, Kafka, MinIO, Apicurio e **Keycloak** — subir a API já traz tudo que a
+coleção precisa (o token sai do Keycloak):
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml \
-  --env-file docker/.env --project-directory docker up -d organizacao-api
+  --env-file docker/.env --project-directory docker up -d uniplus-api
 ```
 
-Use `up -d` sem o nome do serviço para o stack inteiro (inclui MinIO, Apicurio e
-as demais APIs). A `organizacao-api` fica em `:5263`; o Keycloak importa o realm
-`unifesspa-dev-local` com o usuário `admin` (role `plataforma-admin`).
+A API UniPlus fica em `:5200` (serve o módulo Organização sob `/api/organizacao/*`)
+— é o `base_url` do environment. O Keycloak importa o realm `unifesspa-dev-local`
+com o usuário `admin` (role `plataforma-admin`).
 
 ## Rodar (Newman)
 
