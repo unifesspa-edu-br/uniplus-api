@@ -11,7 +11,7 @@ using Domain.ValueObjects;
 /// agregado <see cref="Edital"/> a partir do <see cref="NumeroEdital"/>
 /// validado, persiste via repositório e retorna o id no <see cref="Result{T}"/>.
 /// Validação do request fica fora deste método — responsabilidade do
-/// <c>WolverineValidationMiddleware</c>.
+/// middleware de validação FluentValidation do Wolverine (<c>UseFluentValidation</c>).
 /// </summary>
 public static class CriarEditalCommandHandler
 {

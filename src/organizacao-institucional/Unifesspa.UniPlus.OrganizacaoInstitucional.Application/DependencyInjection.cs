@@ -8,7 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 /// Registra recursos da camada Application do módulo OrganizacaoInstitucional.
 /// CQRS roda integralmente sobre Wolverine (<c>ICommandBus</c>/<c>IQueryBus</c>),
 /// então esta extensão registra apenas os validators FluentValidation,
-/// consumidos pelo <c>WolverineValidationMiddleware</c> em Infrastructure.Core.
+/// consumidos pelo middleware de validação FluentValidation do Wolverine
+/// (<c>UseFluentValidation</c>, configurado em Infrastructure.Core).
 /// </summary>
 public static class OrganizacaoInstitucionalApplicationServiceRegistration
 {

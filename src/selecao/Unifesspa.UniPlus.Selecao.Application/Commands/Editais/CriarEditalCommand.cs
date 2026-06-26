@@ -5,10 +5,10 @@ using Kernel.Results;
 
 /// <summary>
 /// Comando para criação de um novo edital. Validado automaticamente pelo
-/// <c>WolverineValidationMiddleware</c> via <c>CriarEditalCommandValidator</c>
-/// antes de chegar ao handler — falhas de validação resultam em
-/// <c>FluentValidation.ValidationException</c>, mapeada como ProblemDetails 400
-/// pelo <c>GlobalExceptionMiddleware</c>.
+/// middleware de validação FluentValidation do Wolverine (<c>UseFluentValidation</c>)
+/// via <c>CriarEditalCommandValidator</c> antes de chegar ao handler — falhas de
+/// validação resultam em <c>FluentValidation.ValidationException</c>, mapeada como
+/// ProblemDetails 422 pelo <c>GlobalExceptionMiddleware</c>.
 /// </summary>
 /// <remarks>
 /// <para><c>TipoEditalId</c> é a FK preparatória para a futura entidade

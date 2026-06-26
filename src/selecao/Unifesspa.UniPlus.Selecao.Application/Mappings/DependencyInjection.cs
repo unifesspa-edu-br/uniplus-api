@@ -8,7 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 /// Registra os recursos da camada Application do módulo Seleção. CQRS roda
 /// integralmente sobre Wolverine (<c>ICommandBus</c>/<c>IQueryBus</c>) — esta
 /// extensão registra apenas os validators FluentValidation, consumidos pelo
-/// <c>WolverineValidationMiddleware</c> em <c>Infrastructure.Core</c>.
+/// middleware de validação FluentValidation do Wolverine (<c>UseFluentValidation</c>,
+/// configurado em <c>Infrastructure.Core</c>).
 /// </summary>
 public static class SelecaoApplicationServiceRegistration
 {

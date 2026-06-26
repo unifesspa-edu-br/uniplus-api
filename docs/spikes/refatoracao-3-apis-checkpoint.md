@@ -73,20 +73,99 @@ branch `spike/monolito-modular`:
 - Lock files regenerados (locked-mode OK); gambiarra do target appsettings removida.
 - Dev stack Docker consolidado no `uniplus-api` + OIDC; Helm com chart `uniplus`.
 - Validação E2E: build (54 proj, 0 warn) + test (21 proj, 1714 testes, 0 falhas) +
-  Docker + OIDC + Newman (23/24, a falha é drift pré-existente do Organizacao).
+  Docker + OIDC + Newman (agora **24/24** após corrigir a coleção).
 - ADR-0097 publicado; ADR-0001 anotado.
 - 2 rodadas de revisão Codex aplicadas; 1 achado dispensado com verificação.
 
-**Pendências fora do escopo do spike (follow-ups documentados):**
-- Organizacao: alinhar contrato create/read (`municipioSede` vs `cidade`).
-- Wolverine 6.0: tornar repos `internal` públicos (warning de service-location).
-- Geo: criar `docker/Dockerfile.geo` + serviço compose quando conteinerizá-lo.
+**Follow-ups resolvidos após o spike (a pedido):**
+- ✅ **Newman 24/24**: a falha não era bug — a coleção Postman do Organizacao estava
+  desatualizada vs ADR-0096/0090 (enviava `municipioSede` texto livre; o contrato
+  virou o trio estruturado `cidadeCodigoIbge/Nome/Uf` + read `cidade.*`). Coleção
+  atualizada (commit `77b0006`).
+- ✅ **Repos públicos (Wolverine 6.0)**: 6 repos de Configuracao/Organizacao
+  `internal`→`public sealed` (alinha a Selecao/Ingresso) + guardas CA1062. Warnings
+  "not public, requires service location" eliminados no runtime.
+- ✅ **Dockerfile.geo + geo-api**: imagem e serviço compose do Geo; boot healthy
+  contra `uniplus_geo` (PostGIS) validado.
+- ✅ **Teste ignorado**: `LocalOfertaPersistenceTests.RemoverLocalOferta_ComOfertaCursoViva_Bloqueia`
+  é skip LEGÍTIMO — placeholder de `oferta_curso` (UNI-REQ-0010), feature não construída.
+  Re-habilitar exige a feature. **Rastreamento:** UNI-REQ-0010 já é a Story **#588**
+  (Cadastros de Curso e Oferta de Curso); criei a Task **#731** (sub-issue de #588)
+  para o gap específico — cabear `ReferenciadoPorOfertaCursoVivaAsync` contra
+  `oferta_curso` + des-skipar o teste.
 
-## Como retomar
+**Follow-up resolvido nesta branch:**
+- ✅ **Wolverine 6.0 — `IServiceProvider` no `WolverineValidationMiddleware`**: o
+  middleware custom resolvia `IValidator<>` dinamicamente via `IServiceProvider`
+  (service location), disparando o warning "Directly using scoped IServiceProvider;
+  will throw in Wolverine 6.0". Substituído pelo pacote oficial
+  `WolverineFx.FluentValidation` (`opts.UseFluentValidation(RegistrationBehavior.ExplicitRegistration)`),
+  que gera middleware tipado por mensagem (injeta `IValidator<T>`/`IEnumerable<IValidator<T>>`
+  pelo codegen, sem `IServiceProvider`). Mesma `FluentValidation.ValidationException` →
+  422 pelo `GlobalExceptionMiddleware`; validators seguem vindo dos
+  `AddValidatorsFromAssembly` de cada módulo. `WolverineValidationMiddleware` + seus
+  unit tests removidos. Nota na ADR-0003.
+  - **PII (LGPD):** um `IFailureAction<>` próprio (`PiiSafeValidationFailureAction`)
+    substitui o default do pacote — que interpolaria o `ToString()` do command
+    (CPF/CNPJ/nome) na mensagem da exceção logada pelo `GlobalExceptionMiddleware`.
+    O nosso lança `new ValidationException(failures)` (só falhas de regra), como o
+    middleware antigo. Coberto por `PiiSafeValidationFailureActionTests`.
+  - **Verificação:** boot temporário com `ServiceLocationPolicy.NotAllowed` (simula o
+    default do 6.0) confirma que o relatório de service-location do `CriarEditalCommand`
+    **não menciona mais o validator** — só sobra `ISelecaoUnitOfWork` (ver abaixo).
 
-Ler este arquivo + `git log`. Cada fase é commitada. Próxima fase = primeira `[ ]`.
-Plano e dimensionamento completos discutidos na sessão; achados de cada fase
-registrados abaixo.
+**Follow-up remanescente para a migração Wolverine 6.0 (descoberto na verificação, fora deste escopo):**
+- **Registros de UoW/repos via lambda opaca**: sob `ServiceLocationPolicy.NotAllowed`, chains
+  de command ainda falham porque `ISelecaoUnitOfWork` (e provavelmente UoW/repos análogos dos
+  demais módulos) está registrado como `'opaque' lambda factory` Scoped — o codegen do Wolverine
+  não enxerga através do lambda. Diferente do warning da validação (já resolvido): aqui o ajuste
+  é trocar `AddScoped<IUoW>(sp => ...)` por `AddScoped<IUoW, UoWImpl>()` ou opt-in via
+  `opts.CodeGeneration.AlwaysUseServiceLocationFor<T>()`. Tarefa própria da migração 6.0.
+
+## Handoff (para retomar após limpar o contexto)
+
+**Status: tudo entregue e verde. Único passo pendente = abrir o PR.**
+
+- **Branch:** `spike/monolito-modular` (working tree limpo, tudo commitado).
+- **Gate final reproduzível:** `dotnet build UniPlus.slnx` (54 proj, 0 warn) +
+  `dotnet test UniPlus.slnx` (21 proj, **1714 testes, 0 falhas, 1 ignorado** — o
+  skip legítimo de UNI-REQ-0010). Lock files: `dotnet restore --locked-mode` passa.
+- **Stack Docker (validada, derrubada ao fim):**
+  `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build`
+  (copie `override.example.yml`→`override.yml`). APIs: uniplus :5200, geo :5400,
+  portal :5302. OIDC realm `unifesspa-dev-local`, user `admin`/`Changeme!123`.
+  Newman: `npx newman run src/.../OrganizacaoInstitucional.API/postman/organizacao.postman_collection.json --env-var base_url=http://localhost:5200 ...` → 24/24.
+
+**Próximo passo:** `/create-pr` (base `main`). PR deve referenciar ADR-0097.
+
+> Nota: este checkpoint + o `docs/spikes/monolito-modular-checkpoint.md` são
+> artefatos do spike — remover no rollout/squash final junto com os commits
+> `docs(spike): ...`.
+
+### Commits da entrega (mais recente primeiro)
+
+```
+71413fb docs(spike): resolução dos casos de teste e follow-ups
+c971934 build(docker): Dockerfile.geo + serviço geo-api
+de33a25 refactor(persistence): repos de Configuracao/Organizacao públicos
+77b0006 test(organizacao): coleção Postman ao contrato de cidade estruturada
+f7ef28a docs(spike): conclui checkpoint 3 APIs (F7 + revisões finais)
+20bb5d7 build(helm): chart da API UniPlus + remove charts por módulo
+feb810f docs(adr): ADR-0097 (topologia de deploy em 3 APIs)
+6fadffc docs(spike): F5/F6 (Docker+OIDC+Newman)
+0c5a2d2 build(docker): consolida dev stack na API UniPlus
+477cdae test(arch): cobertura de migration por DbContext no host (#419)
+55ffc18 docs(spike): F4 e F4.1
+3f1cfd7 refactor(testes): adapta fitness/smoke + regenera locks
+21518f3 refactor(selecao): converte módulo em library (F4)
+1c141e6 refactor(ingresso): converte módulo em library (F3)
+4527a95 refactor(organizacao): converte módulo em library (F2)
+5cd68ad refactor(configuracao): converte módulo em library + base de teste (F1)
+```
+
+## Como retomar (referência)
+
+Ler este arquivo + `git log`. Achados de cada fase registrados abaixo.
 
 ## Achados por fase
 

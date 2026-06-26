@@ -33,8 +33,8 @@ Dúvidas sobre implementação no dia a dia ficam neste guia. Dúvidas sobre con
 │    WolverineCommandBus      → IMessageBus.InvokeAsync      │
 │    WolverineQueryBus        → IMessageBus.InvokeAsync      │
 │    UseWolverineOutboxCascading (helper canônico, ADR-0040) │
-│    WolverineValidationMiddleware  (FluentValidation)       │
-│    WolverineLoggingMiddleware     (LoggerMessage)          │
+│    UseFluentValidation             (FluentValidation)      │
+│    WolverineLoggingMiddleware      (LoggerMessage)         │
 │                                                            │
 │  Wolverine cuida de:                                       │
 │   • Discovery de handlers por convenção (assembly scan)    │
@@ -82,7 +82,7 @@ O helper centraliza as invariantes compartilhadas:
 - `PersistMessagesWithPostgresql(..., schemaName: "wolverine")` — outbox no schema dedicado.
 - `Policies.AutoApplyTransactions()` — handlers que tocam DbContext entram em transação automática.
 - `Policies.UseDurableOutboxOnAllSendingEndpoints()` — durabilidade Kafka quando broker indisponível.
-- `WolverineValidationMiddleware` + `WolverineLoggingMiddleware` — pipeline de validação + logging estruturado.
+- `UseFluentValidation` (middleware FluentValidation do Wolverine) + `WolverineLoggingMiddleware` — pipeline de validação + logging estruturado.
 - **Auto-build do schema Wolverine desligado** — o helper **não** chama `AutoBuildMessageStorageOnStartup()`. Em produção, o operador roda `dotnet wolverine db-apply` (CLI da JasperFx) como step do pipeline de deploy, similar a `dotnet ef database update` ([ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md)). Em testes integrados, a `CascadingFixture` usa `EnsureCreatedAsync` no Postgres efêmero do testcontainer.
 
 Connection string e Kafka bootstrap são lidos lazy dentro do callback de `UseWolverine`, no startup do host — momento em que os providers de configuração já materializaram (env vars, appsettings). Esse padrão é compatível com o test fixture que injeta override via env var ([ADR-0038](adrs/0038-override-configuracao-em-testes-via-env-vars.md)).
@@ -327,7 +327,7 @@ Slice canônico real: `src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/Edi
 
 ## Validações via FluentValidation middleware
 
-Validação de comando/query usa `WolverineValidationMiddleware` automaticamente — basta declarar um validator em `Application` no mesmo namespace do command:
+Validação de comando/query usa o middleware FluentValidation do Wolverine (`UseFluentValidation`) automaticamente — basta declarar um validator em `Application` no mesmo namespace do command:
 
 ```csharp
 public sealed class PublicarEditalCommandValidator : AbstractValidator<PublicarEditalCommand>

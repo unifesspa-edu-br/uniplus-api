@@ -1011,6 +1011,7 @@
           "VaultSharp": "[1.17.5.1, )",
           "WolverineFx": "[5.39.5, )",
           "WolverineFx.EntityFrameworkCore": "[5.39.5, )",
+          "WolverineFx.FluentValidation": "[5.39.5, )",
           "WolverineFx.Kafka": "[5.39.5, )",
           "WolverineFx.Postgresql": "[5.39.5, )"
         }
@@ -1318,6 +1319,16 @@
           "Microsoft.EntityFrameworkCore.Relational": "10.0.2",
           "Weasel.EntityFrameworkCore": "8.15.1",
           "WolverineFx.RDBMS": "5.39.5"
+        }
+      },
+      "WolverineFx.FluentValidation": {
+        "type": "CentralTransitive",
+        "requested": "[5.39.5, )",
+        "resolved": "5.39.5",
+        "contentHash": "GndYpol1608Mahrw4ZTbwEZO/V/qgPXzy5Q5Bkfa1iYvFiRkf9B11eSsC9SOHhtRONPVI1ZI4Q4CeppTumT+2w==",
+        "dependencies": {
+          "FluentValidation": "12.0.0",
+          "WolverineFx": "5.39.5"
         }
       },
       "WolverineFx.Kafka": {
