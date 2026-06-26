@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+
 /// <summary>
-/// Coleção xUnit que compartilha a <see cref="MonolitoHostFixture"/> entre as
+/// Coleção xUnit que compartilha a <see cref="MonolitoPostgresFixture"/> entre as
 /// suítes do host. <c>DisableParallelization=true</c> protege as env vars
 /// process-wide das connection strings contra interleaving com outras coleções
 /// no mesmo processo de teste.
@@ -17,7 +19,7 @@ using System.Diagnostics.CodeAnalysis;
     "Naming",
     "CA1711:Identifiers should not have incorrect suffix",
     Justification = "Convenção de nome de coleção xUnit termina com 'Collection'.")]
-public sealed class MonolitoHostCollection : ICollectionFixture<MonolitoHostFixture>
+public sealed class MonolitoHostCollection : ICollectionFixture<MonolitoPostgresFixture>
 {
     public const string Name = "Monolito Host";
 }

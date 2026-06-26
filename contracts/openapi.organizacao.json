@@ -1807,7 +1807,13 @@
         }
       },
       "OrigemUnidade": {
-        "type": "integer"
+        "enum": [
+          "nenhum",
+          "legadoCoc",
+          "criadoNoUniPlus",
+          "importadoSiorg"
+        ],
+        "type": "string"
       },
       "ProblemDetails": {
         "type": "object",
@@ -1848,7 +1854,21 @@
         }
       },
       "TipoUnidade": {
-        "type": "integer"
+        "enum": [
+          "nenhum",
+          "reitoria",
+          "proReitoria",
+          "centro",
+          "instituto",
+          "faculdade",
+          "departamento",
+          "coordenacao",
+          "diretoria",
+          "divisao",
+          "nucleo",
+          "outro"
+        ],
+        "type": "string"
       },
       "UnidadeDto": {
         "required": [

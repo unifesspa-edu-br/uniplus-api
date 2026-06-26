@@ -6,18 +6,23 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Factory HTTP-only (Wolverine + migrations desabilitados) usada por suítes que
-/// só exercitam o pipeline HTTP/OpenAPI sem Postgres real.
+/// só exercitam o pipeline HTTP/OpenAPI sem Postgres real. Sobe a API UniPlus
+/// (composition root); Configuracao é uma library exercitada através dela.
 /// </summary>
+/// <remarks>
+/// A connection string é dummy (não-vazia): em HTTP-only o DbContext é resolvido
+/// lazy e nunca usado. Suítes que tocam o banco usam <c>ConfiguracaoEndpointFixture</c>.
+/// </remarks>
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit 2.x IClassFixture<T> requires the fixture type to be public.")]
-public sealed class ConfiguracaoApiFactory : ApiFactoryBase<Program>
+public sealed class ConfiguracaoApiFactory : MonolitoApiFactory
 {
-    protected override IEnumerable<KeyValuePair<string, string?>> GetConfigurationOverrides() =>
-    [
-        new("ConnectionStrings:ConfiguracaoDb", "Host=localhost;Port=5432;Database=uniplus_tests;Username=uniplus;Password=uniplus_dev"),
-        new("Auth:Authority", "http://localhost/test-realm"),
-        new("Auth:Audience", "uniplus"),
-    ];
+    public ConfiguracaoApiFactory()
+        : base(
+            "Host=localhost;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev",
+            wolverineEnabled: false)
+    {
+    }
 }

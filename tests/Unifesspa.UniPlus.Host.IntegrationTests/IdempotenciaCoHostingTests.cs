@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 
 /// <summary>
@@ -29,9 +30,9 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class IdempotenciaCoHostingTests
 {
-    private readonly MonolitoHostFixture _fixture;
+    private readonly MonolitoPostgresFixture _fixture;
 
-    public IdempotenciaCoHostingTests(MonolitoHostFixture fixture)
+    public IdempotenciaCoHostingTests(MonolitoPostgresFixture fixture)
     {
         _fixture = fixture;
     }

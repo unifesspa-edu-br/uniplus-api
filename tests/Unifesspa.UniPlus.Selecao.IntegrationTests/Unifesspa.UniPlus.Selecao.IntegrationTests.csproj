@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.API/Unifesspa.UniPlus.Selecao.API.csproj" />
     <ProjectReference Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
+    <ProjectReference Include="../Unifesspa.UniPlus.Monolito.TestSupport/Unifesspa.UniPlus.Monolito.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>

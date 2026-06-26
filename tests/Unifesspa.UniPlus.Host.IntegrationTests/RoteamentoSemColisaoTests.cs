@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Com os 4 módulos co-hospedados num processo único, o
@@ -32,9 +33,9 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class RoteamentoSemColisaoTests
 {
-    private readonly MonolitoHostFixture _fixture;
+    private readonly MonolitoPostgresFixture _fixture;
 
-    public RoteamentoSemColisaoTests(MonolitoHostFixture fixture)
+    public RoteamentoSemColisaoTests(MonolitoPostgresFixture fixture)
     {
         _fixture = fixture;
     }

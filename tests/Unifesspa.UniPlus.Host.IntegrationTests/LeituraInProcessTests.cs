@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
@@ -38,9 +39,9 @@ public sealed class LeituraInProcessTests
 {
     private static readonly DateOnly DataInicio = new(2026, 1, 1);
 
-    private readonly MonolitoHostFixture _fixture;
+    private readonly MonolitoPostgresFixture _fixture;
 
-    public LeituraInProcessTests(MonolitoHostFixture fixture)
+    public LeituraInProcessTests(MonolitoPostgresFixture fixture)
     {
         _fixture = fixture;
     }
