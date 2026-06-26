@@ -43,9 +43,10 @@ arquiteturalmente correta do co-hosting.
   regenerado; build + testes verdes. Valida a abordagem inteira. (commit `5cd68ad`)
 - [x] **F2 — Organizacao** (mesmo padrão). (commit `4527a95`)
 - [x] **F3 — Ingresso** (esqueleto; mais simples). (commit `1c141e6`)
-- [x] **F4 — Selecao** (por último — Kafka/cascading/SchemaRegistry). **98/98 verde.**
-- [ ] **F4.1 — Achados Codex Fase 1**: ArchTests (MigrationOrder/CrossModuleRead)
-  + lock files com drift (restore `--locked-mode`).
+- [x] **F4 — Selecao** (por último — Kafka/cascading/SchemaRegistry). **98/98 verde.** (commit `21518f3`)
+- [x] **F4.1 — Achados Codex Fase 1**: ArchTests (MigrationOrder→3 entry points
+  executáveis; CrossModuleRead→Geo/Portal standalone) + smoke InfraCore→host +
+  lock files regenerados (locked-mode OK). **ArchTests 19/19, smoke 21/21.** (commit `3f1cfd7`)
 - [ ] **F5 — Ops**: remove Dockerfiles dos módulos; ajusta `compose.override` +
   `compose.monolito`; remove o target de appsettings; OIDC.
 - [ ] **F6 — App + Newman**: sobe a stack, valida `/health`, OIDC e endpoints via

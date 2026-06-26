@@ -1312,8 +1312,6 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.7, )",
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.9, )",
           "Testcontainers": "[4.12.0, )",
-          "Testcontainers.PostgreSql": "[4.12.0, )",
-          "Unifesspa.UniPlus.Host": "[1.0.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "WolverineFx": "[5.39.5, )",
           "xunit": "[2.9.3, )"
@@ -1321,6 +1319,17 @@
       },
       "unifesspa.uniplus.kernel": {
         "type": "Project"
+      },
+      "unifesspa.uniplus.monolito.testsupport": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.AspNetCore.Mvc.Testing": "[10.0.9, )",
+          "Testcontainers.PostgreSql": "[4.12.0, )",
+          "Unifesspa.UniPlus.Host": "[1.0.0, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "Unifesspa.UniPlus.IntegrationTests.Fixtures": "[1.0.0, )",
+          "xunit": "[2.9.3, )"
+        }
       },
       "unifesspa.uniplus.organizacaoinstitucional.api": {
         "type": "Project",

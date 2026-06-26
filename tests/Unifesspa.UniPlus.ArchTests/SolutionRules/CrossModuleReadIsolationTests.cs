@@ -102,14 +102,17 @@ public sealed class CrossModuleReadIsolationTests
         // com filtro `HaveNameMatching("^Program$")` AND `ResideInAssembly(...)`
         // captura DI wiring, extension method calls e qualquer dep arquitetural
         // que apareça apenas no body de Main, não em signature.
-
+        //
+        // Apenas Geo e Portal têm `Program` próprio: são os deployables autônomos
+        // (além do host UniPlus). Os 4 módulos internos viraram class libraries —
+        // não têm Program e rodam só dentro do host. O `Program` do host compõe
+        // legitimamente os 4 módulos internos (composition root), então é exceção
+        // coberta por HostCompositionRoot_ComposeTodosOsModulosInternos. Carregar
+        // o assembly de um módulo-lib traria o `Program` do host ao grafo (closure
+        // compartilhado), poluindo este filtro — por isso só Geo/Portal aqui.
         (string Modulo, ReflectionAssembly Asm)[] apiAssembliesPorModulo =
         [
-            ("Selecao", typeof(global::Unifesspa.UniPlus.Selecao.API.Controllers.EditalController).Assembly),
-            ("Ingresso", typeof(global::Unifesspa.UniPlus.Ingresso.API.IngressoApiAssemblyMarker).Assembly),
             ("Portal", typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly),
-            ("OrganizacaoInstitucional", typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly),
-            ("Configuracao", typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly),
             ("Geo", typeof(global::Unifesspa.UniPlus.Geo.API.GeoApiAssemblyMarker).Assembly),
         ];
 
@@ -175,10 +178,9 @@ public sealed class CrossModuleReadIsolationTests
             "o composition root é isento do R8 — ele é o único autorizado a compor todos os módulos");
 
         // Reflexão sobre os assemblies referenciados (não ArchUnitNET fluent): o
-        // host referencia as 4 .API, cada uma com seu próprio `Program` top-level
-        // — carregar o host no ArchLoader traria 5 `Program` ao grafo, tornando o
-        // filtro por nome ambíguo. A referência de assembly é evidência direta e
-        // determinística da composição (o Add{Modulo}Module vive no .API).
+        // host referencia as 4 .API dos módulos internos (agora class libraries).
+        // A referência de assembly é evidência direta e determinística da
+        // composição (o Add{Modulo}Module vive no .API de cada módulo).
         ReflectionAssembly hostAssembly =
             typeof(global::Unifesspa.UniPlus.Host.HostAssemblyMarker).Assembly;
 
@@ -197,6 +199,22 @@ public sealed class CrossModuleReadIsolationTests
             "o host do monólito modular deve compor os 4 módulos internos (Selecao, Ingresso, "
             + "Configuracao, OrganizacaoInstitucional) via Add<Modulo>Module no .API de cada um. "
             + $"Módulos não compostos: {string.Join(", ", naoCompostos)}");
+
+        // Negativa: Geo e Portal são deployables AUTÔNOMOS (suas próprias APIs
+        // executáveis), não módulos internos do monólito UniPlus. O host não pode
+        // referenciá-los — se referenciar, a fronteira de deploy das 3 APIs
+        // (UniPlus/Geo/Portal) foi violada e o monólito passou a arrastar código
+        // de outro deployable.
+        string[] deployablesAutonomos = ["Geo", "Portal"];
+        List<string> compostosIndevidamente =
+        [
+            .. deployablesAutonomos.Where(modulo => referenciados.Contains($"Unifesspa.UniPlus.{modulo}.API")),
+        ];
+
+        compostosIndevidamente.Should().BeEmpty(
+            "Geo e Portal são APIs executáveis autônomas, não módulos internos do host UniPlus. "
+            + "O host não deve referenciar suas camadas .API. "
+            + $"Referências indevidas: {string.Join(", ", compostosIndevidamente)}");
     }
 
     [Fact(DisplayName = "R8 S4: Application.Abstractions só depende de Governance.Contracts e Kernel cross-módulo")]

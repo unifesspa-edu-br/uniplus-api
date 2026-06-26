@@ -22,12 +22,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.IntegrationTests.Fixtures\Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
-    <!-- Selecao.API hospeda o Program.cs usado pelos smoke tests de
-         middleware shared. O middleware do Infrastructure.Core é cabeado
-         identicamente nos 3 Programs (Selecao/Ingresso/Portal); cobrir
-         via Selecao prova o pattern. Drift cross-module é coberto por
-         CodeQL e arch tests, não por este smoke. -->
-    <ProjectReference Include="..\..\src\selecao\Unifesspa.UniPlus.Selecao.API\Unifesspa.UniPlus.Selecao.API.csproj" />
+    <!-- O smoke test do pipeline de middleware shared sobe a API UniPlus
+         (composition root do monólito) via MonolitoApiFactory. O middleware do
+         Infrastructure.Core é cabeado pelo host — cobrir contra ele exercita o
+         wiring real de produção. TestSupport traz host + Selecao.API
+         transitivamente. -->
+    <ProjectReference Include="..\Unifesspa.UniPlus.Monolito.TestSupport\Unifesspa.UniPlus.Monolito.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>
