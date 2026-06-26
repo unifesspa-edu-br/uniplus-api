@@ -47,12 +47,22 @@ arquiteturalmente correta do co-hosting.
 - [x] **F4.1 — Achados Codex Fase 1**: ArchTests (MigrationOrder→3 entry points
   executáveis; CrossModuleRead→Geo/Portal standalone) + smoke InfraCore→host +
   lock files regenerados (locked-mode OK). **ArchTests 19/19, smoke 21/21.** (commit `3f1cfd7`)
-- [ ] **F5 — Ops**: remove Dockerfiles dos módulos; ajusta `compose.override` +
-  `compose.monolito`; remove o target de appsettings; OIDC.
-- [ ] **F6 — App + Newman**: sobe a stack, valida `/health`, OIDC e endpoints via
-  Newman; fluxo completo.
-- [ ] **F7 — ADR + gate final**: `dotnet build` + `dotnet test` completo verde;
-  ADR registra a topologia 3 APIs.
+- [x] **F5 — Ops**: remove Dockerfiles dos módulos; `override.example`→monólito
+  (uniplus-api + portal-api) + infra + OIDC; `init-db.sql`→3 bancos; traefik +
+  frontend-test → uniplus-api; remove target appsettings do host (publish validado). (commit `0c5a2d2`)
+- [x] **F6 — App + Newman**: stack `docker compose -f docker-compose.yml -f
+  docker-compose.override.yml up -d --build` sobe verde (uniplus-api healthy).
+  Smoke: `/health`+`/health/live` 200; GETs anônimos dos 3 módulos
+  (organizacao/configuracao/selecao) 200; OpenAPI por-módulo 200; token OIDC
+  (password grant, realm dev-local) 200. Newman (coleção Organizacao apontada ao
+  `:5200`): **23/24 asserções** — token + negativos auth (401/400/422) + ciclo de
+  vida CRUD (201→GET→409→PUT→DELETE→404) + soft-delete + idempotência, tudo via
+  monólito. 1 falha = drift de contrato PRÉ-EXISTENTE do Organizacao (read expõe
+  `cidade`, coleção espera `municipioSede`) — não é regressão (código do módulo
+  não muda ao virar library).
+- [x] **F7 — ADR + gate final**: `dotnet build` (54 projetos, 0 warnings) +
+  `dotnet test` completo verde (**21 projetos, 1714 testes, 0 falhas, 1 ignorado**);
+  ADR-0097 registra a topologia de 3 APIs e refina o ADR-0001.
 
 ## Estado atual
 
@@ -102,3 +112,25 @@ registrados abaixo.
   (tratado na F5).
 - **[P2]** `packages.lock.json` de Geo/InfraCore/etc. com drift → `dotnet restore`
   para regenerar (CI roda `--locked-mode`).
+
+### F4.2 — Achados da 2ª revisão Codex (Fase 4 + F4.1)
+
+- **[P2] resolvido]** Docker do Selecao órfão → tratado na F5 (Dockerfiles removidos).
+- **[P2] resolvido]** Migration order não travava por módulo → reforçado: o teste
+  agora assere o conjunto EXATO de DbContexts por entry point (commit `477cdae`).
+
+### F6 — Validação em runtime (pré-existentes, fora do escopo do spike)
+
+- **Organizacao — drift de contrato**: `POST admin/instituicao` aceita
+  `municipioSede` (201) mas `GET instituicao` expõe `cidade` (null). Coleção
+  Newman espera `municipioSede`. Não é regressão do refactoring (o módulo é
+  byte-idêntico ao virar library) — é divergência create/read DTO do próprio
+  Organizacao. Follow-up para o time do módulo.
+- **Wolverine 6.0 forward-compat**: repos `internal` (UnidadeRepository,
+  CampusRepository, InstituicaoRepository) disparam warning de service-location
+  ("not public, requires service location; will throw in Wolverine 6.0"). Também
+  pré-existente (apareceria nas APIs standalone). Quando migrar para Wolverine 6,
+  tornar os repos public ou ajustar a ServiceLocationPolicy.
+- **EF "errors" no 1º boot**: `SELECT ... FROM __EFMigrationsHistory ORDER BY
+  migration_id` falha (Error) antes de a tabela existir — comportamento normal do
+  migration runner em banco novo (cria o schema em seguida). App fica healthy.

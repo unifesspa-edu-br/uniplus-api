@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-ingresso-api
+  name: {{ .Release.Name }}-uniplus-api
   labels:
-    app: {{ .Release.Name }}-ingresso-api
-    app.kubernetes.io/name: uniplus-ingresso
+    app: {{ .Release.Name }}-uniplus-api
+    app.kubernetes.io/name: uniplus-api
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -12,16 +12,16 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-ingresso-api
+      app: {{ .Release.Name }}-uniplus-api
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-ingresso-api
-        app.kubernetes.io/name: uniplus-ingresso
+        app: {{ .Release.Name }}-uniplus-api
+        app.kubernetes.io/name: uniplus-api
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
-        - name: ingresso-api
+        - name: uniplus-api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -29,9 +29,9 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ .Release.Name }}-ingresso-config
+                name: {{ .Release.Name }}-uniplus-config
             - secretRef:
-                name: {{ .Release.Name }}-ingresso-secrets
+                name: {{ .Release.Name }}-uniplus-secrets
           livenessProbe:
             httpGet:
               path: {{ .Values.healthcheck.livenessPath }}

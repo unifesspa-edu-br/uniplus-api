@@ -1,25 +1,24 @@
-# Override de DESENVOLVIMENTO para testar frontends do `uniplus-web` (hoje
-# validados: `selecao` e `configuracao`) contra as APIs conteinerizadas — SEM
-# editar código do frontend.
+# Override de DESENVOLVIMENTO para testar frontends do `uniplus-web` contra a API
+# conteinerizada — SEM editar código do frontend.
+#
+# Com a topologia de 3 APIs, todos os módulos internos (Selecao/Ingresso/
+# Configuracao/Organizacao) são servidos pela API UniPlus (monólito), no serviço
+# `uniplus-api` do docker-compose.override.yml.
 #
 # Faz duas coisas:
-#   1. Realinha o `Auth__Authority` de TODAS as APIs de módulo ao realm
-#      `unifesspa` — o realm em que os frontends autenticam (clients `*-web`,
-#      que emitem aud=uniplus via o client scope default `uniplus-profile`) —
-#      em vez do `unifesspa-dev-local` do docker-compose.override.yml (usado por
-#      scripts de smoke). Sem isso, endpoints autenticados rejeitam o token com
-#      401 e o frontend entra em loop de re-login; o GET de lista é
-#      `[AllowAnonymous]`, então retorna 200 e MASCARA o problema. Issuer
-#      canonicalizado por KC_HOSTNAME. O CORS de dev já cobre `configuracao`
-#      (:4203, na organizacao-api) e `selecao` (:4200) no appsettings.Development
-#      .json; `ingresso` (:4201) e `portal` (:4202) ainda NÃO estão na allowlist
-#      de CORS — testá-los exige adicionar a origin antes.
-#   2. Sobe um Traefik na :5000 que roteia por path-prefix (ADR-0064) e reescreve
-#      /api/editais -> /api/selecao/editais (ver traefik/dynamic.yml) — necessário
-#      apenas para o frontend `selecao`, cujo runtime-config usa um único
-#      `apiUrl=http://localhost:5000` (path pré-ADR-0064). Os demais apps falam
-#      direto com a porta da API (ex.: `configuracao` -> organizacao-api :5263) e
-#      NÃO dependem do Traefik.
+#   1. Realinha o `Auth__Authority` da API UniPlus ao realm `unifesspa` — o realm
+#      em que os frontends autenticam (clients `*-web`, que emitem aud=uniplus via
+#      o client scope default `uniplus-profile`) — em vez do `unifesspa-dev-local`
+#      do docker-compose.override.yml (usado por scripts de smoke/Newman). Sem
+#      isso, endpoints autenticados rejeitam o token com 401 e o frontend entra
+#      em loop de re-login; o GET de lista é `[AllowAnonymous]`, então retorna 200
+#      e MASCARA o problema. Issuer canonicalizado por KC_HOSTNAME. A allowlist de
+#      CORS das origins dos apps Angular vive no appsettings.Development.json da API.
+#   2. Sobe um Traefik na :5000 que roteia /api/ ao `uniplus-api` (ADR-0064) e
+#      reescreve /api/editais -> /api/selecao/editais (ver traefik/dynamic.yml) —
+#      necessário ao frontend `selecao`, cujo runtime-config usa um único
+#      `apiUrl=http://localhost:5000` (path pré-ADR-0064). Os apps que já usam
+#      paths /api/{modulo}/ podem ir direto na :5200 da API UniPlus.
 #
 # Uso:
 #   docker compose -f docker-compose.yml \
@@ -28,13 +27,7 @@
 #
 # Depois, em uniplus-web:
 #   npx nx serve selecao       -> http://localhost:4200  (via gateway :5000)
-#   npx nx serve configuracao  -> http://localhost:4203  (direto na organizacao-api :5263)
-#
-# Obs.: `ingresso` (:4201) e `portal` (:4202) sobem com o realm já realinhado
-# (acima), mas ainda NÃO estão validados aqui: a allowlist de CORS das APIs não
-# inclui essas origins e o gateway :5000 só roteia as rotas de Seleção. Para
-# habilitá-los, inclua a origin (:4201/:4202) no CORS da API e, para quem usa o
-# gateway, adicione a rota no traefik/dynamic.yml.
+#   npx nx serve configuracao  -> http://localhost:4203  (via gateway :5000 ou :5200 direto)
 services:
   traefik:
     image: traefik:v3.3
@@ -52,24 +45,14 @@ services:
     volumes:
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     depends_on:
-      selecao-api:
+      uniplus-api:
         condition: service_healthy
 
-  # Todas as APIs de módulo passam a validar o realm `unifesspa` (o que os
-  # frontends usam), substituindo o `unifesspa-dev-local` do override.
-  selecao-api:
-    environment:
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
-
-  ingresso-api:
-    environment:
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
-
-  organizacao-api:
-    environment:
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
-
-  configuracao-api:
+  # A API UniPlus (monólito) e o Portal passam a validar o realm `unifesspa` (o que
+  # os frontends usam), substituindo o `unifesspa-dev-local` do override. Os 4
+  # módulos internos rodam no uniplus-api (realinha uma vez); o Portal é deployable
+  # autônomo e precisa do realinhamento próprio para o frontend `portal` funcionar.
+  uniplus-api:
     environment:
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
 

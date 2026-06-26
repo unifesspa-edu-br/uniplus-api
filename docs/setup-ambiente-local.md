@@ -99,8 +99,8 @@ docker compose -f docker/docker-compose.yml down
 # Parar e remover volumes (reset completo)
 docker compose -f docker/docker-compose.yml down -v
 
-# Rebuild das APIs após alteração de código
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build selecao-api ingresso-api
+# Rebuild da API UniPlus (monólito) após alteração de código
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build uniplus-api
 
 # Build da solution
 dotnet build UniPlus.slnx
