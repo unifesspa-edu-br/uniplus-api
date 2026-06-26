@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 /// <summary>
@@ -13,8 +13,14 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 /// agregada <see cref="Unidade"/> e o cache de Idempotency-Key
 /// (ADR-0027) adjacente, permitindo gravação atômica em outbox.
 /// </summary>
-public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
+public sealed class OrganizacaoInstitucionalDbContext : DbContext, IOrganizacaoInstitucionalUnitOfWork
 {
+    /// <summary>
+    /// Schema do módulo no banco único do monólito modular (spike). Tabelas,
+    /// índices, FKs e idempotency_cache deste DbContext vivem neste schema.
+    /// </summary>
+    public const string Schema = "organizacao";
+
     public OrganizacaoInstitucionalDbContext(DbContextOptions<OrganizacaoInstitucionalDbContext> options)
         : base(options)
     {
@@ -37,6 +43,8 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+        // Banco único, schema-por-módulo (spike monólito modular).
+        modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrganizacaoInstitucionalDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);
@@ -48,9 +56,13 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IUnitOfWork
         // Mapeia PgFunctions.ImmutableUnaccent → immutable_unaccent(text) do banco
         // (criada pela migration AddSearchExtensionsGin). Usada nas queries de busca
         // textual da Unidade para remover diacríticos server-side (issue #640).
+        // A função vive em `public` (utilitário global, não no schema do módulo).
+        // Sem HasSchema explícito, o HasDefaultSchema(organizacao) faria o EF
+        // chamar organizacao.immutable_unaccent — inexistente. Fixa em public.
         modelBuilder.HasDbFunction(
             typeof(PgFunctions).GetMethod(nameof(PgFunctions.ImmutableUnaccent))!)
-            .HasName("immutable_unaccent");
+            .HasName("immutable_unaccent")
+            .HasSchema("public");
 
         base.OnModelCreating(modelBuilder);
     }

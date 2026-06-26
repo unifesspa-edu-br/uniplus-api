@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -15,8 +15,15 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// módulo <c>Geo</c> (ADR-0090) — referenciada por código + display cache, sem
 /// entidade/tabela própria aqui.
 /// </summary>
-public sealed class ConfiguracaoDbContext : DbContext, IUnitOfWork
+public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 {
+    /// <summary>
+    /// Schema do módulo no banco único do monólito modular (spike). Todas as
+    /// tabelas e o histórico de migrations deste DbContext vivem neste schema,
+    /// isolando o módulo dos demais no mesmo banco.
+    /// </summary>
+    public const string Schema = "configuracao";
+
     public ConfiguracaoDbContext(DbContextOptions<ConfiguracaoDbContext> options)
         : base(options)
     {
@@ -39,6 +46,10 @@ public sealed class ConfiguracaoDbContext : DbContext, IUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+        // Banco único, schema-por-módulo (spike monólito modular): fixa o schema
+        // default do modelo — tabelas, índices, FKs e idempotency_cache deste
+        // módulo passam a ser qualificados por `configuracao`.
+        modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ConfiguracaoDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);

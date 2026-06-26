@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Kernel.Results;
 using Domain.Entities;
 using Domain.Enums;
@@ -38,7 +38,7 @@ public sealed class PublicarEditalCommandHandler
     public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
         PublicarEditalCommand command,
         IEditalRepository editalRepository,
-        IUnitOfWork unitOfWork,
+        ISelecaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

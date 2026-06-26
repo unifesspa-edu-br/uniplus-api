@@ -17,6 +17,6 @@ public sealed class OrganizacaoInstitucionalDbContextDesignTimeFactory
     public OrganizacaoInstitucionalDbContext CreateDbContext(string[] args)
     {
         return new OrganizacaoInstitucionalDbContext(
-            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<OrganizacaoInstitucionalDbContext>());
+            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<OrganizacaoInstitucionalDbContext>(schema: OrganizacaoInstitucionalDbContext.Schema));
     }
 }

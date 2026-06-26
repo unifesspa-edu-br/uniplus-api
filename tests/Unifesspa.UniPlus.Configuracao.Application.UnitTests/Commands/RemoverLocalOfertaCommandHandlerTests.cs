@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class RemoverLocalOfertaCommandHandlerTests
 {
     private readonly ILocalOfertaRepository _repository = Substitute.For<ILocalOfertaRepository>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static LocalOferta NovoLocal() =>
         LocalOferta.Criar(

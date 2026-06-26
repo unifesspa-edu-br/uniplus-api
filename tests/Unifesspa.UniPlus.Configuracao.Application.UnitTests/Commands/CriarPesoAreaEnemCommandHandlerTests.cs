@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class CriarPesoAreaEnemCommandHandlerTests
 {
     private readonly IPesoAreaEnemRepository _repository = Substitute.For<IPesoAreaEnemRepository>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static CriarPesoAreaEnemCommand ComandoValido() =>
         new("Res. 805/2024", GrupoCurso.Tecnologica, 1.50m, 1.00m, 1.00m, 1.00m, 2.00m, "Res. 805/2024 Anexo I", 400m);

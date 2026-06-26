@@ -16,6 +16,7 @@ public sealed class ConfiguracaoDbContextDesignTimeFactory
     public ConfiguracaoDbContext CreateDbContext(string[] args)
     {
         return new ConfiguracaoDbContext(
-            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<ConfiguracaoDbContext>());
+            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<ConfiguracaoDbContext>(
+                schema: ConfiguracaoDbContext.Schema));
     }
 }

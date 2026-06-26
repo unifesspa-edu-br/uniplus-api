@@ -7,9 +7,16 @@ using Domain.Entities;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
-public sealed class SelecaoDbContext : DbContext, IUnitOfWork
+public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
 {
+    /// <summary>
+    /// Schema do módulo no banco único do monólito modular (spike). Tabelas,
+    /// índices, FKs e idempotency_cache deste DbContext vivem neste schema.
+    /// </summary>
+    public const string Schema = "selecao";
+
     public SelecaoDbContext(DbContextOptions<SelecaoDbContext> options) : base(options)
     {
     }
@@ -54,6 +61,8 @@ public sealed class SelecaoDbContext : DbContext, IUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+        // Banco único, schema-por-módulo (spike monólito modular).
+        modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SelecaoDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (ex.: idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);

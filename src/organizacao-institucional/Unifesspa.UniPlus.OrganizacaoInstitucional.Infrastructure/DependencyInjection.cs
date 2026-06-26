@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
@@ -29,10 +28,12 @@ public static class OrganizacaoInstitucionalInfrastructureRegistration
         services.AddUniPlusEfInterceptors();
 
         services.AddDbContext<OrganizacaoInstitucionalDbContext>((serviceProvider, options) =>
-            options.UseUniPlusNpgsqlConventions<OrganizacaoInstitucionalDbContext>(serviceProvider, ConnectionStringName));
+            options.UseUniPlusNpgsqlConventions<OrganizacaoInstitucionalDbContext>(serviceProvider, ConnectionStringName, schema: OrganizacaoInstitucionalDbContext.Schema));
 
-        // IUnitOfWork roteia para o DbContext do módulo — Application consome via abstração (ADR-0042).
-        services.AddScoped<IUnitOfWork>(serviceProvider =>
+        // IOrganizacaoInstitucionalUnitOfWork roteia para o DbContext do módulo — Application consome
+        // via abstração específica do módulo, permitindo coexistência de múltiplos módulos num
+        // processo único sem colisão de registro (ADR-0042).
+        services.AddScoped<IOrganizacaoInstitucionalUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>());
 
         services.AddScoped<IUnidadeRepository, UnidadeRepository>();

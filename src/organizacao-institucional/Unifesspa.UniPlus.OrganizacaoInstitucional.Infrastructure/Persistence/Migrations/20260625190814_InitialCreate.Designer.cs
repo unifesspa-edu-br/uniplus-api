@@ -12,14 +12,15 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrganizacaoInstitucionalDbContext))]
-    [Migration("20260623010211_AdicionaChecksCompletudeEnderecoECidadeSede")]
-    partial class AdicionaChecksCompletudeEnderecoECidadeSede
+    [Migration("20260625190814_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("organizacao")
                 .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -91,7 +92,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                         .IsUnique()
                         .HasDatabaseName("idx_idempotency_lookup");
 
-                    b.ToTable("idempotency_cache", (string)null);
+                    b.ToTable("idempotency_cache", "organizacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Instituicao", b =>
@@ -256,7 +257,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                     b.HasIndex("UnidadeRaizId")
                         .HasDatabaseName("ix_instituicao_unidade_raiz_id");
 
-                    b.ToTable("instituicao", null, t =>
+                    b.ToTable("instituicao", "organizacao", t =>
                         {
                             t.HasCheckConstraint("ck_instituicao_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
 
@@ -388,7 +389,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                     b.HasIndex("UnidadeSuperiorId")
                         .HasDatabaseName("ix_unidade_superior_id");
 
-                    b.ToTable("unidade", (string)null);
+                    b.ToTable("unidade", "organizacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.UnidadeIdentificadorHistorico", b =>
@@ -440,7 +441,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                     b.HasIndex("UnidadeId", "TipoIdentificador", "VigenciaInicio")
                         .HasDatabaseName("ix_uid_hist_unidade_tipo_inicio");
 
-                    b.ToTable("unidade_identificador_historico", (string)null);
+                    b.ToTable("unidade_identificador_historico", "organizacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Instituicao", b =>
@@ -537,7 +538,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 
                             b1.HasKey("InstituicaoId");
 
-                            b1.ToTable("instituicao");
+                            b1.ToTable("instituicao", "organizacao");
 
                             b1.WithOwner()
                                 .HasForeignKey("InstituicaoId")

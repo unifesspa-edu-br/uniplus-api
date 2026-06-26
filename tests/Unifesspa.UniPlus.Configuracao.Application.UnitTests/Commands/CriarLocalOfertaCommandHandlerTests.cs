@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -16,7 +16,7 @@ public sealed class CriarLocalOfertaCommandHandlerTests
 {
     private readonly ILocalOfertaRepository _repository = Substitute.For<ILocalOfertaRepository>();
     private readonly ICampusRepository _campusRepository = Substitute.For<ICampusRepository>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static CriarLocalOfertaCommand ComandoValido(Guid? campusId = null) =>
         new(TipoLocalOferta.PoloEad, campusId, "1504208", "Marabá", "PA", null, null);

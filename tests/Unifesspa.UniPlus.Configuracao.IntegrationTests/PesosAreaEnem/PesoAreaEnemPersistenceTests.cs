@@ -143,7 +143,7 @@ public sealed class PesoAreaEnemPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {-1.0m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {400.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {-1.0m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {400.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK peso_redacao >= 0 impede o INSERT direto");
@@ -155,7 +155,7 @@ public sealed class PesoAreaEnemPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {"Engenharias"}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {400.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {"Engenharias"}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {400.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de grupo_curso impede o INSERT direto");
@@ -170,7 +170,7 @@ public sealed class PesoAreaEnemPersistenceTests
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             await ctx.Database.ExecuteSqlAsync(
-                $"INSERT INTO peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, base_legal, created_at, is_deleted) VALUES ({id}, {resolucao}, {GrupoCurso.Tecnologica}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+                $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, base_legal, created_at, is_deleted) VALUES ({id}, {resolucao}, {GrupoCurso.Tecnologica}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
         }
 
         await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
@@ -218,7 +218,7 @@ public sealed class PesoAreaEnemPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {1000.001m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, peso_redacao, peso_ciencias_natureza, peso_ciencias_humanas, peso_linguagens, peso_matematica, corte_redacao, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {1.5m}, {1.0m}, {1.0m}, {1.0m}, {2.0m}, {1000.001m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK corte_redacao <= 1000 impede o INSERT direto");

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -13,7 +12,7 @@ public static class AtualizarUnidadeCommandHandler
     public static async Task<Result> Handle(
         AtualizarUnidadeCommand command,
         IUnidadeRepository repository,
-        IUnitOfWork unitOfWork,
+        IOrganizacaoInstitucionalUnitOfWork unitOfWork,
         IUnidadeCacheInvalidator cacheInvalidator,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

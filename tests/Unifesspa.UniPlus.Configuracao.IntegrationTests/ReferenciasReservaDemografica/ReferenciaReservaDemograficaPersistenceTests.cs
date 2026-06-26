@@ -127,7 +127,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO referencia_reserva_demografica (id, censo_referencia, ppi_percentual, quilombola_percentual, pcd_percentual, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"9999"}, {120.0m}, {1.0m}, {5.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.referencia_reserva_demografica (id, censo_referencia, ppi_percentual, quilombola_percentual, pcd_percentual, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"9999"}, {120.0m}, {1.0m}, {5.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ppi_percentual <= 100 impede o INSERT direto");

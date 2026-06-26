@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ReferenciasReservaDemografica;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -11,7 +11,7 @@ public static class AtualizarReferenciaReservaDemograficaCommandHandler
     public static async Task<Result> Handle(
         AtualizarReferenciaReservaDemograficaCommand command,
         IReferenciaReservaDemograficaRepository repository,
-        IUnitOfWork unitOfWork,
+        IConfiguracaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

@@ -12,15 +12,16 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260516225949_AddObrigatoriedadeLegalRegraCodigoUniquePartial")]
-    partial class AddObrigatoriedadeLegalRegraCodigoUniquePartial
+    [Migration("20260625191245_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasDefaultSchema("selecao")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -91,42 +92,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("idx_idempotency_lookup");
 
-                    b.ToTable("idempotency_cache", (string)null);
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Infrastructure.Core.Persistence.AreaDeInteresseBinding<Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal>", b =>
-                {
-                    b.Property<Guid>("ParentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("obrigatoriedade_legal_id");
-
-                    b.Property<string>("AreaCodigo")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("area_codigo");
-
-                    b.Property<DateTimeOffset>("ValidoDe")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("valid_from");
-
-                    b.Property<string>("AdicionadoPor")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("added_by");
-
-                    b.Property<DateTimeOffset?>("ValidoAte")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("valid_to");
-
-                    b.HasKey("ParentId", "AreaCodigo", "ValidoDe")
-                        .HasName("pk_obrigatoriedade_legal_areas_de_interesse");
-
-                    b.HasIndex("ParentId", "AreaCodigo")
-                        .HasDatabaseName("ix_obrigatoriedade_legal_areas_de_interesse_vigentes")
-                        .HasFilter("valid_to IS NULL");
-
-                    b.ToTable("obrigatoriedade_legal_areas_de_interesse", (string)null);
+                    b.ToTable("idempotency_cache", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Candidato", b =>
@@ -168,7 +134,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_candidatos");
 
-                    b.ToTable("candidatos", (string)null);
+                    b.ToTable("candidatos", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Cota", b =>
@@ -222,7 +188,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditalId")
                         .HasDatabaseName("ix_cotas_edital_id");
 
-                    b.ToTable("cotas", (string)null);
+                    b.ToTable("cotas", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Edital", b =>
@@ -279,7 +245,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_editais");
 
-                    b.ToTable("editais", (string)null);
+                    b.ToTable("editais", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EditalGovernanceSnapshot", b =>
@@ -308,7 +274,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditalId")
                         .HasDatabaseName("ix_edital_governance_snapshot_edital_id");
 
-                    b.ToTable("edital_governance_snapshot", (string)null);
+                    b.ToTable("edital_governance_snapshot", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Etapa", b =>
@@ -376,7 +342,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditalId")
                         .HasDatabaseName("ix_etapas_edital_id");
 
-                    b.ToTable("etapas", (string)null);
+                    b.ToTable("etapas", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Inscricao", b =>
@@ -451,7 +417,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("CandidatoId", "EditalId")
                         .HasDatabaseName("ix_inscricoes_candidato_id_edital_id");
 
-                    b.ToTable("inscricoes", (string)null);
+                    b.ToTable("inscricoes", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", b =>
@@ -523,11 +489,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("predicado");
 
-                    b.Property<string>("Proprietario")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("proprietario");
-
                     b.Property<string>("RegraCodigo")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -570,7 +531,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_obrigatoriedades_legais_regra_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("obrigatoriedades_legais", (string)null);
+                    b.ToTable("obrigatoriedades_legais", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegalHistorico", b =>
@@ -613,7 +574,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsDescending(false, true)
                         .HasDatabaseName("ix_obrigatoriedade_legal_historico_regra_snapshot_at");
 
-                    b.ToTable("obrigatoriedade_legal_historico", (string)null);
+                    b.ToTable("obrigatoriedade_legal_historico", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
@@ -677,17 +638,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_processos_seletivos");
 
-                    b.ToTable("processos_seletivos", (string)null);
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Infrastructure.Core.Persistence.AreaDeInteresseBinding<Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal>", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", null)
-                        .WithMany()
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_obrigatoriedade_legal_areas_de_interesse_obrigatoriedades_l");
+                    b.ToTable("processos_seletivos", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Candidato", b =>
@@ -710,7 +661,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .IsUnique()
                                 .HasDatabaseName("ix_candidatos_cpf");
 
-                            b1.ToTable("candidatos");
+                            b1.ToTable("candidatos", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("CandidatoId")
@@ -731,7 +682,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("CandidatoId");
 
-                            b1.ToTable("candidatos");
+                            b1.ToTable("candidatos", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("CandidatoId")
@@ -757,7 +708,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("CandidatoId");
 
-                            b1.ToTable("candidatos");
+                            b1.ToTable("candidatos", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("CandidatoId")
@@ -804,7 +755,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("EditalId");
 
-                            b1.ToTable("editais");
+                            b1.ToTable("editais", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("EditalId")
@@ -827,7 +778,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("EditalId");
 
-                            b1.ToTable("editais");
+                            b1.ToTable("editais", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("EditalId")
@@ -850,7 +801,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("EditalId");
 
-                            b1.ToTable("editais");
+                            b1.ToTable("editais", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("EditalId")

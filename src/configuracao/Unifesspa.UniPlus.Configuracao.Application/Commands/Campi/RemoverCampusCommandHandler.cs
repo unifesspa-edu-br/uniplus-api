@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -17,7 +17,7 @@ public static class RemoverCampusCommandHandler
         RemoverCampusCommand command,
         ICampusRepository repository,
         ILocalOfertaRepository localOfertaRepository,
-        IUnitOfWork unitOfWork,
+        IConfiguracaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

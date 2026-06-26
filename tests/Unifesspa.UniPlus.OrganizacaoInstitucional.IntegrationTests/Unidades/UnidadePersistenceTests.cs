@@ -307,7 +307,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
         Func<Task> act = async () =>
             await rawCtx.Database.ExecuteSqlAsync(
-                $"DELETE FROM unidade WHERE id = {pai.Id}");
+                $"DELETE FROM organizacao.unidade WHERE id = {pai.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "FK unidade_superior_id com RESTRICT deve impedir DELETE físico de unidade pai que possui filhos referenciando-a");

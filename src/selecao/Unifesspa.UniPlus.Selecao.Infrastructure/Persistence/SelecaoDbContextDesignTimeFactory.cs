@@ -23,6 +23,6 @@ public sealed class SelecaoDbContextDesignTimeFactory : IDesignTimeDbContextFact
     public SelecaoDbContext CreateDbContext(string[] args)
     {
         return new SelecaoDbContext(
-            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<SelecaoDbContext>());
+            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<SelecaoDbContext>(schema: SelecaoDbContext.Schema));
     }
 }

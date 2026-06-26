@@ -12,15 +12,16 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrganizacaoInstitucionalDbContext))]
-    [Migration("20260610025241_RestringeFkHistoricoIdentificador")]
-    partial class RestringeFkHistoricoIdentificador
+    [Migration("20260625190836_AddSearchExtensionsGin")]
+    partial class AddSearchExtensionsGin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasDefaultSchema("organizacao")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -91,82 +92,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                         .IsUnique()
                         .HasDatabaseName("idx_idempotency_lookup");
 
-                    b.ToTable("idempotency_cache", (string)null);
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.AreaOrganizacional", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("AdrReferenceCode")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("adr_reference_code");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("codigo");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("created_by");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text")
-                        .HasColumnName("deleted_by");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("descricao");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("nome");
-
-                    b.Property<int>("Tipo")
-                        .HasColumnType("integer")
-                        .HasColumnName("tipo");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id")
-                        .HasName("pk_areas_organizacionais");
-
-                    b.HasIndex("Codigo")
-                        .IsUnique()
-                        .HasDatabaseName("ix_areas_organizacionais_codigo");
-
-                    b.ToTable("areas_organizacionais", (string)null);
+                    b.ToTable("idempotency_cache", "organizacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Instituicao", b =>
@@ -191,6 +117,32 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("categoria_administrativa");
+
+                    b.Property<string>("CidadeCodigoIbge")
+                        .HasMaxLength(7)
+                        .HasColumnType("character(7)")
+                        .HasColumnName("cidade_codigo_ibge")
+                        .IsFixedLength();
+
+                    b.Property<DateTimeOffset?>("CidadeDisplayAtualizadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cidade_display_atualizado_em");
+
+                    b.Property<string>("CidadeNome")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("cidade_nome");
+
+                    b.Property<string>("CidadeOrigem")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("cidade_origem");
+
+                    b.Property<string>("CidadeUf")
+                        .HasMaxLength(2)
+                        .HasColumnType("character(2)")
+                        .HasColumnName("cidade_uf")
+                        .IsFixedLength();
 
                     b.Property<string>("Cnpj")
                         .HasMaxLength(100)
@@ -230,11 +182,6 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                         .HasColumnType("text")
                         .HasColumnName("deleted_by");
 
-                    b.Property<string>("EnderecoSede")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("endereco_sede");
-
                     b.Property<string>("Igc")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -248,11 +195,6 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
                         .HasColumnName("mantenedora");
-
-                    b.Property<string>("MunicipioSede")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("municipio_sede");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -304,6 +246,9 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                     b.HasKey("Id")
                         .HasName("pk_instituicao");
 
+                    b.HasIndex("CidadeCodigoIbge")
+                        .HasDatabaseName("ix_instituicao_cidade_codigo_ibge");
+
                     b.HasIndex("RegistroVivoSentinela")
                         .IsUnique()
                         .HasDatabaseName("ix_instituicao_singleton_vivo")
@@ -312,8 +257,16 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                     b.HasIndex("UnidadeRaizId")
                         .HasDatabaseName("ix_instituicao_unidade_raiz_id");
 
-                    b.ToTable("instituicao", null, t =>
+                    b.ToTable("instituicao", "organizacao", t =>
                         {
+                            t.HasCheckConstraint("ck_instituicao_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_instituicao_cidade_obrigatoria_com_endereco", "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_instituicao_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
+
+                            t.HasCheckConstraint("ck_instituicao_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
+
                             t.HasCheckConstraint("ck_instituicao_singleton_sentinela", "registro_vivo_sentinela = true");
                         });
                 });
@@ -436,13 +389,12 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                     b.HasIndex("UnidadeSuperiorId")
                         .HasDatabaseName("ix_unidade_superior_id");
 
-                    b.ToTable("unidade", (string)null);
+                    b.ToTable("unidade", "organizacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.UnidadeIdentificadorHistorico", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -489,7 +441,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                     b.HasIndex("UnidadeId", "TipoIdentificador", "VigenciaInicio")
                         .HasDatabaseName("ix_uid_hist_unidade_tipo_inicio");
 
-                    b.ToTable("unidade_identificador_historico", (string)null);
+                    b.ToTable("unidade_identificador_historico", "organizacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Instituicao", b =>
@@ -499,6 +451,101 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                         .HasForeignKey("UnidadeRaizId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_instituicao_unidades_unidade_raiz_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.Enderecos.ReferenciaEnderecoGeo", "Endereco", b1 =>
+                        {
+                            b1.Property<Guid>("InstituicaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Bairro")
+                                .HasMaxLength(150)
+                                .HasColumnType("character varying(150)")
+                                .HasColumnName("endereco_bairro");
+
+                            b1.Property<string>("Cep")
+                                .IsRequired()
+                                .HasMaxLength(8)
+                                .HasColumnType("character(8)")
+                                .HasColumnName("endereco_cep")
+                                .IsFixedLength();
+
+                            b1.Property<string>("CidadeCodigoIbge")
+                                .IsRequired()
+                                .HasMaxLength(7)
+                                .HasColumnType("character(7)")
+                                .HasColumnName("endereco_cidade_codigo_ibge")
+                                .IsFixedLength();
+
+                            b1.Property<string>("CidadeNome")
+                                .IsRequired()
+                                .HasMaxLength(150)
+                                .HasColumnType("character varying(150)")
+                                .HasColumnName("endereco_cidade_nome");
+
+                            b1.Property<string>("CidadeUf")
+                                .IsRequired()
+                                .HasMaxLength(2)
+                                .HasColumnType("character(2)")
+                                .HasColumnName("endereco_cidade_uf")
+                                .IsFixedLength();
+
+                            b1.Property<string>("Complemento")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("endereco_complemento");
+
+                            b1.Property<DateTimeOffset?>("DisplayAtualizadoEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("endereco_display_atualizado_em");
+
+                            b1.Property<string>("Distrito")
+                                .HasMaxLength(150)
+                                .HasColumnType("character varying(150)")
+                                .HasColumnName("endereco_distrito");
+
+                            b1.Property<decimal?>("Latitude")
+                                .HasPrecision(9, 6)
+                                .HasColumnType("numeric(9,6)")
+                                .HasColumnName("endereco_latitude");
+
+                            b1.Property<string>("Logradouro")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("endereco_logradouro");
+
+                            b1.Property<decimal?>("Longitude")
+                                .HasPrecision(9, 6)
+                                .HasColumnType("numeric(9,6)")
+                                .HasColumnName("endereco_longitude");
+
+                            b1.Property<string>("NivelResolucao")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("endereco_nivel_resolucao");
+
+                            b1.Property<string>("Numero")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("endereco_numero");
+
+                            b1.Property<string>("Origem")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("endereco_origem");
+
+                            b1.HasKey("InstituicaoId");
+
+                            b1.ToTable("instituicao", "organizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InstituicaoId")
+                                .HasConstraintName("fk_instituicao_instituicao_id");
+                        });
+
+                    b.Navigation("Endereco");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Unidade", b =>

@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -15,7 +15,7 @@ public static class AtualizarLocalOfertaCommandHandler
         AtualizarLocalOfertaCommand command,
         ILocalOfertaRepository repository,
         ICampusRepository campusRepository,
-        IUnitOfWork unitOfWork,
+        IConfiguracaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

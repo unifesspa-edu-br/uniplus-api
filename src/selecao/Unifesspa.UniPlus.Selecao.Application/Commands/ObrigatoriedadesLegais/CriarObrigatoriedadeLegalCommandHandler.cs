@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -16,7 +16,7 @@ public static class CriarObrigatoriedadeLegalCommandHandler
     public static async Task<Result<Guid>> Handle(
         CriarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
-        IUnitOfWork unitOfWork,
+        ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

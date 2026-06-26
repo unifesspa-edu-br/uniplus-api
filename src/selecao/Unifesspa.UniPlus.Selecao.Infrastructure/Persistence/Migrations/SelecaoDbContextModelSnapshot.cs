@@ -17,7 +17,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasDefaultSchema("selecao")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -88,7 +89,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("idx_idempotency_lookup");
 
-                    b.ToTable("idempotency_cache", (string)null);
+                    b.ToTable("idempotency_cache", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Candidato", b =>
@@ -130,7 +131,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_candidatos");
 
-                    b.ToTable("candidatos", (string)null);
+                    b.ToTable("candidatos", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Cota", b =>
@@ -184,7 +185,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditalId")
                         .HasDatabaseName("ix_cotas_edital_id");
 
-                    b.ToTable("cotas", (string)null);
+                    b.ToTable("cotas", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Edital", b =>
@@ -241,7 +242,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_editais");
 
-                    b.ToTable("editais", (string)null);
+                    b.ToTable("editais", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EditalGovernanceSnapshot", b =>
@@ -270,7 +271,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditalId")
                         .HasDatabaseName("ix_edital_governance_snapshot_edital_id");
 
-                    b.ToTable("edital_governance_snapshot", (string)null);
+                    b.ToTable("edital_governance_snapshot", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Etapa", b =>
@@ -338,7 +339,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("EditalId")
                         .HasDatabaseName("ix_etapas_edital_id");
 
-                    b.ToTable("etapas", (string)null);
+                    b.ToTable("etapas", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Inscricao", b =>
@@ -413,7 +414,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("CandidatoId", "EditalId")
                         .HasDatabaseName("ix_inscricoes_candidato_id_edital_id");
 
-                    b.ToTable("inscricoes", (string)null);
+                    b.ToTable("inscricoes", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegal", b =>
@@ -527,7 +528,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_obrigatoriedades_legais_regra_codigo_ativos")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("obrigatoriedades_legais", (string)null);
+                    b.ToTable("obrigatoriedades_legais", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ObrigatoriedadeLegalHistorico", b =>
@@ -570,7 +571,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsDescending(false, true)
                         .HasDatabaseName("ix_obrigatoriedade_legal_historico_regra_snapshot_at");
 
-                    b.ToTable("obrigatoriedade_legal_historico", (string)null);
+                    b.ToTable("obrigatoriedade_legal_historico", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
@@ -634,7 +635,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_processos_seletivos");
 
-                    b.ToTable("processos_seletivos", (string)null);
+                    b.ToTable("processos_seletivos", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Candidato", b =>
@@ -657,7 +658,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                                 .IsUnique()
                                 .HasDatabaseName("ix_candidatos_cpf");
 
-                            b1.ToTable("candidatos");
+                            b1.ToTable("candidatos", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("CandidatoId")
@@ -678,7 +679,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("CandidatoId");
 
-                            b1.ToTable("candidatos");
+                            b1.ToTable("candidatos", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("CandidatoId")
@@ -704,7 +705,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("CandidatoId");
 
-                            b1.ToTable("candidatos");
+                            b1.ToTable("candidatos", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("CandidatoId")
@@ -751,7 +752,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("EditalId");
 
-                            b1.ToTable("editais");
+                            b1.ToTable("editais", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("EditalId")
@@ -774,7 +775,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("EditalId");
 
-                            b1.ToTable("editais");
+                            b1.ToTable("editais", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("EditalId")
@@ -797,7 +798,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("EditalId");
 
-                            b1.ToTable("editais");
+                            b1.ToTable("editais", "selecao");
 
                             b1.WithOwner()
                                 .HasForeignKey("EditalId")
