@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!--
+      Suporte de teste do MONÓLITO (API UniPlus). Separado de IntegrationTests.Fixtures
+      porque referencia o host UniPlus (e, transitivamente, os 4 módulos internos): só os
+      assemblies de teste dos módulos internos + Host.IntegrationTests dependem dele. Geo e
+      Portal (deploy separado) usam apenas IntegrationTests.Fixtures, sem arrastar o host
+      nem sofrer ambiguidade de `Program` (CS0433). IsTestProject=false: não tem [Fact].
+    -->
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.IntegrationTests.Fixtures\Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
+    <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
+    <!-- Entry point dos testes de integração do monólito: a API UniPlus (composition root). -->
+    <ProjectReference Include="..\..\src\host\Unifesspa.UniPlus.Host\Unifesspa.UniPlus.Host.csproj" />
+  </ItemGroup>
+
+</Project>

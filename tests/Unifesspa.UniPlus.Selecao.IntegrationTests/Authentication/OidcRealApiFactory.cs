@@ -9,20 +9,23 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// <summary>
 /// Factory de testes E2E que mantém o pipeline real <c>JwtBearer</c> ativo, apontando
 /// <c>Auth:Authority</c> para o Keycloak provisionado pela <see cref="KeycloakContainerFixture"/>.
-/// Diferentemente da <see cref="SelecaoApiFactory"/>, NÃO substitui o esquema de autenticação
-/// produtivo — sobrescreve <see cref="ApiFactoryBase{TEntryPoint}.ConfigureTestAuthentication"/>
-/// como no-op para que a validação real de issuer/audience/lifetime/signing key seja exercitada
-/// contra o IdP em container.
+/// Sobe a API UniPlus (composition root) e, diferentemente da <see cref="Infrastructure.SelecaoApiFactory"/>,
+/// NÃO substitui o esquema de autenticação produtivo — sobrescreve
+/// <see cref="ApiFactoryBase{TEntryPoint}.ConfigureTestAuthentication"/> como no-op para que a
+/// validação real de issuer/audience/lifetime/signing key seja exercitada contra o IdP em container.
 /// </summary>
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit 2.x exige que fixtures e factories instanciados pelo runner sejam públicos.")]
-public sealed class OidcRealApiFactory : ApiFactoryBase<Program>
+public sealed class OidcRealApiFactory : MonolitoApiFactory
 {
     private readonly string _authority;
 
     public OidcRealApiFactory(KeycloakContainerFixture keycloak)
+        : base(
+            "Host=localhost;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev",
+            wolverineEnabled: false)
     {
         ArgumentNullException.ThrowIfNull(keycloak);
         _authority = keycloak.Authority;
@@ -37,9 +40,8 @@ public sealed class OidcRealApiFactory : ApiFactoryBase<Program>
         // Intencionalmente vazio — ver docstring.
     }
 
-    protected override IEnumerable<KeyValuePair<string, string?>> GetConfigurationOverrides() =>
+    protected override IEnumerable<KeyValuePair<string, string?>> OverridesAdicionais() =>
     [
-        new("ConnectionStrings:SelecaoDb", "Host=localhost;Port=5432;Database=uniplus_tests;Username=uniplus;Password=uniplus_dev"),
         new("Auth:Authority", _authority),
         new("Auth:Audience", KeycloakContainerFixture.Audience),
     ];

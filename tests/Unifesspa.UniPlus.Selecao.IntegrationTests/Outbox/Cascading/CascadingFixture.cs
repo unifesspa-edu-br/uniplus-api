@@ -2,110 +2,23 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Testcontainers.PostgreSql;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
+/// <summary>
+/// Fixture da suíte de outbox cascading: provisiona Postgres efêmero e sobe a API
+/// UniPlus com Wolverine + migrations ativos, via <see cref="CascadingApiFactory"/>
+/// (que adiciona o <see cref="DomainEventCollector"/> consumido pelos handlers de
+/// teste). Reaproveita o ciclo de vida do container e o gerenciamento das 5 env vars
+/// de connection string da <see cref="MonolitoPostgresFixtureBase{TFactory}"/> —
+/// inclusive o desligamento do transporte Kafka (<c>Kafka__BootstrapServers</c> em
+/// whitespace), já que esta suíte valida apenas a PG queue.
+/// </summary>
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit ICollectionFixture<T> requires the fixture type to be public.")]
-[SuppressMessage(
-    "Reliability",
-    "CA1001:Types that own disposable fields should be disposable",
-    Justification = "Disposable resources are released by IAsyncLifetime.DisposeAsync, which xUnit invokes deterministically for fixtures.")]
-public sealed class CascadingFixture : IAsyncLifetime
+public sealed class CascadingFixture : MonolitoPostgresFixtureBase<CascadingApiFactory>
 {
-    // Overrides são injetados via env vars (formato `<Section>__<Key>`) porque, em
-    // hosting minimal (WebApplication.CreateBuilder), overrides via
-    // ConfigureAppConfiguration de WebApplicationFactory.ConfigureWebHost não chegam
-    // a WebApplicationBuilder.Configuration. Env vars sempre entram, e como esta
-    // coleção tem DisableParallelization=true, não há risco de interleaving com
-    // outras coleções no mesmo processo.
-    //
-    // Kafka é forçado a empty para desligar o transporte Kafka durante os testes —
-    // appsettings.Development.json define `localhost:9092` por padrão para dev local,
-    // o que faria Wolverine ficar em retry indefinido contra um broker inexistente
-    // no host de teste.
-    private const string ConnectionStringEnvVar = "ConnectionStrings__SelecaoDb";
-    private const string KafkaBootstrapEnvVar = "Kafka__BootstrapServers";
-
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
-        .WithDatabase("uniplus_outbox_cascading")
-        .WithUsername("uniplus_test")
-        .WithPassword("uniplus_test")
-        .Build();
-
-    private string? _connectionStringEnvVarPrevio;
-    private string? _kafkaEnvVarPrevio;
-    private CascadingApiFactory? _factory;
-
-    public string ConnectionString => _postgres.GetConnectionString();
-
-    public CascadingApiFactory Factory =>
-        _factory ?? throw new InvalidOperationException(
-            "Factory ainda não inicializada. InitializeAsync deve rodar antes do primeiro teste.");
-
-    public async Task InitializeAsync()
-    {
-        await _postgres.StartAsync().ConfigureAwait(false);
-
-        // Schema do domínio Selecao no Postgres efêmero é provisionado pelo
-        // MigrationHostedService<SelecaoDbContext> registrado no Program.cs
-        // ANTES de UseWolverineOutboxCascading (uniplus-api#419). Como
-        // HostOptions.ServicesStartConcurrently=false (default), o host inicia
-        // hosted services em ordem: Migration aplica __EFMigrationsHistory antes
-        // do WolverineRuntime aceitar qualquer envelope que toque tabelas do
-        // módulo. Esta fixture confia 100% nessa ordem — não chama MigrateAsync
-        // localmente para não duplicar uma fonte de verdade. O fitness test
-        // MigrationBeforeWolverineRuntimeOrderTests em
-        // tests/Unifesspa.UniPlus.ArchTests/Hosting/ trava regressão da ordem.
-        //
-        // Schema do Wolverine (`wolverine.*`) é provisionado pelo próprio
-        // framework via `AutoBuildMessageStorageOnStartup = CreateOrUpdate`
-        // (issue #344, ADR-0039), independente do schema do domínio.
-
-        // Captura todos os valores prévios ANTES de mutar o environment —
-        // garantia de restore-em-falha dos dois sets atômicos. Sem isto,
-        // uma exceção entre os dois SetEnvironmentVariable abaixo deixaria
-        // a primeira variável setada para o resto do test run (issue #195).
-        _connectionStringEnvVarPrevio = Environment.GetEnvironmentVariable(ConnectionStringEnvVar);
-        _kafkaEnvVarPrevio = Environment.GetEnvironmentVariable(KafkaBootstrapEnvVar);
-
-        try
-        {
-            Environment.SetEnvironmentVariable(ConnectionStringEnvVar, ConnectionString);
-
-            // Whitespace (espaço) em vez de string.Empty: em runtimes anteriores a
-            // .NET 9, Environment.SetEnvironmentVariable(name, string.Empty) apaga
-            // a variável (em vez de definir como vazia), o que faria o appsettings
-            // voltar a ser consultado e o Wolverine tentar conectar em
-            // localhost:9092. O helper produtivo desliga Kafka via IsNullOrWhiteSpace,
-            // então um espaço cobre os dois cenários sem regressão cross-runtime.
-            Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
-
-            _factory = new CascadingApiFactory(ConnectionString);
-        }
-        catch
-        {
-            // Restore inline antes de relançar — DisposeAsync é chamado por xUnit
-            // mesmo após InitializeAsync falhar, mas só se a fixture chegou a
-            // ser construída. Restaurar aqui torna a fixture resiliente mesmo
-            // em cenários onde xUnit pula o dispose por outro motivo.
-            Environment.SetEnvironmentVariable(ConnectionStringEnvVar, _connectionStringEnvVarPrevio);
-            Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, _kafkaEnvVarPrevio);
-            throw;
-        }
-    }
-
-    public async Task DisposeAsync()
-    {
-        if (_factory is not null)
-        {
-            await _factory.DisposeAsync().ConfigureAwait(false);
-        }
-
-        Environment.SetEnvironmentVariable(ConnectionStringEnvVar, _connectionStringEnvVarPrevio);
-        Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, _kafkaEnvVarPrevio);
-
-        await _postgres.DisposeAsync().ConfigureAwait(false);
-    }
+    protected override CascadingApiFactory CreateFactory(string connectionString) =>
+        new(connectionString);
 }

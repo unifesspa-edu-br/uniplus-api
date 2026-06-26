@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 /// <summary>
@@ -30,9 +31,9 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class BootDoMonolitoTests
 {
-    private readonly MonolitoHostFixture _fixture;
+    private readonly MonolitoPostgresFixture _fixture;
 
-    public BootDoMonolitoTests(MonolitoHostFixture fixture)
+    public BootDoMonolitoTests(MonolitoPostgresFixture fixture)
     {
         _fixture = fixture;
     }

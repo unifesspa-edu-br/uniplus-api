@@ -41,11 +41,13 @@ public sealed class CascadingFixtureConfigurationTests
             because: "ConnectionStrings__SelecaoDb deve ter sido injetada pela fixture via env var; "
             + "se ficou vazia, AddSelecaoInfrastructure não conseguiria configurar o DbContext.");
         // Sem expor a connection string completa em logs/asserts — apenas
-        // validar marcadores estruturais (host/Database). PostgreSQL connection
-        // string típica do Testcontainers contém Host=localhost;Port=<random>;Database=uniplus_outbox_cascading.
-        connectionString.Should().Contain("uniplus_outbox_cascading",
-            because: "a fixture cria o testcontainer com WithDatabase(\"uniplus_outbox_cascading\"); "
-            + "se o nome do database divergir, a config efetiva não está vindo do testcontainer.");
+        // validar marcadores estruturais. A MonolitoPostgresFixtureBase cria o
+        // testcontainer com Username="uniplus_test" (distinto do usuário "uniplus"
+        // do appsettings.Development), então a presença de uniplus_test prova que
+        // a connection string efetiva veio do testcontainer e não do appsettings.
+        connectionString.Should().Contain("uniplus_test",
+            because: "a fixture cria o testcontainer com WithUsername(\"uniplus_test\"); "
+            + "se o usuário divergir, a config efetiva não está vindo do testcontainer.");
     }
 
     [Fact(DisplayName = "IConfiguration efetiva mantém Kafka:BootstrapServers em whitespace para desligar o transporte")]

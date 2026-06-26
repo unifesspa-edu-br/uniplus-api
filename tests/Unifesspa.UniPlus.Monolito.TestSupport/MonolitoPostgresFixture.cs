@@ -1,35 +1,34 @@
-namespace Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+namespace Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 using System.Diagnostics.CodeAnalysis;
 
 using Testcontainers.PostgreSql;
 
 /// <summary>
-/// Fixture de coleção xUnit que provisiona um Postgres efêmero (Testcontainers)
-/// com o banco único <c>uniplus</c> e sobe o <see cref="MonolitoHostApiFactory"/>
-/// — o composition root do monólito modular com Wolverine habilitado.
+/// Fixture base genérica que provisiona um Postgres efêmero (Testcontainers) com o
+/// banco único <c>uniplus</c> e sobe a <b>API UniPlus</b> com Wolverine habilitado —
+/// migrations on startup criam os 4 schemas de módulo e o Wolverine provisiona o
+/// outbox (schema <c>wolverine</c>). É a base das suítes de endpoint dos módulos
+/// (que agora rodam contra o monólito real).
 /// </summary>
+/// <typeparam name="TFactory">
+/// Tipo concreto da factory. Permite que suítes especializem o composition root de
+/// teste (ex.: <c>CascadingApiFactory</c> adiciona um coletor de domain events) sem
+/// duplicar o ciclo de vida do container nem o gerenciamento das env vars. O default
+/// não-genérico <see cref="MonolitoPostgresFixture"/> usa <see cref="MonolitoApiFactory"/>.
+/// </typeparam>
 /// <remarks>
-/// <para>As 5 connection strings (<c>UniPlusDb</c> + uma por módulo) são injetadas
-/// via env var (duplo underscore) <em>e</em> via <c>ConfigureAppConfiguration</c>
-/// na factory, apontando todas para o MESMO container. Cada módulo aplica seu
-/// schema (<c>HasDefaultSchema</c>) sobre o banco compartilhado; o Wolverine usa o
-/// schema <c>wolverine</c>. As migrations on startup criam os 4 schemas de módulo
-/// no boot.</para>
-///
-/// <para>Segue o padrão de <c>OrganizacaoEndpointFixture</c>.
-/// <c>DisableParallelization=true</c> em <see cref="MonolitoHostCollection"/>
-/// protege as env vars process-wide contra interleaving com outras coleções.</para>
+/// As 5 connection strings são injetadas via env var (duplo underscore) <em>e</em>
+/// via <c>ConfigureAppConfiguration</c> na factory, todas apontando para o mesmo
+/// container. Suítes derivam esta fixture numa <c>[CollectionDefinition]</c> com
+/// <c>DisableParallelization=true</c> para proteger as env vars process-wide.
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit ICollectionFixture<T> requires the fixture type to be public.")]
 [SuppressMessage(
     "Reliability",
     "CA1001:Types that own disposable fields should be disposable",
     Justification = "Disposable resources released by IAsyncLifetime.DisposeAsync — xUnit invoca deterministicamente.")]
-public sealed class MonolitoHostFixture : IAsyncLifetime
+public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
+    where TFactory : MonolitoApiFactory
 {
     private static readonly string[] ConnectionStringEnvVars =
     [
@@ -50,13 +49,20 @@ public sealed class MonolitoHostFixture : IAsyncLifetime
 
     private readonly Dictionary<string, string?> _envVarsPrevios = [];
     private string? _kafkaEnvVarPrevio;
-    private MonolitoHostApiFactory? _factory;
+    private TFactory? _factory;
 
     public string ConnectionString => _postgres.GetConnectionString();
 
-    public MonolitoHostApiFactory Factory =>
+    public TFactory Factory =>
         _factory ?? throw new InvalidOperationException(
             "Factory ainda não inicializada. InitializeAsync deve rodar antes do primeiro teste.");
+
+    /// <summary>
+    /// Cria a factory concreta apontando para o Postgres efêmero. Implementações
+    /// devem habilitar o Wolverine (<c>wolverineEnabled: true</c>) — esta fixture
+    /// existe justamente para exercitar migrations + outbox.
+    /// </summary>
+    protected abstract TFactory CreateFactory(string connectionString);
 
     public async Task InitializeAsync()
     {
@@ -76,14 +82,14 @@ public sealed class MonolitoHostFixture : IAsyncLifetime
             }
 
             // Espaço em vez de string.Empty: em runtimes < .NET 9, string.Empty apaga
-            // a variável, fazendo o appsettings voltar a ser consultado. O host não
-            // configura transporte Kafka, mas neutralizamos por garantia.
+            // a variável. O host não configura transporte Kafka em teste, mas
+            // neutralizamos por garantia (o routing Kafka só liga com SR + bootstrap).
             Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
 
-            _factory = new MonolitoHostApiFactory(ConnectionString);
+            _factory = CreateFactory(ConnectionString);
 
-            // Força o boot do host (build + StartAsync): as migrations on startup
-            // dos 4 módulos criam os schemas e o Wolverine provisiona o outbox.
+            // Força o boot (build + StartAsync): migrations criam os schemas e o
+            // Wolverine provisiona o outbox.
             _ = _factory.Services;
         }
         catch
@@ -114,4 +120,16 @@ public sealed class MonolitoHostFixture : IAsyncLifetime
 
         Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, _kafkaEnvVarPrevio);
     }
+}
+
+/// <summary>
+/// Fixture base padrão das suítes de endpoint dos módulos: provisiona Postgres
+/// efêmero e sobe a API UniPlus via <see cref="MonolitoApiFactory"/>. Suítes que
+/// precisam de um composition root especializado derivam diretamente de
+/// <see cref="MonolitoPostgresFixtureBase{TFactory}"/>.
+/// </summary>
+public class MonolitoPostgresFixture : MonolitoPostgresFixtureBase<MonolitoApiFactory>
+{
+    protected override MonolitoApiFactory CreateFactory(string connectionString) =>
+        new(connectionString, wolverineEnabled: true);
 }

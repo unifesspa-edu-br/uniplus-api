@@ -6,6 +6,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Prova de P6 (OpenAPI por-módulo no host): no monólito co-hospedado, cada
@@ -28,9 +29,9 @@ public sealed class OpenApiPorModuloTests
 {
     private static readonly string[] Modulos = ["configuracao", "organizacao", "selecao"];
 
-    private readonly MonolitoHostFixture _fixture;
+    private readonly MonolitoPostgresFixture _fixture;
 
-    public OpenApiPorModuloTests(MonolitoHostFixture fixture)
+    public OpenApiPorModuloTests(MonolitoPostgresFixture fixture)
     {
         _fixture = fixture;
     }
