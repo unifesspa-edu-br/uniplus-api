@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Geo.Application.DTOs;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em GeoInfrastructureRegistration.")]
-internal sealed class GeoProximidadeReader : IGeoProximidadeReader
+public sealed class GeoProximidadeReader : IGeoProximidadeReader
 {
     private readonly GeoDbContext _dbContext;
 

@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Caching;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em GeoInfrastructureRegistration.")]
-internal sealed partial class CepResolver : ICepResolver
+public sealed partial class CepResolver : ICepResolver
 {
     // Chave da memoização em processo do selo de versão vigente (#703). Única (um selo
     // global por instância de cache em memória), distinta das chaves de CEP do Redis.

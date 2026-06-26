@@ -89,6 +89,62 @@ Connection string e Kafka bootstrap são lidos lazy dentro do callback de `UseWo
 
 > **Invariante crítico do projeto:** `PublishDomainEventsFromEntityFrameworkCore` está **desabilitado** por configuração — não há scraper EF varrendo `EntityBase.DomainEvents` ao final da transação. Eventos só são entregues ao bus quando o handler os retorna explicitamente via cascading ([ADR-0005](adrs/0005-cascading-messages-para-drenagem-de-domain-events.md)). Um handler que muta entidade e retorna apenas `Result` deixa os eventos acumulados sem nunca despachá-los — bug silencioso. Não há fitness test guardando essa invariante hoje (issue conhecida); revisão de código + a categoria `OutboxCascading` cobrem em parte. Reintroduzir o scraper exige PR explícito que reverta o helper `UseWolverineOutboxCascading` — não acontece por acidente.
 
+## Service location e codegen (ADR-0098)
+
+O Wolverine gera o adaptador de cada chain em tempo de compilação, **inlinando** a
+construção das dependências do handler. Quando uma dependência tem registro que o
+codegen não enxerga — uma _opaque lambda factory_ ou um tipo concreto **não-público** —
+ele cai em **service location** (resolve via `IServiceProvider` no invoke).
+
+A política é travada em **`ServiceLocationPolicy.NotAllowed`** no helper
+`UseWolverineOutboxCascading` ([ADR-0098](adrs/0098-politica-de-service-location-do-codegen-wolverine.md)),
+antecipando o default do Wolverine 6.0: uma dependência opaca numa chain de handler
+**falha a geração** (`InvalidServiceLocationException`) em vez de degradar em silêncio.
+
+Regra prática ao escrever infraestrutura consumida por handlers:
+
+- **Tipos concretos (repos, readers, services) devem ser `public sealed`.** Um tipo
+  `internal` injetado num handler dispara service location. Tornar `public` é o **root
+  fix preferido** — o codegen passa a construí-lo inline.
+- **Prefira `AddScoped<TInterface, TImpl>()` concreto** a `AddScoped<TInterface>(sp => ...)`.
+  A lambda é opaca ao codegen.
+- **Quando o forwarding/opacidade é obrigatório, declare opt-in explícito.** Dois casos
+  legítimos no projeto:
+  - **Unit of Work** — `AddScoped<IXUnitOfWork>(sp => sp.GetRequiredService<XDbContext>())`
+    encaminha para a MESMA instância de DbContext (atomicidade write+evento, ADR-0004).
+    `AddScoped<IXUnitOfWork, XDbContext>()` criaria uma 2ª instância → proibido.
+  - **`Lazy<T>`** (ex.: `Lazy<ICacheService>` do `CepResolver`, que difere o connect do
+    Redis) — não há forma `AddScoped<Lazy<T>, TImpl>()`.
+
+  O opt-in vive num `*CodegenRegistration` na `*.API` do módulo/host (a borda de
+  composição pode referenciar `Wolverine.*`), e o composition root o compõe:
+
+  ```csharp
+  // src/selecao/Unifesspa.UniPlus.Selecao.API/SelecaoCodegenRegistration.cs
+  public static void ConfigurarCodegenWolverine(WolverineOptions opts)
+  {
+      ArgumentNullException.ThrowIfNull(opts);
+      opts.CodeGeneration.AlwaysUseServiceLocationFor<ISelecaoUnitOfWork>();
+  }
+  ```
+
+  ```csharp
+  // host: dentro do configureRouting de UseWolverineOutboxCascading
+  SelecaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
+  ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
+  OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
+  ```
+
+  O helper compartilhado `WolverineOutboxConfiguration` permanece **agnóstico** dos tipos
+  de cada módulo (Clean Arch — `Infrastructure.Core` não referencia a Application dos
+  módulos). Cada módulo/host é dono do seu opt-in (OCP/SRP).
+
+> **Guarda automática.** `ServiceLocationGuardTests` (host monólito e host Geo) sobe o
+> host sob `NotAllowed` e força a geração de toda chain CQRS, falhando e **nomeando o
+> tipo ofensor** se alguma exigir service location sem opt-in. Adicionou uma dependência
+> opaca num handler e o teste quebrou? Corrija na raiz (torne o concreto público) ou,
+> se a opacidade for obrigatória, declare o opt-in no `*CodegenRegistration` do módulo.
+
 ## Fitness test ArchUnitNET
 
 A biblioteca canônica de fitness tests arquiteturais é **ArchUnitNET** ([ADR-0012](adrs/0012-archunitnet-como-fitness-tests-arquiteturais.md)). O encapsulamento `Application` ↛ `Wolverine` é garantido por testes que falham o build no CI:
@@ -359,6 +415,7 @@ Lista prescritiva. Cada item é uma violação que CI ou review vai sinalizar:
 - ❌ **Não** chame `IMessageBus.Publish` direto após `SaveChangesAsync` para drenar eventos. Use `entity.DequeueDomainEvents().Cast<object>()` no return da tupla — caminho via cascading respeita a `IEnvelopeTransaction` ativa.
 - ❌ **Não** use `_logger.LogInformation(...)` direto. Padrão obrigatório `[LoggerMessage]` source generator (CA1848).
 - ❌ **Não** habilite `EnableRetryOnFailure` em DbContext usado por handlers Wolverine — incompatível com `Policies.AutoApplyTransactions` ([ADR-0004](adrs/0004-outbox-transacional-via-wolverine.md)).
+- ❌ **Não** injete em handler tipo concreto `internal` nem dependência registrada por lambda opaca (`AddScoped<T>(sp => ...)`) sem opt-in. Sob `ServiceLocationPolicy.NotAllowed` ([ADR-0098](adrs/0098-politica-de-service-location-do-codegen-wolverine.md)) a geração de código falha. Torne o concreto `public` (root fix) ou, se a opacidade for obrigatória (UoW forwarding / `Lazy<T>`), declare `AlwaysUseServiceLocationFor<T>()` no `*CodegenRegistration` do módulo. `ServiceLocationGuardTests` guarda.
 
 ## FAQ
 

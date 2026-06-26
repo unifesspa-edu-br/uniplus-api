@@ -114,13 +114,19 @@ branch `spike/monolito-modular`:
     default do 6.0) confirma que o relatório de service-location do `CriarEditalCommand`
     **não menciona mais o validator** — só sobra `ISelecaoUnitOfWork` (ver abaixo).
 
-**Follow-up remanescente para a migração Wolverine 6.0 (descoberto na verificação, fora deste escopo):**
-- **Registros de UoW/repos via lambda opaca**: sob `ServiceLocationPolicy.NotAllowed`, chains
-  de command ainda falham porque `ISelecaoUnitOfWork` (e provavelmente UoW/repos análogos dos
-  demais módulos) está registrado como `'opaque' lambda factory` Scoped — o codegen do Wolverine
-  não enxerga através do lambda. Diferente do warning da validação (já resolvido): aqui o ajuste
-  é trocar `AddScoped<IUoW>(sp => ...)` por `AddScoped<IUoW, UoWImpl>()` ou opt-in via
-  `opts.CodeGeneration.AlwaysUseServiceLocationFor<T>()`. Tarefa própria da migração 6.0.
+**Follow-up da migração Wolverine 6.0 — RESOLVIDO (ADR-0098):**
+- ✅ **Service location nas chains CQRS sob `NotAllowed`**: enumeração empírica dos 3 hosts
+  (forçando a geração de toda chain) achou DOIS root causes — (1) as 3 UoW injetadas em handler
+  (`ISelecaoUnitOfWork`/`IConfiguracaoUnitOfWork`/`IOrganizacaoInstitucionalUnitOfWork`), lambdas
+  opacas de forwarding ao DbContext; (2) tipos concretos `internal` injetados (cache invalidators
+  do Organização; readers do Geo, inclusive `Lazy<ICacheService>` do `CepResolver`). Ingresso/Portal
+  não têm handler que injete a UoW → sem ofensor. Correção por achado: concretos → `public` (root
+  fix); UoW e `Lazy<T>` → `AlwaysUseServiceLocationFor<T>()` por módulo/host (OCP — `*CodegenRegistration`
+  na `*.API`, composto pelo composition root). Política travada em `ServiceLocationPolicy.NotAllowed`
+  no `WolverineOutboxConfiguration` (forward-compat 6.0). Guarda: `ServiceLocationGuardTests`
+  (monólito + Geo) sobe sob `NotAllowed` e falha nomeando o tipo ofensor. ADR-0098 + atualização do
+  golden-path. **Nota de versão:** o brief estimava "6 UoW"; empiricamente só 3 disparam (uma UoW só
+  vira service location se um handler a injeta).
 
 ## Handoff (para retomar após limpar o contexto)
 

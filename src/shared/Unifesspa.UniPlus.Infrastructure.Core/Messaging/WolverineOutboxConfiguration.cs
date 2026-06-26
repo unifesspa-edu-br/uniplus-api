@@ -136,6 +136,19 @@ public static class WolverineOutboxConfiguration
             opts.Policies.AutoApplyTransactions();
             opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
+            // Política de service location do codegen (ADR-0098): NotAllowed adota cedo
+            // o default que o Wolverine 6.0 assume — qualquer chain de handler cuja árvore
+            // de dependências contenha uma lambda factory opaca (ou tipo concreto não
+            // público) passa a FALHAR a geração de código (InvalidServiceLocationException)
+            // em vez de cair silenciosamente em service location em runtime. Forward-compat
+            // com o 6.0 + guarda automática contra regressões: a suíte de integração (que
+            // sobe e exercita as chains dos 3 hosts) quebra se uma nova dependência opaca
+            // vazar para um handler. Os opt-ins por tipo justificados (UoW que encaminham
+            // para a MESMA instância de DbContext — ADR-0004) são declarados por cada
+            // módulo via AlwaysUseServiceLocationFor<T>() e compostos pelo host no
+            // configureRouting; este helper permanece agnóstico dos tipos de módulo.
+            opts.ServiceLocationPolicy = JasperFx.CodeGeneration.Model.ServiceLocationPolicy.NotAllowed;
+
             // CorrelationIdEnvelopeMiddleware roda em TODOS os chains (inclusive
             // event handlers consumidos de Kafka) — implementa o terceiro componente
             // da ADR-0052. Registrado ANTES do AddCommandQueryMiddleware para que o
