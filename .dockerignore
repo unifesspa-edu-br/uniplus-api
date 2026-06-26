@@ -1,0 +1,29 @@
+# Artefatos de build locais — regenerados dentro do container. Mantê-los fora do
+# contexto deixa o build mais rápido e evita que obj/project.assets.json gerados
+# na máquina local (paths/versões diferentes) contaminem o restore no container.
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# IDE / ferramentas
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+
+# VCS e CI
+.git/
+.github/
+
+# Testes e cobertura
+**/TestResults/
+**/coverage/
+**/*.trx
+
+# Node (tooling auxiliar, se houver)
+**/node_modules/
+
+# Documentação (não usada no build da imagem; reduz o contexto)
+docs/

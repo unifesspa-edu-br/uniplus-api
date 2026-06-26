@@ -47,7 +47,7 @@ builder.Services.AdicionarObservabilidade(nomeServicoIngresso, builder.Configura
 
 // Registro self-describing do módulo: OpenAPI, erros de domínio, Infrastructure
 // e migrations on startup. O mesmo método é consumido pelo composition root do
-// monólito modular (spike). Migrations on startup ficam ANTES do Wolverine
+// monólito modular. Migrations on startup ficam ANTES do Wolverine
 // (invariante #419 — MigrationBeforeWolverineRuntimeOrder cobre os 3 entry points).
 builder.Services.AddIngressoModule(builder.Configuration);
 

@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 {
     /// <summary>
-    /// Schema do módulo no banco único do monólito modular (spike). Todas as
+    /// Schema do módulo no banco único do monólito modular. Todas as
     /// tabelas e o histórico de migrations deste DbContext vivem neste schema,
     /// isolando o módulo dos demais no mesmo banco.
     /// </summary>
@@ -46,7 +46,7 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
-        // Banco único, schema-por-módulo (spike monólito modular): fixa o schema
+        // Banco único, schema-por-módulo: fixa o schema
         // default do modelo — tabelas, índices, FKs e idempotency_cache deste
         // módulo passam a ser qualificados por `configuracao`.
         modelBuilder.HasDefaultSchema(Schema);

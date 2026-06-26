@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
+using Unifesspa.UniPlus.Geo.API;
 using Unifesspa.UniPlus.Geo.API.Errors;
 using Unifesspa.UniPlus.Geo.API.Formatting;
 using Unifesspa.UniPlus.Geo.API.Hateoas;
@@ -64,7 +65,7 @@ builder.Services.AddUniPlusEncryption(builder.Configuration);
 builder.Services.AddCursorPagination(builder.Configuration);
 // Idempotency-Key (ADR-0027) — store EF adjacente ao GeoDbContext, filter global
 // que se ativa apenas em endpoints com [RequiresIdempotencyKey].
-builder.Services.AddIdempotency<GeoDbContext>(builder.Configuration);
+builder.Services.AddIdempotency<GeoDbContext, GeoApiAssemblyMarker>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();

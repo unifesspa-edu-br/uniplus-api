@@ -90,7 +90,7 @@ public static class UniPlusDbContextOptionsExtensions
             // drift de colunas ainda exige drop+recreate; este pin estabiliza
             // apenas o nome da tabela.
             //
-            // SPIKE monólito modular: quando `schema` é informado, a tabela de
+            // Monólito modular: quando `schema` é informado, a tabela de
             // histórico vive no schema do módulo (banco único, schema-por-módulo).
             // O default schema do modelo é fixado no `OnModelCreating` de cada
             // DbContext via `HasDefaultSchema(Schema)` — aqui só alinhamos a
@@ -189,8 +189,14 @@ public static class UniPlusDbContextOptionsExtensions
         // pontos que já registram TimeProvider.System (paginação, idempotência).
         services.TryAddSingleton(TimeProvider.System);
 
-        services.AddScoped<SoftDeleteInterceptor>();
-        services.AddScoped<AuditableInterceptor>();
+        // TryAdd: cada módulo chama AddUniPlusEfInterceptors no seu
+        // Add{Modulo}Infrastructure. No co-hosting (monólito modular) isso roda
+        // N vezes no mesmo container; sem o guard, o container acumularia N
+        // descritores idênticos de cada interceptor. Os interceptors não têm
+        // estado por módulo (resolvem IUserContext/TimeProvider scoped), então
+        // um único registro serve a todos os DbContexts.
+        services.TryAddScoped<SoftDeleteInterceptor>();
+        services.TryAddScoped<AuditableInterceptor>();
 
         return services;
     }

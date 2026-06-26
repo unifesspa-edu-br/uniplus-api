@@ -88,6 +88,18 @@ O payload do cache (request body + response body) pode conter PII (CPF, nome soc
 - Política de cleanup de entradas expiradas (job periódico vs `pg_cron` vs partition drop) — implementação.
 - Headers cacheados além de `Content-Type` e `Location` — caso a caso na implementação.
 
+### Atualização — idempotência module-aware (monólito modular)
+
+O design original assumia **um módulo por processo**: `AddIdempotency<TDbContext>` registrava um filtro global (`MvcOptions.Filters`) e um `IIdempotencyStore` único. No **monólito modular** (vários módulos co-hospedados num processo, banco único com schema-por-módulo) a premissa quebra em dois pontos: o `PostConfigure<MvcOptions>` é acumulativo (N módulos ⇒ N filtros globais; o 2º filtro vê a reserva do 1º e responde 409) e o registro não-keyed de `IIdempotencyStore` faz o "último vence" (todos gravam no schema do último módulo).
+
+Correção (compatível com standalone) — a idempotência passa a ser **por módulo**:
+
+- O filtro é genérico (`IdempotencyFilter<TDbContext>`) e injeta o store concreto `EfCoreIdempotencyStore<TDbContext>`; **não há registro não-keyed de `IIdempotencyStore`**.
+- `AddIdempotency<TDbContext, TApiMarker>(configuration)` registra o store do módulo e uma `IApplicationModelConvention` que aplica o filtro **apenas aos controllers do assembly do módulo** (`TApiMarker`), de forma idempotente — em vez de um filtro global.
+- Cada controller recebe exatamente um filtro, ligado ao `TDbContext` do seu módulo e, portanto, à tabela `idempotency_cache` no schema correto; a fronteira de módulo (extração futura) é preservada.
+
+Invariante travada por fitness test no host (`IdempotenciaCoHostingTests`): nenhum filtro de idempotência é global, e cada endpoint `[RequiresIdempotencyKey]` tem exatamente um filtro, fechado no `DbContext` do seu próprio módulo.
+
 ## Consequências
 
 ### Positivas

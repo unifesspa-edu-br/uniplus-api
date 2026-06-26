@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 /// <summary>
-/// Prova central do spike monólito modular (P5): com os 4 módulos co-hospedados
+/// Prova central do monólito modular: com os 4 módulos co-hospedados
 /// num processo único sobre o banco <c>uniplus</c> (schema-por-módulo), um
 /// consumidor cross-módulo (ex.: Configuração / Seleção) lê uma <c>Unidade</c>
 /// viva <em>in-process</em> via <see cref="IUnidadeReader"/> — sem acesso direto

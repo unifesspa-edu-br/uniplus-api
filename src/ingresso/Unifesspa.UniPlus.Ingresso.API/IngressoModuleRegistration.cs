@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 
 /// <summary>
 /// Registro self-describing do módulo Ingresso para o composition root do
-/// monólito modular (spike). Reúne tudo que é específico do módulo — OpenAPI
+/// monólito modular. Reúne tudo que é específico do módulo — OpenAPI
 /// doc, registro de erros de domínio, Infrastructure e migrations on startup.
 ///
 /// Ingresso é um módulo esqueleto (3 camadas, sem Application separada — os
@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 /// O que é compartilhado entre módulos (Serilog, auth, CORS, cache, storage,
 /// observabilidade, middleware, AddControllers, AddDomainErrorMapper, health
 /// checks de infra) fica no host. O wiring do Wolverine (consolidado numa única
-/// instância) também é responsabilidade do host (P4). Mantém o módulo extraível:
+/// instância) também é responsabilidade do host. Mantém o módulo extraível:
 /// um serviço próprio chamaria este mesmo método.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(

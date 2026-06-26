@@ -15,14 +15,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 
 /// <summary>
 /// Registro self-describing do módulo Configuracao para o composition root do
-/// monólito modular (spike). Reúne tudo que é específico do módulo — OpenAPI
+/// monólito modular. Reúne tudo que é específico do módulo — OpenAPI
 /// doc, registro de erros de domínio, builders HATEOAS, idempotência sobre o
 /// DbContext do módulo, Application + Infrastructure e migrations on startup.
 ///
 /// O que é compartilhado entre módulos (Serilog, auth, CORS, cache, storage,
 /// observabilidade, middleware, AddControllers, AddDomainErrorMapper, health
 /// checks de infra) fica no host. O wiring do Wolverine (consolidado numa única
-/// instância) também é responsabilidade do host (P4). Mantém o módulo extraível:
+/// instância) também é responsabilidade do host. Mantém o módulo extraível:
 /// um serviço próprio chamaria este mesmo método.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -52,7 +52,7 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<PesoAreaEnemDto>, PesoAreaEnemLinksBuilder>();
 
         // Idempotency-Key (ADR-0027) sobre o DbContext do módulo.
-        services.AddIdempotency<ConfiguracaoDbContext>(configuration);
+        services.AddIdempotency<ConfiguracaoDbContext, ConfiguracaoApiAssemblyMarker>(configuration);
 
         services.AddConfiguracaoApplication();
         services.AddConfiguracaoInfrastructure();

@@ -60,7 +60,7 @@ builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, bu
 
 // Registro self-describing do módulo: OpenAPI, erros de domínio, HATEOAS,
 // idempotência, Application + Infrastructure e migrations on startup. O mesmo
-// método é consumido pelo composition root do monólito modular (spike).
+// método é consumido pelo composition root do monólito modular.
 // Migrations on startup ficam ANTES do Wolverine (invariante #419).
 builder.Services.AddConfiguracaoModule(builder.Configuration);
 

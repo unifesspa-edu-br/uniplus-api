@@ -49,7 +49,7 @@
     <ProjectReference Include="../../src/geo/Unifesspa.UniPlus.Geo.Infrastructure/Unifesspa.UniPlus.Geo.Infrastructure.csproj" />
     <ProjectReference Include="../../src/geo/Unifesspa.UniPlus.Geo.API/Unifesspa.UniPlus.Geo.API.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
-    <!-- Host composition root do monólito modular (spike) — referenciado pelo fato
+    <!-- Host composition root do monólito modular — referenciado pelo fato
          positivo do R8 (host PODE compor todos os módulos). Fica FORA do roster. -->
     <ProjectReference Include="../../src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj" />
   </ItemGroup>

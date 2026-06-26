@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <!--
-    Testes de integração do composition root do monólito modular (spike P5).
+    Testes de integração do composition root do monólito modular.
     Referencia o Host (entry point via HostAssemblyMarker — evita ambiguidade de
     `Program` entre os 4 módulos co-hospedados) e a Infrastructure de
     OrganizacaoInstitucional para semear uma Unidade e provar a leitura

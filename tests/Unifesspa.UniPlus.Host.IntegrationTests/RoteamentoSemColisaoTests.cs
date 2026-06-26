@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Prova de P1 do spike: com os 4 módulos co-hospedados num processo único, o
+/// Com os 4 módulos co-hospedados num processo único, o
 /// roteamento HTTP é compartilhado. Estes testes confirmam que (a) as rotas dos
 /// módulos são namespaced por prefixo <c>api/{modulo}/</c> e (b) não há colisão
 /// — nenhum par (método HTTP, template) é atendido por mais de um endpoint, o

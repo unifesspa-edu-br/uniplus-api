@@ -1,0 +1,43 @@
+# Composition root do monólito modular. Empacota o host
+# (Unifesspa.UniPlus.Host) que compõe os 4 módulos internos — Selecao, Ingresso,
+# Configuracao, OrganizacaoInstitucional — num processo único. Geo e Portal
+# seguem deploy separado e NÃO entram na imagem.
+
+# ---- Restore + Build ----
+FROM mcr.microsoft.com/dotnet/sdk:10.0.100 AS build
+WORKDIR /src
+
+# Configuração da solution. .editorconfig é necessário porque políticas por glob
+# vivem nele — sem ele o build no container reverte às severidades default.
+COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig ./
+
+# Apenas as árvores que o host referencia (shared + 4 módulos internos + host).
+COPY src/shared/ src/shared/
+COPY src/selecao/ src/selecao/
+COPY src/ingresso/ src/ingresso/
+COPY src/configuracao/ src/configuracao/
+COPY src/organizacao-institucional/ src/organizacao-institucional/
+COPY src/host/ src/host/
+
+RUN dotnet restore src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj
+
+RUN dotnet publish src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj \
+    -c Release \
+    -o /app/publish
+
+# ---- Runtime ----
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# curl para health checks + usuário não-root.
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
+
+COPY --from=build /app/publish .
+
+USER appuser
+
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "Unifesspa.UniPlus.Host.dll"]

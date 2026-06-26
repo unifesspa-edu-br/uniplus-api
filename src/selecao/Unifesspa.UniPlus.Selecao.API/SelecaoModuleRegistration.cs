@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// Registro self-describing do módulo Selecao para o composition root do
-/// monólito modular (spike). Reúne tudo que é específico do módulo — OpenAPI
+/// monólito modular. Reúne tudo que é específico do módulo — OpenAPI
 /// doc, registro de erros de domínio, builders HATEOAS, idempotência sobre o
 /// DbContext do módulo, Application + Infrastructure e migrations on startup.
 ///
@@ -56,7 +56,7 @@ public static class SelecaoModuleRegistration
 
         // Idempotency-Key (ADR-0027) — store EF adjacente ao SelecaoDbContext, filter
         // global que se ativa apenas em endpoints com [RequiresIdempotencyKey].
-        services.AddIdempotency<SelecaoDbContext>(configuration);
+        services.AddIdempotency<SelecaoDbContext, SelecaoApiAssemblyMarker>(configuration);
 
         services.AddSelecaoApplication();
         // AddSelecaoInfrastructure resolve a connection string via IConfiguration

@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Host;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 /// <summary>
-/// Convention do composition root do monólito modular (spike): atribui a cada
+/// Convention do composition root do monólito modular: atribui a cada
 /// controller o <c>ApiExplorer.GroupName</c> do seu módulo, derivado do
 /// namespace. Sem isso, o Microsoft.AspNetCore.OpenApi inclui todo endpoint com
 /// <c>GroupName == null</c> em TODOS os documentos — no processo único, cada

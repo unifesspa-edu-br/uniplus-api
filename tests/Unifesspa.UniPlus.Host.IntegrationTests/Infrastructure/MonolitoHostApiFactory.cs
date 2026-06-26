@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// <see cref="Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory{TEntryPoint}"/>
-/// que sobe o composition root do monólito modular (spike) apontando as 5
+/// que sobe o composition root do monólito modular apontando as 5
 /// connection strings para o Postgres efêmero da fixture — banco único
 /// <c>uniplus</c> com schema-por-módulo.
 /// </summary>
@@ -27,12 +27,12 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// <para><strong>Wolverine habilitado:</strong> ao contrário da maioria das
 /// suítes HTTP-only, esta sobe o pipeline produtivo completo — as migrations on
 /// startup dos 4 módulos criam os schemas e o Wolverine provisiona o outbox
-/// (schema <c>wolverine</c>). Isso valida o boot em runtime (P4) além da leitura
-/// in-process (P5). A fixture provisiona o Postgres, então o runtime Wolverine
+/// (schema <c>wolverine</c>). Isso valida o boot em runtime além da leitura
+/// in-process. A fixture provisiona o Postgres, então o runtime Wolverine
 /// não pode ser removido.</para>
 ///
 /// <para><strong>Cache:</strong> <see cref="ICacheService"/> é substituído por
-/// <see cref="FakeInMemoryCacheService"/> — o spike prova o caminho de leitura
+/// <see cref="FakeInMemoryCacheService"/> — o que se prova é o caminho de leitura
 /// in-process até o banco, não a camada de cache Redis (ortogonal). Evita um
 /// container Redis e mantém o teste determinístico.</para>
 /// </remarks>
