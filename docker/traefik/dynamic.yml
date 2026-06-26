@@ -1,38 +1,42 @@
-# Configuração dinâmica do Traefik (file provider) para o gateway de DEV.
-# Roteamento path-based por prefixo de módulo (ADR-0064) + shim que reescreve
-# o path legado do cliente Angular (/api/editais) para o path migrado da API
-# (/api/selecao/editais). Em HML/PROD o equivalente vive no uniplus-infra (K8s).
+# Configuração dinâmica do Traefik (file provider) para o gateway de DEV usado
+# pelo override `frontend-test` (ver docker-compose.frontend-test.yml).
 #
-# Com a topologia de 3 APIs, todos os módulos internos (Selecao/Ingresso/
-# Configuracao/Organizacao) são servidos por UMA API — o monólito `uniplus-api`,
-# que expõe cada módulo sob /api/{modulo}/. O gateway encaminha /api/ inteiro a ele.
+# Topologia de 3 APIs: os 4 módulos internos (Selecao/Ingresso/Configuracao/
+# Organizacao) são servidos pelo monólito `uniplus-api` sob /api/{modulo}/
+# (ADR-0064); o `geo-api` é um deploy separado que serve reference data sob
+# /api/{cidades,estados,cep,logradouros}. Os frontends Angular consomem ambos por
+# um único `apiUrl` (o gateway na :5000), então o gateway só precisa SEPARAR o
+# tráfego de geo do tráfego do monólito — sem reescrever paths.
+#
+# Os clients do `uniplus-web` já chamam os paths com prefixo de módulo (alinhados
+# ao contrato — ADR-0064); por isso aqui NÃO há mais o shim legado
+# `/api/editais -> /api/selecao/editais`. Em HML/PROD o equivalente (split geo vs
+# monólito) vive no ingress do uniplus-infra (K8s).
 http:
   routers:
-    # Shim: o cliente `editais.api.ts` ainda chama /api/editais (pré-ADR-0064).
-    # Reescreve para /api/selecao/editais antes de encaminhar à API UniPlus.
-    selecao-editais-legacy:
-      rule: "PathPrefix(`/api/editais`)"
+    # Reference data do Geo (deploy separado) — encaminha sem reescrever.
+    geo:
+      rule: "PathPrefix(`/api/cidades`) || PathPrefix(`/api/estados`) || PathPrefix(`/api/cep`) || PathPrefix(`/api/logradouros`)"
       entryPoints:
         - web
-      middlewares:
-        - rewrite-editais
-      service: uniplus
+      priority: 100
+      service: geo
 
-    # Passthrough já no padrão ADR-0064 (/api/{modulo}/...).
-    uniplus:
+    # Todo o resto de /api/ vai ao monólito: /api/{selecao,configuracao,
+    # organizacao,ingresso}/... + /api/auth/* + /api/profile/*.
+    monolito:
       rule: "PathPrefix(`/api/`)"
       entryPoints:
         - web
+      priority: 1
       service: uniplus
-
-  middlewares:
-    rewrite-editais:
-      replacePathRegex:
-        regex: "^/api/editais"
-        replacement: "/api/selecao/editais"
 
   services:
     uniplus:
       loadBalancer:
         servers:
           - url: "http://uniplus-api:8080"
+    geo:
+      loadBalancer:
+        servers:
+          - url: "http://geo-api:8080"
