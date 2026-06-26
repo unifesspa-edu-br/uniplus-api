@@ -39,7 +39,7 @@ using Unifesspa.UniPlus.Geo.Infrastructure.Cep;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em GeoInfrastructureRegistration.")]
-internal sealed partial class CepReader : ICepReader
+public sealed partial class CepReader : ICepReader
 {
     private readonly GeoDbContext _dbContext;
     private readonly int _tetoLogradouros;

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em OrganizacaoInstitucionalInfrastructureRegistration.")]
-internal sealed partial class InstituicaoCacheInvalidator : IInstituicaoCacheInvalidator
+public sealed partial class InstituicaoCacheInvalidator : IInstituicaoCacheInvalidator
 {
     private readonly ICacheService _cache;
     private readonly ILogger<InstituicaoCacheInvalidator> _logger;

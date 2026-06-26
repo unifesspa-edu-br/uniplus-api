@@ -133,7 +133,14 @@ builder.Host.UseWolverineOutboxCascading(
     builder.Configuration,
     connectionStringName: "GeoDb",
     configureRouting: opts =>
-        opts.Discovery.IncludeAssembly(typeof(GeoApplicationAssemblyMarker).Assembly));
+    {
+        opts.Discovery.IncludeAssembly(typeof(GeoApplicationAssemblyMarker).Assembly);
+
+        // Opt-in de codegen (ADR-0098): sob ServiceLocationPolicy.NotAllowed, o
+        // Lazy<ICacheService> do CepResolver usa service location intencionalmente
+        // (lambda opaca que difere o connect do Redis). O host é dono do seu opt-in.
+        Unifesspa.UniPlus.Geo.API.GeoCodegenRegistration.ConfigurarCodegenWolverine(opts);
+    });
 builder.Services.AddWolverineMessaging();
 
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);

@@ -99,6 +99,15 @@ builder.Host.UseWolverineOutboxCascading(
         opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
         opts.Discovery.IncludeAssembly(typeof(EditalPublicadoToKafkaCascadeHandler).Assembly);
 
+        // Opt-ins de codegen (ADR-0098): sob ServiceLocationPolicy.NotAllowed, cada
+        // módulo declara as UoW que usam service location intencionalmente (forwarding
+        // para a MESMA instância de DbContext — ADR-0004). Cada módulo é dono do seu
+        // opt-in (OCP/SRP); o host apenas compõe — WolverineOutboxConfiguration
+        // permanece agnóstico dos tipos de módulo (Clean Arch).
+        SelecaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
+        ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
+        OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
+
         // Routing do Selecao (PG queue domain-events + Kafka edital_events) —
         // religa a mensageria externa antes deferida no monólito.
         configurarSelecaoRouting(opts);

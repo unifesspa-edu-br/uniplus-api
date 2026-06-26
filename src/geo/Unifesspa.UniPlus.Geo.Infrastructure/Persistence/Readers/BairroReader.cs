@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em GeoInfrastructureRegistration.")]
-internal sealed class BairroReader : IBairroReader
+public sealed class BairroReader : IBairroReader
 {
     private readonly GeoDbContext _dbContext;
 
