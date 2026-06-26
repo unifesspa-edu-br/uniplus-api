@@ -4,10 +4,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -54,7 +53,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
 
@@ -73,7 +72,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(true);
 
@@ -91,7 +90,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
         Guid raizId = Guid.CreateVersion7();
@@ -110,7 +109,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
         Unidade centro = NovaUnidade(TipoUnidade.Centro);
@@ -129,7 +128,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
         Unidade reitoria = NovaUnidade(TipoUnidade.Reitoria);
@@ -147,7 +146,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
         CriarInstituicaoCommand command = CommandValido() with { CodigoEmec = "" };
@@ -165,7 +164,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
 
@@ -193,7 +192,7 @@ public sealed class CriarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
 

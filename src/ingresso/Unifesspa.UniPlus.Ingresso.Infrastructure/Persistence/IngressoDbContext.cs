@@ -4,10 +4,17 @@ using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
 using Application.Abstractions.Interfaces;
+using Abstractions;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
-public sealed class IngressoDbContext : DbContext, IUnitOfWork
+public sealed class IngressoDbContext : DbContext, IIngressoUnitOfWork
 {
+    /// <summary>
+    /// Schema do módulo no banco único do monólito modular (spike). Tabelas,
+    /// índices e FKs deste DbContext vivem neste schema.
+    /// </summary>
+    public const string Schema = "ingresso";
+
     public IngressoDbContext(DbContextOptions<IngressoDbContext> options) : base(options)
     {
     }
@@ -20,6 +27,8 @@ public sealed class IngressoDbContext : DbContext, IUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
+        // Banco único, schema-por-módulo (spike monólito modular).
+        modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IngressoDbContext).Assembly);
         // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
         // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.

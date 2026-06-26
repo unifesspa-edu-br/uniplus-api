@@ -132,7 +132,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE instituicao SET registro_vivo_sentinela = false WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicao SET registro_vivo_sentinela = false WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "a CHECK constraint ck_instituicao_singleton_sentinela só admite a sentinela true");
@@ -311,7 +311,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
 
         await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE instituicao SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicao SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_instituicao_endereco_cidade_coerente impede divergência cidade↔CEP");
@@ -337,7 +337,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         // domínio recusa (CidadeObrigatoriaComEndereco); o CHECK protege escrita crua.
         await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE instituicao SET cidade_codigo_ibge = NULL, cidade_nome = NULL, cidade_uf = NULL WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicao SET cidade_codigo_ibge = NULL, cidade_nome = NULL, cidade_uf = NULL WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_instituicao_cidade_obrigatoria_com_endereco exige cidade da sede quando há endereço");
@@ -362,7 +362,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         // trata a cidade como all-or-nothing; o CHECK protege a escrita crua.
         await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE instituicao SET cidade_nome = NULL WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicao SET cidade_nome = NULL WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_instituicao_cidade_completa exige o trio de cidade completo ou ausente");
@@ -374,7 +374,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     {
         // Cada teste precisa de um ponto de partida sem Instituição viva — o
         // singleton compartilha o slot único entre todos os testes da fixture.
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM instituicao");
+        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM organizacao.instituicao");
     }
 
     private static Instituicao NovaInstituicao(

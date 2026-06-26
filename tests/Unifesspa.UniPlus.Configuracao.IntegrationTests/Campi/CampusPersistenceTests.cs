@@ -169,7 +169,7 @@ public sealed class CampusPersistenceTests
 
         await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () =>
-            await rawCtx.Database.ExecuteSqlAsync($"DELETE FROM campus WHERE id = {campus.Id}");
+            await rawCtx.Database.ExecuteSqlAsync($"DELETE FROM configuracao.campus WHERE id = {campus.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "a FK campus_responsavel_id com RESTRICT impede o DELETE físico do campus referenciado");
@@ -227,7 +227,7 @@ public sealed class CampusPersistenceTests
         // Diverge o snapshot de cidade do endereço (Belém) da cidade do campus (Marabá).
         await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE campus SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {campus.Id}");
+            $"UPDATE configuracao.campus SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {campus.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_campus_endereco_cidade_coerente impede divergência cidade↔CEP");
@@ -247,7 +247,7 @@ public sealed class CampusPersistenceTests
         // IS NOT NULL no CHECK, a comparação viraria UNKNOWN e passaria.
         await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE campus SET endereco_cidade_uf = NULL WHERE id = {campus.Id}");
+            $"UPDATE configuracao.campus SET endereco_cidade_uf = NULL WHERE id = {campus.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK NULL-safe rejeita UF nula no endereço quando há código IBGE coincidente");
@@ -268,7 +268,7 @@ public sealed class CampusPersistenceTests
         // parcial. O CHECK de completude (all-or-nothing) rejeita.
         await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE campus SET endereco_cep = '68507590' WHERE id = {campus.Id}");
+            $"UPDATE configuracao.campus SET endereco_cep = '68507590' WHERE id = {campus.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_campus_endereco_completo exige todos os campos obrigatórios do endereço");
@@ -289,7 +289,7 @@ public sealed class CampusPersistenceTests
         // all-or-nothing (que inclui as colunas opcionais no ramo "ausente") rejeita.
         await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE campus SET endereco_logradouro = 'Rua Fantasma' WHERE id = {campus.Id}");
+            $"UPDATE configuracao.campus SET endereco_logradouro = 'Rua Fantasma' WHERE id = {campus.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ck_campus_endereco_completo rejeita fragmentos opcionais sem o endereço completo");

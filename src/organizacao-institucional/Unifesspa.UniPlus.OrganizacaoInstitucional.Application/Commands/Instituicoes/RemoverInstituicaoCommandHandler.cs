@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -17,7 +16,7 @@ public static class RemoverInstituicaoCommandHandler
     public static async Task<Result> Handle(
         RemoverInstituicaoCommand command,
         IInstituicaoRepository repository,
-        IUnitOfWork unitOfWork,
+        IOrganizacaoInstitucionalUnitOfWork unitOfWork,
         IInstituicaoCacheInvalidator cacheInvalidator,
         CancellationToken cancellationToken)
     {

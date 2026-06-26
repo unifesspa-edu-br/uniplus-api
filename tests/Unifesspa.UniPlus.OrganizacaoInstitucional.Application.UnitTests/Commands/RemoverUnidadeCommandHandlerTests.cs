@@ -4,9 +4,8 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -35,7 +34,7 @@ public sealed class RemoverUnidadeCommandHandlerTests
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
         IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
 
         Unidade unidade = CriarUnidade();
@@ -57,7 +56,7 @@ public sealed class RemoverUnidadeCommandHandlerTests
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
         IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
         repo.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Unidade?)null);
 
@@ -75,7 +74,7 @@ public sealed class RemoverUnidadeCommandHandlerTests
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
         IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
 
         Unidade unidade = CriarUnidade();
@@ -96,7 +95,7 @@ public sealed class RemoverUnidadeCommandHandlerTests
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
         IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
 
         Unidade unidade = CriarUnidade();

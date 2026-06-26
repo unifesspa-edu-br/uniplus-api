@@ -12,14 +12,15 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    [Migration("20260624114749_AdicionaPesoAreaEnem")]
-    partial class AdicionaPesoAreaEnem
+    [Migration("20260625183858_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("configuracao")
                 .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -119,7 +120,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_campus_sigla_vivo")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("campus", null, t =>
+                    b.ToTable("campus", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_campus_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
 
@@ -217,7 +218,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.HasIndex("CidadeCodigoIbge")
                         .HasDatabaseName("ix_local_oferta_cidade_codigo_ibge");
 
-                    b.ToTable("local_oferta", null, t =>
+                    b.ToTable("local_oferta", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_local_oferta_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
 
@@ -319,7 +320,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_peso_area_enem_resolucao_grupo_vivo")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("peso_area_enem", null, t =>
+                    b.ToTable("peso_area_enem", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_peso_area_enem_corte_redacao", "corte_redacao >= 0 AND corte_redacao <= 1000");
 
@@ -409,7 +410,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_referencia_reserva_demografica_censo_vivo")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("referencia_reserva_demografica", null, t =>
+                    b.ToTable("referencia_reserva_demografica", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_referencia_reserva_demografica_pcd_percentual", "pcd_percentual >= 0 AND pcd_percentual <= 100");
 
@@ -485,7 +486,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("idx_idempotency_lookup");
 
-                    b.ToTable("idempotency_cache", (string)null);
+                    b.ToTable("idempotency_cache", "configuracao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.Campus", b =>
@@ -576,7 +577,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("CampusId");
 
-                            b1.ToTable("campus");
+                            b1.ToTable("campus", "configuracao");
 
                             b1.WithOwner()
                                 .HasForeignKey("CampusId")
@@ -680,7 +681,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("LocalOfertaId");
 
-                            b1.ToTable("local_oferta");
+                            b1.ToTable("local_oferta", "configuracao");
 
                             b1.WithOwner()
                                 .HasForeignKey("LocalOfertaId")

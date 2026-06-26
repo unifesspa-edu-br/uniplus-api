@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Abstractions;
 using Domain.Interfaces;
 using Persistence;
 using Persistence.Repositories;
@@ -24,9 +24,9 @@ public static class IngressoInfrastructureRegistration
         services.AddUniPlusEfInterceptors();
 
         services.AddDbContext<IngressoDbContext>((serviceProvider, options) =>
-            options.UseUniPlusNpgsqlConventions<IngressoDbContext>(serviceProvider, ConnectionStringName));
+            options.UseUniPlusNpgsqlConventions<IngressoDbContext>(serviceProvider, ConnectionStringName, schema: IngressoDbContext.Schema));
 
-        services.AddScoped<IUnitOfWork>(serviceProvider =>
+        services.AddScoped<IIngressoUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<IngressoDbContext>());
 
         services.AddScoped<IChamadaRepository, ChamadaRepository>();

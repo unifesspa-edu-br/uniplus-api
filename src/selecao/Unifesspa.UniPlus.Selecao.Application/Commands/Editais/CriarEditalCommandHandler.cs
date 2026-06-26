@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Kernel.Results;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -18,7 +18,7 @@ public static class CriarEditalCommandHandler
     public static async Task<Result<Guid>> Handle(
         CriarEditalCommand command,
         IEditalRepository editalRepository,
-        IUnitOfWork unitOfWork,
+        ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

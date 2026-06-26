@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
@@ -18,7 +18,7 @@ public sealed class AtualizarCampusCommandHandlerTests
     private static readonly DateTimeOffset CidadeCarimbadaEm = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private readonly ICampusRepository _repository = Substitute.For<ICampusRepository>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static Campus CampusExistente(ReferenciaEnderecoGeo? endereco = null) =>
         Campus.Criar(

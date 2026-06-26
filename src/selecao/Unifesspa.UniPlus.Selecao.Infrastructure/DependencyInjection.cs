@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Domain.Interfaces;
 using ExternalServices;
 using Persistence;
@@ -34,7 +34,7 @@ public static class SelecaoInfrastructureRegistration
 
         services.AddDbContext<SelecaoDbContext>((serviceProvider, options) =>
         {
-            options.UseUniPlusNpgsqlConventions<SelecaoDbContext>(serviceProvider, ConnectionStringName);
+            options.UseUniPlusNpgsqlConventions<SelecaoDbContext>(serviceProvider, ConnectionStringName, schema: SelecaoDbContext.Schema);
 
             // Encaixe deliberado em sequência aos interceptors cross-cutting do
             // UseUniPlusNpgsqlConventions — roda DEPOIS de SoftDelete + Auditable,
@@ -44,7 +44,7 @@ public static class SelecaoInfrastructureRegistration
                 serviceProvider.GetRequiredService<ObrigatoriedadeLegalHistoricoInterceptor>());
         });
 
-        services.AddScoped<IUnitOfWork>(serviceProvider =>
+        services.AddScoped<ISelecaoUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<SelecaoDbContext>());
 
         services.AddScoped<IEditalRepository, EditalRepository>();

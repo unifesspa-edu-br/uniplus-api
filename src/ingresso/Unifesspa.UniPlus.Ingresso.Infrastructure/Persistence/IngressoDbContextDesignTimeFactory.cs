@@ -13,6 +13,6 @@ public sealed class IngressoDbContextDesignTimeFactory : IDesignTimeDbContextFac
     public IngressoDbContext CreateDbContext(string[] args)
     {
         return new IngressoDbContext(
-            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<IngressoDbContext>());
+            UniPlusDbContextOptionsExtensions.BuildDesignTimeOptions<IngressoDbContext>(schema: IngressoDbContext.Schema));
     }
 }

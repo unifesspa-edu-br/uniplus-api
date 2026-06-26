@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class RemoverPesoAreaEnemCommandHandlerTests
 {
     private readonly IPesoAreaEnemRepository _repository = Substitute.For<IPesoAreaEnemRepository>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     [Fact(DisplayName = "Linha inexistente retorna NaoEncontrado")]
     public async Task Handle_NaoEncontrado_RetornaErro()

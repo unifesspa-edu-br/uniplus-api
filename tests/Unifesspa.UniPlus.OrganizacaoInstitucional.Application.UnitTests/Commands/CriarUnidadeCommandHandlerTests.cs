@@ -4,9 +4,8 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -35,7 +34,7 @@ public sealed class CriarUnidadeCommandHandlerTests
     public async Task Handle_ComCommandValido_PersisteEInvalidaCache()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
         repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);
@@ -58,7 +57,7 @@ public sealed class CriarUnidadeCommandHandlerTests
     public async Task Handle_ComSlugDuplicado_RetornaSlugJaExiste()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
         repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(true);
@@ -77,7 +76,7 @@ public sealed class CriarUnidadeCommandHandlerTests
     public async Task Handle_ComSiglaDuplicada_RetornaSiglaJaExiste()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
         repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);
@@ -96,7 +95,7 @@ public sealed class CriarUnidadeCommandHandlerTests
     public async Task Handle_ComSlugInvalido_RetornaSlugFormatoInvalido()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
         CriarUnidadeCommand command = CommandValido() with { Slug = "SLUG-COM-MAIUSCULAS" };
 
@@ -113,7 +112,7 @@ public sealed class CriarUnidadeCommandHandlerTests
     public async Task Handle_ComSuperiorInexistente_RetornaSuperiorNaoEncontrado()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
         IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
         repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);

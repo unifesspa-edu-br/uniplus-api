@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IngressoDbContext))]
-    [Migration("20260513220933_InitialCreate")]
+    [Migration("20260625191509_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,7 +20,8 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasDefaultSchema("ingresso")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -79,7 +80,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_chamadas_edital_id_numero");
 
-                    b.ToTable("chamadas", (string)null);
+                    b.ToTable("chamadas", "ingresso");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.Convocacao", b =>
@@ -145,7 +146,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
                     b.HasIndex("ChamadaId")
                         .HasDatabaseName("ix_convocacoes_chamada_id");
 
-                    b.ToTable("convocacoes", (string)null);
+                    b.ToTable("convocacoes", "ingresso");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.DocumentoMatricula", b =>
@@ -216,7 +217,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
                     b.HasIndex("MatriculaId")
                         .HasDatabaseName("ix_documentos_matricula_matricula_id");
 
-                    b.ToTable("documentos_matricula", (string)null);
+                    b.ToTable("documentos_matricula", "ingresso");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.Matricula", b =>
@@ -272,7 +273,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_matriculas");
 
-                    b.ToTable("matriculas", (string)null);
+                    b.ToTable("matriculas", "ingresso");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Ingresso.Domain.Entities.Convocacao", b =>
@@ -302,7 +303,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
                                 .IsUnique()
                                 .HasDatabaseName("ix_convocacoes_protocolo");
 
-                            b1.ToTable("convocacoes");
+                            b1.ToTable("convocacoes", "ingresso");
 
                             b1.WithOwner()
                                 .HasForeignKey("ConvocacaoId")

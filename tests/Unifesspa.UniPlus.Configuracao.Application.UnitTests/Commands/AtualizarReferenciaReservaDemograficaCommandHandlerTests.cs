@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ReferenciasReservaDemografica;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -17,7 +17,7 @@ public sealed class AtualizarReferenciaReservaDemograficaCommandHandlerTests
 
     private readonly IReferenciaReservaDemograficaRepository _repository =
         Substitute.For<IReferenciaReservaDemograficaRepository>();
-    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static ReferenciaReservaDemografica Existente() =>
         ReferenciaReservaDemografica.Criar("2022", 78.50m, 1.20m, 8.40m, BaseLegal).Value!;

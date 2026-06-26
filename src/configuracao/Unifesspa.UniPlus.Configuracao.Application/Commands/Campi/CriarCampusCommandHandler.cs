@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Campi;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -20,7 +20,7 @@ public static class CriarCampusCommandHandler
     public static async Task<Result<Guid>> Handle(
         CriarCampusCommand command,
         ICampusRepository repository,
-        IUnitOfWork unitOfWork,
+        IConfiguracaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

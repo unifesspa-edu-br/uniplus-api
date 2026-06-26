@@ -11,8 +11,12 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "ingresso");
+
             migrationBuilder.CreateTable(
                 name: "chamadas",
+                schema: "ingresso",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -34,6 +38,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "matriculas",
+                schema: "ingresso",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -55,6 +60,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "convocacoes",
+                schema: "ingresso",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -78,6 +84,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "fk_convocacoes_chamadas_chamada_id",
                         column: x => x.chamada_id,
+                        principalSchema: "ingresso",
                         principalTable: "chamadas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -85,6 +92,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateTable(
                 name: "documentos_matricula",
+                schema: "ingresso",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -107,6 +115,7 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
                     table.ForeignKey(
                         name: "fk_documentos_matricula_matriculas_matricula_id",
                         column: x => x.matricula_id,
+                        principalSchema: "ingresso",
                         principalTable: "matriculas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
@@ -114,23 +123,27 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "ix_chamadas_edital_id_numero",
+                schema: "ingresso",
                 table: "chamadas",
                 columns: new[] { "edital_id", "numero" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_convocacoes_chamada_id",
+                schema: "ingresso",
                 table: "convocacoes",
                 column: "chamada_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_convocacoes_protocolo",
+                schema: "ingresso",
                 table: "convocacoes",
                 column: "protocolo",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_documentos_matricula_matricula_id",
+                schema: "ingresso",
                 table: "documentos_matricula",
                 column: "matricula_id");
         }
@@ -138,14 +151,21 @@ namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Rollback de InitialCreate é proibido em automation (ADR-0054):
-            // derrubaria tabelas com dados de chamadas/matrículas em produção.
-            // Reverter exige procedimento operacional manual com backup
-            // explícito — nunca pelo `dotnet ef database update <previous>`.
-            throw new InvalidOperationException(
-                "Rollback de InitialCreate é proibido em automation. "
-                + "Para reverter, executar procedimento operacional manual com backup do schema ingresso.* + DROP explícito. "
-                + "Política forward-only documentada em docs/guia-banco-de-dados.md §8.");
+            migrationBuilder.DropTable(
+                name: "convocacoes",
+                schema: "ingresso");
+
+            migrationBuilder.DropTable(
+                name: "documentos_matricula",
+                schema: "ingresso");
+
+            migrationBuilder.DropTable(
+                name: "chamadas",
+                schema: "ingresso");
+
+            migrationBuilder.DropTable(
+                name: "matriculas",
+                schema: "ingresso");
         }
     }
 }

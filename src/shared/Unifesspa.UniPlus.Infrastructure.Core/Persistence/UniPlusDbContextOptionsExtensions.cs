@@ -58,7 +58,8 @@ public static class UniPlusDbContextOptionsExtensions
         this DbContextOptionsBuilder options,
         IServiceProvider serviceProvider,
         string connectionStringName,
-        Action<NpgsqlDbContextOptionsBuilder>? configurarNpgsql = null)
+        Action<NpgsqlDbContextOptionsBuilder>? configurarNpgsql = null,
+        string? schema = null)
         where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -88,7 +89,20 @@ public static class UniPlusDbContextOptionsExtensions
             // convention — em rollouts mistos com pods sem convention, o
             // drift de colunas ainda exige drop+recreate; este pin estabiliza
             // apenas o nome da tabela.
-            npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+            //
+            // SPIKE monólito modular: quando `schema` é informado, a tabela de
+            // histórico vive no schema do módulo (banco único, schema-por-módulo).
+            // O default schema do modelo é fixado no `OnModelCreating` de cada
+            // DbContext via `HasDefaultSchema(Schema)` — aqui só alinhamos a
+            // tabela de histórico ao mesmo schema.
+            if (schema is null)
+            {
+                npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+            }
+            else
+            {
+                npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
+            }
 
             // Composição opcional do provider (ex.: UseNetTopologySuite no Geo).
             configurarNpgsql?.Invoke(npgsqlOptions);
@@ -133,7 +147,8 @@ public static class UniPlusDbContextOptionsExtensions
     /// gere o mapeamento <c>geography(Point,4326)</c>. Default <c>null</c>.
     /// </param>
     public static DbContextOptions<TContext> BuildDesignTimeOptions<TContext>(
-        Action<NpgsqlDbContextOptionsBuilder>? configurarNpgsql = null)
+        Action<NpgsqlDbContextOptionsBuilder>? configurarNpgsql = null,
+        string? schema = null)
         where TContext : DbContext
     {
         return new DbContextOptionsBuilder<TContext>()
@@ -142,7 +157,15 @@ public static class UniPlusDbContextOptionsExtensions
                 npgsqlOptions =>
                 {
                     npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
-                    npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+                    if (schema is null)
+                    {
+                        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
+                    }
+                    else
+                    {
+                        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
+                    }
+
                     configurarNpgsql?.Invoke(npgsqlOptions);
                 })
             .UseSnakeCaseNamingConvention()

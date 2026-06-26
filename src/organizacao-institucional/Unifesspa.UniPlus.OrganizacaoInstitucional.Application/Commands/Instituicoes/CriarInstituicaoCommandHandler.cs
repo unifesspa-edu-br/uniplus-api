@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -31,7 +30,7 @@ public static class CriarInstituicaoCommandHandler
         CriarInstituicaoCommand command,
         IInstituicaoRepository repository,
         IUnidadeRepository unidadeRepository,
-        IUnitOfWork unitOfWork,
+        IOrganizacaoInstitucionalUnitOfWork unitOfWork,
         IInstituicaoCacheInvalidator cacheInvalidator,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
