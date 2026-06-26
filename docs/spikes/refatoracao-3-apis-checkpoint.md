@@ -66,12 +66,21 @@ arquiteturalmente correta do co-hosting.
 
 ## Estado atual
 
-**Início.** Branch `spike/monolito-modular`. Pré-requisitos já no lugar:
-- API UniPlus (`Unifesspa.UniPlus.Host`) compõe os 4 módulos, com OpenAPI por-módulo,
-  idempotência module-aware, Kafka do Selecao religado (hook do módulo), boot
-  validado por Testcontainers e por `docker compose`.
-- `MonolitoHostFixture` (em `Host.IntegrationTests`) é o padrão de referência para
-  subir o host com Postgres + 5 conn strings — base para os factories migrados.
+**CONCLUÍDO.** Todas as 7 fases (+ sub-fases de revisão) entregues e verdes na
+branch `spike/monolito-modular`:
+- 4 módulos internos convertidos em class libraries; entry point único = API UniPlus.
+- Fitness tests (R8, ordem migrations→Wolverine) adaptados à topologia de 3 APIs.
+- Lock files regenerados (locked-mode OK); gambiarra do target appsettings removida.
+- Dev stack Docker consolidado no `uniplus-api` + OIDC; Helm com chart `uniplus`.
+- Validação E2E: build (54 proj, 0 warn) + test (21 proj, 1714 testes, 0 falhas) +
+  Docker + OIDC + Newman (23/24, a falha é drift pré-existente do Organizacao).
+- ADR-0097 publicado; ADR-0001 anotado.
+- 2 rodadas de revisão Codex aplicadas; 1 achado dispensado com verificação.
+
+**Pendências fora do escopo do spike (follow-ups documentados):**
+- Organizacao: alinhar contrato create/read (`municipioSede` vs `cidade`).
+- Wolverine 6.0: tornar repos `internal` públicos (warning de service-location).
+- Geo: criar `docker/Dockerfile.geo` + serviço compose quando conteinerizá-lo.
 
 ## Como retomar
 
@@ -134,3 +143,21 @@ registrados abaixo.
 - **EF "errors" no 1º boot**: `SELECT ... FROM __EFMigrationsHistory ORDER BY
   migration_id` falha (Error) antes de a tabela existir — comportamento normal do
   migration runner em banco novo (cria o schema em seguida). App fica healthy.
+
+### F7.1 — Achados das revisões finais Codex
+
+- **[P2 resolvido] Helm desatualizado**: charts `infra/helm/{selecao,ingresso}`
+  deployavam imagens por módulo já removidas e não havia chart do monólito. Criado
+  `infra/helm/uniplus` (imagem do Dockerfile.host, liveness dependency-free,
+  5 conn strings documentadas), removidos os charts órfãos, Portal mantido. `helm
+  lint` OK. Docs (`setup-ambiente-local`, `guia-apicurio`) → `up --build uniplus-api`.
+- **[P2 resolvido] portal-api realm no frontend-test**: re-adicionado o
+  realinhamento `Auth__Authority` do portal-api ao realm `unifesspa`.
+- **[falso-positivo verificado] "portal-api override incompleto"**: a revisão
+  seguinte sugeriu remover o override de portal-api. **Dispensado**: o
+  `override.example.yml` define `portal-api`, e a composição DOCUMENTADA de 3
+  arquivos (base + override + frontend-test) valida limpa (`docker compose config`
+  exit 0). O Codex testou o combo não-suportado de 2 arquivos (sem override), que
+  falha primeiro no próprio `uniplus-api`. Remover regrediria o achado anterior
+  (Portal validando issuer errado → 401). `frontend-test.yml` é camada de override
+  que sempre se sobrepõe ao `override.yml` (design original preservado).

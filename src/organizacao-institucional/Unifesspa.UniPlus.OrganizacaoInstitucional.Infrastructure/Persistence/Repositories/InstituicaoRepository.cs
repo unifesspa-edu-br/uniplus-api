@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em OrganizacaoInstitucionalInfrastructureRegistration.")]
-internal sealed class InstituicaoRepository : IInstituicaoRepository
+public sealed class InstituicaoRepository : IInstituicaoRepository
 {
     private readonly OrganizacaoInstitucionalDbContext _dbContext;
 

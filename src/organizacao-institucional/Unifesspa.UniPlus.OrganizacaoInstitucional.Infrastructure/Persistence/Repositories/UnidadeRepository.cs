@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em OrganizacaoInstitucionalInfrastructureRegistration.")]
-internal sealed class UnidadeRepository : IUnidadeRepository
+public sealed class UnidadeRepository : IUnidadeRepository
 {
     private readonly OrganizacaoInstitucionalDbContext _dbContext;
 
@@ -119,6 +119,8 @@ internal sealed class UnidadeRepository : IUnidadeRepository
 
     public Task<bool> SiglaExisteEntreLivosAsync(string sigla, Guid? excluirId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(sigla);
+
         // Espelha a normalização do agregado (Trim + ToUpperInvariant) para que
         // " abc " case com o "ABC" persistido — senão a checagem erra e a colisão
         // só estoura no índice único (500 em vez do 409 SiglaJaExiste).
@@ -131,6 +133,8 @@ internal sealed class UnidadeRepository : IUnidadeRepository
 
     public Task<bool> CodigoExisteEntreLivosAsync(string codigo, Guid? excluirId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(codigo);
+
         // Espelha o Trim do agregado (mesma razão da Sigla).
         string codigoNorm = codigo.Trim();
         return _dbContext.Unidades

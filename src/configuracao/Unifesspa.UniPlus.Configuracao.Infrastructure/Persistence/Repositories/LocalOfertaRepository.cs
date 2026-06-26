@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
-internal sealed class LocalOfertaRepository : ILocalOfertaRepository
+public sealed class LocalOfertaRepository : ILocalOfertaRepository
 {
     private readonly ConfiguracaoDbContext _dbContext;
 

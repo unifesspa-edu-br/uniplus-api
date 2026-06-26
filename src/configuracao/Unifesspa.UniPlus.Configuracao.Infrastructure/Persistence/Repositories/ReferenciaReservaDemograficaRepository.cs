@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
-internal sealed class ReferenciaReservaDemograficaRepository : IReferenciaReservaDemograficaRepository
+public sealed class ReferenciaReservaDemograficaRepository : IReferenciaReservaDemograficaRepository
 {
     private readonly ConfiguracaoDbContext _dbContext;
 
@@ -62,6 +62,8 @@ internal sealed class ReferenciaReservaDemograficaRepository : IReferenciaReserv
 
     public Task<bool> CensoExisteEntreLivosAsync(string censoReferencia, Guid? excluirId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(censoReferencia);
+
         // Espelha a normalização do agregado (Trim) para casar com o valor persistido.
         string censoNorm = censoReferencia.Trim();
         return _dbContext.ReferenciasReservaDemografica
