@@ -62,6 +62,12 @@ services:
       ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
+      # Stack mínima sem broker: limpa o Kafka:BootstrapServers do
+      # appsettings.Development.json (localhost:9092) para o
+      # UseWolverineOutboxCascading manter o transporte Kafka DESLIGADO (só a queue
+      # PG) — sem isso o host tentaria UseKafka().AutoProvision() num broker ausente.
+      # Espaço em vez de string vazia: em runtimes < .NET 9, vazio apaga a env var.
+      Kafka__BootstrapServers: " "
       Auth__Authority: "http://localhost/realms/unifesspa"
       Auth__Audience: "uniplus"
       # Sem OTEL collector na stack mínima — desliga o exporter p/ evitar ruído de

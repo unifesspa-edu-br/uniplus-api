@@ -3,10 +3,10 @@
 #
 # Topologia de 3 APIs: os 4 módulos internos (Selecao/Ingresso/Configuracao/
 # Organizacao) são servidos pelo monólito `uniplus-api` sob /api/{modulo}/
-# (ADR-0064); o `geo-api` é um deploy separado que serve reference data sob
-# /api/{cidades,estados,cep,logradouros}. Os frontends Angular consomem ambos por
-# um único `apiUrl` (o gateway na :5000), então o gateway só precisa SEPARAR o
-# tráfego de geo do tráfego do monólito — sem reescrever paths.
+# (ADR-0064); o `geo-api` (reference data sob /api/{cidades,estados,cep,
+# logradouros}) e o `portal-api` (/api/portal/*) são deploys separados. Os
+# frontends Angular consomem tudo por um único `apiUrl` (o gateway na :5000),
+# então o gateway só precisa SEPARAR o tráfego das 3 APIs — sem reescrever paths.
 #
 # Os clients do `uniplus-web` já chamam os paths com prefixo de módulo (alinhados
 # ao contrato — ADR-0064); por isso aqui NÃO há mais o shim legado
@@ -21,6 +21,14 @@ http:
         - web
       priority: 100
       service: geo
+
+    # Portal (deploy separado) — /api/portal/* vai ao portal-api, não ao monólito.
+    portal:
+      rule: "PathPrefix(`/api/portal`)"
+      entryPoints:
+        - web
+      priority: 100
+      service: portal
 
     # Todo o resto de /api/ vai ao monólito: /api/{selecao,configuracao,
     # organizacao,ingresso}/... + /api/auth/* + /api/profile/*.
@@ -40,3 +48,7 @@ http:
       loadBalancer:
         servers:
           - url: "http://geo-api:8080"
+    portal:
+      loadBalancer:
+        servers:
+          - url: "http://portal-api:8080"
