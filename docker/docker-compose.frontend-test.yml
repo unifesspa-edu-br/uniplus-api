@@ -14,20 +14,23 @@
 #      em loop de re-login; o GET de lista é `[AllowAnonymous]`, então retorna 200
 #      e MASCARA o problema. Issuer canonicalizado por KC_HOSTNAME. A allowlist de
 #      CORS das origins dos apps Angular vive no appsettings.Development.json da API.
-#   2. Sobe um Traefik na :5000 que roteia /api/ ao `uniplus-api` (ADR-0064) e
-#      reescreve /api/editais -> /api/selecao/editais (ver traefik/dynamic.yml) —
-#      necessário ao frontend `selecao`, cujo runtime-config usa um único
-#      `apiUrl=http://localhost:5000` (path pré-ADR-0064). Os apps que já usam
-#      paths /api/{modulo}/ podem ir direto na :5200 da API UniPlus.
+#   2. Sobe um Traefik na :5000 (o `apiUrl` único que os apps consomem) que apenas
+#      SEPARA o tráfego: /api/{cidades,estados,cep,logradouros} -> `geo-api`; todo
+#      o resto de /api/ -> monólito `uniplus-api`. NÃO reescreve paths — os clients
+#      do `uniplus-web` já chamam os paths com prefixo de módulo do contrato
+#      (ADR-0064: /api/selecao/editais, /api/configuracao/campi, /api/organizacao/
+#      unidades, ...). Espelha o split geo vs monólito do ingress de HML/PROD.
 #
 # Uso:
 #   docker compose -f docker-compose.yml \
 #                  -f docker-compose.override.yml \
 #                  -f docker-compose.frontend-test.yml up -d
 #
-# Depois, em uniplus-web:
-#   npx nx serve selecao       -> http://localhost:4200  (via gateway :5000)
-#   npx nx serve configuracao  -> http://localhost:4203  (via gateway :5000 ou :5200 direto)
+# Depois, em uniplus-web (todos com apiUrl=http://localhost:5000 via gateway):
+#   npx nx serve selecao       -> http://localhost:4200
+#   npx nx serve ingresso      -> http://localhost:4201
+#   npx nx serve portal        -> http://localhost:4202
+#   npx nx serve configuracao  -> http://localhost:4203
 services:
   traefik:
     image: traefik:v3.3
@@ -47,12 +50,23 @@ services:
     depends_on:
       uniplus-api:
         condition: service_healthy
+      # O gateway roteia /api/{cidades,estados,cep,logradouros} ao geo-api — espera
+      # ficar healthy antes de aceitar tráfego (o frontend `configuracao` usa geo
+      # no formulário de endereço/CEP).
+      geo-api:
+        condition: service_healthy
 
-  # A API UniPlus (monólito) e o Portal passam a validar o realm `unifesspa` (o que
-  # os frontends usam), substituindo o `unifesspa-dev-local` do override. Os 4
-  # módulos internos rodam no uniplus-api (realinha uma vez); o Portal é deployable
-  # autônomo e precisa do realinhamento próprio para o frontend `portal` funcionar.
+  # A API UniPlus (monólito), o Geo e o Portal passam a validar o realm `unifesspa`
+  # (o que os frontends usam), substituindo o `unifesspa-dev-local` do override. Os
+  # 4 módulos internos rodam no uniplus-api (realinha uma vez); Geo e Portal são
+  # deployables autônomos e precisam do realinhamento próprio. O reference data do
+  # Geo é [AllowAnonymous] (ADR-0093), mas realinhar mantém o realm consistente
+  # entre as 3 APIs para qualquer chamada autenticada futura.
   uniplus-api:
+    environment:
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+
+  geo-api:
     environment:
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
 
