@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-selecao-api
+  name: {{ .Release.Name }}-uniplus-api
   labels:
-    app: {{ .Release.Name }}-selecao-api
-    app.kubernetes.io/name: uniplus-selecao
+    app: {{ .Release.Name }}-uniplus-api
+    app.kubernetes.io/name: uniplus-api
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   type: {{ .Values.service.type }}
@@ -14,4 +14,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: {{ .Release.Name }}-selecao-api
+    app: {{ .Release.Name }}-uniplus-api

@@ -1,35 +1,22 @@
--- Provisionamento dos databases dos módulos do UniPlus + extensões.
+-- Provisionamento dos databases das 3 APIs do UniPlus + extensões.
 --
--- Topologia (docs/guia-banco-de-dados.md §1): um banco PostgreSQL por módulo,
--- todos no mesmo host PG (custo de dev local) mas isolados por database.
--- Selecao/Ingresso/Portal compartilham o superusuário `uniplus` (legado);
--- Configuracao e Organizacao (Sprint 3) usam usuários `_app` dedicados,
--- cada um dono (OWNER) do seu próprio banco.
+-- Topologia (3 APIs executáveis):
+--   * uniplus       — MONÓLITO modular (Selecao + Ingresso + Configuracao +
+--                     OrganizacaoInstitucional), banco ÚNICO com schema-por-módulo
+--                     (HasDefaultSchema) + schema `wolverine` para o outbox. Dono:
+--                     superusuário `uniplus`. Criado pelo entrypoint do container
+--                     (POSTGRES_DB=uniplus); aqui só instalamos as extensões. Os
+--                     schemas são materializados pelas migrations on startup do host.
+--   * uniplus_portal — Portal (deploy autônomo), dono: superusuário `uniplus`.
+--   * uniplus_geo    — Geo (deploy autônomo, read-mostly com PostGIS), dono:
+--                     usuário `_app` dedicado (ADR-0090/0091).
 --
 -- Este script roda como `POSTGRES_USER` (superusuário) no primeiro boot do
 -- container, via /docker-entrypoint-initdb.d.
 
--- Bancos legados (módulos pré-Sprint 3) — dono: superusuário `uniplus`.
-CREATE DATABASE uniplus_selecao;
-CREATE DATABASE uniplus_ingresso;
+-- Bancos das APIs autônomas + auth.
 CREATE DATABASE uniplus_portal;
 CREATE DATABASE keycloak;
-
--- Bancos da Sprint 3 — usuários isolados, dono do próprio banco.
--- OWNER (não apenas GRANT) é necessário: a partir do PostgreSQL 15 o schema
--- `public` deixou de conceder CREATE implicitamente, então um usuário com
--- apenas GRANT no database não consegue criar tabelas/índices. Como dono, o
--- usuário `_app` tem DDL completo no seu banco e instala extensões trusted
--- (btree_gist, uuid-ossp, pg_trgm) sem precisar de superusuário.
---
--- A senha `uniplus_dev` abaixo é dev-only (mesmo padrão de POSTGRES_PASSWORD).
--- Em standalone/HML/PROD os usuários `_app` são provisionados com segredos
--- reais via o RUNBOOK do uniplus-infra — nunca esta senha.
-CREATE ROLE uniplus_configuracao_app LOGIN PASSWORD 'uniplus_dev';
-CREATE DATABASE uniplus_configuracao OWNER uniplus_configuracao_app;
-
-CREATE ROLE uniplus_organizacao_app LOGIN PASSWORD 'uniplus_dev';
-CREATE DATABASE uniplus_organizacao OWNER uniplus_organizacao_app;
 
 -- Módulo Geo (Epic Geo) — banco isolado read-mostly com PostGIS (ADR-0090/0091).
 -- A extensão `postgis` NÃO é trusted (exige superusuário para criar). Por isso é
@@ -39,45 +26,31 @@ CREATE DATABASE uniplus_organizacao OWNER uniplus_organizacao_app;
 -- quando a extensão já existe (o `IF NOT EXISTS` retorna cedo, antes do check de
 -- privilégio). Em Testcontainers (sem este init-db) a conexão é superusuário, então
 -- a migration cria de fato. Ver ADR-0091.
+--
+-- A senha `uniplus_dev` abaixo é dev-only (mesmo padrão de POSTGRES_PASSWORD).
+-- Em standalone/HML/PROD os usuários `_app` são provisionados com segredos
+-- reais via o RUNBOOK do uniplus-infra — nunca esta senha.
 CREATE ROLE uniplus_geo_app LOGIN PASSWORD 'uniplus_dev';
 CREATE DATABASE uniplus_geo OWNER uniplus_geo_app;
 
 -- Extensões dos databases de aplicação:
 --   uuid-ossp  — geração de UUIDs
 --   pg_trgm    — busca por similaridade (trigram matching)
+--   unaccent   — busca acento-insensível (Organizacao)
 --   btree_gist — pré-requisito de exclusion constraints GIST em junction
---                tables temporais (ADR-0060). A junction de áreas de interesse
---                (primeira aplicação) saiu no KILL do eixo de Área (Epic #600);
---                a extensão segue provisionada em selecao, configuracao e
---                organizacao para junctions temporais futuras.
+--                tables temporais (ADR-0060), provisionado para uso futuro.
 
-\c uniplus_selecao
+-- Monólito: união das extensões que os 4 módulos internos assumem nas migrations.
+\c uniplus
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
-
-\c uniplus_ingresso
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS unaccent;
 
 \c uniplus_portal
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS unaccent;
-
-\c uniplus_configuracao
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS unaccent;
-CREATE EXTENSION IF NOT EXISTS btree_gist;
-
-\c uniplus_organizacao
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS unaccent;
-CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 \c uniplus_geo
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

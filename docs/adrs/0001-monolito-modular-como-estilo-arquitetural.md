@@ -9,6 +9,13 @@ decision-makers:
 
 # ADR-0001: Monolito modular como estilo arquitetural
 
+> **Atualização (2026-06-26):** a **unidade de deploy** descrita aqui ("uma imagem
+> deployável por módulo") foi refinada pelo [ADR-0097](0097-topologia-de-deploy-em-tres-apis-monolito-modular.md):
+> os 4 módulos internos (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional)
+> passam a ser **class libraries co-hospedadas** na API UniPlus (deploy em 3 APIs:
+> Geo, Portal, UniPlus). O **estilo** monolito modular e as fronteiras de módulo
+> permanecem; muda apenas a granularidade de processo.
+
 ## Contexto e enunciado do problema
 
 O `uniplus-api` precisa suportar dois bounded contexts operacionais — Seleção (CEPS) e Ingresso (CRCA) — com equipes distintas, sem o overhead operacional de microservices. A equipe é pequena, a infraestrutura da Unifesspa é própria e enxuta, e os módulos têm requisito de disponibilidade para a janela de processos seletivos.

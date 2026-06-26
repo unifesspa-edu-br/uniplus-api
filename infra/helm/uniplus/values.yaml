@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: registry.unifesspa.edu.br/uniplus/ingresso-api
+  repository: registry.unifesspa.edu.br/uniplus/uniplus-api
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -12,11 +12,11 @@ service:
 
 resources:
   requests:
-    cpu: 250m
-    memory: 256Mi
-  limits:
-    cpu: "1"
+    cpu: 500m
     memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 1Gi
 
 env:
   ASPNETCORE_ENVIRONMENT: Production
@@ -29,14 +29,22 @@ env:
 cors:
   allowedOrigins: []
 
+# Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
+# (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
+# O monólito usa as 5 connection strings apontando para o MESMO banco `uniplus`
+# (schema-por-módulo). Documentadas aqui para rastreabilidade:
 secrets:
-  connectionString: ""
-  redisConnection: ""
-  kafkaBootstrapServers: ""
-  storageEndpoint: ""
-  storageAccessKey: ""
-  storageSecretKey: ""
-  authAuthority: ""
+  uniPlusDbConnection: ""        # ConnectionStrings__UniPlusDb (outbox Wolverine + health)
+  configuracaoDbConnection: ""   # ConnectionStrings__ConfiguracaoDb
+  organizacaoDbConnection: ""    # ConnectionStrings__OrganizacaoDb
+  selecaoDbConnection: ""        # ConnectionStrings__SelecaoDb
+  ingressoDbConnection: ""       # ConnectionStrings__IngressoDb
+  redisConnection: ""            # Redis__ConnectionString
+  kafkaBootstrapServers: ""      # Kafka__BootstrapServers
+  storageEndpoint: ""            # Storage__Endpoint
+  storageAccessKey: ""           # Storage__AccessKey
+  storageSecretKey: ""           # Storage__SecretKey
+  authAuthority: ""              # Auth__Authority
 
 healthcheck:
   # Liveness usa endpoint dependency-free (sem checks externos) para evitar
@@ -46,7 +54,7 @@ healthcheck:
   # do Service quando dependência transitória cai sem reiniciá-lo.
   livenessPath: /health/live
   readinessPath: /health
-  initialDelaySeconds: 15
+  initialDelaySeconds: 20
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 3

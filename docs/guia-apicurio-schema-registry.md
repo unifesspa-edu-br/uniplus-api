@@ -181,8 +181,8 @@ docker compose -f docker/docker-compose.yml up -d apicurio kafka postgres
 # Health
 curl http://localhost:8081/q/health/ready
 
-# Sobe APIs em dev
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build selecao-api
+# Sobe a API UniPlus (monólito) em dev — Selecao roda dentro dela
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build uniplus-api
 
 # Inspeciona o schema registrado
 curl http://localhost:8081/apis/ccompat/v7/subjects/edital_events-value/versions/latest

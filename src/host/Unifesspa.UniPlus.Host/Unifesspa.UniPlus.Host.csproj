@@ -22,23 +22,11 @@
   </ItemGroup>
 
   <!--
-    Co-hosting: os 4 .API referenciados são projetos Sdk.Web e cada um traz seu
-    próprio appsettings*.json para o publish, colidindo no mesmo destino do host
-    (NETSDK1152). As configs efetivas do monólito vêm do appsettings do HOST +
-    variáveis de ambiente; os dos módulos não devem ir para a imagem. Este target
-    os remove do publish (mantém só os do host, identificados por residirem no
-    diretório do projeto host) ANTES da checagem de duplicatas — precedência
-    determinística, sem desligar a proteção NETSDK1152 contra colisões futuras.
+    Co-hosting limpo: os 4 .API referenciados são class libraries (Sdk padrão, não
+    Sdk.Web) e NÃO carregam appsettings*.json próprios. Só este host emite
+    appsettings para o publish, então não há colisão NETSDK1152 — o target de
+    remoção que existia aqui virou desnecessário e foi removido (a conversão dos
+    módulos em libraries é a correção de raiz).
   -->
-  <Target Name="RemoverAppSettingsDeModulosCoHospedados"
-          AfterTargets="ComputeFilesToPublish"
-          BeforeTargets="_CheckForDuplicateItemsToPublish;CopyFilesToPublishDirectory">
-    <ItemGroup>
-      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
-        Condition="'%(Extension)' == '.json'
-                   and $([MSBuild]::ValueOrDefault('%(Filename)', '').StartsWith('appsettings'))
-                   and !$([MSBuild]::ValueOrDefault('%(FullPath)', '').StartsWith('$(MSBuildProjectDirectory)'))" />
-    </ItemGroup>
-  </Target>
 
 </Project>

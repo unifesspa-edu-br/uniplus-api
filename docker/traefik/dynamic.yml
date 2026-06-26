@@ -2,24 +2,28 @@
 # Roteamento path-based por prefixo de módulo (ADR-0064) + shim que reescreve
 # o path legado do cliente Angular (/api/editais) para o path migrado da API
 # (/api/selecao/editais). Em HML/PROD o equivalente vive no uniplus-infra (K8s).
+#
+# Com a topologia de 3 APIs, todos os módulos internos (Selecao/Ingresso/
+# Configuracao/Organizacao) são servidos por UMA API — o monólito `uniplus-api`,
+# que expõe cada módulo sob /api/{modulo}/. O gateway encaminha /api/ inteiro a ele.
 http:
   routers:
     # Shim: o cliente `editais.api.ts` ainda chama /api/editais (pré-ADR-0064).
-    # Reescreve para /api/selecao/editais antes de encaminhar à selecao-api.
+    # Reescreve para /api/selecao/editais antes de encaminhar à API UniPlus.
     selecao-editais-legacy:
       rule: "PathPrefix(`/api/editais`)"
       entryPoints:
         - web
       middlewares:
         - rewrite-editais
-      service: selecao
+      service: uniplus
 
-    # Passthrough já no padrão ADR-0064 (/api/selecao/...).
-    selecao:
-      rule: "PathPrefix(`/api/selecao/`)"
+    # Passthrough já no padrão ADR-0064 (/api/{modulo}/...).
+    uniplus:
+      rule: "PathPrefix(`/api/`)"
       entryPoints:
         - web
-      service: selecao
+      service: uniplus
 
   middlewares:
     rewrite-editais:
@@ -28,7 +32,7 @@ http:
         replacement: "/api/selecao/editais"
 
   services:
-    selecao:
+    uniplus:
       loadBalancer:
         servers:
-          - url: "http://selecao-api:8080"
+          - url: "http://uniplus-api:8080"
