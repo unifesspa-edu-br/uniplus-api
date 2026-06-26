@@ -5,9 +5,7 @@
 #   * uniplus-api — MONÓLITO modular (Selecao + Ingresso + Configuracao +
 #                   OrganizacaoInstitucional) no banco único `uniplus`.
 #   * portal-api  — Portal (deploy autônomo, banco `uniplus_portal`).
-#   * geo-api     — Geo (deploy autônomo, banco `uniplus_geo` com PostGIS). Ainda
-#                   sem Dockerfile próprio; adicione `docker/Dockerfile.geo` e um
-#                   serviço análogo a portal-api quando for conteinerizá-lo.
+#   * geo-api     — Geo (deploy autônomo, banco `uniplus_geo` com PostGIS).
 services:
   keycloak:
     # Override do compose canônico para importar ADICIONALMENTE o realm
@@ -58,7 +56,50 @@ services:
         condition: service_healthy
       apicurio:
         condition: service_healthy
+      # MinIO entra no /health agregado (readiness) — declarar a dependência evita
+      # que a API fique unhealthy quando subida isolada (storage é lazy no uso, mas
+      # o health check o pinga no readiness).
+      minio:
+        condition: service_healthy
       # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # API Geo — deploy autônomo (banco isolado uniplus_geo com PostGIS, ADR-0090/0091).
+  # Dono do banco: usuário _app dedicado (uniplus_geo_app), provisionado por init-db.sql.
+  geo-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.geo
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__GeoDb: "Host=postgres;Port=5432;Database=uniplus_geo;Username=uniplus_geo_app;Password=uniplus_dev"
+      Redis__ConnectionString: "redis:6379"
+      Kafka__BootstrapServers: "kafka:29092"
+      Storage__Endpoint: "minio:9000"
+      Storage__AccessKey: "${MINIO_ROOT_USER}"
+      Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
+      Auth__Audience: "uniplus"
+    ports:
+      - "5400:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
       keycloak:
         condition: service_healthy
     healthcheck:
