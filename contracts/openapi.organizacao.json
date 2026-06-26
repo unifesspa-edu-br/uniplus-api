@@ -162,7 +162,7 @@
         }
       }
     },
-    "/api/instituicao": {
+    "/api/organizacao/instituicao": {
       "get": {
         "tags": [
           "Instituicao"
@@ -211,7 +211,7 @@
         }
       }
     },
-    "/api/admin/instituicao": {
+    "/api/organizacao/admin/instituicao": {
       "post": {
         "tags": [
           "Instituicao"
@@ -328,7 +328,7 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/admin/instituicao/{id}": {
+    "/api/organizacao/admin/instituicao/{id}": {
       "put": {
         "tags": [
           "Instituicao"
@@ -485,7 +485,7 @@
         }
       }
     },
-    "/api/unidades": {
+    "/api/organizacao/unidades": {
       "get": {
         "tags": [
           "Unidades"
@@ -633,7 +633,7 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/unidades/{id}": {
+    "/api/organizacao/unidades/{id}": {
       "get": {
         "tags": [
           "Unidades"
@@ -693,7 +693,7 @@
         }
       }
     },
-    "/api/admin/unidades": {
+    "/api/organizacao/admin/unidades": {
       "post": {
         "tags": [
           "Unidades"
@@ -810,7 +810,7 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/admin/unidades/{id}": {
+    "/api/organizacao/admin/unidades/{id}": {
       "put": {
         "tags": [
           "Unidades"

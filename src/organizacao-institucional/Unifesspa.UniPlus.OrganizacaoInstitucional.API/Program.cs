@@ -4,19 +4,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Errors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Hateoas;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -40,25 +35,15 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-// OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo. Spec em /openapi/organizacao.json.
-builder.Services.AddUniPlusOpenApi("organizacao", builder.Configuration);
-
-builder.Services.AddSingleton<IDomainErrorRegistration, OrganizacaoDomainErrorRegistration>();
+// AddDomainErrorMapper é compartilhado (consome IEnumerable<IDomainErrorRegistration>);
+// o registro de erros do módulo entra via AddOrganizacaoInstitucionalModule.
 builder.Services.AddDomainErrorMapper();
 
-// HATEOAS Level 1 (ADR-0029/0049) — builders de _links.
-builder.Services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
-builder.Services.AddSingleton<IResourceLinksBuilder<InstituicaoDto>, InstituicaoLinksBuilder>();
-
-// Criptografia (Idempotency response cipher) + Idempotency-Key (ADR-0027).
-// AddIdempotency injeta o filter de MVC que ativa-se em endpoints com
-// [RequiresIdempotencyKey], usando o DbContext do módulo para persistir
-// entries cifradas at-rest.
+// Criptografia (entries de idempotência at-rest) e cursor pagination (ADR-0026)
+// são transversais ao host. Cursor pagination registra CursorEncoder,
+// PageRequestModelBinder e o hook que traduz falhas do binder para 400/410/422.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
-// Cursor pagination (ADR-0026) — CursorEncoder, PageRequestModelBinder e o hook
-// que traduz falhas do binder para 400/410/422; usado por GET /api/unidades.
 builder.Services.AddCursorPagination(builder.Configuration);
-builder.Services.AddIdempotency<OrganizacaoInstitucionalDbContext>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
@@ -67,17 +52,11 @@ builder.Services.AddRequestLogging(builder.Configuration);
 // Observabilidade (ADR-0018) — tracing + metrics via OpenTelemetry SDK.
 builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, builder.Environment);
 
-// Application + Infrastructure — registram validators, DbContext, repositórios,
-// readers cross-módulo (ADR-0056) e cache invalidators.
-builder.Services.AddOrganizacaoInstitucionalApplication();
-builder.Services.AddOrganizacaoInstitucionalInfrastructure();
-
-// Migrations EF Core aplicadas no host StartAsync via IHostedService (issue #344).
-// Registrado ANTES de UseWolverineOutboxCascading + AddWolverineMessaging (invariante
-// #419) — HostOptions.ServicesStartConcurrently=false (default) garante inicialização
-// sequencial, então o schema EF é aplicado antes do runtime Wolverine aceitar envelopes.
-// Filtrável por test factories HTTP-only (ApiFactoryBase).
-builder.Services.AddDbContextMigrationsOnStartup<OrganizacaoInstitucionalDbContext>();
+// Registro self-describing do módulo: OpenAPI, erros de domínio, HATEOAS,
+// idempotência, Application + Infrastructure e migrations on startup. O mesmo
+// método é consumido pelo composition root do monólito modular (spike).
+// Migrations on startup ficam ANTES do Wolverine (invariante #419).
+builder.Services.AddOrganizacaoInstitucionalModule(builder.Configuration);
 
 // Wolverine como backbone CQRS/messaging (ADR-0003/0004/0005). Sem roteamento
 // específico — o módulo não emite eventos Kafka em V1 (D4 do plano #447); o

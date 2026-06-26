@@ -40,19 +40,19 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente.
 | Cenário | Verbo / rota | Esperado |
 |---|---|---|
 | Token plataforma-admin | `POST` token (Keycloak) | 200 + `access_token` |
-| Limpeza (estado conhecido) | `GET /api/instituicao` (+ `DELETE` se existir) | 200/404 → limpo |
-| Criar sem auth | `POST /api/admin/instituicao` | 401 |
-| Criar sem Idempotency-Key | `POST /api/admin/instituicao` | 400 |
-| Criar sem campo obrigatório | `POST /api/admin/instituicao` | 400/422 |
-| Criar com unidade raiz inexistente | `POST /api/admin/instituicao` | 422 `unidade_raiz_nao_encontrada` |
-| Criar Instituição | `POST /api/admin/instituicao` | 201 + Guid v7 |
-| Obter (vendor MIME + HATEOAS) | `GET /api/instituicao` | 200 + `_links.self` |
-| Singleton: 2ª criação | `POST /api/admin/instituicao` | 409 `ja_existe` |
-| Atualizar | `PUT /api/admin/instituicao/{id}` | 204 |
-| Obter após atualização | `GET /api/instituicao` | 200 + `situacao` Credenciada |
-| Remover (soft-delete) | `DELETE /api/admin/instituicao/{id}` | 204 |
-| Obter pós-remoção (slot liberado) | `GET /api/instituicao` | 404 |
-| Smoke Unidade | `GET /api/unidades` | 200 + vendor MIME + array |
+| Limpeza (estado conhecido) | `GET /api/organizacao/instituicao` (+ `DELETE` se existir) | 200/404 → limpo |
+| Criar sem auth | `POST /api/organizacao/admin/instituicao` | 401 |
+| Criar sem Idempotency-Key | `POST /api/organizacao/admin/instituicao` | 400 |
+| Criar sem campo obrigatório | `POST /api/organizacao/admin/instituicao` | 400/422 |
+| Criar com unidade raiz inexistente | `POST /api/organizacao/admin/instituicao` | 422 `unidade_raiz_nao_encontrada` |
+| Criar Instituição | `POST /api/organizacao/admin/instituicao` | 201 + Guid v7 |
+| Obter (vendor MIME + HATEOAS) | `GET /api/organizacao/instituicao` | 200 + `_links.self` |
+| Singleton: 2ª criação | `POST /api/organizacao/admin/instituicao` | 409 `ja_existe` |
+| Atualizar | `PUT /api/organizacao/admin/instituicao/{id}` | 204 |
+| Obter após atualização | `GET /api/organizacao/instituicao` | 200 + `situacao` Credenciada |
+| Remover (soft-delete) | `DELETE /api/organizacao/admin/instituicao/{id}` | 204 |
+| Obter pós-remoção (slot liberado) | `GET /api/organizacao/instituicao` | 404 |
+| Smoke Unidade | `GET /api/organizacao/unidades` | 200 + vendor MIME + array |
 
 A coleção é **auto-contida e re-executável**: limpa a Instituição no início e
 remove a que cria ao final, deixando o estado limpo.

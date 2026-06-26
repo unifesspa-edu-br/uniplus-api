@@ -29,23 +29,23 @@ public sealed class LocalOfertaEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "GET /api/locais-oferta retorna 200 com Content-Type vendor MIME de local-oferta")]
+    [Fact(DisplayName = "GET /api/configuracao/locais-oferta retorna 200 com Content-Type vendor MIME de local-oferta")]
     public async Task Listar_Retorna200ComVendorMime()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(new Uri("/api/locais-oferta", UriKind.Relative));
+        HttpResponseMessage response = await client.GetAsync(new Uri("/api/configuracao/locais-oferta", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType
             .Should().Be("application/vnd.uniplus.local-oferta.v1+json");
     }
 
-    [Fact(DisplayName = "POST /api/admin/locais-oferta sem autenticação retorna 401")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta sem autenticação retorna 401")]
     public async Task Criar_SemAuth_Retorna401()
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/admin/locais-oferta", UriKind.Relative));
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/locais-oferta", UriKind.Relative));
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
@@ -54,7 +54,7 @@ public sealed class LocalOfertaEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST /api/admin/locais-oferta cria (201) sem campus responsável e o GET retorna a cidade")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta cria (201) sem campus responsável e o GET retorna a cidade")]
     public async Task Criar_SemCampus_Retorna201()
     {
         var body = new
@@ -67,12 +67,12 @@ public sealed class LocalOfertaEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/admin/locais-oferta", body);
+        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", body);
 
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/locais-oferta/{id}", UriKind.Relative));
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/locais-oferta/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
@@ -80,7 +80,7 @@ public sealed class LocalOfertaEndpointTests
         doc.RootElement.GetProperty("cidade").GetProperty("codigoIbge").GetString().Should().Be("1504208");
     }
 
-    [Fact(DisplayName = "POST /api/admin/locais-oferta com campus responsável existente cria (201) — FK satisfeita")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta com campus responsável existente cria (201) — FK satisfeita")]
     public async Task Criar_ComCampusExistente_Retorna201()
     {
         // Cria primeiro o campus, depois um local apontando para ele (FK intra-banco).
@@ -94,7 +94,7 @@ public sealed class LocalOfertaEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criarCampus = await EnviarPostAdmin(client, "/api/admin/campi", campusBody);
+        HttpResponseMessage criarCampus = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", campusBody);
         criarCampus.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid campusId = await criarCampus.Content.ReadFromJsonAsync<Guid>();
 
@@ -107,17 +107,17 @@ public sealed class LocalOfertaEndpointTests
             cidadeUf = "PA",
         };
 
-        HttpResponseMessage criarLocal = await EnviarPostAdmin(client, "/api/admin/locais-oferta", localBody);
+        HttpResponseMessage criarLocal = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", localBody);
         criarLocal.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid localId = await criarLocal.Content.ReadFromJsonAsync<Guid>();
 
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/locais-oferta/{localId}", UriKind.Relative));
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/locais-oferta/{localId}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("campusResponsavelId").GetGuid().Should().Be(campusId);
     }
 
-    [Fact(DisplayName = "POST /api/admin/locais-oferta com campus responsável inexistente retorna 422")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/locais-oferta com campus responsável inexistente retorna 422")]
     public async Task Criar_CampusInexistente_Retorna422()
     {
         var body = new
@@ -130,7 +130,7 @@ public sealed class LocalOfertaEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/admin/locais-oferta", body);
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }

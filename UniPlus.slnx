@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/" />
+  <Folder Name="/src/host/">
+    <Project Path="src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj" />
+  </Folder>
   <Folder Name="/src/ingresso/">
     <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj" />
     <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
@@ -65,5 +68,6 @@
     <Project Path="tests/Unifesspa.UniPlus.Configuracao.Application.UnitTests/Unifesspa.UniPlus.Configuracao.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Configuracao.IntegrationTests/Unifesspa.UniPlus.Configuracao.IntegrationTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Geo.IntegrationTests/Unifesspa.UniPlus.Geo.IntegrationTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Host.IntegrationTests/Unifesspa.UniPlus.Host.IntegrationTests.csproj" />
   </Folder>
 </Solution>

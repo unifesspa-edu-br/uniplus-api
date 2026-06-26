@@ -4,19 +4,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
-using Unifesspa.UniPlus.Configuracao.API.Errors;
-using Unifesspa.UniPlus.Configuracao.API.Hateoas;
+using Unifesspa.UniPlus.Configuracao.API;
 using Unifesspa.UniPlus.Configuracao.Application;
-using Unifesspa.UniPlus.Configuracao.Application.DTOs;
-using Unifesspa.UniPlus.Configuracao.Infrastructure;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -47,26 +42,14 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-// OpenAPI 3.1 (ADR-0030) — spec em /openapi/configuracao.json.
-builder.Services.AddUniPlusOpenApi("configuracao", builder.Configuration);
-
-builder.Services.AddSingleton<IDomainErrorRegistration, ConfiguracaoDomainErrorRegistration>();
+// AddDomainErrorMapper é compartilhado (consome IEnumerable<IDomainErrorRegistration>);
+// o registro de erros do módulo entra via AddConfiguracaoModule.
 builder.Services.AddDomainErrorMapper();
 
-// HATEOAS Level 1 (ADR-0029) — builders de _links dos cadastros (UNI-REQ #587).
-builder.Services.AddSingleton<IResourceLinksBuilder<CampusDto>, CampusLinksBuilder>();
-builder.Services.AddSingleton<IResourceLinksBuilder<LocalOfertaDto>, LocalOfertaLinksBuilder>();
-builder.Services.AddSingleton<IResourceLinksBuilder<ReferenciaReservaDemograficaDto>, ReferenciaReservaDemograficaLinksBuilder>();
-builder.Services.AddSingleton<IResourceLinksBuilder<PesoAreaEnemDto>, PesoAreaEnemLinksBuilder>();
-
-// Idempotency-Key (ADR-0027) + criptografia para entries at-rest. Filter global
-// se ativa apenas em endpoints com [RequiresIdempotencyKey] — os controllers
-// admin de Campus/LocalOferta o exigem.
+// Criptografia (entries de idempotência at-rest) e cursor pagination (ADR-0026)
+// são transversais ao host.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
-// Cursor pagination (ADR-0026) — CursorEncoder, PageRequestModelBinder e o hook
-// que traduz falhas do binder para 400/410/422; usado pelos GET de listagem.
 builder.Services.AddCursorPagination(builder.Configuration);
-builder.Services.AddIdempotency<ConfiguracaoDbContext>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
@@ -75,14 +58,11 @@ builder.Services.AddRequestLogging(builder.Configuration);
 // Observabilidade (ADR-0018) — tracing + metrics via OpenTelemetry SDK.
 builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, builder.Environment);
 
-builder.Services.AddConfiguracaoApplication();
-builder.Services.AddConfiguracaoInfrastructure();
-
-// Migrations EF Core aplicadas no host StartAsync via IHostedService (issue #344).
-// Registrado ANTES de UseWolverineOutboxCascading + AddWolverineMessaging (invariante
-// #419) — fitness test em ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
-// cobre os 5 entry points com a regra.
-builder.Services.AddDbContextMigrationsOnStartup<ConfiguracaoDbContext>();
+// Registro self-describing do módulo: OpenAPI, erros de domínio, HATEOAS,
+// idempotência, Application + Infrastructure e migrations on startup. O mesmo
+// método é consumido pelo composition root do monólito modular (spike).
+// Migrations on startup ficam ANTES do Wolverine (invariante #419).
+builder.Services.AddConfiguracaoModule(builder.Configuration);
 
 // Wolverine como backbone CQRS/messaging (ADR-0003/0004/0005). Os command/query
 // handlers de Campus/LocalOferta vivem em Configuracao.Application — incluir o

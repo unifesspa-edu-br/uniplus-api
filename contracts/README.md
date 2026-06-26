@@ -6,8 +6,8 @@ Specs OpenAPI 3.1 versionados como **fonte de verdade do contrato V1** da `unipl
 
 - `openapi.selecao.json` — spec do módulo Seleção (endpoints `/api/editais`, `/api/auth/me`, `/api/profile/me`).
 - `openapi.ingresso.json` — spec do módulo Ingresso (stub atual; endpoints próprios chegam em sprints posteriores).
-- `openapi.organizacao.json` — spec do módulo Organização Institucional (Instituição e Unidades, incluindo as variantes administrativas `/api/admin/*`). Áreas Organizacionais ficam fora do contrato — em aposentadoria (issue #625), o controller foi removido.
-- `openapi.configuracao.json` — spec do módulo Configuração (Campus e Local de Oferta, incluindo as variantes administrativas `/api/admin/*`). A Cidade é referenciada por código IBGE + display cache (ADR-0090) — não há endpoint de cidade aqui.
+- `openapi.organizacao.json` — spec do módulo Organização Institucional (Instituição e Unidades, sob o prefixo de módulo `/api/organizacao/*`, incluindo as variantes administrativas `/api/organizacao/admin/*`). Áreas Organizacionais ficam fora do contrato — em aposentadoria (issue #625), o controller foi removido.
+- `openapi.configuracao.json` — spec do módulo Configuração (Campus e Local de Oferta, sob o prefixo de módulo `/api/configuracao/*`, incluindo as variantes administrativas `/api/configuracao/admin/*`). A Cidade é referenciada por código IBGE + display cache (ADR-0090) — não há endpoint de cidade aqui.
 
 ## Como o spec é gerado
 

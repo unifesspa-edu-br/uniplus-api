@@ -31,34 +31,34 @@ public sealed class CampusEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "GET /api/campi retorna 200 com Content-Type vendor MIME de campus")]
+    [Fact(DisplayName = "GET /api/configuracao/campi retorna 200 com Content-Type vendor MIME de campus")]
     public async Task Listar_Retorna200ComVendorMime()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(new Uri("/api/campi", UriKind.Relative));
+        HttpResponseMessage response = await client.GetAsync(new Uri("/api/configuracao/campi", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType
             .Should().Be("application/vnd.uniplus.campus.v1+json");
     }
 
-    [Fact(DisplayName = "GET /api/campi/{id} retorna 404 quando inexistente")]
+    [Fact(DisplayName = "GET /api/configuracao/campi/{id} retorna 404 quando inexistente")]
     public async Task ObterPorId_NaoExiste_Retorna404()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/api/campi/{Guid.NewGuid()}", UriKind.Relative));
+            new Uri($"/api/configuracao/campi/{Guid.NewGuid()}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "POST /api/admin/campi sem autenticação retorna 401")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/campi sem autenticação retorna 401")]
     public async Task Criar_SemAuth_Retorna401()
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/admin/campi", UriKind.Relative));
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/campi", UriKind.Relative));
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
@@ -67,7 +67,7 @@ public sealed class CampusEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "POST /api/admin/campi autenticado sem role plataforma-admin retorna 403")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/campi autenticado sem role plataforma-admin retorna 403")]
     public async Task Criar_SemRoleAdmin_Retorna403()
     {
         var body = new
@@ -80,7 +80,7 @@ public sealed class CampusEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/admin/campi", UriKind.Relative));
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/campi", UriKind.Relative));
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "candidato"); // role insuficiente
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
@@ -92,11 +92,11 @@ public sealed class CampusEndpointTests
             "a policy [Authorize(Roles = \"plataforma-admin\")] nega um principal autenticado sem o role");
     }
 
-    [Fact(DisplayName = "POST /api/admin/campi sem Idempotency-Key retorna 400")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/campi sem Idempotency-Key retorna 400")]
     public async Task Criar_SemIdempotencyKey_Retorna400()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/admin/campi", UriKind.Relative));
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/campi", UriKind.Relative));
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
@@ -106,7 +106,7 @@ public sealed class CampusEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    [Fact(DisplayName = "POST /api/admin/campi cria (201) e o GET subsequente retorna a cidade por código + display cache")]
+    [Fact(DisplayName = "POST /api/configuracao/admin/campi cria (201) e o GET subsequente retorna a cidade por código + display cache")]
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersisteCidade()
     {
         string sigla = $"C{Guid.NewGuid().ToString("N")[..6]}";
@@ -120,13 +120,13 @@ public sealed class CampusEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/admin/campi", body);
+        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
 
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
 
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/campi/{id}", UriKind.Relative));
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/campi/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
@@ -165,11 +165,11 @@ public sealed class CampusEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/admin/campi", body);
+        HttpResponseMessage criar = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/campi/{id}", UriKind.Relative));
+        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/campi/{id}", UriKind.Relative));
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement endereco = doc.RootElement.GetProperty("endereco");
         endereco.GetProperty("cep").GetString().Should().Be("68507590");
@@ -198,12 +198,12 @@ public sealed class CampusEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/admin/campi", body);
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
-    [Fact(DisplayName = "CA-03: POST /api/admin/campi com código IBGE malformado retorna 422 sem consultar o Geo")]
+    [Fact(DisplayName = "CA-03: POST /api/configuracao/admin/campi com código IBGE malformado retorna 422 sem consultar o Geo")]
     public async Task Criar_CidadeMalformada_Retorna422()
     {
         var body = new
@@ -216,7 +216,7 @@ public sealed class CampusEndpointTests
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/admin/campi", body);
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }

@@ -160,6 +160,45 @@ public sealed class CrossModuleReadIsolationTests
             + $"Violações:\n  - {string.Join("\n  - ", violations)}");
     }
 
+    [Fact(DisplayName = "R8 (host composition root): o host é isento do roster e PODE compor os 4 módulos internos")]
+    public void HostCompositionRoot_ComposeTodosOsModulosInternos()
+    {
+        // Contraponto POSITIVO ao R8: enquanto nenhum MÓDULO pode depender de
+        // outro (fatos acima), o host do monólito modular (spike) é a ÚNICA
+        // exceção autorizada — o composition root compõe os 4 módulos internos
+        // num processo único via Add{Modulo}Module + discovery Wolverine. Por
+        // isso fica FORA do ModulesRoster (senão os fatos R8 o acusariam de
+        // depender de todos). Este fato trava a regressão oposta: se o host
+        // parar de compor algum módulo, a composição do monólito quebrou.
+        ModulesRoster.Should().NotContain(
+            "Host",
+            "o composition root é isento do R8 — ele é o único autorizado a compor todos os módulos");
+
+        // Reflexão sobre os assemblies referenciados (não ArchUnitNET fluent): o
+        // host referencia as 4 .API, cada uma com seu próprio `Program` top-level
+        // — carregar o host no ArchLoader traria 5 `Program` ao grafo, tornando o
+        // filtro por nome ambíguo. A referência de assembly é evidência direta e
+        // determinística da composição (o Add{Modulo}Module vive no .API).
+        ReflectionAssembly hostAssembly =
+            typeof(global::Unifesspa.UniPlus.Host.HostAssemblyMarker).Assembly;
+
+        HashSet<string> referenciados = hostAssembly
+            .GetReferencedAssemblies()
+            .Select(nome => nome.Name ?? string.Empty)
+            .ToHashSet(StringComparer.Ordinal);
+
+        string[] modulosInternos = ["Selecao", "Ingresso", "Configuracao", "OrganizacaoInstitucional"];
+        List<string> naoCompostos =
+        [
+            .. modulosInternos.Where(modulo => !referenciados.Contains($"Unifesspa.UniPlus.{modulo}.API")),
+        ];
+
+        naoCompostos.Should().BeEmpty(
+            "o host do monólito modular deve compor os 4 módulos internos (Selecao, Ingresso, "
+            + "Configuracao, OrganizacaoInstitucional) via Add<Modulo>Module no .API de cada um. "
+            + $"Módulos não compostos: {string.Join(", ", naoCompostos)}");
+    }
+
     [Fact(DisplayName = "R8 S4: Application.Abstractions só depende de Governance.Contracts e Kernel cross-módulo")]
     public void ApplicationAbstractions_SoDependeDeFoundationCrossModulo()
     {

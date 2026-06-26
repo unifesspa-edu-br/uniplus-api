@@ -29,24 +29,24 @@ public sealed class InstituicaoEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "GET /api/instituicao retorna 404 quando nenhuma Instituição cadastrada")]
+    [Fact(DisplayName = "GET /api/organizacao/instituicao retorna 404 quando nenhuma Instituição cadastrada")]
     public async Task Obter_SemInstituicao_Retorna404()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/instituicao", UriKind.Relative));
+            new Uri("/api/organizacao/instituicao", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "POST /api/admin/instituicao sem Idempotency-Key retorna 400")]
+    [Fact(DisplayName = "POST /api/organizacao/admin/instituicao sem Idempotency-Key retorna 400")]
     public async Task Criar_SemIdempotencyKey_Retorna400()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post,
-            new Uri("/api/admin/instituicao", UriKind.Relative));
+            new Uri("/api/organizacao/admin/instituicao", UriKind.Relative));
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
@@ -57,13 +57,13 @@ public sealed class InstituicaoEndpointTests
             "Idempotency-Key é obrigatório — sem ela o filtro retorna 400 antes do action");
     }
 
-    [Fact(DisplayName = "POST /api/admin/instituicao sem autenticação retorna 401")]
+    [Fact(DisplayName = "POST /api/organizacao/admin/instituicao sem autenticação retorna 401")]
     public async Task Criar_SemAuth_Retorna401()
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post,
-            new Uri("/api/admin/instituicao", UriKind.Relative));
+            new Uri("/api/organizacao/admin/instituicao", UriKind.Relative));
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
@@ -72,13 +72,13 @@ public sealed class InstituicaoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "PUT /api/admin/instituicao/{id} sem autenticação retorna 401")]
+    [Fact(DisplayName = "PUT /api/organizacao/admin/instituicao/{id} sem autenticação retorna 401")]
     public async Task Atualizar_SemAuth_Retorna401()
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
         using HttpRequestMessage request = new(
             HttpMethod.Put,
-            new Uri($"/api/admin/instituicao/{Guid.NewGuid()}", UriKind.Relative));
+            new Uri($"/api/organizacao/admin/instituicao/{Guid.NewGuid()}", UriKind.Relative));
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
@@ -87,13 +87,13 @@ public sealed class InstituicaoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "DELETE /api/admin/instituicao/{id} sem autenticação retorna 401")]
+    [Fact(DisplayName = "DELETE /api/organizacao/admin/instituicao/{id} sem autenticação retorna 401")]
     public async Task Remover_SemAuth_Retorna401()
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
 
         HttpResponseMessage response = await client.DeleteAsync(
-            new Uri($"/api/admin/instituicao/{Guid.NewGuid()}", UriKind.Relative));
+            new Uri($"/api/organizacao/admin/instituicao/{Guid.NewGuid()}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

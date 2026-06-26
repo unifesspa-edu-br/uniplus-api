@@ -18,17 +18,17 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
 /// <summary>
-/// Endpoints públicos de leitura (<c>GET /api/unidades</c>,
-/// <c>GET /api/unidades/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/admin/unidades</c>) restritos a
+/// Endpoints públicos de leitura (<c>GET /api/organizacao/unidades</c>,
+/// <c>GET /api/organizacao/unidades/{id}</c>) e endpoints admin
+/// (<c>POST/PUT/DELETE /api/organizacao/admin/unidades</c>) restritos a
 /// <c>plataforma-admin</c>.
 /// </summary>
 /// <remarks>
 /// Rotas público/admin em caminhos distintos — o controller declara
-/// <c>[Route("api")]</c> e cada action especifica seu caminho.
+/// <c>[Route("api/organizacao")]</c> e cada action especifica seu caminho.
 /// </remarks>
 [ApiController]
-[Route("api")]
+[Route("api/organizacao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

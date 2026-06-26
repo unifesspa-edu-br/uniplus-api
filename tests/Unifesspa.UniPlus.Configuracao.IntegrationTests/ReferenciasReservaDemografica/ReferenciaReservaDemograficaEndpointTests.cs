@@ -25,8 +25,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 public sealed class ReferenciaReservaDemograficaEndpointTests
 {
     private const string VendorMime = "application/vnd.uniplus.referencia-reserva-demografica.v1+json";
-    private const string ColecaoPath = "/api/referencias-reserva-demografica";
-    private const string AdminPath = "/api/admin/referencias-reserva-demografica";
+    private const string ColecaoPath = "/api/configuracao/referencias-reserva-demografica";
+    private const string AdminPath = "/api/configuracao/admin/referencias-reserva-demografica";
 
     private readonly ConfiguracaoEndpointFixture _fixture;
 
