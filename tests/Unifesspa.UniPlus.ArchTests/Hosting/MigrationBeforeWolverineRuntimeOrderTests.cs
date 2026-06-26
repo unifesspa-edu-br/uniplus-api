@@ -11,21 +11,27 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-using Unifesspa.UniPlus.Ingresso.API;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
-using Unifesspa.UniPlus.Configuracao.API;
 using Unifesspa.UniPlus.Geo.API;
+using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Portal.API;
-using Unifesspa.UniPlus.Selecao.API;
 
 /// <summary>
 /// Fitness test (uniplus-api#419) que trava a invariante de ordem dos
-/// <see cref="IHostedService"/> nos 6 entry points (Selecao/Ingresso/Portal/Organizacao/Configuracao/Geo):
+/// <see cref="IHostedService"/> nos 3 entry points executáveis
+/// (<b>UniPlus</b> — o host do monólito —, <b>Portal</b> e <b>Geo</b>):
 /// <c>MigrationHostedService&lt;TContext&gt;</c> precisa ser registrado antes
 /// do <c>WolverineRuntime</c> para que o schema EF do domínio esteja aplicado
 /// quando o Wolverine começar a processar envelopes que tocam tabelas do módulo.
 /// </summary>
 /// <remarks>
+/// <para>Os 4 módulos internos (Selecao, Ingresso, Configuracao, Organizacao)
+/// deixaram de ser executáveis (viraram class libraries) — não têm mais
+/// <c>Program</c> próprio. A ordem migrations→Wolverine deles é governada por um
+/// <b>único</b> entry point, o host UniPlus, que registra os 4
+/// <c>MigrationHostedService</c> (um por DbContext de módulo) via <c>Add*Module</c>
+/// e só então o <c>WolverineRuntime</c> consolidado. Verificar o host cobre os 4
+/// de uma vez; Portal e Geo permanecem deployables autônomos.</para>
+///
 /// <para>A invariante depende de duas premissas conjuntas:
 /// (1) ordem de registro no <see cref="IServiceCollection"/> determina ordem
 /// de Start dos <see cref="IHostedService"/>, e
@@ -61,7 +67,27 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
     public static TheoryData<string> EntryPointKeys =>
         new(MigrationOrderFixture.RegisteredKeys);
 
-    [Theory(DisplayName = "MigrationHostedService precede WolverineRuntime no IServiceCollection (6 entry points)")]
+    /// <summary>
+    /// DbContexts cuja migration on startup CADA entry point deve registrar. O
+    /// host UniPlus co-hospeda os 4 módulos internos, então precisa dos 4; Portal
+    /// e Geo são autônomos com um DbContext cada. Travar o conjunto exato impede
+    /// que um módulo perca silenciosamente seu <c>AddDbContextMigrationsOnStartup</c>
+    /// enquanto outro ainda registra o seu (a ordem sozinha não pegaria isso).
+    /// </summary>
+    private static readonly Dictionary<string, string[]> MigrationContextsEsperados = new(StringComparer.Ordinal)
+    {
+        [MigrationOrderFixture.UniPlusKey] =
+        [
+            "SelecaoDbContext",
+            "IngressoDbContext",
+            "ConfiguracaoDbContext",
+            "OrganizacaoInstitucionalDbContext",
+        ],
+        [MigrationOrderFixture.PortalKey] = ["PortalDbContext"],
+        [MigrationOrderFixture.GeoKey] = ["GeoDbContext"],
+    };
+
+    [Theory(DisplayName = "MigrationHostedService precede WolverineRuntime no IServiceCollection (3 entry points executáveis)")]
     [MemberData(nameof(EntryPointKeys))]
     public void MigrationRegistradaAntesDeWolverineRuntime(string entryPointKey)
     {
@@ -70,19 +96,36 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
         List<ServiceDescriptor> hostedServices = [..
             snapshot.Where(d => d.ServiceType == typeof(IHostedService))];
 
-        int migrationIndex = hostedServices.FindIndex(d =>
-            MigrationOrderHeuristics.IsMigrationHostedService(d.ImplementationType));
-        int wolverineIndex = hostedServices.FindIndex(MigrationOrderHeuristics.IsWolverineRuntime);
+        // Cobertura: todo DbContext esperado para este entry point precisa de um
+        // MigrationHostedService<TContext>. Travado ANTES da ordem para que perder
+        // o Add*Module de um módulo falhe com mensagem direcional (e não apenas
+        // afrouxe silenciosamente a invariante #419 para os demais).
+        string[] contextsRegistrados = [.. hostedServices
+            .Select(d => MigrationOrderHeuristics.GetMigrationContextName(d.ImplementationType))
+            .Where(nome => nome is not null)
+            .Select(nome => nome!)];
 
-        migrationIndex.Should().BeGreaterThanOrEqualTo(0,
-            "MigrationHostedService<TContext> precisa estar registrado em Program.cs do entry point " + entryPointKey);
+        contextsRegistrados.Should().BeEquivalentTo(
+            MigrationContextsEsperados[entryPointKey],
+            because: "o entry point " + entryPointKey + " deve registrar AddDbContextMigrationsOnStartup<TContext> "
+                + "para exatamente estes DbContexts (uniplus-api#419). No host UniPlus, cada Add*Module contribui o "
+                + "MigrationHostedService do seu módulo — se um sumir, o schema dele não é aplicado antes do Wolverine.");
+
+        int wolverineIndex = hostedServices.FindIndex(MigrationOrderHeuristics.IsWolverineRuntime);
+        // FindLastIndex (e não FindIndex) porque o host UniPlus registra VÁRIOS
+        // MigrationHostedService (um por DbContext de módulo). A invariante exige
+        // que TODAS as migrations precedam o Wolverine — basta a última preceder.
+        int ultimaMigrationIndex = hostedServices.FindLastIndex(d =>
+            MigrationOrderHeuristics.IsMigrationHostedService(d.ImplementationType));
+
         wolverineIndex.Should().BeGreaterThanOrEqualTo(0,
-            "WolverineRuntime IHostedService precisa estar registrado em Program.cs do entry point " + entryPointKey);
-        migrationIndex.Should().BeLessThan(
+            "WolverineRuntime IHostedService precisa estar registrado no Program.cs do entry point " + entryPointKey);
+        ultimaMigrationIndex.Should().BeLessThan(
             wolverineIndex,
             because: "Schema EF do domínio precisa estar aplicado antes do WolverineRuntime aceitar envelopes "
-                + "que toquem tabelas do módulo (uniplus-api#419). Em Program.cs do entry point "
-                + entryPointKey + ", AddDbContextMigrationsOnStartup<TContext>() precisa preceder UseWolverineOutboxCascading.");
+                + "que toquem tabelas do módulo (uniplus-api#419). No entry point "
+                + entryPointKey + ", AddDbContextMigrationsOnStartup<TContext>() precisa preceder UseWolverineOutboxCascading "
+                + "(no host UniPlus, todos os Add*Module precedem o UseWolverineOutboxCascading consolidado).");
     }
 
     [Theory(DisplayName = "HostOptions.ServicesStartConcurrently permanece false (premissa da ordem)")]
@@ -104,9 +147,10 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
 
 /// <summary>
 /// Fixture xUnit que materializa as 3 <see cref="WebApplicationFactory{T}"/>
-/// (uma por entry point) uma única vez por test class, preservando o custo de
-/// inicialização do host. As factories são <c>IDisposable</c> via composição
-/// — não há herança custom (evita pattern Dispose(bool) sobre tipo abstrato).
+/// (uma por entry point executável: UniPlus/Portal/Geo) uma única vez por test
+/// class, preservando o custo de inicialização do host. As factories são
+/// <c>IDisposable</c> via composição — não há herança custom (evita pattern
+/// Dispose(bool) sobre tipo abstrato).
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -114,15 +158,12 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
     Justification = "xUnit IClassFixture<T> exige tipo público para a fixture compartilhada.")]
 public sealed class MigrationOrderFixture : IDisposable
 {
-    public const string SelecaoKey = "Selecao";
-    public const string IngressoKey = "Ingresso";
+    public const string UniPlusKey = "UniPlus";
     public const string PortalKey = "Portal";
-    public const string OrganizacaoKey = "OrganizacaoInstitucional";
-    public const string ConfiguracaoKey = "Configuracao";
     public const string GeoKey = "Geo";
 
     public static IReadOnlyCollection<string> RegisteredKeys { get; } =
-        [SelecaoKey, IngressoKey, PortalKey, OrganizacaoKey, ConfiguracaoKey, GeoKey];
+        [UniPlusKey, PortalKey, GeoKey];
 
     /// <summary>
     /// Env vars sintéticas aplicadas process-wide via static ctor. Replica o
@@ -136,24 +177,16 @@ public sealed class MigrationOrderFixture : IDisposable
         // AddDbContextMigrationsOnStartup registram services lazy; a conexão
         // só seria tentada no IHostedService.StartAsync, que este teste não
         // dispara (apenas Build do host para capturar IServiceCollection).
-        Environment.SetEnvironmentVariable(
-            "ConnectionStrings__SelecaoDb",
-            "Host=fitness-not-real;Database=fake;Username=u;Password=p");
-        Environment.SetEnvironmentVariable(
-            "ConnectionStrings__IngressoDb",
-            "Host=fitness-not-real;Database=fake;Username=u;Password=p");
-        Environment.SetEnvironmentVariable(
-            "ConnectionStrings__PortalDb",
-            "Host=fitness-not-real;Database=fake;Username=u;Password=p");
-        Environment.SetEnvironmentVariable(
-            "ConnectionStrings__OrganizacaoDb",
-            "Host=fitness-not-real;Database=fake;Username=u;Password=p");
-        Environment.SetEnvironmentVariable(
-            "ConnectionStrings__ConfiguracaoDb",
-            "Host=fitness-not-real;Database=fake;Username=u;Password=p");
-        Environment.SetEnvironmentVariable(
-            "ConnectionStrings__GeoDb",
-            "Host=fitness-not-real;Database=fake;Username=u;Password=p");
+        // O host UniPlus lê UniPlusDb (outbox consolidado) + as 4 conn strings dos
+        // módulos internos (Add*Module). Portal e Geo leem as suas próprias.
+        const string fake = "Host=fitness-not-real;Database=fake;Username=u;Password=p";
+        Environment.SetEnvironmentVariable("ConnectionStrings__UniPlusDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__SelecaoDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__IngressoDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__ConfiguracaoDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__OrganizacaoDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__PortalDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__GeoDb", fake);
 
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
         Environment.SetEnvironmentVariable("Kafka__BootstrapServers", " ");
@@ -163,49 +196,37 @@ public sealed class MigrationOrderFixture : IDisposable
         Environment.SetEnvironmentVariable("Observability__Enabled", "false");
     }
 
-    private readonly CapturingFactory<SelecaoApiAssemblyMarker> _selecaoFactory = new();
-    private readonly CapturingFactory<IngressoApiAssemblyMarker> _ingressoFactory = new();
+    private readonly CapturingFactory<HostAssemblyMarker> _uniplusFactory = new();
     private readonly CapturingFactory<PortalApiAssemblyMarker> _portalFactory = new();
-    private readonly CapturingFactory<OrganizacaoApiAssemblyMarker> _organizacaoFactory = new();
-    private readonly CapturingFactory<ConfiguracaoApiAssemblyMarker> _configuracaoFactory = new();
     private readonly CapturingFactory<GeoApiAssemblyMarker> _geoFactory = new();
 
     public IReadOnlyList<ServiceDescriptor> GetCapturedSnapshot(string entryPointKey) => entryPointKey switch
     {
-        SelecaoKey => _selecaoFactory.CapturedSnapshot,
-        IngressoKey => _ingressoFactory.CapturedSnapshot,
+        UniPlusKey => _uniplusFactory.CapturedSnapshot,
         PortalKey => _portalFactory.CapturedSnapshot,
-        OrganizacaoKey => _organizacaoFactory.CapturedSnapshot,
-        ConfiguracaoKey => _configuracaoFactory.CapturedSnapshot,
         GeoKey => _geoFactory.CapturedSnapshot,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
     public IServiceProvider GetCapturedServiceProvider(string entryPointKey) => entryPointKey switch
     {
-        SelecaoKey => _selecaoFactory.Services,
-        IngressoKey => _ingressoFactory.Services,
+        UniPlusKey => _uniplusFactory.Services,
         PortalKey => _portalFactory.Services,
-        OrganizacaoKey => _organizacaoFactory.Services,
-        ConfiguracaoKey => _configuracaoFactory.Services,
         GeoKey => _geoFactory.Services,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
     public void Dispose()
     {
-        _selecaoFactory.Dispose();
-        _ingressoFactory.Dispose();
+        _uniplusFactory.Dispose();
         _portalFactory.Dispose();
-        _organizacaoFactory.Dispose();
-        _configuracaoFactory.Dispose();
         _geoFactory.Dispose();
     }
 }
 
 /// <summary>
 /// <see cref="WebApplicationFactory{TEntryPoint}"/> mínima que captura o
-/// <see cref="IServiceCollection"/> tal como o Program.cs do módulo o deixa,
+/// <see cref="IServiceCollection"/> tal como o Program.cs do entry point o deixa,
 /// antes de qualquer <c>ConfigureTestServices</c> de teste — preserva a ordem
 /// de registro dos <see cref="IHostedService"/>.
 /// </summary>
@@ -278,6 +299,16 @@ internal static class MigrationOrderHeuristics
             implementationType.GetGenericTypeDefinition().FullName,
             MigrationHostedServiceFullName,
             StringComparison.Ordinal);
+
+    /// <summary>
+    /// Nome do <c>TContext</c> em <c>MigrationHostedService&lt;TContext&gt;</c>
+    /// (ex.: <c>SelecaoDbContext</c>), ou <c>null</c> se o descriptor não for um
+    /// migration hosted service. Usado para travar a cobertura por DbContext.
+    /// </summary>
+    public static string? GetMigrationContextName(Type? implementationType) =>
+        IsMigrationHostedService(implementationType)
+            ? implementationType!.GetGenericArguments()[0].Name
+            : null;
 
     public static bool IsWolverineRuntime(ServiceDescriptor descriptor) =>
         descriptor.ImplementationFactory is not null

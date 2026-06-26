@@ -11,7 +11,7 @@ dependências de DI cruzadas e comportamento do servidor HTTP real.
 
 **Decisão arquitetural binding:** [ADR-0053](../../../docs/adrs/0053-zero-test-environment-branches-in-production-code.md)
 proíbe `IsEnvironment("Testing")` e `EnvironmentName == "..."` em `src/`. A
-fixture canônica deste diretório (`InfraCoreApiFactory : ApiFactoryBase<Program>`)
+fixture canônica deste diretório (`InfraCoreApiFactory : MonolitoApiFactory`)
 é o **port** que substitui esse antipattern — toda customização de teste
 vive aqui, não no `Program.cs`. A regra é normativa (sem enforcement
 automático em CI nesta versão); code review humano + ausência de precedente
@@ -26,9 +26,9 @@ ali. Para um middleware novo, geralmente bastam **3 passos** (~20 linhas):
 
 ### 1. Reuso da fixture canônica
 
-A fixture `InfraCoreApiFactory` (neste diretório) hospeda o `Program.cs`
-do Selecao.API e fornece os overrides mínimos de configuração. Reusar
-quando o smoke não exigir setup específico:
+A fixture `InfraCoreApiFactory` (neste diretório) sobe a **API UniPlus**
+(composition root do monólito) e fornece os overrides mínimos de configuração
+pela `MonolitoApiFactory`. Reusar quando o smoke não exigir setup específico:
 
 ```csharp
 public sealed class MeuMiddlewareSmokeTests : IClassFixture<InfraCoreApiFactory>
@@ -52,14 +52,20 @@ public sealed class MeuMiddlewareSmokeTests : IClassFixture<InfraCoreApiFactory>
 Se o middleware exigir configuração específica (ex.: feature flag, header
 adicional, scheme de auth diferente), derivar uma fixture nova:
 
+A `MonolitoApiFactory` já fornece as 5 connection strings + Auth dummy e troca o
+cache por um fake. Para overrides extras, sobrescrever o hook `OverridesAdicionais`
+(aplicado depois dos defaults, vence chaves duplicadas):
+
 ```csharp
-public sealed class RateLimitApiFactory : ApiFactoryBase<Program>
+public sealed class RateLimitApiFactory : MonolitoApiFactory
 {
-    protected override IEnumerable<KeyValuePair<string, string?>> GetConfigurationOverrides() =>
+    public RateLimitApiFactory()
+        : base("Host=localhost;Port=5432;Database=uniplus;Username=u;Password=u", wolverineEnabled: false)
+    {
+    }
+
+    protected override IEnumerable<KeyValuePair<string, string?>> OverridesAdicionais() =>
     [
-        new("ConnectionStrings:SelecaoDb", "Host=localhost;Port=5432;Database=u;Username=u;Password=u"),
-        new("Auth:Authority", "http://localhost/test-realm"),
-        new("Auth:Audience", "uniplus"),
         new("RateLimit:Enabled", "true"),
         new("RateLimit:RequestsPerMinute", "5"),
     ];
@@ -86,26 +92,19 @@ Use o `CorrelationIdMiddlewareSmokeTests` como template literal: 3 cenários
   num `*.IntegrationTests` modular, não aqui.
 - **Testes E2E** com browser/UI — fora do escopo do backend.
 
-## Por que o Selecao.API e não os 3
+## Por que via host UniPlus
 
-Os 3 módulos (Selecao/Ingresso/Portal) cabeiam o middleware do
-`Infrastructure.Core` identicamente no `Program.cs`. Smoke contra um
-deles prova o pattern para o caso atual com custo de manutenção mínimo
-(1 fixture, 1 ProjectReference).
+Com a topologia de 3 APIs, os 4 módulos de negócio (Selecao, Ingresso,
+Configuracao, OrganizacaoInstitucional) viraram class libraries sem `Program.cs`
+próprio — só executam dentro da **API UniPlus** (composition root). O middleware
+do `Infrastructure.Core` é cabeado uma única vez, no `Program.cs` do host. Smoke
+contra o host exercita o **wiring real de produção**, sem o risco antigo de drift
+entre Programs por módulo (que deixaram de existir).
 
-**Risco residual aceito:** drift de wiring entre módulos não é
-exercitado por este smoke. Hoje não há arch test enforçando paridade
-da ordem de middleware entre `Selecao`, `Ingresso` e `Portal`, e o
-CodeQL default não prova essa invariante. Mitigações disponíveis se o
-custo do drift aparecer:
-
-- Promover esta suíte a matriz de 3 fixtures (uma por API).
-- Criar arch test em `Unifesspa.UniPlus.ArchTests` cabreando "todos os
-  `Program.cs` chamam `UseMiddleware<CorrelationIdMiddleware>` na mesma
-  posição relativa a `UseAuthentication`/`UseRouting`".
-
-Issue #117 documenta a decisão CA-01 revisitada e mantém esses dois
-caminhos como follow-up explícito.
+Geo e Portal permanecem deployables autônomos com `Program.cs` próprio. A
+paridade do middleware shared entre os 3 executáveis (UniPlus/Geo/Portal),
+quando o custo do drift aparecer, é melhor coberta por um arch test em
+`Unifesspa.UniPlus.ArchTests` do que por uma matriz de fixtures aqui.
 
 ## Performance esperada
 
