@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 public sealed class IngressoDbContext : DbContext, IIngressoUnitOfWork
 {
     /// <summary>
-    /// Schema do módulo no banco único do monólito modular (spike). Tabelas,
+    /// Schema do módulo no banco único do monólito modular. Tabelas,
     /// índices e FKs deste DbContext vivem neste schema.
     /// </summary>
     public const string Schema = "ingresso";
@@ -27,7 +27,7 @@ public sealed class IngressoDbContext : DbContext, IIngressoUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
-        // Banco único, schema-por-módulo (spike monólito modular).
+        // Banco único, schema-por-módulo.
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IngressoDbContext).Assembly);
         // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo

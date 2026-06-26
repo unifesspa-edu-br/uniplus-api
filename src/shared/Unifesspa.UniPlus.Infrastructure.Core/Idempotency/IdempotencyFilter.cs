@@ -6,12 +6,12 @@ using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 using Cryptography;
@@ -41,19 +41,12 @@ using Kernel.Results;
 /// Janela de inconsistência é coberta por status Processing → 409 em retry
 /// concorrente.</para>
 /// </remarks>
-public sealed partial class IdempotencyFilter : IAsyncResourceFilter
+public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
+    where TDbContext : DbContext
 {
-    [GeneratedRegex(@"^[\x21-\x7E]{1,255}$")]
-    private static partial Regex KeyPrintableAsciiRegex();
-
-    // Vírgula e ponto-vírgula são proibidos pelo draft IETF mesmo estando no
-    // range ASCII printable — usados como separadores em sf-list. Espaço já é
-    // rejeitado pela regex (0x20 < 0x21).
-    private static readonly char[] ForbiddenKeyChars = [',', ';'];
-
     private const string ReplayHeader = "Idempotency-Replayed";
 
-    private readonly IIdempotencyStore _store;
+    private readonly EfCoreIdempotencyStore<TDbContext> _store;
     private readonly IUniPlusEncryptionService _encryption;
     private readonly IDomainErrorMapper _errorMapper;
     private readonly TimeProvider _time;
@@ -61,7 +54,7 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
     private readonly IdempotencyOptions _options;
 
     public IdempotencyFilter(
-        IIdempotencyStore store,
+        EfCoreIdempotencyStore<TDbContext> store,
         IUniPlusEncryptionService encryption,
         IDomainErrorMapper errorMapper,
         TimeProvider time,
@@ -117,7 +110,7 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         }
 
         string idempotencyKey = headerValues[0]!;
-        if (!IsKeyValid(idempotencyKey))
+        if (!IdempotencyKeyValidator.IsValid(idempotencyKey))
         {
             ShortCircuit(context, IdempotencyDomainErrorCodes.KeyMalformada,
                 "Header Idempotency-Key contém caracteres inválidos ou tamanho fora de [1, 255].");
@@ -327,19 +320,6 @@ public sealed partial class IdempotencyFilter : IAsyncResourceFilter
         // POSTs deste controller exigem Idempotency-Key" sem repetir o atributo.
         return descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null
             || descriptor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null;
-    }
-
-    private static bool IsKeyValid(string key)
-    {
-        // Regex {1,255} já garante length em range e [\x21-\x7E] já exclui
-        // espaço (0x20), tab (0x09) e demais caracteres não-imprimíveis.
-        // ForbiddenKeyChars cobre apenas vírgula (0x2C) e ponto-vírgula (0x3B)
-        // que estão dentro do range printable mas são proibidos pelo
-        // draft IETF (caracteres usados como separadores em sf-list).
-        if (key.IndexOfAny(ForbiddenKeyChars) >= 0)
-            return false;
-
-        return KeyPrintableAsciiRegex().IsMatch(key);
     }
 
     private static async Task<byte[]> ReadAndRewindBodyAsync(

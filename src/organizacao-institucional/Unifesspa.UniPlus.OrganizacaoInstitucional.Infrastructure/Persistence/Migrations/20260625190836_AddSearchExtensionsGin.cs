@@ -29,7 +29,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
                 """);
 
             // Índices GIN trigram por campo pesquisável da Unidade — qualificados ao
-            // schema do módulo (banco único, spike monólito modular).
+            // schema do módulo (banco único, monólito modular).
             migrationBuilder.Sql(
                 """
                 CREATE INDEX IF NOT EXISTS idx_unidade_nome_trgm

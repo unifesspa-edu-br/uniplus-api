@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.API;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 
-// Composition root do monólito modular (spike). Compõe os 4 módulos internos
+// Composition root do monólito modular. Compõe os 4 módulos internos
 // (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) num processo único,
 // apontando todos para o banco `uniplus` (schema-por-módulo). Geo e Portal seguem
 // deploys separados. Este assembly é o único que depende de múltiplos módulos
@@ -74,15 +74,21 @@ builder.Services.AddOrganizacaoInstitucionalModule(builder.Configuration);
 builder.Services.AddSelecaoModule(builder.Configuration);
 builder.Services.AddIngressoModule(builder.Configuration);
 
-// Health checks: no spike os 4 módulos compartilham o banco `uniplus`, então um
+// Health checks: os 4 módulos compartilham o banco `uniplus`, então um
 // único check de banco + infra (Redis/MinIO/Kafka/OIDC) cobre o processo.
 builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "UniPlusDb");
 
-// --- Wolverine consolidado (P4): UMA instância, outbox no banco `uniplus`
+// --- Wolverine consolidado: UMA instância, outbox no banco `uniplus`
 // (schema `wolverine`), compondo o discovery de handlers dos módulos. As
 // migrations on startup (registradas acima nos Add*Module) precedem o runtime
-// Wolverine (invariante #419). Externalização Kafka do Selecao deferida no spike
-// (o caminho de leitura in-process não a exige). ---
+// Wolverine (invariante #419). ---
+
+// Mensageria do Selecao (Kafka/Schema Registry — ADR-0051 — + routing): o módulo
+// é dono do seu wiring (SelecaoMessagingRegistration); o host registra o Schema
+// Registry e compõe o configurador de routing na instância única de Wolverine.
+Action<Wolverine.WolverineOptions> configurarSelecaoRouting =
+    builder.Services.AddSelecaoMessaging(builder.Configuration, builder.Environment);
+
 builder.Host.UseWolverineOutboxCascading(
     builder.Configuration,
     connectionStringName: "UniPlusDb",
@@ -92,6 +98,10 @@ builder.Host.UseWolverineOutboxCascading(
         opts.Discovery.IncludeAssembly(typeof(OrganizacaoInstitucionalApplicationServiceRegistration).Assembly);
         opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
         opts.Discovery.IncludeAssembly(typeof(EditalPublicadoToKafkaCascadeHandler).Assembly);
+
+        // Routing do Selecao (PG queue domain-events + Kafka edital_events) —
+        // religa a mensageria externa antes deferida no monólito.
+        configurarSelecaoRouting(opts);
     });
 builder.Services.AddWolverineMessaging();
 

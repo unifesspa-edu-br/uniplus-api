@@ -8,7 +8,7 @@
   </ItemGroup>
 
   <!--
-    Composition root do monólito modular (spike). Referencia os 4 módulos internos
+    Composition root do monólito modular. Referencia os 4 módulos internos
     (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) e os compõe num
     processo único. Geo e Portal permanecem deploys separados. Este assembly é o
     único autorizado a depender de múltiplos módulos — fica FORA do ModulesRoster
@@ -20,5 +20,25 @@
     <ProjectReference Include="..\..\configuracao\Unifesspa.UniPlus.Configuracao.API\Unifesspa.UniPlus.Configuracao.API.csproj" />
     <ProjectReference Include="..\..\organizacao-institucional\Unifesspa.UniPlus.OrganizacaoInstitucional.API\Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
   </ItemGroup>
+
+  <!--
+    Co-hosting: os 4 .API referenciados são projetos Sdk.Web e cada um traz seu
+    próprio appsettings*.json para o publish, colidindo no mesmo destino do host
+    (NETSDK1152). As configs efetivas do monólito vêm do appsettings do HOST +
+    variáveis de ambiente; os dos módulos não devem ir para a imagem. Este target
+    os remove do publish (mantém só os do host, identificados por residirem no
+    diretório do projeto host) ANTES da checagem de duplicatas — precedência
+    determinística, sem desligar a proteção NETSDK1152 contra colisões futuras.
+  -->
+  <Target Name="RemoverAppSettingsDeModulosCoHospedados"
+          AfterTargets="ComputeFilesToPublish"
+          BeforeTargets="_CheckForDuplicateItemsToPublish;CopyFilesToPublishDirectory">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="'%(Extension)' == '.json'
+                   and $([MSBuild]::ValueOrDefault('%(Filename)', '').StartsWith('appsettings'))
+                   and !$([MSBuild]::ValueOrDefault('%(FullPath)', '').StartsWith('$(MSBuildProjectDirectory)'))" />
+    </ItemGroup>
+  </Target>
 
 </Project>

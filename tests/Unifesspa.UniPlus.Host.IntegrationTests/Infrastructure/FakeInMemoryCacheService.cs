@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Caching;
 /// recheck.
 /// </summary>
 /// <remarks>
-/// O spike P5 prova a leitura cross-módulo <em>in-process</em> a partir do banco
+/// Prova-se a leitura cross-módulo <em>in-process</em> a partir do banco
 /// único (schema <c>organizacao</c>) através de <see cref="Governance.Contracts.IUnidadeReader"/>.
 /// O cache Redis que fica à frente do reader é ortogonal a essa prova — substituí-lo
 /// por este fake mantém o teste focado no caminho DB in-process e dispensa um

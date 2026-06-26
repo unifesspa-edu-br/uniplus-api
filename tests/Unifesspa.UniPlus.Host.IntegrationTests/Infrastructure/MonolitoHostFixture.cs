@@ -7,7 +7,7 @@ using Testcontainers.PostgreSql;
 /// <summary>
 /// Fixture de coleção xUnit que provisiona um Postgres efêmero (Testcontainers)
 /// com o banco único <c>uniplus</c> e sobe o <see cref="MonolitoHostApiFactory"/>
-/// — o composition root do monólito modular (spike) com Wolverine habilitado.
+/// — o composition root do monólito modular com Wolverine habilitado.
 /// </summary>
 /// <remarks>
 /// <para>As 5 connection strings (<c>UniPlusDb</c> + uma por módulo) são injetadas
@@ -77,7 +77,7 @@ public sealed class MonolitoHostFixture : IAsyncLifetime
 
             // Espaço em vez de string.Empty: em runtimes < .NET 9, string.Empty apaga
             // a variável, fazendo o appsettings voltar a ser consultado. O host não
-            // configura transporte Kafka no spike, mas neutralizamos por garantia.
+            // configura transporte Kafka, mas neutralizamos por garantia.
             Environment.SetEnvironmentVariable(KafkaBootstrapEnvVar, " ");
 
             _factory = new MonolitoHostApiFactory(ConnectionString);

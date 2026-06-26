@@ -1,0 +1,85 @@
+# Stack do MONÓLITO MODULAR: valida que o composition root boota como
+# UM serviço Docker contra o banco único `uniplus` (schema-por-módulo).
+#
+# Auto-contida e mínima — Postgres + Redis + o monólito. Kafka/MinIO/Keycloak são
+# omitidos de propósito: o host não os toca no boot (o transporte Kafka está
+# deferido; storage/OIDC são lazy), e o smoke usa endpoints anônimos.
+# A stack completa (mensageria, storage, auth) é trabalho de rollout. Geo segue
+# deploy separado.
+#
+# Uso:
+#   docker compose -f docker/docker-compose.monolito.yml up -d --build
+# Smoke (boot + roteamento por módulo, sem auth) — host expõe a 28080:
+#   curl -fsS http://localhost:28080/health/live
+#   curl -fsS http://localhost:28080/api/organizacao/unidades
+#   curl -fsS http://localhost:28080/api/configuracao/campi
+#   curl -fsS http://localhost:28080/openapi/configuracao.json
+# Limpeza (descarta o volume p/ reexecutar o init-db):
+#   docker compose -f docker/docker-compose.monolito.yml down -v
+
+name: uniplus-monolito
+
+services:
+  postgres:
+    image: postgis/postgis:18-3.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: uniplus
+      POSTGRES_PASSWORD: uniplus_dev
+      POSTGRES_DB: uniplus
+    volumes:
+      - postgres_monolito_data:/var/lib/postgresql
+      - ./init-db.monolito.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uniplus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  monolito-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.host
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      # As 5 connection strings apontam para o MESMO banco `uniplus`; cada
+      # DbContext usa seu schema (HasDefaultSchema). UniPlusDb é o outbox
+      # Wolverine (schema `wolverine`) + health checks. Role única.
+      ConnectionStrings__UniPlusDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
+      ConnectionStrings__ConfiguracaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
+      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
+      ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
+      ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
+      Redis__ConnectionString: "redis:6379"
+      Auth__Authority: "http://localhost/realms/unifesspa"
+      Auth__Audience: "uniplus"
+      # Sem OTEL collector na stack mínima — desliga o exporter p/ evitar ruído de
+      # conexão no boot (independe de qual appsettings vence o co-hosting).
+      Observability__Enabled: "false"
+    ports:
+      - "28080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_monolito_data:

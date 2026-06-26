@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 /// <summary>
 /// Registro self-describing do módulo OrganizacaoInstitucional para o composition
-/// root do monólito modular (spike). Reúne tudo que é específico do módulo —
+/// root do monólito modular. Reúne tudo que é específico do módulo —
 /// OpenAPI doc, registro de erros de domínio, builders HATEOAS, idempotência sobre
 /// o DbContext do módulo, Application + Infrastructure e migrations on startup.
 ///
@@ -52,7 +52,7 @@ public static class OrganizacaoInstitucionalModuleRegistration
         // Idempotency-Key (ADR-0027) sobre o DbContext do módulo. O filter de MVC
         // ativa-se em endpoints com [RequiresIdempotencyKey], persistindo entries
         // cifradas at-rest.
-        services.AddIdempotency<OrganizacaoInstitucionalDbContext>(configuration);
+        services.AddIdempotency<OrganizacaoInstitucionalDbContext, OrganizacaoApiAssemblyMarker>(configuration);
 
         // Application + Infrastructure — registram validators, DbContext, repositórios,
         // readers cross-módulo (ADR-0056) e cache invalidators.

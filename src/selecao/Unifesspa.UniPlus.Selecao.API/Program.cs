@@ -1,25 +1,17 @@
 using Serilog;
 
-using Confluent.SchemaRegistry;
-
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
-using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Selecao.API;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
-using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
-
-using Wolverine.Kafka;
-using Wolverine.Kafka.Serialization;
-using Wolverine.Postgresql;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -80,82 +72,16 @@ builder.Services.AdicionarObservabilidade(nomeServicoSelecao, builder.Configurat
 
 // Registro self-describing do módulo: OpenAPI, erros de domínio, HATEOAS,
 // idempotência, Application + Infrastructure e migrations on startup. O mesmo
-// método é consumido pelo composition root do monólito modular (spike).
+// método é consumido pelo composition root do monólito modular.
 // Migrations on startup ficam ANTES do Wolverine (invariante #419).
 builder.Services.AddSelecaoModule(builder.Configuration);
 
-// Schema Registry (ADR-0051) — feature off quando SchemaRegistry:Url está vazio.
-// Cliente único reutilizado pelo hosted service (registro idempotente no startup)
-// e pelo Wolverine routing (SchemaRegistryAvroSerializer no producer Kafka).
-// Singleton registrado ANTES do AddSchemaRegistry para que o TryAddSingleton
-// interno respeite a instância pré-criada e não duplique cache.
-SchemaRegistrySettings selecaoSrSettings = builder.Configuration
-    .GetSection(SchemaRegistrySettings.SectionName)
-    .Get<SchemaRegistrySettings>() ?? new SchemaRegistrySettings();
-
-// Invariante operacional: Kafka habilitado exige Schema Registry configurado.
-// ADR-0051 estabelece que mensagens em tópicos cross-módulo do Uni+ vão sempre
-// como Avro com schema-id no envelope. Sem SR, o publishing seria silenciosamente
-// desligado — consumers cross-módulo parariam de receber sem qualquer erro no
-// boot. Falha imediata orientando o operador é o correto em ambientes produtivos.
-//
-// Test factories (CascadingFixture e similares) sobem Wolverine com Kafka real
-// mas sem SR para testar cascading puro — em ASPNETCORE_ENVIRONMENT=Test/Development
-// degradamos para warning ao invés de exceção, mantendo o fail-fast para
-// Production/Staging/Standalone onde a config real do operador rege.
-bool kafkaEnabledForBuilder = !string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]);
-bool srMissing = string.IsNullOrWhiteSpace(selecaoSrSettings.Url);
-if (kafkaEnabledForBuilder && srMissing)
-{
-    // ADR-0053: HML/sanidade/Prod = mesmo binário, Vault injeta config — só
-    // Development (= local dev box) afrouxa a obrigatoriedade do Schema Registry.
-    // Test factories sobem com `UseEnvironment("Development")` (ApiFactoryBase),
-    // o que cobre o cenário antes resolvido via comparação literal `"Test"`.
-    if (!builder.Environment.IsDevelopment())
-    {
-        throw new InvalidOperationException(
-            "Configuração inválida: Kafka:BootstrapServers populado mas SchemaRegistry:Url vazio em "
-            + $"ASPNETCORE_ENVIRONMENT={builder.Environment.EnvironmentName}. "
-            + "ADR-0051 exige Schema Registry para todo publishing cross-módulo em ambientes produtivos. "
-            + "Configure SchemaRegistry:Url (ou desligue Kafka apagando Kafka:BootstrapServers).");
-    }
-
-    using ILoggerFactory missingSrLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
-    Microsoft.Extensions.Logging.ILogger missingSrLogger = missingSrLoggerFactory.CreateLogger("Selecao.API.Bootstrap");
-#pragma warning disable CA1848 // Bootstrap logging — fora do hot path; LoggerMessage source generator overkill aqui.
-#pragma warning disable CA2254 // Mensagem fixa após format de string interpolada — sem placeholders dinâmicos.
-    missingSrLogger.LogWarning(
-        "Kafka habilitado sem Schema Registry em ambiente {Env} — publishing Avro cross-módulo desligado. "
-        + "Esperado em test factory que isola cascading puro; sinal de bug em ambiente produtivo (ADR-0051).",
-        builder.Environment.EnvironmentName);
-#pragma warning restore CA2254
-#pragma warning restore CA1848
-}
-
-ISchemaRegistryClient? selecaoSrClient = null;
-if (!string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
-{
-    using ILoggerFactory bootstrapLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
-    // CA2000 supprimido: o cliente retornado é registrado como singleton no DI
-    // logo abaixo (AddSingleton) — Microsoft.Extensions.DependencyInjection
-    // assume ownership e dispõe no shutdown do IHost. Top-level statements em
-    // Program.cs não suportam [SuppressMessage] por símbolo, daí pragma inline
-    // (alinhado com pattern já usado no AwaitWolverineDuringDispose etc.).
-    // roslyn-analyzers#5447 — analisador não rastreia ownership via DI.
-#pragma warning disable CA2000
-    selecaoSrClient = SchemaRegistryServiceCollectionExtensions.CreateClient(
-        selecaoSrSettings,
-        bootstrapLoggerFactory,
-        builder.Services);
-#pragma warning restore CA2000
-    builder.Services.AddSingleton(selecaoSrClient);
-}
-
-builder.Services.AddSchemaRegistry(builder.Configuration)
-    .AddSchema(
-        subject: "edital_events-value",
-        schemaResourceName: unifesspa.uniplus.selecao.events.EditalPublicado.SchemaResourceName,
-        resourceAssembly: typeof(EditalPublicadoEvent).Assembly);
+// Mensageria do módulo (Kafka/Schema Registry — ADR-0051 — + routing Wolverine).
+// É setup de processo (uma instância Wolverine por host), compartilhado com o
+// composition root do monólito modular. Registra o Schema Registry e devolve o
+// configurador de routing para compor no UseWolverineOutboxCascading abaixo.
+Action<Wolverine.WolverineOptions> configurarSelecaoRouting =
+    builder.Services.AddSelecaoMessaging(builder.Configuration, builder.Environment);
 
 // INVARIANTE (#419): AddSelecaoModule (acima) registra AddDbContextMigrationsOnStartup
 // ANTES deste UseWolverineOutboxCascading + AddWolverineMessaging.
@@ -201,19 +127,9 @@ builder.Host.UseWolverineOutboxCascading(
         opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
         opts.Discovery.IncludeAssembly(typeof(EditalPublicadoToKafkaCascadeHandler).Assembly);
 
-        opts.PublishMessage<EditalPublicadoEvent>().ToPostgresqlQueue("domain-events");
-        opts.ListenToPostgresqlQueue("domain-events");
-
-        bool kafkaConfigured = !string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]);
-        if (kafkaConfigured && selecaoSrClient is not null)
-        {
-            // Kafka habilitado + Schema Registry disponível: produz Avro com schema-id
-            // no envelope (Confluent wire format). Consumers cross-módulo recuperam o
-            // schema do Apicurio via schema-id, sem dependência do assembly Selecao.Domain.
-            opts.PublishMessage<unifesspa.uniplus.selecao.events.EditalPublicado>()
-                .ToKafkaTopic("edital_events")
-                .DefaultSerializer(new SchemaRegistryAvroSerializer(selecaoSrClient));
-        }
+        // Routing do módulo (PG queue domain-events + Kafka edital_events) — o
+        // mesmo configurador usado pelo host do monólito modular.
+        configurarSelecaoRouting(opts);
     });
 builder.Services.AddWolverineMessaging();
 

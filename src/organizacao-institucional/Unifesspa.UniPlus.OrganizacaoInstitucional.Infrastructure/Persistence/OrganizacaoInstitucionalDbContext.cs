@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 public sealed class OrganizacaoInstitucionalDbContext : DbContext, IOrganizacaoInstitucionalUnitOfWork
 {
     /// <summary>
-    /// Schema do módulo no banco único do monólito modular (spike). Tabelas,
+    /// Schema do módulo no banco único do monólito modular. Tabelas,
     /// índices, FKs e idempotency_cache deste DbContext vivem neste schema.
     /// </summary>
     public const string Schema = "organizacao";
@@ -43,7 +43,7 @@ public sealed class OrganizacaoInstitucionalDbContext : DbContext, IOrganizacaoI
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
-        // Banco único, schema-por-módulo (spike monólito modular).
+        // Banco único, schema-por-módulo.
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrganizacaoInstitucionalDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).

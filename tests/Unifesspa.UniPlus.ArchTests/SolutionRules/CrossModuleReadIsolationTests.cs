@@ -164,7 +164,7 @@ public sealed class CrossModuleReadIsolationTests
     public void HostCompositionRoot_ComposeTodosOsModulosInternos()
     {
         // Contraponto POSITIVO ao R8: enquanto nenhum MÓDULO pode depender de
-        // outro (fatos acima), o host do monólito modular (spike) é a ÚNICA
+        // outro (fatos acima), o host do monólito modular é a ÚNICA
         // exceção autorizada — o composition root compõe os 4 módulos internos
         // num processo único via Add{Modulo}Module + discovery Wolverine. Por
         // isso fica FORA do ModulesRoster (senão os fatos R8 o acusariam de
