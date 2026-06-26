@@ -26,8 +26,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 public sealed class PesoAreaEnemEndpointTests
 {
     private const string VendorMime = "application/vnd.uniplus.peso-area-enem.v1+json";
-    private const string ColecaoPath = "/api/pesos-area-enem";
-    private const string AdminPath = "/api/admin/pesos-area-enem";
+    private const string ColecaoPath = "/api/configuracao/pesos-area-enem";
+    private const string AdminPath = "/api/configuracao/admin/pesos-area-enem";
     private const string BaseLegal = "Res. 805/2024 Anexo I";
 
     private readonly ConfiguracaoEndpointFixture _fixture;

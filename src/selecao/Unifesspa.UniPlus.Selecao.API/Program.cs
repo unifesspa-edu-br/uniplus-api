@@ -5,8 +5,6 @@ using Confluent.SchemaRegistry;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
@@ -14,14 +12,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
-using Unifesspa.UniPlus.Selecao.API.Errors;
-using Unifesspa.UniPlus.Selecao.API.Hateoas;
+using Unifesspa.UniPlus.Selecao.API;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
-using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
-using Unifesspa.UniPlus.Selecao.Infrastructure;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine.Kafka;
 using Wolverine.Kafka.Serialization;
@@ -61,17 +55,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-// OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers Uni+
-// (info, operation, schema). Spec exposto em /openapi/selecao.json.
-builder.Services.AddUniPlusOpenApi("selecao", builder.Configuration);
-
-builder.Services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
+// AddDomainErrorMapper é compartilhado (consome IEnumerable<IDomainErrorRegistration>);
+// o registro de erros do módulo entra via AddSelecaoModule.
 builder.Services.AddDomainErrorMapper();
-
-// HATEOAS Level 1 (ADR-0029) — builder de _links por recurso. Singleton
-// porque encapsula apenas um LinkGenerator (também singleton); função pura.
-builder.Services.AddSingleton<IResourceLinksBuilder<Unifesspa.UniPlus.Selecao.Application.DTOs.EditalDto>, EditalLinksBuilder>();
-builder.Services.AddSingleton<IResourceLinksBuilder<Unifesspa.UniPlus.Selecao.Application.DTOs.ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
 
 // Criptografia + cursor pagination usados pelos endpoints de listagem
 // (ADR-0026 + ADR-0031). AddUniPlusEncryption: provider 'local' AES-GCM 256
@@ -81,9 +67,6 @@ builder.Services.AddSingleton<IResourceLinksBuilder<Unifesspa.UniPlus.Selecao.Ap
 // traduz falhas do PageRequestModelBinder para 400/410/422.
 builder.Services.AddUniPlusEncryption(builder.Configuration);
 builder.Services.AddCursorPagination(builder.Configuration);
-// Idempotency-Key (ADR-0027) — store EF adjacente ao SelecaoDbContext, filter
-// global que se ativa apenas em endpoints com [RequiresIdempotencyKey].
-builder.Services.AddIdempotency<Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.SelecaoDbContext>(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();
@@ -95,13 +78,11 @@ builder.Services.AddRequestLogging(builder.Configuration);
 // Collector provisionado, sobrescrever para false em InMemoryCollection.
 builder.Services.AdicionarObservabilidade(nomeServicoSelecao, builder.Configuration, builder.Environment);
 
-builder.Services.AddSelecaoApplication();
-// AddSelecaoInfrastructure agora resolve a connection string via
-// IConfiguration injetada no factory do AddDbContext (issue #204) —
-// simetria com UseWolverineOutboxCascading que já fazia leitura lazy.
-// Test hosts (CascadingApiFactory) podem sobrescrever via env var ou
-// InMemoryCollection sem precisar re-registrar o DbContext.
-builder.Services.AddSelecaoInfrastructure();
+// Registro self-describing do módulo: OpenAPI, erros de domínio, HATEOAS,
+// idempotência, Application + Infrastructure e migrations on startup. O mesmo
+// método é consumido pelo composition root do monólito modular (spike).
+// Migrations on startup ficam ANTES do Wolverine (invariante #419).
+builder.Services.AddSelecaoModule(builder.Configuration);
 
 // Schema Registry (ADR-0051) — feature off quando SchemaRegistry:Url está vazio.
 // Cliente único reutilizado pelo hosted service (registro idempotente no startup)
@@ -176,19 +157,15 @@ builder.Services.AddSchemaRegistry(builder.Configuration)
         schemaResourceName: unifesspa.uniplus.selecao.events.EditalPublicado.SchemaResourceName,
         resourceAssembly: typeof(EditalPublicadoEvent).Assembly);
 
-// Migrations EF Core do módulo Selecao aplicadas no host StartAsync via IHostedService
-// (issue #344). Como hosted service, o registro é filtrável por test factories que sobem
-// o pipeline HTTP sem Postgres real (ver ApiFactoryBase). Idempotente.
-//
-// INVARIANTE (#419): este registro precede UseWolverineOutboxCascading + AddWolverineMessaging
-// abaixo. HostOptions.ServicesStartConcurrently=false (default) garante que IHostedService
+// INVARIANTE (#419): AddSelecaoModule (acima) registra AddDbContextMigrationsOnStartup
+// ANTES deste UseWolverineOutboxCascading + AddWolverineMessaging.
+// HostOptions.ServicesStartConcurrently=false (default) garante que IHostedService
 // inicia sequencialmente na ordem de registro — então MigrationHostedService aplica o
 // schema EF do domínio ANTES do WolverineRuntime aceitar o primeiro envelope cascading,
 // evitando 42P01 em handlers que tocam tabelas do módulo. Fitness test em
 // tests/Unifesspa.UniPlus.ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
 // trava regressão de ordem nos 3 entry points (Selecao/Ingresso/Portal).
-builder.Services.AddDbContextMigrationsOnStartup<SelecaoDbContext>();
-
+//
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005.
 //

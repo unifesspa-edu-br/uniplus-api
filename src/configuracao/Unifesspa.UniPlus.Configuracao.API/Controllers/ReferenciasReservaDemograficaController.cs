@@ -17,13 +17,13 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Endpoints públicos de leitura (<c>GET /api/referencias-reserva-demografica</c>,
-/// <c>GET /api/referencias-reserva-demografica/{id}</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/admin/referencias-reserva-demografica</c>) restritos a
+/// Endpoints públicos de leitura (<c>GET /api/configuracao/referencias-reserva-demografica</c>,
+/// <c>GET /api/configuracao/referencias-reserva-demografica/{id}</c>) e endpoints admin
+/// (<c>POST/PUT/DELETE /api/configuracao/admin/referencias-reserva-demografica</c>) restritos a
 /// <c>plataforma-admin</c> (UNI-REQ-0065).
 /// </summary>
 [ApiController]
-[Route("api")]
+[Route("api/configuracao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

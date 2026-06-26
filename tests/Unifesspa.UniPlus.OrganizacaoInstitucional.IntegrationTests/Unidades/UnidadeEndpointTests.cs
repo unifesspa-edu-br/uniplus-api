@@ -35,26 +35,26 @@ public sealed class UnidadeEndpointTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "GET /api/unidades retorna 200 com Content-Type vendor MIME de unidade")]
+    [Fact(DisplayName = "GET /api/organizacao/unidades retorna 200 com Content-Type vendor MIME de unidade")]
     public async Task Listar_Retorna200ComVendorMime()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/unidades", UriKind.Relative));
+            new Uri("/api/organizacao/unidades", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType?.MediaType
             .Should().Be("application/vnd.uniplus.unidade.v1+json");
     }
 
-    [Fact(DisplayName = "GET /api/unidades retorna array JSON (catálogo vazio)")]
+    [Fact(DisplayName = "GET /api/organizacao/unidades retorna array JSON (catálogo vazio)")]
     public async Task Listar_RetornaArrayJson()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/unidades", UriKind.Relative));
+            new Uri("/api/organizacao/unidades", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -63,18 +63,18 @@ public sealed class UnidadeEndpointTests
         doc.RootElement.ValueKind.Should().Be(JsonValueKind.Array);
     }
 
-    [Fact(DisplayName = "GET /api/unidades/{id} retorna 404 quando unidade inexistente")]
+    [Fact(DisplayName = "GET /api/organizacao/unidades/{id} retorna 404 quando unidade inexistente")]
     public async Task ObterPorId_NaoExiste_Retorna404()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/api/unidades/{Guid.NewGuid()}", UriKind.Relative));
+            new Uri($"/api/organizacao/unidades/{Guid.NewGuid()}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "POST /api/admin/unidades sem Idempotency-Key retorna 400")]
+    [Fact(DisplayName = "POST /api/organizacao/admin/unidades sem Idempotency-Key retorna 400")]
     public async Task Criar_SemIdempotencyKey_Retorna400()
     {
         // Auth precisa passar (Authorize roda antes dos filtros MVC).
@@ -83,7 +83,7 @@ public sealed class UnidadeEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post,
-            new Uri("/api/admin/unidades", UriKind.Relative));
+            new Uri("/api/organizacao/admin/unidades", UriKind.Relative));
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
         // Sem Idempotency-Key — esperamos 400 do filtro.
@@ -95,13 +95,13 @@ public sealed class UnidadeEndpointTests
             "Idempotency-Key é obrigatório — sem ela o filtro retorna 400 antes do action");
     }
 
-    [Fact(DisplayName = "POST /api/admin/unidades sem autenticação retorna 401")]
+    [Fact(DisplayName = "POST /api/organizacao/admin/unidades sem autenticação retorna 401")]
     public async Task Criar_SemAuth_Retorna401()
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
         using HttpRequestMessage request = new(
             HttpMethod.Post,
-            new Uri("/api/admin/unidades", UriKind.Relative));
+            new Uri("/api/organizacao/admin/unidades", UriKind.Relative));
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
@@ -110,18 +110,18 @@ public sealed class UnidadeEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "DELETE /api/admin/unidades/{id} sem autenticação retorna 401")]
+    [Fact(DisplayName = "DELETE /api/organizacao/admin/unidades/{id} sem autenticação retorna 401")]
     public async Task Remover_SemAuth_Retorna401()
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
 
         HttpResponseMessage response = await client.DeleteAsync(
-            new Uri($"/api/admin/unidades/{Guid.NewGuid()}", UriKind.Relative));
+            new Uri($"/api/organizacao/admin/unidades/{Guid.NewGuid()}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "GET /api/unidades?q= filtra server-side por sigla/nome/código/slug/alias")]
+    [Fact(DisplayName = "GET /api/organizacao/unidades?q= filtra server-side por sigla/nome/código/slug/alias")]
     public async Task Listar_ComBusca_FiltraServerSide()
     {
         string token = Guid.NewGuid().ToString("N")[..10];
@@ -133,7 +133,7 @@ public sealed class UnidadeEndpointTests
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/api/unidades?q={token}", UriKind.Relative));
+            new Uri($"/api/organizacao/unidades?q={token}", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -142,18 +142,18 @@ public sealed class UnidadeEndpointTests
         siglas.Should().NotContain(siglaForaDoFiltro.ToUpperInvariant());
     }
 
-    [Fact(DisplayName = "GET /api/unidades?tipo=<inválido> retorna 400")]
+    [Fact(DisplayName = "GET /api/organizacao/unidades?tipo=<inválido> retorna 400")]
     public async Task Listar_ComTipoInvalido_Retorna400()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/api/unidades?tipo=999", UriKind.Relative));
+            new Uri("/api/organizacao/unidades?tipo=999", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    [Fact(DisplayName = "GET /api/unidades preserva q/tipo no header Link (self e next)")]
+    [Fact(DisplayName = "GET /api/organizacao/unidades preserva q/tipo no header Link (self e next)")]
     public async Task Listar_ComFiltros_PreservaQueryParamsNoLink()
     {
         string token = Guid.NewGuid().ToString("N")[..10];
@@ -163,7 +163,7 @@ public sealed class UnidadeEndpointTests
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/api/unidades?q={token}&tipo=3&limit=1", UriKind.Relative));
+            new Uri($"/api/organizacao/unidades?q={token}&tipo=3&limit=1", UriKind.Relative));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 

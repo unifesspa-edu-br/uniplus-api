@@ -25,13 +25,14 @@
           "Microsoft.Extensions.Hosting": "10.0.9"
         }
       },
-      "Microsoft.EntityFrameworkCore.InMemory": {
+      "Microsoft.EntityFrameworkCore": {
         "type": "Direct",
         "requested": "[10.0.9, )",
         "resolved": "10.0.9",
-        "contentHash": "lvlLJ7kgGivXApixK4FN7pB/aZZJ+bqdNRv2jLR0K0t2ZFIUwNylF1Mo6tMQAN8/2FsNKbv7U4S4FgSdfFtPIQ==",
+        "contentHash": "tu85SRzOT021V7EQlViCiAE7TqldVn469Y6lt5TEn/+XC4/MeNCHgMRSxqYuWqvF4zAQZUhCmtNEZuM3ss4LeA==",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "10.0.9",
+          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.9",
+          "Microsoft.EntityFrameworkCore.Analyzers": "10.0.9",
           "Microsoft.Extensions.Caching.Memory": "10.0.9",
           "Microsoft.Extensions.Logging": "10.0.9"
         }
@@ -46,27 +47,36 @@
           "Microsoft.TestPlatform.TestHost": "18.6.0"
         }
       },
-      "TngTech.ArchUnitNET": {
+      "Testcontainers.PostgreSql": {
         "type": "Direct",
-        "requested": "[0.13.3, )",
-        "resolved": "0.13.3",
-        "contentHash": "4+V+rJ1DC6f2mbwpVnSKwUnN8OhbZ+YC2HoFXYj4Skb+pbabaweu5cnscyXBiMlU97b5GvoOKzpUCn0RCTmWeg==",
+        "requested": "[4.12.0, )",
+        "resolved": "4.12.0",
+        "contentHash": "LZcQu4vfcYuzzy2ENOb7giFb6WNztEEJbufsm7kGiQxjallVuzkWxrBL8LwnjlXGW939pgEZFstL5cO0R2XrBQ==",
         "dependencies": {
-          "CycleDetection": "2.0.0",
-          "JetBrains.Annotations": "2025.2.2",
-          "Mono.Cecil": "0.11.6",
-          "Newtonsoft.Json": "13.0.4",
-          "System.ValueTuple": "4.6.1"
+          "Testcontainers": "4.12.0"
         }
       },
-      "TngTech.ArchUnitNET.xUnit": {
+      "WolverineFx": {
         "type": "Direct",
-        "requested": "[0.13.3, )",
-        "resolved": "0.13.3",
-        "contentHash": "rwgQ9L+/BNGI5kuWozB8uNptXlEYjY38P6jQT388Zat1ZymEuJe8Q097Rrabv28dY0kbNNJVKve9jp7xq9PaOg==",
+        "requested": "[5.39.5, )",
+        "resolved": "5.39.5",
+        "contentHash": "rnyz+ZConabOTi/U8N7UQAOaMc9P03hHyFrXZ6///6X0qtsHQ+VKDZtHe87AZJmY7By2w9As9puY6/jGCg5ZCA==",
         "dependencies": {
-          "TngTech.ArchUnitNET": "0.13.3",
-          "xunit.assert": "2.4.1"
+          "JasperFx": "1.31.0",
+          "JasperFx.Events": "1.36.0",
+          "JasperFx.RuntimeCompiler": "4.5.0",
+          "JasperFx.SourceGeneration": "1.1.0",
+          "Microsoft.Extensions.Caching.Memory": "10.0.0",
+          "Microsoft.Extensions.Configuration": "10.0.0",
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0",
+          "Microsoft.Extensions.Configuration.Binder": "10.0.0",
+          "Microsoft.Extensions.Configuration.Json": "10.0.0",
+          "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "10.0.0",
+          "Microsoft.Extensions.Hosting": "10.0.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.0",
+          "Microsoft.Extensions.ObjectPool": "10.0.2",
+          "NewId": "4.0.1",
+          "Newtonsoft.Json": "13.0.3"
         }
       },
       "xunit": {
@@ -86,6 +96,11 @@
         "resolved": "3.1.5",
         "contentHash": "tKi7dSTwP4m5m9eXPM2Ime4Kn7xNf4x4zT9sdLO/G4hZVnQCRiMTWoSZqI/pYTVeI27oPPqHBKYI/DjJ9GsYgA=="
       },
+      "BouncyCastle.Cryptography": {
+        "type": "Transitive",
+        "resolved": "2.6.2",
+        "contentHash": "7oWOcvnntmMKNzDLsdxAYqApt+AjpRpP2CShjMfIa3umZ42UQMvH0tl1qAliYPNYO6vTdcGMqnRrCPmsfzTI1w=="
+      },
       "CommunityToolkit.HighPerformance": {
         "type": "Transitive",
         "resolved": "8.4.0",
@@ -101,11 +116,6 @@
           "NJsonSchema.NewtonsoftJson": "11.0.2"
         }
       },
-      "CycleDetection": {
-        "type": "Transitive",
-        "resolved": "2.0.0",
-        "contentHash": "iQb2Nm9WqPseGCxPcdeU5qMbWkxtSr1bmnliC7slitx7GOG8cKO2pKZUQ2Yl+DQQZQ7c8qIXe3k+zYE0f96dIA=="
-      },
       "DistributedLock.Core": {
         "type": "Transitive",
         "resolved": "1.0.8",
@@ -118,6 +128,67 @@
         "dependencies": {
           "DistributedLock.Core": "[1.0.8, 1.1.0)",
           "Npgsql": "8.0.6"
+        }
+      },
+      "Docker.DotNet.Enhanced": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "tm2V/DpnaURbBhMQ7Z3orNR3u+H863KQuYfA/sgGjI5py07dEeV0I02f6pGrx2869KG9uNM/E96puf9i0gId2w==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.2.0",
+          "Docker.DotNet.Enhanced.LegacyHttp": "4.2.0",
+          "Docker.DotNet.Enhanced.NPipe": "4.2.0",
+          "Docker.DotNet.Enhanced.NativeHttp": "4.2.0",
+          "Docker.DotNet.Enhanced.Unix": "4.2.0",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.Handler.Abstractions": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "cQNxpdadEPdNdfjFCl9vgoCQIK3aVHRn1Qlu36aZUFpp4xHfPrk4hRPNVLR/CpobIFJ+dAt8AceTKMlCfPSccw==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.LegacyHttp": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "sfbMX1HBPUec3PEMoqlP5ak6skXclcTBmu4gG3aUJatP34J2DgvYMP13bvz/rfrjVkAhPqnIiDKiHAkBCokajg==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.2.0"
+        }
+      },
+      "Docker.DotNet.Enhanced.NativeHttp": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "/ll+2ePYm1qrsMdgMO5BzCQnbfTGmPJAc9SqXEManbliVBZvEpBKHXLugx/OeEca2oC/b4RV+UNPtue5u4jAuA==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.2.0"
+        }
+      },
+      "Docker.DotNet.Enhanced.NPipe": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "8wyYOD6VkvqRkITwsvkt3UbW/1WDl6NFypNAsIIDaMiglNRzFrQcK0nK9VUEZa6Oja8Bso3UYySDoL8qatatAA==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.2.0"
+        }
+      },
+      "Docker.DotNet.Enhanced.Unix": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "x0wNcbww1+p9nUfw8i+JvsSArBDGkoZ9GI2PZ1wPo85B2OiFrdzp89omounNhO2GKyaIRWAqAm5jYZyNg9EnxA==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.2.0"
+        }
+      },
+      "Docker.DotNet.Enhanced.X509": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "nMw+FHGwGZieDi7kBgpIVl+E8MzjzXeXHvMQpidLADT06fts2Gw6G+K+p0hMGv7liZULxyYiZnQ1UbE2B9NNQg==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.2.0"
         }
       },
       "FastExpressionCompiler": {
@@ -202,11 +273,6 @@
         "type": "Transitive",
         "resolved": "1.1.0",
         "contentHash": "yIOaiA/OrlXQLGPjxFDubHnOU8MCzPTz465xBGRITMm4fDf7DbWKogb2SZC2jYLWEj27q3smTz1Z7lU4h1KkOQ=="
-      },
-      "JetBrains.Annotations": {
-        "type": "Transitive",
-        "resolved": "2025.2.2",
-        "contentHash": "0X56ZRizuHdrnPpgXjWV7f2tQO1FlQg5O1967OGKnI/4ZRNOK642J8L7brM1nYvrxTTU5TP1yRyXLRLaXLPQ8A=="
       },
       "librdkafka.redist": {
         "type": "Transitive",
@@ -753,11 +819,6 @@
         "resolved": "1.0.52",
         "contentHash": "oNv2JtYXhpdJrX63nibx1JT3uCESOBQ1LAk7Dtz/sr0+laW0KRM6eKp4CZ3MHDR2siIkKsY8MmUkeP5DKkQQ5w=="
       },
-      "Mono.Cecil": {
-        "type": "Transitive",
-        "resolved": "0.11.6",
-        "contentHash": "f33RkDtZO8VlGXCtmQIviOtxgnUdym9xx/b1p9h91CRGOsJFxCFOFK1FDbVt1OCf1aWwYejUFa2MOQyFWTFjbA=="
-      },
       "Mono.TextTemplating": {
         "type": "Transitive",
         "resolved": "3.0.0",
@@ -791,8 +852,8 @@
       },
       "Newtonsoft.Json": {
         "type": "Transitive",
-        "resolved": "13.0.4",
-        "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
+        "resolved": "13.0.3",
+        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
       },
       "NJsonSchema": {
         "type": "Transitive",
@@ -820,12 +881,12 @@
       },
       "Npgsql.NetTopologySuite": {
         "type": "Transitive",
-        "resolved": "10.0.3",
-        "contentHash": "roOLWX0vokdN5cdRAwOfCWqhGFztsj2PYcvmFsPBoaSdwkboSkviaOu6hxjcX/+xAKUWUS4Al6VmwNlRQzun4g==",
+        "resolved": "9.0.4",
+        "contentHash": "7AwBLPz8EPmgAXveZ55K0Tz/9bNb8j4VI4pkTOQjyHrce8wWfAA9pefm3REidy+Kt2UFiAWef34YVi7sb/kB4A==",
         "dependencies": {
-          "NetTopologySuite": "2.6.0",
+          "NetTopologySuite": "2.5.0",
           "NetTopologySuite.IO.PostGIS": "2.1.0",
-          "Npgsql": "10.0.3"
+          "Npgsql": "9.0.4"
         }
       },
       "OpenTelemetry": {
@@ -930,6 +991,11 @@
           "Serilog": "4.2.0"
         }
       },
+      "SharpZipLib": {
+        "type": "Transitive",
+        "resolved": "1.4.2",
+        "contentHash": "yjj+3zgz8zgXpiiC3ZdF/iyTBbz2fFvMxZFEBPUcwZjIvXOf37Ylm+K58hqMfIBt5JgU/Z2uoUS67JmTLe973A=="
+      },
       "Spectre.Console": {
         "type": "Transitive",
         "resolved": "0.55.0",
@@ -942,6 +1008,15 @@
         "type": "Transitive",
         "resolved": "0.55.0",
         "contentHash": "GIfgOvuF8MpU52bprhwtDEtx0gmVIGOepM8bw0lH/TSMD0rg1Xp+5Y53kPG8rFVdcpbNANlhDQ5mEVVPO3/2Tg=="
+      },
+      "SSH.NET": {
+        "type": "Transitive",
+        "resolved": "2025.1.0",
+        "contentHash": "jrnbtf0ItVaXAe6jE8X/kSLa6uC+0C+7W1vepcnRQB/rD88qy4IxG7Lf1FIbWmkoc4iVXv0pKrz+Wc6J4ngmHw==",
+        "dependencies": {
+          "BouncyCastle.Cryptography": "2.6.2",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+        }
       },
       "System.CodeDom": {
         "type": "Transitive",
@@ -1019,11 +1094,6 @@
         "type": "Transitive",
         "resolved": "6.0.1",
         "contentHash": "rHaWtKDwCi9qJ3ObKo8LHPMuuwv33YbmQi7TcUK1C264V3MFnOr5Im7QgCTdLniztP3GJyeiSg5x8NqYJFqRmg=="
-      },
-      "System.ValueTuple": {
-        "type": "Transitive",
-        "resolved": "4.6.1",
-        "contentHash": "+RJT4qaekpZ7DDLhf+LTjq+E48jieKiY9ulJ+BoxKmZblIJfIJT8Ufcaa/clQqnYvWs8jugfGSMu8ylS0caG0w=="
       },
       "Weasel.Core": {
         "type": "Transitive",
@@ -1168,55 +1238,6 @@
           "WolverineFx.Postgresql": "[5.39.5, )"
         }
       },
-      "unifesspa.uniplus.geo.api": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Geo.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Geo.Infrastructure": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.39.5, )"
-        }
-      },
-      "unifesspa.uniplus.geo.application": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Geo.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Geo.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.geo.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.geo.domain": {
-        "type": "Project",
-        "dependencies": {
-          "NetTopologySuite": "[2.6.0, )",
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.geo.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.9, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.9, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": "[10.0.2, )",
-          "Unifesspa.UniPlus.Geo.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )"
-        }
-      },
       "unifesspa.uniplus.governance.contracts": {
         "type": "Project",
         "dependencies": {
@@ -1297,6 +1318,17 @@
           "Unifesspa.UniPlus.Ingresso.Domain": "[1.0.0, )"
         }
       },
+      "unifesspa.uniplus.integrationtests.fixtures": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.7, )",
+          "Microsoft.AspNetCore.Mvc.Testing": "[10.0.9, )",
+          "Testcontainers": "[4.12.0, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "WolverineFx": "[5.39.5, )",
+          "xunit": "[2.9.3, )"
+        }
+      },
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },
@@ -1337,31 +1369,6 @@
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.Application": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.portal.api": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Portal.Infrastructure": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.portal.domain": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.portal.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.9, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.9, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "Unifesspa.UniPlus.Portal.Domain": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.selecao.api": {
@@ -1491,18 +1498,6 @@
           "Microsoft.OpenApi": "2.0.0"
         }
       },
-      "Microsoft.EntityFrameworkCore": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.9, )",
-        "resolved": "10.0.9",
-        "contentHash": "tu85SRzOT021V7EQlViCiAE7TqldVn469Y6lt5TEn/+XC4/MeNCHgMRSxqYuWqvF4zAQZUhCmtNEZuM3ss4LeA==",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.9",
-          "Microsoft.EntityFrameworkCore.Analyzers": "10.0.9",
-          "Microsoft.Extensions.Caching.Memory": "10.0.9",
-          "Microsoft.Extensions.Logging": "10.0.9"
-        }
-      },
       "Microsoft.EntityFrameworkCore.Design": {
         "type": "CentralTransitive",
         "requested": "[10.0.7, )",
@@ -1570,8 +1565,8 @@
       "NetTopologySuite": {
         "type": "CentralTransitive",
         "requested": "[2.6.0, )",
-        "resolved": "2.6.0",
-        "contentHash": "1B1OTacTd4QtFyBeuIOcThwSSLUdRZU3bSFIwM8vk36XiZlBMi3K36u74e4OqwwHRHUuJC1PhbDx4hyI266X1Q=="
+        "resolved": "2.5.0",
+        "contentHash": "5/+2O2ADomEdUn09mlSigACdqvAf0m/pVPGtIPEPQWnyrVykYY0NlfXLIdkMgi41kvH9kNrPqYaFBTZtHYH7Xw=="
       },
       "Npgsql": {
         "type": "CentralTransitive",
@@ -1591,16 +1586,6 @@
           "Microsoft.EntityFrameworkCore": "[10.0.4, 11.0.0)",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.4, 11.0.0)",
           "Npgsql": "10.0.3"
-        }
-      },
-      "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.2, )",
-        "resolved": "10.0.2",
-        "contentHash": "Ur2U0g90MlGNviptHCknfnu/AiJVUbTT0S6GcSXYEpyH+fcjxyaR6GBw8Ul1cjQCQ9lLmB9Gwh5hsc8ghAwz7g==",
-        "dependencies": {
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.2",
-          "Npgsql.NetTopologySuite": "10.0.3"
         }
       },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
@@ -1699,34 +1684,24 @@
           "System.IO.Hashing": "10.0.2"
         }
       },
+      "Testcontainers": {
+        "type": "CentralTransitive",
+        "requested": "[4.12.0, )",
+        "resolved": "4.12.0",
+        "contentHash": "PTZRdG1ZVkFMsFbc3cK/VUaOB5L3l4wYL+OkWAK33/cvgd/5FcmZlQ6NhMAl3PWBqYkpdWmeYmQW9U2OIXqtFA==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced": "4.2.0",
+          "Docker.DotNet.Enhanced.X509": "4.2.0",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "SSH.NET": "2025.1.0",
+          "SharpZipLib": "1.4.2"
+        }
+      },
       "VaultSharp": {
         "type": "CentralTransitive",
         "requested": "[1.17.5.1, )",
         "resolved": "1.17.5.1",
         "contentHash": "1O/F+AQCkyK4K709pBDYEbDDfJ12OlaE5lnOs9dffq+KxqrnPxh8FIdQtEst9yBJmC7I0BptftzTJyRSwhZR/A=="
-      },
-      "WolverineFx": {
-        "type": "CentralTransitive",
-        "requested": "[5.39.5, )",
-        "resolved": "5.39.5",
-        "contentHash": "rnyz+ZConabOTi/U8N7UQAOaMc9P03hHyFrXZ6///6X0qtsHQ+VKDZtHe87AZJmY7By2w9As9puY6/jGCg5ZCA==",
-        "dependencies": {
-          "JasperFx": "1.31.0",
-          "JasperFx.Events": "1.36.0",
-          "JasperFx.RuntimeCompiler": "4.5.0",
-          "JasperFx.SourceGeneration": "1.1.0",
-          "Microsoft.Extensions.Caching.Memory": "10.0.0",
-          "Microsoft.Extensions.Configuration": "10.0.0",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.0",
-          "Microsoft.Extensions.Configuration.Json": "10.0.0",
-          "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions": "10.0.0",
-          "Microsoft.Extensions.Hosting": "10.0.0",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.0",
-          "Microsoft.Extensions.ObjectPool": "10.0.2",
-          "NewId": "4.0.1",
-          "Newtonsoft.Json": "13.0.3"
-        }
       },
       "WolverineFx.EntityFrameworkCore": {
         "type": "CentralTransitive",

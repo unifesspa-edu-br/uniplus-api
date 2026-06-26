@@ -162,7 +162,7 @@
         }
       }
     },
-    "/api/campi": {
+    "/api/configuracao/campi": {
       "get": {
         "tags": [
           "Campi"
@@ -288,7 +288,7 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/campi/{id}": {
+    "/api/configuracao/campi/{id}": {
       "get": {
         "tags": [
           "Campi"
@@ -348,7 +348,7 @@
         }
       }
     },
-    "/api/admin/campi": {
+    "/api/configuracao/admin/campi": {
       "post": {
         "tags": [
           "Campi"
@@ -465,7 +465,7 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/admin/campi/{id}": {
+    "/api/configuracao/admin/campi/{id}": {
       "put": {
         "tags": [
           "Campi"
@@ -642,7 +642,7 @@
         }
       }
     },
-    "/api/locais-oferta": {
+    "/api/configuracao/locais-oferta": {
       "get": {
         "tags": [
           "LocaisOferta"
@@ -768,7 +768,7 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/locais-oferta/{id}": {
+    "/api/configuracao/locais-oferta/{id}": {
       "get": {
         "tags": [
           "LocaisOferta"
@@ -828,7 +828,7 @@
         }
       }
     },
-    "/api/admin/locais-oferta": {
+    "/api/configuracao/admin/locais-oferta": {
       "post": {
         "tags": [
           "LocaisOferta"
@@ -935,7 +935,7 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/admin/locais-oferta/{id}": {
+    "/api/configuracao/admin/locais-oferta/{id}": {
       "put": {
         "tags": [
           "LocaisOferta"
@@ -1102,7 +1102,7 @@
         }
       }
     },
-    "/api/pesos-area-enem": {
+    "/api/configuracao/pesos-area-enem": {
       "get": {
         "tags": [
           "PesosAreaEnem"
@@ -1228,7 +1228,7 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/pesos-area-enem/{id}": {
+    "/api/configuracao/pesos-area-enem/{id}": {
       "get": {
         "tags": [
           "PesosAreaEnem"
@@ -1288,7 +1288,7 @@
         }
       }
     },
-    "/api/admin/pesos-area-enem": {
+    "/api/configuracao/admin/pesos-area-enem": {
       "post": {
         "tags": [
           "PesosAreaEnem"
@@ -1405,7 +1405,7 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/admin/pesos-area-enem/{id}": {
+    "/api/configuracao/admin/pesos-area-enem/{id}": {
       "put": {
         "tags": [
           "PesosAreaEnem"
@@ -1562,7 +1562,7 @@
         }
       }
     },
-    "/api/referencias-reserva-demografica": {
+    "/api/configuracao/referencias-reserva-demografica": {
       "get": {
         "tags": [
           "ReferenciasReservaDemografica"
@@ -1688,7 +1688,7 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/referencias-reserva-demografica/{id}": {
+    "/api/configuracao/referencias-reserva-demografica/{id}": {
       "get": {
         "tags": [
           "ReferenciasReservaDemografica"
@@ -1748,7 +1748,7 @@
         }
       }
     },
-    "/api/admin/referencias-reserva-demografica": {
+    "/api/configuracao/admin/referencias-reserva-demografica": {
       "post": {
         "tags": [
           "ReferenciasReservaDemografica"
@@ -1865,7 +1865,7 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/admin/referencias-reserva-demografica/{id}": {
+    "/api/configuracao/admin/referencias-reserva-demografica/{id}": {
       "put": {
         "tags": [
           "ReferenciasReservaDemografica"

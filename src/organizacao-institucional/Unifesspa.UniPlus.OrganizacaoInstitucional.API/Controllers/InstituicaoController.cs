@@ -16,14 +16,14 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Instituicoes;
 
 /// <summary>
-/// Endpoint público de leitura (<c>GET /api/instituicao</c>) e endpoints admin
-/// (<c>POST/PUT/DELETE /api/admin/instituicao</c>) restritos a
+/// Endpoint público de leitura (<c>GET /api/organizacao/instituicao</c>) e endpoints admin
+/// (<c>POST/PUT/DELETE /api/organizacao/admin/instituicao</c>) restritos a
 /// <c>plataforma-admin</c>. A Instituição é singleton (ADR-0055) — não há
 /// listagem nem seletor: há a Instituição, criada uma vez e editada ao longo do
 /// tempo.
 /// </summary>
 [ApiController]
-[Route("api")]
+[Route("api/organizacao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

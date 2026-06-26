@@ -3,16 +3,13 @@ using Serilog;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
-using Unifesspa.UniPlus.Ingresso.API.Errors;
-using Unifesspa.UniPlus.Ingresso.Infrastructure;
-using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Ingresso.API;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -37,11 +34,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-// OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers Uni+
-// (info, operation, schema). Spec exposto em /openapi/ingresso.json.
-builder.Services.AddUniPlusOpenApi("ingresso", builder.Configuration);
-
-builder.Services.AddSingleton<IDomainErrorRegistration, IngressoDomainErrorRegistration>();
+// AddDomainErrorMapper é compartilhado (consome IEnumerable<IDomainErrorRegistration>);
+// o registro de erros do módulo entra via AddIngressoModule.
 builder.Services.AddDomainErrorMapper();
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
@@ -51,20 +45,11 @@ builder.Services.AddRequestLogging(builder.Configuration);
 // Observabilidade (ADR-0018) — ver explicação em Selecao.API/Program.cs.
 builder.Services.AdicionarObservabilidade(nomeServicoIngresso, builder.Configuration, builder.Environment);
 
-// AddIngressoInfrastructure agora resolve a connection string via
-// IConfiguration injetada no factory do AddDbContext (issue #204) —
-// simetria com UseWolverineOutboxCascading e com Selecao.
-builder.Services.AddIngressoInfrastructure();
-
-// Migrations EF Core do módulo Ingresso aplicadas no host StartAsync via IHostedService
-// (issue #344). Como hosted service, o registro é filtrável por test factories que sobem
-// o pipeline HTTP sem Postgres real (ver ApiFactoryBase). Idempotente.
-//
-// INVARIANTE (#419): registrado antes de UseWolverineOutboxCascading +
-// AddWolverineMessaging — mesma justificativa do Selecao.API. Fitness em
-// tests/Unifesspa.UniPlus.ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
-// cobre os 3 entry points.
-builder.Services.AddDbContextMigrationsOnStartup<IngressoDbContext>();
+// Registro self-describing do módulo: OpenAPI, erros de domínio, Infrastructure
+// e migrations on startup. O mesmo método é consumido pelo composition root do
+// monólito modular (spike). Migrations on startup ficam ANTES do Wolverine
+// (invariante #419 — MigrationBeforeWolverineRuntimeOrder cobre os 3 entry points).
+builder.Services.AddIngressoModule(builder.Configuration);
 
 // Wolverine como backbone CQRS/messaging com outbox transacional —
 // ver ADR-0003, ADR-0004 e ADR-0005.
