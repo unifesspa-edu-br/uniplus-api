@@ -81,7 +81,7 @@ autorizado a compor todos). A ordem migrations→Wolverine é travada por
 `MigrationBeforeWolverineRuntimeOrderTests` (#419), que agora assere o conjunto exato
 de DbContexts co-hospedados pelo host.
 
-### Consequências
+## Consequências
 
 **Positivas:**
 
