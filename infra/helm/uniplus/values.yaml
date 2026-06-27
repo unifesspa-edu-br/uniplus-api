@@ -45,6 +45,12 @@ secrets:
   storageAccessKey: ""           # Storage__AccessKey
   storageSecretKey: ""           # Storage__SecretKey
   authAuthority: ""              # Auth__Authority
+  # Criptografia de PII (LGPD): AddUniPlusEncryption valida no startup
+  # (ValidateOnStart) — SEM estas chaves o host crasha no boot antes de servir.
+  # Provider "local" exige LocalKey; "vault" exige os campos Vault
+  # (UniPlus__Encryption__VaultAddress / __VaultRole / __VaultTransitMount / ...).
+  encryptionProvider: ""         # UniPlus__Encryption__Provider ("local" ou "vault")
+  encryptionLocalKey: ""         # UniPlus__Encryption__LocalKey (obrigatória quando Provider=local)
 
 healthcheck:
   # Liveness usa endpoint dependency-free (sem checks externos) para evitar
