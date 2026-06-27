@@ -138,7 +138,7 @@ automaticamente se um handler futuro injetar a UoW sem o opt-in correspondente.
 - `dotnet test UniPlus.slnx` exercita as chains de escrita/leitura dos 3 hosts sob
   `NotAllowed`; uma dependência opaca nova quebra a suíte.
 
-### Nota empírica: lambdas de lifetime *Singleton* não disparam
+### Nota empírica: lambdas de lifetime _Singleton_ não disparam
 
 Só lambdas factory opacas de lifetime **Scoped** (e tipos concretos não-públicos)
 disparam service location no codegen. Lambdas **Singleton** (ex.: `IConnectionMultiplexer`
