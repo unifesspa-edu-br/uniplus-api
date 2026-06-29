@@ -11,14 +11,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-using Unifesspa.UniPlus.Geo.API;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Portal.API;
 
 /// <summary>
 /// Fitness test (uniplus-api#419) que trava a invariante de ordem dos
-/// <see cref="IHostedService"/> nos 3 entry points executáveis
-/// (<b>UniPlus</b> — o host do monólito —, <b>Portal</b> e <b>Geo</b>):
+/// <see cref="IHostedService"/> nos 2 entry points executáveis
+/// (<b>UniPlus</b> — o host do monólito — e <b>Portal</b>):
 /// <c>MigrationHostedService&lt;TContext&gt;</c> precisa ser registrado antes
 /// do <c>WolverineRuntime</c> para que o schema EF do domínio esteja aplicado
 /// quando o Wolverine começar a processar envelopes que tocam tabelas do módulo.
@@ -30,7 +29,7 @@ using Unifesspa.UniPlus.Portal.API;
 /// <b>único</b> entry point, o host UniPlus, que registra os 4
 /// <c>MigrationHostedService</c> (um por DbContext de módulo) via <c>Add*Module</c>
 /// e só então o <c>WolverineRuntime</c> consolidado. Verificar o host cobre os 4
-/// de uma vez; Portal e Geo permanecem deployables autônomos.</para>
+/// de uma vez; o Portal permanece deployable autônomo.</para>
 ///
 /// <para>A invariante depende de duas premissas conjuntas:
 /// (1) ordem de registro no <see cref="IServiceCollection"/> determina ordem
@@ -69,8 +68,8 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
 
     /// <summary>
     /// DbContexts cuja migration on startup CADA entry point deve registrar. O
-    /// host UniPlus co-hospeda os 4 módulos internos, então precisa dos 4; Portal
-    /// e Geo são autônomos com um DbContext cada. Travar o conjunto exato impede
+    /// host UniPlus co-hospeda os 4 módulos internos, então precisa dos 4; o
+    /// Portal é autônomo com um DbContext. Travar o conjunto exato impede
     /// que um módulo perca silenciosamente seu <c>AddDbContextMigrationsOnStartup</c>
     /// enquanto outro ainda registra o seu (a ordem sozinha não pegaria isso).
     /// </summary>
@@ -84,10 +83,9 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
             "OrganizacaoInstitucionalDbContext",
         ],
         [MigrationOrderFixture.PortalKey] = ["PortalDbContext"],
-        [MigrationOrderFixture.GeoKey] = ["GeoDbContext"],
     };
 
-    [Theory(DisplayName = "MigrationHostedService precede WolverineRuntime no IServiceCollection (3 entry points executáveis)")]
+    [Theory(DisplayName = "MigrationHostedService precede WolverineRuntime no IServiceCollection (2 entry points executáveis)")]
     [MemberData(nameof(EntryPointKeys))]
     public void MigrationRegistradaAntesDeWolverineRuntime(string entryPointKey)
     {
@@ -146,8 +144,8 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
 }
 
 /// <summary>
-/// Fixture xUnit que materializa as 3 <see cref="WebApplicationFactory{T}"/>
-/// (uma por entry point executável: UniPlus/Portal/Geo) uma única vez por test
+/// Fixture xUnit que materializa as 2 <see cref="WebApplicationFactory{T}"/>
+/// (uma por entry point executável: UniPlus/Portal) uma única vez por test
 /// class, preservando o custo de inicialização do host. As factories são
 /// <c>IDisposable</c> via composição — não há herança custom (evita pattern
 /// Dispose(bool) sobre tipo abstrato).
@@ -160,10 +158,9 @@ public sealed class MigrationOrderFixture : IDisposable
 {
     public const string UniPlusKey = "UniPlus";
     public const string PortalKey = "Portal";
-    public const string GeoKey = "Geo";
 
     public static IReadOnlyCollection<string> RegisteredKeys { get; } =
-        [UniPlusKey, PortalKey, GeoKey];
+        [UniPlusKey, PortalKey];
 
     /// <summary>
     /// Env vars sintéticas aplicadas process-wide via static ctor. Replica o
@@ -178,7 +175,7 @@ public sealed class MigrationOrderFixture : IDisposable
         // só seria tentada no IHostedService.StartAsync, que este teste não
         // dispara (apenas Build do host para capturar IServiceCollection).
         // O host UniPlus lê UniPlusDb (outbox consolidado) + as 4 conn strings dos
-        // módulos internos (Add*Module). Portal e Geo leem as suas próprias.
+        // módulos internos (Add*Module). O Portal lê a sua própria.
         const string fake = "Host=fitness-not-real;Database=fake;Username=u;Password=p";
         Environment.SetEnvironmentVariable("ConnectionStrings__UniPlusDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__SelecaoDb", fake);
@@ -186,7 +183,6 @@ public sealed class MigrationOrderFixture : IDisposable
         Environment.SetEnvironmentVariable("ConnectionStrings__ConfiguracaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__OrganizacaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__PortalDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__GeoDb", fake);
 
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
         Environment.SetEnvironmentVariable("Kafka__BootstrapServers", " ");
@@ -198,13 +194,11 @@ public sealed class MigrationOrderFixture : IDisposable
 
     private readonly CapturingFactory<HostAssemblyMarker> _uniplusFactory = new();
     private readonly CapturingFactory<PortalApiAssemblyMarker> _portalFactory = new();
-    private readonly CapturingFactory<GeoApiAssemblyMarker> _geoFactory = new();
 
     public IReadOnlyList<ServiceDescriptor> GetCapturedSnapshot(string entryPointKey) => entryPointKey switch
     {
         UniPlusKey => _uniplusFactory.CapturedSnapshot,
         PortalKey => _portalFactory.CapturedSnapshot,
-        GeoKey => _geoFactory.CapturedSnapshot,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
@@ -212,7 +206,6 @@ public sealed class MigrationOrderFixture : IDisposable
     {
         UniPlusKey => _uniplusFactory.Services,
         PortalKey => _portalFactory.Services,
-        GeoKey => _geoFactory.Services,
         _ => throw new ArgumentOutOfRangeException(nameof(entryPointKey)),
     };
 
@@ -220,7 +213,6 @@ public sealed class MigrationOrderFixture : IDisposable
     {
         _uniplusFactory.Dispose();
         _portalFactory.Dispose();
-        _geoFactory.Dispose();
     }
 }
 

@@ -25,14 +25,13 @@ using ReflectionType = System.Type;
 /// </list>
 /// </summary>
 /// <remarks>
-/// <para>Roster real dos 6 módulos cobertos:
+/// <para>Roster real dos 5 módulos cobertos:
 /// <list type="bullet">
 ///   <item><description>Selecao (4 layers — Domain, Application, Infrastructure, API)</description></item>
 ///   <item><description>Ingresso (3 layers — sem Application separada, handlers em Infrastructure)</description></item>
 ///   <item><description>Portal (3 layers — sem Application separada)</description></item>
 ///   <item><description>OrganizacaoInstitucional (4 layers)</description></item>
 ///   <item><description>Configuracao (5 layers — inclui Contracts próprio)</description></item>
-///   <item><description>Geo (5 layers — inclui Contracts próprio; banco isolado com PostGIS)</description></item>
 /// </list>
 /// Quando um novo módulo entrar, adicionar ao <see cref="ModulesRoster"/> com os
 /// namespace prefixes dele.</para>
@@ -54,7 +53,6 @@ public sealed class CrossModuleReadIsolationTests
         "Portal",
         "OrganizacaoInstitucional",
         "Configuracao",
-        "Geo",
     ];
 
     private static readonly Architecture SolutionArchitecture = LoadSolutionArchitecture();
@@ -103,17 +101,18 @@ public sealed class CrossModuleReadIsolationTests
         // captura DI wiring, extension method calls e qualquer dep arquitetural
         // que apareça apenas no body de Main, não em signature.
         //
-        // Apenas Geo e Portal têm `Program` próprio: são os deployables autônomos
-        // (além do host UniPlus). Os 4 módulos internos viraram class libraries —
-        // não têm Program e rodam só dentro do host. O `Program` do host compõe
-        // legitimamente os 4 módulos internos (composition root), então é exceção
-        // coberta por HostCompositionRoot_ComposeTodosOsModulosInternos. Carregar
-        // o assembly de um módulo-lib traria o `Program` do host ao grafo (closure
-        // compartilhado), poluindo este filtro — por isso só Geo/Portal aqui.
+        // Apenas o Portal tem `Program` próprio entre os módulos do roster: é o
+        // único deployable autônomo restante (além do host UniPlus). O Geo foi
+        // extraído para repositório dedicado (ADR-0099). Os 4 módulos internos
+        // viraram class libraries — não têm Program e rodam só dentro do host. O
+        // `Program` do host compõe legitimamente os 4 módulos internos (composition
+        // root), então é exceção coberta por
+        // HostCompositionRoot_ComposeTodosOsModulosInternos. Carregar o assembly de
+        // um módulo-lib traria o `Program` do host ao grafo (closure compartilhado),
+        // poluindo este filtro — por isso só o Portal aqui.
         (string Modulo, ReflectionAssembly Asm)[] apiAssembliesPorModulo =
         [
             ("Portal", typeof(global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker).Assembly),
-            ("Geo", typeof(global::Unifesspa.UniPlus.Geo.API.GeoApiAssemblyMarker).Assembly),
         ];
 
         List<string> violations = [];
@@ -200,20 +199,21 @@ public sealed class CrossModuleReadIsolationTests
             + "Configuracao, OrganizacaoInstitucional) via Add<Modulo>Module no .API de cada um. "
             + $"Módulos não compostos: {string.Join(", ", naoCompostos)}");
 
-        // Negativa: Geo e Portal são deployables AUTÔNOMOS (suas próprias APIs
-        // executáveis), não módulos internos do monólito UniPlus. O host não pode
-        // referenciá-los — se referenciar, a fronteira de deploy das 3 APIs
-        // (UniPlus/Geo/Portal) foi violada e o monólito passou a arrastar código
-        // de outro deployable.
-        string[] deployablesAutonomos = ["Geo", "Portal"];
+        // Negativa: o Portal é deployable AUTÔNOMO (sua própria API executável),
+        // não módulo interno do monólito UniPlus. O host não pode referenciá-lo —
+        // se referenciar, a fronteira de deploy entre o host e o Portal foi violada
+        // e o monólito passou a arrastar código de outro deployable. O Geo saiu
+        // para repositório dedicado (ADR-0099), portanto não aparece mais neste
+        // roster.
+        string[] deployablesAutonomos = ["Portal"];
         List<string> compostosIndevidamente =
         [
             .. deployablesAutonomos.Where(modulo => referenciados.Contains($"Unifesspa.UniPlus.{modulo}.API")),
         ];
 
         compostosIndevidamente.Should().BeEmpty(
-            "Geo e Portal são APIs executáveis autônomas, não módulos internos do host UniPlus. "
-            + "O host não deve referenciar suas camadas .API. "
+            "o Portal é API executável autônoma, não módulo interno do host UniPlus. "
+            + "O host não deve referenciar sua camada .API. "
             + $"Referências indevidas: {string.Join(", ", compostosIndevidamente)}");
     }
 
@@ -317,13 +317,6 @@ public sealed class CrossModuleReadIsolationTests
             typeof(global::Unifesspa.UniPlus.Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
-
-            // Geo
-            typeof(global::Unifesspa.UniPlus.Geo.Domain.GeoDomainAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Geo.Application.GeoApplicationAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Geo.Contracts.GeoContractsAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Geo.Infrastructure.Persistence.GeoDbContext).Assembly,
-            typeof(global::Unifesspa.UniPlus.Geo.API.GeoApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();
