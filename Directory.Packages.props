@@ -43,7 +43,7 @@
     <PackageVersion Include="Apache.Avro" Version="1.12.1" />
 
     <!-- Caching -->
-    <PackageVersion Include="StackExchange.Redis" Version="2.12.14" />
+    <PackageVersion Include="StackExchange.Redis" Version="2.13.17" />
 
     <!-- Paginação keyset (ADR-0094) — motor de seek SQL multi-coluna sob o cursor opaco
          do projeto (ADR-0026). MIT, nativo .NET 10 / EF Core 10. O analyzer transitivo
