@@ -776,6 +776,11 @@
         "resolved": "3.1.1",
         "contentHash": "Qn0wM7u9TpSpja2x8UVexr2bLHb1DGMNhD2TCz3woklxaY1oH+Sitrw9fg/4YbNoNtczeH2jf+yPdXMQlgvFlQ=="
       },
+      "NetTopologySuite": {
+        "type": "Transitive",
+        "resolved": "2.5.0",
+        "contentHash": "5/+2O2ADomEdUn09mlSigACdqvAf0m/pVPGtIPEPQWnyrVykYY0NlfXLIdkMgi41kvH9kNrPqYaFBTZtHYH7Xw=="
+      },
       "NetTopologySuite.IO.PostGis": {
         "type": "Transitive",
         "resolved": "2.1.0",
@@ -820,12 +825,12 @@
       },
       "Npgsql.NetTopologySuite": {
         "type": "Transitive",
-        "resolved": "10.0.3",
-        "contentHash": "roOLWX0vokdN5cdRAwOfCWqhGFztsj2PYcvmFsPBoaSdwkboSkviaOu6hxjcX/+xAKUWUS4Al6VmwNlRQzun4g==",
+        "resolved": "9.0.4",
+        "contentHash": "7AwBLPz8EPmgAXveZ55K0Tz/9bNb8j4VI4pkTOQjyHrce8wWfAA9pefm3REidy+Kt2UFiAWef34YVi7sb/kB4A==",
         "dependencies": {
-          "NetTopologySuite": "2.6.0",
+          "NetTopologySuite": "2.5.0",
           "NetTopologySuite.IO.PostGIS": "2.1.0",
-          "Npgsql": "10.0.3"
+          "Npgsql": "9.0.4"
         }
       },
       "OpenTelemetry": {
@@ -1166,55 +1171,6 @@
           "WolverineFx.EntityFrameworkCore": "[5.39.5, )",
           "WolverineFx.Kafka": "[5.39.5, )",
           "WolverineFx.Postgresql": "[5.39.5, )"
-        }
-      },
-      "unifesspa.uniplus.geo.api": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
-          "Serilog.AspNetCore": "[10.0.0, )",
-          "Unifesspa.UniPlus.Geo.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Geo.Infrastructure": "[1.0.0, )",
-          "WolverineFx.Postgresql": "[5.39.5, )"
-        }
-      },
-      "unifesspa.uniplus.geo.application": {
-        "type": "Project",
-        "dependencies": {
-          "FluentValidation": "[12.1.1, )",
-          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
-          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
-          "Unifesspa.UniPlus.Geo.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Geo.Domain": "[1.0.0, )",
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.geo.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.geo.domain": {
-        "type": "Project",
-        "dependencies": {
-          "NetTopologySuite": "[2.6.0, )",
-          "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
-          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
-        }
-      },
-      "unifesspa.uniplus.geo.infrastructure": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.9, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.9, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": "[10.0.2, )",
-          "Unifesspa.UniPlus.Geo.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.governance.contracts": {
@@ -1568,12 +1524,6 @@
           "Microsoft.EntityFrameworkCore": "10.0.0"
         }
       },
-      "NetTopologySuite": {
-        "type": "CentralTransitive",
-        "requested": "[2.6.0, )",
-        "resolved": "2.6.0",
-        "contentHash": "1B1OTacTd4QtFyBeuIOcThwSSLUdRZU3bSFIwM8vk36XiZlBMi3K36u74e4OqwwHRHUuJC1PhbDx4hyI266X1Q=="
-      },
       "Npgsql": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
@@ -1592,16 +1542,6 @@
           "Microsoft.EntityFrameworkCore": "[10.0.4, 11.0.0)",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.4, 11.0.0)",
           "Npgsql": "10.0.3"
-        }
-      },
-      "Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.2, )",
-        "resolved": "10.0.2",
-        "contentHash": "Ur2U0g90MlGNviptHCknfnu/AiJVUbTT0S6GcSXYEpyH+fcjxyaR6GBw8Ul1cjQCQ9lLmB9Gwh5hsc8ghAwz7g==",
-        "dependencies": {
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.2",
-          "Npgsql.NetTopologySuite": "10.0.3"
         }
       },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol": {

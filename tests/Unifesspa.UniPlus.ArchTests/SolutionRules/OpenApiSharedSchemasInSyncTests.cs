@@ -40,7 +40,6 @@ public sealed class OpenApiSharedSchemasInSyncTests
         "openapi.ingresso.json",
         "openapi.organizacao.json",
         "openapi.configuracao.json",
-        "openapi.geo.json",
     ];
 
     private static readonly JsonSerializerOptions CanonicalOptions = new()

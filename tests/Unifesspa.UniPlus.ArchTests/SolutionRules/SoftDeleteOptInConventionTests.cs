@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Geo.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -124,7 +123,6 @@ public sealed class SoftDeleteOptInConventionTests
         yield return Criar<PortalDbContext>();
         yield return Criar<OrganizacaoInstitucionalDbContext>();
         yield return Criar<ConfiguracaoDbContext>();
-        yield return CriarGeo();
     }
 
     private static TContext Criar<TContext>()
@@ -135,23 +133,5 @@ public sealed class SoftDeleteOptInConventionTests
             .Options;
 
         return (TContext)Activator.CreateInstance(typeof(TContext), options)!;
-    }
-
-    // GeoDbContext usa NetTopologySuite (geography(Point,4326), ADR-0091). O
-    // provider InMemory não conhece o tipo NTS Point e falharia ao materializar o
-    // modelo, então o modelo do Geo é construído com Npgsql + UseNetTopologySuite.
-    // O model building é offline (sem conexão) — idêntico ao caminho design-time
-    // do `dotnet ef`; a connection string sintética nunca é aberta aqui, pois o
-    // teste só inspeciona `contexto.Model`.
-    private static GeoDbContext CriarGeo()
-    {
-        DbContextOptions<GeoDbContext> options = new DbContextOptionsBuilder<GeoDbContext>()
-            .UseNpgsql(
-                "Host=fitness-not-real;Database=fake;Username=u;Password=p",
-                npgsql => npgsql.UseNetTopologySuite())
-            .UseSnakeCaseNamingConvention()
-            .Options;
-
-        return new GeoDbContext(options);
     }
 }
