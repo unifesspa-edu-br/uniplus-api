@@ -73,10 +73,17 @@ services:
 
   # API Geo — deploy autônomo (banco isolado uniplus_geo com PostGIS, ADR-0090/0091).
   # Dono do banco: usuário _app dedicado (uniplus_geo_app), provisionado por init-db.sql.
+  # Extraído para repositório dedicado (issue #732, ADR-0099): a imagem do Geo passa
+  # a ser publicada por `unifesspa-geo-api`, não mais construída aqui. O serviço
+  # permanece no stack local apontando para a imagem publicada, contra o banco
+  # `uniplus_geo` que o init-db.sql continua provisionando.
+  #
+  # O workflow do repo Geo publica tags `sha-<short-sha>` e tags de release (usa
+  # `latest=false` — NÃO há tag `latest`). Defina GEO_IMAGE_TAG no seu .env com uma
+  # tag Geo publicada concreta (ex.: `GEO_IMAGE_TAG=sha-abc1234`) para manter o
+  # stack reprodutível — sem isso o compose falha rápido em vez de puxar tag móvel.
   geo-api:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.geo
+    image: "ghcr.io/unifesspa-edu-br/unifesspa-geo-api:${GEO_IMAGE_TAG:?defina GEO_IMAGE_TAG com uma tag Geo publicada (sha-<short> ou release); o repo nao publica latest}"
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Development
