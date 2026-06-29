@@ -127,12 +127,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0096](0096-endereco-como-referencia-estruturada-ao-geo.md) | Endereço de entidades institucionais como referência estruturada ao Geo | accepted | 2026-06-22 |
 | [0097](0097-topologia-de-deploy-em-tres-apis-monolito-modular.md) | Topologia de deploy em 3 APIs — módulos internos como libraries co-hospedadas | accepted | 2026-06-26 |
 | [0098](0098-politica-de-service-location-do-codegen-wolverine.md) | Política de service location do codegen Wolverine (`NotAllowed` + allow-list por tipo) | accepted | 2026-06-26 |
+| [0099](0099-geo-como-repositorio-dedicado.md) | Geo como repositório e serviço transversal dedicado | accepted | 2026-06-26 |
 
-> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0098` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0099+`.
+> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0099` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0100+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0098`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0099`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
