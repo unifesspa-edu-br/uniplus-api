@@ -1,5 +1,10 @@
 # ETL do Geo — ingestão do dataset DNE
 
+> **Nota (ADR-0099):** o Geo foi extraído para o repositório dedicado
+> [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api). A
+> documentação operacional canônica do ETL passa a viver lá. Este arquivo é
+> mantido como registro histórico do que existiu no `uniplus-api`.
+
 Guia operacional da carga de reference data do módulo `Geo` (localidades, endereçamento e georreferência nacional) a partir do dataset **DNE Correios + IBGE**. Decisões em [ADR-0090](adrs/0090-modulo-geo-localidades.md), [ADR-0091](adrs/0091-postgis-georreferencia-nts.md) e [ADR-0092](adrs/0092-etl-carga-dne-reference-data.md).
 
 ## Estratégia: schema de staging + SELECT streamado

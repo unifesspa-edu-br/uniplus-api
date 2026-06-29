@@ -10,6 +10,13 @@ informed:
 
 # ADR-0090: Módulo Geo como bounded context dedicado de localidades
 
+> **Nota (ADR-0099):** o Geo foi extraído para o repositório dedicado
+> [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api),
+> que passou a ser a fonte de verdade de código, contrato, migrations, imagem e
+> release. O `uniplus-api` mantém apenas snapshots de consumo. Ver
+> [ADR-0099](0099-geo-como-repositorio-dedicado.md). O contexto de domínio abaixo
+> permanece válido.
+
 ## Contexto e enunciado do problema
 
 O Uni+ precisa de um catálogo nacional de localidades (país, unidade federativa, município) e, no futuro, de endereçamento e georreferência (CEP, bairro, logradouro, coordenadas), para suportar cidades de prova, campi, bônus regional e demais usos que cruzam vários módulos. Esses dados são **reference data** de origem externa (IBGE, DNE dos Correios), de leitura intensa e baixa escrita.
