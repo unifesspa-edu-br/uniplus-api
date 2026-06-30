@@ -18,7 +18,7 @@ Esta suíte exercita o pipeline real `JwtBearer` da API Uni+ contra um Keycloak 
 
 ## Stack
 
-- **`KeycloakContainerFixture`** (em `tests/Unifesspa.UniPlus.IntegrationTests.Fixtures/Hosting/`) — usa o Testcontainers genérico para subir a imagem composta canônica `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.2` (Keycloak 26.5.7 + JAR `cpf-matcher` embutido), montar o realm sintético `realm-e2e-tests.json` em `/opt/keycloak/data/import/` e iniciar com `start-dev --import-realm`. A wait strategy aguarda o discovery `/realms/unifesspa-e2e/.well-known/openid-configuration` responder 200, garantindo que o realm está importado antes dos testes começarem.
+- **`KeycloakContainerFixture`** (em `tests/Unifesspa.UniPlus.IntegrationTests.Fixtures/Hosting/`) — usa o Testcontainers genérico para subir a imagem composta canônica `ghcr.io/unifesspa-edu-br/uniplus-keycloak:26.6.4` (Keycloak 26.6.4 + JAR `cpf-matcher` embutido), montar o realm sintético `realm-e2e-tests.json` em `/opt/keycloak/data/import/` e iniciar com `start-dev --import-realm`. A wait strategy aguarda o discovery `/realms/unifesspa-e2e/.well-known/openid-configuration` responder 200, garantindo que o realm está importado antes dos testes começarem.
 - **`KeycloakCollection`** — `[CollectionDefinition("Keycloak")]` xUnit que serializa as classes que precisam do container e mantém o cold start pago apenas uma vez por execução.
 - **`OidcRealApiFactory`** — subclasse de `ApiFactoryBase<Program>` que sobrescreve `ConfigureTestAuthentication` como no-op, mantendo o `JwtBearer` produtivo ativo e apontando `Auth:Authority` para o container. O método foi extraído da base como ponto de extensão semântico — subclasses E2E que precisam exercitar o pipeline real ganham um override nomeado em vez de uma flag opaca.
 - **Realm sintético de teste (`docker/keycloak/realm-e2e-tests.json`)** — arquivo SEPARADO do realm canônico (`realm-export.json`), realm name `unifesspa-e2e`. Contém apenas o necessário para os 6 cenários: 4 usuários sintéticos com senha não-temporary, 2 clients confidenciais e o scope `uniplus-profile`. Esse arquivo NUNCA é montado pelo `docker-compose` nem por Helm — vive exclusivamente para o ciclo da fixture.
@@ -45,10 +45,10 @@ echo veth | sudo tee /etc/modules-load.d/veth.conf
 
 ### 2. Pré-cache da imagem (opcional, recomendado para a primeira execução)
 
-A imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.2` tem ~600MB. Sem cache local, o cold start do Testcontainers pode levar 1–2 minutos só no pull. Para evitar surpresa:
+A imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak:26.6.4` tem ~600MB. Sem cache local, o cold start do Testcontainers pode levar 1–2 minutos só no pull. Para evitar surpresa:
 
 ```bash
-docker pull ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.2
+docker pull ghcr.io/unifesspa-edu-br/uniplus-keycloak:26.6.4
 ```
 
 ### 3. Rodar a suíte
@@ -82,7 +82,7 @@ A imagem é pinned em **patch fixo** (`1.0.2`) para garantir parity bit-a-bit en
 | Sintoma | Causa provável | Como resolver |
 |---|---|---|
 | `failed to set up container ... endpoint with name ... already exists` | Módulo `veth` ausente no kernel 6.19+ | `sudo modprobe veth` antes de rodar a suíte |
-| Cold start > 2min na primeira execução | Pull da imagem do GHCR sem cache local | Rodar `docker pull ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.2` antes |
+| Cold start > 2min na primeira execução | Pull da imagem do GHCR sem cache local | Rodar `docker pull ghcr.io/unifesspa-edu-br/uniplus-keycloak:26.6.4` antes |
 | Cenário de token expirado falha esporadicamente | Variação de relógio entre host e container | O delay já cobre `ClockSkew + lifespan`; se persistir, conferir se o host está com NTP sincronizado |
 | `connection refused` na wait strategy | Imagem composta não expõe `/realms/unifesspa/.well-known/openid-configuration` | Verificar se o `realm-export.json` foi montado em `/opt/keycloak/data/import/` e se o `--import-realm` está no comando |
 | Discovery health check `Unhealthy` no cenário 6 | Authority injetada na API não bate com o endpoint do container | Conferir que `OidcRealApiFactory.GetConfigurationOverrides` usa `keycloak.Authority` (URL com porta efêmera publicada) |

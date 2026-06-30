@@ -20,17 +20,18 @@ ghcr.io/unifesspa-edu-br/uniplus-keycloak
 
 Componentes:
 
-- **Base:** `quay.io/keycloak/keycloak:26.5.7`
+- **Base:** `quay.io/keycloak/keycloak:26.6.4` (a versão do Keycloak viva em produção)
 - **JAR `cpf-matcher-*.jar`** embutido em `/opt/keycloak/providers/` — Authenticator Java SPI custom que resolve auto-link por CPF no first-broker-login do gov.br (ver [ADR-0020](../../docs/adrs/0020-identity-brokering-govbr.md))
 
 ### Tags publicadas
 
+O esquema de tag espelha a versão do Keycloak: `v<KC>-<patch-providers>` (ex.: `26.6.4-0`), descontinuando o esquema antigo `1.0.x`.
+
 | Tag | Quando usar |
 |---|---|
-| `1.0.2` | Pinning patch fixo — usado pelo `docker-compose.yml` deste repo |
-| `1.0` | Float dentro do minor `1.0.x` |
-| `1.x` | Float dentro do major `1.x.y` — recomendado para CI/Testcontainers (pega patches automaticamente) |
-| `latest` | Disponível, mas evitar em ambientes reproduzíveis (compose, CI) |
+| `26.6.4-0` | Release imutável (`<KC>-<patch-providers>`) — pinning estrito; consumida pelo Helm em HML/PROD |
+| `26.6.4` | Soft-pin: aponta para o último patch dos providers Uni+ sobre o Keycloak 26.6.4 — usada no `docker-compose.yml` (dev) e em Testcontainers (CI), absorvendo patches sem editar a tag |
+| `latest` | Móvel — evitar em ambientes reproduzíveis (compose, CI) |
 
 A imagem é **pública** — pull sem credenciais.
 
@@ -38,9 +39,9 @@ A imagem é **pública** — pull sem credenciais.
 
 | Cenário | Tag recomendada | Por quê |
 |---|---|---|
-| `docker-compose.yml` (dev local) | Patch fixo (`1.0.2`) | Reproducibilidade entre devs do time; mudança de versão é commit explícito e revisável |
-| CI / Testcontainers | Float minor (`1.x`) | Patches absorvidos automaticamente; cold start de pull em PR vale o trade-off |
-| HML / PROD (Helm) | Patch fixo | Atualização controlada via PR de chart |
+| `docker-compose.yml` (dev local) | Soft-pin (`26.6.4`) | Desenvolve contra a mesma versão de Keycloak que roda em produção; absorve patches dos providers sobre o mesmo KC sem editar o compose |
+| CI / Testcontainers | Soft-pin (`26.6.4`) | Parity teste/prod no pipeline JwtBearer — exercita a versão que será promovida a produção |
+| HML / PROD (Helm) | Patch fixo (`26.6.4-0`) | Atualização controlada via PR de chart |
 
 ### Ciclo de release
 
@@ -48,7 +49,7 @@ Push de tag `v*.*.*` no repo `unifesspa-edu-br/uniplus-keycloak-providers` dispa
 
 1. Builda o JAR via Maven 3.9 / Eclipse Temurin 21
 2. Publica o JAR no GitHub Release (artefato auditável)
-3. Builda e publica a imagem composta no GHCR com tags semver (`1.0.2`, `1.0`, `1.x`, `latest`)
+3. Builda e publica a imagem composta no GHCR com as tags `26.6.4-0` (release imutável), `26.6.4` (soft-pin) e `latest`
 
 Para devs do `uniplus-api` consumirem uma versão nova, basta atualizar a tag em `docker-compose.yml` (e Helm em HML/PROD). **Não há build manual de JAR para devs/operadores** — o consumo padrão é puxar a imagem pronta. O JAR continua publicado no Release apenas como artefato de auditoria.
 
@@ -348,7 +349,7 @@ A configuração desse flow é idempotente e vive em `scripts/setup-cpf-matcher-
 O ambiente de desenvolvimento usa um **segundo realm no mesmo Keycloak** (`govbr-mock`) como simulador do gov.br. Isso permite exercitar todo o flow do cpf-matcher localmente, sem depender do gov.br staging (que não aceita `localhost` como redirect URI).
 
 ```bash
-# 1. Sobe a stack (a imagem ghcr.io/.../uniplus-keycloak:1.0.2 já traz o JAR embutido)
+# 1. Sobe a stack (a imagem ghcr.io/.../uniplus-keycloak:26.6.4 já traz o JAR embutido)
 docker compose -f docker/docker-compose.yml up -d
 
 # 2. Setup completo do realm DEV — flow custom + LDAP sintético + mock IdP
@@ -396,7 +397,7 @@ A validação E2E contra o gov.br staging acontece no Keycloak HML institucional
 
 > ⚠️ O Keycloak HML é **realm compartilhado** com outros sistemas (`ficha_facil`, `sisplad`). Os scripts abaixo só tocam recursos especificamente vinculados ao gov.br + cpf-matcher. **Nunca rodar `setup-keycloak-dev.sh` ou `setup-govbr-mock.sh` em HML.**
 
-Pré-requisito: o Keycloak HML precisa estar rodando a imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak` em **patch pinado** (ex.: `1.0.2`), conforme a política descrita no bloco "Imagem do Keycloak" deste README — HML/PROD nunca usam float (`1.x`/`latest`), para garantir reprodutibilidade e atualização controlada via PR de chart. A imagem já traz o JAR `cpf-matcher` embutido em `/opt/keycloak/providers/`. O pipeline Helm/CI institucional cuida do deploy da imagem — issue separada.
+Pré-requisito: o Keycloak HML precisa estar rodando a imagem composta `ghcr.io/unifesspa-edu-br/uniplus-keycloak` em **patch pinado** (ex.: `26.6.4-0`), conforme a política descrita no bloco "Imagem do Keycloak" deste README — HML/PROD nunca usam soft-pin (`26.6.4`) nem `latest`, para garantir reprodutibilidade e atualização controlada via PR de chart. A imagem já traz o JAR `cpf-matcher` embutido em `/opt/keycloak/providers/`. O pipeline Helm/CI institucional cuida do deploy da imagem — issue separada.
 
 ```bash
 # Variáveis de ambiente HML

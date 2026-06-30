@@ -9,19 +9,23 @@ using DotNet.Testcontainers.Containers;
 
 /// <summary>
 /// Sobe um container do Keycloak real (imagem composta canônica do projeto, com SPI <c>cpf-matcher</c>
-/// embutido) importando o <c>realm-export.json</c> versionado em <c>docker/keycloak/</c>. A fixture é
-/// compartilhada entre testes via <c>[Collection("Keycloak")]</c> — ver <see cref="KeycloakCollection"/>.
+/// embutido) importando o realm sintético <c>realm-e2e-tests.json</c> versionado em
+/// <c>docker/keycloak/</c>. A fixture é compartilhada entre testes via <c>[Collection("Keycloak")]</c>
+/// — ver <see cref="KeycloakCollection"/>.
 ///
-/// Garante que a suíte E2E exercite o pipeline real <c>JwtBearer</c> da API contra o IdP de produção,
-/// sem mocks no esquema de autenticação.
+/// Garante que a suíte E2E exercite o pipeline real <c>JwtBearer</c> da API contra a mesma imagem e
+/// versão de Keycloak que rodam em produção, sem mocks no esquema de autenticação.
 /// </summary>
 public sealed class KeycloakContainerFixture : IAsyncLifetime
 {
     /// <summary>
-    /// Imagem composta canônica do projeto. Patch fixo alinhado ao <c>docker/docker-compose.yml</c>
-    /// para garantir parity dev/CI/prod e evitar deriva silenciosa em <c>1.x</c>.
+    /// Imagem composta canônica do projeto (Keycloak + SPI <c>cpf-matcher</c>), publicada em
+    /// <c>ghcr.io/unifesspa-edu-br/uniplus-keycloak</c>. Soft-pin na versão do Keycloak vivo em
+    /// produção (tag <c>&lt;KC&gt;</c> = último patch dos providers Uni+ sobre o mesmo Keycloak):
+    /// a suíte é exercitada contra a versão que será promovida a produção. Avançar a tag quando o
+    /// Keycloak de produção subir.
     /// </summary>
-    public const string Image = "ghcr.io/unifesspa-edu-br/uniplus-keycloak:1.0.2";
+    public const string Image = "ghcr.io/unifesspa-edu-br/uniplus-keycloak:26.6.4";
 
     /// <summary>
     /// Nome convencional da xUnit collection que compartilha esta fixture entre classes de teste.
