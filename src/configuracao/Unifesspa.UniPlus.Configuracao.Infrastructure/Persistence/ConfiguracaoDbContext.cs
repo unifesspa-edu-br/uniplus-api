@@ -37,6 +37,8 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 
     public DbSet<PesoAreaEnem> PesosAreaEnem => Set<PesoAreaEnem>();
 
+    public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.

@@ -327,5 +327,78 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.peso_area_enem.nao_encontrado",
                 "Linha de pesos do ENEM não encontrada")),
+
+        // ── Tipo de documento (UNI-REQ-0013) ──────────────────────────────
+        new(TipoDocumentoErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.codigo_obrigatorio",
+                "Código do tipo de documento é obrigatório")),
+
+        new(TipoDocumentoErrorCodes.CodigoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.codigo_tamanho",
+                "Tamanho do código do tipo de documento inválido")),
+
+        new(TipoDocumentoErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_documento.codigo_ja_existe",
+                "Já existe um tipo de documento ativo com este código")),
+
+        new(TipoDocumentoErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.nome_obrigatorio",
+                "Nome do tipo de documento é obrigatório")),
+
+        new(TipoDocumentoErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.nome_tamanho",
+                "Tamanho do nome do tipo de documento inválido")),
+
+        new(TipoDocumentoErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.descricao_tamanho",
+                "Tamanho da descrição do tipo de documento inválido")),
+
+        new(TipoDocumentoErrorCodes.CategoriaInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.categoria_invalida",
+                "Categoria do tipo de documento fora do domínio fechado")),
+
+        new(TipoDocumentoErrorCodes.FormatosAceitosTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.formatos_aceitos_tamanho",
+                "Tamanho dos formatos aceitos do tipo de documento inválido")),
+
+        new(TipoDocumentoErrorCodes.TamanhoMaximoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.tamanho_maximo_invalido",
+                "Tamanho máximo em MB do tipo de documento deve ser positivo")),
+
+        new(TipoDocumentoErrorCodes.TipoEquivalenteTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.tipo_equivalente_tamanho",
+                "Tamanho do tipo equivalente inválido")),
+
+        new(TipoDocumentoErrorCodes.TipoEquivalenteIgualCodigo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_documento.tipo_equivalente_igual_codigo",
+                "Um tipo de documento não pode ser equivalente a si mesmo")),
+
+        new(TipoDocumentoErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.tipo_documento.nao_encontrado",
+                "Tipo de documento não encontrado")),
     ];
 }
