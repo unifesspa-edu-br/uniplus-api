@@ -38,11 +38,17 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IReferenciaReservaDemograficaRepository, ReferenciaReservaDemograficaRepository>();
         services.AddScoped<IPesoAreaEnemRepository, PesoAreaEnemRepository>();
         services.AddScoped<ITipoDocumentoRepository, TipoDocumentoRepository>();
+        services.AddScoped<ICondicaoAtendimentoRepository, CondicaoAtendimentoRepository>();
+        services.AddScoped<IRecursoAcessibilidadeRepository, RecursoAcessibilidadeRepository>();
+        services.AddScoped<ITipoDeficienciaRepository, TipoDeficienciaRepository>();
 
         // Readers cross-módulo (ADR-0056).
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
         services.AddScoped<IPesoAreaEnemReader, PesoAreaEnemReader>();
         services.AddScoped<ITipoDocumentoReader, TipoDocumentoReader>();
+        services.AddScoped<ICondicaoAtendimentoReader, CondicaoAtendimentoReader>();
+        services.AddScoped<IRecursoAcessibilidadeReader, RecursoAcessibilidadeReader>();
+        services.AddScoped<ITipoDeficienciaReader, TipoDeficienciaReader>();
 
         return services;
     }

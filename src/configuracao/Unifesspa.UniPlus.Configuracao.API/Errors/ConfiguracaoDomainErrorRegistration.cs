@@ -400,5 +400,122 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.tipo_documento.nao_encontrado",
                 "Tipo de documento não encontrado")),
+
+        // ── Condição de atendimento especializado (UNI-REQ-0012) ──────────
+        new(CondicaoAtendimentoErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.condicao_atendimento.codigo_obrigatorio",
+                "Código da condição de atendimento é obrigatório")),
+
+        new(CondicaoAtendimentoErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.condicao_atendimento.codigo_formato_invalido",
+                "Código da condição de atendimento em formato inválido")),
+
+        new(CondicaoAtendimentoErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.condicao_atendimento.codigo_ja_existe",
+                "Já existe uma condição de atendimento ativa com este código")),
+
+        new(CondicaoAtendimentoErrorCodes.CodigoProtegidoNaoEditavel,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.condicao_atendimento.codigo_protegido_nao_editavel",
+                "O código da condição reservada não pode ser alterado")),
+
+        new(CondicaoAtendimentoErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.condicao_atendimento.nome_obrigatorio",
+                "Nome da condição de atendimento é obrigatório")),
+
+        new(CondicaoAtendimentoErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.condicao_atendimento.nome_tamanho",
+                "Tamanho do nome da condição de atendimento inválido")),
+
+        new(CondicaoAtendimentoErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.condicao_atendimento.descricao_tamanho",
+                "Tamanho da descrição da condição de atendimento inválido")),
+
+        new(CondicaoAtendimentoErrorCodes.NaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.condicao_atendimento.nao_encontrada",
+                "Condição de atendimento não encontrada")),
+
+        new(CondicaoAtendimentoErrorCodes.RemocaoBloqueadaCodigoProtegido,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.condicao_atendimento.remocao_bloqueada_codigo_protegido",
+                "A condição reservada não pode ser removida")),
+
+        // ── Recurso de acessibilidade (UNI-REQ-0012) ──────────────────────
+        new(RecursoAcessibilidadeErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.recurso_acessibilidade.nome_obrigatorio",
+                "Nome do recurso de acessibilidade é obrigatório")),
+
+        new(RecursoAcessibilidadeErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.recurso_acessibilidade.nome_tamanho",
+                "Tamanho do nome do recurso de acessibilidade inválido")),
+
+        new(RecursoAcessibilidadeErrorCodes.NomeJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.recurso_acessibilidade.nome_ja_existe",
+                "Já existe um recurso de acessibilidade ativo com este nome")),
+
+        new(RecursoAcessibilidadeErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.recurso_acessibilidade.descricao_tamanho",
+                "Tamanho da descrição do recurso de acessibilidade inválido")),
+
+        new(RecursoAcessibilidadeErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.recurso_acessibilidade.nao_encontrado",
+                "Recurso de acessibilidade não encontrado")),
+
+        // ── Tipo de deficiência (UNI-REQ-0012) ────────────────────────────
+        new(TipoDeficienciaErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_deficiencia.nome_obrigatorio",
+                "Nome do tipo de deficiência é obrigatório")),
+
+        new(TipoDeficienciaErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_deficiencia.nome_tamanho",
+                "Tamanho do nome do tipo de deficiência inválido")),
+
+        new(TipoDeficienciaErrorCodes.NomeJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_deficiencia.nome_ja_existe",
+                "Já existe um tipo de deficiência ativo com este nome")),
+
+        new(TipoDeficienciaErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_deficiencia.descricao_tamanho",
+                "Tamanho da descrição do tipo de deficiência inválido")),
+
+        new(TipoDeficienciaErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.tipo_deficiencia.nao_encontrado",
+                "Tipo de deficiência não encontrado")),
     ];
 }

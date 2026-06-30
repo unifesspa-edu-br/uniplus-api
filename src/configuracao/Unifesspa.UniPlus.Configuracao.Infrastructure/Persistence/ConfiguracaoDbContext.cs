@@ -39,6 +39,12 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 
     public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
 
+    public DbSet<CondicaoAtendimentoEspecializado> CondicoesAtendimento => Set<CondicaoAtendimentoEspecializado>();
+
+    public DbSet<RecursoAcessibilidade> RecursosAcessibilidade => Set<RecursoAcessibilidade>();
+
+    public DbSet<TipoDeficiencia> TiposDeficiencia => Set<TipoDeficiencia>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
