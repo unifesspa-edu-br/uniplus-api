@@ -614,5 +614,139 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.modalidade.nao_encontrada",
                 "Modalidade não encontrada")),
+
+        // ── Fase canônica (UNI-REQ-0064) ──────────────────────────────────
+        new(FaseCanonicaErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.codigo_obrigatorio",
+                "Código da fase canônica é obrigatório")),
+
+        new(FaseCanonicaErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.codigo_formato_invalido",
+                "Código da fase canônica em formato inválido")),
+
+        new(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.codigo_fora_do_conjunto_canonico",
+                "Código da fase fora do conjunto canônico das quatorze fases")),
+
+        new(FaseCanonicaErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.fase_canonica.codigo_ja_existe",
+                "Já existe uma fase canônica ativa com este código")),
+
+        new(FaseCanonicaErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.nome_obrigatorio",
+                "Nome da fase canônica é obrigatório")),
+
+        new(FaseCanonicaErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.nome_tamanho",
+                "Tamanho do nome da fase canônica inválido")),
+
+        new(FaseCanonicaErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.descricao_tamanho",
+                "Tamanho da descrição da fase canônica inválido")),
+
+        new(FaseCanonicaErrorCodes.DonoTipicoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.dono_tipico_obrigatorio",
+                "Dono típico da fase canônica é obrigatório")),
+
+        new(FaseCanonicaErrorCodes.DonoTipicoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.dono_tipico_invalido",
+                "Dono típico da fase canônica fora do domínio fechado")),
+
+        new(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.agrupa_etapas_apenas_avaliacao",
+                "Apenas a fase de avaliação agrupa etapas pontuadas")),
+
+        new(FaseCanonicaErrorCodes.ComplementacaoApenasFasesPermitidas,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.complementacao_apenas_fases_permitidas",
+                "Complementação documental só é permitida nas fases de homologação e recursos")),
+
+        new(FaseCanonicaErrorCodes.BaseLegalTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.base_legal_tamanho",
+                "Tamanho da base legal da fase canônica inválido")),
+
+        new(FaseCanonicaErrorCodes.NaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.fase_canonica.nao_encontrada",
+                "Fase canônica não encontrada")),
+
+        // ── Tipo de banca (UNI-REQ-0064) ──────────────────────────────────
+        new(TipoBancaErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.codigo_obrigatorio",
+                "Código do tipo de banca é obrigatório")),
+
+        new(TipoBancaErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.codigo_formato_invalido",
+                "Código do tipo de banca em formato inválido")),
+
+        new(TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.codigo_fora_do_conjunto_canonico",
+                "Código do tipo de banca fora do conjunto canônico das quatro bancas")),
+
+        new(TipoBancaErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_banca.codigo_ja_existe",
+                "Já existe um tipo de banca ativo com este código")),
+
+        new(TipoBancaErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.nome_obrigatorio",
+                "Nome do tipo de banca é obrigatório")),
+
+        new(TipoBancaErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.nome_tamanho",
+                "Tamanho do nome do tipo de banca inválido")),
+
+        new(TipoBancaErrorCodes.FaseTipicaTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.fase_tipica_tamanho",
+                "Tamanho da fase típica do tipo de banca inválido")),
+
+        new(TipoBancaErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_banca.descricao_tamanho",
+                "Tamanho da descrição do tipo de banca inválido")),
+
+        new(TipoBancaErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.tipo_banca.nao_encontrado",
+                "Tipo de banca não encontrado")),
     ];
 }
