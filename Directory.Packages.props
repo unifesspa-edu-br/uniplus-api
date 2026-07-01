@@ -8,6 +8,13 @@
 
     <!-- OpenAPI -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <!-- Usado diretamente pelos OpenAPI transformers (Infrastructure.Core/OpenApi), que o declaram
+         como PackageReference. Pin ≥2.7.5 obrigatório: Microsoft.AspNetCore.OpenApi 10.0.7 traz
+         transitivamente a 2.0.0, vulnerável a CVE-2026-49451 (HIGH — referência circular de schema
+         pode encerrar o processo no parsing OpenAPI); Trivy bloqueia. Com PackageVersion central, o
+         CPM aplica o pin transitivamente (CentralTransitive) a todos os projetos que recebem o pacote
+         via Microsoft.AspNetCore.OpenApi, elevando toda a solution a 2.7.5. -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageVersion Include="Microsoft.OpenApi.Kiota" Version="1.31.1" />
 
     <!-- Encryption -->
