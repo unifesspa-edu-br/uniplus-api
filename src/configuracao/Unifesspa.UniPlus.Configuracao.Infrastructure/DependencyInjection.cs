@@ -41,6 +41,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ICondicaoAtendimentoRepository, CondicaoAtendimentoRepository>();
         services.AddScoped<IRecursoAcessibilidadeRepository, RecursoAcessibilidadeRepository>();
         services.AddScoped<ITipoDeficienciaRepository, TipoDeficienciaRepository>();
+        services.AddScoped<IModalidadeRepository, ModalidadeRepository>();
 
         // Readers cross-módulo (ADR-0056).
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
@@ -49,6 +50,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ICondicaoAtendimentoReader, CondicaoAtendimentoReader>();
         services.AddScoped<IRecursoAcessibilidadeReader, RecursoAcessibilidadeReader>();
         services.AddScoped<ITipoDeficienciaReader, TipoDeficienciaReader>();
+        services.AddScoped<IModalidadeReader, ModalidadeReader>();
 
         return services;
     }

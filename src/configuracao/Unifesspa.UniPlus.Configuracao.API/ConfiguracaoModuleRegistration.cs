@@ -54,6 +54,7 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<CondicaoAtendimentoDto>, CondicaoAtendimentoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<RecursoAcessibilidadeDto>, RecursoAcessibilidadeLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<TipoDeficienciaDto>, TipoDeficienciaLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<ModalidadeDto>, ModalidadeLinksBuilder>();
 
         // Idempotency-Key (ADR-0027) sobre o DbContext do módulo.
         services.AddIdempotency<ConfiguracaoDbContext, ConfiguracaoApiAssemblyMarker>(configuration);

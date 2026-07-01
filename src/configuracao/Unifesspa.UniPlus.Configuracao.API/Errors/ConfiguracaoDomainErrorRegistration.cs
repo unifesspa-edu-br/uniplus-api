@@ -517,5 +517,102 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.tipo_deficiencia.nao_encontrado",
                 "Tipo de deficiência não encontrado")),
+
+        // ── Modalidade de concorrência (UNI-REQ-0011) ─────────────────────
+        new(ModalidadeErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.codigo_obrigatorio",
+                "Código da modalidade é obrigatório")),
+
+        new(ModalidadeErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.codigo_formato_invalido",
+                "Código da modalidade em formato inválido")),
+
+        new(ModalidadeErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.modalidade.codigo_ja_existe",
+                "Já existe uma modalidade ativa com este código")),
+
+        new(ModalidadeErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.descricao_tamanho",
+                "Tamanho da descrição da modalidade inválido")),
+
+        new(ModalidadeErrorCodes.NaturezaInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.natureza_invalida",
+                "Natureza legal da modalidade fora do domínio fechado")),
+
+        new(ModalidadeErrorCodes.ComposicaoVagasInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.composicao_vagas_invalida",
+                "Composição de vagas da modalidade fora do domínio fechado")),
+
+        new(ModalidadeErrorCodes.RegraRemanejamentoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.regra_remanejamento_invalida",
+                "Regra de remanejamento da modalidade fora do domínio fechado")),
+
+        new(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.natureza_remanejamento_incoerente",
+                "Regra de remanejamento incoerente com a natureza legal da modalidade")),
+
+        new(ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.origem_obrigatoria_para_retira_de",
+                "A modalidade com composição 'retira de' exige a modalidade de origem")),
+
+        new(ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.origem_apenas_para_retira_de",
+                "Somente a composição 'retira de' admite modalidade de origem")),
+
+        new(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.argumento_remanejamento_obrigatorio",
+                "Argumentos de remanejamento incompatíveis com a regra declarada")),
+
+        new(ModalidadeErrorCodes.AcaoIndeferimentoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.acao_indeferimento_invalida",
+                "Ação no indeferimento fora do domínio fechado")),
+
+        new(ModalidadeErrorCodes.ReferenciaInexistenteOuInativa,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa",
+                "Modalidade referenciada (origem/destino/par/fallback) inexistente ou inativa")),
+
+        new(ModalidadeErrorCodes.RemocaoBloqueadaPorReferencia,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.modalidade.remocao_bloqueada_por_referencia",
+                "Não é possível remover uma modalidade referenciada por outra modalidade ativa")),
+
+        new(ModalidadeErrorCodes.BaseLegalTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.base_legal_tamanho",
+                "Tamanho da base legal da modalidade inválido")),
+
+        new(ModalidadeErrorCodes.NaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.modalidade.nao_encontrada",
+                "Modalidade não encontrada")),
     ];
 }
