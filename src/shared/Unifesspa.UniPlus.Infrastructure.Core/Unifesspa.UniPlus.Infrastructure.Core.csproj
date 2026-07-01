@@ -8,6 +8,8 @@
     <PackageReference Include="Confluent.SchemaRegistry.Serdes.Avro" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- Uso direto pelos OpenAPI transformers (OpenApi/*Transformer); pin ≥2.7.5 (CVE-2026-49451). -->
+    <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="Confluent.Kafka" />
     <PackageReference Include="Confluent.SchemaRegistry" />
     <PackageReference Include="Apache.Avro" />
