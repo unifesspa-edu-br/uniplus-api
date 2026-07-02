@@ -6,11 +6,13 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
@@ -75,6 +77,19 @@ public sealed class OfertaCursoPersistenceTests
         persistida.AtoAutorizacaoMec.Should().Be("Portaria MEC 9/2009");
         persistida.CreatedBy.Should().Be(AdminA);
         persistida.IsDeleted.Should().BeFalse();
+
+        var reader = new OfertaCursoReader(readCtx);
+        OfertaCursoView? view = await reader.ObterPorIdAsync(oferta.Id);
+        view.Should().NotBeNull();
+        view!.CursoId.Should().Be(cursoId);
+        view.LocalOfertaId.Should().Be(localId);
+        view.UnidadeOfertanteOrigemId.Should().Be(unidade.OrigemId);
+        view.UnidadeOfertanteSigla.Should().Be(unidade.Sigla);
+        view.ProgramaDeOferta.Should().Be("PARFOR");
+        view.FormatoPedagogico.Should().Be("SEMIPRESENCIAL");
+        view.Turno.Should().Be("NOTURNO");
+
+        (await reader.ListarVivasAsync()).Should().Contain(v => v.Id == oferta.Id);
     }
 
     [Fact(DisplayName = "Turno e campos opcionais nulos persistem nulos e reidratam como nulos")]
