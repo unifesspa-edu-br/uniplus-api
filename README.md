@@ -69,11 +69,9 @@ cp docker/.env.example docker/.env
 # Subir infraestrutura (PostgreSQL, Redis, Kafka, MinIO, Keycloak)
 docker compose -f docker/docker-compose.yml up -d
 
-# Executar módulo Seleção
-dotnet run --project src/selecao/Unifesspa.UniPlus.Selecao.API
-
-# Executar módulo Ingresso
-dotnet run --project src/ingresso/Unifesspa.UniPlus.Ingresso.API
+# Executar a API (processo único: o Host compõe Seleção, Ingresso,
+# Configuração e Organização — os módulos internos são class libraries)
+dotnet run --project src/host/Unifesspa.UniPlus.Host
 ```
 
 Para o guia completo com troubleshooting, veja [docs/setup-ambiente-local.md](docs/setup-ambiente-local.md).
