@@ -75,6 +75,29 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
             {
                 entry.State = EntityState.Modified;
                 entry.Entity.MarkAsDeleted(deletedBy, deletedAt);
+
+                RestoreOwnedReferences(entry);
+            }
+        }
+    }
+
+    // Owned types (OwnsOne, table splitting — ex.: OfertaCurso.UnidadeOfertante)
+    // são rastreados como entradas próprias e cascateiam para EntityState.Deleted
+    // junto do principal quando ele é removido. Sem este passo, a entrada owned
+    // permaneceria Deleted mesmo após o principal virar Modified acima, e o EF
+    // Core anularia as colunas owned no UPDATE da mesma linha (table splitting) —
+    // corrompendo um snapshot obrigatório (NOT NULL) em vez de só marcar o
+    // principal como removido. Nada no snapshot mudou: a entrada owned volta para
+    // Unchanged. Recursivo para cobrir owned-de-owned, se algum dia existir.
+    private static void RestoreOwnedReferences(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    {
+        foreach (Microsoft.EntityFrameworkCore.ChangeTracking.ReferenceEntry reference in entry.References)
+        {
+            if (reference.TargetEntry is { State: EntityState.Deleted } target
+                && reference.Metadata.TargetEntityType.IsOwned())
+            {
+                target.State = EntityState.Unchanged;
+                RestoreOwnedReferences(target);
             }
         }
     }
