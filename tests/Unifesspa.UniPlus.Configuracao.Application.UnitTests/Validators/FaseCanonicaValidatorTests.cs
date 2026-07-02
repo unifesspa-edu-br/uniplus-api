@@ -47,6 +47,12 @@ public sealed class FaseCanonicaValidatorTests
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarFaseCanonicaCommand.Codigo));
     }
 
+    [Fact(DisplayName = "Código canônico com espaços ao redor passa (validator trima como FaseCanonica.Criar)")]
+    public void Criar_CodigoCanonicoComEspacos_Passa()
+    {
+        _criarValidator.Validate(Base() with { Codigo = " INSCRICAO " }).IsValid.Should().BeTrue();
+    }
+
     [Theory(DisplayName = "Dono típico fora do domínio (incl. numérico e PascalCase) é rejeitado")]
     [InlineData("DTI")]
     [InlineData("1")]

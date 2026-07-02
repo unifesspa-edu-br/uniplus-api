@@ -52,6 +52,12 @@ public sealed class TipoBancaValidatorTests
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarTipoBancaCommand.Codigo));
     }
 
+    [Fact(DisplayName = "Código canônico com espaços ao redor passa (validator trima como TipoBanca.Criar)")]
+    public void Criar_CodigoCanonicoComEspacos_Passa()
+    {
+        _criarValidator.Validate(Base() with { Codigo = " BANCA_ENTREVISTA " }).IsValid.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Nome ausente é rejeitado")]
     public void Criar_SemNome_Rejeita()
     {

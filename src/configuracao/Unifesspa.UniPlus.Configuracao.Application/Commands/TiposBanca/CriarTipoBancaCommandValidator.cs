@@ -23,8 +23,10 @@ public sealed class CriarTipoBancaCommandValidator : AbstractValidator<CriarTipo
 
         // Pertença ao conjunto canônico — só quando o formato já é válido. Em RuleFor
         // separado para o When não vazar ao NotEmpty.
+        // Trim antes do Contains: espelha a normalização de TipoBanca.Criar (via
+        // CodigoBanca.Criar), que também compara o código já trimado contra o catálogo.
         RuleFor(x => x.Codigo)
-            .Must(TipoBancaCatalogo.EhCanonico)
+            .Must(codigo => TipoBancaCatalogo.EhCanonico(codigo.Trim()))
             .WithMessage($"Código do tipo de banca deve ser um dos canônicos: {string.Join(", ", TipoBancaCatalogo.Codigos)}.")
             .When(x => CodigoBanca.EhValido(x.Codigo));
 

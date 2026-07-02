@@ -24,8 +24,10 @@ public sealed class CriarFaseCanonicaCommandValidator : AbstractValidator<CriarF
 
         // Pertença ao conjunto canônico — só quando o formato já é válido (evita
         // mensagem redundante). Em RuleFor separado para o When não vazar ao NotEmpty.
+        // Trim antes do Contains: espelha a normalização de FaseCanonica.Criar (via
+        // CodigoFase.Criar), que também compara o código já trimado contra o catálogo.
         RuleFor(x => x.Codigo)
-            .Must(FaseCanonicaCatalogo.EhCanonico)
+            .Must(codigo => FaseCanonicaCatalogo.EhCanonico(codigo.Trim()))
             .WithMessage($"Código da fase deve ser um dos canônicos: {string.Join(", ", FaseCanonicaCatalogo.Codigos)}.")
             .When(x => CodigoFase.EhValido(x.Codigo));
 
