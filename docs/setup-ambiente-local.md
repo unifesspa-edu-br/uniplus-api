@@ -42,9 +42,9 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.ym
 | MinIO (API S3) | 9000 | http://localhost:9000 | `minioadmin` / `minioadmin` |
 | MinIO (Console) | 9001 | http://localhost:9001 | `minioadmin` / `minioadmin` |
 | Keycloak 26.5 | 8080 | http://localhost:8080 | `admin` / `admin` |
-| Seleção API | 5202 | http://localhost:5202/health | — |
-| Ingresso API | 5262 | http://localhost:5262/health | — |
-| Organização API | 5263 | http://localhost:5263/health | — |
+| Uni+ API (Host: Seleção + Ingresso + Configuração + Organização) | 5200 (via Docker) | http://localhost:5200/health | — |
+
+> Via `dotnet run` local (Modo 1), o `Unifesspa.UniPlus.Host` não tem `launchSettings.json` próprio — a porta usada é a padrão do Kestrel, exibida no console ao subir (`Now listening on: ...`).
 
 ## Databases PostgreSQL
 
@@ -65,14 +65,13 @@ O script `docker/init-db.sql` cria automaticamente:
 # Subir infraestrutura
 docker compose -f docker/docker-compose.yml up -d
 
-# Em um terminal — Seleção API
-dotnet run --project src/selecao/Unifesspa.UniPlus.Selecao.API
-
-# Em outro terminal — Ingresso API
-dotnet run --project src/ingresso/Unifesspa.UniPlus.Ingresso.API
+# Executar a API — processo único, o Host compõe Seleção, Ingresso,
+# Configuração e Organização (os módulos internos são class libraries,
+# não são executáveis isoladamente)
+dotnet run --project src/host/Unifesspa.UniPlus.Host
 ```
 
-As APIs usam `appsettings.Development.json` com connection strings apontando para `localhost`.
+A API usa o `appsettings.Development.json` do Host, com connection strings de todos os módulos apontando para `localhost`.
 
 ### Modo 2: Tudo via Docker (útil para testes de integração)
 
