@@ -57,6 +57,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IModalidadeReader, ModalidadeReader>();
         services.AddScoped<IFaseCanonicaReader, FaseCanonicaReader>();
         services.AddScoped<ITipoBancaReader, TipoBancaReader>();
+        services.AddScoped<IOfertaCursoReader, OfertaCursoReader>();
 
         return services;
     }
