@@ -15,11 +15,18 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 /// cache Redis (TTL 5 min) + stampede protection via lease ~2s
 /// (ADR-0057 Pattern 4).
 /// </summary>
+/// <remarks>
+/// Pública (não <c>internal</c>) porque é injetada em handlers Wolverine de
+/// outros módulos co-hospedados (ex.: o congelamento da unidade ofertante na
+/// <c>OfertaCurso</c> de Configuração) e, sob <c>ServiceLocationPolicy.NotAllowed</c>
+/// (ADR-0098), o codegen precisa construir o tipo concreto — mesmo root fix
+/// aplicado aos cache invalidators.
+/// </remarks>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em OrganizacaoInstitucionalInfrastructureRegistration.")]
-internal sealed partial class UnidadeReader : IUnidadeReader
+public sealed partial class UnidadeReader : IUnidadeReader
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan LeaseTtl = TimeSpan.FromSeconds(2);
