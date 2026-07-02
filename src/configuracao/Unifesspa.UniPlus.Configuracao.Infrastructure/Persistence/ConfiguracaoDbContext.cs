@@ -51,6 +51,8 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 
     public DbSet<TipoBanca> TiposBanca => Set<TipoBanca>();
 
+    public DbSet<Curso> Cursos => Set<Curso>();
+
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.

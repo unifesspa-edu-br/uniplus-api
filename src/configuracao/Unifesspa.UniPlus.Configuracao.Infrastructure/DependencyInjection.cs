@@ -44,6 +44,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IModalidadeRepository, ModalidadeRepository>();
         services.AddScoped<IFaseCanonicaRepository, FaseCanonicaRepository>();
         services.AddScoped<ITipoBancaRepository, TipoBancaRepository>();
+        services.AddScoped<ICursoRepository, CursoRepository>();
 
         // Readers cross-módulo (ADR-0056).
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
