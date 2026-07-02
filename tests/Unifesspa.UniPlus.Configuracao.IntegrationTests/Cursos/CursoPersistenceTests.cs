@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// Integração ponta-a-ponta do Curso contra Postgres real (story #588):
@@ -166,6 +168,52 @@ public sealed class CursoPersistenceTests
             $"INSERT INTO configuracao.curso (id, codigo, nome, grau, nivel_ensino, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().NotThrowAsync("a coluna é opcional e o CHECK é null-safe");
+    }
+
+    [Fact(DisplayName = "Navegação bidirecional do cursor: prev volta exatamente à página anterior, com flags coerentes")]
+    public async Task Navegacao_Bidirecional_PrevVoltaPaginaAnterior()
+    {
+        // 5 cursos criados agora: o prefixo temporal do Guid v7 garante que o BLOCO
+        // fica no fim da tabela em ASC por Id — âncora determinística mesmo com
+        // linhas pré-existentes de outros testes da collection (sequencial, tabela
+        // estática). Dentro do mesmo milissegundo os bits aleatórios permutam a
+        // ordem interna do bloco, então os ids são ordenados como o Postgres ordena
+        // uuid (byte a byte = ordem lexicográfica do hex canônico).
+        Curso[] cursos = [Novo(CodigoUnico()), Novo(CodigoUnico()), Novo(CodigoUnico()), Novo(CodigoUnico()), Novo(CodigoUnico())];
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Cursos.AddRange(cursos);
+            await ctx.SaveChangesAsync();
+        }
+
+        Guid[] ids = [.. cursos.Select(c => c.Id).OrderBy(id => id.ToString(), StringComparer.Ordinal)];
+
+        // Página 1 (forward a partir de ids[0], limit 2): [1,2]; há anterior (ids[0]) e próximo.
+        (IReadOnlyList<Curso> p1, Guid? p1Ant, Guid? p1Prox) = await PaginarAsync(afterId: ids[0], PaginationDirection.Next);
+        p1.Select(c => c.Id).Should().Equal(ids[1], ids[2]);
+        p1Ant.Should().Be(ids[1]);
+        p1Prox.Should().Be(ids[2]);
+
+        // Página 2 (forward a partir do próximo da p1): [3,4]; última página → sem próximo.
+        (IReadOnlyList<Curso> p2, Guid? p2Ant, Guid? p2Prox) = await PaginarAsync(afterId: p1Prox, PaginationDirection.Next);
+        p2.Select(c => c.Id).Should().Equal(ids[3], ids[4]);
+        p2Ant.Should().Be(ids[3]);
+        p2Prox.Should().BeNull("ids[4] é a linha mais recente da tabela (Guid v7)");
+
+        // Backward a partir do anterior da p2: volta exatamente à página 1 em ASC.
+        (IReadOnlyList<Curso> volta, Guid? voltaAnt, Guid? voltaProx) = await PaginarAsync(afterId: p2Ant, PaginationDirection.Prev);
+        volta.Select(c => c.Id).Should().Equal(ids[1], ids[2]);
+        voltaAnt.Should().Be(ids[1], "ainda há linhas antes de ids[1] (ao menos ids[0])");
+        voltaProx.Should().Be(ids[2]);
+    }
+
+    private async Task<(IReadOnlyList<Curso> Itens, Guid? Anterior, Guid? Proximo)> PaginarAsync(
+        Guid? afterId,
+        PaginationDirection direction)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repository = new CursoRepository(ctx);
+        return await repository.ListarPaginadoAsync(afterId, limit: 2, direction, CancellationToken.None);
     }
 
     private static Curso Novo(
