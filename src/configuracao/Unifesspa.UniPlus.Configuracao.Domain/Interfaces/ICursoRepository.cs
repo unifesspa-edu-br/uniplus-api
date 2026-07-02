@@ -46,11 +46,10 @@ public interface ICursoRepository
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Ponto de extensão (#749): indica se o curso é referenciado por alguma
-    /// oferta de curso viva — caso em que a remoção é bloqueada. A entidade
-    /// <c>oferta_curso</c> ainda não existe no módulo, logo a implementação
-    /// retorna <see langword="false"/>. Quando a oferta de curso chegar, esta
-    /// checagem passa a consultá-la.
+    /// Indica se o curso é referenciado por alguma oferta de curso viva (#749)
+    /// — caso em que a remoção é bloqueada. Oferta soft-deletada não conta: o
+    /// curso fica livre para remoção assim que a última oferta viva que o
+    /// referencia deixa de existir.
     /// </summary>
     Task<bool> ReferenciadoPorOfertaCursoVivaAsync(Guid cursoId, CancellationToken cancellationToken);
 }

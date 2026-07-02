@@ -38,7 +38,6 @@ public sealed class RemoverCursoCommandHandlerTests
     {
         Curso curso = NovoCurso();
         _repository.ObterPorIdAsync(curso.Id, Arg.Any<CancellationToken>()).Returns(curso);
-        // Ponto de extensão #749: oferta_curso ainda não existe → false.
         _repository.ReferenciadoPorOfertaCursoVivaAsync(curso.Id, Arg.Any<CancellationToken>())
             .Returns(false);
 
@@ -55,8 +54,6 @@ public sealed class RemoverCursoCommandHandlerTests
     {
         Curso curso = NovoCurso();
         _repository.ObterPorIdAsync(curso.Id, Arg.Any<CancellationToken>()).Returns(curso);
-        // Quando oferta_curso existir (#749), o repositório passa a reportar a
-        // referência viva — o handler já bloqueia sem precisar mudar.
         _repository.ReferenciadoPorOfertaCursoVivaAsync(curso.Id, Arg.Any<CancellationToken>())
             .Returns(true);
 
