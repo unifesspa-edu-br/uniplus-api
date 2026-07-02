@@ -820,5 +820,126 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.curso.remocao_bloqueada_por_oferta_curso",
                 "Não é possível remover um curso referenciado por uma oferta de curso ativa")),
+
+        // ── Oferta de curso (UNI-REQ-0010) ─────────────────────────────────
+        new(OfertaCursoErrorCodes.CursoInexistenteOuRemovido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.curso_inexistente_ou_removido",
+                "Curso informado não existe ou foi removido")),
+
+        new(OfertaCursoErrorCodes.LocalOfertaInexistenteOuRemovido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.local_oferta_inexistente_ou_removido",
+                "Local de oferta informado não existe ou foi removido")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteInexistente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_inexistente",
+                "Unidade ofertante informada não existe ou foi removida — não há identidade viva para congelar")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteOrigemObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_origem_obrigatoria",
+                "Identificador de origem da unidade ofertante é obrigatório")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteSiglaObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_sigla_obrigatoria",
+                "Sigla da unidade ofertante é obrigatória")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteSiglaTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_sigla_tamanho",
+                "Tamanho da sigla da unidade ofertante inválido")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteNomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_nome_obrigatorio",
+                "Nome da unidade ofertante é obrigatório")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteNomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_nome_tamanho",
+                "Tamanho do nome da unidade ofertante inválido")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteTipoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_tipo_obrigatorio",
+                "Tipo da unidade ofertante é obrigatório")),
+
+        new(OfertaCursoErrorCodes.UnidadeOfertanteTipoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.unidade_ofertante_tipo_tamanho",
+                "Tamanho do tipo da unidade ofertante inválido")),
+
+        new(OfertaCursoErrorCodes.ProgramaDeOfertaInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.programa_de_oferta_invalido",
+                "Programa de oferta fora do domínio fechado")),
+
+        new(OfertaCursoErrorCodes.FormatoPedagogicoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.formato_pedagogico_invalido",
+                "Formato pedagógico fora do domínio fechado")),
+
+        new(OfertaCursoErrorCodes.TurnoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.turno_invalido",
+                "Turno fora do domínio fechado")),
+
+        new(OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.base_legal_obrigatoria_para_programa_nao_regular",
+                "Base legal é obrigatória quando o programa de oferta não é Regular")),
+
+        new(OfertaCursoErrorCodes.VagasAnuaisNegativas,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.vagas_anuais_negativas",
+                "Vagas anuais autorizadas não pode ser negativo")),
+
+        new(OfertaCursoErrorCodes.EMecCodigoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.e_mec_codigo_tamanho",
+                "Tamanho do código e-MEC inválido")),
+
+        new(OfertaCursoErrorCodes.CodigoSgaTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.codigo_sga_tamanho",
+                "Tamanho do código SGA inválido")),
+
+        new(OfertaCursoErrorCodes.BaseLegalTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.base_legal_tamanho",
+                "Tamanho da base legal da oferta de curso inválido")),
+
+        new(OfertaCursoErrorCodes.AtoAutorizacaoMecTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.oferta_curso.ato_autorizacao_mec_tamanho",
+                "Tamanho do ato de autorização MEC inválido")),
+
+        new(OfertaCursoErrorCodes.NaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.oferta_curso.nao_encontrada",
+                "Oferta de curso não encontrada")),
     ];
 }

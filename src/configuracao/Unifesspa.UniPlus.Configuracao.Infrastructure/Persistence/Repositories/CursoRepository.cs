@@ -79,11 +79,11 @@ public sealed class CursoRepository : ICursoRepository
 
     public Task<bool> ReferenciadoPorOfertaCursoVivaAsync(Guid cursoId, CancellationToken cancellationToken)
     {
-        // TODO(#749): quando a entidade oferta_curso existir no módulo, consultar
-        // aqui se há oferta de curso viva referenciando este curso. Até lá, não há
-        // tabela a consultar — a checagem retorna false.
-        _ = cursoId;
-        _ = cancellationToken;
-        return Task.FromResult(false);
+        // EXISTS sobre ofertas vivas (#749): o query filter global de soft-delete
+        // já restringe a ofertas não removidas — o soft-delete da oferta libera o
+        // curso para remoção.
+        return _dbContext.OfertasCurso
+            .AsNoTracking()
+            .AnyAsync(o => o.CursoId == cursoId, cancellationToken);
     }
 }
