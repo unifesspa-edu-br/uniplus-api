@@ -68,11 +68,11 @@ public sealed class LocalOfertaRepository : ILocalOfertaRepository
 
     public Task<bool> ReferenciadoPorOfertaCursoVivaAsync(Guid localOfertaId, CancellationToken cancellationToken)
     {
-        // TODO(UNI-REQ-0010): quando a entidade oferta_curso existir no módulo,
-        // consultar aqui se há oferta de curso viva referenciando este local de
-        // oferta. Até lá, não há tabela a consultar — a checagem retorna false.
-        _ = localOfertaId;
-        _ = cancellationToken;
-        return Task.FromResult(false);
+        // EXISTS sobre ofertas vivas (#731): o query filter global de soft-delete
+        // já restringe a ofertas não removidas — o soft-delete da oferta libera o
+        // local de oferta para remoção.
+        return _dbContext.OfertasCurso
+            .AsNoTracking()
+            .AnyAsync(o => o.LocalOfertaId == localOfertaId, cancellationToken);
     }
 }

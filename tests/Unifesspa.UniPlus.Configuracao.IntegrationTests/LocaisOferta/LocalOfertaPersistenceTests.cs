@@ -7,11 +7,16 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
+using Unifesspa.UniPlus.Kernel.Results;
 
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -21,6 +26,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 public sealed class LocalOfertaPersistenceTests
 {
     private const string AdminA = "admin-a";
+    private const string AdminB = "admin-b";
 
     private static readonly DateTimeOffset Agora = new(2026, 6, 17, 12, 0, 0, TimeSpan.Zero);
 
@@ -125,14 +131,68 @@ public sealed class LocalOfertaPersistenceTests
             .WithInnerException(typeof(Npgsql.PostgresException));
     }
 
-    [Fact(
-        Skip = "Bloqueio por oferta de curso viva depende de oferta_curso (UNI-REQ-0010), ainda inexistente no módulo. Ponto de extensão pronto: ILocalOfertaRepository.ReferenciadoPorOfertaCursoVivaAsync retorna false.",
-        DisplayName = "CA-05: remover LocalOferta referenciado por oferta de curso viva é bloqueado")]
-    public Task RemoverLocalOferta_ComOfertaCursoViva_Bloqueia()
+    [Fact(DisplayName = "CA-05: remover LocalOferta referenciado por oferta de curso viva é bloqueado; oferta removida libera (#731)")]
+    public async Task RemoverLocalOferta_ComOfertaCursoViva_Bloqueia()
     {
-        // Quando oferta_curso existir, semear um local + oferta viva referenciando-o
-        // e assertar que RemoverLocalOfertaCommandHandler retorna
-        // LocalOfertaErrorCodes.RemocaoBloqueadaPorOfertaCurso.
-        return Task.CompletedTask;
+        Curso curso = Curso.Criar(
+            CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;
+        LocalOferta local = LocalOferta.Criar(
+            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Cursos.Add(curso);
+            ctx.LocaisOferta.Add(local);
+            await ctx.SaveChangesAsync();
+        }
+
+        UnidadeOfertante unidade = UnidadeOfertante.Criar(
+            Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
+        OfertaCurso oferta = OfertaCurso.Criar(
+            curso.Id, local.Id, unidade, "REGULAR", "PRESENCIAL",
+            null, null, null, null, null, null).Value!;
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.OfertasCurso.Add(oferta);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Oferta viva referenciando o local → RemoverLocalOfertaCommandHandler bloqueia.
+        await using (ConfiguracaoDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
+        {
+            var repository = new LocalOfertaRepository(handlerCtx);
+
+            Result resultado = await RemoverLocalOfertaCommandHandler.Handle(
+                new RemoverLocalOfertaCommand(local.Id), repository, handlerCtx, CancellationToken.None);
+
+            resultado.IsFailure.Should().BeTrue();
+            resultado.Error!.Code.Should().Be(LocalOfertaErrorCodes.RemocaoBloqueadaPorOfertaCurso);
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        {
+            (await ctx.LocaisOferta.AnyAsync(l => l.Id == local.Id)).Should().BeTrue(
+                "o local permanece vivo — a remoção foi bloqueada, não executada");
+        }
+
+        // Soft-delete da oferta: o local deixa de estar referenciado por oferta viva.
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            OfertaCurso ofertaTracked = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
+            ctx.OfertasCurso.Remove(ofertaTracked);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
+        {
+            var repository = new LocalOfertaRepository(handlerCtx);
+
+            Result resultado = await RemoverLocalOfertaCommandHandler.Handle(
+                new RemoverLocalOfertaCommand(local.Id), repository, handlerCtx, CancellationToken.None);
+
+            resultado.IsSuccess.Should().BeTrue("oferta morta não bloqueia — o local fica livre para remoção");
+        }
     }
+
+    private static string CodigoUnico() => $"CUR_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

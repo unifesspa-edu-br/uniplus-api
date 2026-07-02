@@ -41,7 +41,6 @@ public sealed class RemoverLocalOfertaCommandHandlerTests
     {
         LocalOferta local = NovoLocal();
         _repository.ObterPorIdAsync(local.Id, Arg.Any<CancellationToken>()).Returns(local);
-        // Ponto de extensão UNI-REQ-0010: oferta_curso ainda não existe → false.
         _repository.ReferenciadoPorOfertaCursoVivaAsync(local.Id, Arg.Any<CancellationToken>())
             .Returns(false);
 
@@ -51,5 +50,22 @@ public sealed class RemoverLocalOfertaCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         _repository.Received(1).Remover(local);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Local referenciado por oferta de curso viva tem a remoção bloqueada (409)")]
+    public async Task Handle_ComOfertaCursoViva_BloqueiaRemocao()
+    {
+        LocalOferta local = NovoLocal();
+        _repository.ObterPorIdAsync(local.Id, Arg.Any<CancellationToken>()).Returns(local);
+        _repository.ReferenciadoPorOfertaCursoVivaAsync(local.Id, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        Result resultado = await RemoverLocalOfertaCommandHandler.Handle(
+            new RemoverLocalOfertaCommand(local.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(LocalOfertaErrorCodes.RemocaoBloqueadaPorOfertaCurso);
+        _repository.DidNotReceive().Remover(Arg.Any<LocalOferta>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

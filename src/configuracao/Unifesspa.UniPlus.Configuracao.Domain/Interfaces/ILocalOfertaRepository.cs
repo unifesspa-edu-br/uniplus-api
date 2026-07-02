@@ -42,11 +42,10 @@ public interface ILocalOfertaRepository
     Task<bool> ExisteVivoComCampusResponsavelAsync(Guid campusResponsavelId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Ponto de extensão (UNI-REQ-0010): indica se o local de oferta é
-    /// referenciado por alguma oferta de curso viva — caso em que a remoção é
-    /// bloqueada. A entidade <c>oferta_curso</c> ainda não existe no módulo, logo
-    /// a implementação retorna <see langword="false"/>. Quando a oferta de curso
-    /// chegar, esta checagem passa a consultá-la.
+    /// Indica se o local de oferta é referenciado por alguma oferta de curso
+    /// viva (#731) — caso em que a remoção é bloqueada. Oferta soft-deletada
+    /// não conta: o local fica livre para remoção assim que a última oferta
+    /// viva que o referencia deixa de existir.
     /// </summary>
     Task<bool> ReferenciadoPorOfertaCursoVivaAsync(Guid localOfertaId, CancellationToken cancellationToken);
 }
