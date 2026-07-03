@@ -17,38 +17,76 @@ Este documento descreve como contribuir com o backend da plataforma Uni+. Leia-o
 
 ### Dependências via Docker Compose
 
-O projeto depende de serviços externos que rodam localmente via Docker:
+O projeto depende de serviços externos que rodam localmente via Docker. Para subir
+**apenas a infra** (sem as APIs nem o frontend), a partir da raiz do repositório:
 
 ```bash
-docker compose up -d
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-Isso inicia: PostgreSQL 18, Redis, Kafka (KRaft), MinIO e Keycloak (dev mode).
+Isso inicia: PostgreSQL 18, Redis, Kafka (KRaft), MinIO, Apicurio e Keycloak (dev mode).
+Para o stack completo (infra + APIs + frontend), veja **Subir a stack completa** abaixo.
 
-### Testar um frontend contra as APIs conteinerizadas
+### Subir a stack completa (backend + frontend)
 
-Para rodar um app do `uniplus-web` (ex.: `configuracao`, `selecao`) contra estas
-APIs, **suba a stack com o override `frontend-test`**:
+Para subir **tudo** — infra + as 3 APIs + o gateway + os 4 frontends Angular
+conteinerizados — copie os dois templates e suba (nada mais a editar):
 
 ```bash
-docker compose -f docker-compose.yml \
-               -f docker-compose.override.yml \
-               -f docker-compose.frontend-test.yml up -d
+cp docker/.env.example docker/.env
+cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml
+docker compose -f docker/docker-compose.yml \
+               -f docker/docker-compose.override.yml up -d --build
 ```
 
-Depois, em `uniplus-web`: `npx nx serve configuracao` (→ :4203) ou
-`npx nx serve selecao` (→ :4200, via gateway Traefik :5000).
+**Pré-requisito:** `uniplus-api` e `uniplus-web` clonados lado a lado em
+`repositories/` — o build dos frontends usa `context: ../../uniplus-web`. As
+senhas do `.env.example` são de dev local e já vêm preenchidas; só `GOVBR_*`
+fica vazio (gov.br é opcional em dev). A imagem do `geo-api` vem do GHCR
+(`GEO_IMAGE_TAG`, pública). Se você já tinha o stack no ar antes desta mudança,
+rode uma vez `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml down -v --remove-orphans`
+(o `--import-realm` do Keycloak não reimporta um realm já existente).
 
-**Por que o override é obrigatório.** O `docker-compose.override.yml` configura
-as APIs com `Auth__Authority` apontando para o realm **`unifesspa-dev-local`**
-(usado por scripts de smoke), enquanto os frontends autenticam no realm
-**`unifesspa`** (clients `*-web`). Sem o `frontend-test.yml`, que realinha todas
-as APIs ao realm `unifesspa`, o sintoma é:
+| App | URL | Client OIDC |
+|---|---|---|
+| selecao | http://localhost:4200 | `selecao-web` |
+| ingresso | http://localhost:4201 | `ingresso-web` |
+| portal | http://localhost:4202 | `portal-web` |
+| configuracao | http://localhost:4203 | `configuracao-web` |
 
-- `GET` de listas funciona (são `[AllowAnonymous]` — retornam 200 e **mascaram**
-  o problema), mas
-- **toda mutação** (POST/PUT/DELETE) responde **401** e o frontend entra em
-  **loop de re-login** (o `authErrorInterceptor` redireciona ao Keycloak).
+Os frontends consomem as APIs por um único `apiUrl` (o gateway Traefik em
+`http://localhost:5000`, que separa o tráfego geo/portal/monólito) e autenticam
+no realm **`unifesspa`** — as 3 APIs validam esse mesmo realm por padrão. Login
+de teste: usuário `admin` (ver **Sessões manuais longas** abaixo para a senha).
+
+### Desenvolver o frontend com hot reload (`nx serve`)
+
+Os apps `*-web` do override ocupam as portas 4200-4203. Para iterar no frontend
+com hot reload, suba o stack **sem** os containers web e rode o `nx serve` na
+mesma porta:
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml \
+  up -d postgres redis kafka minio apicurio keycloak \
+        uniplus-api geo-api portal-api traefik
+# em uniplus-web:
+npx nx serve selecao        # → :4200, apiUrl=http://localhost:5000
+```
+
+### Smoke / Newman (realm `unifesspa-dev-local`)
+
+Scripts de smoke obtêm token via **password grant**, que exige o realm
+`unifesspa-dev-local` (clients com `directAccessGrantsEnabled`). Realinhe as APIs
+com o override `docker-compose.smoke.yml` e suba só infra + APIs (sem buildar os
+frontends):
+
+```bash
+docker compose -f docker/docker-compose.yml \
+               -f docker/docker-compose.override.yml \
+               -f docker/docker-compose.smoke.yml \
+               up -d postgres redis kafka minio apicurio keycloak \
+                     uniplus-api geo-api portal-api
+```
 
 > **Sessões manuais longas (opcional):** o `accessTokenLifespan` do realm é 300s
 > por padrão; refreshes frequentes podem atrapalhar testes interativos. Para

@@ -165,17 +165,22 @@ dotnet test UniPlus.slnx
 dotnet test tests/Unifesspa.UniPlus.Selecao.ArchTests
 dotnet test tests/Unifesspa.UniPlus.Ingresso.ArchTests
 
-# Infraestrutura local (PostgreSQL, Redis, Kafka, MinIO, Keycloak)
+# Infraestrutura local (PostgreSQL, Redis, Kafka, MinIO, Keycloak) — só a infra
 docker compose -f docker/docker-compose.yml up -d
 
-# APIs em modo desenvolvimento
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d
+# Stack COMPLETA (infra + 3 APIs + gateway Traefik + 4 frontends conteinerizados).
+# Copie os dois templates e suba — nada a editar. As APIs validam o realm `unifesspa`
+# (o mesmo dos clients *-web); frontends em 4200-4203, gateway em :5000. Pré-requisito:
+# uniplus-web clonado lado a lado (build context ../../uniplus-web). Ver CONTRIBUTING.md
+# §"Subir a stack completa".
+cp docker/.env.example docker/.env
+cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build
 
-# Testar um FRONTEND (uniplus-web) contra estas APIs: adicionar o override frontend-test,
-# que realinha o Auth__Authority de TODAS as APIs ao realm `unifesspa` (o override base usa
-# `unifesspa-dev-local`, que faz toda mutação responder 401 + loop de re-login no front;
-# GET de lista é [AllowAnonymous] e mascara). Ver CONTRIBUTING.md §"Testar um frontend".
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml -f docker/docker-compose.frontend-test.yml up -d
+# Smoke/Newman (token via password grant): realinha as APIs ao realm `unifesspa-dev-local`
+# e sobe só infra + APIs (sem os frontends). Ver CONTRIBUTING.md §"Smoke / Newman".
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml -f docker/docker-compose.smoke.yml \
+  up -d postgres redis kafka minio apicurio keycloak uniplus-api geo-api portal-api
 
 # Migrations EF Core — ver CONTRIBUTING.md §Entity Framework + docs/guia-banco-de-dados.md (ADR-0054).
 dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --context SelecaoDbContext --output-dir Persistence/Migrations
