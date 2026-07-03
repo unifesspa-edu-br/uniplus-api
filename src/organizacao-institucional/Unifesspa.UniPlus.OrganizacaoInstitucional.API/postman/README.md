@@ -16,10 +16,13 @@ vida completo da **Instituição** singleton (issue #585) e um smoke de **Unidad
 Com a topologia de 3 APIs, o módulo Organização é servido pela **API UniPlus**
 (o monólito modular, serviço `uniplus-api`), que declara dependência de Postgres,
 Redis, Kafka, MinIO, Apicurio e **Keycloak** — subir a API já traz tudo que a
-coleção precisa (o token sai do Keycloak):
+coleção precisa (o token sai do Keycloak). O override `docker-compose.smoke.yml`
+realinha a API ao realm `unifesspa-dev-local` (o override default usa `unifesspa`,
+dos frontends) — sem ele o token dev-local do environment é rejeitado com 401:
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml \
+  -f docker/docker-compose.smoke.yml \
   --env-file docker/.env --project-directory docker up -d uniplus-api
 ```
 
