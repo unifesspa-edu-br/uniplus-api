@@ -108,6 +108,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__GeoDb: "Host=postgres;Port=5432;Database=uniplus_geo;Username=uniplus_geo_app;Password=uniplus_dev"
+      # Banco de staging da DNE (unifesspa-geo-api#12) — só passa a ter efeito
+      # quando GEO_IMAGE_TAG apontar para uma imagem que já inclua a correção.
+      ConnectionStrings__GeoStagingDb: "Host=postgres;Port=5432;Database=uniplus_geo_staging;Username=uniplus_geo_staging_app;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
       Storage__Endpoint: "minio:9000"
