@@ -38,11 +38,21 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        Guid? cursoId,
         CancellationToken cancellationToken)
     {
+        IQueryable<OfertaCurso> query = _dbContext.OfertasCurso.AsNoTracking();
+
+        // Filtro opcional por curso (issue #755): aplicado ANTES do keyset para que
+        // os EXISTS de prev/next herdem o recorte. Index-backed por ix_oferta_curso_curso_id.
+        if (cursoId is { } curso)
+        {
+            query = query.Where(o => o.CursoId == curso);
+        }
+
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
         CursorKeysetPage<OfertaCurso> page = await CursorKeyset
-            .ApplyAsync(_dbContext.OfertasCurso.AsNoTracking(), afterId, limit, direction, cancellationToken)
+            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);

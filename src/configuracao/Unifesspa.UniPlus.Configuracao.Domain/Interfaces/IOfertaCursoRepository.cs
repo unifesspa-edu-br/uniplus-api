@@ -21,11 +21,15 @@ public interface IOfertaCursoRepository
     /// Lista ofertas de curso vivas paginadas por cursor keyset bidirecional
     /// (ADR-0026 + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve
     /// as âncoras de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
+    /// O filtro opcional <paramref name="cursoId"/> (issue #755) restringe às
+    /// ofertas do curso informado antes do keyset — itens e âncoras respeitam o
+    /// recorte; <c>null</c> lista todas.
     /// </summary>
     Task<(IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        Guid? cursoId,
         CancellationToken cancellationToken);
 
     Task AdicionarAsync(OfertaCurso ofertaCurso, CancellationToken cancellationToken);

@@ -16,7 +16,7 @@ public static class ListarOfertasCursoQueryHandler
         ArgumentNullException.ThrowIfNull(repository);
 
         (IReadOnlyList<OfertaCurso> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, query.CursoId, cancellationToken)
             .ConfigureAwait(false);
 
         OfertaCursoDto[] items = [.. itens.Select(o => o.ToDto())];
