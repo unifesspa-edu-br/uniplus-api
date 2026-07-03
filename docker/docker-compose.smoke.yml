@@ -1,0 +1,26 @@
+# Override de SMOKE/Newman — realinha as 3 APIs ao realm `unifesspa-dev-local`
+# (clients com directAccessGrantsEnabled + senha fixa), para obter token via
+# password grant. É o INVERSO do default de `docker-compose.override.yml`, cujas
+# APIs validam o realm `unifesspa` (o que os frontends `*-web` usam).
+#
+# O realm `unifesspa-dev-local` é importado pelo override (ver o serviço `keycloak`
+# em docker-compose.override.yml). Suba apenas infra + APIs — sem buildar os 4
+# frontends, que exigem o repo `uniplus-web` clonado lado a lado:
+#
+#   docker compose -f docker-compose.yml \
+#                  -f docker-compose.override.yml \
+#                  -f docker-compose.smoke.yml \
+#                  up -d postgres redis kafka minio apicurio keycloak \
+#                        uniplus-api geo-api portal-api
+services:
+  uniplus-api:
+    environment:
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
+
+  geo-api:
+    environment:
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
+
+  portal-api:
+    environment:
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
