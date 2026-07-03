@@ -6,7 +6,7 @@ argument-hint: "--resource=<nome> [--methods=POST,GET,PUT,DELETE,LIST,ALL] [--ap
 
 # Skill: Smoke test de CRUD local contra a API Uni+
 
-Executa o ciclo CRUD completo de um recurso REST contra o stack local (`docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up`), respeitando todas as invariantes do contrato V1:
+Executa o ciclo CRUD completo de um recurso REST contra o stack local (`docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml -f docker/docker-compose.smoke.yml up`), respeitando todas as invariantes do contrato V1:
 
 - OIDC via Keycloak no realm `unifesspa-dev-local` (cliente `selecao-web`, password grant)
 - Vendor MIME `application/vnd.uniplus.<resource>.v<N>+json`
@@ -29,7 +29,12 @@ Invoque quando o usuário pedir:
 
 ## Pré-condições
 
-1. Stack local rodando: `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml --env-file docker/.env --project-directory docker up -d`
+1. Stack local rodando. O override `docker-compose.smoke.yml` realinha as APIs ao realm `unifesspa-dev-local` (o override default usa `unifesspa`, dos frontends); a lista de serviços evita buildar os 4 frontends:
+   ```
+   docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml -f docker/docker-compose.smoke.yml \
+     --env-file docker/.env --project-directory docker up -d \
+     postgres redis kafka minio apicurio keycloak uniplus-api geo-api portal-api
+   ```
 2. APIs em healthy: `selecao-api` em `:5202`, `ingresso-api` em `:5262`
 3. Keycloak com realm `unifesspa-dev-local` importado (vem do `realm-export-dev-local.json`)
 4. PostgreSQL acessível via container `docker-postgres-1`
