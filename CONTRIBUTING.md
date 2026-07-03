@@ -88,6 +88,24 @@ docker compose -f docker/docker-compose.yml \
                      uniplus-api geo-api portal-api
 ```
 
+Com as APIs healthy, obtenha um token (password grant, realm `unifesspa-dev-local`,
+client `selecao-web`, usuário `admin` / senha `Changeme!123` — não-temporária no
+dev-local) e use-o nas chamadas autenticadas:
+
+```bash
+TOKEN=$(curl -s http://localhost:8080/realms/unifesspa-dev-local/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=selecao-web \
+  -d username=admin -d password='Changeme!123' | jq -r .access_token)
+
+# mutação autenticada — direto na API UniPlus (:5200) ou via gateway (:5000)
+curl -s -X POST http://localhost:5200/api/organizacao/admin/instituicao \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{ ... }'
+```
+
+Para o ciclo CRUD completo e automatizado (LIST/POST/idempotência/409/GET/PUT/DELETE
+soft/404/histórico), use a skill **`/smoke-crud`** — ela assume este stack (com o
+`smoke.yml`) no ar e cuida do token e das invariantes do contrato V1.
+
 > **Sessões manuais longas (opcional):** o `accessTokenLifespan` do realm é 300s
 > por padrão; refreshes frequentes podem atrapalhar testes interativos. Para
 > ampliar para 30 min durante o teste:
