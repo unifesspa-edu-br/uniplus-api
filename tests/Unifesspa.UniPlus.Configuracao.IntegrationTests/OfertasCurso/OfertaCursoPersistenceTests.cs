@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// Integração ponta-a-ponta da OfertaCurso contra Postgres real (story #588,
@@ -270,7 +271,82 @@ public sealed class OfertaCursoPersistenceTests
             .Should().BeFalse("o soft-delete da oferta libera o curso para remoção");
     }
 
+    [Fact(DisplayName = "ListarPaginadoAsync filtra por cursoId e o recorte respeita o cursor bidirecional (itens + âncoras)")]
+    public async Task ListarPaginado_FiltraPorCursoId_RespeitaCursorBidirecional()
+    {
+        // issue #755: o filtro entra no IQueryable ANTES do keyset — itens, prev e
+        // next devem ficar todos dentro do recorte do curso A, ignorando o curso B.
+        (Guid cursoA, Guid localId) = await SemearCursoELocalAsync();
+        Guid cursoB = await SemearCursoAsync();
+
+        // Intercala a criação (A, B, A, B, A) para provar que o filtro isola o curso.
+        await SemearOfertasAsync(
+            (cursoA, localId), (cursoB, localId), (cursoA, localId), (cursoB, localId), (cursoA, localId));
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var repository = new OfertaCursoRepository(readCtx);
+
+        // Ordem canônica do banco (uuid) das ofertas de A — base para fatiar as páginas.
+        // Derivada do próprio banco: evita depender da semântica de Guid.CompareTo no cliente.
+        List<Guid> ordemA = await readCtx.OfertasCurso.AsNoTracking()
+            .Where(o => o.CursoId == cursoA)
+            .OrderBy(o => o.Id)
+            .Select(o => o.Id)
+            .ToListAsync();
+        ordemA.Should().HaveCount(3);
+
+        // Página 1 (Next, limit 2): primeiras 2 de A; primeira página não tem anterior.
+        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) pagina1 =
+            await repository.ListarPaginadoAsync(afterId: null, limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
+        pagina1.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
+        pagina1.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
+        pagina1.AnteriorAfterId.Should().BeNull();
+        pagina1.ProximoAfterId.Should().Be(ordemA[1]);
+
+        // Página 2 (Next a partir da 2ª): a 3ª de A; sem próximo; com anterior.
+        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) pagina2 =
+            await repository.ListarPaginadoAsync(ordemA[1], limit: 2, PaginationDirection.Next, cursoA, CancellationToken.None);
+        pagina2.Itens.Select(o => o.Id).Should().Equal(ordemA[2]);
+        pagina2.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
+        pagina2.ProximoAfterId.Should().BeNull();
+        pagina2.AnteriorAfterId.Should().Be(ordemA[2]);
+
+        // Prev a partir da 3ª (limit 2): as 2 anteriores de A, já em ordem ascendente.
+        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) anterior =
+            await repository.ListarPaginadoAsync(ordemA[2], limit: 2, PaginationDirection.Prev, cursoA, CancellationToken.None);
+        anterior.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
+        anterior.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
+
+        // Curso sem ofertas → recorte vazio.
+        (IReadOnlyList<OfertaCurso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) vazio =
+            await repository.ListarPaginadoAsync(afterId: null, limit: 50, PaginationDirection.Next, Guid.CreateVersion7(), CancellationToken.None);
+        vazio.Itens.Should().BeEmpty();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    private async Task<Guid> SemearCursoAsync()
+    {
+        Curso curso = Curso.Criar(
+            CodigoUnico(), "Engenharia Elétrica", "Bacharelado", "Graduação", null).Value!;
+
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.Cursos.Add(curso);
+        await ctx.SaveChangesAsync();
+
+        return curso.Id;
+    }
+
+    private async Task SemearOfertasAsync(params (Guid CursoId, Guid LocalOfertaId)[] ofertas)
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        foreach ((Guid cursoId, Guid localOfertaId) in ofertas)
+        {
+            ctx.OfertasCurso.Add(NovaOferta(cursoId, localOfertaId, NovaUnidade()));
+        }
+
+        await ctx.SaveChangesAsync();
+    }
 
     private async Task<(Guid CursoId, Guid LocalOfertaId)> SemearCursoELocalAsync()
     {

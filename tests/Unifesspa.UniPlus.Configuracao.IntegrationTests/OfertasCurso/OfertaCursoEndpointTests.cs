@@ -332,7 +332,93 @@ public sealed class OfertaCursoEndpointTests
             "o soft-delete da oferta libera o curso para remoção");
     }
 
+    [Fact(DisplayName = "GET /api/configuracao/ofertas-curso?cursoId={id} retorna só as ofertas do curso; curso sem oferta → 200 vazio")]
+    public async Task Listar_FiltraPorCursoId_RetornaSomenteDoCurso()
+    {
+        (Guid cursoA, Guid localId) = await SemearCursoELocalAsync();
+        Guid cursoB = await SemearCursoAsync("Arquitetura e Urbanismo");
+        Unidade unidade = await SemearUnidadeAsync("facomp-755-a", "FCP755A", "OFC755A");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        (await EnviarPostAdmin(client, CorpoOferta(cursoA, localId, unidade.Id)))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await EnviarPostAdmin(client, CorpoOferta(cursoA, localId, unidade.Id)))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await EnviarPostAdmin(client, CorpoOferta(cursoB, localId, unidade.Id)))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // Filtro por A (limit folgado): exatamente as 2 ofertas de A, nenhuma de B.
+        HttpResponseMessage respA = await client.GetAsync(
+            new Uri($"/api/configuracao/ofertas-curso?cursoId={cursoA}&limit=50", UriKind.Relative));
+        respA.StatusCode.Should().Be(HttpStatusCode.OK);
+        using (JsonDocument doc = JsonDocument.Parse(await respA.Content.ReadAsStringAsync()))
+        {
+            JsonElement root = doc.RootElement;
+            root.ValueKind.Should().Be(JsonValueKind.Array, "a listagem devolve array JSON puro (ADR-0025)");
+            root.GetArrayLength().Should().Be(2, "o curso A tem 2 ofertas vivas");
+            foreach (JsonElement item in root.EnumerateArray())
+            {
+                item.GetProperty("cursoId").GetGuid().Should().Be(cursoA);
+            }
+        }
+
+        // Curso sem ofertas → 200 com coleção vazia (sem 404).
+        HttpResponseMessage respVazio = await client.GetAsync(
+            new Uri($"/api/configuracao/ofertas-curso?cursoId={Guid.NewGuid()}", UriKind.Relative));
+        respVazio.StatusCode.Should().Be(HttpStatusCode.OK);
+        using (JsonDocument doc = JsonDocument.Parse(await respVazio.Content.ReadAsStringAsync()))
+        {
+            doc.RootElement.GetArrayLength().Should().Be(0);
+        }
+    }
+
+    [Fact(DisplayName = "GET /api/configuracao/ofertas-curso preserva cursoId no header Link (self e next)")]
+    public async Task Listar_ComFiltroCursoId_PreservaQueryParamNoLink()
+    {
+        (Guid cursoA, Guid localId) = await SemearCursoELocalAsync();
+        Unidade unidade = await SemearUnidadeAsync("facomp-755-b", "FCP755B", "OFC755B");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        // Duas ofertas do mesmo curso → com limit=1 há próxima página (rel=next).
+        (await EnviarPostAdmin(client, CorpoOferta(cursoA, localId, unidade.Id)))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+        (await EnviarPostAdmin(client, CorpoOferta(cursoA, localId, unidade.Id)))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"/api/configuracao/ofertas-curso?cursoId={cursoA}&limit=1", UriKind.Relative));
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        response.Headers.TryGetValues("Link", out IEnumerable<string>? links).Should().BeTrue();
+        string link = links!.Single();
+        link.Should().Contain("rel=\"next\"", "limit=1 com 2 ofertas filtradas deve emitir próxima página");
+        link.Should().Contain($"cursoId={cursoA}", "o filtro de curso deve viajar em self e next para o cliente reanexar");
+    }
+
     // ── Seeds (padrão LeituraInProcessTests: resolve DbContexts do container do host) ──
+
+    private static object CorpoOferta(Guid cursoId, Guid localOfertaId, Guid unidadeOfertanteOrigemId) => new
+    {
+        cursoId,
+        localOfertaId,
+        unidadeOfertanteOrigemId,
+        programaDeOferta = "REGULAR",
+        formatoPedagogico = "PRESENCIAL",
+    };
+
+    private async Task<Guid> SemearCursoAsync(string nome)
+    {
+        Curso curso = Curso.Criar(CodigoUnico(), nome, "Bacharelado", "Graduação", null).Value!;
+
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        ConfiguracaoDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+
+        dbContext.Cursos.Add(curso);
+        await dbContext.SaveChangesAsync(CancellationToken.None);
+
+        return curso.Id;
+    }
 
     private async Task<(Guid CursoId, Guid LocalOfertaId)> SemearCursoELocalAsync()
     {
