@@ -1,19 +1,36 @@
 # Template do override de DESENVOLVIMENTO (copie para docker-compose.override.yml,
-# que é gitignored). Sobe as APIs executáveis sobre a infra do docker-compose.yml.
+# que é gitignored). Sobe o STACK COMPLETO sobre a infra do docker-compose.yml:
+# as 3 APIs + o gateway Traefik + os 4 frontends Angular conteinerizados.
 #
-# Topologia de 3 APIs:
-#   * uniplus-api — MONÓLITO modular (Selecao + Ingresso + Configuracao +
-#                   OrganizacaoInstitucional) no banco único `uniplus`.
+# "Copie e suba" (a partir da raiz do repositório):
+#   cp docker/.env.example docker/.env
+#   cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build
+#
+# Pré-requisito: `uniplus-api` e `uniplus-web` clonados lado a lado em `repositories/`
+# — o build dos frontends usa `context: ../../uniplus-web`. Volume Keycloak limpo na
+# primeira subida (o `--import-realm` não reimporta um realm já existente); se você já
+# tinha o stack no ar antes desta mudança, rode uma vez:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml down -v --remove-orphans
+#
+# Topologia:
+#   * uniplus-api — MONÓLITO modular (Selecao + Ingresso + Configuracao + Organizacao), banco `uniplus`.
 #   * portal-api  — Portal (deploy autônomo, banco `uniplus_portal`).
-#   * geo-api     — Geo (deploy autônomo, banco `uniplus_geo` com PostGIS).
+#   * geo-api     — Geo (imagem publicada no GHCR, banco `uniplus_geo` com PostGIS).
+#   * traefik     — gateway :5000 (o `apiUrl` único que os frontends consomem); split geo/portal/monólito.
+#   * *-web       — selecao :4200, ingresso :4201, portal :4202, configuracao :4203 (nginx unprivileged :8080).
+#
+# Auth: as 3 APIs validam o realm `unifesspa` (onde vivem os clients `*-web` do frontend).
+# Para smoke/Newman (password grant no realm `unifesspa-dev-local`), adicione o override
+# `-f docker-compose.smoke.yml` (ver o cabeçalho daquele arquivo).
 services:
   keycloak:
     # Override do compose canônico para importar ADICIONALMENTE o realm
     # `unifesspa-dev-local` — variante de conveniência para smoke local
     # (clients com directAccessGrantsEnabled, audience mapper para `uniplus`,
-    # senha do admin não-temporária e requiredActions vazias).
-    # O realm canônico `unifesspa` (de realm-export.json) continua importado
-    # em paralelo, sem perda de funcionalidade.
+    # senha do admin não-temporária e requiredActions vazias). Consumido pelo
+    # override `docker-compose.smoke.yml`. O realm canônico `unifesspa` (de
+    # realm-export.json) continua importado em paralelo, sem perda de funcionalidade.
     volumes:
       - ./keycloak/realm-export-dev-local.json:/opt/keycloak/data/import/realm-export-dev-local.json
 
@@ -43,7 +60,9 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
+      # Realm `unifesspa` — o mesmo em que os frontends `*-web` autenticam. Para smoke
+      # via password grant, o override docker-compose.smoke.yml realinha para dev-local.
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
       Auth__Audience: "uniplus"
     ports:
       - "5200:8080"
@@ -61,7 +80,7 @@ services:
       # o health check o pinga no readiness).
       minio:
         condition: service_healthy
-      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      # Keycloak sobe junto da API (a API valida JWT contra o realm unifesspa).
       keycloak:
         condition: service_healthy
     healthcheck:
@@ -80,8 +99,8 @@ services:
   #
   # O workflow do repo Geo publica tags `sha-<short-sha>` e tags de release (usa
   # `latest=false` — NÃO há tag `latest`). Defina GEO_IMAGE_TAG no seu .env com uma
-  # tag Geo publicada concreta (ex.: `GEO_IMAGE_TAG=sha-abc1234`) para manter o
-  # stack reprodutível — sem isso o compose falha rápido em vez de puxar tag móvel.
+  # tag Geo publicada concreta (ex.: `GEO_IMAGE_TAG=v1.0.0`) para manter o stack
+  # reprodutível — sem isso o compose falha rápido em vez de puxar tag móvel.
   geo-api:
     image: "ghcr.io/unifesspa-edu-br/unifesspa-geo-api:${GEO_IMAGE_TAG:?defina GEO_IMAGE_TAG com uma tag Geo publicada (sha-<short> ou release); o repo nao publica latest}"
     restart: unless-stopped
@@ -94,7 +113,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
       Auth__Audience: "uniplus"
     ports:
       - "5400:8080"
@@ -130,7 +149,7 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
-      Auth__Authority: "http://keycloak:8080/realms/unifesspa-dev-local"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
     ports:
       - "5302:8080"
     depends_on:
@@ -140,7 +159,7 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-      # Keycloak sobe junto da API (a API valida JWT contra o realm dev-local).
+      # Keycloak sobe junto da API (a API valida JWT contra o realm unifesspa).
       keycloak:
         condition: service_healthy
     healthcheck:
@@ -149,3 +168,119 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  # Gateway de DEV (absorvido do antigo docker-compose.frontend-test.yml). Os frontends
+  # consomem um único `apiUrl` (http://localhost:5000); o Traefik apenas SEPARA o tráfego
+  # das 3 APIs sem reescrever paths (regras em ./traefik/dynamic.yml): /api/{cidades,
+  # estados,cep,logradouros} -> geo-api; /api/portal/* -> portal-api; resto -> monólito.
+  # Espelha o split geo/portal/monólito do ingress de HML/PROD (K8s).
+  traefik:
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --ping=true
+      - --log.level=INFO
+    ports:
+      - "5000:80"     # gateway consumido pelos frontends (apiUrl=http://localhost:5000)
+      - "5080:8080"   # dashboard do Traefik -> http://localhost:5080/dashboard/
+    volumes:
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    depends_on:
+      uniplus-api:
+        condition: service_healthy
+      geo-api:
+        condition: service_healthy
+      portal-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Frontends Angular conteinerizados (build web via Docker, cross-repo). O Dockerfile
+  # de produção sobrescreve o runtime-config por placeholders `.invalid` (falha rápido
+  # sem ConfigMap, ADR-0020/0021); em dev montamos por cima o runtime-config committed
+  # de cada app (apiUrl=gateway :5000, issuer=realms/unifesspa, clientId=<app>-web).
+  # As portas host (4200-4203) batem os redirectUris/webOrigins dos clients `*-web`.
+  selecao-web:
+    build:
+      context: ../../uniplus-web
+      dockerfile: docker/Dockerfile.selecao
+    restart: unless-stopped
+    volumes:
+      - ../../uniplus-web/apps/selecao/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
+    ports:
+      - "4200:8080"
+    depends_on:
+      traefik:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health.json || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  ingresso-web:
+    build:
+      context: ../../uniplus-web
+      dockerfile: docker/Dockerfile.ingresso
+    restart: unless-stopped
+    volumes:
+      - ../../uniplus-web/apps/ingresso/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
+    ports:
+      - "4201:8080"
+    depends_on:
+      traefik:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health.json || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  portal-web:
+    build:
+      context: ../../uniplus-web
+      dockerfile: docker/Dockerfile.portal
+    restart: unless-stopped
+    volumes:
+      - ../../uniplus-web/apps/portal/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
+    ports:
+      - "4202:8080"
+    depends_on:
+      traefik:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health.json || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  configuracao-web:
+    build:
+      context: ../../uniplus-web
+      dockerfile: docker/Dockerfile.configuracao
+    restart: unless-stopped
+    volumes:
+      - ../../uniplus-web/apps/configuracao/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
+    ports:
+      - "4203:8080"
+    depends_on:
+      traefik:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health.json || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

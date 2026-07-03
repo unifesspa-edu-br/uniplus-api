@@ -1,5 +1,5 @@
-# Configuração dinâmica do Traefik (file provider) para o gateway de DEV usado
-# pelo override `frontend-test` (ver docker-compose.frontend-test.yml).
+# Configuração dinâmica do Traefik (file provider) para o gateway de DEV do stack
+# `docker-compose.override.yml` (serviço `traefik`, absorvido do antigo frontend-test).
 #
 # Topologia de 3 APIs: os 4 módulos internos (Selecao/Ingresso/Configuracao/
 # Organizacao) são servidos pelo monólito `uniplus-api` sob /api/{modulo}/
