@@ -33,6 +33,15 @@ CREATE DATABASE keycloak;
 CREATE ROLE uniplus_geo_app LOGIN PASSWORD 'uniplus_dev';
 CREATE DATABASE uniplus_geo OWNER uniplus_geo_app;
 
+-- Banco de staging da DNE (unifesspa-geo-api#12): recebe os 15 dumps brutos
+-- (Correios/IBGE, gerados via Navicat) via `psql -f` sem nenhuma reescrita de
+-- schema — os dumps qualificam "public"."tbl_cep_..." explicitamente, então só
+-- um "public" NATIVO (banco próprio, não um schema secundário do uniplus_geo)
+-- os recebe de forma transparente. Role própria (não uniplus_geo_app) por
+-- menor privilégio: o app do domínio nunca precisa enxergar o dataset bruto.
+CREATE ROLE uniplus_geo_staging_app LOGIN PASSWORD 'uniplus_dev';
+CREATE DATABASE uniplus_geo_staging OWNER uniplus_geo_staging_app;
+
 -- Extensões dos databases de aplicação:
 --   uuid-ossp  — geração de UUIDs
 --   pg_trgm    — busca por similaridade (trigram matching)
