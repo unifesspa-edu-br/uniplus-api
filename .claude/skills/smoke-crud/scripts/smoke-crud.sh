@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # smoke-crud.sh — executa o ciclo CRUD de um recurso REST contra o stack local Uni+.
 #
-# Pré-condições: docker compose up com perfil dev (override.yml), realm
-# unifesspa-dev-local importado, postgres acessível via container docker-postgres-1.
+# Pré-condições: docker compose up com override.yml + smoke.yml (este realinha as
+# APIs ao realm unifesspa-dev-local, importado), postgres acessível via docker-postgres-1.
 #
 # Uso típico:
 #   bash .claude/skills/smoke-crud/scripts/smoke-crud.sh --resource=obrigatoriedade-legal
@@ -156,8 +156,10 @@ info "Verificando saúde da API ($API_BASE/health)…"
 HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/health" || echo "000")
 if [ "$HEALTH" != "200" ]; then
   echo "${C_FAIL}ERRO:${C_OFF} $API_BASE/health retornou $HEALTH." >&2
-  echo "Suba o stack: docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml \\" >&2
-  echo "  --env-file docker/.env --project-directory docker up -d" >&2
+  echo "Suba o stack (smoke.yml realinha as APIs ao realm unifesspa-dev-local):" >&2
+  echo "  docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml -f docker/docker-compose.smoke.yml \\" >&2
+  echo "  --env-file docker/.env --project-directory docker up -d \\" >&2
+  echo "  postgres redis kafka minio apicurio keycloak uniplus-api geo-api portal-api" >&2
   exit 1
 fi
 dim "  health 200 OK"
