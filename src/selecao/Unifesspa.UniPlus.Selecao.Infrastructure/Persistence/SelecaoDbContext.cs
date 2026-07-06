@@ -37,6 +37,16 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<OfertaAtendimentoEspecializado> OfertasAtendimentoEspecializado => Set<OfertaAtendimentoEspecializado>();
 
     /// <summary>
+    /// Biblioteca <c>rol_de_regras</c> (Story #772) — regras tipadas e
+    /// versionadas que a configuração do Processo Seletivo referencia
+    /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congeladas no snapshot de
+    /// publicação (RN08). Seed-governada e append-only (não é CRUD de admin):
+    /// a leitura passa por <c>IRegraCatalogoReader</c> e a única escrita é o
+    /// seed da migration.
+    /// </summary>
+    public DbSet<RegraCatalogo> RolDeRegras => Set<RegraCatalogo>();
+
+    /// <summary>
     /// Catálogo data-driven de regras legais (Story #460, ADR-0058). O CRUD
     /// admin entra em #461; em V1 esta DbSet é populada via factory direta
     /// para testes e seeds.
