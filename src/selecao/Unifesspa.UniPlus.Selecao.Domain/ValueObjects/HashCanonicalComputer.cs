@@ -134,6 +134,57 @@ public static class HashCanonicalComputer
             ["vigenciaInicio"] = vigenciaInicio.ToString("O", CultureInfo.InvariantCulture),
         };
 
+        return HashCanonicalPayload(payload);
+    }
+
+    /// <summary>
+    /// Computa o hash content-addressable de uma entrada do <c>rol_de_regras</c>
+    /// (<see cref="Entities.RegraCatalogo"/>) sobre a sua definição COMPLETA:
+    /// <c>codigo</c>+<c>versao</c>+<c>tipo</c>+<c>esquema_args</c>+<c>invariantes</c>+<c>base_legal</c>.
+    /// Mudar qualquer campo definicional muda o hash — e a versão de uma regra
+    /// é imutável (nova semântica = nova versão), o que dá a reprodutibilidade
+    /// do freeze do snapshot (RN08) por construção.
+    /// </summary>
+    /// <remarks>
+    /// Espelha o hash validado do <c>rol_de_regras</c> (Postgres real): os
+    /// campos de auditoria (<c>created_at/by</c>) e o próprio <c>hash</c> ficam
+    /// de fora; <paramref name="esquemaArgs"/> (objeto) e
+    /// <paramref name="invariantes"/> (array) entram canonicalizados
+    /// recursivamente, de modo que a ordem das chaves não altere o resultado.
+    /// </remarks>
+    public static string ComputeRegraCatalogo(
+        string codigo,
+        string versao,
+        TipoRegra tipo,
+        JsonElement esquemaArgs,
+        JsonElement invariantes,
+        string baseLegal)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(versao);
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
+
+        JsonObject payload = new()
+        {
+            ["baseLegal"] = baseLegal,
+            ["codigo"] = codigo,
+            ["esquemaArgs"] = JsonNode.Parse(esquemaArgs.GetRawText()),
+            ["invariantes"] = JsonNode.Parse(invariantes.GetRawText()),
+            ["tipo"] = tipo.ToCodigo(),
+            ["versao"] = versao,
+        };
+
+        return HashCanonicalPayload(payload);
+    }
+
+    /// <summary>
+    /// Canonicaliza (reordena chaves recursivamente), serializa com
+    /// <see cref="Utf8JsonWriter"/> byte-stável e devolve o SHA-256 em hex
+    /// minúsculo. Fonte única do passo final de hashing — compartilhada entre
+    /// o hash de <c>ObrigatoriedadeLegal</c> e o do <c>rol_de_regras</c>.
+    /// </summary>
+    private static string HashCanonicalPayload(JsonObject payload)
+    {
         JsonNode canonical = CanonicalizeRecursive(payload);
 
         // Use Utf8JsonWriter for byte-stable output (no environment-dependent

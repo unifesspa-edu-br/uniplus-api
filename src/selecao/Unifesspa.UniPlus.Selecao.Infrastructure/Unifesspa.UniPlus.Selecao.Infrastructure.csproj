@@ -25,4 +25,10 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Selecao.Application\Unifesspa.UniPlus.Selecao.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Expõe internals (ex.: RegraCatalogoReader) aos testes de integração —
+         mesmo padrão de Configuracao/OrganizacaoInstitucional/Infrastructure.Core. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

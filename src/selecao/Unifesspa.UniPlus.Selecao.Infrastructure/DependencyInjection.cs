@@ -8,6 +8,7 @@ using Domain.Interfaces;
 using ExternalServices;
 using Persistence;
 using Persistence.Interceptors;
+using Persistence.Readers;
 using Persistence.Repositories;
 
 public static class SelecaoInfrastructureRegistration
@@ -51,6 +52,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
+        services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();
 
         return services;
