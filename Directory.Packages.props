@@ -14,7 +14,7 @@
          pode encerrar o processo no parsing OpenAPI); Trivy bloqueia. Com PackageVersion central, o
          CPM aplica o pin transitivamente (CentralTransitive) a todos os projetos que recebem o pacote
          via Microsoft.AspNetCore.OpenApi, elevando toda a solution a 2.7.5. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.9.0" />
     <PackageVersion Include="Microsoft.OpenApi.Kiota" Version="1.31.1" />
 
     <!-- Encryption -->
