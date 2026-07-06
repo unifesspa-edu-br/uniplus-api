@@ -19,11 +19,12 @@ using Application.Queries.ProcessosSeletivos;
 /// <summary>
 /// Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015): o
 /// administrador cria o processo em rascunho e monta a configuração sobre o
-/// agregado-raiz. Nesta fatia (fundação) a configuração cobre as etapas
-/// pontuadas e a oferta de atendimento especializado; distribuição de vagas,
-/// bônus, desempate e classificação entram nas fatias seguintes, sobre o
-/// catálogo de regras tipadas versionadas. O <c>Edital</c> não é criado aqui;
-/// é o documento emitido pela publicação (Story #759, fora deste escopo).
+/// agregado-raiz — etapas pontuadas, oferta de atendimento especializado e
+/// distribuição de vagas (Story #773). Bônus, desempate e classificação
+/// entram nas fatias seguintes, sobre o catálogo de regras tipadas
+/// versionadas (<c>rol_de_regras</c>, Story #772). O <c>Edital</c> não é
+/// criado aqui; é o documento emitido pela publicação (Story #759, fora
+/// deste escopo).
 /// </summary>
 [ApiController]
 [Route("api/selecao/processos-seletivos")]
@@ -153,6 +154,29 @@ public sealed class ProcessoSeletivoController : ControllerBase
         Result resultado = await _commandBus.Send(
             new DefinirOfertaAtendimentoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds),
             cancellationToken);
+        if (resultado.IsSuccess)
+            return NoContent();
+        return resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Substitui integralmente a distribuição de vagas do processo (Story
+    /// #773, modelagem P-A): uma configuração por oferta de curso. O
+    /// <c>QuadroDeVagas</c> (quantidade calculada por modalidade) não é
+    /// definido aqui — é output derivado de um motor futuro.
+    /// </summary>
+    [HttpPut("{id:guid}/distribuicao-vagas")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirDistribuicaoVagas(
+        Guid id,
+        [FromBody] IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> distribuicaoVagas,
+        CancellationToken cancellationToken)
+    {
+        Result resultado = await _commandBus.Send(new DefinirDistribuicaoVagasCommand(id, distribuicaoVagas), cancellationToken);
         if (resultado.IsSuccess)
             return NoContent();
         return resultado.ToActionResult(_mapper);

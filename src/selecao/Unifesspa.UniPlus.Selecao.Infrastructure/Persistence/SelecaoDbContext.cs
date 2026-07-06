@@ -37,6 +37,15 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<OfertaAtendimentoEspecializado> OfertasAtendimentoEspecializado => Set<OfertaAtendimentoEspecializado>();
 
     /// <summary>
+    /// Distribuição de vagas por oferta de curso (Story #773, modelagem P-A):
+    /// os inputs (VO_base, PR, referência à regra tipada, snapshot da
+    /// referência demográfica) e as modalidades selecionadas. O
+    /// <c>QuadroDeVagas</c> (output derivado) não é modelado aqui.
+    /// </summary>
+    public DbSet<ConfiguracaoDistribuicaoVagas> ConfiguracoesDistribuicaoVagas => Set<ConfiguracaoDistribuicaoVagas>();
+    public DbSet<ModalidadeSelecionada> ModalidadesSelecionadas => Set<ModalidadeSelecionada>();
+
+    /// <summary>
     /// Biblioteca <c>rol_de_regras</c> (Story #772) — regras tipadas e
     /// versionadas que a configuração do Processo Seletivo referencia
     /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congeladas no snapshot de

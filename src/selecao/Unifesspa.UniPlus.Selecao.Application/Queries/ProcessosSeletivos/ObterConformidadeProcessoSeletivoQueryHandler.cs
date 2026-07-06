@@ -33,6 +33,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
         [
             new ItemConformidadeDto("Etapas", processo.Etapas.Count > 0),
             new ItemConformidadeDto("Atendimento especializado", processo.OfertaAtendimento is not null),
+            new ItemConformidadeDto("Distribuição de vagas", processo.DistribuicaoVagas.Count > 0),
         ];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens);

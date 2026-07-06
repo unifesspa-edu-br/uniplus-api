@@ -1583,6 +1583,101 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/distribuicao-vagas": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ConfiguracaoDistribuicaoVagasInput"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ConfiguracaoDistribuicaoVagasInput"
+                }
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ConfiguracaoDistribuicaoVagasInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/conformidade": {
       "get": {
         "tags": [
@@ -1770,6 +1865,117 @@
           "outros"
         ],
         "type": "string"
+      },
+      "ConfiguracaoDistribuicaoVagasDto": {
+        "required": [
+          "id",
+          "ofertaCursoOrigemId",
+          "voBase",
+          "pr",
+          "regraDistribuicao",
+          "referenciaDemografica",
+          "modalidades"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ofertaCursoOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "voBase": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pr": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "regraDistribuicao": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "referenciaDemografica": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaReservaDemograficaSnapshotDto"
+              }
+            ]
+          },
+          "modalidades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModalidadeSelecionadaDto"
+            }
+          }
+        }
+      },
+      "ConfiguracaoDistribuicaoVagasInput": {
+        "required": [
+          "ofertaCursoId",
+          "voBase",
+          "pr",
+          "regraDistribuicaoCodigo",
+          "regraDistribuicaoVersao",
+          "referenciaReservaDemograficaId",
+          "modalidadeIds"
+        ],
+        "type": "object",
+        "properties": {
+          "ofertaCursoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "voBase": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pr": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "regraDistribuicaoCodigo": {
+            "type": "string"
+          },
+          "regraDistribuicaoVersao": {
+            "type": "string"
+          },
+          "referenciaReservaDemograficaId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "modalidadeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
       },
       "ConformidadeDto": {
         "required": [
@@ -2141,6 +2347,92 @@
         }
       },
       "JsonElement": {},
+      "ModalidadeSelecionadaDto": {
+        "required": [
+          "id",
+          "modalidadeOrigemId",
+          "codigo",
+          "descricao",
+          "naturezaLegal",
+          "composicaoVagas",
+          "composicaoOrigemCodigo",
+          "regraRemanejamento",
+          "remanejamentoDestino",
+          "remanejamentoPar",
+          "remanejamentoFallback",
+          "criteriosCumulativos",
+          "acaoQuandoIndeferido",
+          "baseLegal"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modalidadeOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "naturezaLegal": {
+            "type": "string"
+          },
+          "composicaoVagas": {
+            "type": "string"
+          },
+          "composicaoOrigemCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraRemanejamento": {
+            "type": "string"
+          },
+          "remanejamentoDestino": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remanejamentoPar": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "remanejamentoFallback": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "criteriosCumulativos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "acaoQuandoIndeferido": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "baseLegal": {
+            "type": "string"
+          }
+        }
+      },
       "ObrigatoriedadeLegalDto": {
         "required": [
           "id",
@@ -2547,6 +2839,7 @@
           "status",
           "etapas",
           "ofertaAtendimento",
+          "distribuicaoVagas",
           "criadoEm"
         ],
         "type": "object",
@@ -2579,6 +2872,12 @@
                 "$ref": "#/components/schemas/OfertaAtendimentoEspecializadoDto"
               }
             ]
+          },
+          "distribuicaoVagas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfiguracaoDistribuicaoVagasDto"
+            }
           },
           "criadoEm": {
             "type": "string",
@@ -2621,6 +2920,72 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ReferenciaRegraDto": {
+        "required": [
+          "codigo",
+          "versao",
+          "hash"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "versao": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      },
+      "ReferenciaReservaDemograficaSnapshotDto": {
+        "required": [
+          "origemId",
+          "censoReferencia",
+          "ppiPercentual",
+          "quilombolaPercentual",
+          "pcdPercentual",
+          "baseLegal"
+        ],
+        "type": "object",
+        "properties": {
+          "origemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "censoReferencia": {
+            "type": "string"
+          },
+          "ppiPercentual": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "quilombolaPercentual": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "pcdPercentual": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "baseLegal": {
+            "type": "string"
           }
         }
       },
