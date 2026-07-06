@@ -1369,7 +1369,6 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.9, )",
-          "Testcontainers": "[4.13.0, )",
           "Testcontainers.PostgreSql": "[4.13.0, )",
           "Unifesspa.UniPlus.Host": "[1.0.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
@@ -1434,6 +1433,7 @@
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Configuracao.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )"
         }

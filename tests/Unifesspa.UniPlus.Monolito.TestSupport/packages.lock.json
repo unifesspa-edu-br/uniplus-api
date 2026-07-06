@@ -13,19 +13,6 @@
           "Microsoft.Extensions.Hosting": "10.0.9"
         }
       },
-      "Testcontainers": {
-        "type": "Direct",
-        "requested": "[4.13.0, )",
-        "resolved": "4.13.0",
-        "contentHash": "j8vi9jPBNSwaraGGx8w+2gtZyWrlbKxdhiGMS3nektg+KiwjFWx9ghCjs57EoQfvI+IAbzti0oQJupQChwgMog==",
-        "dependencies": {
-          "Docker.DotNet.Enhanced": "4.3.3",
-          "Docker.DotNet.Enhanced.X509": "4.3.3",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
-          "SSH.NET": "2025.1.0",
-          "SharpZipLib": "1.4.2"
-        }
-      },
       "Testcontainers.PostgreSql": {
         "type": "Direct",
         "requested": "[4.13.0, )",
@@ -1325,6 +1312,7 @@
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Configuracao.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )"
         }
@@ -1630,6 +1618,19 @@
           "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
           "Pipelines.Sockets.Unofficial": "2.2.8",
           "System.IO.Hashing": "10.0.2"
+        }
+      },
+      "Testcontainers": {
+        "type": "CentralTransitive",
+        "requested": "[4.13.0, )",
+        "resolved": "4.13.0",
+        "contentHash": "j8vi9jPBNSwaraGGx8w+2gtZyWrlbKxdhiGMS3nektg+KiwjFWx9ghCjs57EoQfvI+IAbzti0oQJupQChwgMog==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced": "4.3.3",
+          "Docker.DotNet.Enhanced.X509": "4.3.3",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "SSH.NET": "2025.1.0",
+          "SharpZipLib": "1.4.2"
         }
       },
       "VaultSharp": {

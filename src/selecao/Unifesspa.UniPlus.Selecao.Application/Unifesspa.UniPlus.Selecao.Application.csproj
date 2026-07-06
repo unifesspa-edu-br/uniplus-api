@@ -9,6 +9,10 @@
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Selecao.Domain\Unifesspa.UniPlus.Selecao.Domain.csproj" />
+    <!-- Leitura cross-módulo (ADR-0056/R8): Contracts é a única camada permitida
+         de outro módulo. Usado por DefinirVagasCommandHandler/DefinirOfertaAtendimentoCommandHandler
+         para snapshot-copy (ADR-0061) de OfertaCurso/Modalidade/atendimento. -->
+    <ProjectReference Include="..\..\configuracao\Unifesspa.UniPlus.Configuracao.Contracts\Unifesspa.UniPlus.Configuracao.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

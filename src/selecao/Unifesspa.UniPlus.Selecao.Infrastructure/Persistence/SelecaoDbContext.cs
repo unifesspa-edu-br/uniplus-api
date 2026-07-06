@@ -29,6 +29,14 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<ProcessoSeletivo> ProcessosSeletivos => Set<ProcessoSeletivo>();
 
     /// <summary>
+    /// Entidades de configuração do agregado <see cref="ProcessoSeletivo"/>
+    /// (Story #758). Expostas como DbSet para consultas e seeds de teste; a
+    /// escrita passa sempre pela raiz via <c>IProcessoSeletivoRepository</c>.
+    /// </summary>
+    public DbSet<EtapaProcesso> EtapasProcesso => Set<EtapaProcesso>();
+    public DbSet<OfertaAtendimentoEspecializado> OfertasAtendimentoEspecializado => Set<OfertaAtendimentoEspecializado>();
+
+    /// <summary>
     /// Catálogo data-driven de regras legais (Story #460, ADR-0058). O CRUD
     /// admin entra em #461; em V1 esta DbSet é populada via factory direta
     /// para testes e seeds.

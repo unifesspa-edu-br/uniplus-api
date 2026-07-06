@@ -53,6 +53,7 @@ public static class SelecaoModuleRegistration
         // porque encapsula apenas um LinkGenerator (também singleton); função pura.
         services.AddSingleton<IResourceLinksBuilder<EditalDto>, EditalLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<ProcessoSeletivoDto>, ProcessoSeletivoLinksBuilder>();
 
         // Idempotency-Key (ADR-0027) — store EF adjacente ao SelecaoDbContext, filter
         // global que se ativa apenas em endpoints com [RequiresIdempotencyKey].
