@@ -48,6 +48,7 @@ public static class SelecaoInfrastructureRegistration
             serviceProvider.GetRequiredService<SelecaoDbContext>());
 
         services.AddScoped<IEditalRepository, EditalRepository>();
+        services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();

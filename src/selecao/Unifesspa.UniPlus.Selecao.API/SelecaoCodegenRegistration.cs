@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.API;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 using Wolverine;
@@ -47,5 +48,18 @@ public static class SelecaoCodegenRegistration
         ArgumentNullException.ThrowIfNull(opts);
 
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ISelecaoUnitOfWork>();
+
+        // Readers de reference data cross-módulo (ADR-0056) consumidos pelo
+        // handler de oferta de atendimento especializado (F0). A interface vive
+        // em Configuracao.Contracts (contrato público), mas o concreto é
+        // internal a Configuracao.Infrastructure por design de encapsulamento —
+        // o codegen do Wolverine não consegue emitir `new XReader(...)` de um
+        // tipo internal de outro assembly e cai em service location sob a
+        // política NotAllowed. Service-locar o contrato cross-módulo é o consumo
+        // correto; AlwaysUseServiceLocationFor é o opt-in sancionado (ADR-0098).
+        // Os readers de vagas (OfertaCurso/Modalidade) voltam na fatia F2.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICondicaoAtendimentoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IRecursoAcessibilidadeReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDeficienciaReader>();
     }
 }
