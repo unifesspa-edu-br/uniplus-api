@@ -40,6 +40,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
 
+    private readonly List<ConfiguracaoDistribuicaoVagas> _distribuicaoVagas = [];
+    public IReadOnlyCollection<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas => _distribuicaoVagas.AsReadOnly();
+
     private ProcessoSeletivo() { }
 
     public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo)
@@ -115,6 +118,43 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         oferta.VincularProcesso(Id);
         OfertaAtendimento = oferta;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Substitui integralmente a distribuição de vagas do processo (Story
+    /// #773, modelagem P-A): uma <see cref="ConfiguracaoDistribuicaoVagas"/>
+    /// por oferta de curso, sem repetir a mesma oferta duas vezes. As
+    /// invariantes de cada configuração (PR, referência demográfica,
+    /// modalidades federais) já foram validadas em
+    /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/>.
+    /// </summary>
+    public Result DefinirDistribuicaoVagas(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas)
+    {
+        ArgumentNullException.ThrowIfNull(distribuicaoVagas);
+
+        if (distribuicaoVagas.Count == 0)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.DistribuicaoVagasVazia",
+                "O processo deve ter ao menos uma distribuição de vagas configurada."));
+        }
+
+        List<Guid> ofertasInformadas = [.. distribuicaoVagas.Select(d => d.OfertaCursoOrigemId)];
+        if (ofertasInformadas.Distinct().Count() != ofertasInformadas.Count)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.OfertaCursoDuplicada",
+                "Cada oferta de curso só pode ter uma distribuição de vagas no processo."));
+        }
+
+        _distribuicaoVagas.Clear();
+        foreach (ConfiguracaoDistribuicaoVagas configuracao in distribuicaoVagas)
+        {
+            configuracao.VincularProcesso(Id);
+            _distribuicaoVagas.Add(configuracao);
+        }
+
         return Result.Success();
     }
 

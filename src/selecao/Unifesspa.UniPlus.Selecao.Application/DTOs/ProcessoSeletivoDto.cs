@@ -16,6 +16,7 @@ public sealed record ProcessoSeletivoDto(
     string Status,
     IReadOnlyList<EtapaProcessoDto> Etapas,
     OfertaAtendimentoEspecializadoDto? OfertaAtendimento,
+    IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
     DateTimeOffset CriadoEm)
 {
     /// <summary>

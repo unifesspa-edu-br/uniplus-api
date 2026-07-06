@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 using Wolverine;
 
@@ -57,9 +58,19 @@ public static class SelecaoCodegenRegistration
         // tipo internal de outro assembly e cai em service location sob a
         // política NotAllowed. Service-locar o contrato cross-módulo é o consumo
         // correto; AlwaysUseServiceLocationFor é o opt-in sancionado (ADR-0098).
-        // Os readers de vagas (OfertaCurso/Modalidade) voltam na fatia F2.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICondicaoAtendimentoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IRecursoAcessibilidadeReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDeficienciaReader>();
+
+        // Readers de vagas/modalidade (Story #773, F2) — mesmo motivo acima.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IOfertaCursoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IModalidadeReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IReferenciaReservaDemograficaReader>();
+
+        // IRegraCatalogoReader (Story #772): o concreto RegraCatalogoReader é
+        // internal a Selecao.Infrastructure — mesma restrição de visibilidade
+        // do codegen do Wolverine (que roda em Selecao.API), mesmo sendo um
+        // reader intra-módulo (não cross-módulo como os demais acima).
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IRegraCatalogoReader>();
     }
 }

@@ -5,12 +5,15 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura das invariantes do agregado-raiz <see cref="ProcessoSeletivo"/>
-/// na fatia F0 (fundação): criação em rascunho, etapas pontuadas + divisor da
-/// média, e oferta de atendimento especializado (ADR-0067). Vagas, bônus,
-/// desempate e classificação entram nas fatias F2–F4 sobre o rol_de_regras.
+/// nas fatias F0 (fundação) e F2 (distribuição de vagas): criação em
+/// rascunho, etapas pontuadas + divisor da média, oferta de atendimento
+/// especializado (ADR-0067) e distribuição de vagas por oferta (Story #773).
+/// Bônus, desempate e classificação entram nas fatias F3–F4 sobre o
+/// rol_de_regras.
 /// </summary>
 public sealed class ProcessoSeletivoTests
 {
@@ -200,5 +203,58 @@ public sealed class ProcessoSeletivoTests
         processo.OfertaAtendimento!.ProcessoSeletivoId.Should().Be(processo.Id);
         processo.OfertaAtendimento.Condicoes.Single().OfertaAtendimentoEspecializadoId
             .Should().Be(oferta.Id);
+    }
+
+    private static ConfiguracaoDistribuicaoVagas NovaDistribuicao(Guid ofertaCursoId)
+    {
+        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal").Value!;
+
+        ReferenciaRegra regra = ReferenciaRegra.Criar(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
+
+        return ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoId, voBase: 50, pr: 1m, regra, referenciaDemografica: null, [ampla]).Value!;
+    }
+
+    [Fact(DisplayName = "DefinirDistribuicaoVagas vincula a configuração à raiz (Story #773)")]
+    public void DefinirDistribuicaoVagas_Vincula()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        ConfiguracaoDistribuicaoVagas configuracao = NovaDistribuicao(Guid.CreateVersion7());
+
+        Result result = processo.DefinirDistribuicaoVagas([configuracao]);
+
+        result.IsSuccess.Should().BeTrue();
+        processo.DistribuicaoVagas.Should().ContainSingle();
+        processo.DistribuicaoVagas.Single().ProcessoSeletivoId.Should().Be(processo.Id);
+    }
+
+    [Fact(DisplayName = "DefinirDistribuicaoVagas vazia é recusada")]
+    public void DefinirDistribuicaoVagas_Vazia_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        Result result = processo.DefinirDistribuicaoVagas([]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia");
+    }
+
+    [Fact(DisplayName = "DefinirDistribuicaoVagas com oferta de curso duplicada é recusada")]
+    public void DefinirDistribuicaoVagas_OfertaCursoDuplicada_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid ofertaCursoId = Guid.CreateVersion7();
+
+        Result result = processo.DefinirDistribuicaoVagas(
+        [
+            NovaDistribuicao(ofertaCursoId),
+            NovaDistribuicao(ofertaCursoId),
+        ]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.OfertaCursoDuplicada");
     }
 }
