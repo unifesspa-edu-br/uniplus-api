@@ -47,6 +47,25 @@ fica vazio (gov.br é opcional em dev). A imagem do `geo-api` vem do GHCR
 rode uma vez `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml down -v --remove-orphans`
 (o `--import-realm` do Keycloak não reimporta um realm já existente).
 
+#### Manter a infra local do Geo em dia
+
+O repositório `unifesspa-geo-api` não publica tag `latest` — a versão consumida
+localmente fica fixada em `GEO_IMAGE_TAG` (`docker/.env`). Como `docker/.env` e
+`docker/docker-compose.override.yml` são **locais e gitignored**, um `git pull`
+não os atualiza. Ao notar uma nova release do Geo:
+
+1. Confira a tag mais recente na aba Releases do `unifesspa-geo-api` e atualize
+   `GEO_IMAGE_TAG` no seu `docker/.env`.
+2. Rode `diff docker/docker-compose.override.yml docker/docker-compose.override.example.yml`
+   para conferir se o template ganhou variáveis novas desde a última vez que
+   você copiou — o serviço `geo-api` costuma subir `healthy` mesmo com uma
+   variável faltando (a validação pode ficar adiada para o primeiro uso real),
+   então a ausência não aparece no health check, só ao exercitar a
+   funcionalidade correspondente.
+3. Propague sem recriar o stack inteiro:
+   `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml pull geo-api`
+   seguido de `up -d geo-api`.
+
 | App | URL | Client OIDC |
 |---|---|---|
 | selecao | http://localhost:4200 | `selecao-web` |
