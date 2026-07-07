@@ -18,8 +18,8 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 // convenção no contexto. EF Core não permite o mesmo tipo CLR ser
 // owned-type e scalar-with-converter simultaneamente.
 //
-// Hoje, módulos ainda usam OwnsOne (ex.: CandidatoConfiguration em
-// Selecao). A adoção desta convenção será incremental, módulo a módulo,
+// Hoje, módulos ainda usam OwnsOne (ex.: InstituicaoConfiguration em
+// OrganizacaoInstitucional). A adoção desta convenção será incremental, módulo a módulo,
 // junto com a migração do schema. Os converters podem ser usados de
 // forma isolada via HasConversion<T>() em IEntityTypeConfiguration sem
 // precisar acionar a convenção global.
