@@ -12,9 +12,9 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
 /// Constrói <c>_links</c> (HATEOAS Level 1, ADR-0029) para
-/// <see cref="ProcessoSeletivoDto"/>, espelhando <c>EditalLinksBuilder</c>:
-/// apenas <c>self</c>/<c>collection</c> — action links (etapas, publicar
-/// etc.) são descobertos via OpenAPI (ADR-0030), nunca aqui.
+/// <see cref="ProcessoSeletivoDto"/>: apenas <c>self</c>/<c>collection</c> —
+/// action links (etapas, publicar etc.) são descobertos via OpenAPI
+/// (ADR-0030), nunca aqui.
 /// </summary>
 [SuppressMessage(
     "Performance",

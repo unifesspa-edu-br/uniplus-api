@@ -21,12 +21,10 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 ///
 /// O que é compartilhado entre módulos (Serilog, auth, CORS, cache, storage,
 /// observabilidade, middleware, AddControllers, AddDomainErrorMapper, health
-/// checks de infra) fica no host. O wiring de mensageria do módulo —
-/// Kafka/Schema Registry (ADR-0051) e Wolverine (ADR-0003/0004/0005), incluindo
-/// o routing cascading e a criação do ISchemaRegistryClient — é setup de
-/// host/processo e permanece no Program.cs (será consolidado no host fora deste
-/// escopo). Mantém o módulo extraível: um serviço próprio chamaria este mesmo
-/// método.
+/// checks de infra) fica no host. O wiring de Wolverine (ADR-0003/0004/0005) —
+/// discovery de assembly e composição de routing — é setup de host/processo e
+/// permanece no Program.cs. Mantém o módulo extraível: um serviço próprio
+/// chamaria este mesmo método.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Design",
@@ -51,7 +49,6 @@ public static class SelecaoModuleRegistration
 
         // HATEOAS Level 1 (ADR-0029) — builder de _links por recurso. Singleton
         // porque encapsula apenas um LinkGenerator (também singleton); função pura.
-        services.AddSingleton<IResourceLinksBuilder<EditalDto>, EditalLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ProcessoSeletivoDto>, ProcessoSeletivoLinksBuilder>();
 
