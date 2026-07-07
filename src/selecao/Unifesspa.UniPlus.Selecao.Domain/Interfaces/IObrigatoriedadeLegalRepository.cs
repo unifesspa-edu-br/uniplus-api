@@ -54,15 +54,4 @@ public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLe
         string regraCodigo,
         Guid? excluirId,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Lê o <c>RegrasJson</c> do <c>EditalGovernanceSnapshot</c> de um edital
-    /// publicado (ADR-0058 §"Snapshot-on-bind"). Retorna <see langword="null"/>
-    /// quando o edital ainda não foi publicado — <c>GET /conformidade-historica</c>
-    /// emite 404 com <c>uniplus.selecao.conformidade.snapshot_nao_disponivel</c>.
-    /// O preenchimento da tabela é responsabilidade de #462 (US-F4-04).
-    /// </summary>
-    Task<string?> ObterSnapshotConformidadeJsonAsync(
-        Guid editalId,
-        CancellationToken cancellationToken = default);
 }

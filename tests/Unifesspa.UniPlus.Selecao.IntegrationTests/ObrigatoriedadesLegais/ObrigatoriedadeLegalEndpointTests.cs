@@ -56,35 +56,6 @@ public sealed class ObrigatoriedadeLegalEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "GET /api/selecao/editais/{id}/conformidade-historica retorna 404 com type específico quando sem snapshot")]
-    public async Task ConformidadeHistorica_SemSnapshot_Retorna404ComProblemDetailsEspecifico()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        // Edital inexistente (ou existente sem snapshot ainda) — em V1 a tabela
-        // edital_governance_snapshot está vazia per #460 (INSERT diferido para
-        // #462). O endpoint precisa retornar 404 com type
-        // uniplus.selecao.conformidade.snapshot_nao_disponivel.
-        Guid editalId = Guid.NewGuid();
-
-        HttpResponseMessage response = await client.GetAsync(
-            new Uri($"/api/selecao/editais/{editalId}/conformidade-historica", UriKind.Relative));
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-
-        string body = await response.Content.ReadAsStringAsync();
-        if (!string.IsNullOrWhiteSpace(body))
-        {
-            using JsonDocument doc = JsonDocument.Parse(body);
-            // ProblemDetails RFC 9457 — type é a URI canônica do erro.
-            if (doc.RootElement.TryGetProperty("type", out JsonElement typeElement))
-            {
-                typeElement.GetString()
-                    .Should().Be("uniplus.selecao.conformidade.snapshot_nao_disponivel");
-            }
-        }
-    }
-
     [Fact(DisplayName = "POST /api/selecao/admin/obrigatoriedades-legais sem auth retorna 401")]
     public async Task Criar_SemAuth_Retorna401()
     {

@@ -159,17 +159,4 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
 
         return await query.AnyAsync(cancellationToken).ConfigureAwait(false);
     }
-
-    public async Task<string?> ObterSnapshotConformidadeJsonAsync(
-        Guid editalId,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.EditalGovernanceSnapshots
-            .AsNoTracking()
-            .Where(s => s.EditalId == editalId)
-            .OrderByDescending(s => s.SnapshottedAt)
-            .Select(s => s.RegrasJson)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-    }
 }
