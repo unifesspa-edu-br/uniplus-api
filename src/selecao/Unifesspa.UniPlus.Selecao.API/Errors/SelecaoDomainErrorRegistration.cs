@@ -132,6 +132,16 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RegraEliminacao.MinimoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.minimo_obrigatorio", "Minimo é obrigatório para a regra ELIM-CORTE-REDACAO")),
         new("ProcessoSeletivo.EtapaRefEliminacaoInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_ref_eliminacao_inexistente", "A regra de eliminação referencia uma etapa que não existe neste processo")),
         new("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.eliminacao_enem_fora_de_processo_enem", "A regra de eliminação só se aplica a processo baseado em ENEM (SiSU/PSVR)")),
+        // Documento do Edital — upload direto via URL pre-assinada (Story #759, T3
+        // #784). ObjetoNaoEncontrado/TamanhoExcedido/ContentTypeInvalido/AssinaturaInvalida
+        // são recusas de validação da confirmação (422); NaoEncontrado é 404
+        // (registro inexistente ou de outro processo).
+        new("DocumentoEdital.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.documento_edital.nao_encontrado", "Documento do Edital não encontrado")),
+        new("DocumentoEdital.StatusInvalidoParaConfirmacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.status_invalido_para_confirmacao", "Somente um documento pendente pode ser confirmado")),
+        new("DocumentoEdital.ObjetoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.objeto_nao_encontrado", "Objeto ainda não enviado ao storage ou expirado")),
+        new("DocumentoEdital.TamanhoExcedido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.tamanho_excedido", "Documento excede o tamanho máximo permitido")),
+        new("DocumentoEdital.ContentTypeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.content_type_invalido", "Documento do Edital deve ser do tipo application/pdf")),
+        new("DocumentoEdital.AssinaturaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.assinatura_invalida", "Conteúdo do arquivo não corresponde a um PDF válido")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];
