@@ -41,9 +41,15 @@ secrets:
   ingressoDbConnection: ""       # ConnectionStrings__IngressoDb
   redisConnection: ""            # Redis__ConnectionString
   kafkaBootstrapServers: ""      # Kafka__BootstrapServers
-  storageEndpoint: ""            # Storage__Endpoint
+  storageEndpoint: ""            # Storage__Endpoint (cluster-local, ex.: minio.uniplus.svc.cluster.local:9000)
   storageAccessKey: ""           # Storage__AccessKey
   storageSecretKey: ""           # Storage__SecretKey
+  # Endpoint alcançável de fora do cluster (browser), usado só para assinar
+  # URLs pre-assinadas devolvidas a clientes externos (upload/download direto
+  # — ver Story #759 T3). Sem preencher, a API cai para storageEndpoint e as
+  # URLs devolvidas ao cliente ficam com um host só o pod resolve.
+  storagePublicEndpoint: ""      # Storage__PublicEndpoint
+  storagePublicUseSsl: ""        # Storage__PublicUseSSL ("true"/"false" — opcional, cai para o mesmo de Storage__UseSSL)
   authAuthority: ""              # Auth__Authority
   # Criptografia de PII (LGPD): AddUniPlusEncryption valida no startup
   # (ValidateOnStart) — SEM estas chaves o host crasha no boot antes de servir.
