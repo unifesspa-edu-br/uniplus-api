@@ -7,6 +7,13 @@ decision-makers:
 
 # ADR-0049: Implementação de HATEOAS Level 1 em `EditalDto` via `IResourceLinksBuilder<TDto>` na camada API
 
+> **Nota de atualização (#782):** o agregado `Edital` legado e `EditalLinksBuilder`
+> foram removidos por inteiro (demolição pré-inversão ProcessoSeletivo↔Edital,
+> sem produção). O padrão `IResourceLinksBuilder<TDto>` decidido aqui continua
+> vigente e implementado por `ObrigatoriedadeLegalLinksBuilder` e
+> `ProcessoSeletivoLinksBuilder` (código real, não exemplo). Este registro
+> histórico documenta a decisão original; não descreve mais código existente.
+
 ## Contexto e enunciado do problema
 
 A [ADR-0029](0029-hateoas-level-1-links.md) decidiu que toda resposta de recurso single da `uniplus-api` carrega `_links` mínimo (`self` sempre, navigation links opcionais). A decisão é canônica mas explicitamente deixou em aberto a *forma de implementação* (§"Esta ADR não decide": *"Implementação concreta do builder de links na camada API — extension method, helper service ou middleware. Decisão de implementação."*).

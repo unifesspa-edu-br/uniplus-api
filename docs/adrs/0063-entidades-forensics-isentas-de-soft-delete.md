@@ -10,6 +10,12 @@ informed:
 
 # ADR-0063: Entidades forensics append-only são isentas de soft-delete
 
+> **Nota de atualização (#782):** `edital_governance_snapshot`/
+> `EditalGovernanceSnapshot`, citada abaixo como um dos dois exemplos originais
+> do marcador `IForensicEntity`, foi removida por inteiro junto com o agregado
+> `Edital` legado (demolição pré-inversão ProcessoSeletivo↔Edital, sem
+> produção). `ObrigatoriedadeLegalHistorico` continua sendo o exemplo vigente.
+
 ## Contexto e enunciado do problema
 
 A política de persistência do Uni+ exige soft-delete em toda entidade

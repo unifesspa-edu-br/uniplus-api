@@ -15,6 +15,14 @@ Guia operacional em pt-BR para criar novos commands, queries, handlers e domain 
 
 Dúvidas sobre implementação no dia a dia ficam neste guia. Dúvidas sobre contrato, escopo ou reversibilidade vão para a ADR correspondente. Mudanças de escopo (novas abstrações, adoção de features avançadas do Wolverine) exigem emenda à ADR-0003 com PR explícito.
 
+> **Nota temporária (#782):** os exemplos deste guia usam o slice `Edital` (agregado
+> legado, pré-inversão ProcessoSeletivo↔Edital) como referência pedagógica. Esse
+> slice foi removido por inteiro — os tipos citados abaixo (`PublicarEditalCommand`,
+> `EditalController`, `IEditalRepository`, `EditalPublicadoEvent` etc.) não existem
+> mais no código. A FORMA do padrão CQRS/Wolverine/cascading ilustrada continua
+> válida; a reescrita completa com um slice de referência vivo (`ProcessoSeletivo`)
+> está planejada para a T4 (#785).
+
 > **Princípio central:** habilitar o time antes de completar a arquitetura. Apenas duas abstrações (`ICommandBus`, `IQueryBus`) cruzam para `Application`. Drenagem de domain events não é abstração — é convenção de retorno do handler (cascading messages, ADR-0005). Features avançadas do Wolverine (sagas, scheduled messages, middleware custom específico) ficam fora do escopo até um caso de uso concreto pedir.
 
 ## Arquitetura resumida

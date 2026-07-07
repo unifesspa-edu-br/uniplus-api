@@ -238,9 +238,10 @@ docs/0021-cache-distribuido
 
 Antes de começar uma feature, leia o slice canônico mais próximo:
 
-- **Command + handler:** `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/Editais/`
-- **Query + handler:** `src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/Editais/`
-- **Domain event handler com cascading messages:** `PublicarEditalCommandHandler` + `EditalPublicadoEventHandler`
+- **Command + handler / Query + handler / domain event com cascading messages:**
+  o slice `Edital` usado historicamente como referência foi removido (#782 —
+  agregado legado, pré-inversão ProcessoSeletivo↔Edital). Reescrita com um slice
+  vivo (`ProcessoSeletivo`) está planejada para a T4 (#785).
 - **EntityTypeConfiguration:** `src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Configurations/`
 
 ## 10. Referências
