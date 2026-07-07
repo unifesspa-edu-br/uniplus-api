@@ -10,6 +10,14 @@ informed:
 
 # ADR-0058: ObrigatoriedadeLegal como validação data-driven com citação e snapshot
 
+> **Nota de atualização (#782):** o catálogo `ObrigatoriedadeLegal` (CRUD,
+> histórico, hash canônico) descrito nesta ADR continua vigente e intacto. A
+> parte desta ADR que descreve a validação **aplicada contra o agregado
+> `Edital`** (`ValidadorConformidadeEdital`, `Edital.Publicar()`,
+> `EditalGovernanceSnapshot`) foi removida por inteiro — demolição pré-inversão
+> ProcessoSeletivo↔Edital, sem produção, sem substituto imediato. A avaliação
+> de conformidade contra `ProcessoSeletivo` é escopo futuro, fora desta task.
+
 ## Contexto e enunciado do problema
 
 `ObrigatoriedadeLegal` é o catálogo configurável de validação identificado no protótipo do wizard de edital: cerca de 14 regras que validam um `Edital` contra requisitos legais (Lei 12.711/2023, Resolução Unifesspa, Portarias MEC) antes da publicação. As regras cobrem etapa obrigatória, modalidades mínimas, documento obrigatório por modalidade, critério de desempate exigido, atendimento PcD disponível, etc.

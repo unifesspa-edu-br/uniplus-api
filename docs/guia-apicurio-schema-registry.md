@@ -5,6 +5,13 @@
 > [ADR-0044](adrs/0044-roteamento-domain-events-pg-queue-kafka-opcional.md) (routing PG queue/Kafka) +
 > RUNBOOKS §15 do `uniplus-infra` (Apicurio chart deploy + recuperação de `client_secret`).
 
+> **Nota temporária (#782):** o exemplo `EditalPublicado`/`EditalPublicadoEvent`
+> usado abaixo era o único schema Avro de fato registrado no projeto até aqui — o
+> slice Edital foi removido por inteiro (agregado legado, pré-inversão
+> ProcessoSeletivo↔Edital). Hoje o projeto não tem nenhum schema Avro registrado.
+> O wiring e a arquitetura descritos abaixo continuam válidos; a reescrita com um
+> exemplo real vivo entra quando um novo evento cross-módulo precisar de Avro.
+
 ## O que é
 
 [Apicurio Schema Registry](https://www.apicur.io/registry/) é o **registro central de schemas Avro** dos eventos cross-módulo do Uni+. Em standalone roda em

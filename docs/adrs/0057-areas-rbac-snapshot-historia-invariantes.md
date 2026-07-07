@@ -68,6 +68,12 @@ Os seis pontos:
 
 ### Pattern 1: snapshot de `AreasDeInteresse` e `Proprietario` ao publicar edital
 
+> **Nota de atualização (#782):** `Edital.Publicar()` e `EditalGovernanceSnapshot`
+> (o agregado legado que ilustra o pattern abaixo) foram removidos por inteiro
+> — demolição pré-inversão ProcessoSeletivo↔Edital, sem produção. O padrão
+> conceitual de snapshot de governança ao publicar continua válido para
+> reimplementação futura contra `ProcessoSeletivo` (T4/#785).
+
 `Edital.Publicar()` snapshota a **governança em si** de cada item de catálogo referenciado pelo edital, além dos snapshots já especificados em RN08 (`docs/visao-do-projeto.md`).
 
 O snapshot inclui:

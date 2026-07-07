@@ -209,12 +209,19 @@ Siga a ordem de implementação por camada — de dentro para fora:
 3. **Infrastructure** — EF Core configurations, repositórios, integrações externas
 4. **API** — controllers, middleware, filtros
 
-#### Padrão de handler (slice `Edital` como referência)
+#### Padrão de handler
+
+> **Nota temporária (#782):** o slice `Edital` usado historicamente como referência
+> pedagógica deste padrão foi removido — era o agregado legado, pré-inversão
+> ProcessoSeletivo↔Edital. O bloco de código abaixo ilustra a FORMA do padrão
+> CQRS/Wolverine (ainda válida), mas os tipos citados (`CriarEditalCommand`,
+> `IEditalRepository` etc.) não existem mais no código. Reescrita completa com um
+> slice de referência vivo (`ProcessoSeletivo`) está planejada para a T4 (#785).
 
 Commands implementam `ICommand<TResponse>`, queries implementam `IQuery<TResponse>` — ambos definidos em `Application.Abstractions/Messaging`. Handlers seguem a convenção do Wolverine: classe `static`, método `Handle` (`Task<TResponse>` ou `(TResponse, IEnumerable<object>)` para cascading messages) e dependências resolvidas como parâmetros do método.
 
 ```csharp
-// Command + handler — referência: src/selecao/.../Commands/Editais/CriarEditalCommand*.cs
+// Command + handler (forma ilustrativa — ver nota acima)
 public sealed record CriarEditalCommand(...) : ICommand<Result<Guid>>;
 
 public static class CriarEditalCommandHandler
@@ -229,7 +236,7 @@ public static class CriarEditalCommandHandler
     }
 }
 
-// Query + handler — referência: src/selecao/.../Queries/Editais/ObterEditalQuery*.cs
+// Query + handler (forma ilustrativa — ver nota acima)
 public sealed record ObterEditalQuery(Guid Id) : IQuery<EditalDto?>;
 
 public static class ObterEditalQueryHandler
@@ -243,7 +250,7 @@ public static class ObterEditalQueryHandler
 
 **Validação automática:** o middleware de validação FluentValidation do Wolverine (ativado por `UseFluentValidation` em `Infrastructure.Core/Messaging/Middleware/MessagingMiddlewarePolicies`) descobre todos os `IValidator<T>` registrados via `AddValidatorsFromAssembly` e valida o command/query antes do handler. Não chame `validator.ValidateAsync(...)` no handler — falhas viram `FluentValidation.ValidationException` capturada pelo `GlobalExceptionMiddleware` como `ProblemDetails 422`.
 
-**Logging automático:** o `WolverineLoggingMiddleware` registra entrada/saída do handler com tempo de execução, removendo a necessidade de qualquer behavior de pipeline em código de aplicação. Logs específicos de domínio dentro do handler seguem o padrão `[LoggerMessage]` source generator (.NET 6+): a classe é `partial`, o método é `private static partial void Log{Acao}` decorado com `[LoggerMessage(Level = ..., Message = "...")]`, e o `ILogger` entra como primeiro parâmetro do método. Chamadas diretas a `logger.LogInformation(...)` etc. são bloqueadas pelo analisador `CA1848` (com `TreatWarningsAsErrors`) — o source generator evita avaliação de argumentos quando o log level está desativado, elimina boxing de value types e parseia o template uma única vez na compilação. Exemplo no projeto: `EditalPublicadoEventHandler` (`src/selecao/.../Events/Editais/`).
+**Logging automático:** o `WolverineLoggingMiddleware` registra entrada/saída do handler com tempo de execução, removendo a necessidade de qualquer behavior de pipeline em código de aplicação. Logs específicos de domínio dentro do handler seguem o padrão `[LoggerMessage]` source generator (.NET 6+): a classe é `partial`, o método é `private static partial void Log{Acao}` decorado com `[LoggerMessage(Level = ..., Message = "...")]`, e o `ILogger` entra como primeiro parâmetro do método. Chamadas diretas a `logger.LogInformation(...)` etc. são bloqueadas pelo analisador `CA1848` (com `TreatWarningsAsErrors`) — o source generator evita avaliação de argumentos quando o log level está desativado, elimina boxing de value types e parseia o template uma única vez na compilação.
 
 ### 3. Testar
 
