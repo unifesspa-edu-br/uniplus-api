@@ -290,10 +290,10 @@ public sealed class CrossModuleReadIsolationTests
             typeof(global::Unifesspa.UniPlus.Infrastructure.Core.Messaging.WolverineOutboxConfiguration).Assembly,
 
             // Selecao
-            typeof(global::Unifesspa.UniPlus.Selecao.Domain.Entities.Edital).Assembly,
-            typeof(global::Unifesspa.UniPlus.Selecao.Application.Commands.Editais.CriarEditalCommand).Assembly,
+            typeof(global::Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo).Assembly,
+            typeof(global::Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
             typeof(global::Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.SelecaoDbContext).Assembly,
-            typeof(global::Unifesspa.UniPlus.Selecao.API.Controllers.EditalController).Assembly,
+            typeof(global::Unifesspa.UniPlus.Selecao.API.Controllers.ProcessoSeletivoController).Assembly,
 
             // Ingresso
             typeof(global::Unifesspa.UniPlus.Ingresso.Domain.Entities.Chamada).Assembly,

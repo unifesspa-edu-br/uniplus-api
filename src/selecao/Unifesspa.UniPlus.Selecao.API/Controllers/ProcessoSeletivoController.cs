@@ -108,7 +108,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             return NotFound();
         }
 
-        // HATEOAS Level 1 (ADR-0029) — ver EditalController para a justificativa completa.
+        // HATEOAS Level 1 — ver ADR-0029 para a justificativa completa.
         ProcessoSeletivoDto processoComLinks = processo with { Links = _linksBuilder.Build(processo) };
         return Ok(processoComLinks);
     }

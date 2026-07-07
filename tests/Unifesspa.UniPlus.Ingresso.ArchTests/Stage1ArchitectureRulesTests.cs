@@ -80,10 +80,10 @@ public sealed class Stage1ArchitectureRulesTests
             typeof(Domain.Entities.Chamada).Assembly,
             typeof(Infrastructure.Persistence.IngressoDbContext).Assembly,
             typeof(API.IngressoApiAssemblyMarker).Assembly,
-            typeof(Selecao.Domain.Entities.Edital).Assembly,
-            typeof(Selecao.Application.Commands.Editais.CriarEditalCommand).Assembly,
+            typeof(Selecao.Domain.Entities.ProcessoSeletivo).Assembly,
+            typeof(Selecao.Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
             typeof(Selecao.Infrastructure.Persistence.SelecaoDbContext).Assembly,
-            typeof(Selecao.API.Controllers.EditalController).Assembly,
+            typeof(Selecao.API.Controllers.ProcessoSeletivoController).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(assemblies).Build();
