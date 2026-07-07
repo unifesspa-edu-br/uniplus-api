@@ -182,6 +182,42 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("configuracoes_bonus_regional", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int?>("CasasArredondamento")
+                        .HasColumnType("integer")
+                        .HasColumnName("casas_arredondamento");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("NOpcoesAlocacao")
+                        .HasColumnType("integer")
+                        .HasColumnName("n_opcoes_alocacao");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_configuracoes_classificacao");
+
+                    b.HasIndex("ProcessoSeletivoId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_configuracoes_classificacao_processo_seletivo_id");
+
+                    b.ToTable("configuracoes_classificacao", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDistribuicaoVagas", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1330,6 +1366,38 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraEliminacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Args")
+                        .IsRequired()
+                        .HasColumnType("json")
+                        .HasColumnName("args");
+
+                    b.Property<Guid>("ConfiguracaoClassificacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configuracao_classificacao_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_regras_eliminacao");
+
+                    b.HasIndex("ConfiguracaoClassificacaoId")
+                        .HasDatabaseName("ix_regras_eliminacao_configuracao_classificacao_id");
+
+                    b.ToTable("regras_eliminacao", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.Candidato", b =>
                 {
                     b.OwnsOne("Unifesspa.UniPlus.Kernel.Domain.ValueObjects.Cpf", "Cpf", b1 =>
@@ -1458,6 +1526,126 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Regra")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithOne("Classificacao")
+                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", "ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_configuracoes_classificacao_processos_seletivos_processo_se");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraArredondamento", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoClassificacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_arredondamento_codigo");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_arredondamento_hash")
+                                .IsFixedLength();
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_arredondamento_versao");
+
+                            b1.HasKey("ConfiguracaoClassificacaoId");
+
+                            b1.ToTable("configuracoes_classificacao", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoClassificacaoId")
+                                .HasConstraintName("fk_configuracoes_classificacao_configuracoes_classificacao_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraCalculo", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoClassificacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_calculo_codigo");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_calculo_hash")
+                                .IsFixedLength();
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_calculo_versao");
+
+                            b1.HasKey("ConfiguracaoClassificacaoId");
+
+                            b1.ToTable("configuracoes_classificacao", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoClassificacaoId")
+                                .HasConstraintName("fk_configuracoes_classificacao_configuracoes_classificacao_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraOrdemAlocacao", b1 =>
+                        {
+                            b1.Property<Guid>("ConfiguracaoClassificacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_ordem_alocacao_codigo");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_ordem_alocacao_hash")
+                                .IsFixedLength();
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_ordem_alocacao_versao");
+
+                            b1.HasKey("ConfiguracaoClassificacaoId");
+
+                            b1.ToTable("configuracoes_classificacao", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoClassificacaoId")
+                                .HasConstraintName("fk_configuracoes_classificacao_configuracoes_classificacao_id");
+                        });
+
+                    b.Navigation("RegraArredondamento");
+
+                    b.Navigation("RegraCalculo")
+                        .IsRequired();
+
+                    b.Navigation("RegraOrdemAlocacao")
                         .IsRequired();
                 });
 
@@ -1784,6 +1972,58 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_ofertas_tipo_deficiencia_ofertas_atendimento_especializado_");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraEliminacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", null)
+                        .WithMany("RegrasEliminacao")
+                        .HasForeignKey("ConfiguracaoClassificacaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_regras_eliminacao_configuracoes_classificacao_configuracao_");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
+                        {
+                            b1.Property<Guid>("RegraEliminacaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_codigo");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_hash")
+                                .IsFixedLength();
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_versao");
+
+                            b1.HasKey("RegraEliminacaoId");
+
+                            b1.ToTable("regras_eliminacao", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RegraEliminacaoId")
+                                .HasConstraintName("fk_regras_eliminacao_regras_eliminacao_id");
+                        });
+
+                    b.Navigation("Regra")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", b =>
+                {
+                    b.Navigation("RegrasEliminacao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDistribuicaoVagas", b =>
                 {
                     b.Navigation("Modalidades");
@@ -1808,6 +2048,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
                 {
                     b.Navigation("BonusRegional");
+
+                    b.Navigation("Classificacao");
 
                     b.Navigation("CriteriosDesempate");
 
