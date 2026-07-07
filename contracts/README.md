@@ -4,7 +4,7 @@ Specs OpenAPI 3.1 versionados como **fonte de verdade do contrato V1** da `unipl
 
 ## Arquivos
 
-- `openapi.selecao.json` — spec do módulo Seleção (endpoints `/api/editais`, `/api/auth/me`, `/api/profile/me`).
+- `openapi.selecao.json` — spec do módulo Seleção (endpoints `/api/selecao/processos-seletivos`, `/api/selecao/obrigatoriedades-legais`, `/api/auth/me`, `/api/profile/me`).
 - `openapi.ingresso.json` — spec do módulo Ingresso (stub atual; endpoints próprios chegam em sprints posteriores).
 - `openapi.organizacao.json` — spec do módulo Organização Institucional (Instituição e Unidades, sob o prefixo de módulo `/api/organizacao/*`, incluindo as variantes administrativas `/api/organizacao/admin/*`). Áreas Organizacionais ficam fora do contrato — em aposentadoria (issue #625), o controller foi removido.
 - `openapi.configuracao.json` — spec do módulo Configuração (Campus e Local de Oferta, sob o prefixo de módulo `/api/configuracao/*`, incluindo as variantes administrativas `/api/configuracao/admin/*`). A Cidade é referenciada por código IBGE + display cache (ADR-0090) — não há endpoint de cidade aqui.
@@ -45,7 +45,7 @@ Os arquivos `contracts/openapi.{selecao,ingresso,organizacao}.json` são reescri
 Itens originalmente listados em #290 que ficam para próximos PRs (mantém este reviewable):
 
 - ~~`contracts/shared.openapi.json` declarando ProblemDetails, Cursor, `_links`, paginação envelopes via `$ref`.~~ Resolvido por [ADR-0035](../docs/adrs/0035-shared-schemas-cross-module-fitness-test.md): Microsoft.AspNetCore.OpenApi 10 não suporta `$ref` cross-document, e Redocly post-process é desproporcional para 3 schemas duplicados. Em vez disso, `OpenApiSharedSchemasInSyncTests` (`tests/Unifesspa.UniPlus.ArchTests/SolutionRules/`) faz fitness check byte-a-byte dos schemas com mesmo nome em baselines diferentes. Reavaliar quando ≥10 schemas compartilhados, terceiro módulo, ou portal `uniplus-developers` demandar multi-file.
-- `contracts/postman/uniplus-api.postman_collection.json` com cenários smoke (criar edital com Idempotency-Key, listar com cursor, 406 vendor MIME inexistente, 422 validation).
+- `contracts/postman/uniplus-api.postman_collection.json` com cenários smoke (criar processo seletivo com Idempotency-Key, listar com cursor, 406 vendor MIME inexistente, 422 validation).
 - Newman em CI rodando contra a API em container — exige docker-compose com Postgres/Kafka/MinIO/Keycloak.
 
-Esses follow-ups dependem do EditalController real estar exposto em ambiente integrado (HML/dev cluster) e da infra de CI suportar containers — fora do escopo de Milestone A.
+Esses follow-ups dependem dos controllers do módulo Seleção estarem expostos em ambiente integrado (HML/dev cluster) e da infra de CI suportar containers — fora do escopo de Milestone A.
