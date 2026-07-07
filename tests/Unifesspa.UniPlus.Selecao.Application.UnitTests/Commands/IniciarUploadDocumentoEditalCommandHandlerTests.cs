@@ -55,4 +55,28 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Handle não persiste nada quando a geração da URL pre-assinada falha")]
+    public async Task Handle_FalhaAoGerarUrl_NaoPersisteRegistroOrfao()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        processoRepository.ObterPorIdAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns<Task<string>>(_ => throw new InvalidOperationException("MinIO indisponível (simulado)"));
+
+        Func<Task> act = () => IniciarUploadDocumentoEditalCommandHandler.Handle(
+            new IniciarUploadDocumentoEditalCommand(processo.Id),
+            processoRepository, documentoRepository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        // Sem isso, uma falha no presign depois do SaveChanges deixaria uma
+        // linha pendente órfã (sem URL nunca entregue ao cliente) e, sob
+        // retry com a mesma Idempotency-Key, criaria outra a cada tentativa.
+        await documentoRepository.DidNotReceive().AdicionarAsync(Arg.Any<DocumentoEdital>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }
