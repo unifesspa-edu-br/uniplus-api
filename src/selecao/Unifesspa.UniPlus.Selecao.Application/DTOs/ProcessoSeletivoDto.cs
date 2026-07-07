@@ -5,8 +5,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Projeção de leitura do agregado <c>ProcessoSeletivo</c> (Story #758,
 /// UNI-REQ-0014/0015). Cresce à medida que novas dimensões de configuração
-/// ganham commands nas fatias seguintes — a classificação (F4) entra aqui
-/// quando implementada.
+/// ganham commands nas fatias seguintes.
 /// </summary>
 public sealed record ProcessoSeletivoDto(
     Guid Id,
@@ -18,6 +17,7 @@ public sealed record ProcessoSeletivoDto(
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
     ConfiguracaoBonusRegionalDto? BonusRegional,
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
+    ConfiguracaoClassificacaoDto? Classificacao,
     DateTimeOffset CriadoEm)
 {
     /// <summary>

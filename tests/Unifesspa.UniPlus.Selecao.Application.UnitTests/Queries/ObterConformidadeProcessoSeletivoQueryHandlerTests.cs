@@ -59,6 +59,15 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, referenciaDemografica: null, [ampla]).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao]);
 
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
+            ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('b', 64)).Value!,
+            ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64)).Value!,
+            2,
+            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('d', 64)).Value!,
+            1,
+            []).Value!;
+        processo.DefinirClassificacao(classificacao);
+
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
