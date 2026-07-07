@@ -60,21 +60,32 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
                 $"O documento excede o tamanho máximo permitido de {DocumentoEdital.TamanhoMaximoBytes / (1024 * 1024)} MB."));
         }
 
-        // AbrirLeituraAsync nunca traz mais que TamanhoMaximoBytes+1 — o
-        // limite é imposto pelo storage via Range request (byte 0 a
-        // limiteBytes-1), não depois de já ter bufferizado o objeto inteiro
-        // em memória. Sem isso, um objeto substituído por algo muito maior
-        // depois do stat acima faria a leitura bufferizar o arquivo inteiro
-        // antes de ValidarConteudo rejeitar pelo tamanho.
+        // Objeto de 0 bytes: um Range GET (byte 0 a N) não é satisfazível
+        // sobre um objeto vazio (o servidor recusa com 416) — não há o que
+        // ler, e o resultado já é conhecido (ValidarConteudo recusa conteúdo
+        // vazio por assinatura ausente), então nem tenta a leitura.
         byte[] conteudo;
-        Stream stream = await storage
-            .AbrirLeituraAsync(documento.ObjectKey, DocumentoEdital.TamanhoMaximoBytes + 1, cancellationToken)
-            .ConfigureAwait(false);
-        await using (stream.ConfigureAwait(false))
+        if (info.TamanhoBytes == 0)
         {
-            using MemoryStream buffer = new();
-            await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-            conteudo = buffer.ToArray();
+            conteudo = [];
+        }
+        else
+        {
+            // AbrirLeituraAsync nunca traz mais que TamanhoMaximoBytes+1 — o
+            // limite é imposto pelo storage via Range request (byte 0 a
+            // limiteBytes-1), não depois de já ter bufferizado o objeto inteiro
+            // em memória. Sem isso, um objeto substituído por algo muito maior
+            // depois do stat acima faria a leitura bufferizar o arquivo inteiro
+            // antes de ValidarConteudo rejeitar pelo tamanho.
+            Stream stream = await storage
+                .AbrirLeituraAsync(documento.ObjectKey, DocumentoEdital.TamanhoMaximoBytes + 1, cancellationToken)
+                .ConfigureAwait(false);
+            await using (stream.ConfigureAwait(false))
+            {
+                using MemoryStream buffer = new();
+                await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+                conteudo = buffer.ToArray();
+            }
         }
 
         if (conteudo.LongLength > DocumentoEdital.TamanhoMaximoBytes)
