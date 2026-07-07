@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -68,18 +70,25 @@ public static class StorageServiceCollectionExtensions
         services.AddSingleton<IMinioClient>(sp =>
         {
             StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
+            return BuildClient(opts, opts.Endpoint, opts.UseSSL);
+        });
 
-            IMinioClient client = new MinioClient()
-                .WithEndpoint(opts.Endpoint)
-                .WithCredentials(opts.AccessKey, opts.SecretKey)
-                .WithSSL(opts.UseSSL);
-
-            if (!string.IsNullOrWhiteSpace(opts.Region))
+        // Cliente separado, keyed, usado só para ASSINAR URLs pre-assinadas
+        // devolvidas a clientes externos (browser fora da rede Docker/cluster).
+        // A assinatura SigV4 inclui o header Host — reescrever a URL depois de
+        // assinada com o endpoint interno invalidaria a assinatura, então este
+        // cliente assina do zero com PublicEndpoint. Sem PublicEndpoint
+        // configurado, reusa a MESMA instância do cliente interno (nenhum
+        // custo extra; comportamento idêntico ao anterior).
+        services.AddKeyedSingleton<IMinioClient>(StoragePublicClientKey, (sp, _) =>
+        {
+            StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
+            if (string.IsNullOrWhiteSpace(opts.PublicEndpoint) || opts.PublicEndpoint == opts.Endpoint)
             {
-                client = client.WithRegion(opts.Region);
+                return sp.GetRequiredService<IMinioClient>();
             }
 
-            return client.Build();
+            return BuildClient(opts, opts.PublicEndpoint, opts.PublicUseSSL ?? opts.UseSSL);
         });
 
         // IHttpClientFactory — usado por MinioStorageService.DownloadLimitadoAsync
@@ -89,5 +98,27 @@ public static class StorageServiceCollectionExtensions
         services.AddScoped<IStorageService, MinioStorageService>();
 
         return services;
+    }
+
+    /// <summary>Chave do <see cref="IMinioClient"/> keyed usado para assinar URLs devolvidas a clientes externos.</summary>
+    public const string StoragePublicClientKey = "storage-public";
+
+    [SuppressMessage(
+        "Reliability",
+        "CA2000:Dispose objects before losing scope",
+        Justification = "O cliente é devolvido ao caller (factory de DI), que o registra como singleton — o container é o dono do descarte, não este método.")]
+    private static IMinioClient BuildClient(StorageOptions opts, string endpoint, bool useSSL)
+    {
+        IMinioClient client = new MinioClient()
+            .WithEndpoint(endpoint)
+            .WithCredentials(opts.AccessKey, opts.SecretKey)
+            .WithSSL(useSSL);
+
+        if (!string.IsNullOrWhiteSpace(opts.Region))
+        {
+            client = client.WithRegion(opts.Region);
+        }
+
+        return client.Build();
     }
 }

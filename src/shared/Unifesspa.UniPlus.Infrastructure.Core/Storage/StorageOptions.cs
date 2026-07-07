@@ -30,6 +30,21 @@ public sealed class StorageOptions
     public string? Region { get; init; }
 
     /// <summary>
+    /// Endpoint MinIO alcançável por clientes externos (browser, app fora da rede
+    /// Docker/cluster) — usado para <em>assinar</em> URLs pre-assinadas devolvidas a
+    /// esses clientes (upload/download direto). Necessário porque a assinatura SigV4
+    /// inclui o header <c>Host</c>: reescrever a URL depois de assinada com
+    /// <see cref="Endpoint"/> invalida a assinatura, então um segundo cliente MinIO
+    /// assina do zero com este endpoint. Quando <see langword="null"/>/vazio, cai para
+    /// <see cref="Endpoint"/> (comportamento anterior — correto quando o mesmo endpoint
+    /// já é alcançável de fora, ex.: dev local sem stack containerizada completa).
+    /// </summary>
+    public string? PublicEndpoint { get; init; }
+
+    /// <summary>Esquema do <see cref="PublicEndpoint"/>. Cai para <see cref="UseSSL"/> quando não informado.</summary>
+    public bool? PublicUseSSL { get; init; }
+
+    /// <summary>
     /// Bucket default por API (ex.: <c>uniplus-documentos</c>). Opcional na camada de DI —
     /// handlers que dependem dele devem validar a própria obrigatoriedade.
     /// </summary>

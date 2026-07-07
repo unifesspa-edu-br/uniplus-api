@@ -60,6 +60,11 @@ services:
       Storage__Endpoint: "minio:9000"
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      # URLs pre-assinadas devolvidas a clientes externos (browser, Postman)
+      # precisam de um endpoint alcançável de fora da rede Docker — minio:9000
+      # só resolve dentro dela. Porta 9000 já é publicada no host (ver serviço
+      # minio), então localhost funciona para quem roda o frontend fora do Docker.
+      Storage__PublicEndpoint: "localhost:9000"
       # Realm `unifesspa` — o mesmo em que os frontends `*-web` autenticam. Para smoke
       # via password grant, o override docker-compose.smoke.yml realinha para dev-local.
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
