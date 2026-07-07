@@ -43,12 +43,17 @@ public static class IniciarUploadDocumentoEditalCommandHandler
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, clock, TtlUpload);
 
-        await documentoEditalRepository.AdicionarAsync(documento, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
+        // ObjectKey já está determinada (deriva do Id gerado em memória) — dá
+        // para gerar a URL antes de persistir. Se o MinIO falhar aqui, nada é
+        // commitado: sem isso, uma falha depois do SaveChanges deixaria uma
+        // linha pendente órfã e, sob retry com a mesma Idempotency-Key, o
+        // filtro trataria a exceção como pré-conclusão e criaria outra.
         string urlUpload = await storage
             .GerarUrlUploadAsync(documento.ObjectKey, TtlUpload, cancellationToken)
             .ConfigureAwait(false);
+
+        await documentoEditalRepository.AdicionarAsync(documento, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result<IniciarUploadDocumentoEditalDto>.Success(
             new IniciarUploadDocumentoEditalDto(documento.Id, new Uri(urlUpload, UriKind.Absolute), documento.ExpiraEm));
