@@ -50,6 +50,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<CriterioDesempate> _criteriosDesempate = [];
     public IReadOnlyCollection<CriterioDesempate> CriteriosDesempate => _criteriosDesempate.AsReadOnly();
 
+    /// <summary>Configuração de classificação (15º bloco canônico, Story #775) — compõe por referência a fórmula, precisão, eliminação e ordem de alocação.</summary>
+    public ConfiguracaoClassificacao? Classificacao { get; private set; }
+
     private ProcessoSeletivo() { }
 
     public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo)
@@ -121,6 +124,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return Result.Failure(new DomainError(
                     "ProcessoSeletivo.EtapaReferenciadaPorDesempate",
                     $"A etapa {args.EtapaRef} é referenciada por um critério de desempate (ordem {criterio.Ordem}) e não pode ser removida sem antes reconfigurar o desempate."));
+            }
+        }
+
+        // INV-B4 sobrevive à reconfiguração de etapas: uma classificação já
+        // definida referenciando ELIM-NOTA-MINIMA-ETAPA não pode ficar órfã
+        // se a etapa referenciada for removida (mesma proteção do INV-B6
+        // para critérios de desempate).
+        if (Classificacao is not null)
+        {
+            IEnumerable<ArgsElimNotaMinimaEtapa> eliminacoesPorEtapa = Classificacao.RegrasEliminacao
+                .Where(r => r.Args is ArgsElimNotaMinimaEtapa)
+                .Select(r => (ArgsElimNotaMinimaEtapa)r.Args);
+            foreach (ArgsElimNotaMinimaEtapa args in eliminacoesPorEtapa)
+            {
+                if (!novosIdsEtapas.Contains(args.EtapaRef))
+                {
+                    return Result.Failure(new DomainError(
+                        "ProcessoSeletivo.EtapaReferenciadaPorClassificacao",
+                        $"A etapa {args.EtapaRef} é referenciada por uma regra de eliminação da classificação e não pode ser removida sem antes reconfigurar a classificação."));
+                }
             }
         }
 
@@ -250,10 +273,64 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Define (ou substitui) a configuração de classificação do processo
+    /// (Story #775, modelagem P-B §2.1). Valida as invariantes que dependem
+    /// de OUTRAS dimensões do agregado: INV-B4 (todo <c>etapa_ref</c> de uma
+    /// <c>ELIM-NOTA-MINIMA-ETAPA</c> deve existir entre as etapas do
+    /// processo) e a restrição de que <c>ELIM-CORTE-REDACAO</c>/
+    /// <c>ELIM-ZERO-EM-AREA</c> só se aplicam a processo baseado em ENEM
+    /// (INV-B13 parcial — SiSU/PSVR). As invariantes internas da própria
+    /// configuração (INV-B8, limites de <c>NOpcoesAlocacao</c>) já foram
+    /// validadas em <see cref="ConfiguracaoClassificacao.Criar"/>.
+    /// </summary>
+    public Result DefinirClassificacao(ConfiguracaoClassificacao classificacao)
+    {
+        ArgumentNullException.ThrowIfNull(classificacao);
+
+        bool baseadoEmEnem = Tipo is TipoProcesso.SiSU or TipoProcesso.PSVR;
+
+        foreach (RegraEliminacao regra in classificacao.RegrasEliminacao)
+        {
+            if (regra.Args is ArgsElimNotaMinimaEtapa notaMinima && !_etapas.Any(e => e.Id == notaMinima.EtapaRef))
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
+                    $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe neste processo (INV-B4)."));
+            }
+
+            bool somenteEnem = regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea;
+            if (somenteEnem && !baseadoEmEnem)
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
+                    $"A regra {regra.Regra.Codigo} só se aplica a processo baseado em ENEM (SiSU/PSVR)."));
+            }
+        }
+
+        classificacao.VincularProcesso(Id);
+        Classificacao = classificacao;
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
     /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
     /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
     /// </summary>
     public decimal CalcularDivisorMedia() =>
         _etapas.Where(e => e.ComponeNota).Sum(e => e.Peso!.Value);
+
+    /// <summary>
+    /// Aplicabilidade da concorrência dupla (Lei 14.723/2023, INV-B7):
+    /// DERIVADA — <see langword="true"/> sse alguma modalidade selecionada em
+    /// <see cref="DistribuicaoVagas"/> tem
+    /// <see cref="NaturezaLegalModalidade.CotaReservada"/>. Nunca um toggle
+    /// livre nem um campo persistido — computada sob demanda a partir do
+    /// estado corrente para nunca dessincronizar se a distribuição de vagas
+    /// mudar depois de a classificação ter sido configurada.
+    /// </summary>
+    public bool ConcorrenciaDuplaAplicavel() =>
+        _distribuicaoVagas
+            .SelectMany(d => d.Modalidades)
+            .Any(m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
 }

@@ -53,6 +53,14 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<CriterioDesempate> CriteriosDesempate => Set<CriterioDesempate>();
 
     /// <summary>
+    /// Classificação (15º bloco canônico, Story #775, modelagem P-B §2.1) —
+    /// compõe por referência a fórmula, precisão, eliminação e ordem de
+    /// alocação.
+    /// </summary>
+    public DbSet<ConfiguracaoClassificacao> ConfiguracoesClassificacao => Set<ConfiguracaoClassificacao>();
+    public DbSet<RegraEliminacao> RegrasEliminacao => Set<RegraEliminacao>();
+
+    /// <summary>
     /// Biblioteca <c>rol_de_regras</c> (Story #772) — regras tipadas e
     /// versionadas que a configuração do Processo Seletivo referencia
     /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congeladas no snapshot de

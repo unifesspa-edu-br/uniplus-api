@@ -21,11 +21,10 @@ using Application.Queries.ProcessosSeletivos;
 /// administrador cria o processo em rascunho e monta a configuração sobre o
 /// agregado-raiz — etapas pontuadas, oferta de atendimento especializado,
 /// distribuição de vagas (Story #773), bônus regional e critérios de
-/// desempate (Story #774), estes últimos por referência ao catálogo de
-/// regras tipadas versionadas (<c>rol_de_regras</c>, Story #772). A
-/// classificação (bloco 15º) entra na fatia seguinte. O <c>Edital</c> não é
-/// criado aqui; é o documento emitido pela publicação (Story #759, fora
-/// deste escopo).
+/// desempate (Story #774) e classificação (Story #775, 15º bloco canônico),
+/// estes por referência ao catálogo de regras tipadas versionadas
+/// (<c>rol_de_regras</c>, Story #772). O <c>Edital</c> não é criado aqui; é o
+/// documento emitido pela publicação (Story #759, fora deste escopo).
 /// </summary>
 [ApiController]
 [Route("api/selecao/processos-seletivos")]
@@ -232,6 +231,43 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Substitui integralmente a configuração de classificação do processo
+    /// (Story #775, modelagem P-B §2.1) — o 15º bloco canônico, que compõe
+    /// por referência a fórmula da nota, a precisão, a lista de eliminação e
+    /// a ordem de alocação. Bônus e desempate não são parâmetros aqui.
+    /// </summary>
+    [HttpPut("{id:guid}/classificacao")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirClassificacao(
+        Guid id,
+        [FromBody] DefinirClassificacaoRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result resultado = await _commandBus.Send(
+            new DefinirClassificacaoCommand(
+                id,
+                request.RegraCalculoCodigo,
+                request.RegraCalculoVersao,
+                request.RegraArredondamentoCodigo,
+                request.RegraArredondamentoVersao,
+                request.CasasArredondamento,
+                request.RegraOrdemAlocacaoCodigo,
+                request.RegraOrdemAlocacaoVersao,
+                request.NOpcoesAlocacao,
+                request.RegrasEliminacao),
+            cancellationToken);
+        if (resultado.IsSuccess)
+            return NoContent();
+        return resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Consulta a conformidade estrutural do processo (CA-07): checklist com
     /// cada item obrigatório marcado ok/pendente, sem alterar o processo.
     /// </summary>
@@ -274,3 +310,18 @@ public sealed record DefinirBonusRegionalRequest(
     decimal? Teto,
     string? MunicipioConvenio,
     string? BaseLegal);
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.DefinirClassificacao"/> —
+/// omite <c>ProcessoSeletivoId</c> (vem da rota).
+/// </summary>
+public sealed record DefinirClassificacaoRequest(
+    string RegraCalculoCodigo,
+    string RegraCalculoVersao,
+    string? RegraArredondamentoCodigo,
+    string? RegraArredondamentoVersao,
+    int? CasasArredondamento,
+    string RegraOrdemAlocacaoCodigo,
+    string RegraOrdemAlocacaoVersao,
+    int NOpcoesAlocacao,
+    IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao);

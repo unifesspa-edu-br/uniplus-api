@@ -34,6 +34,7 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],
         ProjectBonusRegional(processo.BonusRegional),
         [.. processo.CriteriosDesempate.OrderBy(c => c.Ordem).Select(ProjectCriterioDesempate)],
+        ProjectClassificacao(processo),
         processo.CreatedAt);
 
     private static OfertaAtendimentoEspecializadoDto? ProjectOfertaAtendimento(OfertaAtendimentoEspecializado? oferta)
@@ -94,6 +95,39 @@ public static class ObterProcessoSeletivoQueryHandler
             ArgsDesempatePredicadoFato args => new CriterioDesempateDto(
                 criterio.Id, criterio.Ordem, regra, null, null, args.Fato, args.Operador, args.Valor),
             _ => new CriterioDesempateDto(criterio.Id, criterio.Ordem, regra, null, null, null, null, null),
+        };
+    }
+
+    private static ConfiguracaoClassificacaoDto? ProjectClassificacao(ProcessoSeletivo processo)
+    {
+        ConfiguracaoClassificacao? classificacao = processo.Classificacao;
+        if (classificacao is null)
+        {
+            return null;
+        }
+
+        return new ConfiguracaoClassificacaoDto(
+            classificacao.Id,
+            new ReferenciaRegraDto(classificacao.RegraCalculo.Codigo, classificacao.RegraCalculo.Versao, classificacao.RegraCalculo.Hash),
+            classificacao.RegraArredondamento is { } arredondamento
+                ? new ReferenciaRegraDto(arredondamento.Codigo, arredondamento.Versao, arredondamento.Hash)
+                : null,
+            classificacao.CasasArredondamento,
+            new ReferenciaRegraDto(classificacao.RegraOrdemAlocacao.Codigo, classificacao.RegraOrdemAlocacao.Versao, classificacao.RegraOrdemAlocacao.Hash),
+            classificacao.NOpcoesAlocacao,
+            [.. classificacao.RegrasEliminacao.Select(ProjectRegraEliminacao)],
+            processo.ConcorrenciaDuplaAplicavel());
+    }
+
+    private static RegraEliminacaoDto ProjectRegraEliminacao(RegraEliminacao regra)
+    {
+        ReferenciaRegraDto referenciaRegra = new(regra.Regra.Codigo, regra.Regra.Versao, regra.Regra.Hash);
+
+        return regra.Args switch
+        {
+            ArgsElimNotaMinimaEtapa args => new RegraEliminacaoDto(regra.Id, referenciaRegra, args.EtapaRef, args.NotaMinima, null),
+            ArgsElimCorteRedacao args => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, args.Minimo),
+            _ => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, null),
         };
     }
 }

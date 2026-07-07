@@ -9,11 +9,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura das invariantes do agregado-raiz <see cref="ProcessoSeletivo"/>
-/// nas fatias F0 (fundação) e F2 (distribuição de vagas): criação em
-/// rascunho, etapas pontuadas + divisor da média, oferta de atendimento
-/// especializado (ADR-0067) e distribuição de vagas por oferta (Story #773).
-/// Bônus, desempate e classificação entram nas fatias F3–F4 sobre o
-/// rol_de_regras.
+/// nas fatias F0 (fundação), F2 (distribuição de vagas), F3 (bônus regional e
+/// critérios de desempate) e F4 (classificação): criação em rascunho, etapas
+/// pontuadas + divisor da média, oferta de atendimento especializado
+/// (ADR-0067), distribuição de vagas por oferta (Story #773), bônus/desempate
+/// (Story #774) e classificação — 15º bloco canônico (Story #775).
 /// </summary>
 public sealed class ProcessoSeletivoTests
 {
@@ -389,5 +389,158 @@ public sealed class ProcessoSeletivoTests
         ]);
 
         result.IsSuccess.Should().BeTrue();
+    }
+
+    private static ConfiguracaoClassificacao NovaClassificacao(IReadOnlyList<RegraEliminacao>? regrasEliminacao = null) =>
+        ConfiguracaoClassificacao.Criar(
+            ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
+            2,
+            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
+            1,
+            regrasEliminacao ?? []).Value!;
+
+    [Fact(DisplayName = "DefinirClassificacao vincula a configuração à raiz")]
+    public void DefinirClassificacao_Vincula()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        Result result = processo.DefinirClassificacao(NovaClassificacao());
+
+        result.IsSuccess.Should().BeTrue();
+        processo.Classificacao.Should().NotBeNull();
+        processo.Classificacao!.ProcessoSeletivoId.Should().Be(processo.Id);
+    }
+
+    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação existente no processo tem sucesso (INV-B4)")]
+    public void DefinirClassificacao_EtapaRefEliminacaoExistente_Sucesso()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapa]);
+
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
+            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
+
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "DefinirEtapas remover etapa referenciada por eliminação da classificação é recusado (INV-B4 sobrevive)")]
+    public void DefinirEtapas_RemoverEtapaReferenciadaPorClassificacao_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapa]);
+
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
+            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
+        processo.DefinirClassificacao(NovaClassificacao([eliminacao])).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirEtapas(
+            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorClassificacao");
+    }
+
+    [Fact(DisplayName = "DefinirEtapas mantendo a mesma etapa referenciada pela classificação tem sucesso")]
+    public void DefinirEtapas_MesmaEtapaReferenciadaPorClassificacao_Sucesso()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapa]);
+
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
+            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
+        processo.DefinirClassificacao(NovaClassificacao([eliminacao])).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirEtapas([etapa]);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação inexistente no processo é recusado (INV-B4)")]
+    public void DefinirClassificacao_EtapaRefEliminacaoInexistente_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirEtapas([EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
+            new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!;
+
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
+    }
+
+    [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO fora de processo ENEM é recusado")]
+    public void DefinirClassificacao_EliminacaoEnemForaDeProcessoEnem_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
+
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
+            new ArgsElimCorteRedacao(400m)).Value!;
+
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem");
+    }
+
+    [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO em processo PSVR (baseado em ENEM) tem sucesso")]
+    public void DefinirClassificacao_EliminacaoEnemEmProcessoEnem_Sucesso()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSVR 2026", TipoProcesso.PSVR);
+
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
+            new ArgsElimCorteRedacao(400m)).Value!;
+
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é falsa sem distribuição de vagas com cota reservada")]
+    public void ConcorrenciaDuplaAplicavel_SemCotaReservada_Falsa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirDistribuicaoVagas([NovaDistribuicao(Guid.CreateVersion7())]);
+
+        processo.ConcorrenciaDuplaAplicavel().Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é derivada (true) quando há modalidade de cota reservada (INV-B7)")]
+    public void ConcorrenciaDuplaAplicavel_ComCotaReservada_Verdadeira()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal").Value!;
+        ModalidadeSelecionada cotaReservada = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "LB_PPI", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
+            null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, [], null, "Lei 12.711/2012 art. 3º").Value!;
+
+        // Só para exercitar o cenário mínimo de derivação — INV-6 (8 federais+AC)
+        // não precisa estar satisfeita aqui, já que quem valida isso é
+        // ConfiguracaoDistribuicaoVagas.Criar, não este teste (usa regra
+        // institucional para não disparar essa validação).
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 50, pr: 1m,
+            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('f', 64)).Value!,
+            referenciaDemografica: null, [ampla, cotaReservada]).Value!;
+
+        processo.DefinirDistribuicaoVagas([distribuicao]);
+
+        processo.ConcorrenciaDuplaAplicavel().Should().BeTrue();
     }
 }
