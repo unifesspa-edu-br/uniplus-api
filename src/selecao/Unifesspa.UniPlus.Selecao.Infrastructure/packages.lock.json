@@ -2,27 +2,6 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
-      "Apache.Avro": {
-        "type": "Direct",
-        "requested": "[1.12.1, )",
-        "resolved": "1.12.1",
-        "contentHash": "OTn0ShyXdMnbJ/1LLNOjvQhwE6Q8LiNtM9B/k51UJa7viuotKhDEnmLIof87XfjUt2UJZFhjF366+B3cKs3k4g==",
-        "dependencies": {
-          "Newtonsoft.Json": "13.0.1",
-          "System.CodeDom": "8.0.0"
-        }
-      },
-      "Confluent.SchemaRegistry.Serdes.Avro": {
-        "type": "Direct",
-        "requested": "[2.15.0, )",
-        "resolved": "2.15.0",
-        "contentHash": "50C2ENd0o4Wuanoo7NKyX3d+IxzgLecOw8AE2UVTXi//ZQ/Hj+bWl+Io5kuQrnhLclPjX05tpkfsmx2EDFVVVw==",
-        "dependencies": {
-          "Apache.Avro": "1.12.1",
-          "Confluent.Kafka": "2.15.0",
-          "Confluent.SchemaRegistry": "2.15.0"
-        }
-      },
       "Microsoft.EntityFrameworkCore": {
         "type": "Direct",
         "requested": "[10.0.9, )",
@@ -1071,6 +1050,16 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
+      "Apache.Avro": {
+        "type": "CentralTransitive",
+        "requested": "[1.12.1, )",
+        "resolved": "1.12.1",
+        "contentHash": "OTn0ShyXdMnbJ/1LLNOjvQhwE6Q8LiNtM9B/k51UJa7viuotKhDEnmLIof87XfjUt2UJZFhjF366+B3cKs3k4g==",
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.1",
+          "System.CodeDom": "8.0.0"
+        }
+      },
       "Confluent.Kafka": {
         "type": "CentralTransitive",
         "requested": "[2.15.0, )",
@@ -1089,6 +1078,17 @@
           "Confluent.Kafka": "2.15.0",
           "Microsoft.Extensions.Caching.Memory": "8.0.1",
           "Newtonsoft.Json": "13.0.1"
+        }
+      },
+      "Confluent.SchemaRegistry.Serdes.Avro": {
+        "type": "CentralTransitive",
+        "requested": "[2.15.0, )",
+        "resolved": "2.15.0",
+        "contentHash": "50C2ENd0o4Wuanoo7NKyX3d+IxzgLecOw8AE2UVTXi//ZQ/Hj+bWl+Io5kuQrnhLclPjX05tpkfsmx2EDFVVVw==",
+        "dependencies": {
+          "Apache.Avro": "1.12.1",
+          "Confluent.Kafka": "2.15.0",
+          "Confluent.SchemaRegistry": "2.15.0"
         }
       },
       "EFCore.NamingConventions": {
