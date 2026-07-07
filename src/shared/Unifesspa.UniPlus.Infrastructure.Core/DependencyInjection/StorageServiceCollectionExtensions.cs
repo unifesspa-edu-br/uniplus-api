@@ -91,7 +91,8 @@ public static class StorageServiceCollectionExtensions
                 return sp.GetRequiredService<IMinioClient>();
             }
 
-            return BuildClient(opts, opts.PublicEndpoint ?? opts.Endpoint, opts.PublicUseSSL ?? opts.UseSSL);
+            string endpointResolvido = string.IsNullOrWhiteSpace(opts.PublicEndpoint) ? opts.Endpoint : opts.PublicEndpoint;
+            return BuildClient(opts, endpointResolvido, opts.PublicUseSSL ?? opts.UseSSL);
         });
 
         // IHttpClientFactory — usado por MinioStorageService.DownloadLimitadoAsync
