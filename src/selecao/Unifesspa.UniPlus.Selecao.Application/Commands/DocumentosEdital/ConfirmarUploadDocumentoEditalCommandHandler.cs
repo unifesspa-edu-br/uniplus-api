@@ -60,32 +60,29 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
                 $"O documento excede o tamanho máximo permitido de {DocumentoEdital.TamanhoMaximoBytes / (1024 * 1024)} MB."));
         }
 
-        // Lê no máximo TamanhoMaximoBytes+1 — nunca mais que isso, não importa
-        // o quanto o objeto real cresça entre o stat acima e esta leitura.
-        // Sem o limite, um objeto substituído por algo muito maior depois do
-        // stat faria o CopyToAsync bufferizar o arquivo inteiro em memória
+        // AbrirLeituraAsync nunca traz mais que TamanhoMaximoBytes+1 — o
+        // limite é imposto pelo storage via Range request (byte 0 a
+        // limiteBytes-1), não depois de já ter bufferizado o objeto inteiro
+        // em memória. Sem isso, um objeto substituído por algo muito maior
+        // depois do stat acima faria a leitura bufferizar o arquivo inteiro
         // antes de ValidarConteudo rejeitar pelo tamanho.
-        byte[] bufferLimitado = new byte[DocumentoEdital.TamanhoMaximoBytes + 1];
-        int totalLido = 0;
-        Stream stream = await storage.AbrirLeituraAsync(documento.ObjectKey, cancellationToken).ConfigureAwait(false);
+        byte[] conteudo;
+        Stream stream = await storage
+            .AbrirLeituraAsync(documento.ObjectKey, DocumentoEdital.TamanhoMaximoBytes + 1, cancellationToken)
+            .ConfigureAwait(false);
         await using (stream.ConfigureAwait(false))
         {
-            int lidos;
-            while (totalLido < bufferLimitado.Length &&
-                   (lidos = await stream.ReadAsync(bufferLimitado.AsMemory(totalLido), cancellationToken).ConfigureAwait(false)) > 0)
-            {
-                totalLido += lidos;
-            }
+            using MemoryStream buffer = new();
+            await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+            conteudo = buffer.ToArray();
         }
 
-        if (totalLido > DocumentoEdital.TamanhoMaximoBytes)
+        if (conteudo.LongLength > DocumentoEdital.TamanhoMaximoBytes)
         {
             return Result<DocumentoEditalDto>.Failure(new DomainError(
                 "DocumentoEdital.TamanhoExcedido",
                 $"O documento excede o tamanho máximo permitido de {DocumentoEdital.TamanhoMaximoBytes / (1024 * 1024)} MB."));
         }
-
-        byte[] conteudo = bufferLimitado[..totalLido];
 
         Result validacao = DocumentoEdital.ValidarConteudo(conteudo.LongLength, info.ContentType, conteudo);
         if (validacao.IsFailure)

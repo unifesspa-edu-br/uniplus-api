@@ -62,4 +62,29 @@ public sealed class StorageServiceCollectionExtensionsIntegrationTests(MinioCont
 
         collector.ToArray().Should().Equal(payload);
     }
+
+    [Fact]
+    public async Task DownloadLimitado_ObjetoMaiorQueLimite_TruncaNoLimiteSemBaixarOResto()
+    {
+        await using ServiceProvider sp = BuildProvider();
+        using IServiceScope scope = sp.CreateScope();
+        IStorageService storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
+
+        string objectName = $"smoke/limitado-{Guid.NewGuid():N}.bin";
+        byte[] payload = Encoding.UTF8.GetBytes("0123456789ABCDEFGHIJ"); // 20 bytes
+        const long limite = 5;
+
+        using (MemoryStream uploadStream = new(payload))
+        {
+            await storage.UploadAsync(TestBucket, objectName, uploadStream, "application/octet-stream");
+        }
+
+        await using Stream limitado = await storage.DownloadLimitadoAsync(TestBucket, objectName, limite);
+        using MemoryStream collector = new();
+        await limitado.CopyToAsync(collector);
+
+        // O MinIO só transmite os 5 primeiros bytes (Range request) — o
+        // objeto real tem 20, mas nunca chegam a trafegar pela rede/memória.
+        collector.ToArray().Should().Equal(payload[..(int)limite]);
+    }
 }

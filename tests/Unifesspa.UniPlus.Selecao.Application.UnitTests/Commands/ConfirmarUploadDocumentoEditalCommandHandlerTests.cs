@@ -93,7 +93,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoEdital.TamanhoExcedido");
-        await storage.DidNotReceive().AbrirLeituraAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await storage.DidNotReceive().AbrirLeituraAsync(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle recusa conteúdo sem assinatura PDV válida (422 AssinaturaInvalida)")]
@@ -112,7 +112,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(conteudoFalso.Length, "application/pdf"));
         using MemoryStream streamConteudoFalso = new(conteudoFalso);
-        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamConteudoFalso));
 
         Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
@@ -144,7 +144,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(ConteudoPdfValido.Length, "application/pdf"));
         using MemoryStream streamConteudoValido = new(ConteudoPdfValido);
-        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamConteudoValido));
         string hashEsperado = Convert.ToHexStringLower(SHA256.HashData(ConteudoPdfValido));
 
@@ -182,7 +182,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(ConteudoPdfValido.Length, "application/pdf"));
         using MemoryStream streamConteudoValido = new(ConteudoPdfValido);
-        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamConteudoValido));
 
         Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
@@ -214,7 +214,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
             .Returns(new InfoObjetoArmazenado(10, "application/pdf"));
         byte[] conteudoReal = new byte[DocumentoEdital.TamanhoMaximoBytes + 1024];
         using MemoryStream streamReal = new(conteudoReal);
-        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<Stream>(streamReal));
 
         Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(

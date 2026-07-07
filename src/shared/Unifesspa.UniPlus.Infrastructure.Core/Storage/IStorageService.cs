@@ -24,6 +24,16 @@ public interface IStorageService
     /// quando o objeto (ou o bucket) não existe, em vez de propagar exceção de vendor.
     /// </summary>
     Task<ObjetoMetadados?> ObterMetadadosAsync(string bucket, string nomeArquivo, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Baixa no máximo <paramref name="limiteBytes"/> do objeto via GET com Range (byte
+    /// 0 a <paramref name="limiteBytes"/> - 1) — o MinIO nunca transmite mais que isso pela
+    /// rede, então o limite é aplicado no servidor, não depois de já ter bufferizado o
+    /// objeto inteiro em memória. Um objeto maior que o limite devolve exatamente
+    /// <paramref name="limiteBytes"/> bytes (sem indicar o tamanho real); o caller decide o
+    /// que fazer com isso (ex.: tratar como excedido).
+    /// </summary>
+    Task<Stream> DownloadLimitadoAsync(string bucket, string nomeArquivo, long limiteBytes, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Metadados de um objeto armazenado, obtidos via stat/HEAD sem baixar o conteúdo.</summary>

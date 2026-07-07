@@ -22,8 +22,13 @@ public interface IDocumentoEditalStorage
     /// </summary>
     Task<InfoObjetoArmazenado?> ObterInfoAsync(string objectKey, CancellationToken cancellationToken = default);
 
-    /// <summary>Abre o conteúdo do objeto para leitura (hash + validação de assinatura).</summary>
-    Task<Stream> AbrirLeituraAsync(string objectKey, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Abre o conteúdo do objeto para leitura (hash + validação de assinatura),
+    /// nunca lendo mais que <paramref name="limiteBytes"/> — o limite é
+    /// imposto pelo storage (Range request), não depois de já ter
+    /// bufferizado o objeto inteiro em memória.
+    /// </summary>
+    Task<Stream> AbrirLeituraAsync(string objectKey, long limiteBytes, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Grava o conteúdo já validado numa chave que nunca foi (nem será) alvo
