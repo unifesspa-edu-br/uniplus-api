@@ -179,20 +179,23 @@ public static class DefinirClassificacaoCommandHandler
     private static Result<ArgsRegraEliminacao> MontarArgs(RegraEliminacaoInput input) =>
         input.RegraCodigo switch
         {
-            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => input.EtapaRef is { } etapaRef && input.NotaMinima is { } notaMinima
+            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => input.EtapaRef is { } etapaRef && input.NotaMinima is { } notaMinima && input.Minimo is null
                 ? Result<ArgsRegraEliminacao>.Success(new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima))
                 : Result<ArgsRegraEliminacao>.Failure(new DomainError(
                     "RegraEliminacao.EtapaRefENotaMinimaObrigatorios",
-                    $"EtapaRef e NotaMinima são obrigatórios para a regra {RegraEliminacaoCodigo.ElimNotaMinimaEtapa}.")),
+                    $"EtapaRef e NotaMinima são obrigatórios (e Minimo não se aplica) para a regra {RegraEliminacaoCodigo.ElimNotaMinimaEtapa}.")),
 
-            RegraEliminacaoCodigo.ElimCorteRedacao => input.Minimo is { } minimo
+            RegraEliminacaoCodigo.ElimCorteRedacao => input.Minimo is { } minimo && input.EtapaRef is null && input.NotaMinima is null
                 ? Result<ArgsRegraEliminacao>.Success(new ArgsElimCorteRedacao(minimo))
                 : Result<ArgsRegraEliminacao>.Failure(new DomainError(
                     "RegraEliminacao.MinimoObrigatorio",
-                    $"Minimo é obrigatório para a regra {RegraEliminacaoCodigo.ElimCorteRedacao}.")),
+                    $"Minimo é obrigatório (e EtapaRef/NotaMinima não se aplicam) para a regra {RegraEliminacaoCodigo.ElimCorteRedacao}.")),
 
-            RegraEliminacaoCodigo.ElimZeroEmArea =>
-                Result<ArgsRegraEliminacao>.Success(new ArgsElimZeroEmArea()),
+            RegraEliminacaoCodigo.ElimZeroEmArea => input.EtapaRef is null && input.NotaMinima is null && input.Minimo is null
+                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimZeroEmArea())
+                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
+                    "RegraEliminacao.ArgsIncompativeisComRegra",
+                    $"A regra {RegraEliminacaoCodigo.ElimZeroEmArea} não aceita args (EtapaRef/NotaMinima/Minimo).")),
 
             _ => Result<ArgsRegraEliminacao>.Failure(new DomainError(
                 "RegraEliminacao.RegraTipoInvalido",

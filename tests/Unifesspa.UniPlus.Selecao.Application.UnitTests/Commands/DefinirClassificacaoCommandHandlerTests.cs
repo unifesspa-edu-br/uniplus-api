@@ -156,6 +156,29 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         result.Error!.Code.Should().Be("RegraEliminacao.EtapaRefENotaMinimaObrigatorios");
     }
 
+    [Fact(DisplayName = "Handle com ELIM-ZERO-EM-AREA e Minimo estranho ao args recusa (payload contraditório)")]
+    public async Task Handle_ZeroEmAreaComArgsEstranhos_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        MockRegrasBasicas(mocks);
+        mocks.RegraCatalogoReader.ObterAsync(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, TipoRegra.RegraEliminacao));
+
+        DefinirClassificacaoCommand command = new(
+            processo.Id,
+            RegraCalculoCodigo.FormulaMediaPonderada, "v1",
+            RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
+            RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", 1,
+            [new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", null, null, 400m)]);
+
+        Result result = await DefinirClassificacaoCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("RegraEliminacao.ArgsIncompativeisComRegra");
+    }
+
     [Fact(DisplayName = "Handle com regra de cálculo inexistente recusa")]
     public async Task Handle_RegraCalculoNaoEncontrada_Recusa()
     {
