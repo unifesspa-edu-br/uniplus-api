@@ -1859,6 +1859,92 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/classificacao": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirClassificacaoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirClassificacaoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirClassificacaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/conformidade": {
       "get": {
         "tags": [
@@ -2093,6 +2179,67 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ConfiguracaoClassificacaoDto": {
+        "required": [
+          "id",
+          "regraCalculo",
+          "regraArredondamento",
+          "casasArredondamento",
+          "regraOrdemAlocacao",
+          "nOpcoesAlocacao",
+          "regrasEliminacao",
+          "concorrenciaDuplaAplicavel"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regraCalculo": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "regraArredondamento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaRegraDto"
+              }
+            ]
+          },
+          "casasArredondamento": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "regraOrdemAlocacao": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "nOpcoesAlocacao": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "regrasEliminacao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraEliminacaoDto"
+            }
+          },
+          "concorrenciaDuplaAplicavel": {
+            "type": "boolean"
           }
         }
       },
@@ -2551,6 +2698,69 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DefinirClassificacaoRequest": {
+        "required": [
+          "regraCalculoCodigo",
+          "regraCalculoVersao",
+          "regraArredondamentoCodigo",
+          "regraArredondamentoVersao",
+          "casasArredondamento",
+          "regraOrdemAlocacaoCodigo",
+          "regraOrdemAlocacaoVersao",
+          "nOpcoesAlocacao",
+          "regrasEliminacao"
+        ],
+        "type": "object",
+        "properties": {
+          "regraCalculoCodigo": {
+            "type": "string"
+          },
+          "regraCalculoVersao": {
+            "type": "string"
+          },
+          "regraArredondamentoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraArredondamentoVersao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "casasArredondamento": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "regraOrdemAlocacaoCodigo": {
+            "type": "string"
+          },
+          "regraOrdemAlocacaoVersao": {
+            "type": "string"
+          },
+          "nOpcoesAlocacao": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "regrasEliminacao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraEliminacaoInput"
+            }
           }
         }
       },
@@ -3261,6 +3471,7 @@
           "distribuicaoVagas",
           "bonusRegional",
           "criteriosDesempate",
+          "classificacao",
           "criadoEm"
         ],
         "type": "object",
@@ -3315,6 +3526,16 @@
             "items": {
               "$ref": "#/components/schemas/CriterioDesempateDto"
             }
+          },
+          "classificacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConfiguracaoClassificacaoDto"
+              }
+            ]
           },
           "criadoEm": {
             "type": "string",
@@ -3482,6 +3703,93 @@
               "string"
             ],
             "format": "date"
+          }
+        }
+      },
+      "RegraEliminacaoDto": {
+        "required": [
+          "id",
+          "regra",
+          "etapaRef",
+          "notaMinima",
+          "minimo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regra": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "etapaRef": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "notaMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "RegraEliminacaoInput": {
+        "required": [
+          "regraCodigo",
+          "regraVersao",
+          "etapaRef",
+          "notaMinima",
+          "minimo"
+        ],
+        "type": "object",
+        "properties": {
+          "regraCodigo": {
+            "type": "string"
+          },
+          "regraVersao": {
+            "type": "string"
+          },
+          "etapaRef": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "notaMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "minimo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },
