@@ -6,6 +6,8 @@ using System.Security.Cryptography;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -261,5 +263,32 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
 
         primeira.Should().BeTrue();
         segunda.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "TentarReivindicarConfirmacaoAsync participa da transação ambiente: reverte em rollback")]
+    public async Task TentarReivindicarConfirmacaoAsync_RevertNoRollbackDaTransacaoAmbiente()
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        context.DocumentosEdital.Add(documento);
+        await context.SaveChangesAsync();
+
+        // Simula o mesmo cenário do handler sob Wolverine (ADR-0004,
+        // AutoApplyTransactions): a reivindicação roda dentro da transação
+        // ambiente do comando. Se um passo posterior falhar (ex.: o storage
+        // indisponível), o rollback dessa transação desfaz a reivindicação
+        // junto — o documento volta a Pendente e a confirmação é retentável.
+        await using (IDbContextTransaction transacao = await context.Database.BeginTransactionAsync())
+        {
+            bool reivindicou = await documentoRepository.TentarReivindicarConfirmacaoAsync(documento.Id, CancellationToken.None);
+            reivindicou.Should().BeTrue();
+            await transacao.RollbackAsync();
+        }
+
+        await using SelecaoDbContext contextoIndependente = _dbFixture.CreateDbContext();
+        DocumentoEdital documentoAposRollback = await contextoIndependente.DocumentosEdital
+            .FirstAsync(d => d.Id == documento.Id);
+        documentoAposRollback.Status.Should().Be(StatusDocumentoEdital.Pendente);
     }
 }
