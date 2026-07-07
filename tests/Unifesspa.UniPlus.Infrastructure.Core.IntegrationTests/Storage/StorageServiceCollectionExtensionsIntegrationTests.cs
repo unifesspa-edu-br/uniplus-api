@@ -18,7 +18,7 @@ public sealed class StorageServiceCollectionExtensionsIntegrationTests(MinioCont
 {
     private const string TestBucket = "uniplus-storage-tests";
 
-    private ServiceProvider BuildProvider(string? publicEndpoint = null)
+    private ServiceProvider BuildProvider(string? publicEndpoint = null, bool? publicUseSsl = null)
     {
         Dictionary<string, string?> config = new()
         {
@@ -29,6 +29,11 @@ public sealed class StorageServiceCollectionExtensionsIntegrationTests(MinioCont
         if (publicEndpoint is not null)
         {
             config["Storage:PublicEndpoint"] = publicEndpoint;
+        }
+
+        if (publicUseSsl is not null)
+        {
+            config["Storage:PublicUseSSL"] = publicUseSsl.Value.ToString();
         }
 
         ServiceCollection services = new();
@@ -131,5 +136,22 @@ public sealed class StorageServiceCollectionExtensionsIntegrationTests(MinioCont
 
         url.Should().Contain(publicEndpoint);
         url.Should().NotContain(minio.Endpoint);
+    }
+
+    [Fact]
+    public async Task GerarUrlUploadTemporariaAsync_ComMesmoEndpointMasSslPublicoDiferente_UsaOEsquemaPublico()
+    {
+        // Mesmo host interno/público (ex.: exposto por fora via ingress no
+        // mesmo hostname), mas esquemas diferentes (HTTP dentro do cluster,
+        // HTTPS por fora) — não pode reusar o cliente interno cegamente só
+        // porque o endpoint bate.
+        await using ServiceProvider sp = BuildProvider(publicEndpoint: minio.Endpoint, publicUseSsl: true);
+        using IServiceScope scope = sp.CreateScope();
+        IStorageService storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
+
+        string url = await storage.GerarUrlUploadTemporariaAsync(
+            TestBucket, $"smoke/{Guid.NewGuid():N}.pdf", TimeSpan.FromMinutes(5), "application/pdf");
+
+        url.Should().StartWith("https://");
     }
 }

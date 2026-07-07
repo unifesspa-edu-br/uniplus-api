@@ -77,18 +77,21 @@ public static class StorageServiceCollectionExtensions
         // devolvidas a clientes externos (browser fora da rede Docker/cluster).
         // A assinatura SigV4 inclui o header Host — reescrever a URL depois de
         // assinada com o endpoint interno invalidaria a assinatura, então este
-        // cliente assina do zero com PublicEndpoint. Sem PublicEndpoint
-        // configurado, reusa a MESMA instância do cliente interno (nenhum
-        // custo extra; comportamento idêntico ao anterior).
+        // cliente assina do zero com PublicEndpoint/PublicUseSSL. Reusa a
+        // MESMA instância do cliente interno só quando host E esquema batem
+        // (endpoint igual mas esquema diferente é um caso real: HTTP dentro
+        // do cluster, HTTPS no mesmo hostname exposto por fora via ingress).
         services.AddKeyedSingleton<IMinioClient>(StoragePublicClientKey, (sp, _) =>
         {
             StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
-            if (string.IsNullOrWhiteSpace(opts.PublicEndpoint) || opts.PublicEndpoint == opts.Endpoint)
+            bool endpointIgual = string.IsNullOrWhiteSpace(opts.PublicEndpoint) || opts.PublicEndpoint == opts.Endpoint;
+            bool sslIgual = opts.PublicUseSSL is null || opts.PublicUseSSL == opts.UseSSL;
+            if (endpointIgual && sslIgual)
             {
                 return sp.GetRequiredService<IMinioClient>();
             }
 
-            return BuildClient(opts, opts.PublicEndpoint, opts.PublicUseSSL ?? opts.UseSSL);
+            return BuildClient(opts, opts.PublicEndpoint ?? opts.Endpoint, opts.PublicUseSSL ?? opts.UseSSL);
         });
 
         // IHttpClientFactory — usado por MinioStorageService.DownloadLimitadoAsync
