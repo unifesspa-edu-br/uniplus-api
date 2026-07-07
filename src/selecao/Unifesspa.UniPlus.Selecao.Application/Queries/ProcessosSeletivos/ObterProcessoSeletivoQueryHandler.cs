@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using DTOs;
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 public static class ObterProcessoSeletivoQueryHandler
 {
@@ -31,6 +32,8 @@ public static class ObterProcessoSeletivoQueryHandler
             .Select(e => new EtapaProcessoDto(e.Id, e.Nome, e.Carater.ToString(), e.Peso, e.NotaMinima, e.Ordem))],
         ProjectOfertaAtendimento(processo.OfertaAtendimento),
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],
+        ProjectBonusRegional(processo.BonusRegional),
+        [.. processo.CriteriosDesempate.OrderBy(c => c.Ordem).Select(ProjectCriterioDesempate)],
         processo.CreatedAt);
 
     private static OfertaAtendimentoEspecializadoDto? ProjectOfertaAtendimento(OfertaAtendimentoEspecializado? oferta)
@@ -61,4 +64,36 @@ public static class ObterProcessoSeletivoQueryHandler
             m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, m.NaturezaLegal.ToString(), m.ComposicaoVagas.ToString(),
             m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToString(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
             m.CriteriosCumulativos, m.AcaoQuandoIndeferido, m.BaseLegal))]);
+
+    private static ConfiguracaoBonusRegionalDto? ProjectBonusRegional(ConfiguracaoBonusRegional? bonus)
+    {
+        if (bonus is null)
+        {
+            return null;
+        }
+
+        return new ConfiguracaoBonusRegionalDto(
+            bonus.Id,
+            new ReferenciaRegraDto(bonus.Regra.Codigo, bonus.Regra.Versao, bonus.Regra.Hash),
+            bonus.Fator,
+            bonus.Teto,
+            bonus.MunicipioConvenio,
+            bonus.BaseLegal);
+    }
+
+    private static CriterioDesempateDto ProjectCriterioDesempate(CriterioDesempate criterio)
+    {
+        ReferenciaRegraDto regra = new(criterio.Regra.Codigo, criterio.Regra.Versao, criterio.Regra.Hash);
+
+        return criterio.Args switch
+        {
+            ArgsDesempateMaiorNotaEtapa args => new CriterioDesempateDto(
+                criterio.Id, criterio.Ordem, regra, args.EtapaRef, null, null, null, null),
+            ArgsDesempateIdoso args => new CriterioDesempateDto(
+                criterio.Id, criterio.Ordem, regra, null, args.IdadeMinima, null, null, null),
+            ArgsDesempatePredicadoFato args => new CriterioDesempateDto(
+                criterio.Id, criterio.Ordem, regra, null, null, args.Fato, args.Operador, args.Valor),
+            _ => new CriterioDesempateDto(criterio.Id, criterio.Ordem, regra, null, null, null, null, null),
+        };
+    }
 }

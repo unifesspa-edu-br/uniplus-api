@@ -257,4 +257,137 @@ public sealed class ProcessoSeletivoTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OfertaCursoDuplicada");
     }
+
+    private static ReferenciaRegra RegraDesempate(string codigo) =>
+        ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
+
+    [Fact(DisplayName = "DefinirBonusRegional define e depois remove (toggle por presença, RN05)")]
+    public void DefinirBonusRegional_DefineERemove()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
+            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
+            1.20m, null, "Marabá", "RN05").Value!;
+
+        processo.DefinirBonusRegional(bonus).IsSuccess.Should().BeTrue();
+        processo.BonusRegional.Should().NotBeNull();
+        processo.BonusRegional!.ProcessoSeletivoId.Should().Be(processo.Id);
+
+        processo.DefinirBonusRegional(null).IsSuccess.Should().BeTrue();
+        processo.BonusRegional.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "DefinirCriteriosDesempate vincula os critérios em ordem à raiz")]
+    public void DefinirCriteriosDesempate_Vincula()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        CriterioDesempate idoso = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(60)).Value!;
+        CriterioDesempate maiorIdade = CriterioDesempate.Criar(2, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
+
+        Result result = processo.DefinirCriteriosDesempate([idoso, maiorIdade]);
+
+        result.IsSuccess.Should().BeTrue();
+        processo.CriteriosDesempate.Should().HaveCount(2);
+        processo.CriteriosDesempate.Should().OnlyContain(c => c.ProcessoSeletivoId == processo.Id);
+    }
+
+    [Fact(DisplayName = "DefinirCriteriosDesempate vazia remove todos os critérios (dimensão opcional)")]
+    public void DefinirCriteriosDesempate_Vazia_RemoveTodos()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        CriterioDesempate maiorIdade = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
+        processo.DefinirCriteriosDesempate([maiorIdade]);
+
+        Result result = processo.DefinirCriteriosDesempate([]);
+
+        result.IsSuccess.Should().BeTrue();
+        processo.CriteriosDesempate.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "DefinirCriteriosDesempate com ordem duplicada é recusado")]
+    public void DefinirCriteriosDesempate_OrdemDuplicada_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        CriterioDesempate a = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
+        CriterioDesempate b = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(60)).Value!;
+
+        Result result = processo.DefinirCriteriosDesempate([a, b]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemDesempateDuplicada");
+    }
+
+    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref existente no processo tem sucesso (INV-B6)")]
+    public void DefinirCriteriosDesempate_EtapaRefExistente_Sucesso()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapa]);
+
+        CriterioDesempate criterio = CriterioDesempate.Criar(
+            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!;
+
+        Result result = processo.DefinirCriteriosDesempate([criterio]);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref inexistente no processo é recusado (INV-B6)")]
+    public void DefinirCriteriosDesempate_EtapaRefInexistente_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+
+        CriterioDesempate criterio = CriterioDesempate.Criar(
+            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
+
+        Result result = processo.DefinirCriteriosDesempate([criterio]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
+    }
+
+    [Fact(DisplayName = "DefinirEtapas recusa remover uma etapa referenciada por critério de desempate (achado Codex)")]
+    public void DefinirEtapas_RemoverEtapaReferenciadaPorDesempate_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([redacao]);
+
+        CriterioDesempate criterio = CriterioDesempate.Criar(
+            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(redacao.Id)).Value!;
+        processo.DefinirCriteriosDesempate([criterio]);
+
+        // Troca as etapas por uma completamente nova — a antiga (referenciada
+        // pelo desempate) desaparece do conjunto.
+        Result result = processo.DefinirEtapas(
+            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorDesempate");
+        // A troca é rejeitada por inteiro — a etapa original permanece.
+        processo.Etapas.Should().ContainSingle(e => e.Id == redacao.Id);
+    }
+
+    [Fact(DisplayName = "DefinirEtapas permite manter a mesma etapa referenciada por desempate")]
+    public void DefinirEtapas_MesmaEtapaReferenciadaPorDesempate_Sucesso()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([redacao]);
+
+        CriterioDesempate criterio = CriterioDesempate.Criar(
+            1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(redacao.Id)).Value!;
+        processo.DefinirCriteriosDesempate([criterio]);
+
+        // Redefine as etapas incluindo a MESMA instância (mesmo Id) — não deve
+        // ser bloqueado, já que o desempate continua executável.
+        Result result = processo.DefinirEtapas(
+        [
+            redacao,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 2m, ordem: 2),
+        ]);
+
+        result.IsSuccess.Should().BeTrue();
+    }
 }

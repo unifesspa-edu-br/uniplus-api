@@ -19,10 +19,11 @@ using Application.Queries.ProcessosSeletivos;
 /// <summary>
 /// Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015): o
 /// administrador cria o processo em rascunho e monta a configuração sobre o
-/// agregado-raiz — etapas pontuadas, oferta de atendimento especializado e
-/// distribuição de vagas (Story #773). Bônus, desempate e classificação
-/// entram nas fatias seguintes, sobre o catálogo de regras tipadas
-/// versionadas (<c>rol_de_regras</c>, Story #772). O <c>Edital</c> não é
+/// agregado-raiz — etapas pontuadas, oferta de atendimento especializado,
+/// distribuição de vagas (Story #773), bônus regional e critérios de
+/// desempate (Story #774), estes últimos por referência ao catálogo de
+/// regras tipadas versionadas (<c>rol_de_regras</c>, Story #772). A
+/// classificação (bloco 15º) entra na fatia seguinte. O <c>Edital</c> não é
 /// criado aqui; é o documento emitido pela publicação (Story #759, fora
 /// deste escopo).
 /// </summary>
@@ -183,6 +184,54 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Substitui integralmente os critérios de desempate do processo (Story
+    /// #774, modelagem P-B §2.6). Dimensão opcional (0..*) — lista vazia
+    /// remove todos os critérios.
+    /// </summary>
+    [HttpPut("{id:guid}/criterios-desempate")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirCriteriosDesempate(
+        Guid id,
+        [FromBody] IReadOnlyList<CriterioDesempateInput> criterios,
+        CancellationToken cancellationToken)
+    {
+        Result resultado = await _commandBus.Send(new DefinirCriteriosDesempateCommand(id, criterios), cancellationToken);
+        if (resultado.IsSuccess)
+            return NoContent();
+        return resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Define (ou remove) o bônus regional do processo (RN05, Story #774).
+    /// <c>RegraCodigo</c> nulo remove o bônus — a ausência já é o toggle "sem
+    /// bônus" (INV-B5).
+    /// </summary>
+    [HttpPut("{id:guid}/bonus-regional")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirBonusRegional(
+        Guid id,
+        [FromBody] DefinirBonusRegionalRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result resultado = await _commandBus.Send(
+            new DefinirBonusRegionalCommand(id, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.MunicipioConvenio, request.BaseLegal),
+            cancellationToken);
+        if (resultado.IsSuccess)
+            return NoContent();
+        return resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Consulta a conformidade estrutural do processo (CA-07): checklist com
     /// cada item obrigatório marcado ok/pendente, sem alterar o processo.
     /// </summary>
@@ -213,3 +262,15 @@ public sealed record DefinirOfertaAtendimentoRequest(
     IReadOnlyList<Guid> CondicaoIds,
     IReadOnlyList<Guid> RecursoIds,
     IReadOnlyList<Guid> TipoDeficienciaIds);
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.DefinirBonusRegional"/> —
+/// omite <c>ProcessoSeletivoId</c> (vem da rota).
+/// </summary>
+public sealed record DefinirBonusRegionalRequest(
+    string? RegraCodigo,
+    string? RegraVersao,
+    decimal? Fator,
+    decimal? Teto,
+    string? MunicipioConvenio,
+    string? BaseLegal);

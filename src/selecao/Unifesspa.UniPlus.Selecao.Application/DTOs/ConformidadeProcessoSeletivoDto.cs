@@ -8,14 +8,13 @@ public sealed record ItemConformidadeDto(string Item, bool Ok);
 
 /// <summary>
 /// Checklist de conformidade estrutural do <c>ProcessoSeletivo</c> (CA-07):
-/// cada dimensão estruturalmente obrigatória marcada ok/pendente, sem alterar
-/// o processo. Nesta fatia (fundação) o checklist cobre as dimensões já
-/// modeladas no agregado: Etapas (1..*) e Oferta de atendimento
-/// especializado (1). As dimensões que dependem do catálogo de regras
-/// tipadas versionadas (distribuição de vagas, bônus, critérios de desempate
-/// e classificação) passam a integrar o checklist nas fatias seguintes,
-/// quando existirem no agregado — o conjunto retornado reflete apenas as
-/// dimensões disponíveis nesta versão.
+/// cada dimensão estruturalmente OBRIGATÓRIA marcada ok/pendente, sem alterar
+/// o processo. Cobre Etapas (1..*), Oferta de atendimento especializado (1) e
+/// Distribuição de vagas (1..*). Bônus regional (0..1) e critérios de
+/// desempate (0..*) são deliberadamente opcionais na modelagem (P-B) e NÃO
+/// entram neste checklist — a ausência de bônus/desempate é um estado válido
+/// (RN05: ausência de bônus = sem bônus), não uma pendência. A classificação
+/// (F4) passa a integrar o checklist quando existir no agregado.
 /// </summary>
 public sealed record ConformidadeProcessoSeletivoDto(
     Guid ProcessoSeletivoId,

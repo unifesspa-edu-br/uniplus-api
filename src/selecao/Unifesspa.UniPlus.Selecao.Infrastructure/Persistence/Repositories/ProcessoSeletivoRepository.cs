@@ -58,6 +58,8 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
+            .Include(p => p.BonusRegional)
+            .Include(p => p.CriteriosDesempate)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             .ConfigureAwait(false);
     }
