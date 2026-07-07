@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosEdital;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 
@@ -38,6 +39,11 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     private static readonly byte[] ConteudoPdfValido = [.. "%PDF-1.7 conteúdo de teste — Uni+ #784"u8];
 
     private readonly ProcessoSeletivoDbFixture _dbFixture;
+
+    [SuppressMessage(
+        "Performance",
+        "CA1859:Use concrete types when possible for improved performance",
+        Justification = "Intencional: o teste exercita o port da Application (IDocumentoEditalStorage), não o tipo concreto de Infrastructure — é o mesmo contrato que os handlers reais consomem.")]
     private readonly IDocumentoEditalStorage _storage;
 
     public DocumentoEditalUploadIntegrationTests(ProcessoSeletivoDbFixture dbFixture, MinioContainerFixture minio)
@@ -98,6 +104,47 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         confirmarResultado.Value!.Status.Should().Be("Confirmado");
         confirmarResultado.Value.TamanhoBytes.Should().Be(ConteudoPdfValido.Length);
         confirmarResultado.Value.HashSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(ConteudoPdfValido)));
+    }
+
+    [Fact(DisplayName = "Sobrescrever a object key original após confirmação não afeta o conteúdo selado (P1)")]
+    public async Task Confirmar_ObjectKeyOriginalSobrescritaDepois_ConteudoSeladoPermaneceIntacto()
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoEditalRepository documentoRepository = new(context);
+        ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
+
+        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
+            new IniciarUploadDocumentoEditalCommand(processo.Id),
+            processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+
+        using HttpClient http = new();
+        using ByteArrayContent conteudoOriginal = new(ConteudoPdfValido);
+        conteudoOriginal.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        HttpResponseMessage putOriginal = await http.PutAsync(iniciarResultado.Value!.UrlUpload, conteudoOriginal);
+        putOriginal.EnsureSuccessStatusCode();
+
+        Result<DocumentoEditalDto> confirmarResultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+            documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+        confirmarResultado.IsSuccess.Should().BeTrue();
+
+        DocumentoEdital documentoConfirmado = (await documentoRepository.ObterPorIdAsync(iniciarResultado.Value.DocumentoEditalId, CancellationToken.None))!;
+
+        // A URL de upload original ainda vale (TTL não expirou) — um titular
+        // mal-intencionado ou um retry duplicado do cliente sobrescreve a
+        // ObjectKey de staging depois da confirmação.
+        byte[] conteudoTrocado = [.. "%PDF-1.7 conteúdo trocado após a confirmação"u8];
+        using ByteArrayContent conteudoSobrescrita = new(conteudoTrocado);
+        conteudoSobrescrita.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        HttpResponseMessage putSobrescrita = await http.PutAsync(iniciarResultado.Value.UrlUpload, conteudoSobrescrita);
+        putSobrescrita.EnsureSuccessStatusCode();
+
+        await using Stream streamSelado = await _storage.AbrirLeituraAsync(documentoConfirmado.ObjectKeyConfirmado!, CancellationToken.None);
+        using MemoryStream buffer = new();
+        await streamSelado.CopyToAsync(buffer, CancellationToken.None);
+
+        buffer.ToArray().Should().Equal(ConteudoPdfValido);
+        Convert.ToHexStringLower(SHA256.HashData(buffer.ToArray())).Should().Be(confirmarResultado.Value!.HashSha256);
     }
 
     [Fact(DisplayName = "Confirmar sem upload prévio recusa (422 ObjetoNaoEncontrado)")]

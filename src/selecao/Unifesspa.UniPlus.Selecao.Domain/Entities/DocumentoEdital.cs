@@ -33,6 +33,18 @@ public sealed class DocumentoEdital : EntityBase
     public string? HashSha256 { get; private set; }
     public DateTimeOffset? ConfirmadoEm { get; private set; }
 
+    /// <summary>
+    /// Object key selado, gravado apenas na confirmação — <see langword="null"/>
+    /// enquanto pendente. Nunca é alvo de nenhuma URL pre-assinada de PUT
+    /// (essas só apontam para <see cref="ObjectKey"/>): a cópia do conteúdo
+    /// já validado para esta chave, feita pelo handler no mesmo passo em que
+    /// chama <see cref="Confirmar"/>, é o que torna o documento confirmado
+    /// realmente imutável — sem isso, o titular da URL de <see cref="ObjectKey"/>
+    /// poderia sobrescrever o conteúdo até o TTL expirar, mesmo depois do
+    /// registro já marcado como confirmado.
+    /// </summary>
+    public string? ObjectKeyConfirmado { get; private set; }
+
     private DocumentoEdital() { }
 
     /// <summary>
@@ -65,10 +77,13 @@ public sealed class DocumentoEdital : EntityBase
     }
 
     /// <summary>
-    /// Finaliza o documento como confirmado e imutável (passo 3 do fluxo).
-    /// Só é permitido a partir de <see cref="StatusDocumentoEdital.Pendente"/>
-    /// — a validação do conteúdo (<see cref="ValidarConteudo"/>) já deve ter
-    /// passado antes desta chamada.
+    /// Finaliza o documento como confirmado e imutável (passo 3 do fluxo) e
+    /// determina a <see cref="ObjectKeyConfirmado"/> selada. Só é permitido a
+    /// partir de <see cref="StatusDocumentoEdital.Pendente"/> — a validação
+    /// do conteúdo (<see cref="ValidarConteudo"/>) já deve ter passado antes
+    /// desta chamada. O caller (handler) ainda precisa copiar o conteúdo já
+    /// validado para <see cref="ObjectKeyConfirmado"/> no storage — este
+    /// método só decide o estado e o nome da chave selada, sem I/O.
     /// </summary>
     public Result Confirmar(long tamanhoBytes, string hashSha256, TimeProvider clock)
     {
@@ -86,6 +101,7 @@ public sealed class DocumentoEdital : EntityBase
         HashSha256 = hashSha256;
         Status = StatusDocumentoEdital.Confirmado;
         ConfirmadoEm = clock.GetUtcNow();
+        ObjectKeyConfirmado = $"selecao/documentos-edital/{ProcessoSeletivoId:D}/{Id:D}/confirmado.pdf";
         return Result.Success();
     }
 
