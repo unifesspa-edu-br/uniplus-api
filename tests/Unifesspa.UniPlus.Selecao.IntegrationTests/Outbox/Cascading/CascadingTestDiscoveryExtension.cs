@@ -6,12 +6,10 @@ using Wolverine;
 
 /// <summary>
 /// <see cref="IWolverineExtension"/> que adiciona este assembly de testes à
-/// discovery do Wolverine. Sem isto, os handlers convencionais
-/// (<see cref="PublicarEditalCascadingHandler"/>,
-/// <see cref="FalharAposSaveChangesCascadingHandler"/>,
-/// <see cref="EditalPublicadoSubscriberHandler"/>) não são registrados —
-/// o Program.cs produtivo só inclui o entry assembly do API e seus
-/// referenciados, e o assembly de testes não está nessa cadeia.
+/// discovery do Wolverine. Sem isto, os handlers convencionais declarados
+/// neste diretório (que demonstram o cascading do ADR-0005) não são
+/// registrados — o Program.cs produtivo só inclui o entry assembly do API e
+/// seus referenciados, e o assembly de testes não está nessa cadeia.
 ///
 /// Aplicada via <c>[assembly: WolverineModule&lt;T&gt;]</c> em
 /// <see cref="OutboxCascadingAssemblyInfo"/>.

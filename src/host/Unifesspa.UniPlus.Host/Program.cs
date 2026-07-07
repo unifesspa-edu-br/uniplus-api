@@ -16,8 +16,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
 using Unifesspa.UniPlus.Selecao.API;
-using Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 // Composition root do monólito modular. Compõe os 4 módulos internos
 // (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) num processo único,
@@ -83,12 +82,6 @@ builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringN
 // migrations on startup (registradas acima nos Add*Module) precedem o runtime
 // Wolverine (invariante #419). ---
 
-// Mensageria do Selecao (Kafka/Schema Registry — ADR-0051 — + routing): o módulo
-// é dono do seu wiring (SelecaoMessagingRegistration); o host registra o Schema
-// Registry e compõe o configurador de routing na instância única de Wolverine.
-Action<Wolverine.WolverineOptions> configurarSelecaoRouting =
-    builder.Services.AddSelecaoMessaging(builder.Configuration, builder.Environment);
-
 builder.Host.UseWolverineOutboxCascading(
     builder.Configuration,
     connectionStringName: "UniPlusDb",
@@ -96,8 +89,7 @@ builder.Host.UseWolverineOutboxCascading(
     {
         opts.Discovery.IncludeAssembly(typeof(ConfiguracaoApplicationServiceRegistration).Assembly);
         opts.Discovery.IncludeAssembly(typeof(OrganizacaoInstitucionalApplicationServiceRegistration).Assembly);
-        opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
-        opts.Discovery.IncludeAssembly(typeof(EditalPublicadoToKafkaCascadeHandler).Assembly);
+        opts.Discovery.IncludeAssembly(typeof(CriarProcessoSeletivoCommand).Assembly);
 
         // Opt-ins de codegen (ADR-0098): sob ServiceLocationPolicy.NotAllowed, cada
         // módulo declara as UoW que usam service location intencionalmente (forwarding
@@ -107,10 +99,6 @@ builder.Host.UseWolverineOutboxCascading(
         SelecaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
-
-        // Routing do Selecao (PG queue domain-events + Kafka edital_events) —
-        // religa a mensageria externa antes deferida no monólito.
-        configurarSelecaoRouting(opts);
     });
 builder.Services.AddWolverineMessaging();
 
