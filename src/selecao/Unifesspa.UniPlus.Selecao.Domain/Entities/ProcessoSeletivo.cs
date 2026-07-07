@@ -133,17 +133,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // para critérios de desempate).
         if (Classificacao is not null)
         {
-            IEnumerable<ArgsElimNotaMinimaEtapa> eliminacoesPorEtapa = Classificacao.RegrasEliminacao
-                .Where(r => r.Args is ArgsElimNotaMinimaEtapa)
-                .Select(r => (ArgsElimNotaMinimaEtapa)r.Args);
-            foreach (ArgsElimNotaMinimaEtapa args in eliminacoesPorEtapa)
+            ArgsElimNotaMinimaEtapa? eliminacaoOrfa = Classificacao.RegrasEliminacao
+                .Select(r => r.Args)
+                .OfType<ArgsElimNotaMinimaEtapa>()
+                .FirstOrDefault(args => !novosIdsEtapas.Contains(args.EtapaRef));
+            if (eliminacaoOrfa is not null)
             {
-                if (!novosIdsEtapas.Contains(args.EtapaRef))
-                {
-                    return Result.Failure(new DomainError(
-                        "ProcessoSeletivo.EtapaReferenciadaPorClassificacao",
-                        $"A etapa {args.EtapaRef} é referenciada por uma regra de eliminação da classificação e não pode ser removida sem antes reconfigurar a classificação."));
-                }
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EtapaReferenciadaPorClassificacao",
+                    $"A etapa {eliminacaoOrfa.EtapaRef} é referenciada por uma regra de eliminação da classificação e não pode ser removida sem antes reconfigurar a classificação."));
             }
         }
 
