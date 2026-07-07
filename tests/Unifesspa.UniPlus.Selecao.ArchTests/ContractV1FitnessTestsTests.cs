@@ -112,10 +112,10 @@ public sealed partial class ContractV1FitnessTestsTests
         ReflectionAssembly[] assemblies =
         [
             typeof(DomainError).Assembly,
-            typeof(Domain.Entities.Edital).Assembly,
-            typeof(Application.Commands.Editais.CriarEditalCommand).Assembly,
+            typeof(Domain.Entities.ProcessoSeletivo).Assembly,
+            typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
             typeof(Infrastructure.Persistence.SelecaoDbContext).Assembly,
-            typeof(API.Controllers.EditalController).Assembly,
+            typeof(API.Controllers.ProcessoSeletivoController).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(assemblies).Build();
@@ -161,7 +161,7 @@ public sealed partial class ContractV1FitnessTestsTests
         // estes "touches" a JIT pode não materializar os assemblies no AppDomain
         // antes do scan.
         _ = typeof(IDomainErrorRegistration).Assembly; // Infrastructure.Core: kernel + pagination + idempotency
-        _ = typeof(API.Controllers.EditalController).Assembly; // Selecao.API: SelecaoDomainErrorRegistration
+        _ = typeof(API.Controllers.ProcessoSeletivoController).Assembly; // Selecao.API: SelecaoDomainErrorRegistration
 
         // Whitelist explícito de assemblies de produção. Filtrar por convenção
         // de nome em vez de scan amplo evita que stubs de testes (tipo
