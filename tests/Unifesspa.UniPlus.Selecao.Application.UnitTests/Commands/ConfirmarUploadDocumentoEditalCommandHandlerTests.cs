@@ -194,4 +194,35 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
         repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
     }
+
+    [Fact(DisplayName = "Handle recusa por tamanho quando o conteúdo real excede o limite mesmo com stat menor (TOCTOU)")]
+    [SuppressMessage(
+        "Reliability",
+        "CA2025:Object MemoryStream can be disposed of before operation completes",
+        Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
+    public async Task Handle_ConteudoRealExcedeLimiteApesarDoStatMenor_Recusa()
+    {
+        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        // Stat relata um tamanho pequeno — simula o objeto de staging tendo
+        // sido substituído por um maior entre o stat e a leitura (a chave
+        // original segue sobrescrevível até o TTL expirar).
+        storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+            .Returns(new InfoObjetoArmazenado(10, "application/pdf"));
+        byte[] conteudoReal = new byte[DocumentoEdital.TamanhoMaximoBytes + 1024];
+        using MemoryStream streamReal = new(conteudoReal);
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Stream>(streamReal));
+
+        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+            repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoEdital.TamanhoExcedido");
+        await repository.DidNotReceive().TentarReivindicarConfirmacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
 }

@@ -46,9 +46,13 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
                 "O objeto ainda não foi enviado ao storage ou expirou antes da confirmação."));
         }
 
-        // Corta aqui, antes de baixar: o stat (HEAD) não traz o conteúdo, então
-        // barrar pelo tamanho reportado evita carregar um objeto arbitrariamente
-        // grande inteiro em memória só para descobrir que ele será recusado.
+        // Atalho: o stat (HEAD) não traz o conteúdo, então barrar cedo pelo
+        // tamanho já reportado evita abrir o stream no caso comum de um
+        // envio já obviamente grande demais. Não é a proteção definitiva —
+        // ObjectKey segue sobrescrevível até o TTL expirar (ver
+        // ObjectKeyConfirmado), então o tamanho pode mudar entre este stat e
+        // a leitura abaixo; quem garante o limite de fato é a leitura
+        // limitada, não este atalho.
         if (info.TamanhoBytes > DocumentoEdital.TamanhoMaximoBytes)
         {
             return Result<DocumentoEditalDto>.Failure(new DomainError(
@@ -56,14 +60,32 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
                 $"O documento excede o tamanho máximo permitido de {DocumentoEdital.TamanhoMaximoBytes / (1024 * 1024)} MB."));
         }
 
-        byte[] conteudo;
+        // Lê no máximo TamanhoMaximoBytes+1 — nunca mais que isso, não importa
+        // o quanto o objeto real cresça entre o stat acima e esta leitura.
+        // Sem o limite, um objeto substituído por algo muito maior depois do
+        // stat faria o CopyToAsync bufferizar o arquivo inteiro em memória
+        // antes de ValidarConteudo rejeitar pelo tamanho.
+        byte[] bufferLimitado = new byte[DocumentoEdital.TamanhoMaximoBytes + 1];
+        int totalLido = 0;
         Stream stream = await storage.AbrirLeituraAsync(documento.ObjectKey, cancellationToken).ConfigureAwait(false);
         await using (stream.ConfigureAwait(false))
         {
-            using MemoryStream buffer = new();
-            await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-            conteudo = buffer.ToArray();
+            int lidos;
+            while (totalLido < bufferLimitado.Length &&
+                   (lidos = await stream.ReadAsync(bufferLimitado.AsMemory(totalLido), cancellationToken).ConfigureAwait(false)) > 0)
+            {
+                totalLido += lidos;
+            }
         }
+
+        if (totalLido > DocumentoEdital.TamanhoMaximoBytes)
+        {
+            return Result<DocumentoEditalDto>.Failure(new DomainError(
+                "DocumentoEdital.TamanhoExcedido",
+                $"O documento excede o tamanho máximo permitido de {DocumentoEdital.TamanhoMaximoBytes / (1024 * 1024)} MB."));
+        }
+
+        byte[] conteudo = bufferLimitado[..totalLido];
 
         Result validacao = DocumentoEdital.ValidarConteudo(conteudo.LongLength, info.ContentType, conteudo);
         if (validacao.IsFailure)
