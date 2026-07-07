@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Storage;
 
+using System.Net.Http.Headers;
+
 using Minio;
 using Minio.DataModel;
 using Minio.DataModel.Args;
@@ -8,10 +10,12 @@ using Minio.Exceptions;
 public sealed class MinioStorageService : IStorageService
 {
     private readonly IMinioClient _minioClient;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public MinioStorageService(IMinioClient minioClient)
+    public MinioStorageService(IMinioClient minioClient, IHttpClientFactory httpClientFactory)
     {
         _minioClient = minioClient;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<string> UploadAsync(string bucket, string nomeArquivo, Stream conteudo, string contentType, CancellationToken cancellationToken = default)
@@ -40,6 +44,42 @@ public sealed class MinioStorageService : IStorageService
             .WithCallbackStream(stream => stream.CopyTo(memoryStream));
 
         await _minioClient.GetObjectAsync(args, cancellationToken).ConfigureAwait(false);
+        memoryStream.Position = 0;
+        return memoryStream;
+    }
+
+    public async Task<Stream> DownloadLimitadoAsync(string bucket, string nomeArquivo, long limiteBytes, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limiteBytes);
+
+        // GetObjectAsync (API de alto nível, usada por DownloadAsync) valida o
+        // download como completo e lança PartialContentException quando recebe
+        // menos bytes que o Content-Length total do objeto — não aceita um
+        // Range GET deliberadamente parcial. Uma URL pre-assinada de GET com
+        // header Range via HttpClient é o caminho que o MinIO honra de fato: o
+        // servidor nunca transmite mais que o intervalo pedido.
+        PresignedGetObjectArgs presignedArgs = new PresignedGetObjectArgs()
+            .WithBucket(bucket)
+            .WithObject(nomeArquivo)
+            .WithExpiry(60);
+        string url = await _minioClient.PresignedGetObjectAsync(presignedArgs).ConfigureAwait(false);
+
+        using HttpClient httpClient = _httpClientFactory.CreateClient(nameof(MinioStorageService));
+        using HttpRequestMessage request = new(HttpMethod.Get, url);
+        request.Headers.Range = new RangeHeaderValue(0, limiteBytes - 1);
+
+        using HttpResponseMessage response = await httpClient
+            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        MemoryStream memoryStream = new();
+        Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using (responseStream.ConfigureAwait(false))
+        {
+            await responseStream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+        }
+
         memoryStream.Position = 0;
         return memoryStream;
     }

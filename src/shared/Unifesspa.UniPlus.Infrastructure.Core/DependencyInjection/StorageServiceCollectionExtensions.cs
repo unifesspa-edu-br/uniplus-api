@@ -82,6 +82,10 @@ public static class StorageServiceCollectionExtensions
             return client.Build();
         });
 
+        // IHttpClientFactory — usado por MinioStorageService.DownloadLimitadoAsync
+        // para o GET com Range via URL pre-assinada (a API de alto nível do SDK
+        // MinIO não suporta range parcial). AddHttpClient() é idempotente.
+        services.AddHttpClient();
         services.AddScoped<IStorageService, MinioStorageService>();
 
         return services;

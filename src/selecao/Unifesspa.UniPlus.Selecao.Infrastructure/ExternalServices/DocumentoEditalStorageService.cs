@@ -42,8 +42,8 @@ public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
         return metadados is null ? null : new InfoObjetoArmazenado(metadados.TamanhoBytes, metadados.ContentType);
     }
 
-    public Task<Stream> AbrirLeituraAsync(string objectKey, CancellationToken cancellationToken = default) =>
-        _storageService.DownloadAsync(_bucket, objectKey, cancellationToken);
+    public Task<Stream> AbrirLeituraAsync(string objectKey, long limiteBytes, CancellationToken cancellationToken = default) =>
+        _storageService.DownloadLimitadoAsync(_bucket, objectKey, limiteBytes, cancellationToken);
 
     public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, CancellationToken cancellationToken = default)
     {

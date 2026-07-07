@@ -139,7 +139,8 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         HttpResponseMessage putSobrescrita = await http.PutAsync(iniciarResultado.Value.UrlUpload, conteudoSobrescrita);
         putSobrescrita.EnsureSuccessStatusCode();
 
-        await using Stream streamSelado = await _storage.AbrirLeituraAsync(documentoConfirmado.ObjectKeyConfirmado!, CancellationToken.None);
+        await using Stream streamSelado = await _storage.AbrirLeituraAsync(
+            documentoConfirmado.ObjectKeyConfirmado!, DocumentoEdital.TamanhoMaximoBytes + 1, CancellationToken.None);
         using MemoryStream buffer = new();
         await streamSelado.CopyToAsync(buffer, CancellationToken.None);
 
