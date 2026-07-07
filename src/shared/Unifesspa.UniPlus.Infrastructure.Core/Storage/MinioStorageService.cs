@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Storage;
 
+using System.Net;
 using System.Net.Http.Headers;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -80,6 +81,18 @@ public sealed class MinioStorageService : IStorageService
         using HttpResponseMessage response = await httpClient
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
+
+        // A ObjectKey de staging segue sobrescrevível até o TTL da URL de
+        // upload expirar — mesmo já tendo passado pelo stat com tamanho > 0,
+        // o objeto pode ter virado 0 bytes até este GET rodar. Um Range sobre
+        // objeto vazio não é satisfazível (416); trata como stream vazio em
+        // vez de deixar EnsureSuccessStatusCode() escapar como erro não
+        // tratado — ValidarConteudo já sabe recusar conteúdo vazio (422).
+        if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+        {
+            return new MemoryStream();
+        }
+
         response.EnsureSuccessStatusCode();
 
         MemoryStream memoryStream = new();
