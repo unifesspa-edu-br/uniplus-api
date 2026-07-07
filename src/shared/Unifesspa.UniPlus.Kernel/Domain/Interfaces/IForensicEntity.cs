@@ -22,10 +22,9 @@ namespace Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// de <c>sealed</c>/factory privada.
 /// </para>
 /// <para>
-/// Aplicação inicial (Story #460): <c>ObrigatoriedadeLegalHistorico</c> e
-/// <c>EditalGovernanceSnapshot</c> no módulo Seleção. Tabelas futuras
-/// (<c>proprietario_historico</c>, <c>area_interesse_binding_historico</c>)
-/// também implementam quando vierem.
+/// Aplicação inicial (Story #460): <c>ObrigatoriedadeLegalHistorico</c> no
+/// módulo Seleção. Tabelas futuras (<c>proprietario_historico</c>,
+/// <c>area_interesse_binding_historico</c>) também implementam quando vierem.
 /// </para>
 /// </remarks>
 public interface IForensicEntity

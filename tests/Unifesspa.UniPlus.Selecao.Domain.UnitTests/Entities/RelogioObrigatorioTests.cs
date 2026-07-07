@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -14,46 +13,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed class RelogioObrigatorioTests
 {
-    private static NumeroEdital Numero() => NumeroEdital.Criar(numero: 1, ano: 2026).Value!;
-
-    [Fact(DisplayName = "Edital.Publicar exige TimeProvider não-nulo")]
-    public void EditalPublicar_ClockNulo_Lanca()
-    {
-        Edital edital = Edital.Criar(Numero(), "Edital teste");
-
-        Action act = () => edital.Publicar(null!);
-
-        act.Should().Throw<ArgumentNullException>();
-    }
-
-    [Fact(DisplayName = "Inscricao.Criar exige TimeProvider não-nulo")]
-    public void InscricaoCriar_ClockNulo_Lanca()
-    {
-        Action act = () => Inscricao.Criar(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            ModalidadeConcorrencia.AC,
-            "CURSO01",
-            null!);
-
-        act.Should().Throw<ArgumentNullException>();
-    }
-
-    [Fact(DisplayName = "Inscricao.Confirmar exige TimeProvider não-nulo")]
-    public void InscricaoConfirmar_ClockNulo_Lanca()
-    {
-        Inscricao inscricao = Inscricao.Criar(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            ModalidadeConcorrencia.AC,
-            "CURSO01",
-            TimeProvider.System).Value!;
-
-        Action act = () => inscricao.Confirmar(null!);
-
-        act.Should().Throw<ArgumentNullException>();
-    }
-
     [Fact(DisplayName = "ObrigatoriedadeLegal.Criar (conveniência) exige TimeProvider não-nulo")]
     public void ObrigatoriedadeLegalCriar_ClockNulo_Lanca()
     {

@@ -4,12 +4,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Conjunto fechado de predicados de validação legal aplicáveis a um edital,
-/// modelado como discriminated union (sealed records derivados de
-/// <see cref="PredicadoObrigatoriedade"/>). Cada variante representa uma
-/// shape distinta de regra reconhecida pelo
-/// <c>ValidadorConformidadeEdital</c> — ver
-/// <c>Selecao.Domain.Services.ValidadorConformidadeEdital</c>.
+/// Conjunto fechado de predicados de validação legal aplicáveis a um
+/// processo seletivo, modelado como discriminated union (sealed records
+/// derivados de <see cref="PredicadoObrigatoriedade"/>). Cada variante
+/// representa uma shape distinta de regra do catálogo de
+/// <c>ObrigatoriedadeLegal</c>, reconhecida pela avaliação de conformidade
+/// (ADR-0058).
 /// </summary>
 /// <remarks>
 /// <para>Conforme ADR-0058 (validação data-driven com citação), a forma é
