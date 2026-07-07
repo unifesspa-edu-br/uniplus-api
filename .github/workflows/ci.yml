@@ -324,10 +324,14 @@ jobs:
             exit 1
           fi
 
+      # MIN_TESTS temporariamente 0 (#782): a demonstração do ADR-0005 rodava
+      # contra o agregado Edital legado, removido por inteiro. A T4 (#785)
+      # recria a demonstração sobre o slice ProcessoSeletivo — reativar o
+      # threshold quando os novos testes cascading existirem.
       - name: Sanity check — Category=OutboxCascading filter has expected coverage
         run: |
           set -euo pipefail
-          MIN_TESTS=8
+          MIN_TESTS=0
           out=$(dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
             --configuration ${{ env.BUILD_CONFIG }} \
             --no-build \
