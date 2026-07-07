@@ -28,4 +28,13 @@ public sealed class RelogioObrigatorioTests
 
         act.Should().Throw<ArgumentNullException>();
     }
+
+    [Fact(DisplayName = "DocumentoEdital.IniciarPendente exige TimeProvider não-nulo")]
+    public void DocumentoEditalIniciarPendente_ClockNulo_Lanca()
+    {
+        Action act = () => DocumentoEdital.IniciarPendente(
+            Guid.CreateVersion7(), clock: null!, TimeSpan.FromMinutes(15));
+
+        act.Should().Throw<ArgumentNullException>();
+    }
 }
