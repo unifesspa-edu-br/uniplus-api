@@ -21,11 +21,6 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     {
     }
 
-    public DbSet<Edital> Editais => Set<Edital>();
-    public DbSet<Etapa> Etapas => Set<Etapa>();
-    public DbSet<Cota> Cotas => Set<Cota>();
-    public DbSet<Inscricao> Inscricoes => Set<Inscricao>();
-    public DbSet<Candidato> Candidatos => Set<Candidato>();
     public DbSet<ProcessoSeletivo> ProcessosSeletivos => Set<ProcessoSeletivo>();
 
     /// <summary>
@@ -84,14 +79,6 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// </summary>
     public DbSet<ObrigatoriedadeLegalHistorico> ObrigatoriedadeLegalHistorico =>
         Set<ObrigatoriedadeLegalHistorico>();
-
-    /// <summary>
-    /// Snapshots de governança capturados por <c>Edital.Publicar()</c>
-    /// (ADR-0057 §"Pattern 1"). Em #460 a tabela é criada vazia; #462
-    /// é responsável pelo INSERT.
-    /// </summary>
-    public DbSet<EditalGovernanceSnapshot> EditalGovernanceSnapshots =>
-        Set<EditalGovernanceSnapshot>();
 
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado
