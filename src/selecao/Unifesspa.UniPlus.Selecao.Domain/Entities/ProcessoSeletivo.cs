@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Agregado-raiz do certame (UNI-REQ-0014/0015): o administrador cria o
@@ -13,12 +14,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Esta é a <b>fundação (F0)</b>: entrega a raiz, as etapas pontuadas e a
-/// oferta de atendimento especializado. As dimensões que dependem do
-/// catálogo de regras tipadas (<c>rol_de_regras</c>) — distribuição de vagas,
-/// bônus, critérios de desempate e classificação — entram nas fatias
-/// seguintes (F2–F4), referenciando regras versionadas em vez de guardar
-/// escalares crus.
+/// F0 entregou a raiz, as etapas pontuadas e a oferta de atendimento
+/// especializado; F2 a distribuição de vagas; F3 o bônus regional (RN05) e os
+/// critérios de desempate — ambos por referência ao catálogo de regras
+/// tipadas (<c>rol_de_regras</c>, Story #772), nunca escalares crus. A
+/// classificação (bloco 15º) entra na F4, compondo por referência as
+/// dimensões já modeladas.
 /// </para>
 /// <para>
 /// O <c>Edital</c> não é criado aqui: ele é o documento emitido pelo ato de
@@ -42,6 +43,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private readonly List<ConfiguracaoDistribuicaoVagas> _distribuicaoVagas = [];
     public IReadOnlyCollection<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas => _distribuicaoVagas.AsReadOnly();
+
+    /// <summary>Bônus regional (RN05) — ausência = sem bônus (toggle por presença, INV-B5).</summary>
+    public ConfiguracaoBonusRegional? BonusRegional { get; private set; }
+
+    private readonly List<CriterioDesempate> _criteriosDesempate = [];
+    public IReadOnlyCollection<CriterioDesempate> CriteriosDesempate => _criteriosDesempate.AsReadOnly();
 
     private ProcessoSeletivo() { }
 
@@ -94,6 +101,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NenhumaEtapaComponeNota",
                 "Ao menos uma etapa deve ter caráter classificatória ou ambas, com peso, para compor a nota final."));
+        }
+
+        // INV-B6 sobrevive a DefinirEtapas: um critério de desempate
+        // DESEMPATE-MAIOR-NOTA-ETAPA já configurado referencia uma etapa pelo
+        // Id (dentro do Args); trocar as etapas sem revalidar deixaria o
+        // critério apontando para uma etapa removida — desempate inexecutável
+        // (achado Codex). Rejeita a troca de etapas em vez de silenciosamente
+        // invalidar o desempate; o admin reconfigura o desempate primeiro.
+        List<Guid> novosIdsEtapas = [.. etapas.Select(e => e.Id)];
+        foreach (CriterioDesempate criterio in _criteriosDesempate)
+        {
+            if (criterio.Args is ArgsDesempateMaiorNotaEtapa args
+                && !novosIdsEtapas.Contains(args.EtapaRef))
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EtapaReferenciadaPorDesempate",
+                    $"A etapa {args.EtapaRef} é referenciada por um critério de desempate (ordem {criterio.Ordem}) e não pode ser removida sem antes reconfigurar o desempate."));
+            }
         }
 
         _etapas.Clear();
@@ -153,6 +178,69 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             configuracao.VincularProcesso(Id);
             _distribuicaoVagas.Add(configuracao);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Define (ou remove) o bônus regional do processo (RN05). Passar
+    /// <see langword="null"/> remove o bônus — a ausência da entidade já é o
+    /// toggle "sem bônus" (INV-B5); não existe um "BONUS-NENHUM".
+    /// </summary>
+    public Result DefinirBonusRegional(ConfiguracaoBonusRegional? bonus)
+    {
+        if (bonus is null)
+        {
+            BonusRegional = null;
+            return Result.Success();
+        }
+
+        bonus.VincularProcesso(Id);
+        BonusRegional = bonus;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Substitui integralmente os critérios de desempate do processo (Story
+    /// #774, modelagem P-B §2.6). Dimensão opcional (0..*): lista vazia
+    /// remove todos os critérios. INV-B6: todo <c>etapa_ref</c> referenciado
+    /// por um critério <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> precisa existir entre
+    /// as etapas deste processo — senão a config congelaria um desempate
+    /// inexecutável.
+    /// </summary>
+    public Result DefinirCriteriosDesempate(IReadOnlyList<CriterioDesempate> criterios)
+    {
+        ArgumentNullException.ThrowIfNull(criterios);
+
+        List<int> ordensInformadas = [.. criterios.Select(c => c.Ordem)];
+        if (ordensInformadas.Distinct().Count() != ordensInformadas.Count)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.OrdemDesempateDuplicada",
+                "Cada critério de desempate deve ter uma ordem única dentro do processo."));
+        }
+
+        foreach (CriterioDesempate criterio in criterios)
+        {
+            if (criterio.Args is not ArgsDesempateMaiorNotaEtapa args)
+            {
+                continue;
+            }
+
+            if (!_etapas.Any(e => e.Id == args.EtapaRef))
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.EtapaRefDesempateInexistente",
+                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe neste processo (INV-B6)."));
+            }
+        }
+
+        _criteriosDesempate.Clear();
+        foreach (CriterioDesempate criterio in criterios)
+        {
+            criterio.VincularProcesso(Id);
+            _criteriosDesempate.Add(criterio);
         }
 
         return Result.Success();

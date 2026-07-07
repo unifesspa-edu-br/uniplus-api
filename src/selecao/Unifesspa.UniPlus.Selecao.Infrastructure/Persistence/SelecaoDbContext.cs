@@ -46,6 +46,13 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<ModalidadeSelecionada> ModalidadesSelecionadas => Set<ModalidadeSelecionada>();
 
     /// <summary>
+    /// Bônus regional (RN05) e critérios de desempate (Story #774, modelagem
+    /// P-B §2.5/§2.6) — ambos por referência ao <c>rol_de_regras</c>.
+    /// </summary>
+    public DbSet<ConfiguracaoBonusRegional> ConfiguracoesBonusRegional => Set<ConfiguracaoBonusRegional>();
+    public DbSet<CriterioDesempate> CriteriosDesempate => Set<CriterioDesempate>();
+
+    /// <summary>
     /// Biblioteca <c>rol_de_regras</c> (Story #772) — regras tipadas e
     /// versionadas que a configuração do Processo Seletivo referencia
     /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congeladas no snapshot de

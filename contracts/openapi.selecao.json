@@ -1678,6 +1678,187 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/criterios-desempate": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CriterioDesempateInput"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CriterioDesempateInput"
+                }
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CriterioDesempateInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
+    "/api/selecao/processos-seletivos/{id}/bonus-regional": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirBonusRegionalRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirBonusRegionalRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirBonusRegionalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/conformidade": {
       "get": {
         "tags": [
@@ -1865,6 +2046,55 @@
           "outros"
         ],
         "type": "string"
+      },
+      "ConfiguracaoBonusRegionalDto": {
+        "required": [
+          "id",
+          "regra",
+          "fator",
+          "teto",
+          "municipioConvenio",
+          "baseLegal"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regra": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "fator": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "teto": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "municipioConvenio": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "baseLegal": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       },
       "ConfiguracaoDistribuicaoVagasDto": {
         "required": [
@@ -2139,6 +2369,188 @@
           },
           "tipo": {
             "$ref": "#/components/schemas/TipoProcesso"
+          }
+        }
+      },
+      "CriterioDesempateDto": {
+        "required": [
+          "id",
+          "ordem",
+          "regra",
+          "etapaRef",
+          "idadeMinima",
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "regra": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "etapaRef": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "idadeMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operador": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CriterioDesempateInput": {
+        "required": [
+          "ordem",
+          "regraCodigo",
+          "regraVersao",
+          "etapaRef",
+          "idadeMinima",
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "regraCodigo": {
+            "type": "string"
+          },
+          "regraVersao": {
+            "type": "string"
+          },
+          "etapaRef": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "idadeMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fato": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operador": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DefinirBonusRegionalRequest": {
+        "required": [
+          "regraCodigo",
+          "regraVersao",
+          "fator",
+          "teto",
+          "municipioConvenio",
+          "baseLegal"
+        ],
+        "type": "object",
+        "properties": {
+          "regraCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraVersao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fator": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "teto": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "municipioConvenio": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "baseLegal": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2840,6 +3252,8 @@
           "etapas",
           "ofertaAtendimento",
           "distribuicaoVagas",
+          "bonusRegional",
+          "criteriosDesempate",
           "criadoEm"
         ],
         "type": "object",
@@ -2877,6 +3291,22 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ConfiguracaoDistribuicaoVagasDto"
+            }
+          },
+          "bonusRegional": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConfiguracaoBonusRegionalDto"
+              }
+            ]
+          },
+          "criteriosDesempate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CriterioDesempateDto"
             }
           },
           "criadoEm": {

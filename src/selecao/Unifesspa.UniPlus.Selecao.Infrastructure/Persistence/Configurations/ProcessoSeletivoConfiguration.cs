@@ -25,8 +25,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Property(p => p.Status).HasConversion<int>().IsRequired();
 
         // Coleções filhas do agregado: entidades próprias com FK para a raiz
-        // (nunca owned types). Bônus/desempate/classificação entram nas fatias
-        // F3–F4 sobre o rol_de_regras.
+        // (nunca owned types). Classificação entra na F4 sobre o rol_de_regras.
         builder.HasMany(p => p.Etapas)
             .WithOne()
             .HasForeignKey(e => e.ProcessoSeletivoId)
@@ -42,10 +41,23 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(d => d.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(p => p.BonusRegional)
+            .WithOne()
+            .HasForeignKey<ConfiguracaoBonusRegional>(b => b.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(p => p.CriteriosDesempate)
+            .WithOne()
+            .HasForeignKey(c => c.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Navigation(p => p.Etapas)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Navigation(p => p.DistribuicaoVagas)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(p => p.CriteriosDesempate)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
