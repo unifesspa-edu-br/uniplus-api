@@ -73,6 +73,22 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
 
         string hashSha256 = Convert.ToHexStringLower(SHA256.HashData(conteudo));
 
+        // Reivindica a confirmação só agora — depois de validar o conteúdo,
+        // nunca antes: reivindicar cedo demais travaria o registro como
+        // Confirmado para sempre se a validação recusasse em seguida. Duas
+        // confirmações concorrentes do mesmo documento (Idempotency-Keys
+        // diferentes) nunca ganham as duas — só a vencedora chega a escrever
+        // a cópia selada, evitando hash/objeto de origens diferentes.
+        bool reivindicou = await documentoEditalRepository
+            .TentarReivindicarConfirmacaoAsync(documento.Id, cancellationToken)
+            .ConfigureAwait(false);
+        if (!reivindicou)
+        {
+            return Result<DocumentoEditalDto>.Failure(new DomainError(
+                "DocumentoEdital.StatusInvalidoParaConfirmacao",
+                "Somente um documento pendente pode ser confirmado."));
+        }
+
         Result confirmacao = documento.Confirmar(conteudo.LongLength, hashSha256, clock);
         if (confirmacao.IsFailure)
         {

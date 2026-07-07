@@ -245,4 +245,20 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         DocumentoEdital? doc2 = await documentoRepository.ObterPorIdAsync(segundo.Value.DocumentoEditalId, CancellationToken.None);
         doc1!.ObjectKey.Should().NotBe(doc2!.ObjectKey);
     }
+
+    [Fact(DisplayName = "TentarReivindicarConfirmacaoAsync é atômico: só a primeira chamada ganha (Postgres real)")]
+    public async Task TentarReivindicarConfirmacaoAsync_SoAPrimeiraChamadaGanha()
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoEditalRepository documentoRepository = new(context);
+        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        context.DocumentosEdital.Add(documento);
+        await context.SaveChangesAsync();
+
+        bool primeira = await documentoRepository.TentarReivindicarConfirmacaoAsync(documento.Id, CancellationToken.None);
+        bool segunda = await documentoRepository.TentarReivindicarConfirmacaoAsync(documento.Id, CancellationToken.None);
+
+        primeira.Should().BeTrue();
+        segunda.Should().BeFalse();
+    }
 }

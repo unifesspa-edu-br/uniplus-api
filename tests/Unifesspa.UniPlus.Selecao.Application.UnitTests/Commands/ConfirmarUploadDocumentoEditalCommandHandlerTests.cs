@@ -123,6 +123,9 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         resultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
         repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
         await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
+        // Conteúdo inválido nunca chega a reivindicar a confirmação — senão o
+        // registro travaria como Confirmado sem hash caso a validação recuse.
+        await repository.DidNotReceive().TentarReivindicarConfirmacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle com PDF válido confirma, calcula sha256 e persiste (fluxo feliz)")]
@@ -137,6 +140,7 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(true);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(ConteudoPdfValido.Length, "application/pdf"));
         using MemoryStream streamConteudoValido = new(ConteudoPdfValido);
@@ -156,8 +160,38 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         // A cópia selada é o que efetivamente torna o documento imutável — a
         // URL de upload original ainda aponta para ObjectKey, sobrescrevível
-        // até o TTL expirar (achado P1 Codex).
+        // até o TTL expirar.
         await storage.Received(1).SalvarConteudoSeladoAsync(
             documento.ObjectKeyConfirmado!, Arg.Is<byte[]>(b => b.SequenceEqual(ConteudoPdfValido)), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle recusa quando perde a reivindicação atômica sem escrever no storage")]
+    [SuppressMessage(
+        "Reliability",
+        "CA2025:Object MemoryStream can be disposed of before operation completes",
+        Justification = "O stream é consumido de forma síncrona dentro do await Handle(...) — a leitura pelo handler termina antes do using declarado sair de escopo no fim do método.")]
+    public async Task Handle_PerdeuReivindicacao_RecusaSemEscreverStorage()
+    {
+        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        // Simula outra confirmação concorrente já tendo vencido a reivindicação.
+        repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(false);
+        storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+            .Returns(new InfoObjetoArmazenado(ConteudoPdfValido.Length, "application/pdf"));
+        using MemoryStream streamConteudoValido = new(ConteudoPdfValido);
+        storage.AbrirLeituraAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<Stream>(streamConteudoValido));
+
+        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+            repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoEdital.StatusInvalidoParaConfirmacao");
+        await storage.DidNotReceive().SalvarConteudoSeladoAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>());
+        repository.DidNotReceive().Atualizar(Arg.Any<DocumentoEdital>());
     }
 }

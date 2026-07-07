@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 
 public sealed class DocumentoEditalRepository : IDocumentoEditalRepository
@@ -40,6 +41,16 @@ public sealed class DocumentoEditalRepository : IDocumentoEditalRepository
     {
         ArgumentNullException.ThrowIfNull(entity);
         _context.DocumentosEdital.Update(entity);
+    }
+
+    public async Task<bool> TentarReivindicarConfirmacaoAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        int linhasAfetadas = await _context.DocumentosEdital
+            .Where(d => d.Id == id && d.Status == StatusDocumentoEdital.Pendente)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(d => d.Status, StatusDocumentoEdital.Confirmado), cancellationToken)
+            .ConfigureAwait(false);
+
+        return linhasAfetadas == 1;
     }
 
     public void Remover(DocumentoEdital entity)
