@@ -50,8 +50,15 @@ public static class SelecaoInfrastructureRegistration
 
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
+        services.AddScoped<IDocumentoEditalRepository, DocumentoEditalRepository>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();
+
+        // Storage de documento do Edital (Story #759, T3 #784) — envolve o
+        // IStorageService compartilhado (registrado uma vez no host via
+        // AddUniPlusStorage). Não registra AddUniPlusStorage aqui: é
+        // cross-cutting compartilhado entre módulos, já ligado no host.
+        services.AddScoped<IDocumentoEditalStorage, DocumentoEditalStorageService>();
 
         return services;
     }

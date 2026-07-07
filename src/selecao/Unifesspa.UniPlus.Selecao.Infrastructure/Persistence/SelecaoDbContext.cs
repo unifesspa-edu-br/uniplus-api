@@ -81,6 +81,13 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
         Set<ObrigatoriedadeLegalHistorico>();
 
     /// <summary>
+    /// Documento (PDF) do Edital, vinculado ao processo por FK — não é
+    /// entidade filha do agregado <see cref="ProcessoSeletivo"/> (Story
+    /// #759, T3 #784; ver comentário de <see cref="DocumentoEdital"/>).
+    /// </summary>
+    public DbSet<DocumentoEdital> DocumentosEdital => Set<DocumentoEdital>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado
     /// para permitir gravação adjacente no outbox; entries cifradas at-rest
     /// via <c>IUniPlusEncryptionService</c>.
