@@ -198,6 +198,32 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         confirmarResultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
     }
 
+    [Fact(DisplayName = "Confirmar objeto de 0 bytes recusa (422 AssinaturaInvalida, não 500 — Range GET não é satisfazível sobre objeto vazio)")]
+    public async Task Confirmar_ObjetoVazio_Recusa()
+    {
+        (SelecaoDbContext context, ProcessoSeletivo processo) = await NovoProcessoAsync();
+        DocumentoEditalRepository documentoRepository = new(context);
+        ProcessoSeletivoRepository processoRepository = new(context, TimeProvider.System);
+
+        Result<IniciarUploadDocumentoEditalDto> iniciarResultado = await IniciarUploadDocumentoEditalCommandHandler.Handle(
+            new IniciarUploadDocumentoEditalCommand(processo.Id),
+            processoRepository, documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+        iniciarResultado.IsSuccess.Should().BeTrue();
+
+        using HttpClient http = new();
+        using ByteArrayContent conteudoVazio = new([]);
+        conteudoVazio.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        HttpResponseMessage putResponse = await http.PutAsync(iniciarResultado.Value!.UrlUpload, conteudoVazio);
+        putResponse.EnsureSuccessStatusCode();
+
+        Result<DocumentoEditalDto> confirmarResultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processo.Id, iniciarResultado.Value.DocumentoEditalId),
+            documentoRepository, _storage, context, TimeProvider.System, CancellationToken.None);
+
+        confirmarResultado.IsFailure.Should().BeTrue();
+        confirmarResultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
+    }
+
     [Fact(DisplayName = "Confirmar um documento já confirmado recusa (imutabilidade — CA)")]
     public async Task Confirmar_DocumentoJaConfirmado_Recusa()
     {

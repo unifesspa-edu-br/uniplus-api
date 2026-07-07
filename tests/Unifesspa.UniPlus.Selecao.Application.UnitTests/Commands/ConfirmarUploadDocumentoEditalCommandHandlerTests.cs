@@ -225,4 +225,26 @@ public sealed class ConfirmarUploadDocumentoEditalCommandHandlerTests
         resultado.Error!.Code.Should().Be("DocumentoEdital.TamanhoExcedido");
         await repository.DidNotReceive().TentarReivindicarConfirmacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Handle recusa objeto de 0 bytes sem tentar ler (Range GET não é satisfazível sobre objeto vazio)")]
+    public async Task Handle_ObjetoVazio_RecusaSemTentarLer()
+    {
+        (DocumentoEdital documento, Guid processoId) = NovoDocumentoPendente();
+        IDocumentoEditalRepository repository = Substitute.For<IDocumentoEditalRepository>();
+        IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+        storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
+            .Returns(new InfoObjetoArmazenado(0, "application/pdf"));
+
+        Result<DocumentoEditalDto> resultado = await ConfirmarUploadDocumentoEditalCommandHandler.Handle(
+            new ConfirmarUploadDocumentoEditalCommand(processoId, documento.Id),
+            repository, storage, unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoEdital.AssinaturaInvalida");
+        // Um Range GET (byte 0 a N) não é satisfazível sobre um objeto vazio —
+        // o servidor recusaria com 416. Não há o que ler, então nem tenta.
+        await storage.DidNotReceive().AbrirLeituraAsync(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<CancellationToken>());
+    }
 }
