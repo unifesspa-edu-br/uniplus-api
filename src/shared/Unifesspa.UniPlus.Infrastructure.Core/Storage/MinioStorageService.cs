@@ -2,19 +2,28 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Storage;
 
 using System.Net.Http.Headers;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Minio;
 using Minio.DataModel;
 using Minio.DataModel.Args;
 using Minio.Exceptions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+
 public sealed class MinioStorageService : IStorageService
 {
     private readonly IMinioClient _minioClient;
+    private readonly IMinioClient _presignClient;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public MinioStorageService(IMinioClient minioClient, IHttpClientFactory httpClientFactory)
+    public MinioStorageService(
+        IMinioClient minioClient,
+        [FromKeyedServices(StorageServiceCollectionExtensions.StoragePublicClientKey)] IMinioClient presignClient,
+        IHttpClientFactory httpClientFactory)
     {
         _minioClient = minioClient;
+        _presignClient = presignClient;
         _httpClientFactory = httpClientFactory;
     }
 
@@ -100,7 +109,10 @@ public sealed class MinioStorageService : IStorageService
             .WithObject(nomeArquivo)
             .WithExpiry((int)expiracao.TotalSeconds);
 
-        return await _minioClient.PresignedGetObjectAsync(args).ConfigureAwait(false);
+        // _presignClient (não _minioClient): a URL vai para um cliente externo
+        // (browser fora da rede Docker/cluster) — precisa ser assinada com o
+        // endpoint público (ver Storage:PublicEndpoint em StorageOptions).
+        return await _presignClient.PresignedGetObjectAsync(args).ConfigureAwait(false);
     }
 
     public async Task<string> GerarUrlUploadTemporariaAsync(string bucket, string nomeArquivo, TimeSpan expiracao, string contentType, CancellationToken cancellationToken = default)
@@ -118,7 +130,10 @@ public sealed class MinioStorageService : IStorageService
             .WithExpiry((int)expiracao.TotalSeconds)
             .WithHeaders(new Dictionary<string, string> { ["Content-Type"] = contentType });
 
-        return await _minioClient.PresignedPutObjectAsync(args).ConfigureAwait(false);
+        // _presignClient: mesma razão de GerarUrlTemporariaAsync — o upload
+        // direto é feito pelo cliente externo, então a URL precisa ser
+        // alcançável e assinada por ele (endpoint público).
+        return await _presignClient.PresignedPutObjectAsync(args).ConfigureAwait(false);
     }
 
     public async Task<ObjetoMetadados?> ObterMetadadosAsync(string bucket, string nomeArquivo, CancellationToken cancellationToken = default)
