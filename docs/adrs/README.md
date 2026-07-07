@@ -128,12 +128,15 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0097](0097-topologia-de-deploy-em-tres-apis-monolito-modular.md) | Topologia de deploy em 3 APIs — módulos internos como libraries co-hospedadas | accepted | 2026-06-26 |
 | [0098](0098-politica-de-service-location-do-codegen-wolverine.md) | Política de service location do codegen Wolverine (`NotAllowed` + allow-list por tipo) | accepted | 2026-06-26 |
 | [0099](0099-geo-como-repositorio-dedicado.md) | Geo como repositório e serviço transversal dedicado | accepted | 2026-06-26 |
+| [0100](0100-canonicalizacao-hash-snapshot-publicacao.md) | Contrato de canonicalização e hash do snapshot de publicação (RN08) | accepted | 2026-07-07 |
+| [0101](0101-retificacao-novo-edital-novo-snapshot-motivo.md) | Retificação de processo publicado é sempre novo Edital + novo snapshot + motivo | accepted | 2026-07-07 |
+| [0102](0102-invariantes-coerencia-processo-guard-rails-422.md) | Invariantes de coerência de processo como guard rails no banco, mapeadas a HTTP 422 | accepted | 2026-07-07 |
 
-> **Nota de numeração:** a `0077` (identidade de `Unidade`) foi **publicada** — a sequência de `0001` a `0099` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0100+`.
+> **Nota de numeração:** a sequência de `0001` a `0102` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0103+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0099`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0102`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
