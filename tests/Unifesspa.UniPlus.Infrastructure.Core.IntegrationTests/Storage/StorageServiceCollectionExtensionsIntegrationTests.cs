@@ -93,6 +93,28 @@ public sealed class StorageServiceCollectionExtensionsIntegrationTests(MinioCont
     }
 
     [Fact]
+    public async Task DownloadLimitado_ObjetoVazio_DevolveStreamVazioSemLancar()
+    {
+        await using ServiceProvider sp = BuildProvider();
+        using IServiceScope scope = sp.CreateScope();
+        IStorageService storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
+
+        string objectName = $"smoke/vazio-{Guid.NewGuid():N}.bin";
+        using (MemoryStream uploadStream = new([]))
+        {
+            await storage.UploadAsync(TestBucket, objectName, uploadStream, "application/pdf");
+        }
+
+        // Range sobre objeto vazio não é satisfazível (416 do MinIO) — o
+        // método trata isso como stream vazio, não como exceção.
+        await using Stream limitado = await storage.DownloadLimitadoAsync(TestBucket, objectName, 100);
+        using MemoryStream collector = new();
+        await limitado.CopyToAsync(collector);
+
+        collector.ToArray().Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GerarUrlUploadTemporariaAsync_ComPublicEndpointConfigurado_AssinaComOEndpointPublico()
     {
         const string publicEndpoint = "storage.uniplus.example.org";
