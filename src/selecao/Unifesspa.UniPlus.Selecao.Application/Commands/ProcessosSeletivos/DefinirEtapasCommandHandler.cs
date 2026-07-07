@@ -27,8 +27,34 @@ public static class DefinirEtapasCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        List<EtapaProcesso> etapas = [.. command.Etapas.Select(e =>
-            EtapaProcesso.Criar(e.Nome, e.Carater, e.Peso, e.NotaMinima, e.Ordem))];
+        List<Guid> idsInformados = [.. command.Etapas.Where(e => e.Id.HasValue).Select(e => e.Id!.Value)];
+        if (idsInformados.Distinct().Count() != idsInformados.Count)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.IdEtapaDuplicado",
+                "O mesmo Id de etapa não pode ser informado mais de uma vez no mesmo payload."));
+        }
+
+        // Reconcilia por Id em vez de recriar toda a coleção: uma etapa cujo
+        // Id (ecoado pelo cliente a partir da leitura anterior) ainda existe
+        // no processo é ATUALIZADA na mesma instância tracked, preservando o
+        // etapa_ref que critérios de desempate/eliminação da classificação
+        // possam ter — do contrário, todo PUT /etapas geraria etapas com Id
+        // novo e invalidaria essas referências por construção.
+        Dictionary<Guid, EtapaProcesso> existentes = processo.Etapas.ToDictionary(e => e.Id);
+        List<EtapaProcesso> etapas = [];
+        foreach (EtapaProcessoInput input in command.Etapas)
+        {
+            if (input.Id is { } id && existentes.TryGetValue(id, out EtapaProcesso? etapaExistente))
+            {
+                etapaExistente.AtualizarDados(input.Nome, input.Carater, input.Peso, input.NotaMinima, input.Ordem);
+                etapas.Add(etapaExistente);
+            }
+            else
+            {
+                etapas.Add(EtapaProcesso.Criar(input.Nome, input.Carater, input.Peso, input.NotaMinima, input.Ordem));
+            }
+        }
 
         Result result = processo.DefinirEtapas(etapas);
         if (result.IsFailure)

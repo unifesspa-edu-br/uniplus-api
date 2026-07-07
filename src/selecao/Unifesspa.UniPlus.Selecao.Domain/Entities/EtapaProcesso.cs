@@ -61,6 +61,36 @@ public sealed class EtapaProcesso : EntityBase
     /// </summary>
     public bool ComponeNota => Carater is CaraterEtapa.Classificatoria or CaraterEtapa.Ambas && Peso.HasValue;
 
+    /// <summary>
+    /// Atualiza os dados da MESMA etapa (mesmo <see cref="EntityBase.Id"/>) em
+    /// vez de recriá-la — permite que <c>DefinirEtapasCommandHandler</c>
+    /// reconcilie o payload de <c>PUT /etapas</c> com o agregado tracked
+    /// preservando a identidade de uma etapa já referenciada por critério de
+    /// desempate ou regra de eliminação da classificação (sem isso, qualquer
+    /// reconfiguração de etapas quebraria essas referências por construção).
+    /// </summary>
+    public void AtualizarDados(
+        string nome,
+        CaraterEtapa carater,
+        decimal? peso,
+        decimal? notaMinima,
+        int? ordem)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+        if (carater == CaraterEtapa.Nenhum)
+        {
+            throw new ArgumentException(
+                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).",
+                nameof(carater));
+        }
+
+        Nome = nome.Trim();
+        Carater = carater;
+        Peso = peso;
+        NotaMinima = notaMinima;
+        Ordem = ordem;
+    }
+
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 }

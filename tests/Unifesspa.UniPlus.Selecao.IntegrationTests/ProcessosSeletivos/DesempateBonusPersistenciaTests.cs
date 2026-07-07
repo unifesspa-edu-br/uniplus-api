@@ -140,4 +140,54 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         recarregado.BonusRegional!.Fator.Should().Be(1.30m);
         recarregado.BonusRegional.Teto.Should().Be(5m);
     }
+
+    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém o desempate referenciando-a (achado Codex)")]
+    public async Task AtualizarEtapaMesmoId_MantemDesempateReferenciado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TipoProcesso.PSVR);
+        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapa]);
+        processo.DefinirCriteriosDesempate(
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!]);
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using (SelecaoDbContext configureContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+
+            // Reproduz a reconciliação do DefinirEtapasCommandHandler: o
+            // cliente ecoa o Id lido anteriormente, o handler ATUALIZA a
+            // mesma instância tracked em vez de recriá-la — sem isso, o
+            // etapa_ref do desempate ficaria órfão a cada PUT /etapas.
+            EtapaProcesso etapaTracked = carregado.Etapas.Single();
+            etapaTracked.AtualizarDados("Redação (revisada)", CaraterEtapa.Classificatoria, 2m, null, 1);
+
+            Result result = carregado.DefinirEtapas([etapaTracked]);
+            result.IsSuccess.Should().BeTrue();
+
+            await configureContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
+            .Include(p => p.Etapas)
+            .Include(p => p.CriteriosDesempate)
+            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
+
+        recarregado.Should().NotBeNull();
+        EtapaProcesso etapaAtualizada = recarregado!.Etapas.Single();
+        etapaAtualizada.Id.Should().Be(etapa.Id);
+        etapaAtualizada.Nome.Should().Be("Redação (revisada)");
+        etapaAtualizada.Peso.Should().Be(2m);
+
+        CriterioDesempate criterio = recarregado.CriteriosDesempate.Single();
+        ((ArgsDesempateMaiorNotaEtapa)criterio.Args).EtapaRef.Should().Be(etapa.Id);
+    }
 }
