@@ -79,6 +79,12 @@ public static class ConfirmarUploadDocumentoEditalCommandHandler
             return Result<DocumentoEditalDto>.Failure(confirmacao.Error!);
         }
 
+        // A cópia selada é o que torna o documento confirmado imutável de
+        // fato: ObjectKey (o alvo da URL de upload original) segue
+        // sobrescrevível até o TTL expirar, mas ObjectKeyConfirmado nunca foi
+        // exposto por nenhuma URL pre-assinada — só o handler grava nele.
+        await storage.SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, conteudo, cancellationToken).ConfigureAwait(false);
+
         documentoEditalRepository.Atualizar(documento);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 

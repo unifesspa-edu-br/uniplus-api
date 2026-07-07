@@ -17,6 +17,7 @@ public sealed class DocumentoEditalConfiguration : IEntityTypeConfiguration<Docu
         builder.Property(d => d.Id).ValueGeneratedNever();
 
         builder.Property(d => d.ObjectKey).HasMaxLength(500).IsRequired();
+        builder.Property(d => d.ObjectKeyConfirmado).HasMaxLength(500);
         builder.Property(d => d.Status).HasConversion<int>().IsRequired();
         builder.Property(d => d.HashSha256).HasMaxLength(64);
 

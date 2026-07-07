@@ -24,6 +24,14 @@ public interface IDocumentoEditalStorage
 
     /// <summary>Abre o conteúdo do objeto para leitura (hash + validação de assinatura).</summary>
     Task<Stream> AbrirLeituraAsync(string objectKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Grava o conteúdo já validado numa chave que nunca foi (nem será) alvo
+    /// de uma URL pre-assinada de PUT — a cópia que torna o documento
+    /// confirmado imutável de fato, mesmo que a URL de upload original ainda
+    /// não tenha expirado (ver <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoEdital.ObjectKeyConfirmado"/>).
+    /// </summary>
+    Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Metadados de um objeto de storage, sem o conteúdo.</summary>

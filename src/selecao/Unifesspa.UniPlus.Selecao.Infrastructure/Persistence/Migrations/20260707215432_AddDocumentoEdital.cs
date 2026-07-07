@@ -24,6 +24,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     tamanho_bytes = table.Column<long>(type: "bigint", nullable: true),
                     hash_sha256 = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     confirmado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    object_key_confirmado = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },

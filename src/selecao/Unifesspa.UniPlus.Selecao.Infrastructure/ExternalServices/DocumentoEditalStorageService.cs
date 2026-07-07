@@ -44,4 +44,12 @@ public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
 
     public Task<Stream> AbrirLeituraAsync(string objectKey, CancellationToken cancellationToken = default) =>
         _storageService.DownloadAsync(_bucket, objectKey, cancellationToken);
+
+    public async Task SalvarConteudoSeladoAsync(string objectKey, byte[] conteudo, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(conteudo);
+
+        using MemoryStream stream = new(conteudo);
+        await _storageService.UploadAsync(_bucket, objectKey, stream, ContentTypePdf, cancellationToken).ConfigureAwait(false);
+    }
 }

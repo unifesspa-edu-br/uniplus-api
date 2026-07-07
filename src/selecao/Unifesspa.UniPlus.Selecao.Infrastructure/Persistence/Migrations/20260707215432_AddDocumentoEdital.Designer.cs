@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260707213004_AddDocumentoEdital")]
+    [Migration("20260707215432_AddDocumentoEdital")]
     partial class AddDocumentoEdital
     {
         /// <inheritdoc />
@@ -285,6 +285,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("object_key");
+
+                    b.Property<string>("ObjectKeyConfirmado")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("object_key_confirmado");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
