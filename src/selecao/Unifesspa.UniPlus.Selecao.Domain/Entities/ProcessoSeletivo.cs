@@ -110,10 +110,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // (achado Codex). Rejeita a troca de etapas em vez de silenciosamente
         // invalidar o desempate; o admin reconfigura o desempate primeiro.
         List<Guid> novosIdsEtapas = [.. etapas.Select(e => e.Id)];
-        foreach (CriterioDesempate criterio in _criteriosDesempate)
+        IEnumerable<(CriterioDesempate Criterio, ArgsDesempateMaiorNotaEtapa Args)> criteriosPorEtapa =
+            _criteriosDesempate
+                .Where(c => c.Args is ArgsDesempateMaiorNotaEtapa)
+                .Select(c => (Criterio: c, Args: (ArgsDesempateMaiorNotaEtapa)c.Args));
+        foreach ((CriterioDesempate criterio, ArgsDesempateMaiorNotaEtapa args) in criteriosPorEtapa)
         {
-            if (criterio.Args is ArgsDesempateMaiorNotaEtapa args
-                && !novosIdsEtapas.Contains(args.EtapaRef))
+            if (!novosIdsEtapas.Contains(args.EtapaRef))
             {
                 return Result.Failure(new DomainError(
                     "ProcessoSeletivo.EtapaReferenciadaPorDesempate",

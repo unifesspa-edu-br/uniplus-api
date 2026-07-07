@@ -6,14 +6,20 @@ using Kernel.Results;
 
 /// <summary>
 /// Item de entrada de uma etapa pontuada, usado por
-/// <see cref="DefinirEtapasCommand"/>.
+/// <see cref="DefinirEtapasCommand"/>. <see cref="Id"/> é opcional: quando
+/// informado e corresponder a uma etapa já existente no processo, o handler
+/// atualiza a MESMA etapa em vez de recriá-la — preservando a identidade que
+/// critérios de desempate ou regras de eliminação da classificação possam
+/// referenciar (<c>etapa_ref</c>). Omitido (ou sem correspondência), o
+/// handler cria uma etapa nova.
 /// </summary>
 public sealed record EtapaProcessoInput(
     string Nome,
     CaraterEtapa Carater,
     decimal? Peso,
     decimal? NotaMinima,
-    int? Ordem);
+    int? Ordem,
+    Guid? Id = null);
 
 /// <summary>
 /// Substitui integralmente as etapas pontuadas do processo (CA-02 da Story

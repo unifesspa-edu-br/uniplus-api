@@ -2736,6 +2736,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
