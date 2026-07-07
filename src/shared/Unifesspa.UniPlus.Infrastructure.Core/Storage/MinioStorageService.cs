@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Storage;
 
 using Minio;
+using Minio.DataModel;
 using Minio.DataModel.Args;
+using Minio.Exceptions;
 
 public sealed class MinioStorageService : IStorageService
 {
@@ -59,6 +61,45 @@ public sealed class MinioStorageService : IStorageService
             .WithExpiry((int)expiracao.TotalSeconds);
 
         return await _minioClient.PresignedGetObjectAsync(args).ConfigureAwait(false);
+    }
+
+    public async Task<string> GerarUrlUploadTemporariaAsync(string bucket, string nomeArquivo, TimeSpan expiracao, string contentType, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        // Diferente de GerarUrlTemporariaAsync (GET, assume bucket já existente): este é o
+        // primeiro write path que não passa por UploadAsync — o bucket pode ainda não existir
+        // quando o primeiro upload direto acontece.
+        await GarantirBucketExisteAsync(bucket, cancellationToken).ConfigureAwait(false);
+
+        PresignedPutObjectArgs args = new PresignedPutObjectArgs()
+            .WithBucket(bucket)
+            .WithObject(nomeArquivo)
+            .WithExpiry((int)expiracao.TotalSeconds)
+            .WithHeaders(new Dictionary<string, string> { ["Content-Type"] = contentType });
+
+        return await _minioClient.PresignedPutObjectAsync(args).ConfigureAwait(false);
+    }
+
+    public async Task<ObjetoMetadados?> ObterMetadadosAsync(string bucket, string nomeArquivo, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            StatObjectArgs args = new StatObjectArgs()
+                .WithBucket(bucket)
+                .WithObject(nomeArquivo);
+
+            ObjectStat stat = await _minioClient.StatObjectAsync(args, cancellationToken).ConfigureAwait(false);
+            return new ObjetoMetadados(stat.Size, stat.ContentType);
+        }
+        catch (ObjectNotFoundException)
+        {
+            return null;
+        }
+        catch (BucketNotFoundException)
+        {
+            return null;
+        }
     }
 
     private async Task GarantirBucketExisteAsync(string bucket, CancellationToken cancellationToken)
