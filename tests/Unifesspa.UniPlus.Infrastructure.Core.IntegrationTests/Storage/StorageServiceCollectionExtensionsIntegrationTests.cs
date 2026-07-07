@@ -154,4 +154,23 @@ public sealed class StorageServiceCollectionExtensionsIntegrationTests(MinioCont
 
         url.Should().StartWith("https://");
     }
+
+    [Fact]
+    public async Task GerarUrlUploadTemporariaAsync_ComPublicEndpointVazioMasComSslPublicoDiferente_AssinaComOEndpointInternoEEsquemaPublico()
+    {
+        // Storage:PublicEndpoint="" (string vazia, não ausente — é o valor
+        // literal deixado em branco no values.yaml do Helm chart quando só
+        // Storage:PublicUseSSL é preenchido) não pode virar o host assinado:
+        // precisa cair para Storage:Endpoint mesmo assim, só trocando o
+        // esquema.
+        await using ServiceProvider sp = BuildProvider(publicEndpoint: string.Empty, publicUseSsl: true);
+        using IServiceScope scope = sp.CreateScope();
+        IStorageService storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
+
+        string url = await storage.GerarUrlUploadTemporariaAsync(
+            TestBucket, $"smoke/{Guid.NewGuid():N}.pdf", TimeSpan.FromMinutes(5), "application/pdf");
+
+        url.Should().StartWith("https://");
+        url.Should().Contain(minio.Endpoint);
+    }
 }
