@@ -142,6 +142,24 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoEdital.TamanhoExcedido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.tamanho_excedido", "Documento excede o tamanho máximo permitido")),
         new("DocumentoEdital.ContentTypeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.content_type_invalido", "Documento do Edital deve ser do tipo application/pdf")),
         new("DocumentoEdital.AssinaturaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_edital.assinatura_invalida", "Conteúdo do arquivo não corresponde a um PDF válido")),
+        // Publicação do Processo Seletivo — RN08 (Story #759, T4 #785). Todo
+        // 422: status dominante do módulo para violação de regra de negócio,
+        // inclusive quando a origem física é constraint de banco (ADR-0102).
+        new("DadosEdital.DocumentoEditalIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.documento_edital_id_obrigatorio", "Referência ao documento do Edital é obrigatória")),
+        new("DadosEdital.PeriodoInscricaoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.periodo_inscricao_invalido", "O fim do período de inscrição não pode anteceder o início")),
+        new("Edital.ProcessoSeletivoIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.processo_seletivo_id_obrigatorio", "O Edital deve estar vinculado a um Processo Seletivo")),
+        new("Edital.DataPublicacaoDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.data_publicacao_duplicada", "Já existe um Edital publicado neste processo com a mesma data de publicação")),
+        new("Edital.AberturaJaExiste", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.abertura_ja_existe", "Este processo já tem um Edital de abertura publicado")),
+        new("Edital.ContratoNaturezaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.contrato_natureza_invalido", "Abertura não carrega edital retificado nem motivo; retificação exige ambos")),
+        // SnapshotPublicacao.Congelar (ADR-0063): entidade forensic — guards
+        // de invariante lançam ArgumentException (defesa em profundidade
+        // contra erro de programação do caller, nunca alcançável a partir de
+        // input do usuário), não DomainError. Sem entradas de registry aqui.
+        new("ProcessoSeletivo.TransicaoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.transicao_invalida", "Só é possível publicar um processo em rascunho")),
+        new("ProcessoSeletivo.ConformidadeInsuficiente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conformidade_insuficiente", "Processo não conforme para publicação")),
+        new("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada", "Processo publicado não aceita mutação direta da configuração")),
+        new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
+        new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

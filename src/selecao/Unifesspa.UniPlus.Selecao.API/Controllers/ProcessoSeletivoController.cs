@@ -23,8 +23,9 @@ using Application.Queries.ProcessosSeletivos;
 /// distribuição de vagas (Story #773), bônus regional e critérios de
 /// desempate (Story #774) e classificação (Story #775, 15º bloco canônico),
 /// estes por referência ao catálogo de regras tipadas versionadas
-/// (<c>rol_de_regras</c>, Story #772). O <c>Edital</c> não é criado aqui; é o
-/// documento emitido pela publicação (Story #759, fora deste escopo).
+/// (<c>rol_de_regras</c>, Story #772). O <c>Edital</c> não é criado
+/// diretamente — é o documento emitido pelo ato de publicação
+/// (<see cref="Publicar"/>, Story #759 T4 #785).
 /// </summary>
 [ApiController]
 [Route("api/selecao/processos-seletivos")]
@@ -268,6 +269,59 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Publica o Edital de abertura do processo (RN08, Story #759, T4 #785):
+    /// valida a conformidade, congela um <c>SnapshotPublicacao</c> append-only
+    /// e transita o status para Publicado, tudo na mesma transação. Quando a
+    /// publicação é recusada por conformidade insuficiente (CA-03), o corpo
+    /// do 422 carrega <c>Extensions["pendencias"]</c> com o checklist.
+    /// </summary>
+    [HttpPost("{id:guid}/publicacao")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Publicar(
+        Guid id,
+        [FromBody] PublicarProcessoSeletivoRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result resultado = await _commandBus.Send(
+            new PublicarProcessoSeletivoCommand(
+                id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId),
+            cancellationToken);
+        if (resultado.IsSuccess)
+        {
+            return NoContent();
+        }
+
+        IActionResult actionResult = resultado.ToActionResult(_mapper);
+        if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeInsuficiente")
+            || actionResult is not ObjectResult { Value: ProblemDetails problem })
+        {
+            return actionResult;
+        }
+
+        // CA-03: enriquece o 422 de conformidade insuficiente com o checklist
+        // de pendências — reconsulta ObterConformidadeProcessoSeletivoQuery
+        // (mesmo ProcessoSeletivo.AvaliarConformidade() por trás do gate de
+        // Publicar, sem duplicar a regra) para montar Extensions["pendencias"].
+        ConformidadeProcessoSeletivoDto? conformidade = await _queryBus
+            .Send(new ObterConformidadeProcessoSeletivoQuery(id), cancellationToken)
+            .ConfigureAwait(false);
+        if (conformidade is not null)
+        {
+            problem.Extensions["pendencias"] = conformidade.Itens
+                .Where(item => !item.Ok)
+                .Select(item => item.Item)
+                .ToArray();
+        }
+
+        return actionResult;
+    }
+
+    /// <summary>
     /// Consulta a conformidade estrutural do processo (CA-07): checklist com
     /// cada item obrigatório marcado ok/pendente, sem alterar o processo.
     /// </summary>
@@ -289,6 +343,16 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return Ok(conformidade);
     }
 }
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.Publicar"/> — omite
+/// <c>ProcessoSeletivoId</c> (vem da rota).
+/// </summary>
+public sealed record PublicarProcessoSeletivoRequest(
+    string? Numero,
+    DateOnly PeriodoInscricaoInicio,
+    DateOnly PeriodoInscricaoFim,
+    Guid DocumentoEditalId);
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoController.DefinirOfertaAtendimento"/>

@@ -1633,6 +1633,82 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/publicacao": {
+      "post": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicarProcessoSeletivoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicarProcessoSeletivoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicarProcessoSeletivoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/conformidade": {
       "get": {
         "tags": [
@@ -3199,6 +3275,35 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "PublicarProcessoSeletivoRequest": {
+        "required": [
+          "numero",
+          "periodoInscricaoInicio",
+          "periodoInscricaoFim",
+          "documentoEditalId"
+        ],
+        "type": "object",
+        "properties": {
+          "numero": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "periodoInscricaoInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodoInscricaoFim": {
+            "type": "string",
+            "format": "date"
+          },
+          "documentoEditalId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
