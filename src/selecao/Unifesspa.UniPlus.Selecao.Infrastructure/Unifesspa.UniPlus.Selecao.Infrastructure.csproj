@@ -4,6 +4,20 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!--
+      Apache.Avro: dependência de runtime para os tipos Avro gerados em
+      Messaging/Avro/ (ISpecificRecord). Schema é carregado em Schema.Parse
+      a partir do embedded resource em Selecao.Domain (sem duplicação).
+      ADR-0051: schemas Avro vivem no Domain como recurso; classes ISpecificRecord
+      ficam em Infrastructure para não infectar Domain com dep de Avro.
+    -->
+    <PackageReference Include="Apache.Avro" />
+    <!--
+      Confluent.SchemaRegistry.Serdes.Avro: trazido pela dependência transitiva
+      do Wolverine.Kafka.Serialization.SchemaRegistryAvroSerializer, mas declarado
+      explicitamente para clareza do contrato de produção/consumo Avro.
+    -->
+    <PackageReference Include="Confluent.SchemaRegistry.Serdes.Avro" />
   </ItemGroup>
 
   <ItemGroup>

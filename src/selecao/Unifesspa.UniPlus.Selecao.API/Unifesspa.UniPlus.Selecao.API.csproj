@@ -3,9 +3,8 @@
   <!--
     Módulo interno do monólito modular: class library (não executável). Roda apenas
     dentro da API UniPlus; não carrega Program/appsettings próprios. Deploy: somente
-    Geo, Portal e UniPlus são executáveis. WolverineFx.Postgresql permanece —
-    traz o namespace base Wolverine (WolverineOptions) consumido por
-    SelecaoCodegenRegistration.
+    Geo, Portal e UniPlus são executáveis. WolverineFx.Kafka permanece — o wiring de
+    mensageria (SelecaoMessagingRegistration) é consumido pelo host.
   -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -13,6 +12,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="WolverineFx.Postgresql" />
+    <PackageReference Include="WolverineFx.Kafka" />
   </ItemGroup>
 
   <!-- Implicit usings que o Sdk.Web adicionava e o Sdk padrão não traz. -->

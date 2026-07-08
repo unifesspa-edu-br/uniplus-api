@@ -1383,6 +1383,7 @@
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Infrastructure": "[1.0.0, )",
+          "WolverineFx.Kafka": "[5.39.5, )",
           "WolverineFx.Postgresql": "[5.39.5, )"
         }
       },
@@ -1407,6 +1408,8 @@
       "unifesspa.uniplus.selecao.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "Apache.Avro": "[1.12.1, )",
+          "Confluent.SchemaRegistry.Serdes.Avro": "[2.15.0, )",
           "Microsoft.EntityFrameworkCore": "[10.0.9, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.9, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
