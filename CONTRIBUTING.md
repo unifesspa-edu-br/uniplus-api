@@ -211,39 +211,40 @@ Siga a ordem de implementação por camada — de dentro para fora:
 
 #### Padrão de handler
 
-> **Nota temporária (#782):** o slice `Edital` usado historicamente como referência
-> pedagógica deste padrão foi removido — era o agregado legado, pré-inversão
-> ProcessoSeletivo↔Edital. O bloco de código abaixo ilustra a FORMA do padrão
-> CQRS/Wolverine (ainda válida), mas os tipos citados (`CriarEditalCommand`,
-> `IEditalRepository` etc.) não existem mais no código. Reescrita completa com um
-> slice de referência vivo (`ProcessoSeletivo`) está planejada para a T4 (#785).
-
 Commands implementam `ICommand<TResponse>`, queries implementam `IQuery<TResponse>` — ambos definidos em `Application.Abstractions/Messaging`. Handlers seguem a convenção do Wolverine: classe `static`, método `Handle` (`Task<TResponse>` ou `(TResponse, IEnumerable<object>)` para cascading messages) e dependências resolvidas como parâmetros do método.
 
-```csharp
-// Command + handler (forma ilustrativa — ver nota acima)
-public sealed record CriarEditalCommand(...) : ICommand<Result<Guid>>;
+Slice de referência (Story #759, T4 #785): `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommandHandler.cs`.
 
-public static class CriarEditalCommandHandler
+```csharp
+// Command + handler que muta agregado e emite domain event (cascading)
+public sealed record PublicarProcessoSeletivoCommand(
+    Guid ProcessoSeletivoId,
+    string? Numero,
+    DateOnly PeriodoInscricaoInicio,
+    DateOnly PeriodoInscricaoFim,
+    Guid DocumentoEditalId) : ICommand<Result>;
+
+public static class PublicarProcessoSeletivoCommandHandler
 {
-    public static async Task<Result<Guid>> Handle(
-        CriarEditalCommand command,
-        IEditalRepository editalRepository,
-        IUnitOfWork unitOfWork,
+    public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
+        PublicarProcessoSeletivoCommand command,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        // ... lógica de domínio + persistência
+        // ... carrega o agregado, chama ProcessoSeletivo.Publicar, persiste ...
+        return (Result.Success(), processo.DequeueDomainEvents().Cast<object>());
     }
 }
 
-// Query + handler (forma ilustrativa — ver nota acima)
-public sealed record ObterEditalQuery(Guid Id) : IQuery<EditalDto?>;
+// Query + handler (leitura pura, sem cascading)
+public sealed record ObterProcessoSeletivoQuery(Guid Id) : IQuery<ProcessoSeletivoDto?>;
 
-public static class ObterEditalQueryHandler
+public static class ObterProcessoSeletivoQueryHandler
 {
-    public static async Task<EditalDto?> Handle(
-        ObterEditalQuery query,
-        IEditalRepository editalRepository,
+    public static async Task<ProcessoSeletivoDto?> Handle(
+        ObterProcessoSeletivoQuery query,
+        IProcessoSeletivoRepository processoSeletivoRepository,
         CancellationToken cancellationToken) => /* ... */;
 }
 ```
