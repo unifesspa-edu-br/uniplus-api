@@ -39,7 +39,12 @@ public static class DefinirBonusRegionalCommandHandler
 
         if (command.RegraCodigo is null)
         {
-            processo.DefinirBonusRegional(null);
+            Result removerResult = processo.DefinirBonusRegional(null);
+            if (removerResult.IsFailure)
+            {
+                return removerResult;
+            }
+
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
             return Result.Success();
         }
@@ -81,7 +86,12 @@ public static class DefinirBonusRegionalCommandHandler
             return Result.Failure(bonusResult.Error!);
         }
 
-        processo.DefinirBonusRegional(bonusResult.Value!);
+        Result definirResult = processo.DefinirBonusRegional(bonusResult.Value!);
+        if (definirResult.IsFailure)
+        {
+            return definirResult;
+        }
+
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result.Success();
