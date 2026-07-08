@@ -183,21 +183,8 @@ public static class HashCanonicalComputer
     /// minúsculo. Fonte única do passo final de hashing — compartilhada entre
     /// o hash de <c>ObrigatoriedadeLegal</c> e o do <c>rol_de_regras</c>.
     /// </summary>
-    private static string HashCanonicalPayload(JsonObject payload)
-    {
-        JsonNode canonical = CanonicalizeRecursive(payload);
-
-        // Use Utf8JsonWriter for byte-stable output (no environment-dependent
-        // line endings, no escape policy variation across runtimes).
-        using MemoryStream buffer = new();
-        using (Utf8JsonWriter writer = new(buffer, new JsonWriterOptions { Indented = false }))
-        {
-            canonical.WriteTo(writer);
-        }
-
-        byte[] hash = SHA256.HashData(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
-        return Convert.ToHexStringLower(hash);
-    }
+    private static string HashCanonicalPayload(JsonObject payload) =>
+        ComputeSha256Hex(ComputeSnapshotBytes(payload));
 
     /// <summary>
     /// Reordena alfabeticamente as chaves de todos os <see cref="JsonObject"/>
@@ -251,5 +238,80 @@ public static class HashCanonicalComputer
         }
 
         return hash.All(static c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+    }
+
+    /// <summary>
+    /// Normaliza uma string de negócio para a forma Unicode NFC (ADR-0100
+    /// item 1) — sequências combinantes e formas pré-compostas do mesmo texto
+    /// colapsam para os mesmos bytes antes de entrar no payload canônico.
+    /// Toda string de negócio (nomes, descrições, textos livres) do snapshot
+    /// de publicação passa por aqui antes de ser serializada.
+    /// </summary>
+    public static string NormalizeNfc(string valor)
+    {
+        ArgumentNullException.ThrowIfNull(valor);
+        return valor.Normalize(NormalizationForm.FormC);
+    }
+
+    /// <summary>
+    /// Serializa um decimal de negócio com escala declarada e arredondamento
+    /// half-even (ADR-0100 item 2) — nunca como <c>number</c> JSON de ponto
+    /// flutuante, que reintroduziria ambiguidade de representação entre
+    /// runtimes. O caller declara <paramref name="escala"/> por campo (schema
+    /// do bloco canônico), não um default global.
+    /// </summary>
+    public static string SerializeDecimalCanonical(decimal valor, int escala)
+    {
+        if (escala < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(escala), escala, "Escala decimal não pode ser negativa.");
+        }
+
+        decimal arredondado = Math.Round(valor, escala, MidpointRounding.ToEven);
+        return arredondado.ToString("F" + escala.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Serializa um instante em UTC, RFC 3339, granularidade de segundo, sem
+    /// fração (ADR-0100 item 3) — elimina variação por precisão de relógio ou
+    /// serializador entre runtimes.
+    /// </summary>
+    public static string SerializeInstantCanonical(DateTimeOffset instante) =>
+        instante.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Canonicaliza <paramref name="payload"/> (reordenação recursiva de
+    /// chaves) e serializa via <see cref="Utf8JsonWriter"/> byte-estável,
+    /// retornando os BYTES — não o hash. É a base do
+    /// <c>configuracao_congelada_canonica</c> persistido pelo
+    /// <c>SnapshotPublicacao</c> (ADR-0100 item 6): a aplicação produz os
+    /// bytes uma vez, na publicação; o hash é derivado deles (nunca
+    /// recalculado a partir de uma forma intermediária).
+    /// </summary>
+    public static byte[] ComputeSnapshotBytes(JsonObject payload)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+
+        JsonNode canonical = CanonicalizeRecursive(payload);
+
+        using MemoryStream buffer = new();
+        using (Utf8JsonWriter writer = new(buffer, new JsonWriterOptions { Indented = false }))
+        {
+            canonical.WriteTo(writer);
+        }
+
+        return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// Extrai o hash SHA-256 (hex minúsculo) de bytes já canônicos — usado
+    /// tanto pela aplicação ao publicar (sobre os bytes recém-produzidos)
+    /// quanto por testes de integração (re-hashear os bytes lidos de volta do
+    /// banco deve bater com o hash persistido, ADR-0100 §Confirmação).
+    /// </summary>
+    public static string ComputeSha256Hex(byte[] bytes)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        return Convert.ToHexStringLower(SHA256.HashData(bytes));
     }
 }
