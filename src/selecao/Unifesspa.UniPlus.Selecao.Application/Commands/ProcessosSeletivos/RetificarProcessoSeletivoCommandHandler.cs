@@ -133,6 +133,13 @@ public static class RetificarProcessoSeletivoCommandHandler
                     "Abertura não carrega edital retificado nem motivo; retificação exige ambos.")), []);
             }
 
+            if (UniqueConstraintViolation.IsRetificacaoDuplicada(constraint))
+            {
+                return (Result.Failure(new DomainError(
+                    "Edital.RetificacaoJaExiste",
+                    "Este Edital já foi retificado — a cadeia de retificação é linear.")), []);
+            }
+
             throw;
         }
 

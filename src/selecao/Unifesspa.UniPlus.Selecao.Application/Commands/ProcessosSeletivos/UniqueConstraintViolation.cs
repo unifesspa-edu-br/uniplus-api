@@ -25,6 +25,7 @@ internal static class UniqueConstraintViolation
     private const string DataPublicacaoConstraint = "ux_editais_processo_data_publicacao";
     private const string AberturaUnicaConstraint = "ux_editais_processo_abertura_unica";
     private const string ContratoNaturezaConstraint = "ck_editais_contrato_natureza";
+    private const string RetificadoUnicoConstraint = "ux_editais_edital_retificado_unico";
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
@@ -70,4 +71,8 @@ internal static class UniqueConstraintViolation
     /// <summary><see langword="true"/> quando a constraint violada é o CHECK do contrato abertura×retificação (ADR-0101).</summary>
     public static bool IsContratoNaturezaInvalido(string? constraint) =>
         string.Equals(constraint, ContratoNaturezaConstraint, StringComparison.Ordinal);
+
+    /// <summary><see langword="true"/> quando a constraint violada é a de retificação única por Edital (cadeia linear, ADR-0101).</summary>
+    public static bool IsRetificacaoDuplicada(string? constraint) =>
+        string.Equals(constraint, RetificadoUnicoConstraint, StringComparison.Ordinal);
 }

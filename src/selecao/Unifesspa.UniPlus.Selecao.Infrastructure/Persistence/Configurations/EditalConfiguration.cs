@@ -71,6 +71,18 @@ internal sealed class EditalConfiguration : IEntityTypeConfiguration<Edital>
             .IsUnique()
             .HasFilter($"natureza = {(int)Domain.Enums.NaturezaEdital.Abertura}")
             .HasDatabaseName("ux_editais_processo_abertura_unica");
+
+        // T5 #786 (ADR-0101, cadeia linear): cada Edital é retificado no
+        // máximo uma vez — backstop de banco simétrico ao da abertura única.
+        // O lock pessimista de ObterComConfiguracaoAsync já serializa
+        // retificações do mesmo processo (o guard em memória sempre vê a
+        // cadeia atualizada), mas esta trava garante a linearidade como
+        // invariante de banco, fechando qualquer janela residual sem que a
+        // cadeia possa ramificar.
+        builder.HasIndex(e => e.EditalRetificadoId)
+            .IsUnique()
+            .HasFilter("edital_retificado_id IS NOT NULL")
+            .HasDatabaseName("ux_editais_edital_retificado_unico");
     }
 
     // ADR-0101: contrato abertura×retificação — abertura sem os dois campos
