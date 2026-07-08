@@ -153,6 +153,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("Edital.ContratoNaturezaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.contrato_natureza_invalido", "Abertura não carrega edital retificado nem motivo; retificação exige ambos")),
         new("Edital.EditalRetificadoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.edital_retificado_obrigatorio", "A retificação deve referenciar o Edital anterior")),
         new("Edital.MotivoRetificacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.motivo_retificacao_obrigatorio", "O motivo da retificação é obrigatório")),
+        new("Edital.RetificacaoJaExiste", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.retificacao_ja_existe", "Este Edital já foi retificado — a cadeia de retificação é linear")),
         // SnapshotPublicacao.Congelar (ADR-0063): entidade forensic — guards
         // de invariante lançam ArgumentException (defesa em profundidade
         // contra erro de programação do caller, nunca alcançável a partir de
