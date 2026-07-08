@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using FluentValidation;
 
 using Commands.ProcessosSeletivos;
+using Domain.ValueObjects;
 
 public sealed class RetificarProcessoSeletivoCommandValidator : AbstractValidator<RetificarProcessoSeletivoCommand>
 {
@@ -11,7 +12,11 @@ public sealed class RetificarProcessoSeletivoCommandValidator : AbstractValidato
 
     // Espelha a coluna varchar(2000) de EditalConfiguration.MotivoRetificacao —
     // sem este limite, um motivo acima do tamanho da coluna só falharia no
-    // SaveChanges (erro de infraestrutura), nunca como 422.
+    // SaveChanges (erro de infraestrutura), nunca como 422. O limite é aferido
+    // sobre o valor NORMALIZADO (Trim + NFC), que é o efetivamente persistido:
+    // a normalização NFC pode expandir code points de composição-excluída
+    // (ex.: U+0958 → U+0915 U+093C), então validar o comprimento cru deixaria
+    // passar um input que estoura a coluna só depois da normalização.
     private const int MotivoMaxLength = 2000;
 
     public RetificarProcessoSeletivoCommandValidator()
@@ -23,7 +28,8 @@ public sealed class RetificarProcessoSeletivoCommandValidator : AbstractValidato
         RuleFor(x => x.Motivo)
             .NotEmpty()
             .WithMessage("Motivo da retificação é obrigatório.")
-            .MaximumLength(MotivoMaxLength)
+            .Must(motivo => motivo is null
+                || HashCanonicalComputer.NormalizeNfc(motivo.Trim()).Length <= MotivoMaxLength)
             .WithMessage($"Motivo da retificação deve ter no máximo {MotivoMaxLength} caracteres.");
 
         RuleFor(x => x.DocumentoEditalId)
