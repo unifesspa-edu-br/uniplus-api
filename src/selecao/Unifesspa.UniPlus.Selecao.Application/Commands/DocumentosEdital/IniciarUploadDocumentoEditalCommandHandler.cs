@@ -13,8 +13,20 @@ using Kernel.Results;
 /// </summary>
 public static class IniciarUploadDocumentoEditalCommandHandler
 {
-    /// <summary>TTL da URL pre-assinada de upload — curto por design (ADR-0027-adjacent: janela mínima de exposição).</summary>
-    public static readonly TimeSpan TtlUpload = TimeSpan.FromMinutes(15);
+    /// <summary>
+    /// TTL da URL pre-assinada de upload, em segundos — curto por design
+    /// (janela mínima de exposição). <c>const int</c> (não <see cref="TimeSpan"/>)
+    /// porque também é consumido como argumento de atributo em
+    /// <see cref="Unifesspa.UniPlus.Infrastructure.Core.Idempotency.RequiresIdempotencyKeyAttribute.TtlSeconds"/>
+    /// no controller — o cache de idempotência (teto de 24h por padrão,
+    /// ADR-0027) precisa expirar no mesmo prazo desta URL, senão um replay
+    /// devolve uma URL já expirada e o cliente fica sem como reobter uma
+    /// válida sem criar outro registro pendente com nova Idempotency-Key.
+    /// </summary>
+    public const int TtlUploadSegundos = 900;
+
+    /// <summary>TTL da URL pre-assinada de upload como <see cref="TimeSpan"/> — ver <see cref="TtlUploadSegundos"/>.</summary>
+    public static readonly TimeSpan TtlUpload = TimeSpan.FromSeconds(TtlUploadSegundos);
 
     public static async Task<Result<IniciarUploadDocumentoEditalDto>> Handle(
         IniciarUploadDocumentoEditalCommand command,

@@ -81,7 +81,8 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(next);
 
-        if (!HasRequiresIdempotencyKey(context))
+        RequiresIdempotencyKeyAttribute? attribute = GetRequiresIdempotencyKeyAttribute(context);
+        if (attribute is null)
         {
             await next().ConfigureAwait(false);
             return;
@@ -164,7 +165,8 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         // em Processing (409), ou ter Hit com body diferente (422). Sem o
         // re-lookup, perdedor receberia 409 mesmo se o vencedor já estivesse
         // pronto para replay — quebra de contrato draft IETF §3.
-        DateTimeOffset expiresAt = _time.GetUtcNow().Add(_options.Ttl);
+        TimeSpan ttl = attribute.TtlSeconds >= 0 ? TimeSpan.FromSeconds(attribute.TtlSeconds) : _options.Ttl;
+        DateTimeOffset expiresAt = _time.GetUtcNow().Add(ttl);
         bool reserved = await _store.TryReserveAsync(
             scope, endpoint, idempotencyKey, bodyHash, expiresAt, httpContext.RequestAborted).ConfigureAwait(false);
 
@@ -310,16 +312,16 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         }
     }
 
-    private static bool HasRequiresIdempotencyKey(ResourceExecutingContext context)
+    private static RequiresIdempotencyKeyAttribute? GetRequiresIdempotencyKeyAttribute(ResourceExecutingContext context)
     {
         if (context.ActionDescriptor is not ControllerActionDescriptor descriptor)
-            return false;
+            return null;
 
         // Atributo aceita AttributeTargets.Method | Class. Method-level vence
         // (controlle granularidade fina); class-level cobre o caso "todos os
         // POSTs deste controller exigem Idempotency-Key" sem repetir o atributo.
-        return descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null
-            || descriptor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true) is not null;
+        return descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)
+            ?? descriptor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true);
     }
 
     private static async Task<byte[]> ReadAndRewindBodyAsync(
