@@ -44,7 +44,10 @@ public sealed class DocumentosEditalController : ControllerBase
     /// URL pre-assinada de PUT (TTL curto) + o id do documento.
     /// </summary>
     [HttpPost]
-    [RequiresIdempotencyKey]
+    // TTL alinhado ao da URL pre-assinada devolvida (não ao teto default de
+    // 24h, ADR-0027) — sem isso, um replay depois da URL expirar devolveria
+    // uma URL inutilizável ao cliente. Ver XML doc de TtlUploadSegundos.
+    [RequiresIdempotencyKey(TtlSeconds = IniciarUploadDocumentoEditalCommandHandler.TtlUploadSegundos)]
     [ProducesResponseType(typeof(IniciarUploadDocumentoEditalDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
