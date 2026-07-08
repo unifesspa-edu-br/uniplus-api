@@ -151,6 +151,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("Edital.DataPublicacaoDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.data_publicacao_duplicada", "Já existe um Edital publicado neste processo com a mesma data de publicação")),
         new("Edital.AberturaJaExiste", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.abertura_ja_existe", "Este processo já tem um Edital de abertura publicado")),
         new("Edital.ContratoNaturezaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.contrato_natureza_invalido", "Abertura não carrega edital retificado nem motivo; retificação exige ambos")),
+        new("Edital.EditalRetificadoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.edital_retificado_obrigatorio", "A retificação deve referenciar o Edital anterior")),
+        new("Edital.MotivoRetificacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.motivo_retificacao_obrigatorio", "O motivo da retificação é obrigatório")),
         // SnapshotPublicacao.Congelar (ADR-0063): entidade forensic — guards
         // de invariante lançam ArgumentException (defesa em profundidade
         // contra erro de programação do caller, nunca alcançável a partir de
@@ -160,6 +162,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada", "Processo publicado não aceita mutação direta da configuração")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
+        new("ProcessoSeletivo.EditalRetificadoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.edital_retificado_invalido", "A retificação deve referenciar o Edital vigente deste processo")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

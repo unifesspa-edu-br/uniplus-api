@@ -65,4 +65,57 @@ public sealed class Edital : EntityBase
             MotivoRetificacao = null,
         });
     }
+
+    /// <summary>
+    /// Emite um Edital de retificação (natureza <see cref="NaturezaEdital.Retificacao"/>,
+    /// ADR-0101, T5 #786) — vinculado ao Edital anterior da cadeia e com
+    /// motivo obrigatório. Contrato tudo-ou-nada da natureza: retificação
+    /// exige <paramref name="editalRetificadoId"/> e <paramref name="motivo"/>
+    /// simultaneamente (defesa em profundidade sobre o CHECK
+    /// <c>ck_editais_contrato_natureza</c>). A pertença do edital retificado ao
+    /// mesmo processo é responsabilidade da raiz
+    /// (<see cref="ProcessoSeletivo.Retificar"/>), que carrega a cadeia completa.
+    /// </summary>
+    public static Result<Edital> EmitirRetificacao(
+        Guid processoSeletivoId,
+        DadosEdital dados,
+        Guid editalRetificadoId,
+        string motivo,
+        TimeProvider clock)
+    {
+        ArgumentNullException.ThrowIfNull(dados);
+        ArgumentNullException.ThrowIfNull(clock);
+
+        if (processoSeletivoId == Guid.Empty)
+        {
+            return Result<Edital>.Failure(new DomainError(
+                "Edital.ProcessoSeletivoIdObrigatorio",
+                "O Edital deve estar vinculado a um Processo Seletivo."));
+        }
+
+        if (editalRetificadoId == Guid.Empty)
+        {
+            return Result<Edital>.Failure(new DomainError(
+                "Edital.EditalRetificadoObrigatorio",
+                "A retificação deve referenciar o Edital anterior."));
+        }
+
+        if (string.IsNullOrWhiteSpace(motivo))
+        {
+            return Result<Edital>.Failure(new DomainError(
+                "Edital.MotivoRetificacaoObrigatorio",
+                "O motivo da retificação é obrigatório."));
+        }
+
+        return Result<Edital>.Success(new Edital
+        {
+            ProcessoSeletivoId = processoSeletivoId,
+            Natureza = NaturezaEdital.Retificacao,
+            Numero = dados.Numero,
+            DataPublicacao = clock.GetUtcNow(),
+            DocumentoEditalId = dados.DocumentoEditalId,
+            EditalRetificadoId = editalRetificadoId,
+            MotivoRetificacao = motivo.Trim(),
+        });
+    }
 }
