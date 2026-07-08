@@ -89,12 +89,16 @@ public static class RetificarProcessoSeletivoCommandHandler
                 $"Só é possível retificar um processo publicado — status atual: {processo.Status}.")), []);
         }
 
-        // Normaliza o motivo UMA vez, aqui, e usa o mesmo valor nos dois
-        // caminhos: o bloco 'retificacao' do snapshot e o MotivoRetificacao do
-        // Edital. Sem isso, o Edital guardaria motivo.Trim() enquanto o
-        // snapshot congelaria o motivo cru — divergência que quebra a
-        // reconciliação do snapshot congelado contra a linha do Edital.
-        string motivo = command.Motivo.Trim();
+        // Normaliza o motivo UMA vez, aqui (Trim + NFC), e usa o mesmo valor
+        // nos dois caminhos: o bloco 'retificacao' do snapshot e o
+        // MotivoRetificacao do Edital. O canonicalizer aplica NormalizeNfc ao
+        // congelar o snapshot; se o Edital guardasse o valor sem a mesma
+        // normalização, um input Unicode decomposto (ex.: "correção" em NFD)
+        // divergiria entre a coluna motivo_retificacao e o bloco congelado,
+        // quebrando a reconciliação. Postgres não normaliza texto, então a
+        // paridade tem de ser garantida na aplicação. NormalizeNfc é
+        // idempotente — reaplicá-lo no canonicalizer não altera o valor.
+        string motivo = HashCanonicalComputer.NormalizeNfc(command.Motivo.Trim());
 
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             processo,

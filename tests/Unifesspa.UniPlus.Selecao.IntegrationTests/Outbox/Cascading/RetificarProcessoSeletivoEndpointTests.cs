@@ -4,7 +4,9 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -75,6 +77,44 @@ public sealed class RetificarProcessoSeletivoEndpointTests
             collector, retificacao.Id, TimeSpan.FromSeconds(15));
         evento.Should().NotBeNull("a retificação drena ProcessoPublicadoEvent pelo mesmo caminho cascading");
         evento!.ProcessoSeletivoId.Should().Be(processoId);
+    }
+
+    [Fact(DisplayName =
+        "Retificação com motivo Unicode decomposto congela o mesmo valor NFC no snapshot e na coluna do Edital")]
+    public async Task Retificar_MotivoUnicodeDecomposto_SnapshotEEditalReconciliam()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        (Guid processoId, Guid documentoAbertura) = await SemearAsync(api, nameof(Retificar_MotivoUnicodeDecomposto_SnapshotEEditalReconciliam));
+        HttpResponseMessage publicar = await PostPublicarAsync(client, processoId, documentoAbertura, MakeIdempotencyKey());
+        publicar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
+
+        // Motivo em forma DECOMPOSTA (NFD): ç = c + U+0327, ã = a + U+0303. O
+        // handler deve normalizar para NFC uma vez e congelar o mesmo valor nos
+        // dois lados (coluna do Edital e bloco 'retificacao' do snapshot).
+        string motivoDecomposto = "correção do prazo de inscrição".Normalize(NormalizationForm.FormD);
+        HttpResponseMessage retificar = await PostRetificarAsync(
+            client, processoId, documentoRetificacao, motivoDecomposto, MakeIdempotencyKey());
+        retificar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        Edital retificacao = await db.Set<Edital>().AsNoTracking()
+            .SingleAsync(e => e.ProcessoSeletivoId == processoId && e.Natureza == NaturezaEdital.Retificacao);
+        SnapshotPublicacao snapshot = await db.SnapshotsPublicacao.AsNoTracking()
+            .SingleAsync(s => s.EditalId == retificacao.Id);
+        string motivoNoSnapshot = JsonNode.Parse(snapshot.ConfiguracaoCongelada)!
+            .AsObject()["retificacao"]!["motivo"]!.GetValue<string>();
+
+        // A coluna do Edital e o bloco congelado guardam o MESMO valor NFC — a
+        // reconciliação do snapshot forense contra a linha do Edital vale mesmo
+        // com input decomposto (Postgres não normaliza texto).
+        retificacao.MotivoRetificacao.Should().Be(motivoNoSnapshot);
+        retificacao.MotivoRetificacao.Should().Be(
+            "correção do prazo de inscrição".Normalize(NormalizationForm.FormC));
     }
 
     private static async Task<ProcessoPublicadoEvent?> EsperarEventoPorEditalAsync(

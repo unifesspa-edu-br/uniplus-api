@@ -39,6 +39,20 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));
     }
 
+    [Fact(DisplayName = "Motivo dentro do limite cru mas que estoura o limite após NFC é recusado")]
+    public void MotivoQueExpandeComNfc_AcimaDoLimite_Recusado()
+    {
+        // U+0958 (DEVANAGARI QA) é composição-excluída: NFC o decompõe em dois
+        // code points (U+0915 U+093C). 1001 chars crus (≤ 2000) viram 2002 após
+        // NFC — o valor efetivamente persistido estoura a coluna varchar(2000).
+        string motivoQueExpande = new('\u0958', 1001);
+
+        ValidationResult resultado = Validator.Validate(ComandoValido() with { Motivo = motivoQueExpande });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));
+    }
+
     [Fact(DisplayName = "Fim do período anterior ao início é recusado")]
     public void PeriodoInvertido_Recusado()
     {
