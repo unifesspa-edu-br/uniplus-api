@@ -88,6 +88,23 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<DocumentoEdital> DocumentosEdital => Set<DocumentoEdital>();
 
     /// <summary>
+    /// Editais emitidos pela publicação/retificação do processo (Story #759,
+    /// T4 #785) — entidade interna do agregado, exposta como <c>DbSet</c>
+    /// para consulta e para o mapeamento EF da coleção
+    /// <see cref="ProcessoSeletivo.Editais"/>; a escrita passa sempre pela
+    /// raiz via <c>IProcessoSeletivoRepository</c>.
+    /// </summary>
+    public DbSet<Edital> Editais => Set<Edital>();
+
+    /// <summary>
+    /// Congelamento append-only da configuração de negócio no momento da
+    /// publicação (RN08, ADR-0100) — <see cref="SnapshotPublicacao"/> é
+    /// <c>IForensicEntity</c>, capturado explicitamente dentro de
+    /// <see cref="ProcessoSeletivo.Publicar"/> (Story #759, T4 #785).
+    /// </summary>
+    public DbSet<SnapshotPublicacao> SnapshotsPublicacao => Set<SnapshotPublicacao>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado
     /// para permitir gravação adjacente no outbox; entries cifradas at-rest
     /// via <c>IUniPlusEncryptionService</c>.
