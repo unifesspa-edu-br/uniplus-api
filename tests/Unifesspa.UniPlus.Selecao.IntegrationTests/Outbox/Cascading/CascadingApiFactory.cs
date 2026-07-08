@@ -2,6 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -15,7 +19,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// redundante: o host registra o DbContext via
 /// <c>AddSelecaoInfrastructure</c> com todos os interceptors
 /// (SoftDelete + Auditable + ObrigatoriedadeLegalHistorico) e snake_case por
-/// convenção (<c>UseUniPlusNpgsqlConventions</c>).
+/// convenção (<c>UseUniPlusNpgsqlConventions</c>). Resta apenas o
+/// <see cref="DomainEventCollector"/> que o handler subscritor consome.
 /// </remarks>
 [SuppressMessage(
     "Performance",
@@ -26,5 +31,17 @@ public sealed class CascadingApiFactory : MonolitoApiFactory
     public CascadingApiFactory(string connectionString)
         : base(connectionString, wolverineEnabled: true)
     {
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        base.ConfigureWebHost(builder);
+
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<DomainEventCollector>();
+        });
     }
 }
