@@ -467,6 +467,89 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Retifica um processo já publicado (RN08, Story #759 T5 #786, ADR-0101):
+    /// emite um novo <see cref="Edital"/> de natureza retificação, vinculado ao
+    /// Edital vigente da cadeia e com motivo obrigatório, e congela um novo
+    /// <see cref="SnapshotPublicacao"/> — o snapshot anterior permanece
+    /// intocado (append-only). O status continua Publicado. Os bytes canônicos
+    /// já vêm do <c>ISnapshotPublicacaoCanonicalizer</c> (Application) com o
+    /// bloco de retificação incluído; esta raiz não os produz (ADR-0042).
+    /// </summary>
+    /// <param name="editalRetificadoId">Edital vigente (topo da cadeia) que esta retificação sucede — deve pertencer a este processo (CA-06).</param>
+    /// <param name="motivo">Justificativa obrigatória do ato de retificação (ADR-0101).</param>
+    public Result<PublicacaoResultado> Retificar(
+        DadosEdital dados,
+        byte[] configuracaoCongeladaCanonica,
+        string schemaVersion,
+        string algoritmoHash,
+        string hashEdital,
+        string atorUsuarioSub,
+        Guid editalRetificadoId,
+        string motivo,
+        TimeProvider clock)
+    {
+        ArgumentNullException.ThrowIfNull(dados);
+        ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
+        ArgumentNullException.ThrowIfNull(clock);
+
+        if (Status != StatusProcesso.Publicado)
+        {
+            return Result<PublicacaoResultado>.Failure(new DomainError(
+                "ProcessoSeletivo.TransicaoInvalida",
+                $"Só é possível retificar um processo publicado — status atual: {Status}."));
+        }
+
+        // CA-06 + ADR-0101: a retificação não cruza processos E sucede o
+        // Edital VIGENTE (topo da cadeia — maior data de publicação, único
+        // por ux_editais_processo_data_publicacao). Referenciar um edital de
+        // outro processo, ou um nó que não é o topo, ramificaria a cadeia que
+        // o seletor de snapshot vigente (T6) espera linear.
+        Edital? vigente = _editais
+            .Where(static e => e.DataPublicacao is not null)
+            .OrderByDescending(static e => e.DataPublicacao!.Value)
+            .FirstOrDefault();
+        if (vigente is null || vigente.Id != editalRetificadoId)
+        {
+            return Result<PublicacaoResultado>.Failure(new DomainError(
+                "ProcessoSeletivo.EditalRetificadoInvalido",
+                "A retificação deve referenciar o Edital vigente (o mais recente) deste processo."));
+        }
+
+        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, editalRetificadoId, motivo, clock);
+        if (editalResult.IsFailure)
+        {
+            return Result<PublicacaoResultado>.Failure(editalResult.Error!);
+        }
+
+        Edital edital = editalResult.Value!;
+
+        SnapshotPublicacao snapshot = SnapshotPublicacao.Congelar(
+            edital.Id,
+            configuracaoCongeladaCanonica,
+            schemaVersion,
+            algoritmoHash,
+            hashEdital,
+            atorUsuarioSub,
+            clock);
+
+        _editais.Add(edital);
+
+        // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato
+        // de negócio drenado é "emitido novo Edital + snapshot", idêntico em
+        // forma ao da abertura — o payload (edital/snapshot/hashes/data) serve
+        // aos dois. Evita um segundo schema Avro/tópico sem consumidor.
+        AddDomainEvent(new ProcessoPublicadoEvent(
+            Id,
+            edital.Id,
+            snapshot.Id,
+            snapshot.HashConfiguracao,
+            snapshot.HashEdital,
+            edital.DataPublicacao!.Value));
+
+        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, snapshot));
+    }
+
+    /// <summary>
     /// Trava de mutação pós-publicação (CA-04): todo <c>Definir*</c> recusa
     /// quando o processo já foi publicado — mudança em conteúdo congelável só
     /// via retificação (T5, #786). Reaproveitada por todos os métodos

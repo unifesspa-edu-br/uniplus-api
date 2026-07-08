@@ -58,7 +58,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     private static readonly JsonObject NaoConstruido = new() { ["status"] = "nao_construido" };
 
-    public SnapshotCanonico Canonicalizar(ProcessoSeletivo processo, DadosEdital dados, string hashEdital)
+    public SnapshotCanonico Canonicalizar(
+        ProcessoSeletivo processo,
+        DadosEdital dados,
+        string hashEdital,
+        RetificacaoInfo? retificacao = null)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -84,6 +88,19 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["cronogramaFases"] = NaoConstruido.DeepClone(),
             ["identidadesUnidade"] = NaoConstruido.DeepClone(),
         };
+
+        // ADR-0101: a retificação ACRESCENTA um 18º bloco preservando os 17
+        // anteriores. A abertura não escreve esta chave — seu payload é
+        // byte-a-byte o mesmo do T4 (a reordenação de chaves em
+        // ComputeSnapshotBytes independe da ordem de inserção aqui).
+        if (retificacao is not null)
+        {
+            payload["retificacao"] = new JsonObject
+            {
+                ["editalRetificadoId"] = retificacao.EditalRetificadoId,
+                ["motivo"] = HashCanonicalComputer.NormalizeNfc(retificacao.Motivo),
+            };
+        }
 
         byte[] bytes = HashCanonicalComputer.ComputeSnapshotBytes(payload);
         return new SnapshotCanonico(bytes, SchemaVersionAtual, AlgoritmoHashAtual);

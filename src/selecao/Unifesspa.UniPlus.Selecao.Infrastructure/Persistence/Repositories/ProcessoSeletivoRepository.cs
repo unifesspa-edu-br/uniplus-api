@@ -75,6 +75,9 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.BonusRegional)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
+            // Editais carregados para a retificação (T5 #786) validar que o
+            // edital retificado é o vigente deste processo (ProcessoSeletivo.Retificar).
+            .Include(p => p.Editais)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             .ConfigureAwait(false);
     }

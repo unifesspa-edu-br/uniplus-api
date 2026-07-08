@@ -322,6 +322,38 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Retifica o processo já publicado (RN08, Story #759, T5 #786, ADR-0101):
+    /// emite um novo Edital de natureza retificação vinculado ao Edital
+    /// vigente, com motivo obrigatório, e congela um novo
+    /// <c>SnapshotPublicacao</c> — o snapshot anterior permanece imutável.
+    /// </summary>
+    [HttpPost("{id:guid}/retificacoes")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Retificar(
+        Guid id,
+        [FromBody] RetificarProcessoSeletivoRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result resultado = await _commandBus.Send(
+            new RetificarProcessoSeletivoCommand(
+                id,
+                request.EditalRetificadoId,
+                request.Motivo,
+                request.Numero,
+                request.PeriodoInscricaoInicio,
+                request.PeriodoInscricaoFim,
+                request.DocumentoEditalId),
+            cancellationToken);
+
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Consulta a conformidade estrutural do processo (CA-07): checklist com
     /// cada item obrigatório marcado ok/pendente, sem alterar o processo.
     /// </summary>
@@ -349,6 +381,18 @@ public sealed class ProcessoSeletivoController : ControllerBase
 /// <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 public sealed record PublicarProcessoSeletivoRequest(
+    string? Numero,
+    DateOnly PeriodoInscricaoInicio,
+    DateOnly PeriodoInscricaoFim,
+    Guid DocumentoEditalId);
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.Retificar"/> — omite
+/// <c>ProcessoSeletivoId</c> (vem da rota).
+/// </summary>
+public sealed record RetificarProcessoSeletivoRequest(
+    Guid EditalRetificadoId,
+    string Motivo,
     string? Numero,
     DateOnly PeriodoInscricaoInicio,
     DateOnly PeriodoInscricaoFim,
