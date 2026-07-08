@@ -52,6 +52,20 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
     public async Task<ProcessoSeletivo?> ObterComConfiguracaoAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        // Lock pessimista da linha raiz do agregado (revisão do PR #791,
+        // Story #759 T4): serializa handlers concorrentes (todo Definir* e
+        // Publicar) que carregam o MESMO processo — sem isso, um Definir*
+        // que leu Status=Rascunho antes de uma publicação concorrente pode
+        // persistir mutação DEPOIS do SnapshotPublicacao já ter sido
+        // congelado, furando RN08/CA-04 sem que o guard em memória
+        // (MutacaoBloqueadaPosPublicacao) tenha visibilidade da publicação
+        // alheia. SELECT ... FOR UPDATE roda na MESMA transação ambiente do
+        // Wolverine (EnrollDbContextInTransaction) — a segunda transação
+        // concorrente bloqueia aqui até a primeira committar ou reverter.
+        await _context.Database
+            .ExecuteSqlInterpolatedAsync($"SELECT 1 FROM selecao.processos_seletivos WHERE id = {id} FOR UPDATE", cancellationToken)
+            .ConfigureAwait(false);
+
         return await _context.ProcessosSeletivos
             .Include(p => p.Etapas)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
