@@ -33,6 +33,21 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// motor futuro. Por isso "vagas" serializa como stub
 /// <c>nao_construido</c> e "distribuição" carrega os inputs reais.
 /// </para>
+/// <para>
+/// <strong>Ordenação determinística das coleções (achado de review, PR #791):</strong>
+/// <c>IProcessoSeletivoRepository.ObterComConfiguracaoAsync</c> não aplica
+/// <c>ORDER BY</c> aos <c>Include</c> das coleções filhas — a ordem física
+/// devolvida pelo Postgres para a MESMA linha pode variar entre leituras
+/// (plano de execução, VACUUM, etc.). Como a ordem de um array entra no
+/// hash, todo bloco baseado em coleção é ordenado por uma chave estável
+/// antes de serializar: campo <c>Ordem</c> quando ele é semântico (etapas,
+/// critérios de desempate), identidade de negócio única quando existe
+/// (oferta/modalidade/condição/recurso por seus <c>*OrigemId</c>), ou
+/// <see cref="Kernel.Domain.Entities.EntityBase.Id"/> como fallback quando
+/// não há chave semântica (regras de eliminação — cardinalidade múltipla
+/// sem unicidade natural). Isso garante que reler e recanonicalizar o MESMO
+/// processo sempre produz os mesmos bytes (ADR-0100 §Confirmação).
+/// </para>
 /// </remarks>
 public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonicalizer
 {
@@ -84,7 +99,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonArray SerializarEtapas(ProcessoSeletivo processo)
     {
         JsonArray array = [];
-        foreach (EtapaProcesso etapa in processo.Etapas)
+        IOrderedEnumerable<EtapaProcesso> ordenadas = processo.Etapas
+            .OrderBy(static e => e.Ordem ?? int.MaxValue)
+            .ThenBy(static e => e.Id);
+        foreach (EtapaProcesso etapa in ordenadas)
         {
             array.Add(new JsonObject
             {
@@ -102,7 +120,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonArray SerializarDistribuicao(ProcessoSeletivo processo)
     {
         JsonArray array = [];
-        foreach (ConfiguracaoDistribuicaoVagas configuracao in processo.DistribuicaoVagas)
+        foreach (ConfiguracaoDistribuicaoVagas configuracao in OrdenarPorOfertaCursoOrigemId(processo.DistribuicaoVagas))
         {
             array.Add(new JsonObject
             {
@@ -132,9 +150,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonArray SerializarModalidades(ProcessoSeletivo processo)
     {
         JsonArray array = [];
-        foreach (ConfiguracaoDistribuicaoVagas configuracao in processo.DistribuicaoVagas)
+        foreach (ConfiguracaoDistribuicaoVagas configuracao in OrdenarPorOfertaCursoOrigemId(processo.DistribuicaoVagas))
         {
-            foreach (ModalidadeSelecionada modalidade in configuracao.Modalidades)
+            IOrderedEnumerable<ModalidadeSelecionada> modalidadesOrdenadas = configuracao.Modalidades
+                .OrderBy(static m => m.Codigo, StringComparer.Ordinal);
+            foreach (ModalidadeSelecionada modalidade in modalidadesOrdenadas)
             {
                 array.Add(new JsonObject
                 {
@@ -159,6 +179,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         return array;
     }
 
+    // OfertaCursoOrigemId é único por processo (ConfiguracaoDistribuicaoVagas
+    // — "cada oferta de curso só pode ter uma distribuição de vagas no
+    // processo", validado em ProcessoSeletivo.DefinirDistribuicaoVagas) —
+    // chave de negócio estável, sem empate possível.
+    private static IOrderedEnumerable<ConfiguracaoDistribuicaoVagas> OrdenarPorOfertaCursoOrigemId(
+        IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicoes) =>
+        distribuicoes.OrderBy(static d => d.OfertaCursoOrigemId);
+
     private static JsonArray SerializarOfertas(ProcessoSeletivo processo)
     {
         IEnumerable<string> ofertaIds = processo.DistribuicaoVagas
@@ -178,22 +206,28 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
         return new JsonObject
         {
-            ["condicoes"] = new JsonArray([.. oferta.Condicoes.Select(static c => (JsonNode)new JsonObject
-            {
-                ["condicaoOrigemId"] = c.CondicaoOrigemId,
-                ["condicaoCodigo"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoCodigo),
-                ["condicaoNome"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoNome),
-            })]),
-            ["recursos"] = new JsonArray([.. oferta.Recursos.Select(static r => (JsonNode)new JsonObject
-            {
-                ["recursoOrigemId"] = r.RecursoOrigemId,
-                ["recursoNome"] = HashCanonicalComputer.NormalizeNfc(r.RecursoNome),
-            })]),
-            ["tiposDeficiencia"] = new JsonArray([.. oferta.TiposDeficiencia.Select(static t => (JsonNode)new JsonObject
-            {
-                ["tipoDeficienciaOrigemId"] = t.TipoDeficienciaOrigemId,
-                ["tipoDeficienciaNome"] = HashCanonicalComputer.NormalizeNfc(t.TipoDeficienciaNome),
-            })]),
+            ["condicoes"] = new JsonArray([.. oferta.Condicoes
+                .OrderBy(static c => c.CondicaoOrigemId)
+                .Select(static c => (JsonNode)new JsonObject
+                {
+                    ["condicaoOrigemId"] = c.CondicaoOrigemId,
+                    ["condicaoCodigo"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoCodigo),
+                    ["condicaoNome"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoNome),
+                })]),
+            ["recursos"] = new JsonArray([.. oferta.Recursos
+                .OrderBy(static r => r.RecursoOrigemId)
+                .Select(static r => (JsonNode)new JsonObject
+                {
+                    ["recursoOrigemId"] = r.RecursoOrigemId,
+                    ["recursoNome"] = HashCanonicalComputer.NormalizeNfc(r.RecursoNome),
+                })]),
+            ["tiposDeficiencia"] = new JsonArray([.. oferta.TiposDeficiencia
+                .OrderBy(static t => t.TipoDeficienciaOrigemId)
+                .Select(static t => (JsonNode)new JsonObject
+                {
+                    ["tipoDeficienciaOrigemId"] = t.TipoDeficienciaOrigemId,
+                    ["tipoDeficienciaNome"] = HashCanonicalComputer.NormalizeNfc(t.TipoDeficienciaNome),
+                })]),
         };
     }
 
@@ -218,7 +252,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonArray SerializarCriteriosDesempate(ProcessoSeletivo processo)
     {
         JsonArray array = [];
-        foreach (CriterioDesempate criterio in processo.CriteriosDesempate)
+        foreach (CriterioDesempate criterio in processo.CriteriosDesempate.OrderBy(static c => c.Ordem))
         {
             array.Add(new JsonObject
             {
@@ -261,11 +295,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["casasArredondamento"] = classificacao.CasasArredondamento,
             ["regraOrdemAlocacao"] = SerializarReferenciaRegra(classificacao.RegraOrdemAlocacao),
             ["nOpcoesAlocacao"] = classificacao.NOpcoesAlocacao,
-            ["regrasEliminacao"] = new JsonArray([.. classificacao.RegrasEliminacao.Select(static r => (JsonNode)new JsonObject
-            {
-                ["regra"] = SerializarReferenciaRegra(r.Regra),
-                ["args"] = SerializarArgsRegraEliminacao(r.Args),
-            })]),
+            // RegrasEliminacao não tem chave de negócio única (cardinalidade
+            // múltipla — duas ELIM-NOTA-MINIMA-ETAPA distintas são válidas,
+            // ex. PS Convênios); Id (Guid v7, estável por linha) é o fallback
+            // determinístico contra reordenação física do Postgres entre leituras.
+            ["regrasEliminacao"] = new JsonArray([.. classificacao.RegrasEliminacao
+                .OrderBy(static r => r.Id)
+                .Select(static r => (JsonNode)new JsonObject
+                {
+                    ["regra"] = SerializarReferenciaRegra(r.Regra),
+                    ["args"] = SerializarArgsRegraEliminacao(r.Args),
+                })]),
         };
     }
 
