@@ -22,7 +22,16 @@ public sealed class DocumentoEdital : EntityBase
     /// critério de aceite pedindo configurabilidade.</summary>
     public const long TamanhoMaximoBytes = 20 * 1024 * 1024;
 
-    private const string ContentTypeEsperado = "application/pdf";
+    /// <summary>
+    /// Content-Type exigido tanto na validação de <see cref="ValidarConteudo"/>
+    /// quanto como header assinado na URL pre-assinada de PUT (o SDK MinIO
+    /// inclui o header assinado na query da assinatura SigV4 — um PUT que não
+    /// enviar exatamente este valor falha com SignatureDoesNotMatch antes de
+    /// chegar à validação de negócio). Público para o handler devolver o
+    /// valor exato ao cliente junto da URL, em vez de exigir conhecimento
+    /// fora de banda do contrato.
+    /// </summary>
+    public const string ContentTypeEsperado = "application/pdf";
     private static readonly byte[] AssinaturaPdf = "%PDF-"u8.ToArray();
 
     public Guid ProcessoSeletivoId { get; private set; }

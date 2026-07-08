@@ -50,6 +50,7 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.UrlUpload.Should().Be(new Uri("https://minio.local/uniplus-documentos/x.pdf?X-Amz-Signature=fake"));
+        resultado.Value!.ContentTypeExigido.Should().Be(DocumentoEdital.ContentTypeEsperado);
         await documentoRepository.Received(1).AdicionarAsync(
             Arg.Is<DocumentoEdital>(d => d.ProcessoSeletivoId == processo.Id && d.Status == StatusDocumentoEdital.Pendente),
             Arg.Any<CancellationToken>());
