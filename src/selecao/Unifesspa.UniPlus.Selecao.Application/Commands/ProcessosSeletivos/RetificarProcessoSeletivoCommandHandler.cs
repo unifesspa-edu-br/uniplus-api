@@ -75,11 +75,18 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         DadosEdital dados = dadosResult.Value!;
 
+        // Normaliza o motivo UMA vez, aqui, e usa o mesmo valor nos dois
+        // caminhos: o bloco 'retificacao' do snapshot e o MotivoRetificacao do
+        // Edital. Sem isso, o Edital guardaria motivo.Trim() enquanto o
+        // snapshot congelaria o motivo cru — divergência que quebra a
+        // reconciliação do snapshot congelado contra a linha do Edital.
+        string motivo = command.Motivo.Trim();
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             processo,
             dados,
             documento.HashSha256!,
-            new RetificacaoInfo(command.EditalRetificadoId, command.Motivo));
+            new RetificacaoInfo(command.EditalRetificadoId, motivo));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
@@ -91,7 +98,7 @@ public static class RetificarProcessoSeletivoCommandHandler
             documento.HashSha256!,
             atorUsuarioSub,
             command.EditalRetificadoId,
-            command.Motivo,
+            motivo,
             timeProvider);
         if (retificarResult.IsFailure)
         {
