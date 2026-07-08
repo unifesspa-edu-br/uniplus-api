@@ -163,6 +163,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada", "Processo publicado não aceita mutação direta da configuração")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
+        // Seletor de snapshot vigente (T6 #787, ADR-0075/0076): não há publicação
+        // vigente ≤ o instante consultado — 422, nunca retorno silencioso.
+        new("Snapshot.VigenteAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.snapshot.vigente_ausente", "Nenhuma publicação vigente para o instante")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

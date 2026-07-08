@@ -42,4 +42,26 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// agregado inteiro, incluindo <see cref="Edital"/> e <see cref="SnapshotPublicacao"/>.
     /// </summary>
     Task AdicionarSnapshotPublicacaoAsync(SnapshotPublicacao snapshot, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolve a publicação vigente num instante (RN08, Story #759 T6 #787,
+    /// ADR-0075/0076): o <see cref="Edital"/> publicado (<c>DataPublicacao</c>
+    /// não nula) de MAIOR data ≤ <paramref name="instante"/> e o seu
+    /// <see cref="SnapshotPublicacao"/>. <see langword="null"/> quando não há
+    /// Edital publicado ≤ o instante (inclusive processo inexistente ou ainda
+    /// em rascunho). O empate é impossível por
+    /// <c>ux_editais_processo_data_publicacao</c>. Leitura <c>AsNoTracking</c>.
+    /// </summary>
+    Task<(Edital Edital, SnapshotPublicacao Snapshot)?> ObterSnapshotVigenteAsync(
+        Guid processoSeletivoId,
+        DateTimeOffset instante,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <see langword="true"/> se existe um Processo Seletivo com este id
+    /// (checagem barata via <c>AnyAsync</c>, sem materializar o agregado). Usada
+    /// pelo seletor de snapshot vigente para distinguir 404 (processo
+    /// inexistente) de 422 (sem publicação vigente ≤ o instante).
+    /// </summary>
+    Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
 }

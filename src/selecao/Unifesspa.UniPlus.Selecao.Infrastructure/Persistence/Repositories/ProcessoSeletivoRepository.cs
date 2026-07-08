@@ -88,6 +88,58 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         await _context.SnapshotsPublicacao.AddAsync(snapshot, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<(Edital Edital, SnapshotPublicacao Snapshot)?> ObterSnapshotVigenteAsync(
+        Guid processoSeletivoId,
+        DateTimeOffset instante,
+        CancellationToken cancellationToken = default)
+    {
+        // Npgsql exige DateTimeOffset em UTC (offset zero) ao comparar contra
+        // colunas timestamptz — um instante com offset não-UTC (ex.: -03:00
+        // vindo de um Accept RFC 3339) falharia na execução da query. Normaliza
+        // aqui, no boundary que dona a interação com o Npgsql, preservando o
+        // mesmo instante; qualquer chamador fica DB-safe.
+        DateTimeOffset instanteUtc = instante.ToUniversalTime();
+
+        // Publicação vigente = Edital publicado de MAIOR data ≤ instante
+        // (ADR-0075/0076). ux_editais_processo_data_publicacao garante que não
+        // há empate, então OrderByDescending().FirstOrDefault() é determinístico.
+        // O EXISTS através de ProcessosSeletivos herda o filtro global de
+        // soft-delete (ProcessoSeletivo é SoftDeletableEntity; Edital não é):
+        // um processo excluído logicamente não vaza seu snapshot congelado —
+        // cai no mesmo caminho 404 que o resto da API, coerente com ExisteAsync.
+        Edital? edital = await _context.Editais
+            .AsNoTracking()
+            .Where(e => e.ProcessoSeletivoId == processoSeletivoId
+                && e.DataPublicacao != null
+                && e.DataPublicacao <= instanteUtc
+                && _context.ProcessosSeletivos.Any(p => p.Id == processoSeletivoId))
+            .OrderByDescending(e => e.DataPublicacao)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (edital is null)
+        {
+            return null;
+        }
+
+        // Todo Edital publicado tem exatamente um snapshot congelado 1:1 (T4,
+        // ux_snapshot_publicacao_edital_id) — a ausência aqui seria estado
+        // inconsistente e é tratada como "sem vigente" pelo handler.
+        SnapshotPublicacao? snapshot = await _context.SnapshotsPublicacao
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.EditalId == edital.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        return snapshot is null ? null : (edital, snapshot);
+    }
+
+    public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.ProcessosSeletivos
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<(IReadOnlyList<ProcessoSeletivo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,

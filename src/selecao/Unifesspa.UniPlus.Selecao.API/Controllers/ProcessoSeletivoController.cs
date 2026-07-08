@@ -373,6 +373,33 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         return Ok(conformidade);
     }
+
+    /// <summary>
+    /// Resolve o snapshot congelado vigente do processo num instante (RN08, T6
+    /// #787, ADR-0075/0076): a publicação de maior <c>data_publicacao</c> ≤ o
+    /// instante. Quando <paramref name="instante"/> é omitido, usa o relógio do
+    /// servidor (ADR-0068). É o contrato de LEITURA que o runtime e os
+    /// incrementos downstream consomem — a configuração congelada, não a viva.
+    /// 422 (<c>Snapshot.VigenteAusente</c>) quando não há publicação vigente ≤
+    /// o instante; 404 quando o processo não existe — nunca retorno silencioso.
+    /// </summary>
+    [HttpGet("{id:guid}/snapshot-vigente")]
+    [VendorMediaType(Resource = "snapshot-vigente-processo-seletivo", Versions = [1])]
+    [ProducesResponseType(typeof(SnapshotVigenteDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterSnapshotVigente(
+        Guid id,
+        [FromQuery] DateTimeOffset? instante,
+        CancellationToken cancellationToken)
+    {
+        Result<SnapshotVigenteDto> resultado = await _queryBus
+            .Send(new ObterSnapshotVigenteQuery(id, instante), cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
 }
 
 /// <summary>

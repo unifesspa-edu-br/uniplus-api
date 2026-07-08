@@ -1844,6 +1844,84 @@
           }
         }
       }
+    },
+    "/api/selecao/processos-seletivos/{id}/snapshot-vigente": {
+      "get": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "instante",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotVigenteDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotVigenteDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotVigenteDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2749,6 +2827,7 @@
         }
       },
       "JsonElement": {},
+      "JsonNode": {},
       "ModalidadeSelecionadaDto": {
         "required": [
           "id",
@@ -3566,6 +3645,47 @@
           "documentoEditalId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "SnapshotVigenteDto": {
+        "required": [
+          "snapshotPublicacaoId",
+          "dataPublicacao",
+          "natureza",
+          "schemaVersion",
+          "algoritmoHash",
+          "hashConfiguracao",
+          "hashEdital",
+          "configuracao"
+        ],
+        "type": "object",
+        "properties": {
+          "snapshotPublicacaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataPublicacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "natureza": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "algoritmoHash": {
+            "type": "string"
+          },
+          "hashConfiguracao": {
+            "type": "string"
+          },
+          "hashEdital": {
+            "type": "string"
+          },
+          "configuracao": {
+            "$ref": "#/components/schemas/JsonNode"
           }
         }
       },
