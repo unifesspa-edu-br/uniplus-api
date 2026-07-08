@@ -5,13 +5,6 @@
 > [ADR-0044](adrs/0044-roteamento-domain-events-pg-queue-kafka-opcional.md) (routing PG queue/Kafka) +
 > RUNBOOKS §15 do `uniplus-infra` (Apicurio chart deploy + recuperação de `client_secret`).
 
-> **Nota temporária (#782):** o exemplo `EditalPublicado`/`EditalPublicadoEvent`
-> usado abaixo era o único schema Avro de fato registrado no projeto até aqui — o
-> slice Edital foi removido por inteiro (agregado legado, pré-inversão
-> ProcessoSeletivo↔Edital). Hoje o projeto não tem nenhum schema Avro registrado.
-> O wiring e a arquitetura descritos abaixo continuam válidos; a reescrita com um
-> exemplo real vivo entra quando um novo evento cross-módulo precisar de Avro.
-
 ## O que é
 
 [Apicurio Schema Registry](https://www.apicur.io/registry/) é o **registro central de schemas Avro** dos eventos cross-módulo do Uni+. Em standalone roda em
@@ -39,65 +32,63 @@
        │                     │ (consumer futuro)  │
        │                     └────────────────────┘
        ▼
-┌──────────────────────────────────┐
-│ Selecao.Domain                   │
-│ Events/Schemas/EditalPublicado.avsc │
-└──────────────────────────────────┘
+┌────────────────────────────────────────┐
+│ Selecao.Domain                          │
+│ Events/Schemas/ProcessoPublicado.avsc   │
+└────────────────────────────────────────┘
 ```
 
-**Single source of truth:** o `.avsc` vive como **embedded resource** em `Selecao.Domain`. A classe `unifesspa.uniplus.selecao.events.EditalPublicado` (`Selecao.Infrastructure`) e o `SchemaRegistrationHostedService` (`Infrastructure.Core`) leem o mesmo recurso via reflection — não há cópia em outro arquivo.
+**Single source of truth:** o `.avsc` vive como **embedded resource** em `Selecao.Domain`. A classe `unifesspa.uniplus.selecao.events.ProcessoPublicado` (`Selecao.Infrastructure`) e o `SchemaRegistrationHostedService` (`Infrastructure.Core`) leem o mesmo recurso via reflection — não há cópia em outro arquivo.
 
 ## Wiring no Program.cs
 
+Slice de referência (Story #759, T4 #785): `src/selecao/Unifesspa.UniPlus.Selecao.API/SelecaoMessagingRegistration.cs` — o módulo Selecao encapsula seu próprio wiring de mensageria num método de extensão (`AddSelecaoMessaging`), consumido pelo composition root (`src/host/Unifesspa.UniPlus.Host/Program.cs`):
+
 ```csharp
-// 1) Settings + cliente único (compartilhado entre hosted service e Wolverine).
-SchemaRegistrySettings selecaoSrSettings = builder.Configuration
-    .GetSection(SchemaRegistrySettings.SectionName)
-    .Get<SchemaRegistrySettings>() ?? new SchemaRegistrySettings();
+// SelecaoMessagingRegistration.AddSelecaoMessaging — registra o Schema Registry
+// do módulo (cliente + schema Avro processo_seletivo_events-value) e devolve o
+// configurador de routing Wolverine, sem o host precisar conhecer Kafka/SR.
+Action<WolverineOptions> configurarSelecaoRouting =
+    builder.Services.AddSelecaoMessaging(builder.Configuration, builder.Environment);
 
-ISchemaRegistryClient? selecaoSrClient = null;
-if (!string.IsNullOrWhiteSpace(selecaoSrSettings.Url))
-{
-    using ILoggerFactory bootstrapLoggerFactory = LoggerFactory.Create(b => b.AddSerilog());
-    selecaoSrClient = SchemaRegistryServiceCollectionExtensions.CreateClient(
-        selecaoSrSettings,
-        bootstrapLoggerFactory);
-    builder.Services.AddSingleton(selecaoSrClient);
-}
-
-// 2) Hosted service idempotente registra subjects no Apicurio no startup.
-builder.Services.AddSchemaRegistry(builder.Configuration)
-    .AddSchema(
-        subject: "edital_events-value",
-        schemaResourceName: unifesspa.uniplus.selecao.events.EditalPublicado.SchemaResourceName,
-        resourceAssembly: typeof(EditalPublicadoEvent).Assembly);
-
-// 3) Wolverine routing: cascade EditalPublicadoEvent → EditalPublicado (Avro) → Kafka.
-builder.Host.UseWolverineOutboxCascading(builder.Configuration, "SelecaoDb",
+builder.Host.UseWolverineOutboxCascading(builder.Configuration, "UniPlusDb",
     configureRouting: opts =>
     {
-        opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
-        opts.Discovery.IncludeAssembly(typeof(EditalPublicadoToKafkaCascadeHandler).Assembly);
+        opts.Discovery.IncludeAssembly(typeof(CriarProcessoSeletivoCommand).Assembly);
+        opts.Discovery.IncludeAssembly(typeof(ProcessoPublicadoToKafkaCascadeHandler).Assembly);
 
-        opts.PublishMessage<EditalPublicadoEvent>().ToPostgresqlQueue("domain-events");
-        opts.ListenToPostgresqlQueue("domain-events");
-
-        bool kafkaConfigured = !string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]);
-        if (kafkaConfigured && selecaoSrClient is not null)
-        {
-            opts.PublishMessage<unifesspa.uniplus.selecao.events.EditalPublicado>()
-                .ToKafkaTopic("edital_events")
-                .DefaultSerializer(new SchemaRegistryAvroSerializer(selecaoSrClient));
-        }
+        // Routing do Selecao (PG queue domain-events + Kafka processo_seletivo_events).
+        configurarSelecaoRouting(opts);
     });
+```
+
+Dentro de `AddSelecaoMessaging`/`ConfigurarRouting` (`Selecao.API/SelecaoMessagingRegistration.cs`):
+
+```csharp
+services.AddSchemaRegistry(configuration)
+    .AddSchema(
+        subject: "processo_seletivo_events-value",
+        schemaResourceName: unifesspa.uniplus.selecao.events.ProcessoPublicado.SchemaResourceName,
+        resourceAssembly: typeof(ProcessoPublicadoEvent).Assembly);
+
+opts.PublishMessage<ProcessoPublicadoEvent>().ToPostgresqlQueue("domain-events");
+opts.ListenToPostgresqlQueue("domain-events");
+
+bool kafkaConfigured = !string.IsNullOrWhiteSpace(configuration["Kafka:BootstrapServers"]);
+if (kafkaConfigured && srClient is not null)
+{
+    opts.PublishMessage<unifesspa.uniplus.selecao.events.ProcessoPublicado>()
+        .ToKafkaTopic("processo_seletivo_events")
+        .DefaultSerializer(new SchemaRegistryAvroSerializer(srClient));
+}
 ```
 
 **Pontos importantes:**
 
 1. **Feature off:** `SchemaRegistry:Url` vazio → cliente não é construído, hosted service não é registrado, routing Avro é skippado. APIs sobem sem Apicurio (dev local sem o serviço).
 2. **Cliente único:** o singleton no DI é a mesma instância capturada no closure do callback Wolverine. Evita 2 caches.
-3. **Cascade:** o handler `EditalPublicadoToKafkaCascadeHandler` (em `Selecao.Infrastructure`) projeta o evento de domínio (`EditalPublicadoEvent`, intra-módulo) em `EditalPublicado` (Avro, cross-módulo). Application/Domain ficam puros — não conhecem `Apache.Avro`.
-4. **Outbox cascade:** o `EditalPublicado` (Avro) é instalado no outbox **dentro** da transação do listener da PG queue. Se o publish para Kafka falhar, o Wolverine retenta a partir do outbox (at-least-once). Consumers cross-módulo deduplicam por `EventId` (UUID v7).
+3. **Cascade:** o handler `ProcessoPublicadoToKafkaCascadeHandler` (em `Selecao.Infrastructure`) projeta o evento de domínio (`ProcessoPublicadoEvent`, intra-módulo) em `ProcessoPublicado` (Avro, cross-módulo). Application/Domain ficam puros — não conhecem `Apache.Avro`.
+4. **Outbox cascade:** o `ProcessoPublicado` (Avro) é instalado no outbox **dentro** da transação do listener da PG queue. Se o publish para Kafka falhar, o Wolverine retenta a partir do outbox (at-least-once). Consumers cross-módulo deduplicam por `EventId` (UUID v7).
 
 ## Configuração — modos de auth
 
@@ -175,7 +166,7 @@ Padrão concreto. Para acrescentar `InscricaoCriadaEvent` (módulo Selecao):
 | API trava em `StartAsync` com erro de bind | `SchemaRegistrySettingsValidator` falhou | Logs mostram a falha exata. Conferir env vars `SchemaRegistry__*` |
 | Hosted service loga `Falha ao registrar schema Avro no startup` | Apicurio offline, auth inválida, ou DNS não resolve | Logs incluem o subject; Apicurio side: `kubectl logs deploy/apicurio-registry`. Após Apicurio voltar, registro tenta novamente em runtime |
 | Producer falha com `SchemaRegistryException: Schema being registered is incompatible` | Mudança no `.avsc` quebra BACKWARD compatibility | Re-pensar evolução — campos novos devem ter default; remoção exige etapa intermediária |
-| Consumer recebe `AvroException: Unable to find type 'unifesspa...EditalPublicado'` | Namespace do `.avsc` não casa com namespace da classe C# | Apache.Avro NET resolve via `Type.GetType("&lt;ns&gt;.&lt;name&gt;")` — namespace lowercase é mandatório quando o schema usa lowercase |
+| Consumer recebe `AvroException: Unable to find type 'unifesspa...ProcessoPublicado'` | Namespace do `.avsc` não casa com namespace da classe C# | Apache.Avro NET resolve via `Type.GetType("&lt;ns&gt;.&lt;name&gt;")` — namespace lowercase é mandatório quando o schema usa lowercase |
 | Token endpoint retorna 401 | Vault não populado ou client_secret rotacionado | RUNBOOKS §15.6 do `uniplus-infra` — re-recuperar via `kcadm.sh get clients/$CID/client-secret` |
 | Wolverine envia `byte[]` JSON em vez de Avro | `selecaoSrClient` é `null` (URL vazia) ou Kafka não configurado | Conferir `SchemaRegistry__Url` + `Kafka__BootstrapServers` ambos populados |
 
@@ -192,10 +183,10 @@ curl http://localhost:8081/q/health/ready
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build uniplus-api
 
 # Inspeciona o schema registrado
-curl http://localhost:8081/apis/ccompat/v7/subjects/edital_events-value/versions/latest
+curl http://localhost:8081/apis/ccompat/v7/subjects/processo_seletivo_events-value/versions/latest
 
-# Publica via endpoint (cria + publica edital → cascade dispara → Avro vai para Kafka)
-curl -X POST http://localhost:5202/api/editais ...
+# Publica via endpoint (publica processo → cascade dispara → Avro vai para Kafka)
+curl -X POST http://localhost:5202/api/selecao/processos-seletivos/{id}/publicacao ...
 ```
 
 ## Referências

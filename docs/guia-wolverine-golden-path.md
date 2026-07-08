@@ -15,14 +15,6 @@ Guia operacional em pt-BR para criar novos commands, queries, handlers e domain 
 
 Dúvidas sobre implementação no dia a dia ficam neste guia. Dúvidas sobre contrato, escopo ou reversibilidade vão para a ADR correspondente. Mudanças de escopo (novas abstrações, adoção de features avançadas do Wolverine) exigem emenda à ADR-0003 com PR explícito.
 
-> **Nota temporária (#782):** os exemplos deste guia usam o slice `Edital` (agregado
-> legado, pré-inversão ProcessoSeletivo↔Edital) como referência pedagógica. Esse
-> slice foi removido por inteiro — os tipos citados abaixo (`PublicarEditalCommand`,
-> `EditalController`, `IEditalRepository`, `EditalPublicadoEvent` etc.) não existem
-> mais no código. A FORMA do padrão CQRS/Wolverine/cascading ilustrada continua
-> válida; a reescrita completa com um slice de referência vivo (`ProcessoSeletivo`)
-> está planejada para a T4 (#785).
-
 > **Princípio central:** habilitar o time antes de completar a arquitetura. Apenas duas abstrações (`ICommandBus`, `IQueryBus`) cruzam para `Application`. Drenagem de domain events não é abstração — é convenção de retorno do handler (cascading messages, ADR-0005). Features avançadas do Wolverine (sagas, scheduled messages, middleware custom específico) ficam fora do escopo até um caso de uso concreto pedir.
 
 ## Arquitetura resumida
@@ -59,26 +51,27 @@ Handlers e código de domínio **nunca** importam `Wolverine.*`. Usam apenas os 
 A configuração Wolverine vive no helper `UseWolverineOutboxCascading` em `src/shared/Unifesspa.UniPlus.Infrastructure.Core/Messaging/WolverineOutboxConfiguration.cs` ([ADR-0040](adrs/0040-helper-wolverine-outbox-cascading-canonico.md)). Cada `*.API/Program.cs` consome o helper passando connection string name + um callback opcional de roteamento específico do módulo:
 
 ```csharp
-// src/selecao/Unifesspa.UniPlus.Selecao.API/Program.cs
+// src/host/Unifesspa.UniPlus.Host/Program.cs (composition root do monólito)
+Action<WolverineOptions> configurarSelecaoRouting =
+    builder.Services.AddSelecaoMessaging(builder.Configuration, builder.Environment);
+
 builder.Host.UseWolverineOutboxCascading(
     builder.Configuration,
-    connectionStringName: "SelecaoDb",
+    connectionStringName: "UniPlusDb",
     configureRouting: opts =>
     {
-        // Wolverine escaneia o entry assembly (Selecao.API) por padrão;
-        // handlers produtivos vivem em Selecao.Application — incluir
-        // explicitamente para que PublicarEditalCommandHandler (e futuros)
-        // sejam descobertos. Obrigatório por ADR-0043.
-        opts.Discovery.IncludeAssembly(typeof(PublicarEditalCommand).Assembly);
+        // Wolverine escaneia o entry assembly por padrão; handlers
+        // produtivos vivem em Selecao.Application/Infrastructure — incluir
+        // explicitamente para que PublicarProcessoSeletivoCommandHandler
+        // (e futuros) sejam descobertos. Obrigatório por ADR-0043.
+        opts.Discovery.IncludeAssembly(typeof(CriarProcessoSeletivoCommand).Assembly);
+        opts.Discovery.IncludeAssembly(typeof(ProcessoPublicadoToKafkaCascadeHandler).Assembly);
 
-        // Roteamento específico do módulo Selecao (ADR-0044).
-        opts.PublishMessage<EditalPublicadoEvent>().ToPostgresqlQueue("domain-events");
-        opts.ListenToPostgresqlQueue("domain-events");
-
-        if (!string.IsNullOrWhiteSpace(builder.Configuration["Kafka:BootstrapServers"]))
-        {
-            opts.PublishMessage<EditalPublicadoEvent>().ToKafkaTopic("edital_events");
-        }
+        // Roteamento específico do módulo Selecao (ADR-0044) — PG queue
+        // domain-events sempre; Kafka processo_seletivo_events quando
+        // configurado. O módulo é dono do próprio wiring
+        // (SelecaoMessagingRegistration); o host só compõe.
+        configurarSelecaoRouting(opts);
     });
 ```
 
@@ -183,23 +176,29 @@ Regras análogas existem em `Unifesspa.UniPlus.Ingresso.ArchTests` e na suíte s
 **Commands** representam intenções de mudança de estado. **Queries** representam leitura. Ambos são `sealed record`s, mas com convenções de retorno distintas:
 
 ```csharp
-// src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/Editais/PublicarEditalCommand.cs
-namespace Unifesspa.UniPlus.Selecao.Application.Commands.Editais;
+// src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommand.cs
+namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-public sealed record PublicarEditalCommand(Guid EditalId) : ICommand<Result>;
+public sealed record PublicarProcessoSeletivoCommand(
+    Guid ProcessoSeletivoId,
+    string? Numero,
+    DateOnly PeriodoInscricaoInicio,
+    DateOnly PeriodoInscricaoFim,
+    Guid DocumentoEditalId) : ICommand<Result>;
 ```
 
 ```csharp
-// src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/Editais/ObterEditalQuery.cs
-namespace Unifesspa.UniPlus.Selecao.Application.Queries.Editais;
+// src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQuery.cs
+namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 // Queries retornam o DTO direto (`?` quando "não encontrado" é caso normal).
-public sealed record ObterEditalQuery(Guid Id) : IQuery<EditalDto?>;
+public sealed record ObterProcessoSeletivoQuery(Guid Id) : IQuery<ProcessoSeletivoDto?>;
 ```
 
 ```csharp
-// src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/Editais/ListarEditaisQuery.cs
-public sealed record ListarEditaisQuery(Guid? AfterId, int Limit) : IQuery<ListarEditaisResult>;
+// src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ListarProcessosSeletivosQuery.cs
+public sealed record ListarProcessosSeletivosQuery(Guid? AfterId, int Limit, PaginationDirection Direction)
+    : IQuery<ListarProcessosSeletivosResult>;
 ```
 
 **Convenções:**
@@ -208,7 +207,7 @@ public sealed record ListarEditaisQuery(Guid? AfterId, int Limit) : IQuery<Lista
 - Namespace: `<Module>.Application.{Commands,Queries}.<Feature>`.
 - Nome termina em `Command` (mutação) ou `Query` (leitura).
 - **Commands** retornam `Result` ou `Result<T>` — nunca `void`, nunca `Task`, nunca o tipo de domínio direto. Mantém o contrato de erro explícito ([ADR-0046](adrs/0046-validacao-de-regras-sem-excecao-result-failure.md)).
-- **Queries** retornam o **DTO de leitura direto** (`EditalDto?`, `ListarEditaisResult`) — sem `Result<T>`. Queries não falham por regra de negócio; falham por entrada inválida (`ValidationException` via middleware) ou erro técnico (mapeado pelo `GlobalExceptionMiddleware`). Essa simetria evita boilerplate de `Result.Failure` em caminhos de leitura onde "não encontrado" é resposta normal (`null` ou coleção vazia).
+- **Queries** retornam o **DTO de leitura direto** (`ProcessoSeletivoDto?`, `ListarProcessosSeletivosResult`) — sem `Result<T>`. Queries não falham por regra de negócio; falham por entrada inválida (`ValidationException` via middleware) ou erro técnico (mapeado pelo `GlobalExceptionMiddleware`). Essa simetria evita boilerplate de `Result.Failure` em caminhos de leitura onde "não encontrado" é resposta normal (`null` ou coleção vazia).
 
 ## Passo 2 — escrever o command handler que muta agregado
 
@@ -216,54 +215,58 @@ Handlers são classes `sealed class` ou `static class` convention-based. **Sem i
 
 Quando o handler **muta agregado** e o agregado emite domain events, o retorno é uma **tupla** `(Result, IEnumerable<object>)` ([ADR-0041](adrs/0041-padrao-retorno-handlers-wolverine-cascading.md)). O Wolverine reconhece o padrão, propaga a `Result` para o caller via `ICommandBus.Send<Result>` e captura o `IEnumerable<object>` como cascading messages, persistindo cada envelope no outbox dentro da `IEnvelopeTransaction` ativa — atomicidade write+evento garantida por design.
 
-Slice de referência: `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/Editais/PublicarEditalCommandHandler.cs`.
+Slice de referência (Story #759, T4 #785): `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommandHandler.cs`.
 
 ```csharp
-public sealed class PublicarEditalCommandHandler
+public static class PublicarProcessoSeletivoCommandHandler
 {
     public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
-        PublicarEditalCommand command,
-        IEditalRepository editalRepository,
-        IUnitOfWork unitOfWork,
+        PublicarProcessoSeletivoCommand command,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IDocumentoEditalRepository documentoEditalRepository,
+        ISnapshotPublicacaoCanonicalizer canonicalizer,
+        ISelecaoUnitOfWork unitOfWork,
+        IUserContext userContext,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(editalRepository);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        // ... demais guards ...
 
-        Edital? edital = await editalRepository
-            .ObterPorIdAsync(command.EditalId, cancellationToken)
+        ProcessoSeletivo? processo = await processoSeletivoRepository
+            .ObterComConfiguracaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (edital is null)
+        if (processo is null)
         {
             return (
                 Result.Failure(new DomainError(
-                    "Edital.NaoEncontrado",
-                    $"Edital '{command.EditalId}' não encontrado.")),
+                    "ProcessoSeletivo.NaoEncontrado",
+                    $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")),
                 []);
         }
 
-        if (edital.Status == StatusEdital.Publicado)
+        // ... carrega o documento confirmado, monta DadosEdital, canonicaliza
+        // a configuração (ADR-0100) ...
+
+        Result<PublicacaoResultado> publicarResult = processo.Publicar(
+            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
+            documento.HashSha256!, atorUsuarioSub, timeProvider);
+        if (publicarResult.IsFailure)
         {
-            return (
-                Result.Failure(new DomainError(
-                    "Edital.JaPublicado",
-                    $"Edital '{command.EditalId}' já está publicado.")),
-                []);
+            return (Result.Failure(publicarResult.Error!), []);
         }
 
-        edital.Publicar();
-        editalRepository.Atualizar(edital);
-        await unitOfWork
-            .SalvarAlteracoesAsync(cancellationToken)
+        await processoSeletivoRepository
+            .AdicionarSnapshotPublicacaoAsync(publicarResult.Value!.Snapshot, cancellationToken)
             .ConfigureAwait(false);
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        // ADR-0005 + ADR-0041: drenagem por cascading messages.
-        // Cast<object> garante o switch case `IEnumerable<object>` em
-        // MessageContext.EnqueueCascadingAsync sem depender de covariância
-        // implícita de IDomainEvent (interface) para object.
-        return (Result.Success(), edital.DequeueDomainEvents().Cast<object>());
+        // ADR-0005 + ADR-0041: drenagem por cascading messages, DEPOIS do
+        // SaveChanges bem-sucedido. Cast<object> garante o switch case
+        // `IEnumerable<object>` em MessageContext.EnqueueCascadingAsync sem
+        // depender de covariância implícita de IDomainEvent para object.
+        return (Result.Success(), processo.DequeueDomainEvents().Cast<object>());
     }
 }
 ```
@@ -278,63 +281,63 @@ public sealed class PublicarEditalCommandHandler
 6. **Domain events são retornados explicitamente.** `entity.DequeueDomainEvents().Cast<object>()` é o helper canônico do `EntityBase` — combina snapshot atômico e clear da coleção interna ([ADR-0005](adrs/0005-cascading-messages-para-drenagem-de-domain-events.md)).
 7. **`DequeueDomainEvents()` deve vir DEPOIS de `SaveChangesAsync`.** Drenar antes do save abre janela em que o agregado fica sem eventos se houver rollback.
 
-Handlers de **query** (leitura pura) seguem assinatura `Task<TResponse>` simples sem tupla, retornando o DTO direto. Slice de referência: `src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/Editais/ObterEditalQueryHandler.cs`.
+Handlers de **query** (leitura pura) seguem assinatura `Task<TResponse>` simples sem tupla, retornando o DTO direto. Slice de referência: `src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs`.
 
 ```csharp
-public static class ObterEditalQueryHandler
+public static class ObterProcessoSeletivoQueryHandler
 {
-    public static async Task<EditalDto?> Handle(
-        ObterEditalQuery query,
-        IEditalRepository editalRepository,
+    public static async Task<ProcessoSeletivoDto?> Handle(
+        ObterProcessoSeletivoQuery query,
+        IProcessoSeletivoRepository processoSeletivoRepository,
         CancellationToken ct)
     {
-        Edital? edital = await editalRepository
+        ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterPorIdAsync(query.Id, ct)
             .ConfigureAwait(false);
 
-        if (edital is null)
+        if (processo is null)
             return null;
 
-        return new EditalDto(
-            edital.Id,
-            edital.NumeroEdital.ToString(),
+        return new ProcessoSeletivoDto(
+            processo.Id,
+            processo.Nome,
             // ... demais campos do DTO
         );
     }
 }
 ```
 
-`null` aqui não é erro — é resposta semanticamente válida para "edital não encontrado". O controller mapeia `null` para `404 NotFound` no caminho HTTP, sem precisar instanciar `Result.Failure`. Query handlers podem ser declarados como `static class` (sem instanciamento por request) quando o método `Handle` é `static`.
+`null` aqui não é erro — é resposta semanticamente válida para "processo não encontrado". O controller mapeia `null` para `404 NotFound` no caminho HTTP, sem precisar instanciar `Result.Failure`. Query handlers podem ser declarados como `static class` (sem instanciamento por request) quando o método `Handle` é `static`.
 
 ## Passo 3 — escrever o domain event handler
 
 Domain events reagem a fatos consumados. Mesmo padrão dos command handlers: classe pública (`sealed partial` quando usa `[LoggerMessage]` source generator) + método `static Handle`:
 
 ```csharp
-// src/selecao/Unifesspa.UniPlus.Selecao.Application/Events/Editais/EditalPublicadoEventHandler.cs
+// src/selecao/Unifesspa.UniPlus.Selecao.Application/Events/ProcessosSeletivos/ProcessoPublicadoEventHandler.cs
 [SuppressMessage(
     "Naming",
     "CA1711:Identifiers should not have incorrect suffix",
     Justification = "Convenção do projeto: subscritores de domain events terminam em EventHandler.")]
-public sealed partial class EditalPublicadoEventHandler
+public sealed partial class ProcessoPublicadoEventHandler
 {
     public static void Handle(
-        EditalPublicadoEvent @event,
-        ILogger<EditalPublicadoEventHandler> logger)
+        ProcessoPublicadoEvent @event,
+        ILogger<ProcessoPublicadoEventHandler> logger)
     {
         ArgumentNullException.ThrowIfNull(@event);
         ArgumentNullException.ThrowIfNull(logger);
 
-        LogEditalPublicadoRecebido(logger, @event.EditalId, @event.NumeroEdital);
+        LogProcessoPublicadoRecebido(logger, @event.ProcessoSeletivoId, @event.EditalId);
     }
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "EditalPublicadoEvent recebido. EditalId={EditalId} NumeroEdital={NumeroEdital}")]
-    private static partial void LogEditalPublicadoRecebido(
+        Message = "ProcessoPublicadoEvent recebido. ProcessoSeletivoId={ProcessoSeletivoId} EditalId={EditalId}")]
+    private static partial void LogProcessoPublicadoRecebido(
         ILogger logger,
-        Guid editalId,
-        string numeroEdital);
+        Guid processoSeletivoId,
+        Guid editalId);
 }
 ```
 
@@ -351,8 +354,9 @@ Controllers MVC ([ADR-0036](adrs/0036-controllers-mvc-para-negocio-minimal-api-p
 
 ```csharp
 [ApiController]
-[Route("api/editais")]
-public sealed class EditalController(
+[Route("api/selecao/processos-seletivos")]
+[Authorize(Roles = "plataforma-admin")]
+public sealed class ProcessoSeletivoController(
     ICommandBus commandBus,
     IQueryBus queryBus,
     IDomainErrorMapper mapper) : ControllerBase
@@ -361,10 +365,15 @@ public sealed class EditalController(
     private readonly IQueryBus _queryBus = queryBus;
     private readonly IDomainErrorMapper _mapper = mapper;
 
-    [HttpPost("{id:guid}/publicar")]
-    public async Task<IActionResult> Publicar(Guid id, CancellationToken ct)
+    [HttpPost("{id:guid}/publicacao")]
+    [RequiresIdempotencyKey]
+    public async Task<IActionResult> Publicar(
+        Guid id, [FromBody] PublicarProcessoSeletivoRequest request, CancellationToken ct)
     {
-        Result resultado = await _commandBus.Send(new PublicarEditalCommand(id), ct);
+        Result resultado = await _commandBus.Send(
+            new PublicarProcessoSeletivoCommand(
+                id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId),
+            ct);
         if (resultado.IsSuccess)
             return NoContent();
         return resultado.ToActionResult(_mapper);
@@ -373,8 +382,8 @@ public sealed class EditalController(
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken ct)
     {
-        EditalDto? edital = await _queryBus.Send(new ObterEditalQuery(id), ct);
-        return edital is null ? NotFound() : Ok(edital);
+        ProcessoSeletivoDto? processo = await _queryBus.Send(new ObterProcessoSeletivoQuery(id), ct);
+        return processo is null ? NotFound() : Ok(processo);
     }
 }
 ```
@@ -385,7 +394,7 @@ public sealed class EditalController(
 - Comando falho → `resultado.ToActionResult(_mapper)` mapeia `DomainError` para `ProblemDetails` RFC 9457 ([ADR-0023](adrs/0023-wire-formato-erro-rfc-9457.md), [ADR-0024](adrs/0024-mapeamento-domain-error-http.md)).
 - **`ToActionResult` exige `IDomainErrorMapper` injetado e só é válido para failures** — chamar em `Result.Success` lança exceção. Por isso o pattern é sempre `if (IsSuccess) return ...; return resultado.ToActionResult(_mapper);`, nunca `return resultado.ToActionResult()` direto.
 
-Slice canônico real: `src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/EditalController.cs`.
+Slice canônico real: `src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ProcessoSeletivoController.cs`.
 
 **Nunca** injete `IMessageBus` do Wolverine diretamente em controllers ou handlers. Sempre `ICommandBus` ou `IQueryBus` — contrato enforçado pela ArchUnitNET.
 
@@ -394,11 +403,13 @@ Slice canônico real: `src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/Edi
 Validação de comando/query usa o middleware FluentValidation do Wolverine (`UseFluentValidation`) automaticamente — basta declarar um validator em `Application` no mesmo namespace do command:
 
 ```csharp
-public sealed class PublicarEditalCommandValidator : AbstractValidator<PublicarEditalCommand>
+public sealed class PublicarProcessoSeletivoCommandValidator : AbstractValidator<PublicarProcessoSeletivoCommand>
 {
-    public PublicarEditalCommandValidator()
+    public PublicarProcessoSeletivoCommandValidator()
     {
-        RuleFor(x => x.EditalId).NotEmpty();
+        RuleFor(x => x.ProcessoSeletivoId).NotEmpty();
+        RuleFor(x => x.DocumentoEditalId).NotEmpty();
+        RuleFor(x => x.PeriodoInscricaoFim).GreaterThanOrEqualTo(x => x.PeriodoInscricaoInicio);
     }
 }
 ```
@@ -452,21 +463,25 @@ Dois cenários, alinhados a [ADR-0046](adrs/0046-validacao-de-regras-sem-excecao
 
 ```csharp
 [Fact]
-public async Task Deve_falhar_quando_edital_nao_encontrado()
+public async Task Deve_falhar_quando_processo_nao_encontrado()
 {
-    var repository = Substitute.For<IEditalRepository>();
-    repository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-        .Returns((Edital?)null);
-    var unitOfWork = Substitute.For<IUnitOfWork>();
+    var repository = Substitute.For<IProcessoSeletivoRepository>();
+    repository.ObterComConfiguracaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        .Returns((ProcessoSeletivo?)null);
+    // ... demais dependências via Substitute.For<T>() ...
 
-    var (resposta, eventos) = await PublicarEditalCommandHandler.Handle(
-        new PublicarEditalCommand(Guid.NewGuid()),
+    var (resposta, eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
+        new PublicarProcessoSeletivoCommand(Guid.NewGuid(), null, DateOnly.MinValue, DateOnly.MaxValue, Guid.NewGuid()),
         repository,
+        documentoEditalRepository,
+        canonicalizer,
         unitOfWork,
+        userContext,
+        timeProvider,
         CancellationToken.None);
 
     resposta.IsFailure.Should().BeTrue();
-    resposta.Error!.Code.Should().Be("Edital.NaoEncontrado");
+    resposta.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     eventos.Should().BeEmpty();
 }
 ```
