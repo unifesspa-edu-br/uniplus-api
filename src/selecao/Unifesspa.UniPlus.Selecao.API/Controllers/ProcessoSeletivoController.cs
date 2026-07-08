@@ -342,7 +342,6 @@ public sealed class ProcessoSeletivoController : ControllerBase
         Result resultado = await _commandBus.Send(
             new RetificarProcessoSeletivoCommand(
                 id,
-                request.EditalRetificadoId,
                 request.Motivo,
                 request.Numero,
                 request.PeriodoInscricaoInicio,
@@ -387,11 +386,12 @@ public sealed record PublicarProcessoSeletivoRequest(
     Guid DocumentoEditalId);
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.Retificar"/> — omite
-/// <c>ProcessoSeletivoId</c> (vem da rota).
+/// Corpo de <see cref="ProcessoSeletivoController.Retificar"/> — carrega só os
+/// dados próprios da retificação. Omite <c>ProcessoSeletivoId</c> (vem da rota)
+/// e não recebe id de Edital: o Edital sucedido é o vigente, resolvido no
+/// servidor (a retificação endereça o agregado, não uma entidade interna).
 /// </summary>
 public sealed record RetificarProcessoSeletivoRequest(
-    Guid EditalRetificadoId,
     string Motivo,
     string? Numero,
     DateOnly PeriodoInscricaoInicio,

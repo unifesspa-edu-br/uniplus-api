@@ -15,15 +15,16 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// Cobertura de concorrência da retificação (Story #759 T5 #786, ADR-0101/0102):
-/// duas retificações do MESMO Edital vigente disparadas simultaneamente não
-/// podem ramificar a cadeia — a linearidade "cada Edital é retificado no máximo
-/// uma vez" tem de valer sob corrida. O lock pessimista
-/// (<c>SELECT ... FOR UPDATE</c> em <c>ObterComConfiguracaoAsync</c>) serializa
-/// os handlers: quando a segunda retificação recarrega o agregado, o vigente já
-/// é o Edital de retificação recém-criado, e o guard de vigência a recusa. Se a
-/// serialização falhasse e ambas passassem pelo guard em memória, o índice único
-/// parcial <c>ux_editais_edital_retificado_unico</c> é o backstop de banco — em
-/// qualquer caminho, exatamente uma retificação vence e a cadeia não ramifica.
+/// duas retificações do mesmo processo disparadas simultaneamente não podem
+/// ramificar a cadeia — a linearidade "nenhum Edital é sucedido por dois ramos"
+/// tem de valer sob corrida. O lock pessimista (<c>SELECT ... FOR UPDATE</c> em
+/// <c>ObterComConfiguracaoAsync</c>) serializa os handlers: quando a segunda
+/// retificação recarrega o agregado, o vigente já é o Edital de retificação
+/// recém-criado, então ela sucede ESSE — empilhando em cadeia linear
+/// (abertura→R1→R2), sem ramificar. Se a serialização falhasse e ambas lessem o
+/// mesmo vigente, o índice único parcial <c>ux_editais_edital_retificado_unico</c>
+/// é o backstop de banco que barra a segunda. Em qualquer caminho a cadeia
+/// permanece estritamente linear.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 public sealed class RetificacaoConcorrenciaTests
@@ -36,7 +37,7 @@ public sealed class RetificacaoConcorrenciaTests
     }
 
     [Fact(DisplayName =
-        "Duas retificações concorrentes do mesmo Edital vigente não ramificam a cadeia (ADR-0101/0102)")]
+        "Duas retificações concorrentes do mesmo processo não ramificam a cadeia (ADR-0101/0102)")]
     public async Task DuasRetificacoesConcorrentes_NaoRamificamCadeia()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -86,7 +87,6 @@ public sealed class RetificacaoConcorrenciaTests
 
         var retificarCommand = new RetificarProcessoSeletivoCommand(
             processoId,
-            editalAberturaId,
             "Correção concorrente do prazo de inscrição",
             Numero: "001/2026-R1",
             PeriodoInscricaoInicio: new DateOnly(2026, 2, 1),
@@ -105,28 +105,35 @@ public sealed class RetificacaoConcorrenciaTests
         Result resultadoA = await retificarTaskA;
         Result resultadoB = await retificarTaskB;
 
-        // Exatamente uma retificação vence; a outra é recusada — nunca as duas.
-        new[] { resultadoA, resultadoB }.Count(r => r.IsSuccess).Should().Be(1,
-            "o lock pessimista + guard de vigência serializam as retificações do mesmo processo");
+        // Ao menos uma retificação conclui. Sob o lock as duas serializam e
+        // ambas concluem (empilhando); num cenário sem lock, o índice único
+        // barra a segunda (falha com Edital.RetificacaoJaExiste). O invariante
+        // testado é a NÃO-RAMIFICAÇÃO da cadeia, não o número de vencedores.
+        int sucessos = new[] { resultadoA, resultadoB }.Count(r => r.IsSuccess);
+        sucessos.Should().BeGreaterThanOrEqualTo(1, "ao menos uma retificação conclui");
+        Result? perdedor = new[] { resultadoA, resultadoB }.FirstOrDefault(r => r.IsFailure);
+        if (perdedor is not null)
+        {
+            perdedor.HasErrorCode("Edital.RetificacaoJaExiste").Should().BeTrue(
+                "a retificação que perde a corrida sem o lock é barrada pelo índice único de banco");
+        }
 
-        Result perdedor = resultadoA.IsFailure ? resultadoA : resultadoB;
-        bool codigoDeLinearidade =
-            perdedor.HasErrorCode("ProcessoSeletivo.EditalRetificadoInvalido")
-            || perdedor.HasErrorCode("Edital.RetificacaoJaExiste");
-        codigoDeLinearidade.Should().BeTrue(
-            "a segunda retificação recarrega a cadeia com o novo vigente (guard em memória) " +
-            "ou é barrada pelo índice único de banco — ambos preservam a linearidade");
-
-        // A cadeia não ramificou: exatamente 1 abertura + 1 retificação.
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
         SelecaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         List<Edital> editais = await readDb.Set<Edital>().AsNoTracking()
             .Where(e => e.ProcessoSeletivoId == processoId)
             .ToListAsync();
 
-        editais.Should().HaveCount(2);
-        editais.Count(e => e.Natureza == NaturezaEdital.Retificacao).Should().Be(1,
-            "a linearidade da cadeia (ADR-0101) impede um segundo ramo de retificação sobre o mesmo Edital");
+        // Invariante de linearidade (ADR-0101): nenhum Edital é sucedido por
+        // mais de um ramo de retificação.
+        editais.Where(e => e.EditalRetificadoId is not null)
+            .GroupBy(e => e.EditalRetificadoId)
+            .Where(g => g.Count() > 1)
+            .Should().BeEmpty("nenhum Edital pode ser sucedido por dois ramos — a cadeia é linear");
+
+        // Cada retificação concluída acrescenta exatamente um Edital de
+        // retificação; a abertura é sucedida por no máximo um deles.
+        editais.Count(e => e.Natureza == NaturezaEdital.Retificacao).Should().Be(sucessos);
         editais.Should().ContainSingle(e => e.EditalRetificadoId == editalAberturaId);
     }
 }

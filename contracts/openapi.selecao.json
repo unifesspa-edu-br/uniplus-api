@@ -3538,7 +3538,6 @@
       },
       "RetificarProcessoSeletivoRequest": {
         "required": [
-          "editalRetificadoId",
           "motivo",
           "numero",
           "periodoInscricaoInicio",
@@ -3547,10 +3546,6 @@
         ],
         "type": "object",
         "properties": {
-          "editalRetificadoId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "motivo": {
             "type": "string"
           },

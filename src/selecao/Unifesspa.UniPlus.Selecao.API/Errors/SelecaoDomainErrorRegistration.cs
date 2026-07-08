@@ -163,7 +163,6 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada", "Processo publicado não aceita mutação direta da configuração")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
-        new("ProcessoSeletivo.EditalRetificadoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.edital_retificado_invalido", "A retificação deve referenciar o Edital vigente deste processo")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

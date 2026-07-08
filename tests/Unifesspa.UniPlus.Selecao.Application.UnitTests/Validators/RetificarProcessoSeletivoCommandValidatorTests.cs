@@ -18,7 +18,6 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
 
     private static RetificarProcessoSeletivoCommand ComandoValido() => new(
         ProcessoSeletivoId: Guid.CreateVersion7(),
-        EditalRetificadoId: Guid.CreateVersion7(),
         Motivo: "Correção do prazo de inscrição",
         Numero: "001/2026-R1",
         PeriodoInscricaoInicio: new DateOnly(2026, 1, 2),
@@ -38,14 +37,6 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
         ValidationResult resultado = Validator.Validate(ComandoValido() with { Motivo = "" });
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));
-    }
-
-    [Fact(DisplayName = "EditalRetificadoId vazio é recusado")]
-    public void EditalRetificadoVazio_Recusado()
-    {
-        ValidationResult resultado = Validator.Validate(ComandoValido() with { EditalRetificadoId = Guid.Empty });
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.EditalRetificadoId));
     }
 
     [Fact(DisplayName = "Fim do período anterior ao início é recusado")]

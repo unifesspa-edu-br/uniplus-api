@@ -100,7 +100,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            editalRetificadoId: abertura.Id, motivo: "Correção do prazo de inscrição", clock: clock);
+            motivo: "Correção do prazo de inscrição", clock: clock);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado, "retificar não altera o status Publicado");
@@ -118,13 +118,13 @@ public sealed class ProcessoSeletivoRetificarTests
     public void Retificar_ProcessoPublicado_EmiteEventoComNovosIdentificadores()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _);
         processo.ClearDomainEvents(); // descarta o evento da abertura
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            abertura.Id, "Ajuste de vaga", clock);
+            "Ajuste de vaga", clock);
 
         resultado.IsSuccess.Should().BeTrue();
         Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
@@ -140,47 +140,37 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            editalRetificadoId: Guid.CreateVersion7(), motivo: "qualquer", clock: Relogio());
+            motivo: "qualquer", clock: Relogio());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
         processo.Editais.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Retificacao_MesmoProcesso — retificar referenciando edital que não é o vigente é recusado (CA-06)")]
-    public void Retificar_EditalRetificadoNaoVigente_Recusa()
-    {
-        RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _);
-        clock.Avancar(TimeSpan.FromMinutes(1));
-
-        // Id arbitrário (ex.: edital de outro processo) — não é o vigente.
-        Result<PublicacaoResultado> resultado = processo.Retificar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            editalRetificadoId: Guid.CreateVersion7(), motivo: "motivo", clock: clock);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EditalRetificadoInvalido");
-        processo.Editais.Should().ContainSingle("a retificação recusada não emite um segundo Edital");
-    }
-
-    [Fact(DisplayName = "Retificacao — segunda retificação deve suceder a primeira, não a abertura (cadeia linear)")]
-    public void Retificar_SegundaRetificacao_ReferenciandoAbertura_Recusa()
+    [Fact(DisplayName = "Retificacao_MesmoProcesso — segunda retificação sucede o vigente, formando cadeia linear abertura→R1→R2 (CA-06)")]
+    public void Retificar_SegundaRetificacao_SucedeVigente_CadeiaLinear()
     {
         RelogioManual clock = Relogio();
         ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura);
         clock.Avancar(TimeSpan.FromMinutes(1));
-        processo.Retificar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            abertura.Id, "primeira retificação", clock).IsSuccess.Should().BeTrue();
+
+        Result<PublicacaoResultado> primeira = processo.Retificar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "primeira retificação", clock: clock);
+        primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        // Tenta suceder a abertura de novo — mas o vigente agora é a 1ª retificação.
-        Result<PublicacaoResultado> resultado = processo.Retificar(
+        // A segunda retificação sucede automaticamente o vigente (a 1ª
+        // retificação), não a abertura — o alvo é resolvido pela raiz.
+        Result<PublicacaoResultado> segunda = processo.Retificar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            abertura.Id, "segunda retificação", clock);
+            motivo: "segunda retificação", clock: clock);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EditalRetificadoInvalido");
+        segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
+        primeira.Value!.Edital.EditalRetificadoId.Should().Be(abertura.Id, "R1 sucede a abertura");
+        segunda.Value!.Edital.EditalRetificadoId.Should().Be(primeira.Value!.Edital.Id, "R2 sucede R1 — cada Edital retificado uma única vez");
+        processo.Editais.Should().HaveCount(3);
+        processo.EditalVigente!.Id.Should().Be(segunda.Value!.Edital.Id, "o vigente avança para a última retificação");
     }
 
     [Fact(DisplayName = "Edital_ContratoAberturaRetificacao — EmitirRetificacao sem motivo é recusado")]

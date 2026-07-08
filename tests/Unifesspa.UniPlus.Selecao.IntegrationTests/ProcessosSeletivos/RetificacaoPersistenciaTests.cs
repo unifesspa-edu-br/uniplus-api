@@ -107,10 +107,10 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!,
-                new RetificacaoInfo(publicar.Value!.Edital.Id, "Correção do prazo de inscrição"));
+                new RetificacaoInfo(carregado.EditalVigente!.Id, "Correção do prazo de inscrição"));
             Result<PublicacaoResultado> retificar = carregado.Retificar(
                 dadosRetificacao, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
-                docRetificacao.HashSha256!, "integration-test-user", publicar.Value!.Edital.Id, "Correção do prazo de inscrição", clock);
+                docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
             snapshotRetificacao = retificar.Value!.Snapshot;
             retificacaoEdital = retificar.Value!.Edital;

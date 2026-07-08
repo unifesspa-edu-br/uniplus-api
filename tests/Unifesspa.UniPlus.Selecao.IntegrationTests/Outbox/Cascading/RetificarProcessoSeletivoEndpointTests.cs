@@ -52,9 +52,10 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         Guid editalAberturaId = await ObterEditalUnicoAsync(api, processoId);
         Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
 
-        // Retifica o Edital vigente (a abertura).
+        // Retifica: o servidor infere o Edital vigente (a abertura) — o cliente
+        // não informa id de Edital interno, só endereça o processo.
         HttpResponseMessage retificar = await PostRetificarAsync(
-            client, processoId, editalAberturaId, documentoRetificacao, "Correção do prazo de inscrição", MakeIdempotencyKey());
+            client, processoId, documentoRetificacao, "Correção do prazo de inscrição", MakeIdempotencyKey());
         retificar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Lê o Edital de retificação persistido e espera o evento que carrega
@@ -105,7 +106,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(Retificar_ProcessoRascunho_Retorna422));
 
         HttpResponseMessage response = await PostRetificarAsync(
-            client, processoId, Guid.CreateVersion7(), documentoId, "motivo", MakeIdempotencyKey());
+            client, processoId, documentoId, "motivo", MakeIdempotencyKey());
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -121,7 +122,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         using HttpClient client = api.CreateClient();
 
         HttpResponseMessage response = await PostRetificarAsync(
-            client, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "motivo", MakeIdempotencyKey());
+            client, Guid.CreateVersion7(), Guid.CreateVersion7(), "motivo", MakeIdempotencyKey());
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -137,9 +138,8 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         documentoEditalId,
     };
 
-    private static object NovoCorpoRetificacao(Guid editalRetificadoId, Guid documentoEditalId, string motivo) => new
+    private static object NovoCorpoRetificacao(Guid documentoEditalId, string motivo) => new
     {
-        editalRetificadoId,
         motivo,
         numero = "001/2026-R1",
         periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
@@ -161,12 +161,12 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     }
 
     private static async Task<HttpResponseMessage> PostRetificarAsync(
-        HttpClient client, Guid processoId, Guid editalRetificadoId, Guid documentoEditalId, string motivo, string idempotencyKey)
+        HttpClient client, Guid processoId, Guid documentoEditalId, string motivo, string idempotencyKey)
     {
         using HttpRequestMessage request = new(HttpMethod.Post,
             new Uri($"/api/selecao/processos-seletivos/{processoId}/retificacoes", UriKind.Relative))
         {
-            Content = JsonContent.Create(NovoCorpoRetificacao(editalRetificadoId, documentoEditalId, motivo)),
+            Content = JsonContent.Create(NovoCorpoRetificacao(documentoEditalId, motivo)),
         };
         AppendTestAuth(request);
         request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
