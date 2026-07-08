@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
+using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -53,6 +54,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Configuração de classificação (15º bloco canônico, Story #775) — compõe por referência a fórmula, precisão, eliminação e ordem de alocação.</summary>
     public ConfiguracaoClassificacao? Classificacao { get; private set; }
 
+    /// <summary>
+    /// Editais emitidos pelo ato de publicação/retificação (Story #759, T4
+    /// #785) — só cresce dentro de <see cref="Publicar"/> (e, na T5, de
+    /// <c>Retificar</c>); nunca exposta como <c>Definir*</c> mutável.
+    /// </summary>
+    private readonly List<Edital> _editais = [];
+    public IReadOnlyCollection<Edital> Editais => _editais.AsReadOnly();
+
     private ProcessoSeletivo() { }
 
     public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo)
@@ -79,6 +88,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas)
     {
         ArgumentNullException.ThrowIfNull(etapas);
+
+        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
 
         if (etapas.Count == 0)
         {
@@ -165,6 +179,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(oferta);
 
+        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
         oferta.VincularProcesso(Id);
         OfertaAtendimento = oferta;
         return Result.Success();
@@ -181,6 +200,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirDistribuicaoVagas(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas)
     {
         ArgumentNullException.ThrowIfNull(distribuicaoVagas);
+
+        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
 
         if (distribuicaoVagas.Count == 0)
         {
@@ -214,6 +238,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public Result DefinirBonusRegional(ConfiguracaoBonusRegional? bonus)
     {
+        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
         if (bonus is null)
         {
             BonusRegional = null;
@@ -236,6 +265,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirCriteriosDesempate(IReadOnlyList<CriterioDesempate> criterios)
     {
         ArgumentNullException.ThrowIfNull(criterios);
+
+        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
 
         List<int> ordensInformadas = [.. criterios.Select(c => c.Ordem)];
         if (ordensInformadas.Distinct().Count() != ordensInformadas.Count)
@@ -285,6 +319,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(classificacao);
 
+        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
         bool baseadoEmEnem = Tipo is TipoProcesso.SiSU or TipoProcesso.PSVR;
 
         foreach (RegraEliminacao regra in classificacao.RegrasEliminacao)
@@ -331,4 +370,125 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _distribuicaoVagas
             .SelectMany(d => d.Modalidades)
             .Any(m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
+
+    /// <summary>
+    /// Checklist de conformidade estrutural (Story #758 CA-07; reusado por
+    /// <see cref="Publicar"/>, Story #759 CA-03) — cobre as dimensões
+    /// estruturalmente OBRIGATÓRIAS do agregado: Etapas (1..*), Oferta de
+    /// atendimento especializado (1), Distribuição de vagas (1..*) e
+    /// Classificação (1). Bônus regional (0..1) e critérios de desempate
+    /// (0..*) são deliberadamente opcionais e NÃO entram — a ausência é um
+    /// estado válido (RN05: ausência de bônus = sem bônus), não uma
+    /// pendência. Única fonte de verdade do checklist: tanto
+    /// <c>ObterConformidadeProcessoSeletivoQueryHandler</c> quanto
+    /// <see cref="Publicar"/> chamam este método, nunca duplicam a lista.
+    /// </summary>
+    public IReadOnlyList<ItemConformidade> AvaliarConformidade() =>
+    [
+        new ItemConformidade("Etapas", _etapas.Count > 0),
+        new ItemConformidade("Atendimento especializado", OfertaAtendimento is not null),
+        new ItemConformidade("Distribuição de vagas", _distribuicaoVagas.Count > 0),
+        new ItemConformidade("Classificação", Classificacao is not null),
+    ];
+
+    /// <summary>
+    /// Publica o processo (RN08, Story #759 T4): valida a transição e a
+    /// conformidade estrutural, emite o <see cref="Edital"/> de abertura,
+    /// congela o <see cref="SnapshotPublicacao"/> a partir dos bytes
+    /// canônicos já produzidos pelo <c>ISnapshotPublicacaoCanonicalizer</c>
+    /// (Application — Domain não pode chamá-lo, ver ADR-0042) e transita o
+    /// status — tudo dentro deste método, atomicamente em memória; o handler
+    /// só persiste o resultado numa única transação.
+    /// </summary>
+    /// <param name="dados">Número, período de inscrição e referência ao documento confirmado.</param>
+    /// <param name="configuracaoCongeladaCanonica">Bytes canônicos (ADR-0100) já produzidos pelo canonicalizador da Application.</param>
+    /// <param name="schemaVersion">Versão do conjunto de blocos do snapshot (ADR-0100 item 8).</param>
+    /// <param name="algoritmoHash">Identificador do algoritmo de hash (ex.: <c>canonical-json/sha256@v1</c>).</param>
+    /// <param name="hashEdital">Hash SHA-256 do documento do Edital (T3, #784).</param>
+    /// <param name="atorUsuarioSub">Sub do usuário autenticado responsável pela publicação (via <c>IUserContext</c>, nunca input do command).</param>
+    /// <param name="clock">Relógio injetado (ADR-0068) — nunca lido implicitamente.</param>
+    public Result<PublicacaoResultado> Publicar(
+        DadosEdital dados,
+        byte[] configuracaoCongeladaCanonica,
+        string schemaVersion,
+        string algoritmoHash,
+        string hashEdital,
+        string atorUsuarioSub,
+        TimeProvider clock)
+    {
+        ArgumentNullException.ThrowIfNull(dados);
+        ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
+        ArgumentNullException.ThrowIfNull(clock);
+
+        if (Status != StatusProcesso.Rascunho)
+        {
+            return Result<PublicacaoResultado>.Failure(new DomainError(
+                "ProcessoSeletivo.TransicaoInvalida",
+                $"Só é possível publicar um processo em rascunho — status atual: {Status}."));
+        }
+
+        IReadOnlyList<ItemConformidade> pendencias = [.. AvaliarConformidade().Where(item => !item.Ok)];
+        if (pendencias.Count > 0)
+        {
+            return Result<PublicacaoResultado>.Failure(new DomainError(
+                "ProcessoSeletivo.ConformidadeInsuficiente",
+                $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(p => p.Item))}."));
+        }
+
+        Result<Edital> editalResult = Edital.EmitirAbertura(Id, dados, clock);
+        if (editalResult.IsFailure)
+        {
+            return Result<PublicacaoResultado>.Failure(editalResult.Error!);
+        }
+
+        Edital edital = editalResult.Value!;
+
+        SnapshotPublicacao snapshot = SnapshotPublicacao.Congelar(
+            edital.Id,
+            configuracaoCongeladaCanonica,
+            schemaVersion,
+            algoritmoHash,
+            hashEdital,
+            atorUsuarioSub,
+            clock);
+
+        _editais.Add(edital);
+        Status = StatusProcesso.Publicado;
+
+        AddDomainEvent(new ProcessoPublicadoEvent(
+            Id,
+            edital.Id,
+            snapshot.Id,
+            snapshot.HashConfiguracao,
+            snapshot.HashEdital,
+            edital.DataPublicacao!.Value));
+
+        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, snapshot));
+    }
+
+    /// <summary>
+    /// Trava de mutação pós-publicação (CA-04): todo <c>Definir*</c> recusa
+    /// quando o processo já foi publicado — mudança em conteúdo congelável só
+    /// via retificação (T5, #786). Reaproveitada por todos os métodos
+    /// <c>Definir*</c>; <see langword="null"/> quando a mutação é permitida.
+    /// </summary>
+    private DomainError? MutacaoBloqueadaPosPublicacao()
+    {
+        if (Status != StatusProcesso.Publicado)
+        {
+            return null;
+        }
+
+        return new DomainError(
+            "ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
+            "Processo publicado não aceita mutação direta da configuração — utilize a retificação.");
+    }
 }
+
+/// <summary>
+/// Resultado de <see cref="ProcessoSeletivo.Publicar"/> — o <see cref="Edital"/>
+/// e o <see cref="SnapshotPublicacao"/> recém-criados, para o handler
+/// persistir via repositório sem precisar recriá-los ou tocar a coleção
+/// interna do agregado.
+/// </summary>
+public sealed record PublicacaoResultado(Edital Edital, SnapshotPublicacao Snapshot);
