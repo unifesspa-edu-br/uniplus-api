@@ -56,6 +56,10 @@ public static class IniciarUploadDocumentoEditalCommandHandler
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result<IniciarUploadDocumentoEditalDto>.Success(
-            new IniciarUploadDocumentoEditalDto(documento.Id, new Uri(urlUpload, UriKind.Absolute), documento.ExpiraEm));
+            new IniciarUploadDocumentoEditalDto(
+                documento.Id,
+                new Uri(urlUpload, UriKind.Absolute),
+                DocumentoEdital.ContentTypeEsperado,
+                documento.ExpiraEm));
     }
 }

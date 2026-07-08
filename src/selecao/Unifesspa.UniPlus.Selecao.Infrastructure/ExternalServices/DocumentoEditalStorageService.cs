@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// Implementação de <see cref="IDocumentoEditalStorage"/> (Story #759, T3
@@ -15,8 +16,6 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 /// </summary>
 public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
 {
-    private const string ContentTypePdf = "application/pdf";
-
     private readonly IStorageService _storageService;
     private readonly string _bucket;
 
@@ -31,7 +30,7 @@ public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
     }
 
     public Task<string> GerarUrlUploadAsync(string objectKey, TimeSpan expiracao, CancellationToken cancellationToken = default) =>
-        _storageService.GerarUrlUploadTemporariaAsync(_bucket, objectKey, expiracao, ContentTypePdf, cancellationToken);
+        _storageService.GerarUrlUploadTemporariaAsync(_bucket, objectKey, expiracao, DocumentoEdital.ContentTypeEsperado, cancellationToken);
 
     public async Task<InfoObjetoArmazenado?> ObterInfoAsync(string objectKey, CancellationToken cancellationToken = default)
     {
@@ -50,6 +49,6 @@ public sealed class DocumentoEditalStorageService : IDocumentoEditalStorage
         ArgumentNullException.ThrowIfNull(conteudo);
 
         using MemoryStream stream = new(conteudo);
-        await _storageService.UploadAsync(_bucket, objectKey, stream, ContentTypePdf, cancellationToken).ConfigureAwait(false);
+        await _storageService.UploadAsync(_bucket, objectKey, stream, DocumentoEdital.ContentTypeEsperado, cancellationToken).ConfigureAwait(false);
     }
 }

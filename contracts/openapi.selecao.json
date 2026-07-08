@@ -2559,6 +2559,7 @@
         "required": [
           "documentoEditalId",
           "urlUpload",
+          "contentTypeExigido",
           "expiraEm"
         ],
         "type": "object",
@@ -2570,6 +2571,9 @@
           "urlUpload": {
             "type": "string",
             "format": "uri"
+          },
+          "contentTypeExigido": {
+            "type": "string"
           },
           "expiraEm": {
             "type": "string",
