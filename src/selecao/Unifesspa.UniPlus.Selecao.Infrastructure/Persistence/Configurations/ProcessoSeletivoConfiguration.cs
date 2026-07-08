@@ -56,6 +56,16 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey<ConfiguracaoClassificacao>(c => c.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Editais (Story #759, T4 #785): Restrict, não Cascade — um Edital já
+        // publicado é evidência append-only (a cadeia de retificações
+        // referencia EditalRetificadoId); remover fisicamente o processo sem
+        // antes lidar com os editais emitidos é incidente operacional, igual
+        // ao padrão de ObrigatoriedadeLegalHistorico.
+        builder.HasMany(p => p.Editais)
+            .WithOne()
+            .HasForeignKey(e => e.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Navigation(p => p.Etapas)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
@@ -63,6 +73,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Navigation(p => p.CriteriosDesempate)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(p => p.Editais)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
