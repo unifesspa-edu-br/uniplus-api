@@ -106,6 +106,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         {
             array.Add(new JsonObject
             {
+                // Id incluído (achado Codex, revisão do PR #791): os blocos
+                // "criteriosDesempate" (DESEMPATE-MAIOR-NOTA-ETAPA) e
+                // "classificacao" (ELIM-NOTA-MINIMA-ETAPA) congelam um
+                // etapaRef apontando para este Id — sem ele aqui, o snapshot
+                // teria uma referência não resolvível dentro do próprio JSON
+                // congelado, obrigando a consultar a tabela viva (mutável)
+                // para interpretar um documento que deveria ser autocontido.
+                ["id"] = etapa.Id,
                 ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome),
                 ["carater"] = etapa.Carater.ToString(),
                 ["peso"] = etapa.Peso is { } peso ? HashCanonicalComputer.SerializeDecimalCanonical(peso, EscalaPadrao) : null,
