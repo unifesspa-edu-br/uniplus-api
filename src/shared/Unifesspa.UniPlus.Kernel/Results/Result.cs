@@ -14,6 +14,15 @@ public sealed class Result
 
     public static Result Success() => new(true, null);
     public static Result Failure(DomainError error) => new(false, error);
+
+    /// <summary>
+    /// <see langword="true"/> quando o resultado falhou com exatamente este
+    /// código de erro. Permite que callers (ex.: controllers) ramifiquem por
+    /// causa específica sem depender diretamente do tipo <see cref="DomainError"/>
+    /// (ADR-0024 — mapeamento de erro é responsabilidade de <c>IDomainErrorMapper</c>;
+    /// este método só expõe o código para decisão de fluxo, nunca o objeto).
+    /// </summary>
+    public bool HasErrorCode(string code) => Error?.Code == code;
 }
 
 public sealed class Result<T>

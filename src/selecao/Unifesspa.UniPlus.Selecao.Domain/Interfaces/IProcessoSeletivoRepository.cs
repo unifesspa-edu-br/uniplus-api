@@ -33,4 +33,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Adiciona o <see cref="SnapshotPublicacao"/> congelado por
+    /// <see cref="ProcessoSeletivo.Publicar"/> (Story #759, T4 #785). Sem
+    /// repositório próprio para a entidade forense — a issue #759 §4
+    /// estabelece que <see cref="IProcessoSeletivoRepository"/> persiste o
+    /// agregado inteiro, incluindo <see cref="Edital"/> e <see cref="SnapshotPublicacao"/>.
+    /// </summary>
+    Task AdicionarSnapshotPublicacaoAsync(SnapshotPublicacao snapshot, CancellationToken cancellationToken = default);
 }

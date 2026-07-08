@@ -6,11 +6,16 @@ using Domain.Interfaces;
 
 /// <summary>
 /// Handler da <see cref="ObterConformidadeProcessoSeletivoQuery"/>: leitura
-/// pura (sem side effects) que avalia a presença das dimensões estruturalmente
-/// obrigatórias do agregado — não confundir com a conformidade de
+/// pura (sem side effects) que mapeia <see cref="ProcessoSeletivo.AvaliarConformidade"/>
+/// para o DTO público — não confundir com a conformidade de
 /// <c>ObrigatoriedadeLegal</c> (Story #460/#461), que avalia regras
 /// legais configuráveis contra o <c>Edital</c> legado.
 /// </summary>
+/// <remarks>
+/// O checklist em si vive em <c>ProcessoSeletivo.AvaliarConformidade()</c>
+/// (Domain) — reusado também pelo gate de <c>Publicar</c> (Story #759 CA-03),
+/// para que a leitura pública e o gate de publicação nunca divirjam.
+/// </remarks>
 public static class ObterConformidadeProcessoSeletivoQueryHandler
 {
     public static async Task<ConformidadeProcessoSeletivoDto?> Handle(
@@ -29,13 +34,8 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
             return null;
         }
 
-        ItemConformidadeDto[] itens =
-        [
-            new ItemConformidadeDto("Etapas", processo.Etapas.Count > 0),
-            new ItemConformidadeDto("Atendimento especializado", processo.OfertaAtendimento is not null),
-            new ItemConformidadeDto("Distribuição de vagas", processo.DistribuicaoVagas.Count > 0),
-            new ItemConformidadeDto("Classificação", processo.Classificacao is not null),
-        ];
+        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade()
+            .Select(static item => new ItemConformidadeDto(item.Item, item.Ok))];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens);
     }
