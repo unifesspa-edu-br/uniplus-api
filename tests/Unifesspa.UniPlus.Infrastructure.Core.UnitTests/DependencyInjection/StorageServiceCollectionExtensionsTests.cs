@@ -177,6 +177,28 @@ public sealed class StorageServiceCollectionExtensionsTests
             .WithMessage("*host:port without scheme*");
     }
 
+    [Theory]
+    [InlineData("http://storage.example.org")]
+    [InlineData("https://storage.example.org")]
+    [InlineData("HTTPS://storage.example.org")]
+    public void AddUniPlusStorage_PublicEndpointComScheme_OptionsValueLancaOptionsValidationException(string publicEndpoint)
+    {
+        Dictionary<string, string?> values = new(CompleteConfig())
+        {
+            ["Storage:PublicEndpoint"] = publicEndpoint,
+        };
+
+        ServiceCollection services = new();
+        services.AddUniPlusStorage(BuildConfig(values), Env(Environments.Production));
+
+        using ServiceProvider sp = services.BuildServiceProvider();
+
+        Action acao = () => { _ = sp.GetRequiredService<IOptions<StorageOptions>>().Value; };
+
+        acao.Should().Throw<OptionsValidationException>()
+            .WithMessage("*Storage:PublicEndpoint*host:port without scheme*");
+    }
+
     [Fact]
     public void AddUniPlusStorage_BindingMapeiaTodasAsPropriedades()
     {

@@ -65,6 +65,11 @@ public static class StorageServiceCollectionExtensions
                     || (!options.Endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                         && !options.Endpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase)),
                 "Storage:Endpoint must be host:port without scheme — control HTTPS via Storage:UseSSL.")
+            .Validate(
+                options => string.IsNullOrWhiteSpace(options.PublicEndpoint)
+                    || (!options.PublicEndpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                        && !options.PublicEndpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase)),
+                "Storage:PublicEndpoint must be host:port without scheme — control HTTPS via Storage:PublicUseSSL.")
             .ValidateOnStart();
 
         services.AddSingleton<IMinioClient>(sp =>
