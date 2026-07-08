@@ -62,6 +62,20 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<Edital> _editais = [];
     public IReadOnlyCollection<Edital> Editais => _editais.AsReadOnly();
 
+    /// <summary>
+    /// Edital vigente da cadeia de publicação: o de maior data de publicação
+    /// (topo da cadeia linear, ADR-0101) — único por instante graças a
+    /// <c>ux_editais_processo_data_publicacao</c>. <see langword="null"/>
+    /// enquanto o processo não foi publicado. É a raiz — não o cliente — quem
+    /// determina qual Edital uma retificação sucede; este acessor é a fonte
+    /// única dessa definição, consumida pela raiz e pelo handler (que precisa
+    /// do id do vigente para congelar o bloco de retificação do snapshot).
+    /// </summary>
+    public Edital? EditalVigente => _editais
+        .Where(static e => e.DataPublicacao is not null)
+        .OrderByDescending(static e => e.DataPublicacao!.Value)
+        .FirstOrDefault();
+
     private ProcessoSeletivo() { }
 
     public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo)
@@ -475,7 +489,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// já vêm do <c>ISnapshotPublicacaoCanonicalizer</c> (Application) com o
     /// bloco de retificação incluído; esta raiz não os produz (ADR-0042).
     /// </summary>
-    /// <param name="editalRetificadoId">Edital vigente (topo da cadeia) que esta retificação sucede — deve pertencer a este processo (CA-06).</param>
     /// <param name="motivo">Justificativa obrigatória do ato de retificação (ADR-0101).</param>
     public Result<PublicacaoResultado> Retificar(
         DadosEdital dados,
@@ -484,7 +497,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string algoritmoHash,
         string hashEdital,
         string atorUsuarioSub,
-        Guid editalRetificadoId,
         string motivo,
         TimeProvider clock)
     {
@@ -499,23 +511,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Só é possível retificar um processo publicado — status atual: {Status}."));
         }
 
-        // CA-06 + ADR-0101: a retificação não cruza processos E sucede o
-        // Edital VIGENTE (topo da cadeia — maior data de publicação, único
-        // por ux_editais_processo_data_publicacao). Referenciar um edital de
-        // outro processo, ou um nó que não é o topo, ramificaria a cadeia que
-        // o seletor de snapshot vigente (T6) espera linear.
-        Edital? vigente = _editais
-            .Where(static e => e.DataPublicacao is not null)
-            .OrderByDescending(static e => e.DataPublicacao!.Value)
-            .FirstOrDefault();
-        if (vigente is null || vigente.Id != editalRetificadoId)
+        // ADR-0101: a retificação sempre sucede o Edital VIGENTE (topo da
+        // cadeia — maior data de publicação, único por
+        // ux_editais_processo_data_publicacao). O alvo é estado do agregado,
+        // não input do cliente: qual Edital interno é sucedido é decisão da
+        // raiz, e mantê-la no vigente garante que a cadeia permaneça linear.
+        // Publicado implica ao menos um Edital publicado — o null aqui só
+        // cobriria um estado inconsistente.
+        if (EditalVigente is not { } vigente)
         {
             return Result<PublicacaoResultado>.Failure(new DomainError(
-                "ProcessoSeletivo.EditalRetificadoInvalido",
-                "A retificação deve referenciar o Edital vigente (o mais recente) deste processo."));
+                "ProcessoSeletivo.TransicaoInvalida",
+                "Processo publicado sem Edital vigente — estado inconsistente."));
         }
 
-        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, editalRetificadoId, motivo, clock);
+        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, vigente.Id, motivo, clock);
         if (editalResult.IsFailure)
         {
             return Result<PublicacaoResultado>.Failure(editalResult.Error!);

@@ -75,6 +75,20 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         DadosEdital dados = dadosResult.Value!;
 
+        // O Edital sucedido é o vigente do próprio agregado — não um id vindo
+        // do cliente (Edital é entidade interna do agregado ProcessoSeletivo e
+        // a cadeia é linear). Precisamos do id do vigente já aqui para congelar
+        // o bloco 'retificacao' do snapshot; se o processo não foi publicado
+        // não há vigente e a retificação é inválida — mesma transição barrada
+        // por ProcessoSeletivo.Retificar, antecipada para não canonicalizar em
+        // vão.
+        if (processo.EditalVigente is not { } vigente)
+        {
+            return (Result.Failure(new DomainError(
+                "ProcessoSeletivo.TransicaoInvalida",
+                $"Só é possível retificar um processo publicado — status atual: {processo.Status}.")), []);
+        }
+
         // Normaliza o motivo UMA vez, aqui, e usa o mesmo valor nos dois
         // caminhos: o bloco 'retificacao' do snapshot e o MotivoRetificacao do
         // Edital. Sem isso, o Edital guardaria motivo.Trim() enquanto o
@@ -86,7 +100,7 @@ public static class RetificarProcessoSeletivoCommandHandler
             processo,
             dados,
             documento.HashSha256!,
-            new RetificacaoInfo(command.EditalRetificadoId, motivo));
+            new RetificacaoInfo(vigente.Id, motivo));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
@@ -97,7 +111,6 @@ public static class RetificarProcessoSeletivoCommandHandler
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub,
-            command.EditalRetificadoId,
             motivo,
             timeProvider);
         if (retificarResult.IsFailure)

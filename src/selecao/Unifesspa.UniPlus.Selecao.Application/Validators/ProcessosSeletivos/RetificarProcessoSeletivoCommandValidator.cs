@@ -20,10 +20,6 @@ public sealed class RetificarProcessoSeletivoCommandValidator : AbstractValidato
             .NotEmpty()
             .WithMessage("Id do processo seletivo é obrigatório.");
 
-        RuleFor(x => x.EditalRetificadoId)
-            .NotEmpty()
-            .WithMessage("Referência ao Edital retificado é obrigatória.");
-
         RuleFor(x => x.Motivo)
             .NotEmpty()
             .WithMessage("Motivo da retificação é obrigatório.")
