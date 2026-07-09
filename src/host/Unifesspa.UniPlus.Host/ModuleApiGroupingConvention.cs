@@ -32,6 +32,7 @@ internal sealed class ModuleApiGroupingConvention : IApplicationModelConvention
         ("Unifesspa.UniPlus.OrganizacaoInstitucional.", "organizacao"),
         ("Unifesspa.UniPlus.Selecao.", "selecao"),
         ("Unifesspa.UniPlus.Ingresso.", "ingresso"),
+        ("Unifesspa.UniPlus.Publicacoes.", "publicacoes"),
     ];
 
     public void Apply(ApplicationModel application)
