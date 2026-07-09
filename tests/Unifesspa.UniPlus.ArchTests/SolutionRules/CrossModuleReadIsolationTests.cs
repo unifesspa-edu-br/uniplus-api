@@ -53,6 +53,7 @@ public sealed class CrossModuleReadIsolationTests
         "Portal",
         "OrganizacaoInstitucional",
         "Configuracao",
+        "Publicacoes",
     ];
 
     private static readonly Architecture SolutionArchitecture = LoadSolutionArchitecture();
@@ -103,9 +104,9 @@ public sealed class CrossModuleReadIsolationTests
         //
         // Apenas o Portal tem `Program` próprio entre os módulos do roster: é o
         // único deployable autônomo restante (além do host UniPlus). O Geo foi
-        // extraído para repositório dedicado (ADR-0099). Os 4 módulos internos
+        // extraído para repositório dedicado (ADR-0099). Os 5 módulos internos
         // viraram class libraries — não têm Program e rodam só dentro do host. O
-        // `Program` do host compõe legitimamente os 4 módulos internos (composition
+        // `Program` do host compõe legitimamente os 5 módulos internos (composition
         // root), então é exceção coberta por
         // HostCompositionRoot_ComposeTodosOsModulosInternos. Carregar o assembly de
         // um módulo-lib traria o `Program` do host ao grafo (closure compartilhado),
@@ -162,12 +163,12 @@ public sealed class CrossModuleReadIsolationTests
             + $"Violações:\n  - {string.Join("\n  - ", violations)}");
     }
 
-    [Fact(DisplayName = "R8 (host composition root): o host é isento do roster e PODE compor os 4 módulos internos")]
+    [Fact(DisplayName = "R8 (host composition root): o host é isento do roster e PODE compor os 5 módulos internos")]
     public void HostCompositionRoot_ComposeTodosOsModulosInternos()
     {
         // Contraponto POSITIVO ao R8: enquanto nenhum MÓDULO pode depender de
         // outro (fatos acima), o host do monólito modular é a ÚNICA
-        // exceção autorizada — o composition root compõe os 4 módulos internos
+        // exceção autorizada — o composition root compõe os 5 módulos internos
         // num processo único via Add{Modulo}Module + discovery Wolverine. Por
         // isso fica FORA do ModulesRoster (senão os fatos R8 o acusariam de
         // depender de todos). Este fato trava a regressão oposta: se o host
@@ -188,15 +189,15 @@ public sealed class CrossModuleReadIsolationTests
             .Select(nome => nome.Name ?? string.Empty)
             .ToHashSet(StringComparer.Ordinal);
 
-        string[] modulosInternos = ["Selecao", "Ingresso", "Configuracao", "OrganizacaoInstitucional"];
+        string[] modulosInternos = ["Selecao", "Ingresso", "Configuracao", "OrganizacaoInstitucional", "Publicacoes"];
         List<string> naoCompostos =
         [
             .. modulosInternos.Where(modulo => !referenciados.Contains($"Unifesspa.UniPlus.{modulo}.API")),
         ];
 
         naoCompostos.Should().BeEmpty(
-            "o host do monólito modular deve compor os 4 módulos internos (Selecao, Ingresso, "
-            + "Configuracao, OrganizacaoInstitucional) via Add<Modulo>Module no .API de cada um. "
+            "o host do monólito modular deve compor os 5 módulos internos (Selecao, Ingresso, "
+            + "Configuracao, OrganizacaoInstitucional, Publicacoes) via Add<Modulo>Module no .API de cada um. "
             + $"Módulos não compostos: {string.Join(", ", naoCompostos)}");
 
         // Negativa: o Portal é deployable AUTÔNOMO (sua própria API executável),
@@ -279,7 +280,7 @@ public sealed class CrossModuleReadIsolationTests
 
     private static Architecture LoadSolutionArchitecture()
     {
-        // Carrega apenas assemblies do produto — todos os 5 módulos + shared foundation.
+        // Carrega apenas assemblies do produto — todos os 6 módulos + shared foundation.
         // Tipos âncora são intencionalmente públicos e resistentes a refactors.
         ReflectionAssembly[] productAssemblies =
         [
@@ -317,6 +318,11 @@ public sealed class CrossModuleReadIsolationTests
             typeof(global::Unifesspa.UniPlus.Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
+
+            // Publicacoes
+            typeof(global::Unifesspa.UniPlus.Publicacoes.Domain.PublicacoesDomainAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Publicacoes.API.PublicacoesApiAssemblyMarker).Assembly,
         ];
 
         return new ArchLoader().LoadAssemblies(productAssemblies).Build();

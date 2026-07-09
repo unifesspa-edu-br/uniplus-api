@@ -4,7 +4,7 @@
     <IsPackable>false</IsPackable>
     <!--
       Suporte de teste do MONÓLITO (API UniPlus). Separado de IntegrationTests.Fixtures
-      porque referencia o host UniPlus (e, transitivamente, os 4 módulos internos): só os
+      porque referencia o host UniPlus (e, transitivamente, os 5 módulos internos): só os
       assemblies de teste dos módulos internos + Host.IntegrationTests dependem dele. Geo e
       Portal (deploy separado) usam apenas IntegrationTests.Fixtures, sem arrastar o host
       nem sofrer ambiguidade de `Program` (CS0433). IsTestProject=false: não tem [Fact].

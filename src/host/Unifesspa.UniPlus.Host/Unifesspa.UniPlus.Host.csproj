@@ -8,7 +8,7 @@
   </ItemGroup>
 
   <!--
-    Composition root do monólito modular. Referencia os 4 módulos internos
+    Composition root do monólito modular. Referencia os 5 módulos internos
     (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) e os compõe num
     processo único. Geo e Portal permanecem deploys separados. Este assembly é o
     único autorizado a depender de múltiplos módulos — fica FORA do ModulesRoster
@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\selecao\Unifesspa.UniPlus.Selecao.API\Unifesspa.UniPlus.Selecao.API.csproj" />
     <ProjectReference Include="..\..\ingresso\Unifesspa.UniPlus.Ingresso.API\Unifesspa.UniPlus.Ingresso.API.csproj" />
+    <ProjectReference Include="..\..\publicacoes\Unifesspa.UniPlus.Publicacoes.API\Unifesspa.UniPlus.Publicacoes.API.csproj" />
     <ProjectReference Include="..\..\configuracao\Unifesspa.UniPlus.Configuracao.API\Unifesspa.UniPlus.Configuracao.API.csproj" />
     <ProjectReference Include="..\..\organizacao-institucional\Unifesspa.UniPlus.OrganizacaoInstitucional.API\Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
   </ItemGroup>

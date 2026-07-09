@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Portal.API;
 /// quando o Wolverine começar a processar envelopes que tocam tabelas do módulo.
 /// </summary>
 /// <remarks>
-/// <para>Os 4 módulos internos (Selecao, Ingresso, Configuracao, Organizacao)
+/// <para>Os 5 módulos internos (Selecao, Ingresso, Configuracao, Organizacao)
 /// deixaram de ser executáveis (viraram class libraries) — não têm mais
 /// <c>Program</c> próprio. A ordem migrations→Wolverine deles é governada por um
 /// <b>único</b> entry point, o host UniPlus, que registra os 4
@@ -68,7 +68,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
 
     /// <summary>
     /// DbContexts cuja migration on startup CADA entry point deve registrar. O
-    /// host UniPlus co-hospeda os 4 módulos internos, então precisa dos 4; o
+    /// host UniPlus co-hospeda os 5 módulos internos, então precisa dos 5; o
     /// Portal é autônomo com um DbContext. Travar o conjunto exato impede
     /// que um módulo perca silenciosamente seu <c>AddDbContextMigrationsOnStartup</c>
     /// enquanto outro ainda registra o seu (a ordem sozinha não pegaria isso).
@@ -81,6 +81,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
             "IngressoDbContext",
             "ConfiguracaoDbContext",
             "OrganizacaoInstitucionalDbContext",
+            "PublicacoesDbContext",
         ],
         [MigrationOrderFixture.PortalKey] = ["PortalDbContext"],
     };
@@ -180,6 +181,7 @@ public sealed class MigrationOrderFixture : IDisposable
         Environment.SetEnvironmentVariable("ConnectionStrings__UniPlusDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__SelecaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__IngressoDb", fake);
+        Environment.SetEnvironmentVariable("ConnectionStrings__PublicacoesDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__ConfiguracaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__OrganizacaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__PortalDb", fake);

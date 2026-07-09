@@ -163,7 +163,7 @@ Se a imagem `sdk:10.0` não contiver o SDK GA, o build falhará. Os Dockerfiles 
 
 Se a API não conectar no PostgreSQL, verifique:
 
-1. A key da connection string no `appsettings.json` deve ser `SelecaoDb` (Seleção) ou `IngressoDb` (Ingresso)
+1. A key da connection string no `appsettings.json` deve ser a do módulo: `SelecaoDb`, `IngressoDb`, `ConfiguracaoDb`, `OrganizacaoDb` ou `PublicacoesDb` — todas apontam para o banco `uniplus` (schema por módulo, ADR-0097)
 2. O `appsettings.Development.json` deve incluir `Username` e `Password`
 3. Os valores devem coincidir com o `docker/.env`
 

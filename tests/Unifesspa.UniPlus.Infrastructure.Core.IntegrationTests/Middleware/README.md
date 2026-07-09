@@ -94,7 +94,7 @@ Use o `CorrelationIdMiddlewareSmokeTests` como template literal: 3 cenários
 
 ## Por que via host UniPlus
 
-Com a topologia de 3 APIs, os 4 módulos de negócio (Selecao, Ingresso,
+Com a topologia de 3 APIs, os 5 módulos de negócio (Selecao, Ingresso,
 Configuracao, OrganizacaoInstitucional) viraram class libraries sem `Program.cs`
 próprio — só executam dentro da **API UniPlus** (composition root). O middleware
 do `Infrastructure.Core` é cabeado uma única vez, no `Program.cs` do host. Smoke

@@ -3,6 +3,7 @@ using Serilog;
 using Unifesspa.UniPlus.Configuracao.API;
 using Unifesspa.UniPlus.Configuracao.Application;
 using Unifesspa.UniPlus.Ingresso.API;
+using Unifesspa.UniPlus.Publicacoes.API;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
@@ -19,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.API;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 
-// Composition root do monólito modular. Compõe os 4 módulos internos
+// Composition root do monólito modular. Compõe os 5 módulos internos
 // (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) num processo único,
 // apontando todos para o banco `uniplus` (schema-por-módulo). Geo e Portal seguem
 // deploys separados. Este assembly é o único que depende de múltiplos módulos
@@ -73,8 +74,9 @@ builder.Services.AddConfiguracaoModule(builder.Configuration);
 builder.Services.AddOrganizacaoInstitucionalModule(builder.Configuration);
 builder.Services.AddSelecaoModule(builder.Configuration);
 builder.Services.AddIngressoModule(builder.Configuration);
+builder.Services.AddPublicacoesModule(builder.Configuration);
 
-// Health checks: os 4 módulos compartilham o banco `uniplus`, então um
+// Health checks: os 5 módulos compartilham o banco `uniplus`, então um
 // único check de banco + infra (Redis/MinIO/Kafka/OIDC) cobre o processo.
 builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "UniPlusDb");
 

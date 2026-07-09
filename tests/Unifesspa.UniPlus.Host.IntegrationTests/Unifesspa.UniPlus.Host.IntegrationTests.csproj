@@ -19,7 +19,7 @@
   <!--
     Testes de integração do composition root do monólito modular.
     Referencia o Host (entry point via HostAssemblyMarker — evita ambiguidade de
-    `Program` entre os 4 módulos co-hospedados) e a Infrastructure de
+    `Program` entre os 5 módulos co-hospedados) e a Infrastructure de
     OrganizacaoInstitucional para semear uma Unidade e provar a leitura
     cross-módulo in-process via IUnidadeReader.
   -->

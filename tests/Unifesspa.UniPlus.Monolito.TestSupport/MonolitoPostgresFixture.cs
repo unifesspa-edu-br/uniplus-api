@@ -7,7 +7,7 @@ using Testcontainers.PostgreSql;
 /// <summary>
 /// Fixture base genérica que provisiona um Postgres efêmero (Testcontainers) com o
 /// banco único <c>uniplus</c> e sobe a <b>API UniPlus</b> com Wolverine habilitado —
-/// migrations on startup criam os 4 schemas de módulo e o Wolverine provisiona o
+/// migrations on startup criam os 5 schemas de módulo e o Wolverine provisiona o
 /// outbox (schema <c>wolverine</c>). É a base das suítes de endpoint dos módulos
 /// (que agora rodam contra o monólito real).
 /// </summary>
@@ -37,6 +37,7 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         "ConnectionStrings__OrganizacaoDb",
         "ConnectionStrings__SelecaoDb",
         "ConnectionStrings__IngressoDb",
+        "ConnectionStrings__PublicacoesDb",
     ];
 
     private const string KafkaBootstrapEnvVar = "Kafka__BootstrapServers";

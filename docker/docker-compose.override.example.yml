@@ -34,7 +34,7 @@ services:
     volumes:
       - ./keycloak/realm-export-dev-local.json:/opt/keycloak/data/import/realm-export-dev-local.json
 
-  # API UniPlus — o MONÓLITO modular (composition root). Co-hospeda os 4 módulos
+  # API UniPlus — o MONÓLITO modular (composition root). Co-hospeda os 5 módulos
   # internos num único processo, contra o banco único `uniplus` (schema-por-módulo).
   uniplus-api:
     build:
@@ -52,6 +52,7 @@ services:
       ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Redis__ConnectionString: "redis:6379"
       Kafka__BootstrapServers: "kafka:29092"
       # Schema Registry (Apicurio em modo Confluent-compat) — sufixo /apis/ccompat/v7

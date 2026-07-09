@@ -49,7 +49,7 @@ CREATE DATABASE uniplus_geo_staging OWNER uniplus_geo_staging_app;
 --   btree_gist — pré-requisito de exclusion constraints GIST em junction
 --                tables temporais (ADR-0060), provisionado para uso futuro.
 
--- Monólito: união das extensões que os 4 módulos internos assumem nas migrations.
+-- Monólito: união das extensões que os 5 módulos internos assumem nas migrations.
 \c uniplus
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
