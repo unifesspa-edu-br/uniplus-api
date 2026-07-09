@@ -43,7 +43,7 @@ E há um risco latente. Hoje `DataPublicacao = clock.GetUtcNow()`, de modo que a
 
 **Escolhida:** "B — `VersaoConfiguracao` como agregado próprio", porque separar a grandeza que ordena da grandeza que documenta é o antídoto à retroatividade, e porque o seletor de vigência não deve precisar saber o que é um tipo de ato.
 
-```
+```text
 VersaoConfiguracao                       [append-only, forense]
     Id, ProcessoSeletivoId
     NumeroVersao          -- monotônico por processo; UNIQUE(processo, numero)
@@ -62,7 +62,7 @@ VersaoConfiguracao                       [append-only, forense]
 
 O seletor passa a ser:
 
-```
+```sql
 WHERE  vigente_a_partir_de <= @instante
 ORDER  BY vigente_a_partir_de DESC, numero_versao DESC
 LIMIT  1
