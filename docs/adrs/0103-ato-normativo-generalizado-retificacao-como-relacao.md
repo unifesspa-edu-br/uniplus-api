@@ -50,7 +50,7 @@ O ato publicado passa a ter `ato_retificado_id` e `motivo`, com contrato simétr
 
 A invariante que protege a integridade da configuração publicada **não é** "a retificação referencia um ato do mesmo tipo" — essa é falsa, e o aviso que retifica um edital a derruba. A invariante correta é:
 
-```
+```text
 congela(retificador) == congela(retificado)
 ```
 
