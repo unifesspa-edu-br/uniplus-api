@@ -1,7 +1,7 @@
 # Configuração dinâmica do Traefik (file provider) para o gateway de DEV do stack
 # `docker-compose.override.yml` (serviço `traefik`, absorvido do antigo frontend-test).
 #
-# Topologia de 3 APIs: os 4 módulos internos (Selecao/Ingresso/Configuracao/
+# Topologia de 3 APIs: os 5 módulos internos (Selecao/Ingresso/Configuracao/
 # Organizacao) são servidos pelo monólito `uniplus-api` sob /api/{modulo}/
 # (ADR-0064); o `geo-api` (reference data sob /api/{cidades,estados,cep,
 # logradouros}) e o `portal-api` (/api/portal/*) são deploys separados. Os

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.ApplicationModels;
 /// controller o <c>ApiExplorer.GroupName</c> do seu módulo, derivado do
 /// namespace. Sem isso, o Microsoft.AspNetCore.OpenApi inclui todo endpoint com
 /// <c>GroupName == null</c> em TODOS os documentos — no processo único, cada
-/// <c>/openapi/{modulo}.json</c> listaria os endpoints dos 4 módulos.
+/// <c>/openapi/{modulo}.json</c> listaria os endpoints dos 5 módulos.
 /// </summary>
 /// <remarks>
 /// <para>Com o <c>GroupName</c> atribuído, o <c>ShouldInclude</c> default do

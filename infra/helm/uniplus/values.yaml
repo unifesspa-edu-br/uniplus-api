@@ -31,7 +31,7 @@ cors:
 
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).
-# O monólito usa as 5 connection strings apontando para o MESMO banco `uniplus`
+# O monólito usa as 6 connection strings apontando para o MESMO banco `uniplus`
 # (schema-por-módulo). Documentadas aqui para rastreabilidade:
 secrets:
   uniPlusDbConnection: ""        # ConnectionStrings__UniPlusDb (outbox Wolverine + health)
@@ -39,6 +39,7 @@ secrets:
   organizacaoDbConnection: ""    # ConnectionStrings__OrganizacaoDb
   selecaoDbConnection: ""        # ConnectionStrings__SelecaoDb
   ingressoDbConnection: ""       # ConnectionStrings__IngressoDb
+  publicacoesDbConnection: ""    # ConnectionStrings__PublicacoesDb
   redisConnection: ""            # Redis__ConnectionString
   kafkaBootstrapServers: ""      # Kafka__BootstrapServers
   storageEndpoint: ""            # Storage__Endpoint (cluster-local, ex.: minio.uniplus.svc.cluster.local:9000)

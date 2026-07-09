@@ -27,6 +27,11 @@
     <Project Path="src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Unifesspa.UniPlus.Configuracao.Domain.csproj" />
     <Project Path="src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/publicacoes/">
+    <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Unifesspa.UniPlus.Publicacoes.API.csproj" />
+    <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.Domain/Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
+    <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.Infrastructure/Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/portal/">
     <Project Path="src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj" />
     <Project Path="src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />

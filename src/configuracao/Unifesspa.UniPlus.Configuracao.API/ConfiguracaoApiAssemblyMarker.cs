@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.API;
 /// <summary>
 /// Marker type usado por carregadores de assembly (ArchUnitNET, fixtures).
 /// Necessário porque o entry point top-level (<c>Program</c>) compartilha
-/// nome com os outros 4 módulos.
+/// nome com os outros módulos.
 /// </summary>
 public sealed class ConfiguracaoApiAssemblyMarker
 {

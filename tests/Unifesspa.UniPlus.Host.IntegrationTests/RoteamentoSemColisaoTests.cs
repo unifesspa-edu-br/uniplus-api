@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// Com os 4 módulos co-hospedados num processo único, o
+/// Com os 5 módulos co-hospedados num processo único, o
 /// roteamento HTTP é compartilhado. Estes testes confirmam que (a) as rotas dos
 /// módulos são namespaced por prefixo <c>api/{modulo}/</c> e (b) não há colisão
 /// — nenhum par (método HTTP, template) é atendido por mais de um endpoint, o
@@ -65,7 +65,7 @@ public sealed class RoteamentoSemColisaoTests
             .ToList();
 
         colisoes.Should().BeEmpty(
-            "no monólito modular os 4 módulos compartilham o pipeline de roteamento; "
+            "no monólito modular os 5 módulos compartilham o pipeline de roteamento; "
             + "o prefixo api/<modulo>/ deve garantir templates únicos por (método, caminho)");
     }
 

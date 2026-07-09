@@ -1244,6 +1244,7 @@
           "Unifesspa.UniPlus.Configuracao.API": "[1.0.0, )",
           "Unifesspa.UniPlus.Ingresso.API": "[1.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.API": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.API": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.API": "[1.0.0, )",
           "WolverineFx.Postgresql": "[5.39.5, )"
         }
@@ -1373,6 +1374,30 @@
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.Application": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.publicacoes.api": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.AspNetCore.OpenApi": "[10.0.7, )",
+          "Serilog.AspNetCore": "[10.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Infrastructure": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.publicacoes.domain": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
+      "unifesspa.uniplus.publicacoes.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.9, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.9, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.selecao.api": {

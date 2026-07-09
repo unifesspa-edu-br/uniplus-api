@@ -27,29 +27,27 @@ Referência canônica para devs que tocam persistência: naming convention, tipo
 
 ## 1. Topologia
 
-Uni+ usa **5 bancos PostgreSQL 18 isolados** (um por módulo), no mesmo host PG mas isolados por database:
+Uni+ usa um **banco único `uniplus`** com **schema por módulo** ([ADR-0097](adrs/0097-topologia-de-deploy-em-tres-apis-monolito-modular.md)). Os módulos internos coabitam a API UniPlus num processo único, cada um com `HasDefaultSchema` próprio, e as connection strings do host apontam todas para o mesmo banco.
 
-| Banco | Usuário | DbContext | Cobertura |
-|---|---|---|---|
-| `uniplus_selecao` | `uniplus` | `SelecaoDbContext` | Editais, Candidatos, Inscrições, Cotas, Etapas, ProcessosSeletivos |
-| `uniplus_ingresso` | `uniplus` | `IngressoDbContext` | Chamadas, Convocações, Matrículas, DocumentosMatricula |
-| `uniplus_portal` | `uniplus` | `PortalDbContext` | Vazio até primeira Story tocar entity Portal |
-| `uniplus_configuracao` | `uniplus_configuracao_app` | `ConfiguracaoDbContext` | Catálogos cross-cutting: Modalidade, NecessidadeEspecial, TipoDocumento, Endereco |
-| `uniplus_organizacao` | `uniplus_organizacao_app` | `OrganizacaoInstitucionalDbContext` | Unidade, Instituição |
+| Schema | DbContext | Cobertura |
+|---|---|---|
+| `selecao` | `SelecaoDbContext` | Processos seletivos, Editais, Candidatos, Inscrições, Cotas, Etapas |
+| `ingresso` | `IngressoDbContext` | Chamadas, Convocações, Matrículas, DocumentosMatricula |
+| `configuracao` | `ConfiguracaoDbContext` | Catálogos cross-cutting: Modalidade, NecessidadeEspecial, TipoDocumento, Endereco |
+| `organizacao` | `OrganizacaoInstitucionalDbContext` | Unidade, Instituição |
+| `publicacoes` | `PublicacoesDbContext` | Registro central dos atos normativos ([ADR-0105](adrs/0105-modulo-publicacoes-registro-central-dos-atos.md)). Nasce vazio |
+| `wolverine` | — | Outbox/envelopes/dead-letters, uma única instância ([ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md)) |
 
-Os bancos legados (Selecao/Ingresso/Portal) compartilham o superusuário `uniplus`. Os bancos da Sprint 3 (Configuracao/Organizacao) usam **usuários `_app` dedicados, cada um dono (`OWNER`) do seu próprio banco** — o owner tem DDL completo no schema `public` (necessário a partir do PG 15, que removeu o `CREATE` implícito) e instala extensões trusted sem superusuário. Provisionamento em `docker/init-db.sql`.
+**Geo** (`uniplus_geo`, com PostGIS) e **Portal** (`uniplus_portal`) permanecem deployables autônomos, com banco próprio.
+
+> ⚠️ **A ausência de chave estrangeira cross-módulo deixou de ser física.** Com bancos separados, uma chave estrangeira não atravessava banco — o motor garantia o isolamento. Com schema por módulo, `REFERENCES selecao.processos_seletivos(id)` a partir de outro schema **funciona**. A referência cross-módulo continua sendo **por valor** ([ADR-0061](adrs/0061-referencia-cross-modulo-via-snapshot-copy.md)), mas agora quem a defende é o modelo, não o PostgreSQL. O teste de integração `IsolamentoCrossSchemaTests` planta um canário — cria a chave estrangeira cross-schema, exige que a consulta de detecção a encontre, remove-a — e só então assere que nenhuma existe.
 
 Extensões habilitadas:
 
 - `uuid-ossp`, `pg_trgm` — em todos os bancos de aplicação.
 - `btree_gist` — em `uniplus_selecao`, `uniplus_configuracao` e `uniplus_organizacao`: pré-requisito de exclusion constraints GIST em junction tables temporais ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)). A primeira aplicação (junction de áreas de interesse) foi removida no KILL do eixo de Área (Epic #600); a extensão segue provisionada — em dev via `init-db.sql`, em standalone/HML/PROD via a primeira migration de cada DbContext (idempotente, `CREATE EXTENSION IF NOT EXISTS`) — para junctions temporais futuras.
 
-Schemas usados em cada banco:
-
-- `public` — domínio do módulo + `idempotency_cache` (compartilhada por Selecao via `Infrastructure.Core`).
-- `wolverine.*` — outbox/envelopes/dead-letters do Wolverine (auto-provisionado via `AutoBuildMessageStorageOnStartup`, ver [ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md)).
-
-Migrations EF Core são **por DbContext** — cada banco tem seu `__EFMigrationsHistory` independente, sem coordenação cross-módulo.
+Migrations EF Core são **por DbContext** — cada módulo tem o seu `__EFMigrationsHistory` **no próprio schema**, sem coordenação cross-módulo. As migrations on startup rodam antes do runtime Wolverine (invariante travada por `MigrationBeforeWolverineRuntimeOrderTests`).
 
 ## 2. Naming convention
 

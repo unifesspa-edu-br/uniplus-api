@@ -14,13 +14,13 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 /// <summary>
 /// Prova de boot do monólito modular (P4 em runtime): o composition root sobe
 /// como um processo único e, no <c>StartAsync</c>, as migrations on startup dos
-/// 4 módulos criam seus schemas no banco <c>uniplus</c> e o Wolverine provisiona
+/// 5 módulos criam seus schemas no banco <c>uniplus</c> e o Wolverine provisiona
 /// o outbox no schema <c>wolverine</c> — tudo sobre a MESMA connection.
 /// </summary>
 /// <remarks>
 /// O fato de a fixture conseguir resolver serviços do host (boot bem-sucedido) já
-/// prova que os 4 <c>MigrationHostedService</c> e o runtime Wolverine iniciaram
-/// sem conflito (o conflito de 4 <c>Program</c> executáveis NÃO ocorre — o entry
+/// prova que os 5 <c>MigrationHostedService</c> e o runtime Wolverine iniciaram
+/// sem conflito (o conflito de 5 <c>Program</c> executáveis NÃO ocorre — o entry
 /// point é único). Este teste fecha o ciclo afirmando que os schemas esperados
 /// materializaram.
 /// </remarks>
@@ -38,11 +38,12 @@ public sealed class BootDoMonolitoTests
         _fixture = fixture;
     }
 
-    [Theory(DisplayName = "Boot do monólito cria os 4 schemas de módulo + wolverine no banco único")]
+    [Theory(DisplayName = "Boot do monólito cria os 5 schemas de módulo + wolverine no banco único")]
     [InlineData("configuracao")]
     [InlineData("organizacao")]
     [InlineData("selecao")]
     [InlineData("ingresso")]
+    [InlineData("publicacoes")]
     [InlineData("wolverine")]
     public async Task Boot_CriaSchemaEsperado(string schema)
     {
@@ -59,8 +60,8 @@ public sealed class BootDoMonolitoTests
     {
         IReadOnlyCollection<string> schemas = await ListarSchemasAsync();
 
-        schemas.Should().Contain(["configuracao", "organizacao", "selecao", "ingresso"],
-            "os 4 módulos compartilham o banco `uniplus`, isolados por schema (não por banco)");
+        schemas.Should().Contain(["configuracao", "organizacao", "selecao", "ingresso", "publicacoes"],
+            "os 5 módulos compartilham o banco `uniplus`, isolados por schema (não por banco)");
     }
 
     private async Task<IReadOnlyCollection<string>> ListarSchemasAsync()

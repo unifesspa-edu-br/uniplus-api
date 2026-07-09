@@ -61,6 +61,7 @@ services:
       ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
+      ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
       # Stack mínima sem broker: limpa o Kafka:BootstrapServers do
       # appsettings.Development.json (localhost:9092) para o
