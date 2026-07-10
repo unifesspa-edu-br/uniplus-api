@@ -27,8 +27,6 @@ namespace Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// <c>area_interesse_binding_historico</c>) também implementam quando vierem.
 /// </para>
 /// </remarks>
-public interface IForensicEntity
+public interface IForensicEntity : IIdentificavel
 {
-    /// <summary>Identificador único da linha (UUID v7 do timestamp do snapshot).</summary>
-    Guid Id { get; }
 }
