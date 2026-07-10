@@ -102,12 +102,26 @@
                   "//",
                   "// `pm.execution.skipRequest()` pula ESTE request. `setNextRequest(null)` não serve:",
                   "// ele encerra a iteração DEPOIS de o request atual rodar, e o POST chegaria ao",
-                  "// servidor de qualquer forma — devolvendo 201 do cache de idempotência enquanto",
-                  "// ele durasse, e 409 vigencia_sobreposta assim que expirasse.",
+                  "// servidor de qualquer forma.",
                   "if (pm.environment.get('deve_criar') !== 'true') {",
                   "  console.log(`${pm.iterationData.get('codigo')}: já cadastrado, nada a fazer`);",
                   "  pm.execution.skipRequest();",
-                  "}"
+                  "}",
+                  "",
+                  "// O corpo sai da linha do arquivo, campo a campo. Escrevê-lo com `null` fixo em",
+                  "// vigenciaFim/baseLegal gravaria nulo para qualquer linha que os informasse, e o",
+                  "// Newman diria sucesso — a resposta do POST é só o id.",
+                  "const corpo = {",
+                  "  codigo: pm.iterationData.get('codigo'),",
+                  "  nome: pm.iterationData.get('nome'),",
+                  "  congelaConfiguracao: pm.iterationData.get('congelaConfiguracao'),",
+                  "  unicoPorObjeto: pm.iterationData.get('unicoPorObjeto'),",
+                  "  efeitoIrreversivel: pm.iterationData.get('efeitoIrreversivel'),",
+                  "  vigenciaInicio: pm.iterationData.get('vigenciaInicio'),",
+                  "  vigenciaFim: pm.iterationData.get('vigenciaFim') ?? null,",
+                  "  baseLegal: pm.iterationData.get('baseLegal') ?? null,",
+                  "};",
+                  "pm.variables.set('corpo_json', JSON.stringify(corpo));"
                 ]
               }
             },
@@ -116,14 +130,36 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(`${pm.iterationData.get('codigo')} registrado (201)`, () => pm.response.to.have.status(201));",
-                  "pm.test('Location aponta para o recurso', () => pm.expect(pm.response.headers.get('Location')).to.include('/api/publicacoes/tipos-ato/'));",
+                  "const codigo = pm.iterationData.get('codigo');",
+                  "pm.test(`${codigo} registrado (201)`, () => pm.response.to.have.status(201));",
+                  "",
+                  "const local = pm.response.headers.get('Location');",
+                  "pm.test('Location aponta para o recurso', () => pm.expect(local).to.include('/api/publicacoes/tipos-ato/'));",
+                  "",
                   "pm.test('a resposta não veio do cache de idempotência', () => {",
                   "  // Uma chave reaproveitada devolveria a resposta cacheada com este header, e o",
                   "  // seed terminaria verde sem ter criado nada — por exemplo se o tipo tivesse sido",
                   "  // removido depois da execução anterior, dentro das 24h de TTL.",
                   "  pm.expect(pm.response.headers.get('Idempotency-Replayed')).to.be.oneOf([null, undefined]);",
-                  "});"
+                  "});",
+                  "",
+                  "// Lê de volta o que foi gravado. O POST devolve só o id: sem esta leitura, um",
+                  "// corpo incompleto persistiria valores errados e o Newman reportaria sucesso.",
+                  "if (pm.response.code === 201 && local) {",
+                  "  pm.sendRequest({ url: local, method: 'GET' }, (err, res) => {",
+                  "    pm.test(`${codigo} foi gravado como o arquivo de seed declara`, () => {",
+                  "      pm.expect(err, 'erro ao reler o recurso criado').to.be.null;",
+                  "      pm.expect(res.code, 'status da releitura').to.eql(200);",
+                  "      const gravado = res.json();",
+                  "      const campos = ['codigo', 'nome', 'congelaConfiguracao', 'unicoPorObjeto', 'efeitoIrreversivel', 'vigenciaInicio', 'vigenciaFim', 'baseLegal'];",
+                  "      campos.forEach((campo) => {",
+                  "        const esperado = pm.iterationData.get(campo) ?? null;",
+                  "        const encontrado = gravado[campo] === undefined ? null : gravado[campo];",
+                  "        pm.expect(encontrado, campo).to.eql(esperado);",
+                  "      });",
+                  "    });",
+                  "  });",
+                  "}"
                 ]
               }
             }
@@ -146,7 +182,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"codigo\": \"{{codigo}}\",\n  \"nome\": \"{{nome}}\",\n  \"congelaConfiguracao\": {{congelaConfiguracao}},\n  \"unicoPorObjeto\": {{unicoPorObjeto}},\n  \"efeitoIrreversivel\": {{efeitoIrreversivel}},\n  \"vigenciaInicio\": \"{{vigenciaInicio}}\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}"
+              "raw": "{{corpo_json}}"
             },
             "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
           }
