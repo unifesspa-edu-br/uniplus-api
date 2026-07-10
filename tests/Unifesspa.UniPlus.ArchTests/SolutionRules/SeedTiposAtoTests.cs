@@ -107,6 +107,11 @@ public sealed partial class SeedTiposAtoTests
 
     private static LinhaSeed[] Carregar()
     {
+        // Path.Combine descarta os segmentos anteriores quando um deles é enraizado.
+        // O precedente é OpenApiEndpointTests.ResolveRepoPath, que valida o mesmo.
+        Path.IsPathRooted(CaminhoRelativo).Should().BeFalse(
+            "o caminho do seed é relativo à raiz do repositório");
+
         string caminho = Path.Combine(SolutionRootLocator.Locate(), CaminhoRelativo);
 
         File.Exists(caminho).Should().BeTrue($"o seed dos tipos de ato precisa existir em {CaminhoRelativo}");
