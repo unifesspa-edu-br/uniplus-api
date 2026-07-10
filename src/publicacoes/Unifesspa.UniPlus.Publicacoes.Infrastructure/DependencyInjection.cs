@@ -3,17 +3,19 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 using Persistence;
+using Persistence.Repositories;
 
 public static class PublicacoesInfrastructureRegistration
 {
     private const string ConnectionStringName = "PublicacoesDb";
 
     /// <summary>
-    /// Registra a infraestrutura do módulo Publicações (DbContext + interceptors).
-    /// Wire-up centralizado em <see cref="UniPlusDbContextOptionsExtensions"/>.
+    /// Registra a infraestrutura do módulo Publicações (DbContext, interceptors e
+    /// repositórios). Wire-up centralizado em <see cref="UniPlusDbContextOptionsExtensions"/>.
     ///
-    /// Sem repositórios e sem unit of work: o módulo ainda não tem entidades.
+    /// Sem unit of work: nenhum handler existe ainda para consumi-la.
     /// </summary>
     public static IServiceCollection AddPublicacoesInfrastructure(this IServiceCollection services)
     {
@@ -23,6 +25,8 @@ public static class PublicacoesInfrastructureRegistration
 
         services.AddDbContext<PublicacoesDbContext>((serviceProvider, options) =>
             options.UseUniPlusNpgsqlConventions<PublicacoesDbContext>(serviceProvider, ConnectionStringName, schema: PublicacoesDbContext.Schema));
+
+        services.AddScoped<ITipoAtoPublicadoRepository, TipoAtoPublicadoRepository>();
 
         return services;
     }
