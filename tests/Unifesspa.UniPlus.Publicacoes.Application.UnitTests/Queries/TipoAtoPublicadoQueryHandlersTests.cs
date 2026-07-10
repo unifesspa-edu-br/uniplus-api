@@ -56,7 +56,7 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         Guid after = Guid.NewGuid();
         Guid prev = Guid.NewGuid();
         Guid next = Guid.NewGuid();
-        _repository.ListarPaginadoAsync(after, 25, PaginationDirection.Next, Arg.Any<CancellationToken>())
+        _repository.ListarPaginadoAsync(after, 25, PaginationDirection.Next, true, Arg.Any<CancellationToken>())
             .Returns((new[] { Novo("AVISO") }, prev, next));
 
         ListarTiposAtoPublicadoResult resultado = await ListarTiposAtoPublicadoQueryHandler.Handle(
@@ -66,6 +66,36 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         resultado.Items.Should().ContainSingle().Which.Codigo.Should().Be("AVISO");
         resultado.AnteriorAfterId.Should().Be(prev);
         resultado.ProximoAfterId.Should().Be(next);
+    }
+
+    [Fact(DisplayName = "Listar repassa o filtro de vigência ao repositório")]
+    public async Task Listar_RepassaFiltroDeVigencia()
+    {
+        _repository.ListarPaginadoAsync(
+            Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns((Array.Empty<TipoAtoPublicado>(), (Guid?)null, (Guid?)null));
+
+        await ListarTiposAtoPublicadoQueryHandler.Handle(
+            new ListarTiposAtoPublicadoQuery(null, 25, PaginationDirection.Next, Vigentes: false),
+            _repository, CancellationToken.None);
+
+        await _repository.Received(1).ListarPaginadoAsync(
+            null, 25, PaginationDirection.Next, false, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Listar filtra por vigentes quando a query não diz o contrário")]
+    public async Task Listar_DefaultEhVigentes()
+    {
+        _repository.ListarPaginadoAsync(
+            Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<PaginationDirection>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns((Array.Empty<TipoAtoPublicado>(), (Guid?)null, (Guid?)null));
+
+        await ListarTiposAtoPublicadoQueryHandler.Handle(
+            new ListarTiposAtoPublicadoQuery(null, 25, PaginationDirection.Next),
+            _repository, CancellationToken.None);
+
+        await _repository.Received(1).ListarPaginadoAsync(
+            null, 25, PaginationDirection.Next, true, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "ObterVigente sem data usa o relógio injetado, não DateTime.Now")]
