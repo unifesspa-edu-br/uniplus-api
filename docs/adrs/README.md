@@ -134,12 +134,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) | Retificação é uma relação entre atos publicados, não um tipo de ato | accepted | 2026-07-09 |
 | [0104](0104-versao-configuracao-como-agregado-proprio.md) | A vigência da configuração ordena versões, não documentos | accepted | 2026-07-09 |
 | [0105](0105-modulo-publicacoes-registro-central-dos-atos.md) | O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios | accepted | 2026-07-09 |
+| [0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md) | Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir | accepted | 2026-07-10 |
 
-> **Nota de numeração:** a sequência de `0001` a `0105` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0106+`.
+> **Nota de numeração:** a sequência de `0001` a `0106` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0107+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0105`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0106`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
