@@ -1,0 +1,162 @@
+[
+  {
+    "codigo": "EDITAL_ABERTURA",
+    "nome": "Edital de abertura",
+    "congelaConfiguracao": true,
+    "unicoPorObjeto": true,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "EDITAL_RETIFICACAO",
+    "nome": "Edital de retificação",
+    "congelaConfiguracao": true,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "AVISO",
+    "nome": "Aviso",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "COMUNICADO",
+    "nome": "Comunicado",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "CONVOCACAO",
+    "nome": "Convocação",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "HOMOLOGACAO_INSCRICOES",
+    "nome": "Homologação das inscrições",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": true,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "HOMOLOGACAO_ANALISE_DOCUMENTAL",
+    "nome": "Homologação da análise documental",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "HOMOLOGACAO_RECURSOS",
+    "nome": "Homologação dos recursos",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "RESULTADO_PRELIMINAR",
+    "nome": "Resultado preliminar",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "RESULTADO_FINAL",
+    "nome": "Resultado final",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": true,
+    "efeitoIrreversivel": true,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "LISTA_ESPERA",
+    "nome": "Lista de espera",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "CONFIRMACAO_INTERESSE",
+    "nome": "Confirmação de interesse",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "GABARITO_PRELIMINAR",
+    "nome": "Gabarito preliminar",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "GABARITO_DEFINITIVO",
+    "nome": "Gabarito definitivo",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": true,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "CHAMADA",
+    "nome": "Chamada",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  },
+  {
+    "codigo": "ERRATA",
+    "nome": "Errata",
+    "congelaConfiguracao": false,
+    "unicoPorObjeto": false,
+    "efeitoIrreversivel": false,
+    "vigenciaInicio": "2026-01-01",
+    "vigenciaFim": null,
+    "baseLegal": null
+  }
+]
