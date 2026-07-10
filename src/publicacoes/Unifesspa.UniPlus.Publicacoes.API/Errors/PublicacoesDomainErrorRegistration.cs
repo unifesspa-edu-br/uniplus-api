@@ -83,5 +83,23 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.publicacoes.tipo_ato.vigencia_fim_anterior_ao_inicio",
                 "Fim da vigência deve ser posterior ao início")),
+
+        new(AtoNormativoErrorCodes.TipoSemVersaoVigente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.tipo_sem_versao_vigente",
+                "Não há versão vigente do tipo de ato na data de publicação")),
+
+        new(AtoNormativoErrorCodes.VersaoInvocadaIncompleta,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.versao_invocada_incompleta",
+                "A versão invocada deve trazer o par (id, hash) completo ou nenhum dos dois")),
+
+        new(AtoNormativoErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.publicacoes.ato_normativo.nao_encontrado",
+                "Ato normativo não encontrado")),
     ];
 }
