@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 using Events;
+using Interfaces;
 
-public abstract class EntityBase
+public abstract class EntityBase : IIdentificavel
 {
     // UUIDv7 (RFC 9562 §5.7) — 48 bits de unix_ts_ms no prefixo + 74 bits aleatórios.
     // Adotado em todas as entidades de domínio (ADR-0032). Ganhos:

@@ -86,9 +86,10 @@ public sealed class ForensicEntityConventionsTests
             typeof(EntityBase).Assembly,
             // Apenas assemblies de Domain que JÁ definem IForensicEntity ficam aqui;
             // como typeof(EntityBase).Assembly é Kernel (sem implementações), e as
-            // implementações vivem em Selecao.Domain, basta carregar pelo tipo de
-            // domínio referenciado.
+            // implementações vivem nos módulos, basta carregar pelo tipo de domínio
+            // referenciado de cada um.
             typeof(Selecao.Domain.Entities.ObrigatoriedadeLegal).Assembly,
+            typeof(Publicacoes.Domain.Entities.AtoNormativo).Assembly,
         ];
 
         return [.. assemblies

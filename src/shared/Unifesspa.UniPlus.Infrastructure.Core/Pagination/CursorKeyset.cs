@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -47,7 +47,7 @@ public static class CursorKeyset
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
-        where T : EntityBase
+        where T : IIdentificavel
     {
         ArgumentNullException.ThrowIfNull(filtered);
 
@@ -61,7 +61,7 @@ public static class CursorKeyset
         Guid? afterId,
         int limit,
         CancellationToken cancellationToken)
-        where T : EntityBase
+        where T : IIdentificavel
     {
         IQueryable<T> forward = afterId is { } anchor
             ? filtered.Where(e => e.Id.CompareTo(anchor) > 0)
@@ -101,7 +101,7 @@ public static class CursorKeyset
         Guid? afterId,
         int limit,
         CancellationToken cancellationToken)
-        where T : EntityBase
+        where T : IIdentificavel
     {
         IQueryable<T> backward = afterId is { } anchor
             ? filtered.Where(e => e.Id.CompareTo(anchor) < 0)
