@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "Uni+ — Seed de catálogos",
+    "description": "Bootstrap dos catálogos administráveis (ADR-0062): obtém token plataforma-admin por client_credentials e registra cada linha pelos endpoints admin, com o mesmo AuditableInterceptor de qualquer escrita — sem HasData, sem CreatedBy sintético.\n\nIdempotente por preflight: cada linha lê antes de escrever, compara todos os campos com o arquivo de seed, e só cria o que falta. A Idempotency-Key é gerada por execução, não derivada do código: uma chave estável faria o POST devolver a resposta cacheada (ADR-0027, TTL de 24h) e o seed terminaria verde sem recriar um tipo que tivesse sido removido.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Token de service account, cacheado até 60s antes de expirar.",
+          "const agora = Math.floor(Date.now() / 1000);",
+          "const expira = Number(pm.environment.get('access_token_expira_em') || 0);",
+          "if (pm.environment.get('access_token') && agora < expira - 60) { return; }",
+          "",
+          "pm.sendRequest({",
+          "  url: pm.environment.get('keycloak_token_url'),",
+          "  method: 'POST',",
+          "  header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+          "  body: { mode: 'urlencoded', urlencoded: [",
+          "    { key: 'grant_type', value: 'client_credentials' },",
+          "    { key: 'client_id', value: pm.environment.get('bootstrap_client_id') },",
+          "    { key: 'client_secret', value: pm.environment.get('bootstrap_client_secret') },",
+          "  ]}",
+          "}, (err, res) => {",
+          "  if (err) { throw new Error('falha ao obter token de bootstrap: ' + err); }",
+          "  if (res.code !== 200) { throw new Error('token endpoint devolveu ' + res.code + ': ' + res.text()); }",
+          "  const j = res.json();",
+          "  pm.environment.set('access_token', j.access_token);",
+          "  pm.environment.set('access_token_expira_em', agora + Number(j.expires_in));",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Tipos de ato",
+      "item": [
+        {
+          "name": "Preflight — o tipo já existe?",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 404 significa 'ainda não existe' e libera o POST.",
+                  "// 200 significa 'já existe': comparamos todos os campos do seed e falhamos se",
+                  "// divergirem, porque um seed que sobrescreve em silêncio é pior que um que quebra.",
+                  "pm.test('preflight devolve 200 ou 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+                  "",
+                  "if (pm.response.code === 404) {",
+                  "  pm.environment.set('deve_criar', 'true');",
+                  "  return;",
+                  "}",
+                  "",
+                  "pm.environment.set('deve_criar', 'false');",
+                  "const existente = pm.response.json();",
+                  "const codigo = pm.iterationData.get('codigo');",
+                  "",
+                  "// Booleanos, texto e datas: tudo que o arquivo de seed declara.",
+                  "const campos = ['codigo', 'nome', 'congelaConfiguracao', 'unicoPorObjeto', 'efeitoIrreversivel', 'vigenciaInicio', 'vigenciaFim', 'baseLegal'];",
+                  "pm.test(`${codigo} já cadastrado bate com o seed`, () => {",
+                  "  campos.forEach((campo) => {",
+                  "    const esperado = pm.iterationData.get(campo);",
+                  "    const encontrado = existente[campo] === undefined ? null : existente[campo];",
+                  "    pm.expect(encontrado, campo).to.eql(esperado === undefined ? null : esperado);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/publicacoes/tipos-ato/{{codigo}}/vigente?data={{vigenciaInicio}}"
+          }
+        },
+        {
+          "name": "Registrar tipo de ato",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Pula a escrita quando o preflight encontrou a linha íntegra.",
+                  "//",
+                  "// `pm.execution.skipRequest()` pula ESTE request. `setNextRequest(null)` não serve:",
+                  "// ele encerra a iteração DEPOIS de o request atual rodar, e o POST chegaria ao",
+                  "// servidor de qualquer forma — devolvendo 201 do cache de idempotência enquanto",
+                  "// ele durasse, e 409 vigencia_sobreposta assim que expirasse.",
+                  "if (pm.environment.get('deve_criar') !== 'true') {",
+                  "  console.log(`${pm.iterationData.get('codigo')}: já cadastrado, nada a fazer`);",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`${pm.iterationData.get('codigo')} registrado (201)`, () => pm.response.to.have.status(201));",
+                  "pm.test('Location aponta para o recurso', () => pm.expect(pm.response.headers.get('Location')).to.include('/api/publicacoes/tipos-ato/'));",
+                  "pm.test('a resposta não veio do cache de idempotência', () => {",
+                  "  // Uma chave reaproveitada devolveria a resposta cacheada com este header, e o",
+                  "  // seed terminaria verde sem ter criado nada — por exemplo se o tipo tivesse sido",
+                  "  // removido depois da execução anterior, dentro das 24h de TTL.",
+                  "  pm.expect(pm.response.headers.get('Idempotency-Replayed')).to.be.oneOf([null, undefined]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/vnd.uniplus.tipo-ato.v1+json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigo}}\",\n  \"nome\": \"{{nome}}\",\n  \"congelaConfiguracao\": {{congelaConfiguracao}},\n  \"unicoPorObjeto\": {{unicoPorObjeto}},\n  \"efeitoIrreversivel\": {{efeitoIrreversivel}},\n  \"vigenciaInicio\": \"{{vigenciaInicio}}\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}"
+            },
+            "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
+          }
+        }
+      ]
+    }
+  ]
+}

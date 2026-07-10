@@ -1251,6 +1251,35 @@
         "offline_access",
         "microprofile-jwt"
       ]
+    },
+    {
+      "clientId": "uniplus-api-bootstrap",
+      "name": "Uni+ — bootstrap de catálogos (seed)",
+      "description": "Service account usada pelo seed de catálogos (ADR-0062). Obtém token plataforma-admin via client_credentials e faz POST nos endpoints admin. Secret de desenvolvimento; em standalone/HML/PROD vem do uniplus-infra.",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "bootstrap-dev-secret",
+      "protocol": "openid-connect",
+      "attributes": {
+        "use.refresh.tokens": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "uniplus-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "uniplus",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "clientScopes": [
@@ -3229,6 +3258,14 @@
         }
       ],
       "requiredActions": []
+    },
+    {
+      "username": "service-account-uniplus-api-bootstrap",
+      "enabled": true,
+      "serviceAccountClientId": "uniplus-api-bootstrap",
+      "realmRoles": [
+        "plataforma-admin"
+      ]
     }
   ],
   "eventsExpiration": 2592000
