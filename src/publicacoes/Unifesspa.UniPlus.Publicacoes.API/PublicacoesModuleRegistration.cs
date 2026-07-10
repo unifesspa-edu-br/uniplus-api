@@ -46,6 +46,7 @@ public static class PublicacoesModuleRegistration
         services.AddSingleton<IDomainErrorRegistration, PublicacoesDomainErrorRegistration>();
 
         services.AddSingleton<IResourceLinksBuilder<TipoAtoPublicadoDto>, TipoAtoPublicadoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<AtoNormativoDto>, AtoNormativoLinksBuilder>();
 
         // Idempotency-Key (ADR-0027) sobre o DbContext do módulo. Sem este registro o
         // [RequiresIdempotencyKey] do POST compila e não faz nada: a requisição sem

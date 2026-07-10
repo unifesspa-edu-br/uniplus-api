@@ -10,8 +10,10 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
+using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
 
 /// <summary>
@@ -96,5 +98,44 @@ public sealed class PublicacoesHandlersNoBusTests
             new ObterTipoAtoPublicadoVigenteQuery("BUS_VIGENTE", Inicio.AddYears(1)),
             CancellationToken.None);
         noFim.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O registro de ato atravessa o bus, resolve o tipo vigente e copia por valor")]
+    public async Task RegistrarAto_AtravessaOBus()
+    {
+        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
+        ICommandBus commandBus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
+        IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
+
+        Result<Guid> tipo = await commandBus.Send(
+            new CriarTipoAtoPublicadoCommand(
+                "BUS_ATO_TIPO", "Tipo para ato exercitado pelo bus",
+                CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false,
+                VigenciaInicio: Inicio),
+            CancellationToken.None);
+        tipo.IsSuccess.Should().BeTrue();
+
+        Result<RegistrarAtoNormativoResult> registrado = await commandBus.Send(
+            new RegistrarAtoNormativoCommand(
+                Orgao: "CEPS",
+                Serie: "BUS_EDITAL",
+                Ano: 2026,
+                Numero: "1",
+                TipoCodigo: "BUS_ATO_TIPO",
+                DataPublicacao: Inicio.AddMonths(2),
+                DocumentoHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                Assinante: "Jairo Belchior"),
+            CancellationToken.None);
+
+        registrado.IsSuccess.Should().BeTrue(
+            "o handler de registro precisa resolver ITipoAtoPublicadoRepository, "
+            + "IAtoNormativoRepository e a IPublicacoesUnitOfWork encaminhada pelo codegen (ADR-0098)");
+
+        AtoNormativoDto? lido = await queryBus.Send(
+            new ObterAtoNormativoPorIdQuery(registrado.Value!.AtoId), CancellationToken.None);
+
+        lido.Should().NotBeNull();
+        // O tipo vigente congela configuração — copiado por valor no ato (AC5).
+        lido!.CongelaConfiguracao.Should().BeTrue();
     }
 }
