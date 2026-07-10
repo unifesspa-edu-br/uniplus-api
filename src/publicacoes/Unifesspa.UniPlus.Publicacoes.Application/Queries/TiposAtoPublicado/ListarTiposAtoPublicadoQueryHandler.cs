@@ -16,7 +16,7 @@ public static class ListarTiposAtoPublicadoQueryHandler
         ArgumentNullException.ThrowIfNull(repository);
 
         (IReadOnlyList<TipoAtoPublicado> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, query.Vigentes, cancellationToken)
             .ConfigureAwait(false);
 
         TipoAtoPublicadoDto[] items = [.. itens.Select(t => t.ToDto())];

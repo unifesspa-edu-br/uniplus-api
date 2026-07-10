@@ -132,7 +132,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(nova);
 
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx);
+        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         // Véspera: a antiga. Dia da fronteira: já a nova — o fim é exclusivo.
         (await repo.ObterVigenteAsync(codigo, Meio.AddDays(-1), default))!.Id.Should().Be(antiga.Id);
@@ -149,7 +149,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(Novo(codigo, Meio, vigenciaFim: null, congela: true));
 
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx);
+        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         TipoAtoPublicado? vigenteEmMarco = await repo.ObterVigenteAsync(codigo, new DateOnly(2026, 3, 15), default);
 
@@ -165,7 +165,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(Novo(codigo, Inicio, vigenciaFim: null));
 
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx);
+        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         (await repo.ObterVigenteAsync(codigo, Inicio.AddDays(-1), default)).Should().BeNull();
     }
@@ -207,7 +207,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(recriado);
 
         await using PublicacoesDbContext leitura = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(leitura);
+        var repo = new TipoAtoPublicadoRepository(leitura, TimeProvider.System);
 
         (await repo.ObterVigenteAsync(codigo, Inicio, default))!.Id.Should().Be(recriado.Id);
 
@@ -243,7 +243,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(existente);
 
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
-        var repo = new TipoAtoPublicadoRepository(ctx);
+        var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         // Cruza.
         (await repo.ExisteSobreposicaoDeVigenciaAsync(codigo, Meio, null, null, default))

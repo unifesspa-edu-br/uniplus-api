@@ -32,10 +32,17 @@ public interface ITipoAtoPublicadoRepository
     /// (ADR-0026 + ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve
     /// as âncoras de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
     /// </summary>
+    /// <param name="vigentes">
+    /// Quando verdadeiro, devolve apenas as versões cuja janela contém a data de
+    /// hoje. É o default do endpoint público: uma versão com vigência futura é
+    /// planejamento normativo ainda não anunciado, e listá-la a qualquer cliente
+    /// o divulgaria antes do ato que a institui.
+    /// </param>
     Task<(IReadOnlyList<TipoAtoPublicado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        bool vigentes,
         CancellationToken cancellationToken);
 
     Task AdicionarAsync(TipoAtoPublicado tipo, CancellationToken cancellationToken);

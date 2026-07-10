@@ -1,0 +1,402 @@
+{
+  "info": {
+    "name": "Uni+ — Publicações API",
+    "description": "Coleção de testes HTTP do módulo Publicações. Exercita o ciclo de vida do cadastro de tipos de ato — autenticação plataforma-admin via Keycloak (realm unifesspa-dev-local), Idempotency-Key no POST (ADR-0027; o PUT é excluído por ser idempotente por semântica), vendor MIME por recurso (ADR-0028), ProblemDetails RFC 9457 (ADR-0023/0024), HATEOAS Level 1 (ADR-0029), janela de vigência semiaberta [início, fim) e soft-delete. Roda contra o stack local (API UniPlus (monólito) em :5200). Auto-contida e re-executável.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Obter token plataforma-admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.expect(j.access_token, 'access_token presente').to.be.a('string').and.to.have.length.above(0);",
+                  "pm.environment.set('token', j.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}"
+                },
+                {
+                  "key": "username",
+                  "value": "{{username}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}"
+                }
+              ]
+            },
+            "url": "{{keycloak_token_url}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tipos de ato",
+      "item": [
+        {
+          "name": "Criar tipo de ato",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Código único por execução: a coleção é re-executável.",
+                  "const letras = 'ABCDEFGHIJKLMNOP';",
+                  "let sufixo = '';",
+                  "for (let i = 0; i < 8; i++) { sufixo += letras[Math.floor(Math.random() * letras.length)]; }",
+                  "pm.environment.set('tipo_ato_codigo', 'POSTMAN_' + sufixo);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Location aponta para o recurso', () => pm.expect(pm.response.headers.get('Location')).to.include('/api/publicacoes/tipos-ato/'));",
+                  "pm.environment.set('tipo_ato_id', pm.response.json());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Tipo de ato criado pela coleção\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}"
+            },
+            "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
+          }
+        },
+        {
+          "name": "Criar com janela sobreposta deve falhar com 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('type do ProblemDetails', () => pm.expect(pm.response.json().type).to.include('vigencia_sobreposta'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Duplicata da mesma janela\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-06-01\",\n  \"vigenciaFim\": null\n}"
+            },
+            "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
+          }
+        },
+        {
+          "name": "Criar sem Idempotency-Key deve falhar com 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('code key_ausente', () => pm.expect(pm.response.text()).to.include('key_ausente'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"SEM_CHAVE\",\n  \"nome\": \"Sem Idempotency-Key\",\n  \"congelaConfiguracao\": false,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\"\n}"
+            },
+            "url": "{{base_url}}/api/publicacoes/admin/tipos-ato"
+          }
+        },
+        {
+          "name": "Obter por Id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('_links.self presente', () => pm.expect(j._links.self).to.include('/api/publicacoes/tipos-ato/'));",
+                  "pm.test('autoria não exposta', () => { pm.expect(j).to.not.have.property('createdBy'); pm.expect(j).to.not.have.property('updatedBy'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/publicacoes/tipos-ato/{{tipo_ato_id}}"
+          }
+        },
+        {
+          "name": "Obter vigente hoje",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('é o tipo criado', () => pm.expect(pm.response.json().id).to.eql(pm.environment.get('tipo_ato_id')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/publicacoes/tipos-ato/{{tipo_ato_codigo}}/vigente"
+          }
+        },
+        {
+          "name": "Obter vigente antes do início devolve 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/publicacoes/tipos-ato/{{tipo_ato_codigo}}/vigente?data=2025-12-31"
+          }
+        },
+        {
+          "name": "Obter vigente com código malformado devolve 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/publicacoes/tipos-ato/codigo_minusculo/vigente"
+          }
+        },
+        {
+          "name": "Listar tipos de ato",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('vendor MIME', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.uniplus.tipo-ato.v1+json'));",
+                  "pm.test('itens trazem _links', () => pm.expect(pm.response.json()[0]).to.have.property('_links'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/publicacoes/tipos-ato"
+          }
+        },
+        {
+          "name": "Atualizar tipo de ato (sem Idempotency-Key)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));",
+                  "// PUT puro é idempotente por semântica: a ADR-0027 o exclui do Idempotency-Key."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{tipo_ato_id}}\",\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Nome atualizado pela coleção\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\",\n  \"vigenciaFim\": null\n}"
+            },
+            "url": "{{base_url}}/api/publicacoes/admin/tipos-ato/{{tipo_ato_id}}"
+          }
+        },
+        {
+          "name": "Atualizar com Id divergente devolve 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{tipo_ato_id}}\",\n  \"codigo\": \"{{tipo_ato_codigo}}\",\n  \"nome\": \"Id divergente\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2026-01-01\"\n}"
+            },
+            "url": "{{base_url}}/api/publicacoes/admin/tipos-ato/00000000-0000-0000-0000-000000000001"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Limpeza",
+      "item": [
+        {
+          "name": "Remover tipo de ato",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/publicacoes/admin/tipos-ato/{{tipo_ato_id}}"
+          }
+        },
+        {
+          "name": "Removido some da leitura",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/publicacoes/tipos-ato/{{tipo_ato_id}}"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 
+using System.Linq;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -14,11 +16,14 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
 {
     private readonly PublicacoesDbContext _dbContext;
+    private readonly TimeProvider _timeProvider;
 
-    public TipoAtoPublicadoRepository(PublicacoesDbContext dbContext)
+    public TipoAtoPublicadoRepository(PublicacoesDbContext dbContext, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         _dbContext = dbContext;
+        _timeProvider = timeProvider;
     }
 
     public Task<TipoAtoPublicado?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken)
@@ -60,11 +65,23 @@ public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        bool vigentes,
         CancellationToken cancellationToken)
     {
-        // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
+        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia. Aplicamos só
+        // os filtros; os EXISTS de flag do helper herdam a mesma query base.
+        IQueryable<TipoAtoPublicado> query = _dbContext.TiposAtoPublicado.AsNoTracking();
+
+        if (vigentes)
+        {
+            DateOnly hoje = DateOnly.FromDateTime(_timeProvider.GetUtcNow().UtcDateTime.Date);
+            query = query.Where(t =>
+                t.VigenciaInicio <= hoje
+                && (t.VigenciaFim == null || t.VigenciaFim > hoje));
+        }
+
         CursorKeysetPage<TipoAtoPublicado> page = await CursorKeyset
-            .ApplyAsync(_dbContext.TiposAtoPublicado.AsNoTracking(), afterId, limit, direction, cancellationToken)
+            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);

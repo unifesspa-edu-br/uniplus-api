@@ -17,4 +17,7 @@ public static class TipoAtoPublicadoErrorCodes
     public const string VigenciaSobreposta = "TipoAtoPublicado.VigenciaSobreposta";
 
     public const string NaoEncontrado = "TipoAtoPublicado.NaoEncontrado";
+
+    /// <summary>O identificador da URL não corresponde ao do corpo da requisição.</summary>
+    public const string IdDivergente = "TipoAtoPublicado.IdDivergente";
 }

@@ -6,7 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Publicacoes.Application;
+using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Publicacoes.API.Errors;
+using Unifesspa.UniPlus.Publicacoes.API.Hateoas;
+using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
@@ -41,6 +44,13 @@ public static class PublicacoesModuleRegistration
         // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).
         services.AddSingleton<IDomainErrorRegistration, PublicacoesDomainErrorRegistration>();
+
+        services.AddSingleton<IResourceLinksBuilder<TipoAtoPublicadoDto>, TipoAtoPublicadoLinksBuilder>();
+
+        // Idempotency-Key (ADR-0027) sobre o DbContext do módulo. Sem este registro o
+        // [RequiresIdempotencyKey] do POST compila e não faz nada: a requisição sem
+        // header alcança o handler, e o replay reexecuta em vez de devolver o cache.
+        services.AddIdempotency<PublicacoesDbContext, PublicacoesApiAssemblyMarker>(configuration);
 
         services.AddPublicacoesApplication();
         services.AddPublicacoesInfrastructure();

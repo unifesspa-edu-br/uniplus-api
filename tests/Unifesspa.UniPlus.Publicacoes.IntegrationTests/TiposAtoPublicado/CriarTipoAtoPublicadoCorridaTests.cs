@@ -49,7 +49,7 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
         string codigo = CodigoUnico();
 
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin");
-        var real = new TipoAtoPublicadoRepository(ctx);
+        var real = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         // Primeira versão, gravada normalmente.
         Result<Guid> primeira = await CriarTipoAtoPublicadoCommandHandler.Handle(
@@ -58,7 +58,7 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
 
         // Segunda versão, com a consulta prévia cega — o estado do banco mudou sob ela.
         await using PublicacoesDbContext ctx2 = _fixture.CreateDbContext("admin");
-        var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(ctx2));
+        var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(ctx2, TimeProvider.System));
 
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
             Comando(codigo), cego, ctx2, CancellationToken.None);
@@ -73,14 +73,14 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
         string codigo = CodigoUnico();
 
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin");
-        var repositorio = new TipoAtoPublicadoRepository(ctx);
+        var repositorio = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         (await CriarTipoAtoPublicadoCommandHandler.Handle(Comando(codigo), repositorio, ctx, CancellationToken.None))
             .IsSuccess.Should().BeTrue();
 
         await using PublicacoesDbContext ctx2 = _fixture.CreateDbContext("admin");
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
-            Comando(codigo), new TipoAtoPublicadoRepository(ctx2), ctx2, CancellationToken.None);
+            Comando(codigo), new TipoAtoPublicadoRepository(ctx2, TimeProvider.System), ctx2, CancellationToken.None);
 
         segunda.IsFailure.Should().BeTrue();
         segunda.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.VigenciaSobreposta);
@@ -119,8 +119,8 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
             _real.ObterVigenteAsync(codigo, data, ct);
 
         public Task<(IReadOnlyList<TipoAtoPublicado> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-            Guid? afterId, int limit, PaginationDirection direction, CancellationToken ct) =>
-            _real.ListarPaginadoAsync(afterId, limit, direction, ct);
+            Guid? afterId, int limit, PaginationDirection direction, bool vigentes, CancellationToken ct) =>
+            _real.ListarPaginadoAsync(afterId, limit, direction, vigentes, ct);
 
         public Task AdicionarAsync(TipoAtoPublicado tipo, CancellationToken ct) => _real.AdicionarAsync(tipo, ct);
 

@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class OpenApiPorModuloTests
 {
-    private static readonly string[] Modulos = ["configuracao", "organizacao", "selecao"];
+    private static readonly string[] Modulos = ["configuracao", "organizacao", "selecao", "publicacoes"];
 
     private readonly MonolitoPostgresFixture _fixture;
 
@@ -40,6 +40,7 @@ public sealed class OpenApiPorModuloTests
     [InlineData("configuracao")]
     [InlineData("organizacao")]
     [InlineData("selecao")]
+    [InlineData("publicacoes")]
     public async Task DocDeModulo_NaoVazaPathsDeOutrosModulos(string modulo)
     {
         IReadOnlyList<string> paths = await ObterPathsAsync(modulo);
@@ -57,13 +58,22 @@ public sealed class OpenApiPorModuloTests
         }
     }
 
-    [Fact(DisplayName = "Doc /openapi/configuracao.json contém os próprios endpoints (api/configuracao/*)")]
-    public async Task DocDeModulo_ContemSeusProprios()
+    /// <remarks>
+    /// Generalizado por módulo de propósito: fixo em Configuração, o teste de
+    /// não-vazamento passaria por vacuidade para qualquer módulo cujo documento
+    /// estivesse vazio — um doc sem paths nunca vaza nada.
+    /// </remarks>
+    [Theory(DisplayName = "Doc /openapi/{modulo}.json contém os próprios endpoints (api/{modulo}/*)")]
+    [InlineData("configuracao")]
+    [InlineData("organizacao")]
+    [InlineData("selecao")]
+    [InlineData("publicacoes")]
+    public async Task DocDeModulo_ContemSeusProprios(string modulo)
     {
-        IReadOnlyList<string> paths = await ObterPathsAsync("configuracao");
+        IReadOnlyList<string> paths = await ObterPathsAsync(modulo);
 
         paths.Should().Contain(
-            p => p.StartsWith("/api/configuracao/", StringComparison.Ordinal),
+            p => p.StartsWith($"/api/{modulo}/", StringComparison.Ordinal),
             "o doc do módulo deve conter seus próprios endpoints");
     }
 

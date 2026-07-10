@@ -8,7 +8,11 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// (ADR-0026 + ADR-0089). O controller decifra o cursor opaco e valida
 /// limit/direction antes de despachar (ADR-0031).
 /// </summary>
+/// <param name="Vigentes">
+/// Quando verdadeiro (o default do endpoint), restringe às versões que valem hoje.
+/// </param>
 public sealed record ListarTiposAtoPublicadoQuery(
     Guid? AfterId,
     int Limit,
-    PaginationDirection Direction) : IQuery<ListarTiposAtoPublicadoResult>;
+    PaginationDirection Direction,
+    bool Vigentes = true) : IQuery<ListarTiposAtoPublicadoResult>;
