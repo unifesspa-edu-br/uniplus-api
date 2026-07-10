@@ -33,6 +33,7 @@ public static class PublicacoesInfrastructureRegistration
             serviceProvider.GetRequiredService<PublicacoesDbContext>());
 
         services.AddScoped<ITipoAtoPublicadoRepository, TipoAtoPublicadoRepository>();
+        services.AddScoped<IAtoNormativoRepository, AtoNormativoRepository>();
 
         return services;
     }
