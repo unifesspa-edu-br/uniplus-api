@@ -30,6 +30,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
     private const string Admin = "admin-publicacoes";
     private const string ExclusionViolation = "23P01";
     private const string CheckViolation = "23514";
+    private const string NomeDaExclusionConstraint = "ex_tipo_ato_publicado_codigo_vigencia";
 
     private static readonly DateOnly Inicio = new(2026, 1, 1);
     private static readonly DateOnly Meio = new(2026, 6, 1);
@@ -97,8 +98,14 @@ public sealed class TipoAtoPublicadoPersistenceTests
         Func<Task> segundaInsercao = () => Gravar(Novo(codigo, Meio, Fim.AddYears(1)));
 
         DbUpdateException erro = (await segundaInsercao.Should().ThrowAsync<DbUpdateException>()).Which;
-        erro.InnerException.Should().BeOfType<PostgresException>()
-            .Which.SqlState.Should().Be(ExclusionViolation);
+        PostgresException pg = erro.InnerException.Should().BeOfType<PostgresException>().Which;
+        pg.SqlState.Should().Be(ExclusionViolation);
+
+        // O nome da constraint é o que a camada Application usa para distinguir esta
+        // violação de qualquer outra exclusion constraint futura. Se o PostgreSQL
+        // deixasse de informá-lo, a tradução para erro de domínio falharia em silêncio
+        // e a corrida viraria 500.
+        pg.ConstraintName.Should().Be(NomeDaExclusionConstraint);
     }
 
     [Fact(DisplayName = "Vigência aberta cruza qualquer janela futura do mesmo código")]

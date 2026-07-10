@@ -44,6 +44,7 @@
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.API/Unifesspa.UniPlus.Configuracao.API.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Domain/Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
+    <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Unifesspa.UniPlus.Publicacoes.Application.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Infrastructure/Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Unifesspa.UniPlus.Publicacoes.API.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />

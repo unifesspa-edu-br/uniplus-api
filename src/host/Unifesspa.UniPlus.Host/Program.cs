@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Configuracao.API;
 using Unifesspa.UniPlus.Configuracao.Application;
 using Unifesspa.UniPlus.Ingresso.API;
 using Unifesspa.UniPlus.Publicacoes.API;
+using Unifesspa.UniPlus.Publicacoes.Application;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
@@ -98,6 +99,7 @@ builder.Host.UseWolverineOutboxCascading(
     {
         opts.Discovery.IncludeAssembly(typeof(ConfiguracaoApplicationServiceRegistration).Assembly);
         opts.Discovery.IncludeAssembly(typeof(OrganizacaoInstitucionalApplicationServiceRegistration).Assembly);
+        opts.Discovery.IncludeAssembly(typeof(PublicacoesApplicationServiceRegistration).Assembly);
         opts.Discovery.IncludeAssembly(typeof(CriarProcessoSeletivoCommand).Assembly);
         opts.Discovery.IncludeAssembly(typeof(ProcessoPublicadoToKafkaCascadeHandler).Assembly);
 
@@ -109,6 +111,7 @@ builder.Host.UseWolverineOutboxCascading(
         SelecaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
+        PublicacoesCodegenRegistration.ConfigurarCodegenWolverine(opts);
 
         // Routing do Selecao (PG queue domain-events + Kafka processo_seletivo_events) —
         // religa a mensageria externa antes deferida no monólito.
