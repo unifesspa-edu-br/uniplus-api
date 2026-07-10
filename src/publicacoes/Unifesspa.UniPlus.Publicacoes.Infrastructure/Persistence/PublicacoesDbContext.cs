@@ -11,11 +11,11 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 /// DbContext do módulo Publicações — o registro central dos atos normativos
 /// publicados por Reitoria, CEPS e CRCA (ADR-0105).
 ///
-/// Hospeda o cadastro de tipos de ato e o cache de Idempotency-Key (ADR-0027)
-/// adjacente. O ato normativo e o vínculo ato↔entidade chegam nas stories
-/// seguintes. O módulo não conhece ProcessoSeletivo, Chamada nem configuração
-/// de certame — nenhuma coluna, nenhuma chave estrangeira desses conceitos
-/// entra aqui.
+/// Hospeda o cadastro de tipos de ato, o ato normativo append-only e o cache de
+/// Idempotency-Key (ADR-0027) adjacente. O vínculo genérico ato↔entidade chega
+/// na story seguinte (#801). O módulo não conhece ProcessoSeletivo, Chamada nem
+/// configuração de certame — nenhuma coluna, nenhuma chave estrangeira desses
+/// conceitos entra aqui.
 /// </summary>
 public sealed class PublicacoesDbContext : DbContext, IPublicacoesUnitOfWork
 {
@@ -30,6 +30,12 @@ public sealed class PublicacoesDbContext : DbContext, IPublicacoesUnitOfWork
     }
 
     public DbSet<TipoAtoPublicado> TiposAtoPublicado => Set<TipoAtoPublicado>();
+
+    /// <summary>
+    /// Atos normativos publicados — registro central e append-only (ADR-0063/0105).
+    /// Só recebe <c>INSERT</c>; <c>UPDATE</c>/<c>DELETE</c> são bloqueados por trigger.
+    /// </summary>
+    public DbSet<AtoNormativo> AtosNormativos => Set<AtoNormativo>();
 
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no schema do módulo para permitir
