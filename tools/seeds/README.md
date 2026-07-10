@@ -18,6 +18,24 @@ Pré-requisito no dev: a stack de smoke no ar (API em `:5200`, Keycloak em `:808
 
 O `run.sh` propaga o exit code do Newman — um seed que falha derruba o passo de bootstrap do pipeline.
 
+### Fora do dev
+
+Os templates `standalone` e `hml` trazem apenas o que é público. O secret do client de bootstrap **não é versionado**: vem do `uniplus-infra`, por variável de ambiente.
+
+```bash
+BOOTSTRAP_CLIENT_SECRET=*** ENV=standalone bash tools/seeds/run.sh
+```
+
+Sem ele, o script para antes de chamar o Newman e nomeia a causa — em vez de deixar o token endpoint devolver 401 e a falha aparecer no primeiro request.
+
+Um ambiente inteiro pode vir de fora do repositório, montado pelo pipeline:
+
+```bash
+SEED_ENV_FILE=/run/secrets/prod.postman_environment.json bash tools/seeds/run.sh
+```
+
+Qualquer variável do ambiente pode ser sobrescrita sem editar arquivo: `BASE_URL`, `KEYCLOAK_TOKEN_URL`, `BOOTSTRAP_CLIENT_ID`, `BOOTSTRAP_CLIENT_SECRET`.
+
 ## Reexecutar é seguro, e não pelo motivo óbvio
 
 Cada linha faz **preflight**: consulta `GET /tipos-ato/{codigo}/vigente` antes de escrever. Se o tipo já existe, **todos** os campos são comparados com o arquivo de seed — código, nome, os três atributos de consequência, a janela de vigência e a base legal — e o `POST` é **pulado**. Se qualquer um divergir, o seed **falha**, em vez de sobrescrever em silêncio ou de aceitar uma linha que não é a que o arquivo declara.
@@ -36,7 +54,7 @@ Por isso a chave é `{{$guid}}`, gerada por execução, e o request assere que a
 
 `client_credentials` contra o Keycloak, com o client confidencial `uniplus-api-bootstrap` (service account com a realm role `plataforma-admin`). O token é cacheado na coleção até 60 s antes de expirar.
 
-Em `dev`, o client e o secret vivem no realm export versionado (`docker/keycloak/realm-export-dev-local.json`) — são credenciais de desenvolvimento, sem valor fora da máquina local. Em **standalone, HML e PROD** o client é precondição de deploy e o secret vem do `uniplus-infra`: **nunca** versionado neste repositório.
+Em `dev`, o client e o secret vivem no realm export versionado (`docker/keycloak/realm-export-dev-local.json`) — são credenciais de desenvolvimento, sem valor fora da máquina local. Em **standalone, HML e PROD** o client é precondição de deploy e o secret vem do `uniplus-infra`, por `BOOTSTRAP_CLIENT_SECRET`: **nunca** versionado neste repositório.
 
 ## Estrutura
 
@@ -44,10 +62,14 @@ Em `dev`, o client e o secret vivem no realm export versionado (`docker/keycloak
 seeds/
   seed-tipos-ato.json                     ← dados: array flat, camelCase, um objeto por linha
 tools/seeds/
-  seed-catalogos.postman_collection.json  ← um folder por catálogo (preflight + POST)
-  envs/dev.postman_environment.json
+  seed-catalogos.postman_collection.json  ← um folder por catálogo (preflight + POST + releitura)
+  envs/dev.postman_environment.json        ← secret de desenvolvimento, sem valor fora da máquina local
+  envs/standalone.postman_environment.json ← secret vazio: vem do uniplus-infra
+  envs/hml.postman_environment.json        ← idem
   run.sh
 ```
+
+O corpo do `POST` é montado a partir da linha do arquivo, campo a campo, e o request **relê o recurso criado** pelo `Location` para conferir o que foi de fato gravado. O `POST` devolve só o `id`: sem a releitura, um corpo incompleto persistiria valores errados e o Newman reportaria sucesso.
 
 O Newman é **pinado por versão exata** no `run.sh`. Um bootstrap cuja ferramenta muda sozinha entre execuções não é bootstrap.
 
