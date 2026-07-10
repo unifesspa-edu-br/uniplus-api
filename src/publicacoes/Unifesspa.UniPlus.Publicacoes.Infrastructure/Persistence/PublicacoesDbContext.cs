@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 /// <summary>
@@ -16,7 +17,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 /// de certame — nenhuma coluna, nenhuma chave estrangeira desses conceitos
 /// entra aqui.
 /// </summary>
-public sealed class PublicacoesDbContext : DbContext
+public sealed class PublicacoesDbContext : DbContext, IPublicacoesUnitOfWork
 {
     /// <summary>
     /// Schema do módulo no banco único do monólito modular (ADR-0097). Tabelas,
@@ -48,5 +49,10 @@ public sealed class PublicacoesDbContext : DbContext
         // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
         modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
+    }
+
+    public async Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
+    {
+        return await SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

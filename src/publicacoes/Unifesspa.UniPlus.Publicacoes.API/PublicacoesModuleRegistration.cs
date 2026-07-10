@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Publicacoes.Application;
 using Unifesspa.UniPlus.Publicacoes.API.Errors;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -14,14 +15,12 @@ using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 /// monólito modular (ADR-0097). Reúne o que é específico do módulo — OpenAPI
 /// doc, registro de erros de domínio, Infrastructure e migrations on startup.
 ///
-/// Publicações nasce como módulo esqueleto: schema próprio, sem entidades e sem
-/// endpoints. O cadastro de tipos de ato, o ato normativo e o vínculo
-/// ato↔entidade chegam nas stories seguintes.
-///
 /// O módulo não referencia Domain, Application, Infrastructure ou API de nenhum
 /// outro módulo (ADR-0105): ele possui a essência documental do ato, e nada mais.
-/// Como não há handlers, o assembly não entra no discovery do Wolverine — a
-/// primeira story que introduzir um handler deve compor o discovery no host.
+///
+/// Os handlers vivem no assembly Application e são descobertos pelo Wolverine, que
+/// os inclui explicitamente no <c>Discovery</c> do composition root — junto com o
+/// opt-in de codegen de <see cref="PublicacoesCodegenRegistration"/>.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Design",
@@ -43,6 +42,7 @@ public static class PublicacoesModuleRegistration
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).
         services.AddSingleton<IDomainErrorRegistration, PublicacoesDomainErrorRegistration>();
 
+        services.AddPublicacoesApplication();
         services.AddPublicacoesInfrastructure();
 
         // Migrations EF Core aplicadas no host StartAsync via IHostedService, ANTES

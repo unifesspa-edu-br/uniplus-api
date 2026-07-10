@@ -321,6 +321,7 @@ public sealed class CrossModuleReadIsolationTests
 
             // Publicacoes
             typeof(global::Unifesspa.UniPlus.Publicacoes.Domain.PublicacoesDomainAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Publicacoes.Application.PublicacoesApplicationAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext).Assembly,
             typeof(global::Unifesspa.UniPlus.Publicacoes.API.PublicacoesApiAssemblyMarker).Assembly,
         ];

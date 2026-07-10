@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Unifesspa.UniPlus.Publicacoes.Application.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Infrastructure.Core/Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <ProjectReference Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
