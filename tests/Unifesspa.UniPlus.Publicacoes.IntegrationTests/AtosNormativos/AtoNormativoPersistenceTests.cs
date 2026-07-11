@@ -29,6 +29,8 @@ public sealed class AtoNormativoPersistenceTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string CheckViolation = "23514";
+    private const string UniqueViolation = "23505";
+    private const string ForeignKeyViolation = "23503";
     private static readonly DateOnly Publicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset Registro = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
 
@@ -194,6 +196,141 @@ public sealed class AtoNormativoPersistenceTests
         (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
     }
 
+    // ── Cadeia de retificação (ADR-0103) ─────────────────────────────────────
+
+    [Fact(DisplayName = "Retificação persiste e relê o par (ato retificado, motivo) e o snapshot unico_por_objeto")]
+    public async Task Insert_Retificacao_PersisteCampos()
+    {
+        AtoNormativo raiz = Novo(numero: "13");
+        await Gravar(raiz);
+        AtoNormativo retificador = Novo(
+            numero: "13", atoRetificadoId: raiz.Id, motivoRetificacao: "corrige o anexo II");
+        await Gravar(retificador);
+
+        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        AtoNormativo persistido = await ctx.AtosNormativos.SingleAsync(a => a.Id == retificador.Id);
+
+        persistido.AtoRetificadoId.Should().Be(raiz.Id);
+        persistido.MotivoRetificacao.Should().Be("corrige o anexo II");
+        persistido.UnicoPorObjeto.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "FK self-ref recusa retificação a um ato inexistente")]
+    public async Task Insert_RetificaInexistente_ViolaFk()
+    {
+        AtoNormativo retificador = Novo(
+            numero: "13", atoRetificadoId: Guid.CreateVersion7(), motivoRetificacao: "corrige");
+
+        Func<Task> gravar = () => Gravar(retificador);
+
+        DbUpdateException ex = (await gravar.Should().ThrowAsync<DbUpdateException>()).Which;
+        (ex.InnerException as PostgresException)!.SqlState.Should().Be(ForeignKeyViolation);
+    }
+
+    [Fact(DisplayName = "Índice único parcial recusa retificar o mesmo ato duas vezes (cadeia linear)")]
+    public async Task Insert_RetificaDuasVezes_ViolaUnique()
+    {
+        AtoNormativo raiz = Novo(numero: "13");
+        await Gravar(raiz);
+        await Gravar(Novo(numero: "13", atoRetificadoId: raiz.Id, motivoRetificacao: "primeira"));
+
+        Func<Task> segunda = () => Gravar(
+            Novo(numero: "13", atoRetificadoId: raiz.Id, motivoRetificacao: "segunda"));
+
+        DbUpdateException ex = (await segunda.Should().ThrowAsync<DbUpdateException>()).Which;
+        PostgresException pg = (ex.InnerException as PostgresException)!;
+        pg.SqlState.Should().Be(UniqueViolation);
+        // O nome da constraint violada é exatamente o que UniqueConstraintViolation
+        // procura para traduzir a corrida check-then-act em RaizJaRetificada (409).
+        pg.ConstraintName.Should().Be("ux_ato_normativo_retificado");
+    }
+
+    [Fact(DisplayName = "Duas retificações empilham na cabeça: R2 retifica R1 (não a raiz), aceito")]
+    public async Task Insert_EmpilhaNaCabeca_Aceito()
+    {
+        AtoNormativo raiz = Novo(numero: "13");
+        await Gravar(raiz);
+        AtoNormativo r1 = Novo(numero: "13", atoRetificadoId: raiz.Id, motivoRetificacao: "primeira");
+        await Gravar(r1);
+
+        // R2 emenda R1, a cabeça da cadeia; R1 ainda não foi retificado, então passa.
+        Func<Task> r2 = () => Gravar(
+            Novo(numero: "13", atoRetificadoId: r1.Id, motivoRetificacao: "segunda"));
+
+        await r2.Should().NotThrowAsync();
+    }
+
+    [Fact(DisplayName = "ListarIdsDaCadeia devolve a linhagem inteira a partir de qualquer elo (A→B→C)")]
+    public async Task ListarIdsDaCadeia_DevolveLinhagemInteira()
+    {
+        AtoNormativo a = Novo(numero: "13");
+        await Gravar(a);
+        AtoNormativo b = Novo(numero: "13", atoRetificadoId: a.Id, motivoRetificacao: "segunda versão");
+        await Gravar(b);
+        AtoNormativo c = Novo(numero: "13", atoRetificadoId: b.Id, motivoRetificacao: "terceira versão");
+        await Gravar(c);
+
+        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repo = new AtoNormativoRepository(ctx);
+
+        Guid[] esperada = [a.Id, b.Id, c.Id];
+        // A partir da raiz, do meio ou da cabeça, a cadeia inteira é devolvida.
+        (await repo.ListarIdsDaCadeiaAsync(a.Id, default)).Should().BeEquivalentTo(esperada);
+        (await repo.ListarIdsDaCadeiaAsync(b.Id, default)).Should().BeEquivalentTo(esperada);
+        (await repo.ListarIdsDaCadeiaAsync(c.Id, default)).Should().BeEquivalentTo(esperada);
+    }
+
+    [Fact(DisplayName = "ListarIdsDaCadeia de um ato sem retificação devolve só ele")]
+    public async Task ListarIdsDaCadeia_SemRetificacao_SoOProprio()
+    {
+        AtoNormativo solo = Novo(numero: "77");
+        await Gravar(solo);
+
+        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        var repo = new AtoNormativoRepository(ctx);
+
+        (await repo.ListarIdsDaCadeiaAsync(solo.Id, default))
+            .Should().ContainSingle().Which.Should().Be(solo.Id);
+    }
+
+    [Fact(DisplayName = "CHECK recusa retificação incompleta (só ato retificado, insert cru)")]
+    public async Task CheckRetificacaoCompleta_RecusaSoAto()
+    {
+        AtoNormativo raiz = Novo(numero: "13");
+        await Gravar(raiz);
+
+        Func<Task> insercao = () => InserirCru(atoRetificadoId: raiz.Id, motivoRetificacao: null);
+        (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
+    }
+
+    [Fact(DisplayName = "CHECK recusa retificação incompleta (só motivo, insert cru)")]
+    public async Task CheckRetificacaoCompleta_RecusaSoMotivo()
+    {
+        Func<Task> insercao = () => InserirCru(atoRetificadoId: null, motivoRetificacao: "corrige");
+        (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
+    }
+
+    [Theory(DisplayName = "CHECK recusa retificação com motivo em branco (vazio ou só espaços, insert cru)")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task CheckRetificacaoCompleta_RecusaMotivoEmBranco(string motivo)
+    {
+        AtoNormativo raiz = Novo(numero: "13");
+        await Gravar(raiz);
+
+        // Motivo presente porém sem conteúdo: uma retificação sem razão registrada, que
+        // a factory normaliza para ausente e o CHECK (btrim) barra no insert cru.
+        Func<Task> insercao = () => InserirCru(atoRetificadoId: raiz.Id, motivoRetificacao: motivo);
+        (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
+    }
+
+    [Fact(DisplayName = "CHECK recusa auto-retificação (id = ato_retificado_id, insert cru)")]
+    public async Task CheckNaoAutorretifica_RecusaSelfRef()
+    {
+        Func<Task> insercao = () => InserirCruAutorreferente();
+        (await insercao.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(CheckViolation);
+    }
+
     [Fact(DisplayName = "ListarIdsComMesmaNumeracao devolve os conflitantes, ignorando o próprio ato")]
     public async Task ListarIdsComMesmaNumeracao_IgnoraProprio()
     {
@@ -300,19 +437,25 @@ public sealed class AtoNormativoPersistenceTests
         int ano = 2026,
         string documentoHash = HashValido,
         Guid? versaoId = null,
-        string? versaoHash = null)
+        string? versaoHash = null,
+        Guid? atoRetificadoId = null,
+        string? motivoRetificacao = null)
     {
         await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.OpenConnectionAsync();
 
+        // unico_por_objeto omitido de propósito: a coluna é NOT NULL DEFAULT false,
+        // e o insert cru exercita justamente o caminho que não a informa.
         await using var command = new NpgsqlCommand(
             """
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 data_publicacao, documento_hash, assinante, registrado_em, versao_invocada_id, versao_invocada_hash)
+                 data_publicacao, documento_hash, assinante, registrado_em, versao_invocada_id, versao_invocada_hash,
+                 ato_retificado_id, motivo_retificacao)
             VALUES
                 (gen_random_uuid(), 'CEPS', 'EDITAL', @ano, '13', 'EDITAL_ABERTURA', false, false,
-                 @data, @hash, 'Assinante', now(), @versao_id, @versao_hash)
+                 @data, @hash, 'Assinante', now(), @versao_id, @versao_hash,
+                 @ato_retificado_id, @motivo_retificacao)
             """,
             (NpgsqlConnection)ctx.Database.GetDbConnection());
 
@@ -321,11 +464,47 @@ public sealed class AtoNormativoPersistenceTests
         command.Parameters.AddWithValue("hash", documentoHash);
         command.Parameters.AddWithValue("versao_id", versaoId ?? (object)DBNull.Value);
         command.Parameters.AddWithValue("versao_hash", versaoHash ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("ato_retificado_id", atoRetificadoId ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("motivo_retificacao", (object?)motivoRetificacao ?? DBNull.Value);
 
         await command.ExecuteNonQueryAsync();
     }
 
-    private static AtoNormativo Novo(string? numero = "13", ReferenciaVersaoConfiguracao? versao = null) =>
+    [SuppressMessage(
+        "Security",
+        "CA2100:Review SQL queries for security vulnerabilities",
+        Justification = "SQL fixo dos testes de integração, sem entrada de usuário; parâmetros via NpgsqlParameter.")]
+    private async Task InserirCruAutorreferente()
+    {
+        Guid id = Guid.CreateVersion7();
+
+        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await ctx.Database.OpenConnectionAsync();
+
+        // id = ato_retificado_id na mesma linha: a auto-retificação que o CHECK barra.
+        await using var command = new NpgsqlCommand(
+            """
+            INSERT INTO publicacoes.ato_normativo
+                (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
+                 data_publicacao, documento_hash, assinante, registrado_em, ato_retificado_id, motivo_retificacao)
+            VALUES
+                (@id, 'CEPS', 'EDITAL', 2026, '13', 'EDITAL_ABERTURA', false, false,
+                 @data, @hash, 'Assinante', now(), @id, 'corrige')
+            """,
+            (NpgsqlConnection)ctx.Database.GetDbConnection());
+
+        command.Parameters.AddWithValue("id", id);
+        command.Parameters.AddWithValue("data", Publicacao);
+        command.Parameters.AddWithValue("hash", HashValido);
+
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static AtoNormativo Novo(
+        string? numero = "13",
+        ReferenciaVersaoConfiguracao? versao = null,
+        Guid? atoRetificadoId = null,
+        string? motivoRetificacao = null) =>
         AtoNormativo.Registrar(
             orgao: "CEPS",
             serie: "EDITAL",
@@ -334,9 +513,12 @@ public sealed class AtoNormativoPersistenceTests
             tipoCodigo: "EDITAL_ABERTURA",
             congelaConfiguracao: false,
             efeitoIrreversivel: false,
+            unicoPorObjeto: false,
             dataPublicacao: Publicacao,
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             registradoEm: Registro,
-            versaoInvocada: versao);
+            versaoInvocada: versao,
+            atoRetificadoId: atoRetificadoId,
+            motivoRetificacao: motivoRetificacao);
 }

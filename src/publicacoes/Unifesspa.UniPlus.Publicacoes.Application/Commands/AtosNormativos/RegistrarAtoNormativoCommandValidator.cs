@@ -59,5 +59,21 @@ public sealed class RegistrarAtoNormativoCommandValidator
         RuleFor(x => x.VersaoInvocadaHash)
             .Matches(AtoNormativoRegras.HashPattern).WithMessage(AtoNormativoRegras.VersaoInvocadaHashFormato)
             .When(x => x.VersaoInvocadaHash is not null);
+
+        // A retificação é o par (ato retificado, motivo), completo ou ausente (ADR-0103).
+        RuleFor(x => x)
+            .Must(x => x.AtoRetificadoId.HasValue == (AtoNormativoRegras.Normalizar(x.MotivoRetificacao) is not null))
+            .WithMessage(AtoNormativoRegras.RetificacaoIncompleta)
+            .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.MotivoRetificacao));
+
+        // Id zerado não é referência: um Guid.Empty não aponta ato algum.
+        RuleFor(x => x.AtoRetificadoId)
+            .Must(id => id != Guid.Empty).WithMessage(AtoNormativoRegras.AtoRetificadoIdObrigatorio)
+            .When(x => x.AtoRetificadoId.HasValue);
+
+        RuleFor(x => AtoNormativoRegras.Normalizar(x.MotivoRetificacao))
+            .MaximumLength(AtoNormativoRegras.MotivoRetificacaoMaxLength).WithMessage(AtoNormativoRegras.MotivoRetificacaoTamanho)
+            .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.MotivoRetificacao))
+            .When(x => AtoNormativoRegras.Normalizar(x.MotivoRetificacao) is not null);
     }
 }

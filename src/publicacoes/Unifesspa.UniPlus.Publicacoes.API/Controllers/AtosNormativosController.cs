@@ -112,9 +112,12 @@ public sealed class AtosNormativosController : ControllerBase
     }
 
     /// <summary>
-    /// Registra um ato publicado. Restrito a <c>plataforma-admin</c>.
-    /// <c>Idempotency-Key</c> obrigatório (ADR-0027). A resposta traz o Id, o
-    /// instante forense de registro e eventuais avisos de numeração (AC4).
+    /// Registra um ato publicado — publicação nova ou retificação de outro ato,
+    /// quando o corpo traz o par <c>atoRetificadoId</c>/<c>motivoRetificacao</c>
+    /// (ADR-0103). Restrito a <c>plataforma-admin</c>. <c>Idempotency-Key</c>
+    /// obrigatório (ADR-0027). A resposta traz o Id, o instante forense de registro
+    /// e eventuais avisos de numeração (AC4). Uma retificação que quebra a cadeia
+    /// linear (o ato-alvo já foi retificado) responde 409.
     /// </summary>
     [HttpPost("admin/atos")]
     [Authorize(Roles = "plataforma-admin")]
@@ -123,6 +126,7 @@ public sealed class AtosNormativosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Registrar(
         [FromBody] RegistrarAtoNormativoCommand command,

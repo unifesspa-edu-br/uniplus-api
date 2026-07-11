@@ -101,5 +101,25 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status404NotFound,
                 "uniplus.publicacoes.ato_normativo.nao_encontrado",
                 "Ato normativo não encontrado")),
+
+        new(AtoNormativoErrorCodes.AtoRetificadoNaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.ato_retificado_nao_encontrado",
+                "O ato retificado não corresponde a nenhum ato registrado")),
+
+        new(AtoNormativoErrorCodes.ClasseDeCongelamentoDivergente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.ato_normativo.classe_congelamento_divergente",
+                "A classe de congelamento do ato que retifica deve coincidir com a do ato retificado")),
+
+        // 409 e não 422: é conflito com o estado já gravado — o ato-alvo já tem um
+        // retificador —, o mesmo critério que classifica a vigência sobreposta como 409.
+        new(AtoNormativoErrorCodes.RaizJaRetificada,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.publicacoes.ato_normativo.raiz_ja_retificada",
+                "O ato que se tentou retificar já foi retificado por outro (a cadeia é linear)")),
     ];
 }

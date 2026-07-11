@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
+using System.Globalization;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Avisos;
@@ -50,6 +52,16 @@ public static class RegistrarAtoNormativoCommandHandler
             return Result<RegistrarAtoNormativoResult>.Failure(versaoResult.Error!);
         }
 
+        // ADR-0103: quando o registro emenda outro ato, as invariantes da cadeia que
+        // dependem do ato retificado (existência, classe de congelamento coincidente,
+        // linearidade) são verificadas aqui, com o retificado em mãos.
+        DomainError? retificacaoErro = await ValidarRetificacaoAsync(
+            command, tipo, atosRepository, cancellationToken).ConfigureAwait(false);
+        if (retificacaoErro is not null)
+        {
+            return Result<RegistrarAtoNormativoResult>.Failure(retificacaoErro);
+        }
+
         AtoNormativo ato = AtoNormativo.Registrar(
             command.Orgao,
             command.Serie,
@@ -58,29 +70,129 @@ public static class RegistrarAtoNormativoCommandHandler
             command.TipoCodigo,
             tipo.CongelaConfiguracao,
             tipo.EfeitoIrreversivel,
+            tipo.UnicoPorObjeto,
             command.DataPublicacao,
             command.DocumentoHash,
             command.Assinante,
             timeProvider.GetUtcNow(),
-            versaoResult?.Value);
+            versaoResult?.Value,
+            command.AtoRetificadoId,
+            command.MotivoRetificacao);
 
-        // AC4: colisão de numeração é aviso, jamais recusa. No registro o próprio
-        // ato ainda não existe, então todos os que compartilham a numeração são
-        // conflitantes. O aviso do POST é best-effort: como o número não tem
-        // unicidade, dois registros concorrentes da mesma numeração podem ambos
-        // observar zero conflitos e responder sem aviso — a consulta de detalhe
-        // recomputa e enxerga ambos. Serializar aqui exigiria advisory lock para
-        // um aviso que, por decisão de negócio, nunca bloqueia o registro.
+        // AC4: colisão de numeração é aviso, jamais recusa. No registro o próprio ato
+        // ainda não existe, então todos os que compartilham a numeração são
+        // conflitantes — menos a linhagem que este ato passa a integrar: uma
+        // republicação com o mesmo número dentro da cadeia de retificação não é
+        // duplicata, é a mesma linhagem (ADR-0103). Exclui a cadeia inteira do ato
+        // retificado, não só o pai direto. O aviso é best-effort: como o número não
+        // tem unicidade, dois registros concorrentes da mesma numeração podem ambos
+        // observar zero conflitos; a consulta de detalhe recomputa e enxerga ambos.
+        IReadOnlyCollection<Guid> excluirDoAviso = command.AtoRetificadoId is { } retificadoId
+            ? await atosRepository.ListarIdsDaCadeiaAsync(retificadoId, cancellationToken).ConfigureAwait(false)
+            : [];
         IReadOnlyList<AvisoNumeracao> avisos = await AvisoNumeracaoCalculator
-            .CalcularAsync(atosRepository, ato, excluirId: null, cancellationToken)
+            .CalcularAsync(atosRepository, ato, excluirDoAviso, cancellationToken)
             .ConfigureAwait(false);
 
         await atosRepository.AdicionarAsync(ato, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
+            && UniqueConstraintViolation.IsLinearidadeConflict(constraint))
+        {
+            // Corrida check-then-act: dois atos tentaram retificar a mesma raiz ao
+            // mesmo tempo. O índice único parcial deixou passar só um; o outro vira
+            // recusa nomeada, não erro 500.
+            return Result<RegistrarAtoNormativoResult>.Failure(new DomainError(
+                AtoNormativoErrorCodes.RaizJaRetificada,
+                RaizJaRetificadaConcorrenteMensagem(command.AtoRetificadoId)));
+        }
 
         return Result<RegistrarAtoNormativoResult>.Success(
             new RegistrarAtoNormativoResult(ato.Id, ato.RegistradoEm, avisos));
     }
+
+    /// <summary>
+    /// Verifica as invariantes da cadeia de retificação que dependem do ato
+    /// retificado (ADR-0103). Devolve o <see cref="DomainError"/> da primeira
+    /// violação, ou <see langword="null"/> quando o registro não é retificação ou
+    /// passa em todas. A garantia dura da linearidade contra a corrida é do índice
+    /// único parcial; esta consulta dá a mensagem legível no caso comum.
+    /// </summary>
+    private static async Task<DomainError?> ValidarRetificacaoAsync(
+        RegistrarAtoNormativoCommand command,
+        TipoAtoPublicado tipo,
+        IAtoNormativoRepository atosRepository,
+        CancellationToken cancellationToken)
+    {
+        if (command.AtoRetificadoId is not { } retificadoId)
+        {
+            return null;
+        }
+
+        AtoNormativo? retificado = await atosRepository
+            .ObterPorIdParaLeituraAsync(retificadoId, cancellationToken)
+            .ConfigureAwait(false);
+        if (retificado is null)
+        {
+            return new DomainError(
+                AtoNormativoErrorCodes.AtoRetificadoNaoEncontrado,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "O ato retificado {0} não corresponde a nenhum ato registrado.",
+                    retificadoId));
+        }
+
+        // congela(retificador) == congela(retificado): a classe de congelamento do
+        // novo ato é a do tipo vigente já resolvido; a do retificado é o snapshot que
+        // ele congelou no próprio registro. É essa classe, não o rótulo do tipo, que
+        // protege a integridade da configuração publicada (RN08).
+        if (retificado.CongelaConfiguracao != tipo.CongelaConfiguracao)
+        {
+            return new DomainError(
+                AtoNormativoErrorCodes.ClasseDeCongelamentoDivergente,
+                "A classe de congelamento do ato que retifica deve coincidir com a do ato retificado: "
+                + "um ato não congelante não emenda um congelante, nem o inverso.");
+        }
+
+        // Linearidade: se a raiz já foi retificada, a nova retificação deveria emendar
+        // a cabeça da cadeia, não a raiz. Nomeia quem já a retificou.
+        AtoNormativo? retificador = await atosRepository
+            .ObterRetificadorAsync(retificadoId, cancellationToken)
+            .ConfigureAwait(false);
+        if (retificador is not null)
+        {
+            return new DomainError(
+                AtoNormativoErrorCodes.RaizJaRetificada,
+                RaizJaRetificadaMensagem(retificadoId, retificador));
+        }
+
+        return null;
+    }
+
+    private static string RaizJaRetificadaMensagem(Guid retificadoId, AtoNormativo retificador)
+    {
+        string numero = retificador.Numero is null ? "sem número" : "nº " + retificador.Numero;
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "O ato {0} já foi retificado pelo ato {1} ({2} {3}/{4}). A cadeia é linear: "
+            + "retifique a cabeça da cadeia, não uma raiz já retificada.",
+            retificadoId,
+            retificador.Id,
+            retificador.Serie,
+            numero,
+            retificador.Ano);
+    }
+
+    private static string RaizJaRetificadaConcorrenteMensagem(Guid? retificadoId) =>
+        string.Format(
+            CultureInfo.InvariantCulture,
+            "O ato {0} já foi retificado por outro ato registrado concorrentemente. "
+            + "A cadeia é linear: retifique a cabeça da cadeia.",
+            retificadoId);
 
     private static Result<ReferenciaVersaoConfiguracao>? ResolverVersaoInvocada(
         RegistrarAtoNormativoCommand command)

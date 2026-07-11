@@ -39,8 +39,14 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// ato nenhum.
 /// </para>
 /// <para>
-/// Retificação (relação entre atos) e o vínculo genérico ato↔entidade não
-/// pertencem a este agregado ainda — nascem em stories próprias (#800 e #801).
+/// <b>Retificação é relação, não tipo</b> (ADR-0103). Um ato pode retificar outro
+/// pelo par <see cref="AtoRetificadoId"/> + <see cref="MotivoRetificacao"/>,
+/// simétrico (um existe se e somente se o outro existe). A cadeia é linear — um
+/// ato é retificado no máximo uma vez — e empilha na cabeça: uma segunda
+/// retificação retifica a primeira, não a raiz. As invariantes que dependem do
+/// ato retificado (classe de congelamento coincidente, linearidade) vivem no
+/// handler, que as consulta no repositório; aqui fica só a simetria de shape. O
+/// vínculo genérico ato↔entidade ainda nasce em story própria (#801).
 /// </para>
 /// </remarks>
 public sealed class AtoNormativo : IForensicEntity
@@ -50,6 +56,7 @@ public sealed class AtoNormativo : IForensicEntity
     private const int NumeroMaxLength = 60;
     private const int TipoCodigoMaxLength = 60;
     private const int AssinanteMaxLength = 200;
+    private const int MotivoRetificacaoMaxLength = 1000;
 
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
@@ -74,6 +81,15 @@ public sealed class AtoNormativo : IForensicEntity
     /// <summary>Se a publicação do ato não pode ser desfeita — copiado por valor do catálogo.</summary>
     public bool EfeitoIrreversivel { get; private init; }
 
+    /// <summary>
+    /// Se o objeto do ato admite um único ato vivo deste tipo — copiado por valor
+    /// do catálogo, no instante do registro (ADR-0075), como os demais atributos de
+    /// consequência. A unicidade da raiz de cadeia por objeto (#801) ancora-se neste
+    /// snapshot: consultar o catálogo vigente no futuro tornaria a regra histórica
+    /// instável, porque o cadastro é editável.
+    /// </summary>
+    public bool UnicoPorObjeto { get; private init; }
+
     /// <summary>Data que o documento declara. Documental — nunca ordena vigência.</summary>
     public DateOnly DataPublicacao { get; private init; }
 
@@ -92,6 +108,20 @@ public sealed class AtoNormativo : IForensicEntity
     /// </summary>
     public ReferenciaVersaoConfiguracao? VersaoInvocada { get; private init; }
 
+    /// <summary>
+    /// Ato que este retifica, quando é uma retificação (ADR-0103). Nulo num ato que
+    /// não emenda outro. Referência intra-módulo por FK — permitida, pois a ADR-0061
+    /// só proíbe FK atravessando a fronteira de outro módulo. Simétrico com
+    /// <see cref="MotivoRetificacao"/>.
+    /// </summary>
+    public Guid? AtoRetificadoId { get; private init; }
+
+    /// <summary>
+    /// Motivo declarado da retificação. Simétrico com <see cref="AtoRetificadoId"/> —
+    /// um existe se e somente se o outro existe.
+    /// </summary>
+    public string? MotivoRetificacao { get; private init; }
+
     // EF Core materialization
     private AtoNormativo()
     {
@@ -99,11 +129,15 @@ public sealed class AtoNormativo : IForensicEntity
 
     /// <summary>
     /// Registra um ato publicado. Os atributos de consequência
-    /// (<paramref name="congelaConfiguracao"/>, <paramref name="efeitoIrreversivel"/>)
-    /// já vêm resolvidos por valor do catálogo vigente; a validação de negócio
-    /// (existência de versão vigente, formato do payload) é responsabilidade do
-    /// handler e do validator. Aqui ficam as invariantes de última linha, que
-    /// lançam — o agregado nunca materializa em estado inválido.
+    /// (<paramref name="congelaConfiguracao"/>, <paramref name="efeitoIrreversivel"/>,
+    /// <paramref name="unicoPorObjeto"/>) já vêm resolvidos por valor do catálogo
+    /// vigente; a validação de negócio (existência de versão vigente, formato do
+    /// payload) é responsabilidade do handler e do validator. Aqui ficam as
+    /// invariantes de última linha, que lançam — o agregado nunca materializa em
+    /// estado inválido. As regras de retificação que dependem do ato retificado
+    /// (classe de congelamento coincidente, linearidade da cadeia) são do handler,
+    /// que as consulta no repositório; a factory garante só a simetria de shape do
+    /// par (<paramref name="atoRetificadoId"/>, <paramref name="motivoRetificacao"/>).
     /// </summary>
     public static AtoNormativo Registrar(
         string orgao,
@@ -113,17 +147,21 @@ public sealed class AtoNormativo : IForensicEntity
         string tipoCodigo,
         bool congelaConfiguracao,
         bool efeitoIrreversivel,
+        bool unicoPorObjeto,
         DateOnly dataPublicacao,
         string documentoHash,
         string assinante,
         DateTimeOffset registradoEm,
-        ReferenciaVersaoConfiguracao? versaoInvocada)
+        ReferenciaVersaoConfiguracao? versaoInvocada,
+        Guid? atoRetificadoId = null,
+        string? motivoRetificacao = null)
     {
         string orgaoNorm = ExigirTexto(orgao, OrgaoMaxLength, nameof(orgao));
         string serieNorm = ExigirTexto(serie, SerieMaxLength, nameof(serie));
         string tipoCodigoNorm = ExigirTexto(tipoCodigo, TipoCodigoMaxLength, nameof(tipoCodigo));
         string assinanteNorm = ExigirTexto(assinante, AssinanteMaxLength, nameof(assinante));
         string? numeroNorm = NormalizarOpcional(numero, NumeroMaxLength, nameof(numero));
+        string? motivoNorm = NormalizarOpcional(motivoRetificacao, MotivoRetificacaoMaxLength, nameof(motivoRetificacao));
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(ano);
 
@@ -132,6 +170,24 @@ public sealed class AtoNormativo : IForensicEntity
             throw new ArgumentException(
                 "Hash do documento deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).",
                 nameof(documentoHash));
+        }
+
+        if (atoRetificadoId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Identificador do ato retificado não pode ser vazio.",
+                nameof(atoRetificadoId));
+        }
+
+        // Simetria da retificação (ADR-0103): a linhagem é o par (ato retificado,
+        // motivo) — um sem o outro não registra emenda alguma. A auto-referência é
+        // impossível por esta via (o Id é gerado aqui, fresco); o insert cru fica
+        // barrado por CHECK no banco.
+        if ((atoRetificadoId is not null) != (motivoNorm is not null))
+        {
+            throw new ArgumentException(
+                "A retificação é o par (ato retificado, motivo) completo, ou nenhum dos dois.",
+                nameof(atoRetificadoId));
         }
 
         return new AtoNormativo
@@ -143,11 +199,14 @@ public sealed class AtoNormativo : IForensicEntity
             TipoCodigo = tipoCodigoNorm,
             CongelaConfiguracao = congelaConfiguracao,
             EfeitoIrreversivel = efeitoIrreversivel,
+            UnicoPorObjeto = unicoPorObjeto,
             DataPublicacao = dataPublicacao,
             DocumentoHash = documentoHash,
             Assinante = assinanteNorm,
             RegistradoEm = registradoEm,
             VersaoInvocada = versaoInvocada,
+            AtoRetificadoId = atoRetificadoId,
+            MotivoRetificacao = motivoNorm,
         };
     }
 
