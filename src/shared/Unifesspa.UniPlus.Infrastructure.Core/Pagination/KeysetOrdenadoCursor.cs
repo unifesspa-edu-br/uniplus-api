@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using MR.EntityFrameworkCore.KeysetPagination;
 
-using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -34,6 +34,11 @@ public sealed record KeysetOrdenadoPage<T>(
 /// <para><b>Flags bidirecionais (ADR-0089):</b> <c>EnsureCorrectOrder</c> restaura a ordem
 /// ascendente na navegação <c>Backward</c>; <c>HasPreviousAsync</c>/<c>HasNextAsync</c>
 /// resolvem os lados por <c>EXISTS</c> indexado (sem <c>COUNT</c>).</para>
+/// <para><b>Ciclo de vida da entidade é irrelevante aqui:</b> a restrição é
+/// <see cref="IIdentificavel"/>, a base comum de <c>EntityBase</c> e de
+/// <c>IForensicEntity</c> — o keyset só precisa de um <c>Id</c> ordenável para
+/// desempatar a chave de ordenação. Assim uma entidade append-only (ex.: o ato
+/// publicado) pagina pelo mesmo motor, sem herdar soft-delete nem auditoria.</para>
 /// </remarks>
 public static class KeysetOrdenadoCursor
 {
@@ -47,7 +52,7 @@ public static class KeysetOrdenadoCursor
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
-        where T : EntityBase
+        where T : class, IIdentificavel
     {
         ArgumentNullException.ThrowIfNull(filtered);
         ArgumentNullException.ThrowIfNull(buildKeyset);
