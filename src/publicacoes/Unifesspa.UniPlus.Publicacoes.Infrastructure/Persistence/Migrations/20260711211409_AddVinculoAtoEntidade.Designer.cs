@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PublicacoesDbContext))]
-    partial class PublicacoesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711211409_AddVinculoAtoEntidade")]
+    partial class AddVinculoAtoEntidade
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
