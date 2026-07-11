@@ -38,4 +38,13 @@ public static class AtoNormativoErrorCodes
     /// cadeia, não uma raiz já retificada. A mensagem nomeia o ato que já a retificou.
     /// </summary>
     public const string RaizJaRetificada = "AtoNormativo.RaizJaRetificada";
+
+    /// <summary>
+    /// O tipo do ato admite um único ato vivo por objeto (<c>unico_por_objeto</c>), e a
+    /// entidade vinculada já é tratada por outra linhagem de atos desse tipo. Não é o
+    /// payload que está incoerente — é o estado já gravado que não comporta uma segunda
+    /// linhagem; daí 409, e não 422. Uma nova versão do ato vivo é uma retificação da
+    /// própria linhagem (ADR-0103), não um ato novo.
+    /// </summary>
+    public const string ObjetoJaTemAtoVivoDoTipo = "AtoNormativo.ObjetoJaTemAtoVivoDoTipo";
 }

@@ -45,8 +45,13 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// ato é retificado no máximo uma vez — e empilha na cabeça: uma segunda
 /// retificação retifica a primeira, não a raiz. As invariantes que dependem do
 /// ato retificado (classe de congelamento coincidente, linearidade) vivem no
-/// handler, que as consulta no repositório; aqui fica só a simetria de shape. O
-/// vínculo genérico ato↔entidade ainda nasce em story própria (#801).
+/// handler, que as consulta no repositório; aqui fica só a simetria de shape.
+/// </para>
+/// <para>
+/// <b>Vínculo com entidades de outros domínios</b> (ADR-0105): o ato carrega os
+/// pares <c>(entidade_tipo, entidade_id)</c> que o ligam ao objeto de que trata —
+/// opacos para o módulo. Um ato sem vínculo algum é válido: há atos que não
+/// pertencem a certame nenhum. Ver <see cref="VinculoAtoEntidade"/>.
 /// </para>
 /// </remarks>
 public sealed class AtoNormativo : IForensicEntity
@@ -122,6 +127,15 @@ public sealed class AtoNormativo : IForensicEntity
     /// </summary>
     public string? MotivoRetificacao { get; private init; }
 
+    /// <summary>
+    /// Entidades de outros domínios a que este ato se liga (ADR-0105). Vazio num ato
+    /// que não trata de objeto algum — o edital que seleciona elaboradores de questões
+    /// não pertence a certame nenhum, e é válido assim.
+    /// </summary>
+    public IReadOnlyCollection<VinculoAtoEntidade> Vinculos => _vinculos.AsReadOnly();
+
+    private readonly List<VinculoAtoEntidade> _vinculos = [];
+
     // EF Core materialization
     private AtoNormativo()
     {
@@ -138,6 +152,11 @@ public sealed class AtoNormativo : IForensicEntity
     /// (classe de congelamento coincidente, linearidade da cadeia) são do handler,
     /// que as consulta no repositório; a factory garante só a simetria de shape do
     /// par (<paramref name="atoRetificadoId"/>, <paramref name="motivoRetificacao"/>).
+    ///
+    /// Os <paramref name="vinculos"/> são construídos a partir do ato recém-criado, de
+    /// modo que nenhum deles possa apontar para outro ato. A unicidade da linhagem por
+    /// objeto (tipos <c>unico_por_objeto</c>) depende do estado já gravado e é do
+    /// handler, não daqui.
     /// </summary>
     public static AtoNormativo Registrar(
         string orgao,
@@ -154,7 +173,8 @@ public sealed class AtoNormativo : IForensicEntity
         DateTimeOffset registradoEm,
         ReferenciaVersaoConfiguracao? versaoInvocada,
         Guid? atoRetificadoId = null,
-        string? motivoRetificacao = null)
+        string? motivoRetificacao = null,
+        IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null)
     {
         string orgaoNorm = ExigirTexto(orgao, OrgaoMaxLength, nameof(orgao));
         string serieNorm = ExigirTexto(serie, SerieMaxLength, nameof(serie));
@@ -190,7 +210,7 @@ public sealed class AtoNormativo : IForensicEntity
                 nameof(atoRetificadoId));
         }
 
-        return new AtoNormativo
+        AtoNormativo ato = new()
         {
             Orgao = orgaoNorm,
             Serie = serieNorm,
@@ -208,6 +228,27 @@ public sealed class AtoNormativo : IForensicEntity
             AtoRetificadoId = atoRetificadoId,
             MotivoRetificacao = motivoNorm,
         };
+
+        foreach ((string entidadeTipo, Guid entidadeId) in vinculos ?? [])
+        {
+            VinculoAtoEntidade vinculo = VinculoAtoEntidade.Criar(ato, entidadeTipo, entidadeId);
+
+            // O trio (ato, tipo, id) é único: repetir a mesma entidade no mesmo ato não
+            // acrescenta vínculo nenhum, e o índice único do banco recusaria a segunda
+            // linha. O validator já devolve 422 antes; aqui é a última linha.
+            if (ato._vinculos.Exists(v =>
+                    string.Equals(v.EntidadeTipo, vinculo.EntidadeTipo, StringComparison.Ordinal)
+                    && v.EntidadeId == vinculo.EntidadeId))
+            {
+                throw new ArgumentException(
+                    $"A entidade {vinculo.EntidadeTipo}/{vinculo.EntidadeId} está vinculada mais de uma vez ao mesmo ato.",
+                    nameof(vinculos));
+            }
+
+            ato._vinculos.Add(vinculo);
+        }
+
+        return ato;
     }
 
     private static string ExigirTexto(string valor, int maxLength, string paramName)

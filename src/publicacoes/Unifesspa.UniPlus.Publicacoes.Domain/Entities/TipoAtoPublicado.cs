@@ -103,10 +103,19 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
     }
 
     /// <summary>
-    /// Atualiza os atributos da versão. O <c>Codigo</c> é editável, como no
-    /// <c>TipoDocumento</c>: o consumo é por cópia de valor no ato publicado, então
-    /// renomear o código vivo não altera nenhum ato já publicado.
+    /// Atualiza os atributos da versão. O <c>Codigo</c> é <b>imutável</b>: ele é a
+    /// identidade do tipo, não um rótulo dele.
     /// </summary>
+    /// <remarks>
+    /// Duas coisas dependem de o código não mudar. A série de vigências agrupa-se por
+    /// ele — é o <c>codigo</c> que a exclusion constraint compara para impedir duas
+    /// versões vivas no mesmo dia —, de modo que renomear uma versão a desgarraria das
+    /// demais, e o tipo se partiria em dois sem que ninguém o pedisse. E a vaga que um
+    /// objeto reserva para uma linhagem de atos únicos por objeto é chaveada pelo código
+    /// (ADR-0107): renomeá-lo abriria uma vaga nova no mesmo objeto, e o certame acabaria
+    /// com dois editais de abertura vivos. Renomear é criar outro tipo — não editar este.
+    /// Nome, atributos de consequência, vigência e base legal seguem editáveis.
+    /// </remarks>
     public Result Atualizar(
         string codigo,
         string nome,
@@ -124,6 +133,15 @@ public sealed partial class TipoAtoPublicado : SoftDeletableEntity, IAuditableEn
         if (validacao.IsFailure)
         {
             return validacao;
+        }
+
+        if (!string.Equals(codigo.Trim(), Codigo, StringComparison.Ordinal))
+        {
+            return Result.Failure(new DomainError(
+                TipoAtoPublicadoErrorCodes.CodigoImutavel,
+                "O código do tipo de ato é a sua identidade e não muda: a série de vigências "
+                + "agrupa-se por ele, e é por ele que um objeto reserva a vaga de um ato único. "
+                + "Para um tipo diferente, cadastre um tipo novo."));
         }
 
         AplicarCampos(
