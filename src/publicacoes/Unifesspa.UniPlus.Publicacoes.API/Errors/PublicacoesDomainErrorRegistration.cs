@@ -60,6 +60,12 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.publicacoes.tipo_ato.codigo_formato",
                 "Formato do código do tipo de ato inválido")),
 
+        new(TipoAtoPublicadoErrorCodes.CodigoImutavel,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.publicacoes.tipo_ato.codigo_imutavel",
+                "O código do tipo de ato é a sua identidade e não pode ser alterado")),
+
         new(TipoAtoPublicadoErrorCodes.NomeObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -121,5 +127,13 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 StatusCodes.Status409Conflict,
                 "uniplus.publicacoes.ato_normativo.raiz_ja_retificada",
                 "O ato que se tentou retificar já foi retificado por outro (a cadeia é linear)")),
+
+        // 409 pelo mesmo critério: o payload está coerente, mas o objeto vinculado já é
+        // tratado por outra linhagem de atos deste tipo (ADR-0107).
+        new(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo",
+                "O tipo admite um único ato vivo por objeto, e a entidade vinculada já é tratada por outra linhagem")),
     ];
 }

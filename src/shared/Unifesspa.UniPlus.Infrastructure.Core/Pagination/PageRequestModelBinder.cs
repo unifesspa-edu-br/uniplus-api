@@ -84,8 +84,20 @@ public sealed class PageRequestModelBinder : IModelBinder
                     return;
 
                 case CursorDecodeStatus.Success:
+                    // A etiqueta esperada inclui os valores de rota que escopam a coleção
+                    // (ADR-0026): sem isso, um cursor emitido na coleção de uma entidade
+                    // retomaria a paginação na coleção de outra, numa âncora que não é
+                    // dela. Coleção única (a maioria) ⇒ a etiqueta é a constante do
+                    // atributo, e nada muda.
+                    string etiquetaEsperada = CursorResourceTag.Compose(
+                        attribute.Resource,
+                        attribute.ScopeRouteValues.Select(nome =>
+                            bindingContext.ActionContext.RouteData.Values.TryGetValue(nome, out object? valor)
+                                ? valor?.ToString()
+                                : null));
+
                     if (!Guid.TryParse(decoded.Payload!.After, out Guid parsedAfter)
-                        || !string.Equals(decoded.Payload.ResourceTag, attribute.Resource, StringComparison.Ordinal))
+                        || !string.Equals(decoded.Payload.ResourceTag, etiquetaEsperada, StringComparison.Ordinal))
                     {
                         FailWith(bindingContext, CursorBindingErrorCodes.Invalido, "O cursor informado é inválido.");
                         return;
