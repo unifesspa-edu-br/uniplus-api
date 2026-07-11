@@ -438,6 +438,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Unprocessable Entity",
             "content": {
@@ -1010,12 +1020,15 @@
           "tipoCodigo",
           "congelaConfiguracao",
           "efeitoIrreversivel",
+          "unicoPorObjeto",
           "dataPublicacao",
           "documentoHash",
           "assinante",
           "registradoEm",
           "versaoInvocadaId",
-          "versaoInvocadaHash"
+          "versaoInvocadaHash",
+          "atoRetificadoId",
+          "motivoRetificacao"
         ],
         "type": "object",
         "properties": {
@@ -1052,6 +1065,9 @@
           "efeitoIrreversivel": {
             "type": "boolean"
           },
+          "unicoPorObjeto": {
+            "type": "boolean"
+          },
           "dataPublicacao": {
             "type": "string",
             "format": "date"
@@ -1074,6 +1090,19 @@
             "format": "uuid"
           },
           "versaoInvocadaHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "atoRetificadoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "motivoRetificacao": {
             "type": [
               "null",
               "string"
@@ -1353,6 +1382,19 @@
             "format": "uuid"
           },
           "versaoInvocadaHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "atoRetificadoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "motivoRetificacao": {
             "type": [
               "null",
               "string"

@@ -92,6 +92,46 @@ public sealed class RegistrarAtoNormativoCommandValidatorTests
             .IsValid.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Retificação só com ato retificado (sem motivo) é recusada")]
+    public void RetificacaoSoAto()
+    {
+        _validator.Validate(
+            Comando() with { AtoRetificadoId = Guid.CreateVersion7(), MotivoRetificacao = null })
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Retificação só com motivo (sem ato retificado) é recusada")]
+    public void RetificacaoSoMotivo()
+    {
+        _validator.Validate(
+            Comando() with { AtoRetificadoId = null, MotivoRetificacao = "corrige o anexo II" })
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Retificação com o par (ato retificado, motivo) completo passa")]
+    public void RetificacaoParCompleto()
+    {
+        _validator.Validate(
+            Comando() with { AtoRetificadoId = Guid.CreateVersion7(), MotivoRetificacao = "corrige o anexo II" })
+            .IsValid.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Retificação com ato retificado vazio (Guid.Empty) é recusada")]
+    public void RetificacaoAtoVazio()
+    {
+        _validator.Validate(
+            Comando() with { AtoRetificadoId = Guid.Empty, MotivoRetificacao = "corrige o anexo II" })
+            .IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Motivo de retificação acima do limite (1000) é recusado")]
+    public void RetificacaoMotivoLongo()
+    {
+        _validator.Validate(
+            Comando() with { AtoRetificadoId = Guid.CreateVersion7(), MotivoRetificacao = new string('x', 1001) })
+            .IsValid.Should().BeFalse();
+    }
+
     private static RegistrarAtoNormativoCommand Comando() =>
         new(
             Orgao: "CEPS",

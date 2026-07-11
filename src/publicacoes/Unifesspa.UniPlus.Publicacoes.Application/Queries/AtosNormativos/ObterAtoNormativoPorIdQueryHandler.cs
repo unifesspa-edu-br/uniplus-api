@@ -24,9 +24,15 @@ public static class ObterAtoNormativoPorIdQueryHandler
             return null;
         }
 
-        // Recomputa o aviso (AC4), excluindo o próprio ato do conjunto de conflitantes.
+        // Recomputa o aviso (AC4), excluindo do conjunto de conflitantes a linhagem
+        // inteira: o próprio ato, a raiz e as demais retificações empilhadas. Uma
+        // republicação com o mesmo número dentro da cadeia não é colisão (ADR-0103).
+        // A cadeia sempre contém o próprio ato.
+        IReadOnlyList<Guid> cadeia = await repository
+            .ListarIdsDaCadeiaAsync(ato.Id, cancellationToken)
+            .ConfigureAwait(false);
         IReadOnlyList<AvisoNumeracao> avisos = await AvisoNumeracaoCalculator
-            .CalcularAsync(repository, ato, excluirId: ato.Id, cancellationToken)
+            .CalcularAsync(repository, ato, cadeia, cancellationToken)
             .ConfigureAwait(false);
 
         return ato.ToDto() with { Avisos = avisos };

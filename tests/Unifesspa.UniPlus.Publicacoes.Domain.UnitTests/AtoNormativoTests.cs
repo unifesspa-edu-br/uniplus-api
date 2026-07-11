@@ -10,7 +10,8 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Invariantes de domínio do ato normativo append-only: normalização, shape do
-/// hash do documento, positividade do ano e o par {id, hash} da versão invocada.
+/// hash do documento, positividade do ano, o par {id, hash} da versão invocada e
+/// a simetria de shape do par de retificação (ADR-0103).
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -33,6 +34,7 @@ public sealed class AtoNormativoTests
             tipoCodigo: "  EDITAL_ABERTURA  ",
             congelaConfiguracao: true,
             efeitoIrreversivel: false,
+            unicoPorObjeto: true,
             dataPublicacao: Publicacao,
             documentoHash: HashValido,
             assinante: "  Jairo Belchior  ",
@@ -47,11 +49,14 @@ public sealed class AtoNormativoTests
         ato.TipoCodigo.Should().Be("EDITAL_ABERTURA");
         ato.CongelaConfiguracao.Should().BeTrue();
         ato.EfeitoIrreversivel.Should().BeFalse();
+        ato.UnicoPorObjeto.Should().BeTrue();
         ato.DataPublicacao.Should().Be(Publicacao);
         ato.DocumentoHash.Should().Be(HashValido);
         ato.Assinante.Should().Be("Jairo Belchior");
         ato.RegistradoEm.Should().Be(Registro);
         ato.VersaoInvocada.Should().BeNull();
+        ato.AtoRetificadoId.Should().BeNull();
+        ato.MotivoRetificacao.Should().BeNull();
     }
 
     [Fact(DisplayName = "Número em branco vira nulo (ato sem número é válido)")]
@@ -105,22 +110,81 @@ public sealed class AtoNormativoTests
         acao.Should().Throw<ArgumentOutOfRangeException>();
     }
 
+    [Fact(DisplayName = "Registrar copia unico_por_objeto por valor do catálogo")]
+    public void Registrar_CopiaUnicoPorObjeto()
+    {
+        AtoNormativo ato = Registrar(unicoPorObjeto: true);
+        ato.UnicoPorObjeto.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Retificação preenche o par (ato retificado, motivo) e normaliza o motivo")]
+    public void Registrar_ComRetificacao_PreencheParENormaliza()
+    {
+        Guid retificado = Guid.CreateVersion7();
+        AtoNormativo ato = Registrar(atoRetificadoId: retificado, motivoRetificacao: "  corrige o anexo II  ");
+
+        ato.AtoRetificadoId.Should().Be(retificado);
+        ato.MotivoRetificacao.Should().Be("corrige o anexo II");
+    }
+
+    [Theory(DisplayName = "Par de retificação incompleto (só um dos dois) é recusado")]
+    [InlineData(true, false)]   // só ato retificado
+    [InlineData(false, true)]   // só motivo
+    public void Registrar_ComRetificacaoIncompleta_Lanca(bool temRetificado, bool temMotivo)
+    {
+        Guid? retificado = temRetificado ? Guid.CreateVersion7() : null;
+        string? motivo = temMotivo ? "corrige o anexo II" : null;
+
+        Action acao = () => Registrar(atoRetificadoId: retificado, motivoRetificacao: motivo);
+        acao.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Motivo em branco normaliza para ausente (par ausente é válido)")]
+    public void Registrar_ComMotivoEmBranco_TrataComoAusente()
+    {
+        AtoNormativo ato = Registrar(atoRetificadoId: null, motivoRetificacao: "   ");
+        ato.AtoRetificadoId.Should().BeNull();
+        ato.MotivoRetificacao.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Motivo acima do limite (1000) é recusado")]
+    public void Registrar_ComMotivoLongoDemais_Lanca()
+    {
+        Action acao = () => Registrar(
+            atoRetificadoId: Guid.CreateVersion7(),
+            motivoRetificacao: new string('x', 1001));
+        acao.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Ato retificado com id vazio (Guid.Empty) é recusado")]
+    public void Registrar_ComAtoRetificadoIdVazio_Lanca()
+    {
+        Action acao = () => Registrar(atoRetificadoId: Guid.Empty, motivoRetificacao: "corrige o anexo II");
+        acao.Should().Throw<ArgumentException>();
+    }
+
     private static AtoNormativo Registrar(
         string orgao = "CEPS",
         string serie = "EDITAL",
         int ano = 2026,
         string? numero = "13",
         string tipoCodigo = "EDITAL_ABERTURA",
+        bool unicoPorObjeto = false,
         string documentoHash = HashValido,
         string assinante = "Jairo Belchior",
-        ReferenciaVersaoConfiguracao? versao = null) =>
+        ReferenciaVersaoConfiguracao? versao = null,
+        Guid? atoRetificadoId = null,
+        string? motivoRetificacao = null) =>
         AtoNormativo.Registrar(
             orgao, serie, ano, numero, tipoCodigo,
             congelaConfiguracao: false,
             efeitoIrreversivel: false,
+            unicoPorObjeto: unicoPorObjeto,
             dataPublicacao: Publicacao,
             documentoHash: documentoHash,
             assinante: assinante,
             registradoEm: Registro,
-            versaoInvocada: versao);
+            versaoInvocada: versao,
+            atoRetificadoId: atoRetificadoId,
+            motivoRetificacao: motivoRetificacao);
 }

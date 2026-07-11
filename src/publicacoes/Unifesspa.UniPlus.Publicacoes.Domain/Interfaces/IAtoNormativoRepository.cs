@@ -17,6 +17,26 @@ public interface IAtoNormativoRepository
     Task<AtoNormativo?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Devolve o ato que já retifica <paramref name="atoRetificadoId"/>, ou nulo se
+    /// nenhum o retificou ainda. Sustenta a linearidade da cadeia (ADR-0103): dá a
+    /// mensagem que nomeia o retificador no caso comum. A garantia dura contra a
+    /// corrida check-then-act é do índice único parcial em <c>ato_retificado_id</c>,
+    /// não desta consulta.
+    /// </summary>
+    Task<AtoNormativo?> ObterRetificadorAsync(Guid atoRetificadoId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devolve os identificadores de todos os atos da cadeia de retificação linear à
+    /// qual <paramref name="atoId"/> pertence — a raiz, o próprio ato e as demais
+    /// retificações empilhadas. Sobe de <paramref name="atoId"/> até a raiz e desce
+    /// dela até a cabeça. Base para excluir a linhagem inteira do aviso de duplicata:
+    /// uma republicação com o mesmo número dentro da cadeia não é colisão, é a mesma
+    /// linhagem (ADR-0103). Lista com o próprio <paramref name="atoId"/> quando ele
+    /// não participa de retificação alguma.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListarIdsDaCadeiaAsync(Guid atoId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Devolve os identificadores dos atos que compartilham a mesma numeração
     /// <c>(orgao, serie, ano, numero)</c>, excluindo <paramref name="excluirId"/>
     /// quando informado (o próprio ato, na recomputação do aviso durante a leitura).

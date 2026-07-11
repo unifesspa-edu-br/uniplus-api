@@ -12,6 +12,7 @@ internal static class AtoNormativoRegras
     public const int NumeroMaxLength = 60;
     public const int TipoCodigoMaxLength = 60;
     public const int AssinanteMaxLength = 200;
+    public const int MotivoRetificacaoMaxLength = 1000;
 
     /// <summary>SHA-256 em hexadecimal minúsculo, 64 caracteres.</summary>
     public const string HashPattern = "^[0-9a-f]{64}$";
@@ -31,6 +32,9 @@ internal static class AtoNormativoRegras
     public const string VersaoInvocadaIncompleta = "A versão invocada é o par (id, hash) completo, ou nenhum dos dois — um identificador sem hash não prova nada.";
     public const string VersaoInvocadaIdObrigatorio = "Identificador da versão invocada não pode ser vazio.";
     public const string VersaoInvocadaHashFormato = "Hash da versão invocada deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).";
+    public const string RetificacaoIncompleta = "A retificação é o par (ato retificado, motivo) completo, ou nenhum dos dois — um sem o outro não registra linhagem.";
+    public const string AtoRetificadoIdObrigatorio = "Identificador do ato retificado não pode ser vazio.";
+    public const string MotivoRetificacaoTamanho = "Motivo da retificação deve ter no máximo 1000 caracteres.";
 
     /// <summary>Código do aviso de número duplicado (AC4).</summary>
     public const string AvisoNumeroDuplicado = "NumeroDuplicado";

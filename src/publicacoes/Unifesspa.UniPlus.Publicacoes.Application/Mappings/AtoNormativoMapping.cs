@@ -22,11 +22,14 @@ public static class AtoNormativoMapping
             ato.TipoCodigo,
             ato.CongelaConfiguracao,
             ato.EfeitoIrreversivel,
+            ato.UnicoPorObjeto,
             ato.DataPublicacao,
             ato.DocumentoHash,
             ato.Assinante,
             ato.RegistradoEm,
             ato.VersaoInvocada?.Id,
-            ato.VersaoInvocada?.Hash);
+            ato.VersaoInvocada?.Hash,
+            ato.AtoRetificadoId,
+            ato.MotivoRetificacao);
     }
 }

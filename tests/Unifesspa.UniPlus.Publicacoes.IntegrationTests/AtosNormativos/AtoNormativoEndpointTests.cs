@@ -255,6 +255,126 @@ public sealed class AtoNormativoEndpointTests
         conflitantes.EnumerateArray().Select(e => e.GetGuid()).Should().Contain(primeiroId);
     }
 
+    // ── Cadeia de retificação (ADR-0103) ─────────────────────────────────────
+
+    [Fact(DisplayName = "POST de retificação com a mesma classe de congelamento retorna 201 e expõe a linhagem")]
+    public async Task Registrar_Retificacao_Retorna201ComLinhagem()
+    {
+        string tipo = await CriarTipoVigenteAsync(congela: true);
+        string serie = SerieUnica();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        Guid raizId = await PostAtoIdAsync(client, PayloadAto(tipo, serie, "13"));
+        Guid retId = await PostAtoIdAsync(
+            client, PayloadRetificacao(tipo, serie, "13", raizId, "corrige o anexo II"));
+
+        using JsonDocument detalhe = JsonDocument.Parse(
+            await client.GetStringAsync(new Uri($"{BaseAtos}/{retId}", UriKind.Relative)));
+        detalhe.RootElement.GetProperty("atoRetificadoId").GetGuid().Should().Be(raizId);
+        detalhe.RootElement.GetProperty("motivoRetificacao").GetString().Should().Be("corrige o anexo II");
+    }
+
+    [Fact(DisplayName = "POST de retificação com classe de congelamento divergente retorna 422")]
+    public async Task Registrar_RetificacaoCongelaDivergente_Retorna422()
+    {
+        string tipoCongelante = await CriarTipoVigenteAsync(congela: true);
+        string tipoNaoCongelante = await CriarTipoVigenteAsync(congela: false);
+        string serie = SerieUnica();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        Guid raizId = await PostAtoIdAsync(client, PayloadAto(tipoCongelante, serie, "13"));
+
+        HttpResponseMessage retResp = await PostAtoAsync(
+            client, PayloadRetificacao(tipoNaoCongelante, serie, "14", raizId, "corrige"));
+
+        retResp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await retResp.Content.ReadAsStringAsync())
+            .Should().Contain("uniplus.publicacoes.ato_normativo.classe_congelamento_divergente");
+    }
+
+    [Fact(DisplayName = "POST que retifica ato inexistente retorna 422")]
+    public async Task Registrar_RetificaInexistente_Retorna422()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage resp = await PostAtoAsync(
+            client, PayloadRetificacao(tipo, SerieUnica(), "13", Guid.CreateVersion7(), "corrige"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resp.Content.ReadAsStringAsync())
+            .Should().Contain("uniplus.publicacoes.ato_normativo.ato_retificado_nao_encontrado");
+    }
+
+    [Fact(DisplayName = "POST que retifica uma raiz já retificada retorna 409")]
+    public async Task Registrar_RetificaRaizJaRetificada_Retorna409()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+        string serie = SerieUnica();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        Guid raizId = await PostAtoIdAsync(client, PayloadAto(tipo, serie, "13"));
+        await PostAtoIdAsync(client, PayloadRetificacao(tipo, serie, "13", raizId, "primeira"));
+
+        HttpResponseMessage segunda = await PostAtoAsync(
+            client, PayloadRetificacao(tipo, serie, "13", raizId, "segunda"));
+
+        segunda.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await segunda.Content.ReadAsStringAsync())
+            .Should().Contain("uniplus.publicacoes.ato_normativo.raiz_ja_retificada");
+    }
+
+    [Fact(DisplayName = "POST que retifica a cabeça da cadeia (R2 emenda R1) retorna 201")]
+    public async Task Registrar_EmpilhaNaCabeca_Retorna201()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+        string serie = SerieUnica();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        Guid raizId = await PostAtoIdAsync(client, PayloadAto(tipo, serie, "13"));
+        Guid r1Id = await PostAtoIdAsync(client, PayloadRetificacao(tipo, serie, "13", raizId, "primeira"));
+
+        HttpResponseMessage r2 = await PostAtoAsync(
+            client, PayloadRetificacao(tipo, serie, "13", r1Id, "segunda"));
+
+        r2.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact(DisplayName = "Um aviso (tipo distinto, série e número próprios) retifica um edital quando a classe de congelamento coincide")]
+    public async Task Registrar_AvisoRetificaEdital_MesmaClasse_Retorna201()
+    {
+        // Dois tipos congelantes distintos: um edital e um aviso, cada um com sua
+        // numeração — o caso real do CRCA, em que um aviso emenda um edital.
+        string edital = await CriarTipoVigenteAsync(congela: true);
+        string aviso = await CriarTipoVigenteAsync(congela: true);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        Guid editalId = await PostAtoIdAsync(client, PayloadAto(edital, SerieUnica(), "13"));
+
+        HttpResponseMessage resp = await PostAtoAsync(
+            client, PayloadRetificacao(aviso, SerieUnica(), "50", editalId, "prorroga o prazo de inscrições"));
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact(DisplayName = "Detalhe da 3ª versão de uma cadeia (mesmo número) não avisa duplicata dentro da linhagem")]
+    public async Task ObterPorId_CadeiaProfundaMesmoNumero_NaoAvisaLinhagem()
+    {
+        string tipo = await CriarTipoVigenteAsync();
+        string serie = SerieUnica();
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        // A → B → C, todos com o mesmo número: republicações da mesma linhagem.
+        Guid a = await PostAtoIdAsync(client, PayloadAto(tipo, serie, "13"));
+        Guid b = await PostAtoIdAsync(client, PayloadRetificacao(tipo, serie, "13", a, "segunda versão"));
+        Guid c = await PostAtoIdAsync(client, PayloadRetificacao(tipo, serie, "13", b, "terceira versão"));
+
+        // O detalhe da cabeça não reporta A nem B como duplicata — é a mesma linhagem.
+        using JsonDocument detalhe = JsonDocument.Parse(
+            await client.GetStringAsync(new Uri($"{BaseAtos}/{c}", UriKind.Relative)));
+        detalhe.RootElement.GetProperty("avisos").GetArrayLength().Should().Be(0);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static void Autenticar(HttpRequestMessage request, string role = "plataforma-admin")
@@ -275,6 +395,30 @@ public sealed class AtoNormativoEndpointTests
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
         };
+
+    private static object PayloadRetificacao(
+        string tipoCodigo, string serie, string? numero, Guid atoRetificadoId, string motivo) =>
+        new
+        {
+            orgao = "CEPS",
+            serie,
+            ano = 2026,
+            numero,
+            tipoCodigo,
+            dataPublicacao = Publicacao,
+            documentoHash = HashValido,
+            assinante = "Jairo Belchior",
+            atoRetificadoId,
+            motivoRetificacao = motivo,
+        };
+
+    private static async Task<Guid> PostAtoIdAsync(HttpClient client, object payload)
+    {
+        HttpResponseMessage resp = await PostAtoAsync(client, payload);
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
+        return JsonDocument.Parse(await resp.Content.ReadAsStringAsync())
+            .RootElement.GetProperty("atoId").GetGuid();
+    }
 
     private static async Task<HttpResponseMessage> PostAtoAsync(
         HttpClient client, object payload, string? chave = null)
