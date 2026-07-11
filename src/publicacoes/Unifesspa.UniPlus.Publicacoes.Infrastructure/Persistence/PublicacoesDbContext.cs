@@ -11,11 +11,11 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 /// DbContext do módulo Publicações — o registro central dos atos normativos
 /// publicados por Reitoria, CEPS e CRCA (ADR-0105).
 ///
-/// Hospeda o cadastro de tipos de ato, o ato normativo append-only e o cache de
-/// Idempotency-Key (ADR-0027) adjacente. O vínculo genérico ato↔entidade chega
-/// na story seguinte (#801). O módulo não conhece ProcessoSeletivo, Chamada nem
-/// configuração de certame — nenhuma coluna, nenhuma chave estrangeira desses
-/// conceitos entra aqui.
+/// Hospeda o cadastro de tipos de ato, o ato normativo append-only, o vínculo
+/// genérico ato↔entidade e o cache de Idempotency-Key (ADR-0027) adjacente. O
+/// módulo não conhece ProcessoSeletivo, Chamada nem configuração de certame —
+/// nenhuma coluna, nenhuma chave estrangeira desses conceitos entra aqui, e a
+/// ausência é travada por fitness test contra o banco real.
 /// </summary>
 public sealed class PublicacoesDbContext : DbContext, IPublicacoesUnitOfWork
 {
@@ -36,6 +36,18 @@ public sealed class PublicacoesDbContext : DbContext, IPublicacoesUnitOfWork
     /// Só recebe <c>INSERT</c>; <c>UPDATE</c>/<c>DELETE</c> são bloqueados por trigger.
     /// </summary>
     public DbSet<AtoNormativo> AtosNormativos => Set<AtoNormativo>();
+
+    /// <summary>
+    /// Vínculos genéricos ato ↔ entidade (ADR-0105) — o par opaco que serve a consulta
+    /// unificada sem que o módulo conheça os domínios.
+    /// </summary>
+    public DbSet<VinculoAtoEntidade> VinculosAtoEntidade => Set<VinculoAtoEntidade>();
+
+    /// <summary>
+    /// Vagas de linhagem única por objeto (ADR-0107) — a chave que o banco trava para
+    /// que um objeto não seja tratado por duas linhagens de atos do mesmo tipo único.
+    /// </summary>
+    public DbSet<LinhagemUnicaPorObjeto> LinhagensUnicasPorObjeto => Set<LinhagemUnicaPorObjeto>();
 
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no schema do módulo para permitir

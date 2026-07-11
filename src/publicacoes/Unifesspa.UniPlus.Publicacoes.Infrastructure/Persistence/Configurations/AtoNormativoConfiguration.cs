@@ -129,6 +129,15 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         builder.HasIndex(a => new { a.Orgao, a.Serie, a.Ano, a.Numero })
             .HasDatabaseName("ix_ato_normativo_numeracao");
 
+        // O agregado expõe os vínculos como coleção só-leitura; o EF materializa no
+        // campo de apoio, sem passar pela propriedade.
+        builder.Navigation(a => a.Vinculos).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // Suporte ao seek do keyset ordenado da consulta por entidade (ADR-0094): a
+        // ordenação é (data_publicacao, id), e o índice casa a mesma expressão.
+        builder.HasIndex(a => new { a.DataPublicacao, a.Id })
+            .HasDatabaseName("ix_ato_normativo_data_publicacao");
+
         // Linearidade da cadeia (ADR-0103): um ato é retificado no máximo uma vez.
         // Índice único parcial — garantia dura à prova da corrida check-then-act do
         // handler. Parcial porque a maioria dos atos não retifica ninguém (nulo não
