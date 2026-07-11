@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Publicacoes.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,9 +36,12 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
-public sealed class AtosNormativosController : ControllerBase
+public sealed partial class AtosNormativosController : ControllerBase
 {
     private const string ResourceTag = "atos";
+    private const string ResourceTagEntidade = "entidade-atos";
+    private const string RouteEntidadeTipo = "entidadeTipo";
+    private const string RouteEntidadeId = "entidadeId";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -84,6 +89,84 @@ public sealed class AtosNormativosController : ControllerBase
 
         return await this.OkPaginatedAsync(
             comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Lista os atos publicados que tratam de uma entidade — a consulta unificada
+    /// (ADR-0105): todos os atos de um certame num só lugar, em ordem cronológica de
+    /// publicação.
+    /// </summary>
+    /// <remarks>
+    /// <para>O par <c>(entidadeTipo, entidadeId)</c> é opaco para o módulo, que não
+    /// conhece os domínios e por isso <b>não sabe se a entidade existe</b>. Entidade
+    /// inexistente e entidade sem ato algum devolvem, ambas, uma coleção vazia — nunca
+    /// 404. Distingui-las exigiria perguntar a outro módulo, e é justamente essa pergunta
+    /// que a fronteira proíbe.</para>
+    /// <para>Ordem: data de publicação ascendente, com o <c>Id</c> (Guid v7) de
+    /// desempate — a retificação republica a mesma data. Paginação por cursor opaco
+    /// escopado à entidade: um cursor emitido aqui não navega a coleção de outra
+    /// entidade.</para>
+    /// </remarks>
+    [HttpGet("entidades/{entidadeTipo}/{entidadeId:guid}/atos")]
+    [AllowAnonymous]
+    [VendorMediaType(Resource = "ato-normativo", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<AtoNormativoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ListarDaEntidade(
+        string entidadeTipo,
+        Guid entidadeId,
+        [FromCursor(
+            ResourceTagEntidade,
+            RequireSortKey = true,
+            ScopeRouteValues = [RouteEntidadeTipo, RouteEntidadeId])] PageRequest page,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+
+        // A forma do rótulo é conferida — o valor, jamais. Sem esta recusa, um rótulo
+        // fora da grafia canônica (minúsculo, com hífen) devolveria a mesma coleção vazia
+        // de uma entidade sem atos, e o erro de digitação passaria por resultado legítimo.
+        if (!FormatoDoTipoDeEntidade().IsMatch(entidadeTipo))
+        {
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Tipo de entidade inválido",
+                detail: "O tipo da entidade deve ser um rótulo em maiúsculas, com grupos separados por sublinhado.");
+        }
+
+        // A âncora do cursor é o par (data de publicação, Id), e a data chega como texto.
+        // Decodificar o wire é do boundary (ADR-0031): sem esta recusa, uma âncora
+        // malformada só falharia lá dentro, ao construir a chave do seek — e um cursor
+        // adulterado viraria 500 em vez de 400.
+        if (page.AfterSortKey is { } ancora
+            && !DateOnly.TryParseExact(ancora, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+        {
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Cursor inválido",
+                detail: "O cursor informado é inválido.");
+        }
+
+        ListarAtosDaEntidadeResult resultado = await _queryBus
+            .Send(
+                new ListarAtosDaEntidadeQuery(
+                    entidadeTipo, entidadeId, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        AtoNormativoDto[] comLinks =
+            [.. resultado.Items.Select(a => a with { Links = _linksBuilder.Build(a) })];
+
+        return await this.OkPaginatedOrdenadoAsync(
+            comLinks,
+            resultado.Anterior,
+            resultado.Proximo,
+            page,
+            EtiquetaDaEntidade(entidadeTipo, entidadeId),
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -146,4 +229,17 @@ public sealed class AtosNormativosController : ControllerBase
 
         return resultado.ToActionResult(_mapper);
     }
+
+    /// <summary>
+    /// Etiqueta do cursor da coleção desta entidade. Composta pelo mesmo utilitário que
+    /// o binder usa para conferi-la — se cada lado a montasse à sua maneira, nenhum
+    /// cursor emitido aqui passaria na leitura.
+    /// </summary>
+    private static string EtiquetaDaEntidade(string entidadeTipo, Guid entidadeId) =>
+        CursorResourceTag.Compose(
+            ResourceTagEntidade, [entidadeTipo, entidadeId.ToString()]);
+
+    /// <summary>Grafia canônica do rótulo opaco da entidade (a mesma que o domínio exige).</summary>
+    [GeneratedRegex(@"^[A-Z0-9]+(_[A-Z0-9]+)*$")]
+    private static partial Regex FormatoDoTipoDeEntidade();
 }

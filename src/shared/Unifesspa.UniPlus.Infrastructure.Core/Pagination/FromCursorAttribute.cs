@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -39,4 +41,24 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
     /// multi-coluna, nos quais a âncora é o par <c>(SortKey, Id)</c>.
     /// </summary>
     public bool RequireSortKey { get; init; }
+
+    /// <summary>
+    /// Nomes dos valores de rota que escopam a coleção (ex.:
+    /// <c>["entidadeTipo", "entidadeId"]</c> em
+    /// <c>/api/publicacoes/entidades/{entidadeTipo}/{entidadeId}/atos</c>). O binder
+    /// compõe a etiqueta esperada com eles (<see cref="CursorResourceTag"/>), de modo que
+    /// um cursor emitido para uma entidade não seja navegável na coleção de outra — mesmo
+    /// recurso, coleções distintas. Vazio na maioria dos recursos, cuja coleção é única e
+    /// a etiqueta, uma constante.
+    /// </summary>
+    /// <remarks>
+    /// Quem emite tem de compor a etiqueta com os <b>mesmos</b> valores, na mesma ordem,
+    /// pelo mesmo <see cref="CursorResourceTag.Compose"/> — senão nenhum cursor emitido
+    /// passa na conferência.
+    /// </remarks>
+    [SuppressMessage(
+        "Performance",
+        "CA1819:Properties should not return arrays",
+        Justification = "Argumento nomeado de atributo — a linguagem só admite array aqui.")]
+    public string[] ScopeRouteValues { get; init; } = [];
 }
