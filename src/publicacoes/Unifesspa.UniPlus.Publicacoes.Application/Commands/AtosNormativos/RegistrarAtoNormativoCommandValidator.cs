@@ -75,5 +75,49 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .MaximumLength(AtoNormativoRegras.MotivoRetificacaoMaxLength).WithMessage(AtoNormativoRegras.MotivoRetificacaoTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.MotivoRetificacao))
             .When(x => AtoNormativoRegras.Normalizar(x.MotivoRetificacao) is not null);
+
+        // Vínculos com entidades de outros domínios (ADR-0105). A forma do rótulo é
+        // verificada; o valor, jamais — não há tipos permitidos, e não pode haver.
+        //
+        // O elemento nulo é recusado explicitamente: a anotação de nulidade do record não
+        // impede um `"vinculos": [null]` no corpo, e sem esta regra o nulo atravessaria a
+        // validação e estouraria no handler — 500 onde cabe 422.
+        RuleForEach(x => x.Vinculos)
+            .NotNull().WithMessage(AtoNormativoRegras.VinculoNulo)
+            .When(x => x.Vinculos is not null);
+
+        RuleForEach(x => x.Vinculos)
+            .ChildRules(vinculo =>
+            {
+                vinculo.RuleFor(v => AtoNormativoRegras.Normalizar(v.EntidadeTipo))
+                    .NotEmpty().WithMessage(AtoNormativoRegras.EntidadeTipoObrigatorio)
+                    .MaximumLength(AtoNormativoRegras.EntidadeTipoMaxLength).WithMessage(AtoNormativoRegras.EntidadeTipoTamanho)
+                    .Matches(AtoNormativoRegras.EntidadeTipoPattern).WithMessage(AtoNormativoRegras.EntidadeTipoFormato)
+                    .OverridePropertyName(nameof(VinculoEntidadeInput.EntidadeTipo));
+
+                vinculo.RuleFor(v => v.EntidadeId)
+                    .NotEmpty().WithMessage(AtoNormativoRegras.EntidadeIdObrigatorio);
+            })
+            .When(x => x.Vinculos is not null && x.Vinculos.All(v => v is not null));
+
+        // O vínculo é único por trio (ato, tipo, id): repetir a mesma entidade no mesmo
+        // ato não acrescenta vínculo nenhum, e o payload está internamente incoerente.
+        RuleFor(x => x.Vinculos)
+            .Must(SemEntidadeRepetida).WithMessage(AtoNormativoRegras.VinculoDuplicado)
+            .When(x => x.Vinculos is { Count: > 1 });
+    }
+
+    private static bool SemEntidadeRepetida(IReadOnlyList<VinculoEntidadeInput>? vinculos)
+    {
+        if (vinculos is null)
+        {
+            return true;
+        }
+
+        // O elemento nulo tem regra própria; aqui ele não é duplicata de coisa alguma.
+        HashSet<(string, Guid)> vistos = new(vinculos.Count);
+        return vinculos
+            .Where(v => v is not null)
+            .All(v => vistos.Add((AtoNormativoRegras.Normalizar(v.EntidadeTipo) ?? string.Empty, v.EntidadeId)));
     }
 }
