@@ -24,6 +24,8 @@ internal static class UniqueConstraintViolation
 
     private const string LinearidadeConstraint = "ux_ato_normativo_retificado";
 
+    private const string LinhagemUnicaConstraint = "ux_linhagem_unica_por_objeto";
+
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
     /// <summary>
@@ -63,4 +65,12 @@ internal static class UniqueConstraintViolation
     /// </summary>
     public static bool IsLinearidadeConflict(string? constraint) =>
         string.Equals(constraint, LinearidadeConstraint, StringComparison.Ordinal);
+
+    /// <summary>
+    /// <see langword="true"/> quando a constraint violada é a vaga do objeto: outra
+    /// linhagem reservou-a entre a consulta do handler e o <c>SaveChanges</c>
+    /// (ADR-0107). É o que fecha a corrida check-then-act da unicidade por objeto.
+    /// </summary>
+    public static bool IsLinhagemUnicaConflict(string? constraint) =>
+        string.Equals(constraint, LinhagemUnicaConstraint, StringComparison.Ordinal);
 }
