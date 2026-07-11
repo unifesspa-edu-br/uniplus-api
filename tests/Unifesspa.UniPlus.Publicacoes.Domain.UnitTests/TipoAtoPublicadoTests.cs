@@ -140,9 +140,33 @@ public sealed class TipoAtoPublicadoTests
         tipo.Nome.Should().Be("Edital de abertura");
     }
 
-    [Fact(DisplayName = "Atualizar aceita novo código — o cadastro é editável")]
-    public void Atualizar_ComCodigoValido_Sucesso()
+    [Fact(DisplayName = "Atualizar edita nome e atributos, mantendo o código")]
+    public void Atualizar_ComMesmoCodigo_Sucesso()
     {
+        TipoAtoPublicado tipo = Novo().Value!;
+
+        Result resultado = tipo.Atualizar(
+            codigo: "EDITAL_ABERTURA",
+            nome: "Edital de abertura de processo seletivo",
+            congelaConfiguracao: true,
+            unicoPorObjeto: false,
+            efeitoIrreversivel: false,
+            vigenciaInicio: Inicio,
+            vigenciaFim: null,
+            baseLegal: null);
+
+        resultado.IsSuccess.Should().BeTrue();
+        tipo.Nome.Should().Be("Edital de abertura de processo seletivo");
+        tipo.UnicoPorObjeto.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Atualizar recusa novo código — o código é a identidade do tipo")]
+    public void Atualizar_ComOutroCodigo_Recusa()
+    {
+        // A série de vigências agrupa-se pelo código (exclusion constraint), e a vaga que
+        // um objeto reserva para uma linhagem de atos únicos é chaveada por ele
+        // (ADR-0107). Renomear partiria o tipo em dois — e abriria uma segunda vaga no
+        // mesmo objeto. Renomear é criar outro tipo.
         TipoAtoPublicado tipo = Novo().Value!;
 
         Result resultado = tipo.Atualizar(
@@ -155,9 +179,9 @@ public sealed class TipoAtoPublicadoTests
             vigenciaFim: null,
             baseLegal: null);
 
-        resultado.IsSuccess.Should().BeTrue();
-        tipo.Codigo.Should().Be("EDITAL_RETIFICACAO");
-        tipo.UnicoPorObjeto.Should().BeFalse();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.CodigoImutavel);
+        tipo.Codigo.Should().Be("EDITAL_ABERTURA");
     }
 
     [Theory(DisplayName = "A janela é semiaberta: o início entra, o fim não")]

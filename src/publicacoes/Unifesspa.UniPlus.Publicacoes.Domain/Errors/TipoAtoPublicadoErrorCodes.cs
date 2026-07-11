@@ -5,6 +5,14 @@ public static class TipoAtoPublicadoErrorCodes
     public const string CodigoObrigatorio = "TipoAtoPublicado.CodigoObrigatorio";
     public const string CodigoTamanho = "TipoAtoPublicado.CodigoTamanho";
     public const string CodigoFormato = "TipoAtoPublicado.CodigoFormato";
+
+    /// <summary>
+    /// Tentou-se trocar o código de uma versão existente. O código é a identidade do
+    /// tipo: a série de vigências agrupa-se por ele (exclusion constraint), e a vaga que
+    /// um objeto reserva para uma linhagem de atos únicos por objeto é chaveada por ele
+    /// (ADR-0107). Renomear é criar outro tipo, não editar este.
+    /// </summary>
+    public const string CodigoImutavel = "TipoAtoPublicado.CodigoImutavel";
     public const string NomeObrigatorio = "TipoAtoPublicado.NomeObrigatorio";
     public const string NomeTamanho = "TipoAtoPublicado.NomeTamanho";
     public const string BaseLegalTamanho = "TipoAtoPublicado.BaseLegalTamanho";

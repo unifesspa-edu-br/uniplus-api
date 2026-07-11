@@ -62,4 +62,77 @@ public interface IAtoNormativoRepository
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devolve a raiz da cadeia de retificação a que <paramref name="atoId"/> pertence —
+    /// o próprio <paramref name="atoId"/> quando ele não retifica ninguém. Identifica a
+    /// linhagem, que é a chave da vaga de <see cref="LinhagemUnicaPorObjeto"/>. Sobe pela
+    /// cadeia, que é linear e acíclica (ADR-0103).
+    /// </summary>
+    Task<Guid> ObterRaizDaCadeiaAsync(Guid atoId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devolve a linhagem que ocupa a vaga do objeto
+    /// <paramref name="entidadeTipo"/>/<paramref name="entidadeId"/> para o tipo de ato
+    /// <paramref name="tipoCodigo"/>, ou <see langword="null"/> se a vaga está livre.
+    /// Dá a mensagem legível no caso comum; a garantia dura contra a corrida
+    /// check-then-act é o índice único da vaga, não esta consulta.
+    /// </summary>
+    Task<LinhagemUnicaPorObjeto?> ObterLinhagemDoObjetoAsync(
+        string entidadeTipo,
+        Guid entidadeId,
+        string tipoCodigo,
+        CancellationToken cancellationToken);
+
+    /// <summary>Reserva a vaga do objeto para uma linhagem. Persiste no <c>SalvarAlteracoesAsync</c> da unidade de trabalho.</summary>
+    Task AdicionarLinhagemAsync(LinhagemUnicaPorObjeto linhagem, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devolve os pares <c>(tipo, id)</c> das entidades a que <paramref name="atoId"/>
+    /// está vinculado. Base da herança de vínculos pela retificação: quem emenda um ato
+    /// trata do mesmo objeto que ele — se a retificação não os herdasse, sumiria da
+    /// consulta do certame, e a consulta exibiria a versão superada escondendo a que
+    /// vale.
+    /// </summary>
+    Task<IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)>> ListarVinculosDoAtoAsync(
+        Guid atoId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Devolve um ato do tipo <paramref name="tipoCodigo"/> já vinculado ao objeto
+    /// <paramref name="entidadeTipo"/>/<paramref name="entidadeId"/> e que <b>não</b>
+    /// pertence à cadeia <paramref name="idsDaPropriaCadeia"/>, ou <see langword="null"/>
+    /// se não há nenhum.
+    /// </summary>
+    /// <remarks>
+    /// Olha o histórico de atos, não a tabela de vagas — e é essa a razão de existir.
+    /// O atributo <c>unico_por_objeto</c> é editável no catálogo: um ato publicado quando
+    /// o tipo ainda <i>não</i> era único por objeto não reservou vaga alguma, e sem esta
+    /// consulta um ato posterior, publicado depois de o atributo virar, encontraria a vaga
+    /// livre e o objeto acabaria com duas linhagens vivas. A vaga
+    /// (<see cref="LinhagemUnicaPorObjeto"/>) continua sendo a garantia dura contra a
+    /// corrida entre transações concorrentes; esta consulta é a que enxerga o passado.
+    /// </remarks>
+    Task<AtoNormativo?> ObterAtoConflitanteNoObjetoAsync(
+        string entidadeTipo,
+        Guid entidadeId,
+        string tipoCodigo,
+        IReadOnlyCollection<Guid> idsDaPropriaCadeia,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista os atos vinculados a uma entidade, ordenados por data de publicação
+    /// ascendente com o <c>Id</c> (Guid v7) de desempate — a retificação republica a
+    /// mesma data, então a data sozinha não ordena de forma estável. Keyset ordenado
+    /// (ADR-0094) sob cursor opaco; as âncoras são o par <c>(data, id)</c>.
+    /// </summary>
+    Task<(IReadOnlyList<AtoNormativo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
+        ListarPorEntidadeAsync(
+            string entidadeTipo,
+            Guid entidadeId,
+            string? afterSortKey,
+            Guid? afterId,
+            int limit,
+            PaginationDirection direction,
+            CancellationToken cancellationToken);
 }
