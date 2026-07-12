@@ -106,6 +106,19 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<Guid>> ObterAtosCriadoresAsync(
+        Guid processoSeletivoId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoSeletivoId)
+            .OrderBy(v => v.NumeroVersao)
+            .Select(v => v.AtoCriadorId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<VersaoConfiguracao?> ObterVersaoVigenteAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,

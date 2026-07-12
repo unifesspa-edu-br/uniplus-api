@@ -34,6 +34,8 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_AposPublicar_ResolveAbertura()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(ObterSnapshotVigente_AposPublicar_ResolveAbertura));
@@ -59,6 +61,8 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_AposRetificar_ResolveRetificacao()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoAbertura) = await SemearAsync(api, nameof(ObterSnapshotVigente_AposRetificar_ResolveRetificacao));
@@ -92,6 +96,8 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_ProcessoEmRascunho_Retorna422()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, _) = await SemearAsync(api, nameof(ObterSnapshotVigente_ProcessoEmRascunho_Retorna422));
@@ -108,6 +114,8 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_InstanteAntesDaPublicacao_Retorna422()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(ObterSnapshotVigente_InstanteAntesDaPublicacao_Retorna422));
@@ -126,6 +134,8 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_ProcessoInexistente_Retorna404()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         HttpResponseMessage response = await GetSnapshotVigenteAsync(client, Guid.CreateVersion7(), instante: null);
@@ -140,6 +150,8 @@ public sealed class ObterSnapshotVigenteEndpointTests
     public async Task ObterSnapshotVigente_VersaoDeMidiaNaoSuportada_Retorna406()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         // O filtro de negociação roda antes do handler — 406 independe de o
@@ -179,6 +191,15 @@ public sealed class ObterSnapshotVigenteEndpointTests
             periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             documentoEditalId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2026,
+                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = "EDITAL_ABERTURA",
+            },
         };
         using HttpRequestMessage request = new(HttpMethod.Post,
             new Uri($"/api/selecao/processos-seletivos/{processoId}/publicacao", UriKind.Relative))
@@ -199,6 +220,15 @@ public sealed class ObterSnapshotVigenteEndpointTests
             periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(40)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             documentoEditalId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2026,
+                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = "EDITAL_RETIFICACAO",
+            },
         };
         using HttpRequestMessage request = new(HttpMethod.Post,
             new Uri($"/api/selecao/processos-seletivos/{processoId}/retificacoes", UriKind.Relative))

@@ -42,6 +42,8 @@ public sealed class RetificacaoConcorrenciaTests
     {
         CascadingApiFactory api = _fixture.Factory;
 
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+
         Guid processoId;
         Guid documentoAbertura;
         await using (AsyncServiceScope seedScope = api.Services.CreateAsyncScope())
@@ -59,7 +61,8 @@ public sealed class RetificacaoConcorrenciaTests
             Numero: null,
             PeriodoInscricaoInicio: new DateOnly(2026, 1, 1),
             PeriodoInscricaoFim: new DateOnly(2026, 1, 31),
-            DocumentoEditalId: documentoAbertura);
+            DocumentoEditalId: documentoAbertura,
+            Ato: DadosDoAtoDeTeste.Padrao);
         await using (AsyncServiceScope publicarScope = api.Services.CreateAsyncScope())
         {
             IMessageBus publicarBus = publicarScope.ServiceProvider.GetRequiredService<IMessageBus>();
@@ -91,7 +94,8 @@ public sealed class RetificacaoConcorrenciaTests
             Numero: "001/2026-R1",
             PeriodoInscricaoInicio: new DateOnly(2026, 2, 1),
             PeriodoInscricaoFim: new DateOnly(2026, 2, 28),
-            DocumentoEditalId: documentoRetificacao);
+            DocumentoEditalId: documentoRetificacao,
+            Ato: DadosDoAtoDeTeste.Padrao);
 
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();

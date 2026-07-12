@@ -72,5 +72,11 @@ public static class SelecaoCodegenRegistration
         // do codegen do Wolverine (que roda em Selecao.API), mesmo sendo um
         // reader intra-módulo (não cross-módulo como os demais acima).
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IRegraCatalogoReader>();
+
+        // Catálogo de tipos de ato (ADR-0056/0108): a conferência do tipo declarado acontece
+        // antes de publicar. Mesmo motivo dos readers de Configuracao acima — o contrato é
+        // público, o concreto vive na Infrastructure do outro módulo.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.ITipoAtoPublicadoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IVagaDeLinhagemReader>();
     }
 }

@@ -2491,6 +2491,43 @@
           }
         }
       },
+      "DadosDoAtoRequest": {
+        "required": [
+          "orgao",
+          "serie",
+          "ano",
+          "dataPublicacao",
+          "assinante",
+          "tipoAtoCodigo"
+        ],
+        "type": "object",
+        "properties": {
+          "orgao": {
+            "type": "string"
+          },
+          "serie": {
+            "type": "string"
+          },
+          "ano": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dataPublicacao": {
+            "type": "string",
+            "format": "date"
+          },
+          "assinante": {
+            "type": "string"
+          },
+          "tipoAtoCodigo": {
+            "type": "string"
+          }
+        }
+      },
       "DefinirBonusRegionalRequest": {
         "required": [
           "regraCodigo",
@@ -3438,7 +3475,8 @@
           "numero",
           "periodoInscricaoInicio",
           "periodoInscricaoFim",
-          "documentoEditalId"
+          "documentoEditalId",
+          "ato"
         ],
         "type": "object",
         "properties": {
@@ -3459,6 +3497,9 @@
           "documentoEditalId": {
             "type": "string",
             "format": "uuid"
+          },
+          "ato": {
+            "$ref": "#/components/schemas/DadosDoAtoRequest"
           }
         }
       },
@@ -3621,7 +3662,8 @@
           "numero",
           "periodoInscricaoInicio",
           "periodoInscricaoFim",
-          "documentoEditalId"
+          "documentoEditalId",
+          "ato"
         ],
         "type": "object",
         "properties": {
@@ -3645,6 +3687,9 @@
           "documentoEditalId": {
             "type": "string",
             "format": "uuid"
+          },
+          "ato": {
+            "$ref": "#/components/schemas/DadosDoAtoRequest"
           }
         }
       },

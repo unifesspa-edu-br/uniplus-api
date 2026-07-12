@@ -83,7 +83,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(processo, dadosAbertura, docAbertura.HashSha256!);
         Result<PublicacaoResultado> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", clock);
+            docAbertura.HashSha256!, "integration-test-user", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -114,7 +114,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"));
             Result<PublicacaoResultado> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
-                docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);
+                docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
             versaoRetificacao = retificar.Value!.Versao;
             retificacaoEdital = retificar.Value!.Edital;

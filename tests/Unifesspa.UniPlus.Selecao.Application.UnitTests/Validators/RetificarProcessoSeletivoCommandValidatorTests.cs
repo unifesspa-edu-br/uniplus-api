@@ -22,6 +22,7 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
         Numero: "001/2026-R1",
         PeriodoInscricaoInicio: new DateOnly(2026, 1, 2),
         PeriodoInscricaoFim: new DateOnly(2026, 2, 1),
+        Ato: new DadosDoAto("CEPS", "EDITAL", 2026, new DateOnly(2026, 1, 2), "Diretor do CEPS", "EDITAL_RETIFICACAO"),
         DocumentoEditalId: Guid.CreateVersion7());
 
     [Fact(DisplayName = "Comando válido passa na validação")]
@@ -42,12 +43,24 @@ public sealed class RetificarProcessoSeletivoCommandValidatorTests
     [Fact(DisplayName = "Motivo dentro do limite cru mas que estoura o limite após NFC é recusado")]
     public void MotivoQueExpandeComNfc_AcimaDoLimite_Recusado()
     {
-        // U+0958 (DEVANAGARI QA) é composição-excluída: NFC o decompõe em dois
-        // code points (U+0915 U+093C). 1001 chars crus (≤ 2000) viram 2002 após
-        // NFC — o valor efetivamente persistido estoura a coluna varchar(2000).
-        string motivoQueExpande = new('\u0958', 1001);
+        // U+0958 (DEVANAGARI QA) é composição-excluída: NFC o decompõe em dois code points
+        // (U+0915 U+093C). 501 chars crus (≤ 1000) viram 1002 após NFC — o valor
+        // efetivamente persistido estoura o limite.
+        string motivoQueExpande = new('\u0958', 501);
 
         ValidationResult resultado = Validator.Validate(ComandoValido() with { Motivo = motivoQueExpande });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));
+    }
+
+    [Fact(DisplayName = "Motivo entre 1001 e 2000 chars é recusado — o ato em Publicações corta em 1000, e publicar antes de descobrir isso deixaria a retificação sem ato")]
+    public void MotivoAcimaDoLimiteDoAto_Recusado()
+    {
+        // A coluna de Seleção aceitaria 2000, mas o mesmo motivo viaja para o ato normativo
+        // (ADR-0108), cujo limite é 1000. Aceitar aqui publicaria o Edital com 204 e mataria
+        // o registro do ato na dead letter: retificação publicada, ato nenhum.
+        ValidationResult resultado = Validator.Validate(ComandoValido() with { Motivo = new string('a', 1500) });
 
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(RetificarProcessoSeletivoCommand.Motivo));

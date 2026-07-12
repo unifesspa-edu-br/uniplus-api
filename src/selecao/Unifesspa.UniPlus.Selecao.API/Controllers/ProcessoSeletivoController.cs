@@ -289,7 +289,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         Result resultado = await _commandBus.Send(
             new PublicarProcessoSeletivoCommand(
-                id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId),
+                id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId,
+                MapearAto(request.Ato)),
             cancellationToken);
         if (resultado.IsSuccess)
         {
@@ -346,7 +347,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.Numero,
                 request.PeriodoInscricaoInicio,
                 request.PeriodoInscricaoFim,
-                request.DocumentoEditalId),
+                request.DocumentoEditalId,
+                MapearAto(request.Ato)),
             cancellationToken);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
@@ -385,6 +387,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// 422 (<c>Snapshot.VigenteAusente</c>) quando não há versão vigente ≤ o
     /// instante; 404 quando o processo não existe — nunca retorno silencioso.
     /// </summary>
+    private static DadosDoAto MapearAto(DadosDoAtoRequest ato)
+    {
+        ArgumentNullException.ThrowIfNull(ato);
+        return new DadosDoAto(ato.Orgao, ato.Serie, ato.Ano, ato.DataPublicacao, ato.Assinante, ato.TipoAtoCodigo);
+    }
+
     [HttpGet("{id:guid}/snapshot-vigente")]
     [VendorMediaType(Resource = "snapshot-vigente-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(SnapshotVigenteDto), StatusCodes.Status200OK)]
@@ -412,7 +420,8 @@ public sealed record PublicarProcessoSeletivoRequest(
     string? Numero,
     DateOnly PeriodoInscricaoInicio,
     DateOnly PeriodoInscricaoFim,
-    Guid DocumentoEditalId);
+    Guid DocumentoEditalId,
+    DadosDoAtoRequest Ato);
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoController.Retificar"/> — carrega só os
@@ -425,7 +434,22 @@ public sealed record RetificarProcessoSeletivoRequest(
     string? Numero,
     DateOnly PeriodoInscricaoInicio,
     DateOnly PeriodoInscricaoFim,
-    Guid DocumentoEditalId);
+    Guid DocumentoEditalId,
+    DadosDoAtoRequest Ato);
+
+/// <summary>
+/// Dados que o DOCUMENTO declara sobre si — órgão publicador, série, ano, data de
+/// publicação, quem assina e o tipo do ato no catálogo de Publicações. Nenhum deles é
+/// derivado pelo sistema: a data documental não é o relógio, o assinante não é o usuário
+/// autenticado, e o tipo não se infere (ADR-0103 — um aviso pode retificar um edital).
+/// </summary>
+public sealed record DadosDoAtoRequest(
+    string Orgao,
+    string Serie,
+    int Ano,
+    DateOnly DataPublicacao,
+    string Assinante,
+    string TipoAtoCodigo);
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoController.DefinirOfertaAtendimento"/>

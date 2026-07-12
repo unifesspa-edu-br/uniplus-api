@@ -44,6 +44,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     public async Task Publicar_FluxoCompleto_DispatchaCascadingMessages()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
@@ -75,6 +77,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     public async Task Publicar_QuandoProcessoNaoExiste_Retorna404()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         Guid inexistente = Guid.CreateVersion7();
@@ -95,6 +99,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         // segunda execução vê processo já publicado e retorna 422 (regra de
         // domínio, não idempotência do middleware Idempotency-Key).
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(Publicar_QuandoJaPublicado_Retorna422));
@@ -114,6 +120,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     public async Task Publicar_MesmaKey_ReplayVerbatim()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(Publicar_MesmaKey_ReplayVerbatim));
@@ -134,6 +142,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     public async Task Publicar_SemKey_Retorna400()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         using HttpRequestMessage request = new(HttpMethod.Post,
@@ -156,6 +166,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     public async Task Publicar_KeyMalformada_Retorna400()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         using HttpRequestMessage request = new(HttpMethod.Post,
@@ -181,6 +193,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         // Endpoint marcado com [RequiresIdempotencyKey] exige principal —
         // sem auth, filter rejeita para evitar cache poisoning entre clientes.
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         using HttpRequestMessage request = new(HttpMethod.Post,
@@ -201,6 +215,8 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     public async Task Publicar_MesmaKeyBodyDiferente_Retorna422BodyMismatch()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(Publicar_MesmaKeyBodyDiferente_Retorna422BodyMismatch));
@@ -237,6 +253,15 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2026,
+                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = "EDITAL_ABERTURA",
+            },
     };
 
     private static async Task<HttpResponseMessage> PostPublicarAsync(

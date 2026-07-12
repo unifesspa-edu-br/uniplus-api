@@ -109,7 +109,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
-            TimeProvider.System);
+            new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using SelecaoDbContext context = fixture.CreateDbContext();
