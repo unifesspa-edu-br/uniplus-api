@@ -13,17 +13,21 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Semeia um Processo Seletivo conforme e o publica pelo caminho real do
-/// agregado (Publicar → Edital + <see cref="VersaoConfiguracao"/>), persistindo
-/// tudo numa transação. É o ponto de partida dos testes que precisam de um
-/// certame já publicado para exercitar o que vem DEPOIS — em especial os que
-/// atacam a tabela de versões com SQL cru.
+/// agregado (Publicar → <see cref="VersaoConfiguracao"/>), persistindo tudo numa
+/// transação. É o ponto de partida dos testes que precisam de um certame já
+/// publicado para exercitar o que vem DEPOIS — em especial os que atacam a tabela
+/// de versões com SQL cru.
 /// </summary>
 internal static class ProcessoSeletivoPublicacaoSeeder
 {
     private static readonly string HashDocumento = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
     private static readonly SnapshotPublicacaoCanonicalizer Canonicalizer = new();
 
-    internal sealed record Resultado(Guid ProcessoId, Guid EditalId, Guid VersaoId);
+    /// <summary>
+    /// O que a publicação produz: o certame, o id do ATO que criou a versão (decidido pela
+    /// raiz; o ato em si é registrado depois, em Publicações — ADR-0108) e a versão congelada.
+    /// </summary>
+    internal sealed record Resultado(Guid ProcessoId, Guid AtoId, Guid VersaoId);
 
     private static ReferenciaRegra Regra(string codigo, char hashChar) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(hashChar, 64)).Value!;
@@ -102,26 +106,26 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dados, documento.HashSha256!);
 
-        Result<PublicacaoResultado> publicarResult = processo.Publicar(
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dados,
             canonico.Bytes,
             canonico.SchemaVersion,
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
-            new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
+            TimeProvider.System);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using SelecaoDbContext context = fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await context.DocumentosEdital.AddAsync(documento, CancellationToken.None);
-        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!.Versao, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
 
         return new Resultado(
             processo.Id,
-            publicarResult.Value!.Edital.Id,
-            publicarResult.Value!.Versao.Id);
+            publicarResult.Value!.AtoCriadorId,
+            publicarResult.Value!.Id);
     }
 }

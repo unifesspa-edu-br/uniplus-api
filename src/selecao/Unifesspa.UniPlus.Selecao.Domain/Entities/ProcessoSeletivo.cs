@@ -23,9 +23,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// dimensões já modeladas.
 /// </para>
 /// <para>
-/// O <c>Edital</c> não é criado aqui: ele é o documento emitido pelo ato de
-/// publicação (F5), que congela esta configuração num snapshot imutável
-/// (RN08). Enquanto o processo está em rascunho, a configuração é livremente
+/// O documento normativo não pertence a esta raiz: ele é o <b>ato publicado</b>,
+/// e vive no módulo <c>Publicacoes</c> (ADR-0103/0105). O que a publicação
+/// produz aqui é a <see cref="VersaoConfiguracao"/> congelada (RN08), que
+/// referencia o ato por VALOR — o par <c>{id, hash}</c>, sem chave estrangeira
+/// (ADR-0061). Enquanto o processo está em rascunho, a configuração é livremente
 /// substituível (o comando <c>Definir*</c> troca a coleção inteira). A
 /// configuração é CRUD puro via EF Core — a fronteira de Event Sourcing
 /// (ADR-0069) começa nos agregados de decisão downstream, nunca aqui.
@@ -53,14 +55,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Configuração de classificação (15º bloco canônico, Story #775) — compõe por referência a fórmula, precisão, eliminação e ordem de alocação.</summary>
     public ConfiguracaoClassificacao? Classificacao { get; private set; }
-
-    /// <summary>
-    /// Editais emitidos pelo ato de publicação/retificação (Story #759, T4
-    /// #785) — só cresce dentro de <see cref="Publicar"/> (e, na T5, de
-    /// <c>Retificar</c>); nunca exposta como <c>Definir*</c> mutável.
-    /// </summary>
-    private readonly List<Edital> _editais = [];
-    public IReadOnlyCollection<Edital> Editais => _editais.AsReadOnly();
 
     private ProcessoSeletivo() { }
 
@@ -393,35 +387,43 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Publica o processo (RN08, Story #759 T4): valida a transição e a
-    /// conformidade estrutural, emite o <see cref="Edital"/> de abertura,
-    /// abre a cadeia de <see cref="VersaoConfiguracao"/> a partir dos bytes
-    /// canônicos já produzidos pelo <c>ISnapshotPublicacaoCanonicalizer</c>
-    /// (Application — Domain não pode chamá-lo, ver ADR-0042) e transita o
-    /// status — tudo dentro deste método, atomicamente em memória; o handler
-    /// só persiste o resultado numa única transação.
+    /// conformidade estrutural, abre a cadeia de <see cref="VersaoConfiguracao"/>
+    /// a partir dos bytes canônicos já produzidos pelo
+    /// <c>ISnapshotPublicacaoCanonicalizer</c> (Application — Domain não pode
+    /// chamá-lo, ver ADR-0042) e transita o status — tudo dentro deste método,
+    /// atomicamente em memória; o handler só persiste o resultado numa única
+    /// transação.
     /// </summary>
     /// <remarks>
-    /// O Edital de abertura é o <b>ato criador</b> da versão 1 (ADR-0104),
-    /// referenciado por valor: a versão guarda o seu id e o hash do seu
-    /// documento, sem chave estrangeira (ADR-0061). Quando o ato migrar para
-    /// o módulo <c>Publicacoes</c> (#804), muda a origem do identificador, não
-    /// a forma do vínculo.
+    /// <para>
+    /// A raiz <b>decide o identificador</b> do ato que cria a versão, mas não o
+    /// documento: o ato publicado vive no módulo <c>Publicacoes</c> (ADR-0103/0105) e
+    /// é registrado a partir da mensagem durável que sai desta mesma transação
+    /// (ADR-0108). É por isso que o id é decidido aqui e não lá — sem ele, a versão
+    /// não teria o que referenciar, e a reentrega da fila (at-least-once) criaria um
+    /// ato gêmeo em vez de reencontrar o mesmo.
+    /// </para>
+    /// <para>
+    /// A referência é <b>por valor</b>: a versão guarda o par <c>{id, hash}</c> do ato,
+    /// sem chave estrangeira (ADR-0061). Nada aqui sabe o que o ato <i>é</i> — o tipo
+    /// vem do catálogo de Publicações, e retificar é uma relação entre atos, nunca um
+    /// tipo (ADR-0103).
+    /// </para>
     /// </remarks>
     /// <param name="dados">Número, período de inscrição e referência ao documento confirmado.</param>
     /// <param name="configuracaoCongeladaCanonica">Bytes canônicos (ADR-0100) já produzidos pelo canonicalizador da Application.</param>
     /// <param name="schemaVersion">Versão do conjunto de blocos do snapshot (ADR-0100 item 8).</param>
     /// <param name="algoritmoHash">Identificador do algoritmo de hash (ex.: <c>canonical-json/sha256@v1</c>).</param>
-    /// <param name="hashEdital">Hash SHA-256 do documento do Edital (T3, #784) — o hash do ato criador.</param>
+    /// <param name="hashDocumento">Hash SHA-256 do documento publicado (T3, #784) — o hash do ato criador.</param>
     /// <param name="atorUsuarioSub">Sub do usuário autenticado responsável pela publicação (via <c>IUserContext</c>, nunca input do command).</param>
     /// <param name="clock">Relógio injetado (ADR-0068) — nunca lido implicitamente.</param>
-    public Result<PublicacaoResultado> Publicar(
+    public Result<VersaoConfiguracao> Publicar(
         DadosEdital dados,
         byte[] configuracaoCongeladaCanonica,
         string schemaVersion,
         string algoritmoHash,
-        string hashEdital,
+        string hashDocumento,
         string atorUsuarioSub,
-        DateTimeOffset dataDocumental,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(dados);
@@ -430,7 +432,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         if (Status != StatusProcesso.Rascunho)
         {
-            return Result<PublicacaoResultado>.Failure(new DomainError(
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
                 "ProcessoSeletivo.TransicaoInvalida",
                 $"Só é possível publicar um processo em rascunho — status atual: {Status}."));
         }
@@ -438,45 +440,34 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         IReadOnlyList<ItemConformidade> pendencias = [.. AvaliarConformidade().Where(item => !item.Ok)];
         if (pendencias.Count > 0)
         {
-            return Result<PublicacaoResultado>.Failure(new DomainError(
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
                 "ProcessoSeletivo.ConformidadeInsuficiente",
                 $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(p => p.Item))}."));
         }
 
-        // UMA leitura do relógio para o ato e para a versão que ele cria. Duas
-        // leituras deixariam a vigência alguns ticks à frente da data documental
-        // — e o instante que o ProcessoPublicadoEvent publica é o do ato, de modo
-        // que resolver a configuração NESSE instante (ADR-0075: o ato é avaliado
-        // contra o que vigia quando ocorreu) cairia antes da vigência da versão
-        // criada pelo próprio ato, aflorando VigenteAusente. Mesma razão pela qual
-        // a ADR-0106 passa o InstantePublicacao às factories em vez de deixá-las
-        // derivar um GetUtcNow() próprio.
+        // UMA leitura do relógio para o ato e para a versão que ele cria. O instante
+        // que o ProcessoPublicadoEvent publica é o do ato, de modo que resolver a
+        // configuração NESSE instante (ADR-0075: o ato é avaliado contra o que vigia
+        // quando ocorreu) tem de cair dentro da vigência da versão que o próprio ato
+        // criou. Duas leituras deixariam a vigência alguns ticks à frente e aflorariam
+        // VigenteAusente.
         DateTimeOffset instantePublicacao = clock.GetUtcNow();
-
-        Result<Edital> editalResult = Edital.EmitirAbertura(Id, dados, dataDocumental);
-        if (editalResult.IsFailure)
-        {
-            return Result<PublicacaoResultado>.Failure(editalResult.Error!);
-        }
-
-        Edital edital = editalResult.Value!;
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             Id,
             configuracaoCongeladaCanonica,
             schemaVersion,
             algoritmoHash,
-            atoCriadorId: edital.Id,
-            atoCriadorHash: hashEdital,
+            atoCriadorId: NovoIdDeAto(instantePublicacao),
+            atoCriadorHash: hashDocumento,
             atorUsuarioSub,
             instantePublicacao);
 
-        _editais.Add(edital);
         Status = StatusProcesso.Publicado;
 
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
-            edital.Id,
+            versao.AtoCriadorId,
             versao.Id,
             versao.HashConfiguracao,
             versao.AtoCriadorHash,
@@ -489,38 +480,42 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // ressuscitaria por outra porta.
             versao.VigenteAPartirDe));
 
-        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, versao));
+        return Result<VersaoConfiguracao>.Success(versao);
     }
 
     /// <summary>
-    /// Retifica um processo já publicado (RN08, Story #759 T5 #786, ADR-0101):
-    /// emite um novo <see cref="Edital"/> de natureza retificação, vinculado ao
-    /// Edital vigente da cadeia e com motivo obrigatório, e sucede a
-    /// <see cref="VersaoConfiguracao"/> corrente — a versão anterior permanece
-    /// intocada (append-only). O status continua Publicado. Os bytes canônicos
-    /// já vêm do <c>ISnapshotPublicacaoCanonicalizer</c> (Application) com o
-    /// bloco de retificação incluído; esta raiz não os produz (ADR-0042).
+    /// Retifica um processo já publicado (RN08, ADR-0101/0103): decide o ato que
+    /// emenda o ato criador da <see cref="VersaoConfiguracao"/> corrente e sucede
+    /// essa versão — a anterior permanece intocada (append-only). O status continua
+    /// Publicado. Os bytes canônicos já vêm do <c>ISnapshotPublicacaoCanonicalizer</c>
+    /// (Application) com o bloco de retificação incluído; esta raiz não os produz
+    /// (ADR-0042).
     /// </summary>
     /// <remarks>
-    /// O novo Edital é o ato criador da versão <c>N + 1</c>, e retifica o ato
-    /// criador da versão <c>N</c> — invariante que <see cref="VersaoConfiguracao.Suceder"/>
-    /// verifica (ADR-0104). O alvo da retificação é lido da CADEIA DE VERSÕES, não
-    /// da data documental: é a versão que ordena a configuração, e a data pode
-    /// regredir (relógio do host, importação de acervo) sem que isso mova o topo
-    /// da cadeia.
+    /// <para>
+    /// Retificar <b>não é um tipo de ato</b>: é uma relação entre atos (ADR-0103). O que
+    /// muda em relação à abertura é só o par (ato emendado, motivo) — o tipo do ato
+    /// continua vindo declarado pelo operador, e uma convocação retificada continua
+    /// convocação.
+    /// </para>
+    /// <para>
+    /// O alvo é o ato criador da versão corrente, e o servidor o <b>infere</b> — o cliente
+    /// nunca o informa (ADR-0101). Ele é lido da CADEIA DE VERSÕES, não da data documental:
+    /// é a versão que ordena a configuração, e a data pode regredir (relógio do host,
+    /// importação de acervo) sem que isso mova o topo da cadeia.
+    /// </para>
     /// </remarks>
     /// <param name="versaoAtual">Versão de configuração corrente do processo (maior <c>NumeroVersao</c>), carregada pelo handler — <see cref="VersaoConfiguracao"/> é agregado próprio, não coleção desta raiz.</param>
     /// <param name="motivo">Justificativa obrigatória do ato de retificação (ADR-0101).</param>
-    public Result<PublicacaoResultado> Retificar(
+    public Result<VersaoConfiguracao> Retificar(
         DadosEdital dados,
         VersaoConfiguracao versaoAtual,
         byte[] configuracaoCongeladaCanonica,
         string schemaVersion,
         string algoritmoHash,
-        string hashEdital,
+        string hashDocumento,
         string atorUsuarioSub,
         string motivo,
-        DateTimeOffset dataDocumental,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(dados);
@@ -530,9 +525,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         if (Status != StatusProcesso.Publicado)
         {
-            return Result<PublicacaoResultado>.Failure(new DomainError(
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
                 "ProcessoSeletivo.TransicaoInvalida",
                 $"Só é possível retificar um processo publicado — status atual: {Status}."));
+        }
+
+        if (string.IsNullOrWhiteSpace(motivo))
+        {
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
+                "ProcessoSeletivo.MotivoRetificacaoObrigatorio",
+                "O motivo da retificação é obrigatório."));
         }
 
         // A cadeia de versões não atravessa certames: uma versão corrente de
@@ -540,88 +542,85 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // numeração — derivada dela — sairia do lugar.
         if (versaoAtual.ProcessoSeletivoId != Id)
         {
-            return Result<PublicacaoResultado>.Failure(new DomainError(
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
                 "VersaoConfiguracao.VersaoAnteriorDeOutroProcesso",
                 "A versão corrente informada pertence a outro Processo Seletivo."));
         }
 
-        // ADR-0101/0104: a retificação sucede o ato que criou a VERSÃO CORRENTE —
-        // o topo da cadeia de configuração —, e não o Edital de maior data
-        // documental. O alvo continua sendo estado do agregado, nunca input do
-        // cliente; o que muda é de onde se lê o topo.
+        // Uma única leitura do relógio para o ato e para a versão que ele cria — ver a nota
+        // em Publicar.
         //
-        // Ordenar por data para achar o alvo é frágil: a data de publicação vem do
-        // relógio, e um retrocesso (ajuste NTP em degrau, importação de acervo)
-        // pode dar ao ato mais NOVO uma data mais ANTIGA. O topo por data e o topo
-        // por versão divergiriam, e uma cadeia perfeitamente linear ficaria
-        // irretificável. É a versão que ordena a configuração (ADR-0104) — inclusive
-        // para decidir o que se retifica.
+        // E ela é ANCORADA na vigência da anterior antes de qualquer uso. Quando o relógio
+        // regride (ajuste NTP em degrau), Suceder já ancorava a VIGÊNCIA; se o id do ato
+        // nascesse do instante cru, as duas grandezas descreveriam instantes diferentes — e o
+        // Guid v7 do ato novo, que carrega o timestamp nos 48 bits mais significativos,
+        // ordenaria ANTES do ato que ele emenda. A ordenação cronológica por id (ADR-0032),
+        // de que a paginação por keyset depende, inverteria a cadeia.
+        DateTimeOffset agora = clock.GetUtcNow();
+        DateTimeOffset instantePublicacao = agora < versaoAtual.VigenteAPartirDe
+            ? versaoAtual.VigenteAPartirDe
+            : agora;
+
+        // ADR-0101/0104: a retificação emenda o ato que criou a VERSÃO CORRENTE — o
+        // topo da cadeia de configuração —, e não o ato de maior data documental.
+        // Ordenar o alvo por data seria frágil: a data é declarada pelo operador, e um
+        // acervo migrado (ou um relógio que regrediu) pode dar ao ato mais NOVO uma data
+        // mais ANTIGA. O topo por data e o topo por versão divergiriam, e uma cadeia
+        // perfeitamente linear ficaria irretificável. É a versão que ordena a
+        // configuração (ADR-0104) — inclusive para decidir o que se retifica.
         //
-        // Publicado implica versão corrente com ato criador entre os Editais do
-        // processo; o null aqui só cobriria estado inconsistente.
-        if (_editais.FirstOrDefault(e => e.Id == versaoAtual.AtoCriadorId) is not { } atoCriadorCorrente)
-        {
-            return Result<PublicacaoResultado>.Failure(new DomainError(
-                "VersaoConfiguracao.CadeiaQuebrada",
-                $"O ato que criou a versão {versaoAtual.NumeroVersao} não está entre os Editais deste processo — estado inconsistente."));
-        }
-
-        // Uma única leitura do relógio para o ato e para a versão que ele cria —
-        // ver a nota em Publicar. Quando o instante regride, a vigência da
-        // sucessora é ancorada na da anterior (Suceder), e só então ela passa a
-        // divergir da data documental: é o retrocesso de relógio aflorando, não
-        // duas leituras discordando.
-        DateTimeOffset instantePublicacao = clock.GetUtcNow();
-
-        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, atoCriadorCorrente.Id, motivo, dataDocumental);
-        if (editalResult.IsFailure)
-        {
-            return Result<PublicacaoResultado>.Failure(editalResult.Error!);
-        }
-
-        Edital edital = editalResult.Value!;
-
+        // A linearidade da cadeia é garantida na MESMA transação por
+        // ux_versoes_configuracao_ato_criador (um ato cria no máximo uma versão) e pelo
+        // trigger de sucessão (ck_versoes_configuracao_cadeia). Publicações também a
+        // barra, mas só no consumo da fila — backstop, não guard rail transacional.
         VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
             versaoAtual,
             configuracaoCongeladaCanonica,
             schemaVersion,
             algoritmoHash,
-            atoCriadorId: edital.Id,
-            atoCriadorHash: hashEdital,
-            atoCriadorRetificaId: atoCriadorCorrente.Id,
+            atoCriadorId: NovoIdDeAto(instantePublicacao),
+            atoCriadorHash: hashDocumento,
+            atoCriadorRetificaId: versaoAtual.AtoCriadorId,
             atorUsuarioSub,
             instantePublicacao);
 
-        _editais.Add(edital);
-
-        // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato
-        // de negócio drenado é "emitido novo Edital + nova versão da
-        // configuração", idêntico em forma ao da abertura — o payload
-        // (edital/versão/hashes/data) serve aos dois. Evita um segundo schema
-        // Avro/tópico sem consumidor.
+        // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato de
+        // negócio drenado é "novo ato + nova versão da configuração", idêntico em
+        // forma ao da abertura — o payload serve aos dois. Evita um segundo schema
+        // Avro/tópico sem consumidor. O nome do membro EditalId é o histórico: ele é
+        // contrato do envelope durável e do schema Avro, e o valor sempre foi o do
+        // ato criador.
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
-            edital.Id,
+            versao.AtoCriadorId,
             versao.Id,
             versao.HashConfiguracao,
             versao.AtoCriadorHash,
-            // OccurredOn é o instante em que o fato ocorreu — o do SISTEMA, que é o da
-            // vigência da versão. NÃO a data que o documento declara: ela é informada pelo
-            // operador (ADR-0108) e pode ser retroativa (importação de acervo). Um consumidor
-            // que resolvesse a configuração vigente no instante do ato (ADR-0075) usando a data
-            // documental cairia antes da vigência e não acharia a versão que o próprio ato
-            // criou — foi o defeito que a #803 corrigiu, e usar a data declarada aqui o
-            // ressuscitaria por outra porta.
             versao.VigenteAPartirDe));
 
-        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, versao));
+        return Result<VersaoConfiguracao>.Success(versao);
     }
+
+    /// <summary>
+    /// Decide o identificador do ato que cria uma versão. Guid v7 ancorado no
+    /// <b>mesmo instante</b> já lido para a versão (ADR-0068) — nunca num relógio
+    /// próprio: o id do ato e a vigência da versão que ele cria descrevem o mesmo
+    /// fato, e derivar cada um de uma leitura diferente os faria discordar.
+    /// </summary>
+    /// <remarks>
+    /// O id nasce aqui, e não em <c>Publicacoes</c>, porque a versão precisa
+    /// referenciá-lo dentro desta transação — antes de o ato existir fisicamente
+    /// (ADR-0108). É também o que torna a reentrega da fila (at-least-once)
+    /// idempotente: o segundo processamento tenta gravar o MESMO id, e a chave
+    /// primária o recusa.
+    /// </remarks>
+    private static Guid NovoIdDeAto(DateTimeOffset instante) => Guid.CreateVersion7(instante);
 
     /// <summary>
     /// Trava de mutação pós-publicação (CA-04): todo <c>Definir*</c> recusa
     /// quando o processo já foi publicado — mudança em conteúdo congelável só
-    /// via retificação (T5, #786). Reaproveitada por todos os métodos
-    /// <c>Definir*</c>; <see langword="null"/> quando a mutação é permitida.
+    /// via retificação. Reaproveitada por todos os métodos <c>Definir*</c>;
+    /// <see langword="null"/> quando a mutação é permitida.
     /// </summary>
     private DomainError? MutacaoBloqueadaPosPublicacao()
     {
@@ -635,12 +634,3 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             "Processo publicado não aceita mutação direta da configuração — utilize a retificação.");
     }
 }
-
-/// <summary>
-/// Resultado de <see cref="ProcessoSeletivo.Publicar"/> — o <see cref="Edital"/>
-/// e a <see cref="VersaoConfiguracao"/> recém-criados, para o handler persistir
-/// via repositório sem precisar recriá-los ou tocar a coleção interna do
-/// agregado. A versão não é entidade filha desta raiz (ADR-0104): viaja no
-/// resultado justamente porque o handler a persiste por fora.
-/// </summary>
-public sealed record PublicacaoResultado(Edital Edital, VersaoConfiguracao Versao);

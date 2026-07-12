@@ -8,14 +8,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Cobertura do handler do snapshot vigente (Story #803, ADR-0075/0076/0068/0104):
-/// o instante nunca é lido por dentro do seletor, a ausência de configuração é
-/// distinguida de processo inexistente, e a versão eleita é hidratada com os
-/// dados documentais do ato que a criou.
+/// Cobertura do handler do snapshot vigente (ADR-0075/0076/0068/0103/0104): o instante
+/// nunca é lido por dentro do seletor, a ausência de configuração é distinguida de
+/// processo inexistente, e a versão eleita é projetada com a referência por VALOR ao
+/// ato — sem consultar Publicações.
 /// </summary>
 public sealed class ObterSnapshotVigenteQueryHandlerTests
 {
@@ -40,8 +39,6 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
         VersaoConfiguracao versao = NovaVersao(processoId, Agora);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterVersaoVigenteAsync(processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
-        repository.ObterDadosDocumentaisDoAtoAsync(processoId, versao.AtoCriadorId, Arg.Any<CancellationToken>())
-            .Returns(new DadosDocumentaisAto(Agora, nameof(NaturezaEdital.Abertura)));
 
         Result<SnapshotVigenteDto> resultado = await ObterSnapshotVigenteQueryHandler.Handle(
             new ObterSnapshotVigenteQuery(processoId, Instante: null),
@@ -53,18 +50,15 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
         await repository.Received(1).ObterVersaoVigenteAsync(processoId, Agora, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Versão vigente é projetada com os dados documentais do ato que a criou — contrato de leitura inalterado")]
-    public async Task Handle_VersaoVigente_ProjetaSnapshotComDadosDoAto()
+    [Fact(DisplayName = "A versão vigente é projetada com a referência por VALOR ao ato — o par {id, hash} que ela já guarda")]
+    public async Task Handle_VersaoVigente_ProjetaReferenciaPorValorAoAto()
     {
         Guid processoId = Guid.CreateVersion7();
         DateTimeOffset instante = Agora.AddDays(2);
         VersaoConfiguracao versao = NovaVersao(processoId, Agora);
-        DateTimeOffset dataDocumental = Agora.AddDays(-10);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterVersaoVigenteAsync(processoId, instante, Arg.Any<CancellationToken>()).Returns(versao);
-        repository.ObterDadosDocumentaisDoAtoAsync(processoId, versao.AtoCriadorId, Arg.Any<CancellationToken>())
-            .Returns(new DadosDocumentaisAto(dataDocumental, nameof(NaturezaEdital.Retificacao)));
 
         Result<SnapshotVigenteDto> resultado = await ObterSnapshotVigenteQueryHandler.Handle(
             new ObterSnapshotVigenteQuery(processoId, instante),
@@ -75,13 +69,24 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         SnapshotVigenteDto dto = resultado.Value!;
         dto.SnapshotPublicacaoId.Should().Be(versao.Id, "a referência forense durável é a da VERSÃO");
+        dto.AtoId.Should().Be(versao.AtoCriadorId, "o id do ato é a metade-identificador da referência por valor (ADR-0061)");
+        dto.HashEdital.Should().Be(versao.AtoCriadorHash, "e o hash do documento é a outra metade");
         dto.HashConfiguracao.Should().Be(versao.HashConfiguracao);
-        dto.HashEdital.Should().Be(versao.AtoCriadorHash);
         dto.SchemaVersion.Should().Be(versao.SchemaVersion);
-        dto.Natureza.Should().Be(nameof(NaturezaEdital.Retificacao));
-        dto.DataPublicacao.Should().Be(
-            dataDocumental,
-            "a data publicada é a DOCUMENTAL — que pode preceder a vigência, e não ordena nada");
+    }
+
+    [Fact(DisplayName = "O contrato de leitura não republica atributo documental algum — o documento é de Publicações (ADR-0103/0105)")]
+    public void SnapshotVigenteDto_NaoCarregaAtributoDocumental()
+    {
+        // O que a Seleção sabe do ato é o par {id, hash}, e mais nada. Tipo, número, data de
+        // publicação e assinante pertencem ao ato, e o ato é de Publicações — republicá-los
+        // aqui seria manter a posse do documento por outra porta, e obrigaria a Seleção a
+        // saber o que um ato É. Se um destes campos reaparecer, é este teste que denuncia.
+        IEnumerable<string> propriedades = typeof(SnapshotVigenteDto).GetProperties().Select(p => p.Name);
+
+        propriedades.Should().NotContain(
+            ["Natureza", "TipoAtoCodigo", "DataPublicacao", "Numero", "Assinante", "Orgao", "Serie"],
+            "o contrato publica a REFERÊNCIA ao ato, não os atributos dele");
     }
 
     [Fact(DisplayName = "Sem versão vigente em processo existente retorna 422 Snapshot.VigenteAusente — a ausência aflora (ADR-0076)")]
@@ -122,27 +127,28 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Versão vigente cujo ato não existe é corrupção, não ausência — falha alto, sem mascarar como 422")]
-    public async Task Handle_VersaoVigenteSemAto_LancaEstadoInconsistente()
+    [Fact(DisplayName = "A leitura do snapshot não espera o ato existir — o registro em Publicações é assíncrono (ADR-0108)")]
+    public async Task Handle_VersaoVigente_NaoDependeDoRegistroDoAto()
     {
         Guid processoId = Guid.CreateVersion7();
         VersaoConfiguracao versao = NovaVersao(processoId, Agora);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterVersaoVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(versao);
-        repository.ObterDadosDocumentaisDoAtoAsync(processoId, versao.AtoCriadorId, Arg.Any<CancellationToken>())
-            .Returns((DadosDocumentaisAto?)null);
 
-        Func<Task> acao = async () => await ObterSnapshotVigenteQueryHandler.Handle(
+        Result<SnapshotVigenteDto> resultado = await ObterSnapshotVigenteQueryHandler.Handle(
             new ObterSnapshotVigenteQuery(processoId, Instante: null),
             repository,
             new RelogioFixo(Agora),
             CancellationToken.None);
 
-        // 422 diria ao cliente que o certame não tem configuração vigente — e tem;
-        // o que falta é o documento. A ausência que a ADR-0076 manda aflorar é a de
-        // configuração, não a de evidência corrompida.
-        await acao.Should().ThrowAsync<InvalidOperationException>();
+        // Entre o 204 da publicação e a drenagem do outbox, o ato ainda não existe em
+        // Publicações. Se o snapshot dependesse dele para responder, essa janela viraria um
+        // 404 (ou pior, um 500) num certame perfeitamente publicado. Ele não depende: o par
+        // {id, hash} está na própria versão, e é UMA leitura só.
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.AtoId.Should().Be(versao.AtoCriadorId);
+        await repository.Received(1).ObterVersaoVigenteAsync(processoId, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
         await repository.DidNotReceive().ExisteAsync(processoId, Arg.Any<CancellationToken>());
     }
 

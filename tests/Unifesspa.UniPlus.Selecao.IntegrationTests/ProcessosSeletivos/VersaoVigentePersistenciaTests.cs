@@ -38,7 +38,6 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
     // A data que o DOCUMENTO declara (ADR-0108) — informada pelo operador, e distinta do
     // instante do sistema que rege a vigência. Aqui é fixa: o que os testes exercitam é a
     // vigência, e a data documental só precisa não se confundir com ela.
-    private static readonly DateTimeOffset DataDocumental = new(2026, 3, 13, 0, 0, 0, TimeSpan.Zero);
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 
@@ -87,16 +86,15 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
     private async Task<(Guid ProcessoId, VersaoConfiguracao V1, VersaoConfiguracao V2)> PublicarERetificarAsync(
         string nome,
         RelogioManual clock,
-        TimeSpan avancoAteRetificacao,
-        DateTimeOffset? dataDocumentalDaRetificacao = null)
+        TimeSpan avancoAteRetificacao)
     {
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(processo, dadosAbertura, docAbertura.HashSha256!);
-        Result<PublicacaoResultado> publicar = processo.Publicar(
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock);
+            docAbertura.HashSha256!, "integration-test-user", clock);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -104,7 +102,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
-            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!.Versao, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -121,19 +119,19 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"));
-            Result<PublicacaoResultado> retificar = carregado.Retificar(
+            Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
                 canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
-                "Correção do prazo de inscrição", dataDocumentalDaRetificacao ?? DataDocumental, clock);
+                "Correção do prazo de inscrição", clock);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
-            v2 = retificar.Value!.Versao;
+            v2 = retificar.Value!;
 
             await writeContext.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(v2, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        return (processo.Id, publicar.Value!.Versao, v2);
+        return (processo.Id, publicar.Value!, v2);
     }
 
     [Fact(DisplayName = "Seletor resolve a versão de maior vigência ≤ instante — e nada antes da primeira publicação (ADR-0076)")]
@@ -185,46 +183,32 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         vigente!.Id.Should().Be(v1.Id);
     }
 
-    [Fact(DisplayName = "Relógio regredido: a retificação com data documental ANTERIOR à abertura resolve corretamente (o defeito que a story corrige)")]
-    public async Task ObterVersaoVigente_RelogioRegredido_ResolvePelaVigenciaNaoPelaDataDocumental()
+    [Fact(DisplayName = "Relógio regredido: a vigência da sucessora é ancorada na anterior — a cadeia não anda para trás")]
+    public async Task ObterVersaoVigente_RelogioRegredido_ResolvePelaVigenciaAncorada()
     {
-        // Cenário do certame migrado: abertura documental às 10:00, retificação
-        // documental às 09:00 (o relógio do legado regrediu). A vigência da
-        // sucessora é ANCORADA na da anterior (VersaoConfiguracao.Suceder), então
-        // as duas vigem a partir de 10:00 e o desempate cabe ao número da versão.
-        //
-        // Com o seletor antigo — maior Edital.DataPublicacao ≤ instante — este
-        // certame resolvia ao contrário: entre 09:00 e 10:00 devolvia a retificação
-        // (que ainda não vigia) e, a partir de 10:00, a abertura — a retificação
-        // nunca era resolvida.
+        // O relógio do host regride entre a abertura e a retificação (ajuste NTP em degrau,
+        // troca de hora). Como é a VIGÊNCIA que ordena as versões, um retrocesso faria a
+        // versão 1 voltar a ser a vigente depois de a 2 existir. VersaoConfiguracao.Suceder
+        // ancora a sucessora no instante da anterior: as duas passam a viger em T0, e o
+        // desempate cabe ao número da versão.
         RelogioManual clock = new(T0);
-        DateTimeOffset documentalRegredida = DataDocumental.AddDays(-1);
         (Guid processoId, VersaoConfiguracao v1, VersaoConfiguracao v2) = await PublicarERetificarAsync(
-            nameof(ObterVersaoVigente_RelogioRegredido_ResolvePelaVigenciaNaoPelaDataDocumental),
+            nameof(ObterVersaoVigente_RelogioRegredido_ResolvePelaVigenciaAncorada),
             clock,
-            avancoAteRetificacao: TimeSpan.FromHours(-1),
-            dataDocumentalDaRetificacao: documentalRegredida);
+            avancoAteRetificacao: TimeSpan.FromHours(-1));
 
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
 
-        // Pré-condição: a data DOCUMENTAL da retificação regrediu, a vigência não.
-        Edital abertura = await context.Editais.AsNoTracking()
-            .SingleAsync(e => e.ProcessoSeletivoId == processoId && e.Natureza == NaturezaEdital.Abertura, CancellationToken.None);
-        Edital retificacao = await context.Editais.AsNoTracking()
-            .SingleAsync(e => e.ProcessoSeletivoId == processoId && e.Natureza == NaturezaEdital.Retificacao, CancellationToken.None);
-        retificacao.DataPublicacao.Should().Be(documentalRegredida, "a retificação DECLARA uma data anterior à da abertura — acervo importado");
-        abertura.DataPublicacao.Should().Be(DataDocumental);
         v2.VigenteAPartirDe.Should().Be(v1.VigenteAPartirDe, "a vigência da sucessora é ancorada — nunca regride");
 
-        // Uma hora antes de T0 (quando a retificação DIZ ter sido publicada) nada
-        // vige ainda: nenhuma versão passou a valer.
+        // Antes de T0 nada vige: nenhuma versão passou a valer ainda.
         VersaoConfiguracao? antesDaVigencia = await repository
             .ObterVersaoVigenteAsync(processoId, T0.AddMinutes(-30), CancellationToken.None);
-        antesDaVigencia.Should().BeNull("a data que o documento declara não faz a configuração vigir");
+        antesDaVigencia.Should().BeNull("um relógio que regrediu não faz a configuração vigir antes");
 
-        // A partir de T0, as duas vigem no mesmo instante — e o desempate por
-        // número elege a retificação, a mais nova.
+        // A partir de T0 as duas vigem no mesmo instante — e o desempate por número elege a
+        // retificação, a mais nova.
         VersaoConfiguracao? vigente = await repository
             .ObterVersaoVigenteAsync(processoId, T0, CancellationToken.None);
         vigente.Should().NotBeNull();
@@ -249,12 +233,12 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         DadosEdital dados = NovosDados(documento.Id);
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dados, documento.HashSha256!);
 
-        Result<PublicacaoResultado> publicar = processo.Publicar(
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
+            documento.HashSha256!, "integration-test-user", TimeProvider.System);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
-        VersaoConfiguracao versao = publicar.Value!.Versao;
+        VersaoConfiguracao versao = publicar.Value!;
 
         // O evento publica OccurredOn = VigenteAPartirDe (o instante do SISTEMA), e não a data
         // que o documento declara — esta é informada pelo operador e pode ser retroativa. É por
@@ -319,87 +303,28 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             CancellationToken.None);
 
         emT0.IsSuccess.Should().BeTrue();
-        emT0.Value!.Natureza.Should().Be(nameof(NaturezaEdital.Retificacao));
+        // O vigente em T0 é a versão do topo — a que a retificação criou. Não há campo de
+        // natureza a conferir: o que a distingue é ter sido criada por um ato que emenda
+        // outro, e essa relação vive no ato, em Publicações (ADR-0103).
+        VersaoConfiguracao topo = await context.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .OrderByDescending(v => v.NumeroVersao)
+            .FirstAsync(CancellationToken.None);
+        topo.AtoCriadorRetificaId.Should().NotBeNull();
+        emT0.Value!.AtoId.Should().Be(topo.AtoCriadorId);
+        emT0.Value!.SnapshotPublicacaoId.Should().Be(topo.Id);
     }
 
-    [Fact(DisplayName = "Dois atos com a MESMA data documental e vigências distintas resolvem corretamente — e o banco os aceita (índice de unicidade removido)")]
-    public async Task ObterVersaoVigente_MesmaDataDocumental_ResolvePelaVigencia()
+    [Fact(DisplayName = "O SQL do seletor toca APENAS a tabela de versões — nenhum atributo do ato entra na escolha")]
+    public async Task ObterVersaoVigente_SqlSoTocaEmVersoes()
     {
-        // O caso real: a retificação republica a data do ato original. Enquanto
-        // ux_editais_processo_data_publicacao existia, este cenário era rejeitado
-        // pelo banco — a trava serializava o conjunto errado.
-        //
-        // As duas grandezas são atribuídas por relógios distintos de propósito: o
-        // documental fica CONGELADO em D (mesma data nos dois atos) e o do sistema
-        // avança (vigências distintas). Hoje as factories derivam ambas do mesmo
-        // TimeProvider; o dia em que a data documental for declarada pelo usuário
-        // — como o número já é —, este é o estado que chega.
-        ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_MesmaDataDocumental_ResolvePelaVigencia));
-        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
-        DocumentoEdital docRetificacao = DocumentoConfirmado(processo.Id);
-
-        RelogioManual relogioDocumental = new(new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero));
-        RelogioManual relogioDoSistema = new(T0);
-
-        DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
-
-        Edital abertura = Edital.EmitirAbertura(processo.Id, dadosAbertura, relogioDocumental.GetUtcNow()).Value!;
-        Edital retificacao = Edital
-            .EmitirRetificacao(processo.Id, dadosRetificacao, abertura.Id, "Correção do prazo", relogioDocumental.GetUtcNow())
-            .Value!;
-        retificacao.DataPublicacao.Should().Be(abertura.DataPublicacao, "pré-condição: a retificação republica a data do ato original");
-
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dadosAbertura, docAbertura.HashSha256!);
-        VersaoConfiguracao v1 = VersaoConfiguracao.Abrir(
-            processo.Id, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            abertura.Id, docAbertura.HashSha256!, "integration-test-user", relogioDoSistema.GetUtcNow());
-
-        relogioDoSistema.Avancar(TimeSpan.FromDays(1));
-        SnapshotCanonico canonicoR = Canonicalizer.Canonicalizar(
-            processo, dadosRetificacao, docRetificacao.HashSha256!,
-            new RetificacaoInfo(abertura.Id, "Correção do prazo"));
-        VersaoConfiguracao v2 = VersaoConfiguracao.Suceder(
-            v1, canonicoR.Bytes, canonicoR.SchemaVersion, canonicoR.AlgoritmoHash,
-            retificacao.Id, docRetificacao.HashSha256!, abertura.Id, "integration-test-user", relogioDoSistema.GetUtcNow());
-
-        // As duas versões vão em SaveChanges distintos, como no fluxo real (a
-        // publicação e a retificação são transações separadas): o trigger de
-        // sucessão valida a cadeia linha a linha, e um lote único deixaria o EF
-        // livre para inserir a versão 2 antes da 1.
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
-        {
-            await writeContext.ProcessosSeletivos.AddAsync(processo, CancellationToken.None);
-            await writeContext.DocumentosEdital.AddRangeAsync([docAbertura, docRetificacao], CancellationToken.None);
-
-            // Estes dois INSERTs são a prova de que a unicidade de data_publicacao
-            // caiu: com o índice, colidiriam em 23505 — os atos têm a mesma data.
-            await writeContext.Editais.AddRangeAsync([abertura, retificacao], CancellationToken.None);
-            await writeContext.VersoesConfiguracao.AddAsync(v1, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
-        {
-            await writeContext.VersoesConfiguracao.AddAsync(v2, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
-
-        (await repository.ObterVersaoVigenteAsync(processo.Id, T0, CancellationToken.None))!
-            .Id.Should().Be(v1.Id, "em T0 só a versão 1 vige");
-        (await repository.ObterVersaoVigenteAsync(processo.Id, T0.AddDays(1), CancellationToken.None))!
-            .Id.Should().Be(v2.Id, "em T0+1d a versão 2 passa a viger — mesmo com a data documental idêntica");
-    }
-
-    [Fact(DisplayName = "O SQL do seletor não referencia a tabela de editais — a vigência ordena versões, não documentos")]
-    public async Task ObterVersaoVigente_SqlNaoTocaEmEditais()
-    {
+        // A prova mecânica de que a vigência ordena VERSÕES, não documentos (ADR-0104). Antes,
+        // este teste precisava afirmar que o SQL não citava `editais`; agora a tabela nem
+        // existe, e o que resta a garantir é que nenhuma OUTRA fonte de atributo documental
+        // (o documento, um join com Publicações) se infiltre no seletor pela porta dos fundos.
         RelogioManual clock = new(T0);
         (Guid processoId, _, _) = await PublicarERetificarAsync(
-            nameof(ObterVersaoVigente_SqlNaoTocaEmEditais), clock, TimeSpan.FromDays(1));
+            nameof(ObterVersaoVigente_SqlSoTocaEmVersoes), clock, TimeSpan.FromDays(1));
 
         CapturadorDeSql capturador = new();
         DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
@@ -416,33 +341,36 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
 
         (await repository.ObterVersaoVigenteAsync(processoId, T0.AddDays(2), CancellationToken.None)).Should().NotBeNull();
 
-        capturador.Comandos.Should().ContainSingle();
-        capturador.Comandos[0].Should().NotContain(
-            "editais",
-            "o seletor não consulta atributo algum do ato — é imune a tipos de ato (ADR-0104)");
-        capturador.Comandos[0].Should().Contain("versoes_configuracao");
+        capturador.Comandos.Should().ContainSingle("a resolução do vigente é UMA leitura — não há hidratação do documento a fazer");
+        string sql = capturador.Comandos[0];
+        sql.Should().Contain("versoes_configuracao");
+        sql.Should().NotContain("editais", "a tabela do documento não existe mais, e o seletor jamais dependeu dela");
+        sql.Should().NotContain("documentos_edital", "o documento não decide qual configuração vale");
+        sql.Should().NotContain("atos_normativos", "e o ato tampouco — ele entra por VALOR, não por join (ADR-0061)");
     }
 
-    [Fact(DisplayName = "Versão órfã: o seletor a resolve mesmo sem o ato criador — a seleção não depende do documento")]
-    public async Task ObterVersaoVigente_VersaoSemAtoCriador_AindaResolve()
+    [Fact(DisplayName = "Versão cujo ato ainda não foi registrado resolve normalmente — a seleção não espera a fila drenar")]
+    public async Task ObterVersaoVigente_AtoAindaNaoRegistrado_AindaResolve()
     {
-        // Estado que só um INSERT cru produz (ato_criador_id é referência por valor,
-        // sem FK — ADR-0061). Serve a dois propósitos: prova que a SELEÇÃO não passa
-        // pelo ato, e monta o caso em que a HIDRATAÇÃO não acha o documento.
-        ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_VersaoSemAtoCriador_AindaResolve));
+        // O ato é registrado em Publicações por mensagem durável, DEPOIS do commit da
+        // publicação (ADR-0108). Entre o 204 e a drenagem do outbox, a versão existe e o ato
+        // ainda não — e é exatamente aí que o certame precisa continuar consultável. A
+        // referência é por valor, sem FK (ADR-0061): o seletor não sabe nem pergunta se o ato
+        // já existe do outro lado.
+        ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_AtoAindaNaoRegistrado_AindaResolve));
         DocumentoEdital documento = DocumentoConfirmado(processo.Id);
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, NovosDados(documento.Id), documento.HashSha256!);
 
-        Guid atoInexistente = Guid.CreateVersion7();
-        VersaoConfiguracao orfa = VersaoConfiguracao.Abrir(
+        Guid atoAindaNaoRegistrado = Guid.CreateVersion7();
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processo.Id, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            atoInexistente, HashFixo, "integration-test-user", T0);
+            atoAindaNaoRegistrado, HashFixo, "integration-test-user", T0);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
             await writeContext.ProcessosSeletivos.AddAsync(processo, CancellationToken.None);
             await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
-            await writeContext.VersoesConfiguracao.AddAsync(orfa, CancellationToken.None);
+            await writeContext.VersoesConfiguracao.AddAsync(versao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -451,40 +379,9 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
 
         VersaoConfiguracao? vigente = await repository
             .ObterVersaoVigenteAsync(processo.Id, T0.AddDays(1), CancellationToken.None);
-        vigente.Should().NotBeNull("a seleção não depende da existência do ato");
-        vigente!.Id.Should().Be(orfa.Id);
-
-        DadosDocumentaisAto? ato = await repository
-            .ObterDadosDocumentaisDoAtoAsync(processo.Id, atoInexistente, CancellationToken.None);
-        ato.Should().BeNull("o ato não existe — a hidratação aflora a corrupção em vez de inventar dados");
-    }
-
-    [Fact(DisplayName = "Hidratação recusa ato de OUTRO processo — sem FK, a pertença é verificada na consulta (ADR-0061)")]
-    public async Task ObterDadosDocumentaisDoAto_AtoDeOutroProcesso_RetornaNull()
-    {
-        RelogioManual clockA = new(T0);
-        (Guid processoA, VersaoConfiguracao versaoA, _) = await PublicarERetificarAsync(
-            $"{nameof(ObterDadosDocumentaisDoAto_AtoDeOutroProcesso_RetornaNull)}-A", clockA, TimeSpan.FromDays(1));
-
-        RelogioManual clockB = new(T0);
-        (Guid processoB, VersaoConfiguracao versaoB, _) = await PublicarERetificarAsync(
-            $"{nameof(ObterDadosDocumentaisDoAto_AtoDeOutroProcesso_RetornaNull)}-B", clockB, TimeSpan.FromDays(1));
-
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
-
-        // O ato criador da versão de B existe — mas não neste certame. Sem o filtro
-        // de pertença, o snapshot de A viria com o documento de B.
-        DadosDocumentaisAto? cruzado = await repository
-            .ObterDadosDocumentaisDoAtoAsync(processoA, versaoB.AtoCriadorId, CancellationToken.None);
-        cruzado.Should().BeNull("um ato de outro certame não hidrata este snapshot");
-
-        DadosDocumentaisAto? proprio = await repository
-            .ObterDadosDocumentaisDoAtoAsync(processoA, versaoA.AtoCriadorId, CancellationToken.None);
-        proprio.Should().NotBeNull();
-        proprio!.Natureza.Should().Be(nameof(NaturezaEdital.Abertura));
-        proprio.DataPublicacao.Should().Be(DataDocumental, "a data publicada é a que o DOCUMENTO declara (ADR-0108), não o relógio");
-        processoB.Should().NotBe(processoA);
+        vigente.Should().NotBeNull("a seleção não depende da existência do ato do outro lado da fila");
+        vigente!.Id.Should().Be(versao.Id);
+        vigente.AtoCriadorId.Should().Be(atoAindaNaoRegistrado, "a referência por valor ao ato está na própria versão");
     }
 
     [Fact(DisplayName = "Seletor não resolve configuração de processo soft-deleted nem de processo inexistente (base do 404)")]

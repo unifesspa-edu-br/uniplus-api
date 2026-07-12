@@ -49,16 +49,16 @@ public sealed class FalharAposPublicarCascadingHandler
 
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(processo, dadosResult.Value!, documento.HashSha256!);
 
-        Result<PublicacaoResultado> publicarResult = processo.Publicar(
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
             canonico.Bytes,
             canonico.SchemaVersion,
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "cascading-v9-test",
-            new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), timeProvider);
+            timeProvider);
 
-        db.VersoesConfiguracao.Add(publicarResult.Value!.Versao);
+        db.VersoesConfiguracao.Add(publicarResult.Value!);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         throw new InvalidOperationException(MensagemErro);

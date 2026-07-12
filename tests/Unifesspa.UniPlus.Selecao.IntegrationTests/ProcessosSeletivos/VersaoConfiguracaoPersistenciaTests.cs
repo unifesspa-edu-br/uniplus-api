@@ -328,7 +328,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         ProcessoSeletivoPublicacaoSeeder.Resultado semeado =
             await ProcessoSeletivoPublicacaoSeeder.PublicarAsync(_fixture, nome);
 
-        return new Publicacao(semeado.ProcessoId, semeado.EditalId, semeado.VersaoId);
+        return new Publicacao(semeado.ProcessoId, semeado.AtoId, semeado.VersaoId);
     }
 
     private async Task<Guid> SemearProcessoEmRascunhoAsync(string nome)

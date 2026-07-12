@@ -112,21 +112,14 @@ public sealed class PublicacaoConcorrenciaTests
             publicarResultado.IsSuccess.Should().BeTrue(publicarResultado.Error?.Message);
             processoFinal.Status.Should().Be(StatusProcesso.Publicado);
 
-            // Filtra pelo Edital DESTE processo — sob carga de suíte
-            // completa, outros testes do mesmo Collection publicam seus
-            // próprios processos em paralelo (com a etapa padrão do
-            // seeder, "Prova Objetiva"); um FirstAsync() sem filtro pega o
-            // snapshot de QUALQUER um deles, não necessariamente o desta
-            // execução (achado ao investigar flake sob `dotnet test` da
-            // suíte inteira).
-            Guid editalId = await readDb.Editais
-                .AsNoTracking()
-                .Where(e => e.ProcessoSeletivoId == processoId)
-                .Select(e => e.Id)
-                .SingleAsync();
+            // Filtra pela versão DESTE processo — sob carga de suíte completa, outros
+            // testes do mesmo Collection publicam seus próprios processos em paralelo
+            // (com a etapa padrão do seeder, "Prova Objetiva"); um FirstAsync() sem
+            // filtro pega o snapshot de QUALQUER um deles, não necessariamente o desta
+            // execução (achado ao investigar flake sob `dotnet test` da suíte inteira).
             VersaoConfiguracao versao = await readDb.VersoesConfiguracao
                 .AsNoTracking()
-                .SingleAsync(v => v.AtoCriadorId == editalId);
+                .SingleAsync(v => v.ProcessoSeletivoId == processoId);
             JsonNode configuracao = JsonNode.Parse(versao.ConfiguracaoCongelada)!;
             JsonArray etapasNoSnapshot = configuracao["etapas"]!.AsArray();
             etapasNoSnapshot.Should().ContainSingle();

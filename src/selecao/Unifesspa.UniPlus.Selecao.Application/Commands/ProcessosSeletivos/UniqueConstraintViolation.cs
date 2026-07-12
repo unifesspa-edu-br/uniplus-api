@@ -1,13 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
-/// Helper para mapear violações de constraint de banco (índice UNIQUE
-/// parcial ou CHECK) do ciclo de publicação do Processo Seletivo para
-/// <c>DomainError</c> nomeado (RN08, Story #759 T4 #785, ADR-0102). Mesmo
-/// padrão de <c>ObrigatoriedadesLegais/UniqueConstraintViolation.cs</c>:
-/// inspeção do tipo da exceção por nome via <see cref="System.Type.FullName"/>
-/// evita dependência direta do <c>Microsoft.EntityFrameworkCore</c> package
-/// na camada Application (mantém Clean Arch).
+/// Extrai o NOME da constraint de banco violada (índice UNIQUE ou CHECK) do
+/// ciclo de publicação do Processo Seletivo, para que
+/// <see cref="VersaoConfiguracaoConstraintViolation"/> a traduza em
+/// <c>DomainError</c> nomeado (RN08, ADR-0102). Mesmo padrão de
+/// <c>ObrigatoriedadesLegais/UniqueConstraintViolation.cs</c>: inspeção do tipo
+/// da exceção por nome via <see cref="System.Type.FullName"/> evita dependência
+/// direta do package <c>Microsoft.EntityFrameworkCore</c> na camada Application
+/// (mantém Clean Arch).
 /// </summary>
 /// <remarks>
 /// A tradução acontece no boundary de persistência (ADR-0102 §"Forma do
@@ -21,10 +22,6 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
     private const string CheckViolationSqlState = "23514";
-
-    private const string AberturaUnicaConstraint = "ux_editais_processo_abertura_unica";
-    private const string ContratoNaturezaConstraint = "ck_editais_contrato_natureza";
-    private const string RetificadoUnicoConstraint = "ux_editais_edital_retificado_unico";
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
@@ -58,16 +55,4 @@ internal static class UniqueConstraintViolation
 
         return innerType.GetProperty("ConstraintName")?.GetValue(inner) as string;
     }
-
-    /// <summary><see langword="true"/> quando a constraint violada é a de abertura única por processo (corrida de publicações concorrentes).</summary>
-    public static bool IsAberturaJaExiste(string? constraint) =>
-        string.Equals(constraint, AberturaUnicaConstraint, StringComparison.Ordinal);
-
-    /// <summary><see langword="true"/> quando a constraint violada é o CHECK do contrato abertura×retificação (ADR-0101).</summary>
-    public static bool IsContratoNaturezaInvalido(string? constraint) =>
-        string.Equals(constraint, ContratoNaturezaConstraint, StringComparison.Ordinal);
-
-    /// <summary><see langword="true"/> quando a constraint violada é a de retificação única por Edital (cadeia linear, ADR-0101).</summary>
-    public static bool IsRetificacaoDuplicada(string? constraint) =>
-        string.Equals(constraint, RetificadoUnicoConstraint, StringComparison.Ordinal);
 }

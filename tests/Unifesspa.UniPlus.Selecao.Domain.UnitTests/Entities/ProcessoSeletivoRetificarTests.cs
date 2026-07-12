@@ -11,13 +11,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="ProcessoSeletivo.Retificar"/> e
-/// <see cref="Edital.EmitirRetificacao"/> (RN08, Story #759 T5 #786,
-/// ADR-0101) — novo Edital de retificação vinculado ao vigente, motivo
-/// obrigatório, novo snapshot, snapshot anterior intocado, status permanece
-/// Publicado. Mapa de testes de #759: <c>Retificacao_NovoEditalSnapshotMotivo</c>,
-/// <c>Edital_ContratoAberturaRetificacao</c>, <c>Retificacao_MesmoProcesso</c>.
+/// Cobertura de <see cref="ProcessoSeletivo.Retificar"/> (RN08, ADR-0101/0103/0104):
+/// a retificação é uma <b>relação entre atos</b>, não um tipo — o novo ato emenda o
+/// ato criador da versão corrente, sucede-a na cadeia linear e exige motivo; a versão
+/// anterior fica intocada e o status permanece Publicado.
 /// </summary>
+/// <remarks>
+/// Não há mais entidade <c>Edital</c> a inspecionar: o documento é o ato publicado, e
+/// vive em <c>Publicacoes</c>. O que estes testes verificam é a única coisa que a
+/// Seleção decide sobre ele — o seu identificador, e o ato que ele emenda.
+/// </remarks>
 public sealed class ProcessoSeletivoRetificarTests
 {
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
@@ -34,10 +37,9 @@ public sealed class ProcessoSeletivoRetificarTests
     // processo são um estado válido (ADR-0104) — a data documental não ordena.
     private static RelogioManual Relogio() => new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
 
-    // A data que o DOCUMENTO declara (ADR-0108) — deixou de sair do relógio. A da abertura e a
-    // da retificação são declaradas separadamente, como o operador as informa.
-    private static readonly DateTimeOffset DataDocumentalDaAbertura = new(2026, 3, 13, 0, 0, 0, TimeSpan.Zero);
-    private static readonly DateTimeOffset DataDocumentalDaRetificacao = new(2026, 3, 20, 0, 0, 0, TimeSpan.Zero);
+    // A data que o DOCUMENTO declara (ADR-0108) não aparece mais aqui: ela é atributo do ato,
+    // que é de Publicações (ADR-0103/0105), e viaja direto para lá na mensagem durável. O
+    // agregado não a recebe nem a guarda — ela nunca ordenou coisa alguma.
 
     /// <summary>
     /// Versão de configuração avulsa, sem vínculo com nenhum processo real —
@@ -103,58 +105,66 @@ public sealed class ProcessoSeletivoRetificarTests
 
         return processo;
     }
-
-    private static ProcessoSeletivo NovoProcessoPublicado(RelogioManual clock, out Edital abertura, out VersaoConfiguracao versaoAbertura)
+    private static ProcessoSeletivo NovoProcessoPublicado(RelogioManual clock, out VersaoConfiguracao versaoAbertura)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        Result<PublicacaoResultado> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", DataDocumentalDaAbertura, clock);
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        abertura = publicacao.Value!.Edital;
-        versaoAbertura = publicacao.Value!.Versao;
+        versaoAbertura = publicacao.Value!;
+        processo.DequeueDomainEvents();
         return processo;
     }
 
-    [Fact(DisplayName = "Retificacao_NovoEditalSnapshotMotivo — retificar processo publicado emite Edital de retificação vinculado ao vigente")]
-    public void Retificar_ProcessoPublicado_EmiteEditalRetificacaoVinculado()
+    [Fact(DisplayName = "Retificar processo publicado emite um ato que emenda o ato criador da versão corrente, com motivo")]
+    public void Retificar_ProcessoPublicado_EmiteAtoQueEmendaOVigente()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura, out VersaoConfiguracao versaoAbertura);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        Result<PublicacaoResultado> resultado = processo.Retificar(
+        Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção do prazo de inscrição", DataDocumentalDaRetificacao, clock: clock);
+            motivo: "Correção do prazo de inscrição", clock: clock);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado, "retificar não altera o status Publicado");
-        processo.Editais.Should().HaveCount(2);
 
-        Edital retificacao = resultado.Value!.Edital;
-        retificacao.Natureza.Should().Be(NaturezaEdital.Retificacao);
-        retificacao.EditalRetificadoId.Should().Be(abertura.Id);
-        retificacao.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
-        retificacao.DataPublicacao.Should().NotBeNull().And.NotBe(abertura.DataPublicacao);
-        resultado.Value!.Versao.AtoCriadorId.Should().Be(retificacao.Id);
+        VersaoConfiguracao versao = resultado.Value!;
+        versao.NumeroVersao.Should().Be(2);
+        versao.AtoCriadorId.Should().NotBe(versaoAbertura.AtoCriadorId, "a retificação é um ato NOVO — o passado não se muta");
+        versao.AtoCriadorRetificaId.Should().Be(
+            versaoAbertura.AtoCriadorId,
+            "o alvo é o ato criador da versão corrente, e o servidor o infere — o cliente nunca o informa (ADR-0101)");
     }
 
-    [Fact(DisplayName = "Retificacao_NovoEditalSnapshotMotivo — retificação emite evento com os identificadores do novo Edital/snapshot")]
-    public void Retificar_ProcessoPublicado_EmiteEventoComNovosIdentificadores()
+    [Fact(DisplayName = "A retificação de um ato NÃO muda o tipo do ato: o que a marca é a relação, e nada além dela")]
+    public void Retificar_NaoCarregaMarcaDeTipo_SoARelacao()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _, out VersaoConfiguracao versaoAbertura);
-        processo.ClearDomainEvents(); // descarta o evento da abertura
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        Result<PublicacaoResultado> resultado = processo.Retificar(
+        Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            "Ajuste de vaga", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock);
+            motivo: "Correção do anexo II", clock: clock);
 
-        resultado.IsSuccess.Should().BeTrue();
-        Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
-            .OfType<Domain.Events.ProcessoPublicadoEvent>().Should().ContainSingle().Subject;
-        evento.EditalId.Should().Be(resultado.Value!.Edital.Id);
-        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Versao.Id);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+
+        // A ÚNICA diferença entre a versão da abertura e a da retificação é a presença do ato
+        // emendado. Não há campo de "natureza", nem rótulo, nem enum: uma convocação retificada
+        // continua convocação, e o tipo do ato vem do catálogo de Publicações, declarado pelo
+        // operador (ADR-0103). Se um dia voltar a existir um atributo aqui que diga "isto é uma
+        // retificação", este teste é o que o denuncia.
+        versaoAbertura.AtoCriadorRetificaId.Should().BeNull("a raiz da cadeia não emenda ninguém");
+        resultado.Value!.AtoCriadorRetificaId.Should().NotBeNull("a retificação emenda — e é só isso que a distingue");
+
+        typeof(VersaoConfiguracao).GetProperties()
+            .Select(p => p.Name)
+            .Should().NotContain(
+                nome => nome.Contains("Natureza", StringComparison.OrdinalIgnoreCase)
+                    || nome.Contains("TipoAto", StringComparison.OrdinalIgnoreCase),
+                "a configuração congelada não carrega o tipo do ato: saber o que um ato É pertence a Publicações");
     }
 
     [Fact(DisplayName = "Lifecycle — retificar processo ainda em rascunho é recusado (CA-09)")]
@@ -162,167 +172,157 @@ public sealed class ProcessoSeletivoRetificarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        Result<PublicacaoResultado> resultado = processo.Retificar(
+        Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "qualquer", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock: Relogio());
+            motivo: "qualquer", clock: Relogio());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
-        processo.Editais.Should().BeEmpty();
+        processo.DequeueDomainEvents().Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Retificacao_MesmoProcesso — segunda retificação sucede o vigente, formando cadeia linear abertura→R1→R2 (CA-06)")]
-    public void Retificar_SegundaRetificacao_SucedeVigente_CadeiaLinear()
+    [Fact(DisplayName = "Retificação sem motivo é recusada — a relação é o par (ato emendado, motivo), completo ou nenhum")]
+    public void Retificar_SemMotivo_Recusa()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura, out VersaoConfiguracao versaoAbertura);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        Result<PublicacaoResultado> primeira = processo.Retificar(
+        Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "primeira retificação", DataDocumentalDaRetificacao, clock: clock);
+            motivo: "   ", clock: clock);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MotivoRetificacaoObrigatorio");
+        processo.DequeueDomainEvents().Should().BeEmpty("nenhuma versão é criada quando a relação está incompleta");
+    }
+
+    [Fact(DisplayName = "Segunda retificação empilha na CABEÇA da cadeia (abertura→R1→R2), não na raiz (CA-06)")]
+    public void Retificar_SegundaRetificacao_EmpilhaNaCabeca()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
+        clock.Avancar(TimeSpan.FromMinutes(1));
+
+        Result<VersaoConfiguracao> primeira = processo.Retificar(
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "primeira retificação", clock: clock);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        // A segunda retificação sucede automaticamente o vigente (a 1ª
-        // retificação), não a abertura — o alvo é resolvido pela raiz. A
-        // versão que ela sucede também é a da 1ª retificação, devolvida no
-        // resultado anterior — não a da abertura.
-        Result<PublicacaoResultado> segunda = processo.Retificar(
-            NovosDados(), primeira.Value!.Versao, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "segunda retificação", DataDocumentalDaRetificacao, clock: clock);
+        // A segunda retificação emenda o ato que criou a versão CORRENTE (R1), não a abertura:
+        // é o que a prática faz — o aviso que prorroga um prazo já prorrogado cita o aviso
+        // anterior, não o edital original (ADR-0103).
+        Result<VersaoConfiguracao> segunda = processo.Retificar(
+            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "segunda retificação", clock: clock);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
-        primeira.Value!.Edital.EditalRetificadoId.Should().Be(abertura.Id, "R1 sucede a abertura");
-        segunda.Value!.Edital.EditalRetificadoId.Should().Be(primeira.Value!.Edital.Id, "R2 sucede R1 — cada Edital retificado uma única vez");
-        processo.Editais.Should().HaveCount(3);
-        segunda.Value!.Versao.NumeroVersao.Should().Be(3, "o topo da cadeia de configuração avança com a última retificação");
-        segunda.Value!.Versao.AtoCriadorId.Should().Be(segunda.Value!.Edital.Id, "a versão do topo foi criada pelo último ato");
-    }
-
-    [Fact(DisplayName = "Edital_ContratoAberturaRetificacao — EmitirRetificacao sem motivo é recusado")]
-    public void EmitirRetificacao_MotivoVazio_Recusa()
-    {
-        Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), Guid.CreateVersion7(), motivo: "   ", dataDocumental: Relogio().GetUtcNow());
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("Edital.MotivoRetificacaoObrigatorio");
-    }
-
-    [Fact(DisplayName = "Edital_ContratoAberturaRetificacao — EmitirRetificacao sem edital retificado é recusado")]
-    public void EmitirRetificacao_SemEditalRetificado_Recusa()
-    {
-        Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), editalRetificadoId: Guid.Empty, motivo: "motivo", dataDocumental: Relogio().GetUtcNow());
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("Edital.EditalRetificadoObrigatorio");
-    }
-
-    [Fact(DisplayName = "Edital_ContratoAberturaRetificacao — EmitirRetificacao preenche os dois campos de retificação")]
-    public void EmitirRetificacao_Valida_PreencheContratoRetificacao()
-    {
-        Guid retificadoId = Guid.CreateVersion7();
-
-        Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), retificadoId, motivo: "  Adequação a decisão superveniente  ", dataDocumental: Relogio().GetUtcNow());
-
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Natureza.Should().Be(NaturezaEdital.Retificacao);
-        resultado.Value!.EditalRetificadoId.Should().Be(retificadoId);
-        resultado.Value!.MotivoRetificacao.Should().Be("Adequação a decisão superveniente", "o motivo é normalizado com Trim");
+        primeira.Value!.AtoCriadorRetificaId.Should().Be(versaoAbertura.AtoCriadorId, "R1 emenda a abertura");
+        segunda.Value!.AtoCriadorRetificaId.Should().Be(
+            primeira.Value!.AtoCriadorId,
+            "R2 emenda R1 — cada ato é emendado no máximo uma vez, e a cadeia é linear");
+        segunda.Value!.NumeroVersao.Should().Be(3, "o topo da cadeia de configuração avança com a última retificação");
     }
 
     [Fact(DisplayName = "Retificar — versão corrente de OUTRO processo é recusada: a cadeia não atravessa certames")]
     public void Retificar_VersaoDeOutroProcesso_Recusa()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _, out _);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        Result<PublicacaoResultado> resultado = processo.Retificar(
+        Result<VersaoConfiguracao> resultado = processo.Retificar(
             NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção de datas", DataDocumentalDaRetificacao, clock: clock);
+            motivo: "Correção de datas", clock: clock);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso");
-        processo.Editais.Should().ContainSingle("nada é mutado quando a versão informada não é deste certame");
+        processo.DequeueDomainEvents().Should().BeEmpty("nada é mutado quando a versão informada não é deste certame");
     }
 
-    [Fact(DisplayName = "Retificar — versão corrente cujo ato criador não está entre os Editais do processo é recusada")]
-    public void Retificar_VersaoComAtoCriadorDesconhecido_Recusa()
+    [Fact(DisplayName = "Relógio regredido: o id do ato da retificação NÃO ordena antes do ato que ele emenda (Guid v7, ADR-0032)")]
+    public void Retificar_RelogioRegride_IdDoAtoNaoRegride()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _, out VersaoConfiguracao versaoAbertura);
-        clock.Avancar(TimeSpan.FromMinutes(1));
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
 
-        // Uma versão do MESMO processo, mas criada por um ato que este processo
-        // não conhece: não há Edital a retificar, e emitir a retificação
-        // apontando para um documento inexistente deixaria a cadeia pendurada
-        // no vazio.
-        VersaoConfiguracao versaoForaDaCadeia = VersaoConfiguracao.Abrir(
-            processo.Id,
-            BytesCanonicos,
-            "1.0",
-            "canonical-json/sha256@v1",
-            Guid.CreateVersion7(),
-            HashFixo,
-            "user-sub-123",
-            clock.GetUtcNow());
-        versaoForaDaCadeia.AtoCriadorId.Should().NotBe(
-            versaoAbertura.AtoCriadorId,
-            "pré-condição do teste: o ato criador tem de ser outro");
+        // O relógio regride 10 minutos entre a abertura e a retificação (ajuste NTP em
+        // degrau). Suceder já ancorava a VIGÊNCIA na da anterior; o id do ato tem de nascer
+        // do mesmo instante ancorado.
+        clock.Avancar(TimeSpan.FromMinutes(-10));
 
-        // Drena o evento da publicação para que o assert final fale só da
-        // retificação recusada.
-        processo.DequeueDomainEvents();
+        Result<VersaoConfiguracao> retificacao = processo.Retificar(
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "retificação sob relógio regredido", clock: clock);
 
-        Result<PublicacaoResultado> resultado = processo.Retificar(
-            NovosDados(), versaoForaDaCadeia, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção de datas", DataDocumentalDaRetificacao, clock: clock);
+        retificacao.IsSuccess.Should().BeTrue(retificacao.Error?.Message);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("VersaoConfiguracao.CadeiaQuebrada");
-        processo.Editais.Should().ContainSingle("o Edital de retificação não é emitido quando a cadeia não fecha");
-        processo.DequeueDomainEvents().Should().BeEmpty("nenhum evento é enfileirado numa retificação recusada");
+        // O Guid v7 carrega o timestamp nos 48 bits MAIS SIGNIFICATIVOS (RFC 9562 §5.7), e é
+        // por eles que o Postgres ordena `uuid` — a ordem bytewise big-endian de que a
+        // paginação por keyset depende (ADR-0032). Se o id do ato novo nascesse do relógio
+        // CRU, o seu timestamp seria 10 minutos ANTERIOR ao do ato que ele emenda, e a cadeia
+        // apareceria invertida na listagem. (Comparar os `Guid` em C# não serviria: o layout
+        // do tipo é misto, e a ordem de `Comparer<Guid>` não é a do banco.)
+        DateTimeOffset instanteDaAbertura = InstanteDoGuidV7(versaoAbertura.AtoCriadorId);
+        DateTimeOffset instanteDaRetificacao = InstanteDoGuidV7(retificacao.Value!.AtoCriadorId);
+
+        instanteDaRetificacao.Should().BeOnOrAfter(
+            instanteDaAbertura,
+            "o ato que emenda nunca ordena antes do ato emendado — o instante do id é ancorado, como o da vigência");
+
+        retificacao.Value!.VigenteAPartirDe.Should().Be(
+            versaoAbertura.VigenteAPartirDe,
+            "id e vigência descrevem o MESMO instante: uma leitura do relógio, uma âncora só");
     }
 
-    [Fact(DisplayName = "Retificar — relógio que regride não move o alvo: a retificação sucede o ato criador da versão corrente, não o Edital de maior data")]
+    /// <summary>
+    /// Lê o timestamp Unix em milissegundos dos 48 bits mais significativos de um Guid v7
+    /// (RFC 9562 §5.7) — a mesma grandeza pela qual o Postgres ordena a coluna <c>uuid</c>.
+    /// </summary>
+    private static DateTimeOffset InstanteDoGuidV7(Guid id)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        id.TryWriteBytes(bytes, bigEndian: true, out _);
+
+        long milissegundos = 0;
+        for (int i = 0; i < 6; i++)
+        {
+            milissegundos = (milissegundos << 8) | bytes[i];
+        }
+
+        return DateTimeOffset.FromUnixTimeMilliseconds(milissegundos);
+    }
+
+    [Fact(DisplayName = "Retificar — relógio que regride não move o alvo: quem ordena a cadeia é a versão, não o tempo")]
     public void Retificar_RelogioRegride_AlvoVemDaCadeiaDeVersoes()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura, out VersaoConfiguracao versaoAbertura);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
 
-        // A retificação DECLARA uma data documental anterior à da abertura — o que a
-        // importação de um acervo produz. E o relógio também regride (ajuste NTP em degrau).
-        // Nenhuma das duas coisas pode mover a cadeia: quem ordena é a versão.
+        // O relógio regride (ajuste NTP em degrau, troca de hora do host). Isso não pode mover
+        // a cadeia: quem ordena as versões é a vigência, e ela nunca precede a da anterior.
         clock.Avancar(TimeSpan.FromMinutes(-10));
-        DateTimeOffset dataDocumentalRegredida = DataDocumentalDaAbertura.AddDays(-1);
-        Result<PublicacaoResultado> primeira = processo.Retificar(
+        Result<VersaoConfiguracao> primeira = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "primeira retificação", dataDocumentalRegredida, clock: clock);
+            motivo: "primeira retificação", clock: clock);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
-        primeira.Value!.Edital.DataPublicacao.Should().BeBefore(
-            abertura.DataPublicacao!.Value,
-            "pré-condição do teste: a data DOCUMENTAL da retificação regrediu para antes da abertura — é essa divergência que não pode decidir nada");
-        primeira.Value!.Versao.VigenteAPartirDe.Should().Be(
+        primeira.Value!.VigenteAPartirDe.Should().Be(
             versaoAbertura.VigenteAPartirDe,
             "a vigência da sucessora é ancorada na anterior quando o relógio regride — nunca precede o passado");
 
-        // A segunda retificação continua possível, e sucede R1 — o ato que criou a
-        // versão corrente —, não a abertura. Ordenar o alvo por data tornaria uma
-        // cadeia perfeitamente linear irretificável.
-        Result<PublicacaoResultado> segunda = processo.Retificar(
-            NovosDados(), primeira.Value!.Versao, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "segunda retificação", DataDocumentalDaRetificacao, clock: clock);
+        // A segunda retificação continua possível, e emenda R1 — o ato que criou a versão
+        // corrente. Ordenar o alvo pelo tempo tornaria uma cadeia perfeitamente linear
+        // irretificável.
+        Result<VersaoConfiguracao> segunda = processo.Retificar(
+            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "segunda retificação", clock: clock);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
-        segunda.Value!.Edital.EditalRetificadoId.Should().Be(
-            primeira.Value!.Edital.Id,
+        segunda.Value!.AtoCriadorRetificaId.Should().Be(
+            primeira.Value!.AtoCriadorId,
             "o alvo é o ato criador da versão corrente — a cadeia manda, não o relógio");
-        segunda.Value!.Versao.NumeroVersao.Should().Be(3);
-        segunda.Value!.Versao.AtoCriadorRetificaId.Should().Be(primeira.Value!.Edital.Id);
+        segunda.Value!.NumeroVersao.Should().Be(3);
     }
 
     /// <summary>

@@ -77,7 +77,7 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// ou foi excluído logicamente. Leitura <c>AsNoTracking</c>.
     /// <para>
     /// Quem ordena é a VERSÃO, pelo relógio do sistema: este seletor não lê
-    /// atributo algum do ato (natureza, número, data documental) e por isso é
+    /// atributo algum do ato (tipo, número, data documental) e por isso é
     /// imune a tipos de ato e à data que o documento declara — que a
     /// retificação republica inalterada, e que um acervo migrado pode trazer
     /// regredida. O instante entra explicitamente: nunca há relógio lido por
@@ -90,25 +90,6 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Dados documentais do ato que criou uma versão — os campos que o contrato
-    /// de leitura publica sobre o documento, e nada além deles.
-    /// <see langword="null"/> quando o ato não existe ou não pertence a
-    /// <paramref name="processoSeletivoId"/>: <c>ato_criador_id</c> é referência
-    /// por VALOR, sem chave estrangeira (ADR-0061), então a pertença é
-    /// verificada aqui, não pelo banco.
-    /// <para>
-    /// Projeção estreita — não devolve o <see cref="Edital"/> — porque esta é a
-    /// única superfície que a #804 troca: quando o ato migrar para o módulo
-    /// <c>Publicacoes</c>, muda a origem destes dois campos, não o seletor de
-    /// vigência acima, que jamais tocou no ato.
-    /// </para>
-    /// </summary>
-    Task<DadosDocumentaisAto?> ObterDadosDocumentaisDoAtoAsync(
-        Guid processoSeletivoId,
-        Guid atoCriadorId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// <see langword="true"/> se existe um Processo Seletivo com este id
     /// (checagem barata via <c>AnyAsync</c>, sem materializar o agregado). Usada
     /// pelo seletor de snapshot vigente para distinguir 404 (processo
@@ -116,11 +97,3 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// </summary>
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
 }
-
-/// <summary>
-/// Dados que o snapshot vigente publica sobre o DOCUMENTO do ato — a data que
-/// o documento declara e a natureza do ato. Deliberadamente não é o
-/// <see cref="Edital"/>: nenhum deles ordena coisa alguma (ADR-0104), e o
-/// contrato de leitura não deve depender da entidade que a #804 substitui.
-/// </summary>
-public sealed record DadosDocumentaisAto(DateTimeOffset DataPublicacao, string Natureza);

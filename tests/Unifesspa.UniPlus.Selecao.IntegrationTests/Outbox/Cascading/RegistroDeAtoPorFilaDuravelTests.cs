@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Domain.Entities;
+using Domain.Events;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -52,13 +53,13 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // O Edital já existe assim que o 204 volta — a publicação NÃO espera Publicações.
-        Guid editalId = await ObterEditalIdAsync(api, processoId);
+        Guid atoId = await ObterAtoIdAsync(api, processoId);
 
         // O ato chega pela fila durável, logo depois do commit.
-        AtoNormativo? ato = await AguardarAtoAsync(api, editalId);
+        AtoNormativo? ato = await AguardarAtoAsync(api, atoId);
 
         ato.Should().NotBeNull("o ato é registrado a partir da mensagem persistida no outbox");
-        ato!.Id.Should().Be(editalId, "o id do ato é decidido por Seleção — é o que torna a reentrega idempotente");
+        ato!.Id.Should().Be(atoId, "o id do ato é decidido por Seleção — é o que torna a reentrega idempotente");
         ato.TipoCodigo.Should().Be("EDITAL_ABERTURA");
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
@@ -66,12 +67,12 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         // O vínculo com o certame (ADR-0105) — sem ele a consulta "atos deste certame" não acha nada.
         (await db.Set<VinculoAtoEntidade>().AsNoTracking()
-            .AnyAsync(v => v.AtoId == editalId && v.EntidadeTipo == "PROCESSO_SELETIVO" && v.EntidadeId == processoId))
+            .AnyAsync(v => v.AtoId == atoId && v.EntidadeTipo == "PROCESSO_SELETIVO" && v.EntidadeId == processoId))
             .Should().BeTrue();
 
         // A vaga de linhagem foi reservada — pela linhagem CERTA.
         (await db.Set<LinhagemUnicaPorObjeto>().AsNoTracking()
-            .AnyAsync(l => l.EntidadeId == processoId && l.TipoCodigo == "EDITAL_ABERTURA" && l.RaizId == editalId))
+            .AnyAsync(l => l.EntidadeId == processoId && l.TipoCodigo == "EDITAL_ABERTURA" && l.RaizId == atoId))
             .Should().BeTrue();
     }
 
@@ -85,9 +86,9 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(RegistroRecusado_NaoPrendeAVagaDoCertame));
         (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        Guid editalId = await ObterEditalIdAsync(api, processoId);
-        editalId.Should().NotBeEmpty("a publicação de Seleção não espera Publicações aceitar o ato");
-        (await AguardarAtoAsync(api, editalId)).Should().NotBeNull();
+        Guid atoId = await ObterAtoIdAsync(api, processoId);
+        atoId.Should().NotBeEmpty("a publicação de Seleção não espera Publicações aceitar o ato");
+        (await AguardarAtoAsync(api, atoId)).Should().NotBeNull();
 
         // Agora uma requisição que Publicações RECUSA: tipo sem versão vigente. É o caso
         // real de falha — um código de tipo que o catálogo não conhece na data.
@@ -136,7 +137,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         // E o que Seleção publicou permanece publicado — os dois módulos falham em separado.
         await using AsyncServiceScope scopeSelecao = api.Services.CreateAsyncScope();
         SelecaoDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (await selecao.Editais.AsNoTracking().AnyAsync(e => e.Id == editalId)).Should().BeTrue();
+        (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.AtoCriadorId == atoId)).Should().BeTrue();
     }
 
     [Fact(DisplayName = "publicar e retificar em sequência registram OS DOIS atos, com a cadeia — a ordem da fila não decide")]
@@ -159,12 +160,14 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         await using AsyncServiceScope scopeSelecao = api.Services.CreateAsyncScope();
         SelecaoDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        Guid abertura = await selecao.Editais.AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processoId && e.Natureza == Domain.Enums.NaturezaEdital.Abertura)
-            .Select(e => e.Id).SingleAsync();
-        Guid retificacao = await selecao.Editais.AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processoId && e.Natureza == Domain.Enums.NaturezaEdital.Retificacao)
-            .Select(e => e.Id).SingleAsync();
+        // A raiz da cadeia é o ato que não emenda ninguém, e a retificação é o que emenda —
+        // não há rótulo de natureza a consultar: a relação É a marca (ADR-0103).
+        Guid abertura = await selecao.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId && v.AtoCriadorRetificaId == null)
+            .Select(v => v.AtoCriadorId).SingleAsync();
+        Guid retificacao = await selecao.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId && v.AtoCriadorRetificaId != null)
+            .Select(v => v.AtoCriadorId).SingleAsync();
 
         AtoNormativo? atoAbertura = await AguardarAtoAsync(api, abertura);
         AtoNormativo? atoRetificacao = await AguardarAtoAsync(api, retificacao);
@@ -200,8 +203,8 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(RetificacaoEnfileirada_ComClasseDeCongelamentoDivergente_EhRecusada));
         (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        Guid editalId = await ObterEditalIdAsync(api, processoId);
-        (await AguardarAtoAsync(api, editalId)).Should().NotBeNull();
+        Guid atoId = await ObterAtoIdAsync(api, processoId);
+        (await AguardarAtoAsync(api, atoId)).Should().NotBeNull();
 
         // Uma requisição que emenda o edital (congelante) com um ato NÃO congelante. A
         // invariante da ADR-0103 é congela(retificador) == congela(retificado): registrar
@@ -227,7 +230,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 Assinante: "Diretor do CEPS",
                 VersaoInvocadaId: null,
                 VersaoInvocadaHash: null,
-                AtoRetificadoId: editalId,
+                AtoRetificadoId: atoId,
                 MotivoRetificacao: "Tentativa de emendar um ato congelante com um não congelante",
                 Vinculos: [],
                 // Os atributos conferidos: este ato declara NÃO congelar, e emenda um que congela.
@@ -265,8 +268,83 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         // sairia publicado com 204 e a recusa só apareceria na dead letter.
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext selecao = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (await selecao.Editais.AsNoTracking().AnyAsync(e => e.ProcessoSeletivoId == processoId))
+        (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().BeFalse("a recusa precede qualquer escrita");
+    }
+
+    [Fact(DisplayName = "RETIFICAR declarando um tipo que NÃO congela configuração é recusado com 422 — nenhuma versão, nenhuma mensagem")]
+    public async Task Retificar_ComTipoQueNaoCongela_Recusa422_SemEscrever()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        await SemearTipoDeAtoAsync(api, "AVISO_NAO_CONGELANTE", unicoPorObjeto: false, congela: false);
+
+        (Guid processoId, Guid documentoAbertura) = await SemearProcessoAsync(api, nameof(Retificar_ComTipoQueNaoCongela_Recusa422_SemEscrever));
+        (await PublicarAsync(client, processoId, documentoAbertura)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
+
+        // A retificação de um ato NÃO CONGELANTE não cria versão de configuração — é o
+        // critério de aceite da story, e ele vale nos DOIS handlers, não só ao publicar.
+        // Aqui a recusa é dupla: o ato não congela (e retificar um certame congela), e a
+        // classe de congelamento divergiria da do ato emendado (ADR-0103), o que
+        // Publicações recusaria depois — tarde demais, com o 204 já entregue.
+        HttpResponseMessage resposta = await RetificarAsync(client, processoId, documentoRetificacao, "AVISO_NAO_CONGELANTE");
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext selecao = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (await selecao.VersoesConfiguracao.AsNoTracking().CountAsync(v => v.ProcessoSeletivoId == processoId))
+            .Should().Be(1, "a retificação recusada não cria versão alguma — só a da abertura existe");
+    }
+
+    [Fact(DisplayName = "o mesmo id percorre a cadeia inteira: evento → versão → requisição → ato registrado")]
+    public async Task IdentidadeDoAto_AtravessaEventoVersaoERegistro()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        using HttpClient client = api.CreateClient();
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
+
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(IdentidadeDoAto_AtravessaEventoVersaoERegistro));
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // 1. A VERSÃO congelada, gravada na transação da publicação.
+        VersaoConfiguracao versao;
+        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
+        {
+            SelecaoDbContext selecao = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            versao = await selecao.VersoesConfiguracao.AsNoTracking()
+                .SingleAsync(v => v.ProcessoSeletivoId == processoId);
+        }
+
+        // 2. O ATO registrado em Publicações, a partir da mensagem durável.
+        AtoNormativo? ato = await AguardarAtoAsync(api, versao.AtoCriadorId);
+        ato.Should().NotBeNull();
+
+        // 3. O EVENTO drenado pelo Kafka/outbox.
+        ProcessoPublicadoEvent? evento = await EsperarEventoAsync(collector, processoId, TimeSpan.FromSeconds(20));
+        evento.Should().NotBeNull();
+
+        // Um único identificador atravessa os três canais duráveis. Se algum deles gerasse o
+        // seu próprio id, a reentrega da fila (at-least-once) criaria um ato gêmeo, e o gêmeo
+        // disputaria a vaga de linhagem do certame (ADR-0107) contra o primeiro. O nome do
+        // membro do evento é o histórico — EditalId —, porque renomeá-lo quebraria o envelope
+        // durável e o schema Avro; o VALOR sempre foi o do ato criador.
+        evento!.EditalId.Should().Be(versao.AtoCriadorId, "evento → versão");
+        ato!.Id.Should().Be(versao.AtoCriadorId, "versão → ato registrado (o id viaja na requisição)");
+        evento.SnapshotPublicacaoId.Should().Be(versao.Id);
+        evento.HashEdital.Should().Be(versao.AtoCriadorHash);
+        evento.HashConfiguracao.Should().Be(versao.HashConfiguracao);
+
+        // E o ato guarda, por valor, a versão que o governou (ADR-0075/0061).
+        ato.VersaoInvocada.Should().NotBeNull();
+        ato.VersaoInvocada!.Id.Should().Be(versao.Id);
+        ato.VersaoInvocada.Hash.Should().Be(versao.HashConfiguracao);
     }
 
     [Fact(DisplayName = "o ato é registrado com os atributos CONFERIDOS, não com os do catálogo no momento do consumo (ADR-0061)")]
@@ -361,7 +439,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
         SelecaoDbContext selecao = conferencia.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (await selecao.Editais.AsNoTracking().AnyAsync(e => e.ProcessoSeletivoId == processoId))
+        (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().BeFalse("a recusa precede qualquer escrita");
     }
 
@@ -417,7 +495,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         await using AsyncServiceScope scopeSelecao = api.Services.CreateAsyncScope();
         SelecaoDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (await selecao.Editais.AsNoTracking().AnyAsync(e => e.ProcessoSeletivoId == processoId))
+        (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().BeFalse("a recusa precede qualquer escrita");
     }
 
@@ -431,7 +509,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         (Guid processoId, Guid documentoAbertura) = await SemearProcessoAsync(api, nameof(AtoJaRetificadoPorFora_RecusaRetificacao));
         (await PublicarAsync(client, processoId, documentoAbertura)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        Guid abertura = await ObterEditalIdAsync(api, processoId);
+        Guid abertura = await ObterAtoIdAsync(api, processoId);
         (await AguardarAtoAsync(api, abertura)).Should().NotBeNull();
 
         // Alguém já emendou o ato de abertura por fora — pelo endpoint administrativo de
@@ -466,9 +544,9 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
         SelecaoDbContext selecao = conferencia.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        (await selecao.Editais.AsNoTracking()
-            .CountAsync(e => e.ProcessoSeletivoId == processoId))
-            .Should().Be(1, "a recusa precede qualquer escrita — só o Edital de abertura existe");
+        (await selecao.VersoesConfiguracao.AsNoTracking()
+            .CountAsync(v => v.ProcessoSeletivoId == processoId))
+            .Should().Be(1, "a recusa precede qualquer escrita — só a versão da abertura existe");
     }
 
     [Fact(DisplayName = "reentrega da mesma requisição não duplica o ato (idempotente por id)")]
@@ -481,12 +559,12 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         (Guid processoId, Guid documentoId) = await SemearProcessoAsync(api, nameof(Reentrega_NaoDuplicaOAto));
         (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        Guid editalId = await ObterEditalIdAsync(api, processoId);
-        (await AguardarAtoAsync(api, editalId)).Should().NotBeNull();
+        Guid atoId = await ObterAtoIdAsync(api, processoId);
+        (await AguardarAtoAsync(api, atoId)).Should().NotBeNull();
 
         // Reentrega o MESMO envelope, como a fila at-least-once faria após um crash entre
         // o processamento e o ack.
-        Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao requisicao = await MontarRequisicaoDoAtoAsync(api, editalId, processoId);
+        Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao requisicao = await MontarRequisicaoDoAtoAsync(api, atoId, processoId);
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
             Wolverine.IMessageBus bus = scope.ServiceProvider.GetRequiredService<Wolverine.IMessageBus>();
@@ -496,18 +574,18 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
         PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
 
-        (await db.Set<AtoNormativo>().AsNoTracking().CountAsync(a => a.Id == editalId))
+        (await db.Set<AtoNormativo>().AsNoTracking().CountAsync(a => a.Id == atoId))
             .Should().Be(1, "o id vem na mensagem — o segundo processamento reencontra o ato e não faz nada");
         (await db.Set<LinhagemUnicaPorObjeto>().AsNoTracking().CountAsync(l => l.EntidadeId == processoId))
             .Should().Be(1, "e não abre uma segunda vaga contra a própria linhagem");
     }
 
     private static async Task<Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao> MontarRequisicaoDoAtoAsync(
-        CascadingApiFactory api, Guid editalId, Guid processoId)
+        CascadingApiFactory api, Guid atoId, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
-        AtoNormativo ato = await db.Set<AtoNormativo>().AsNoTracking().SingleAsync(a => a.Id == editalId);
+        AtoNormativo ato = await db.Set<AtoNormativo>().AsNoTracking().SingleAsync(a => a.Id == atoId);
 
         return new Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao(
             AtoId: ato.Id,
@@ -526,6 +604,29 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             Vinculos: [new Unifesspa.UniPlus.Publicacoes.Contracts.VinculoEntidadeRequisicao("PROCESSO_SELETIVO", processoId)],
             AtributosDoTipo: new Unifesspa.UniPlus.Publicacoes.Contracts.AtributosDoTipoAto(
                 ato.CongelaConfiguracao, ato.UnicoPorObjeto, ato.EfeitoIrreversivel));
+    }
+
+    /// <summary>
+    /// Espera o <see cref="ProcessoPublicadoEvent"/> deste certame chegar ao coletor — a
+    /// entrega cascading é assíncrona, pela queue durável (ADR-0004/0005).
+    /// </summary>
+    private static async Task<ProcessoPublicadoEvent?> EsperarEventoAsync(
+        DomainEventCollector collector, Guid processoId, TimeSpan timeout)
+    {
+        DateTimeOffset limite = DateTimeOffset.UtcNow + timeout;
+        while (DateTimeOffset.UtcNow < limite)
+        {
+            ProcessoPublicadoEvent? evento = collector.Snapshot()
+                .FirstOrDefault(e => e.ProcessoSeletivoId == processoId);
+            if (evento is not null)
+            {
+                return evento;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+        }
+
+        return null;
     }
 
     private static async Task<AtoNormativo?> AguardarAtoAsync(CascadingApiFactory api, Guid atoId)
@@ -564,17 +665,22 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         await db.SaveChangesAsync();
     }
 
-    private static async Task<Guid> ObterEditalIdAsync(CascadingApiFactory api, Guid processoId)
+    /// <summary>
+    /// O id do ato que criou a versão do certame — decidido pela Seleção, dentro da
+    /// transação, e é por ele que o ato é procurado em Publicações depois que a fila drena.
+    /// </summary>
+    private static async Task<Guid> ObterAtoIdAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        return await db.Editais.AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processoId)
-            .Select(e => e.Id)
+        return await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .Select(v => v.AtoCriadorId)
             .SingleAsync();
     }
 
-    private static async Task<HttpResponseMessage> RetificarAsync(HttpClient client, Guid processoId, Guid documentoId)
+    private static async Task<HttpResponseMessage> RetificarAsync(
+        HttpClient client, Guid processoId, Guid documentoId, string? tipoAto = null)
     {
         object corpo = new
         {
@@ -590,7 +696,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
                 ano = 2026,
                 dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 assinante = "Diretor do CEPS",
-                tipoAtoCodigo = DadosDoAtoDeTeste.TipoRetificacao,
+                tipoAtoCodigo = tipoAto ?? DadosDoAtoDeTeste.TipoRetificacao,
             },
         };
         using HttpRequestMessage request = new(HttpMethod.Post,

@@ -14,16 +14,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Events;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
-// Cenário fim-a-fim da retificação (Story #759, T5 #786, ADR-0101): publica
-// via HTTP, depois retifica o Edital vigente — novo Edital de retificação +
-// novo snapshot, cascading do ProcessoPublicadoEvent (reusado; a retificação
-// é, em forma, outra emissão de Edital+snapshot). Reusa a mesma infra de
-// cascading do fluxo de publicação.
+// Cenário fim-a-fim da retificação (ADR-0101/0103/0108): publica via HTTP, depois
+// retifica — nova versão da configuração, criada por um ato que emenda o ato criador da
+// anterior, mais o cascading do ProcessoPublicadoEvent (reusado; a retificação é, em
+// forma, outra emissão de ato+versão). O ato em si é registrado em Publicações, pela
+// fila durável — é lá que os testes o conferem.
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
@@ -37,7 +38,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     }
 
     [Fact(DisplayName =
-        "POST /processos-seletivos/{id}/retificacoes emite Edital de retificação + snapshot e dispara cascading")]
+        "POST /processos-seletivos/{id}/retificacoes sucede a versão, emenda o ato anterior e dispara cascading")]
     public async Task Retificar_FluxoCompleto_EmiteRetificacaoEDispatchaCascading()
     {
         CascadingApiFactory api = _fixture.Factory;
@@ -49,56 +50,67 @@ public sealed class RetificarProcessoSeletivoEndpointTests
 
         (Guid processoId, Guid documentoAbertura) = await SemearAsync(api, nameof(Retificar_FluxoCompleto_EmiteRetificacaoEDispatchaCascading));
 
-        // Publica o Edital de abertura.
+        // Publica a abertura.
         HttpResponseMessage publicar = await PostPublicarAsync(client, processoId, documentoAbertura, MakeIdempotencyKey());
         publicar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        Guid editalAberturaId = await ObterEditalUnicoAsync(api, processoId);
+        Guid atoAberturaId = await ObterAtoCriadorUnicoAsync(api, processoId);
         Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
 
-        // Retifica: o servidor infere o Edital vigente (a abertura) — o cliente
-        // não informa id de Edital interno, só endereça o processo.
+        // Retifica: o servidor INFERE o alvo (o ato criador da versão corrente) — o cliente
+        // não informa id de ato nenhum, só endereça o processo (ADR-0101).
         HttpResponseMessage retificar = await PostRetificarAsync(
             client, processoId, documentoRetificacao, "Correção do prazo de inscrição", MakeIdempotencyKey());
         retificar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // Lê o Edital de retificação persistido e espera o evento que carrega
-        // ESTE editalId — a entrega cascading é assíncrona e o coletor também
-        // guarda o evento da abertura (mesmo processoId); filtrar por editalId
-        // evita a corrida de pegar o evento errado.
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        List<Edital> editais = await db.Set<Edital>().AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processoId).ToListAsync();
-        editais.Should().HaveCount(2);
-        Edital retificacao = editais.Single(e => e.Natureza == NaturezaEdital.Retificacao);
-        retificacao.EditalRetificadoId.Should().Be(editalAberturaId);
-        retificacao.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
+        List<VersaoConfiguracao> versoes = await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .OrderBy(v => v.NumeroVersao)
+            .ToListAsync();
 
+        versoes.Should().HaveCount(2);
+        versoes[1].AtoCriadorRetificaId.Should().Be(atoAberturaId, "a retificação emenda o ato criador da versão corrente");
+
+        // O evento é filtrado pelo id do ato desta retificação: a entrega cascading é
+        // assíncrona e o coletor também guarda o evento da abertura (mesmo processoId).
         ProcessoPublicadoEvent? evento = await EsperarEventoPorEditalAsync(
-            collector, retificacao.Id, TimeSpan.FromSeconds(15));
+            collector, versoes[1].AtoCriadorId, TimeSpan.FromSeconds(15));
         evento.Should().NotBeNull("a retificação drena ProcessoPublicadoEvent pelo mesmo caminho cascading");
         evento!.ProcessoSeletivoId.Should().Be(processoId);
+
+        // E o ato chega a Publicações carregando a RELAÇÃO — que é o que faz dele uma
+        // retificação (ADR-0103). O tipo é o que o operador DECLAROU no corpo, não algo que o
+        // servidor tenha deduzido do fato de ser uma retificação: um aviso pode emendar um
+        // edital, e o rótulo do documento pertence ao órgão que o publica, não ao sistema.
+        AtoNormativo? ato = await AguardarAtoAsync(api, versoes[1].AtoCriadorId);
+        ato.Should().NotBeNull();
+        ato!.AtoRetificadoId.Should().Be(atoAberturaId);
+        ato.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
+        ato.TipoCodigo.Should().Be(
+            DadosDoAtoDeTeste.TipoRetificacao,
+            "o tipo do ato é o DECLARADO — o servidor não o impõe nem o deduz da relação");
     }
 
     [Fact(DisplayName =
-        "Retificação com motivo Unicode decomposto congela o mesmo valor NFC no snapshot e na coluna do Edital")]
-    public async Task Retificar_MotivoUnicodeDecomposto_SnapshotEEditalReconciliam()
+        "Retificação com motivo Unicode decomposto congela o mesmo valor NFC no snapshot e no ato registrado")]
+    public async Task Retificar_MotivoUnicodeDecomposto_SnapshotEAtoReconciliam()
     {
         CascadingApiFactory api = _fixture.Factory;
 
         await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
-        (Guid processoId, Guid documentoAbertura) = await SemearAsync(api, nameof(Retificar_MotivoUnicodeDecomposto_SnapshotEEditalReconciliam));
+        (Guid processoId, Guid documentoAbertura) = await SemearAsync(api, nameof(Retificar_MotivoUnicodeDecomposto_SnapshotEAtoReconciliam));
         HttpResponseMessage publicar = await PostPublicarAsync(client, processoId, documentoAbertura, MakeIdempotencyKey());
         publicar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         Guid documentoRetificacao = await SemearDocumentoConfirmadoAsync(api, processoId);
 
-        // Motivo em forma DECOMPOSTA (NFD): ç = c + U+0327, ã = a + U+0303. O
-        // handler deve normalizar para NFC uma vez e congelar o mesmo valor nos
-        // dois lados (coluna do Edital e bloco 'retificacao' do snapshot).
+        // Motivo em forma DECOMPOSTA (NFD): ç = c + U+0327, ã = a + U+0303. O handler deve
+        // normalizar para NFC uma vez e usar o MESMO valor nos dois destinos: o bloco
+        // 'retificacao' do snapshot congelado (Seleção) e o motivo do ato (Publicações).
         string motivoDecomposto = "correção do prazo de inscrição".Normalize(NormalizationForm.FormD);
         HttpResponseMessage retificar = await PostRetificarAsync(
             client, processoId, documentoRetificacao, motivoDecomposto, MakeIdempotencyKey());
@@ -106,19 +118,45 @@ public sealed class RetificarProcessoSeletivoEndpointTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        Edital retificacao = await db.Set<Edital>().AsNoTracking()
-            .SingleAsync(e => e.ProcessoSeletivoId == processoId && e.Natureza == NaturezaEdital.Retificacao);
         VersaoConfiguracao versao = await db.VersoesConfiguracao.AsNoTracking()
-            .SingleAsync(v => v.AtoCriadorId == retificacao.Id);
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .OrderByDescending(v => v.NumeroVersao)
+            .FirstAsync();
         string motivoNoSnapshot = JsonNode.Parse(versao.ConfiguracaoCongelada)!
             .AsObject()["retificacao"]!["motivo"]!.GetValue<string>();
 
-        // A coluna do Edital e o bloco congelado guardam o MESMO valor NFC — a
-        // reconciliação do snapshot forense contra a linha do Edital vale mesmo
-        // com input decomposto (Postgres não normaliza texto).
-        retificacao.MotivoRetificacao.Should().Be(motivoNoSnapshot);
-        retificacao.MotivoRetificacao.Should().Be(
+        // O snapshot forense (Seleção) e o ato registrado (Publicações) guardam o MESMO
+        // valor NFC — a reconciliação entre os dois módulos vale mesmo com input decomposto
+        // (Postgres não normaliza texto, e a normalização acontece uma vez só, no handler).
+        AtoNormativo? ato = await AguardarAtoAsync(api, versao.AtoCriadorId);
+        ato.Should().NotBeNull();
+        ato!.MotivoRetificacao.Should().Be(motivoNoSnapshot);
+        ato.MotivoRetificacao.Should().Be(
             "correção do prazo de inscrição".Normalize(NormalizationForm.FormC));
+    }
+
+    /// <summary>
+    /// Espera o ato aparecer em Publicações — o registro é assíncrono, por mensagem durável
+    /// (ADR-0108). A publicação em si já respondeu 204 muito antes.
+    /// </summary>
+    private static async Task<AtoNormativo?> AguardarAtoAsync(CascadingApiFactory api, Guid atoId)
+    {
+        DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(20);
+        while (DateTimeOffset.UtcNow < limite)
+        {
+            await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+            PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+            AtoNormativo? ato = await db.Set<AtoNormativo>().AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == atoId);
+            if (ato is not null)
+            {
+                return ato;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(300));
+        }
+
+        return null;
     }
 
     private static async Task<ProcessoPublicadoEvent?> EsperarEventoPorEditalAsync(
@@ -269,13 +307,13 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         return documento.Id;
     }
 
-    private static async Task<Guid> ObterEditalUnicoAsync(CascadingApiFactory api, Guid processoId)
+    private static async Task<Guid> ObterAtoCriadorUnicoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        return await db.Set<Edital>().AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processoId)
-            .Select(e => e.Id)
+        return await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .Select(v => v.AtoCriadorId)
             .SingleAsync();
     }
 }
