@@ -37,6 +37,19 @@
           "Npgsql": "10.0.3"
         }
       },
+      "WolverineFx.EntityFrameworkCore": {
+        "type": "Direct",
+        "requested": "[5.39.5, )",
+        "resolved": "5.39.5",
+        "contentHash": "HW0f2XTA05OkhogwnKT3vWOVaI6NzE5RUxrn3pRVda7bKKuhUIPP5yi5Wql5tI+/nelaBpkNsB94+4hnpRwgeg==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "10.0.2",
+          "Microsoft.EntityFrameworkCore.Design": "10.0.2",
+          "Microsoft.EntityFrameworkCore.Relational": "10.0.2",
+          "Weasel.EntityFrameworkCore": "8.15.1",
+          "WolverineFx.RDBMS": "5.39.5"
+        }
+      },
       "CommunityToolkit.HighPerformance": {
         "type": "Transitive",
         "resolved": "8.4.0",
@@ -1032,8 +1045,16 @@
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )",
           "WolverineFx": "[5.39.5, )"
+        }
+      },
+      "unifesspa.uniplus.publicacoes.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.publicacoes.domain": {
@@ -1318,19 +1339,6 @@
           "Microsoft.Extensions.ObjectPool": "10.0.2",
           "NewId": "4.0.1",
           "Newtonsoft.Json": "13.0.3"
-        }
-      },
-      "WolverineFx.EntityFrameworkCore": {
-        "type": "CentralTransitive",
-        "requested": "[5.39.5, )",
-        "resolved": "5.39.5",
-        "contentHash": "HW0f2XTA05OkhogwnKT3vWOVaI6NzE5RUxrn3pRVda7bKKuhUIPP5yi5Wql5tI+/nelaBpkNsB94+4hnpRwgeg==",
-        "dependencies": {
-          "Microsoft.EntityFrameworkCore": "10.0.2",
-          "Microsoft.EntityFrameworkCore.Design": "10.0.2",
-          "Microsoft.EntityFrameworkCore.Relational": "10.0.2",
-          "Weasel.EntityFrameworkCore": "8.15.1",
-          "WolverineFx.RDBMS": "5.39.5"
         }
       },
       "WolverineFx.FluentValidation": {

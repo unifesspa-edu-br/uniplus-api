@@ -239,6 +239,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
     private static AtoNormativo AtoDeOutraLinhagem() =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "99", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataPublicacao: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
@@ -247,6 +248,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
     private static AtoNormativo AtoRetificado() =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataPublicacao: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",

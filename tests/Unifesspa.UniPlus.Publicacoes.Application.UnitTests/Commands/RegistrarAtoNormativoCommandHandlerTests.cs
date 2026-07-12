@@ -249,6 +249,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 
     private static AtoNormativo AtoExistente(bool congela, string tipoCodigo = "EDITAL_ABERTURA") =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", tipoCodigo,
             congelaConfiguracao: congela, efeitoIrreversivel: false, unicoPorObjeto: false,
             dataPublicacao: Publicacao,

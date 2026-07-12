@@ -4,12 +4,14 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Publicacoes.Application\Unifesspa.UniPlus.Publicacoes.Application.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Publicacoes.Domain\Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Publicacoes.Contracts\Unifesspa.UniPlus.Publicacoes.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

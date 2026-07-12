@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using System.Globalization;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Avisos;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
@@ -33,16 +34,41 @@ public static class RegistrarAtoNormativoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        // AC6: sem versão do tipo vigente na data, não há de onde copiar os
-        // atributos de consequência — recusa nomeada.
-        TipoAtoPublicado? tipo = await tiposRepository
-            .ObterVigenteAsync(command.TipoCodigo, command.DataPublicacao, cancellationToken)
-            .ConfigureAwait(false);
-        if (tipo is null)
+        // Os atributos de consequência do tipo: ou vêm CONFERIDOS pelo domínio que publicou
+        // (registro por mensagem durável — ADR-0108/0061), ou se resolvem agora no catálogo
+        // (registro pelo endpoint, em que quem publica está aqui, neste instante).
+        //
+        // Quando vêm conferidos, o catálogo NÃO é relido. O cadastro é editável, e um
+        // administrador pode mudar `congela_configuracao` entre o 204 da publicação e o
+        // consumo da fila; reler faria um edital publicado como congelante ser registrado
+        // com um tipo que já não congela. O ato foi publicado sob as regras que valiam
+        // então, e é sob elas que se registra — mudança no cadastro vale para o que vier
+        // depois, não reescreve o passado.
+        string tipoCodigo;
+        AtributosDoTipoAto atributos;
+
+        if (command.AtributosDoTipo is { } conferidos)
         {
-            return Result<RegistrarAtoNormativoResult>.Failure(new DomainError(
-                AtoNormativoErrorCodes.TipoSemVersaoVigente,
-                $"Não há versão vigente do tipo de ato '{command.TipoCodigo}' na data de publicação {command.DataPublicacao:yyyy-MM-dd}."));
+            tipoCodigo = command.TipoCodigo.Trim();
+            atributos = conferidos;
+        }
+        else
+        {
+            // AC6: sem versão do tipo vigente na data, não há de onde copiar os
+            // atributos de consequência — recusa nomeada.
+            TipoAtoPublicado? tipo = await tiposRepository
+                .ObterVigenteAsync(command.TipoCodigo, command.DataPublicacao, cancellationToken)
+                .ConfigureAwait(false);
+            if (tipo is null)
+            {
+                return Result<RegistrarAtoNormativoResult>.Failure(new DomainError(
+                    AtoNormativoErrorCodes.TipoSemVersaoVigente,
+                    $"Não há versão vigente do tipo de ato '{command.TipoCodigo}' na data de publicação {command.DataPublicacao:yyyy-MM-dd}."));
+            }
+
+            tipoCodigo = tipo.Codigo;
+            atributos = new AtributosDoTipoAto(
+                tipo.CongelaConfiguracao, tipo.UnicoPorObjeto, tipo.EfeitoIrreversivel);
         }
 
         // AC7: o par {id, hash} é recebido por valor, completo ou ausente.
@@ -56,7 +82,7 @@ public static class RegistrarAtoNormativoCommandHandler
         // dependem do ato retificado (existência, classe de congelamento coincidente,
         // linearidade) são verificadas aqui, com o retificado em mãos.
         DomainError? retificacaoErro = await ValidarRetificacaoAsync(
-            command, tipo, atosRepository, cancellationToken).ConfigureAwait(false);
+            command, atributos.CongelaConfiguracao, atosRepository, cancellationToken).ConfigureAwait(false);
         if (retificacaoErro is not null)
         {
             return Result<RegistrarAtoNormativoResult>.Failure(retificacaoErro);
@@ -73,14 +99,18 @@ public static class RegistrarAtoNormativoCommandHandler
             command, atosRepository, cancellationToken).ConfigureAwait(false);
 
         AtoNormativo ato = AtoNormativo.Registrar(
+            // O id vem do domínio que publicou, quando o registro chega por mensagem
+            // durável (ADR-0108). No caminho HTTP não há domínio remoto a quem ele
+            // pertença: Guid.Empty faz a factory gerá-lo, como sempre fez.
+            command.AtoId ?? Guid.Empty,
             command.Orgao,
             command.Serie,
             command.Ano,
             command.Numero,
-            command.TipoCodigo,
-            tipo.CongelaConfiguracao,
-            tipo.EfeitoIrreversivel,
-            tipo.UnicoPorObjeto,
+            tipoCodigo,
+            atributos.CongelaConfiguracao,
+            atributos.EfeitoIrreversivel,
+            atributos.UnicoPorObjeto,
             command.DataPublicacao,
             command.DocumentoHash,
             command.Assinante,
@@ -312,7 +342,7 @@ public static class RegistrarAtoNormativoCommandHandler
     /// </summary>
     private static async Task<DomainError?> ValidarRetificacaoAsync(
         RegistrarAtoNormativoCommand command,
-        TipoAtoPublicado tipo,
+        bool congelaConfiguracao,
         IAtoNormativoRepository atosRepository,
         CancellationToken cancellationToken)
     {
@@ -338,7 +368,7 @@ public static class RegistrarAtoNormativoCommandHandler
         // novo ato é a do tipo vigente já resolvido; a do retificado é o snapshot que
         // ele congelou no próprio registro. É essa classe, não o rótulo do tipo, que
         // protege a integridade da configuração publicada (RN08).
-        if (retificado.CongelaConfiguracao != tipo.CongelaConfiguracao)
+        if (retificado.CongelaConfiguracao != congelaConfiguracao)
         {
             return new DomainError(
                 AtoNormativoErrorCodes.ClasseDeCongelamentoDivergente,
