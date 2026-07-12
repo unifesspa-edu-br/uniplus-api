@@ -12,6 +12,14 @@ informed:
 
 # ADR-0106: Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir
 
+> **Superseded no mecanismo pela [ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md).** A chamada síncrona
+> in-process decidida aqui não foi implementada: a [ADR-0107](0107-vaga-de-linhagem-unica-por-objeto.md),
+> posterior, tornou a vaga de linhagem monotônica, e com ela o "ato órfão" que esta ADR aceitava como resíduo
+> passou a deixar o certame **impublicável em definitivo**. A alternativa atômica é inviável no pipeline do
+> Wolverine, que além disso desaconselha explicitamente a chamada síncrona entre handlers. O registro do ato
+> passa a viajar por mensagem durável no outbox. O que esta ADR decidiu sobre *ownership* e sobre a assimetria
+> de dependência entre os módulos **permanece vigente**.
+
 ## Contexto e enunciado do problema
 
 A ADR-0105 decidiu que o módulo `Publicacoes` é o registro central dos atos normativos, e que os domínios (Seleção, Ingresso) o referenciam por valor, sem que `Publicacoes` conheça `ProcessoSeletivo`/`Chamada`. O que a ADR-0105 não decidiu — porque ainda não existia o problema concreto — é **como** um domínio aciona esse registro no instante em que publica.

@@ -136,8 +136,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0105](0105-modulo-publicacoes-registro-central-dos-atos.md) | O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios | accepted | 2026-07-09 |
 | [0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md) | Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir | accepted | 2026-07-10 |
 | [0107](0107-vaga-de-linhagem-unica-por-objeto.md) | A unicidade de ato por objeto é uma vaga que a linhagem reserva, não um índice sobre o ato | accepted | 2026-07-11 |
+| [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) | accepted | 2026-07-12 |
 
-> **Nota de numeração:** a sequência de `0001` a `0107` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0108+`.
+> **Nota de numeração:** a sequência de `0001` a `0108` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0109+`.
 
 ## Como adicionar um novo ADR
 
