@@ -103,6 +103,13 @@ builder.Host.UseWolverineOutboxCascading(
         opts.Discovery.IncludeAssembly(typeof(CriarProcessoSeletivoCommand).Assembly);
         opts.Discovery.IncludeAssembly(typeof(ProcessoPublicadoToKafkaCascadeHandler).Assembly);
 
+        // SPIKE #820: o handler da requisição de ato vive em Publicacoes.Infrastructure —
+        // o middleware transacional do Wolverine só instala a transação (e o SaveChanges
+        // automático) quando enxerga o DbContext CONCRETO na assinatura. Mesmo lugar, e
+        // mesmo motivo, do handler de cascade do Selecao logo acima.
+        opts.Discovery.IncludeAssembly(
+            typeof(Unifesspa.UniPlus.Publicacoes.Infrastructure.Messaging.RegistrarAtoNormativoRequisicaoHandler).Assembly);
+
         // Opt-ins de codegen (ADR-0098): sob ServiceLocationPolicy.NotAllowed, cada
         // módulo declara as UoW que usam service location intencionalmente (forwarding
         // para a MESMA instância de DbContext — ADR-0004). Cada módulo é dono do seu
@@ -116,6 +123,9 @@ builder.Host.UseWolverineOutboxCascading(
         // Routing do Selecao (PG queue domain-events + Kafka processo_seletivo_events) —
         // religa a mensageria externa antes deferida no monólito.
         configurarSelecaoRouting(opts);
+
+        // SPIKE #820: fila PG durável dos atos (mesmo transporte de domain-events).
+        PublicacoesMessagingRegistration.ConfigurarRouting(opts);
     });
 builder.Services.AddWolverineMessaging();
 

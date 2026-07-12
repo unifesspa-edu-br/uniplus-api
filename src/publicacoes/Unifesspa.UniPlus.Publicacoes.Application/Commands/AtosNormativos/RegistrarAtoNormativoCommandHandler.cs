@@ -73,6 +73,10 @@ public static class RegistrarAtoNormativoCommandHandler
             command, atosRepository, cancellationToken).ConfigureAwait(false);
 
         AtoNormativo ato = AtoNormativo.Registrar(
+            // Caminho HTTP: quem publica é o próprio operador em Publicações, e não há
+            // domínio remoto a quem pertença decidir o id — Guid.Empty faz a factory
+            // gerá-lo, como sempre fez.
+            Guid.Empty,
             command.Orgao,
             command.Serie,
             command.Ano,

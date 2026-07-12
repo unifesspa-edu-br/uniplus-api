@@ -6,6 +6,7 @@ using Domain.Interfaces;
 using Domain.ValueObjects;
 using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Handler convention-based do <see cref="PublicarProcessoSeletivoCommand"/>
@@ -128,8 +129,35 @@ public static class PublicarProcessoSeletivoCommandHandler
             throw;
         }
 
-        // ADR-0005 + ADR-0041: drenagem por cascading messages, DEPOIS do
-        // SaveChanges bem-sucedido — nunca antes (janela de perda em rollback).
-        return (Result.Success(), processo.DequeueDomainEvents().Cast<object>());
+        // SPIKE #820: a requisição de registro do ato viaja como cascading message, junto
+        // dos domain events — o Wolverine instala o envelope no outbox DENTRO da transação
+        // que acabou de gravar o Edital e a versão (ADR-0004). Ou os dois existem, ou
+        // nenhum: é a atomicidade que a chamada síncrona não conseguia dar, e é o que
+        // impede o ato órfão que reservaria a vaga do certame para sempre (ADR-0107).
+        //
+        // O ato ainda não existe quando esta linha roda — e não precisa existir: o id é
+        // decidido aqui e a versão já o referencia por VALOR, sem chave estrangeira
+        // (ADR-0061). O modelo sempre previu que o ato viveria noutro módulo.
+        object[] mensagens =
+        [
+            .. processo.DequeueDomainEvents().Cast<object>(),
+            new RegistrarAtoNormativoRequisicao(
+                AtoId: publicarResult.Value!.Versao.AtoCriadorId,
+                Orgao: DadosDoAtoSpike.Orgao,
+                Serie: DadosDoAtoSpike.Serie,
+                Ano: DadosDoAtoSpike.Ano,
+                Numero: dados.Numero,
+                TipoCodigo: DadosDoAtoSpike.TipoAbertura,
+                DataPublicacao: DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
+                DocumentoHash: documento.HashSha256!,
+                Assinante: DadosDoAtoSpike.Assinante,
+                VersaoInvocadaId: publicarResult.Value!.Versao.Id,
+                VersaoInvocadaHash: publicarResult.Value!.Versao.HashConfiguracao,
+                AtoRetificadoId: null,
+                MotivoRetificacao: null,
+                Vinculos: [new VinculoEntidadeRequisicao(DadosDoAtoSpike.EntidadeProcessoSeletivo, processo.Id)]),
+        ];
+
+        return (Result.Success(), mensagens);
     }
 }

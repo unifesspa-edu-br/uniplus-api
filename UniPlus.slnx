@@ -30,6 +30,7 @@
   <Folder Name="/src/publicacoes/">
     <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Unifesspa.UniPlus.Publicacoes.API.csproj" />
     <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Unifesspa.UniPlus.Publicacoes.Application.csproj" />
+    <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.Contracts/Unifesspa.UniPlus.Publicacoes.Contracts.csproj" />
     <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.Domain/Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
     <Project Path="src/publicacoes/Unifesspa.UniPlus.Publicacoes.Infrastructure/Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
   </Folder>

@@ -145,6 +145,7 @@ public sealed class VinculoAtoEntidadeTests
         bool unicoPorObjeto = false,
         IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null) =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             orgao: "CEPS",
             serie: "EDITAL",
             ano: 2026,

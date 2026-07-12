@@ -16,6 +16,8 @@
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="WolverineFx" />
+      <ProjectReference Include="..\..\src\publicacoes\Unifesspa.UniPlus.Publicacoes.Infrastructure\Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\publicacoes\Unifesspa.UniPlus.Publicacoes.Contracts\Unifesspa.UniPlus.Publicacoes.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
