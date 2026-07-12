@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contracts do módulo Publicacoes. Diferente dos demais Contracts do projeto
+    (que expõem só leitura — IXxxReader, ADR-0056), este expõe também a
+    REQUISIÇÃO de registro de ato: a mensagem durável que os domínios enfileiram
+    para que Publicações registre o ato que eles publicaram (ADR-0106 revisada).
+
+    Referencia Application.Abstractions apenas pelo contrato de mensagem; não
+    conhece o Domain nem a Infrastructure de Publicações.
+  -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

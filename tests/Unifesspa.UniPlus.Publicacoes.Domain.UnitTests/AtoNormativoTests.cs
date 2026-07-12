@@ -27,6 +27,7 @@ public sealed class AtoNormativoTests
     public void Registrar_ComCamposValidos_NormalizaEPreenche()
     {
         AtoNormativo ato = AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             orgao: "  CEPS  ",
             serie: "  EDITAL  ",
             ano: 2026,
@@ -176,6 +177,7 @@ public sealed class AtoNormativoTests
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null) =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             orgao, serie, ano, numero, tipoCodigo,
             congelaConfiguracao: false,
             efeitoIrreversivel: false,

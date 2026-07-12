@@ -4,9 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 using Persistence;
 using Persistence.Repositories;
+using Readers;
 
 public static class PublicacoesInfrastructureRegistration
 {
@@ -33,6 +35,11 @@ public static class PublicacoesInfrastructureRegistration
             serviceProvider.GetRequiredService<PublicacoesDbContext>());
 
         services.AddScoped<ITipoAtoPublicadoRepository, TipoAtoPublicadoRepository>();
+
+        // Leitura cross-módulo do catálogo (ADR-0056): deixa o domínio que vai publicar
+        // conferir o tipo declarado ANTES de escrever, em vez de descobrir na dead letter.
+        services.AddScoped<ITipoAtoPublicadoReader, TipoAtoPublicadoReader>();
+        services.AddScoped<IVagaDeLinhagemReader, VagaDeLinhagemReader>();
         services.AddScoped<IAtoNormativoRepository, AtoNormativoRepository>();
 
         return services;

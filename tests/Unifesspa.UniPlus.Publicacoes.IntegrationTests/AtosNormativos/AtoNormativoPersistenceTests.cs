@@ -506,6 +506,7 @@ public sealed class AtoNormativoPersistenceTests
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null) =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             orgao: "CEPS",
             serie: "EDITAL",
             ano: 2026,

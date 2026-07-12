@@ -159,6 +159,7 @@ public sealed class AtoNormativo : IForensicEntity
     /// handler, não daqui.
     /// </summary>
     public static AtoNormativo Registrar(
+        Guid id,
         string orgao,
         string serie,
         int ano,
@@ -212,6 +213,12 @@ public sealed class AtoNormativo : IForensicEntity
 
         AtoNormativo ato = new()
         {
+            // o id vem do domínio que publica, quando ele o decide. É o que
+            // torna a reentrega da fila durável (at-least-once) idempotente: o segundo
+            // processamento tenta gravar o MESMO id e a chave primária o recusa. Sem
+            // isso, a reentrega criaria um ato gêmeo, e o gêmeo disputaria a vaga de
+            // linhagem do objeto (ADR-0107) contra a linhagem do primeiro.
+            Id = id == Guid.Empty ? Guid.CreateVersion7() : id,
             Orgao = orgaoNorm,
             Serie = serieNorm,
             Ano = ano,

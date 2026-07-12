@@ -116,6 +116,7 @@ public sealed class AtoNormativoQueryHandlersTests
 
     private static AtoNormativo NovoAto() =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
             dataPublicacao: new DateOnly(2026, 3, 13),
@@ -126,6 +127,7 @@ public sealed class AtoNormativoQueryHandlersTests
 
     private static AtoNormativo NovoRetificador(Guid atoRetificadoId) =>
         AtoNormativo.Registrar(
+            Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
             dataPublicacao: new DateOnly(2026, 3, 13),
