@@ -89,6 +89,21 @@ public static class RetificarProcessoSeletivoCommandHandler
                 $"Só é possível retificar um processo publicado — status atual: {processo.Status}.")), []);
         }
 
+        // A versão de configuração é agregado próprio (ADR-0104) — não coleção
+        // da raiz. O handler carrega a corrente (maior NumeroVersao) e a entrega
+        // a Retificar, que sucede a cadeia a partir dela. Um processo publicado
+        // sem versão é estado inconsistente: mesmo tratamento do Edital vigente
+        // ausente logo acima.
+        VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
+            .ObterVersaoAtualAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
+        if (versaoAtual is null)
+        {
+            return (Result.Failure(new DomainError(
+                "ProcessoSeletivo.TransicaoInvalida",
+                "Processo publicado sem versão de configuração — estado inconsistente.")), []);
+        }
+
         // Normaliza o motivo UMA vez, aqui (Trim + NFC), e usa o mesmo valor
         // nos dois caminhos: o bloco 'retificacao' do snapshot e o
         // MotivoRetificacao do Edital. O canonicalizer aplica NormalizeNfc ao
@@ -110,6 +125,7 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         Result<PublicacaoResultado> retificarResult = processo.Retificar(
             dados,
+            versaoAtual,
             canonico.Bytes,
             canonico.SchemaVersion,
             canonico.AlgoritmoHash,
@@ -123,7 +139,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         }
 
         await processoSeletivoRepository
-            .AdicionarSnapshotPublicacaoAsync(retificarResult.Value!.Snapshot, cancellationToken)
+            .AdicionarVersaoConfiguracaoAsync(retificarResult.Value!.Versao, cancellationToken)
             .ConfigureAwait(false);
 
         try
@@ -155,6 +171,11 @@ public static class RetificarProcessoSeletivoCommandHandler
                 return (Result.Failure(new DomainError(
                     "Edital.RetificacaoJaExiste",
                     "Este Edital já foi retificado — a cadeia de retificação é linear.")), []);
+            }
+
+            if (VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
+            {
+                return (Result.Failure(erroVersao), []);
             }
 
             throw;

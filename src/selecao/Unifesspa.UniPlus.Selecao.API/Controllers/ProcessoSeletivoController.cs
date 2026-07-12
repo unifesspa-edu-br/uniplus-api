@@ -270,7 +270,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Publica o Edital de abertura do processo (RN08, Story #759, T4 #785):
-    /// valida a conformidade, congela um <c>SnapshotPublicacao</c> append-only
+    /// valida a conformidade, congela a versão 1 da configuração (append-only)
     /// e transita o status para Publicado, tudo na mesma transação. Quando a
     /// publicação é recusada por conformidade insuficiente (CA-03), o corpo
     /// do 422 carrega <c>Extensions["pendencias"]</c> com o checklist.
@@ -324,8 +324,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <summary>
     /// Retifica o processo já publicado (RN08, Story #759, T5 #786, ADR-0101):
     /// emite um novo Edital de natureza retificação vinculado ao Edital
-    /// vigente, com motivo obrigatório, e congela um novo
-    /// <c>SnapshotPublicacao</c> — o snapshot anterior permanece imutável.
+    /// vigente, com motivo obrigatório, e sucede a versão corrente da
+    /// configuração — a versão anterior permanece imutável.
     /// </summary>
     [HttpPost("{id:guid}/retificacoes")]
     [RequiresIdempotencyKey]

@@ -82,13 +82,30 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
-    public async Task AdicionarSnapshotPublicacaoAsync(SnapshotPublicacao snapshot, CancellationToken cancellationToken = default)
+    public async Task AdicionarVersaoConfiguracaoAsync(VersaoConfiguracao versao, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(snapshot);
-        await _context.SnapshotsPublicacao.AddAsync(snapshot, cancellationToken).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(versao);
+        await _context.VersoesConfiguracao.AddAsync(versao, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<(Edital Edital, SnapshotPublicacao Snapshot)?> ObterSnapshotVigenteAsync(
+    public async Task<VersaoConfiguracao?> ObterVersaoAtualAsync(
+        Guid processoSeletivoId,
+        CancellationToken cancellationToken = default)
+    {
+        // A versão corrente é a de maior NÚMERO — não a de maior vigência nem a
+        // mais recente por id. A numeração é contígua e monotônica por processo
+        // (ux_versoes_configuracao_processo_numero + trigger de sucessão), então
+        // o topo da cadeia é inequívoco mesmo se duas versões compartilharem o
+        // mesmo instante de vigência (permitido por desenho — ADR-0104).
+        return await _context.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoSeletivoId)
+            .OrderByDescending(v => v.NumeroVersao)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<(Edital Edital, VersaoConfiguracao Versao)?> ObterSnapshotVigenteAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,
         CancellationToken cancellationToken = default)
@@ -105,8 +122,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         // há empate, então OrderByDescending().FirstOrDefault() é determinístico.
         // O EXISTS através de ProcessosSeletivos herda o filtro global de
         // soft-delete (ProcessoSeletivo é SoftDeletableEntity; Edital não é):
-        // um processo excluído logicamente não vaza seu snapshot congelado —
-        // cai no mesmo caminho 404 que o resto da API, coerente com ExisteAsync.
+        // um processo excluído logicamente não vaza sua configuração congelada
+        // — cai no mesmo caminho 404 que o resto da API, coerente com ExisteAsync.
+        //
+        // O mecanismo continua passando pelo DOCUMENTO (data documental do
+        // Edital). Ordenar as VERSÕES por vigente_a_partir_de, sem tocar em
+        // Editais, é a story #803 — aqui muda o que se carrega, não como se
+        // escolhe.
         Edital? edital = await _context.Editais
             .AsNoTracking()
             .Where(e => e.ProcessoSeletivoId == processoSeletivoId
@@ -121,15 +143,16 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             return null;
         }
 
-        // Todo Edital publicado tem exatamente um snapshot congelado 1:1 (T4,
-        // ux_snapshot_publicacao_edital_id) — a ausência aqui seria estado
-        // inconsistente e é tratada como "sem vigente" pelo handler.
-        SnapshotPublicacao? snapshot = await _context.SnapshotsPublicacao
+        // Todo Edital publicado é o ato criador de exatamente uma versão
+        // (ux_versoes_configuracao_ato_criador) — a ausência aqui seria estado
+        // inconsistente e é tratada como "sem vigente" pelo handler. A busca é
+        // pelo ato criador, referência POR VALOR: não há join por FK (ADR-0061).
+        VersaoConfiguracao? versao = await _context.VersoesConfiguracao
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.EditalId == edital.Id, cancellationToken)
+            .FirstOrDefaultAsync(v => v.AtoCriadorId == edital.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return snapshot is null ? null : (edital, snapshot);
+        return versao is null ? null : (edital, versao);
     }
 
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)

@@ -408,17 +408,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Publica o processo (RN08, Story #759 T4): valida a transição e a
     /// conformidade estrutural, emite o <see cref="Edital"/> de abertura,
-    /// congela o <see cref="SnapshotPublicacao"/> a partir dos bytes
+    /// abre a cadeia de <see cref="VersaoConfiguracao"/> a partir dos bytes
     /// canônicos já produzidos pelo <c>ISnapshotPublicacaoCanonicalizer</c>
     /// (Application — Domain não pode chamá-lo, ver ADR-0042) e transita o
     /// status — tudo dentro deste método, atomicamente em memória; o handler
     /// só persiste o resultado numa única transação.
     /// </summary>
+    /// <remarks>
+    /// O Edital de abertura é o <b>ato criador</b> da versão 1 (ADR-0104),
+    /// referenciado por valor: a versão guarda o seu id e o hash do seu
+    /// documento, sem chave estrangeira (ADR-0061). Quando o ato migrar para
+    /// o módulo <c>Publicacoes</c> (#804), muda a origem do identificador, não
+    /// a forma do vínculo.
+    /// </remarks>
     /// <param name="dados">Número, período de inscrição e referência ao documento confirmado.</param>
     /// <param name="configuracaoCongeladaCanonica">Bytes canônicos (ADR-0100) já produzidos pelo canonicalizador da Application.</param>
     /// <param name="schemaVersion">Versão do conjunto de blocos do snapshot (ADR-0100 item 8).</param>
     /// <param name="algoritmoHash">Identificador do algoritmo de hash (ex.: <c>canonical-json/sha256@v1</c>).</param>
-    /// <param name="hashEdital">Hash SHA-256 do documento do Edital (T3, #784).</param>
+    /// <param name="hashEdital">Hash SHA-256 do documento do Edital (T3, #784) — o hash do ato criador.</param>
     /// <param name="atorUsuarioSub">Sub do usuário autenticado responsável pela publicação (via <c>IUserContext</c>, nunca input do command).</param>
     /// <param name="clock">Relógio injetado (ADR-0068) — nunca lido implicitamente.</param>
     public Result<PublicacaoResultado> Publicar(
@@ -457,12 +464,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         Edital edital = editalResult.Value!;
 
-        SnapshotPublicacao snapshot = SnapshotPublicacao.Congelar(
-            edital.Id,
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
+            Id,
             configuracaoCongeladaCanonica,
             schemaVersion,
             algoritmoHash,
-            hashEdital,
+            atoCriadorId: edital.Id,
+            atoCriadorHash: hashEdital,
             atorUsuarioSub,
             clock);
 
@@ -472,26 +480,36 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
             edital.Id,
-            snapshot.Id,
-            snapshot.HashConfiguracao,
-            snapshot.HashEdital,
+            versao.Id,
+            versao.HashConfiguracao,
+            versao.AtoCriadorHash,
             edital.DataPublicacao!.Value));
 
-        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, snapshot));
+        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, versao));
     }
 
     /// <summary>
     /// Retifica um processo já publicado (RN08, Story #759 T5 #786, ADR-0101):
     /// emite um novo <see cref="Edital"/> de natureza retificação, vinculado ao
-    /// Edital vigente da cadeia e com motivo obrigatório, e congela um novo
-    /// <see cref="SnapshotPublicacao"/> — o snapshot anterior permanece
-    /// intocado (append-only). O status continua Publicado. Os bytes canônicos
+    /// Edital vigente da cadeia e com motivo obrigatório, e sucede a
+    /// <see cref="VersaoConfiguracao"/> corrente — a versão anterior permanece
+    /// intocada (append-only). O status continua Publicado. Os bytes canônicos
     /// já vêm do <c>ISnapshotPublicacaoCanonicalizer</c> (Application) com o
     /// bloco de retificação incluído; esta raiz não os produz (ADR-0042).
     /// </summary>
+    /// <remarks>
+    /// O novo Edital é o ato criador da versão <c>N + 1</c>, e retifica o ato
+    /// criador da versão <c>N</c> — invariante que <see cref="VersaoConfiguracao.Suceder"/>
+    /// verifica (ADR-0104). Se o Edital vigente da cadeia documental não for o
+    /// ato criador da versão corrente, as duas cadeias divergiram e a
+    /// retificação é recusada, em vez de abrir uma segunda linhagem de
+    /// configuração no mesmo certame.
+    /// </remarks>
+    /// <param name="versaoAtual">Versão de configuração corrente do processo (maior <c>NumeroVersao</c>), carregada pelo handler — <see cref="VersaoConfiguracao"/> é agregado próprio, não coleção desta raiz.</param>
     /// <param name="motivo">Justificativa obrigatória do ato de retificação (ADR-0101).</param>
     public Result<PublicacaoResultado> Retificar(
         DadosEdital dados,
+        VersaoConfiguracao versaoAtual,
         byte[] configuracaoCongeladaCanonica,
         string schemaVersion,
         string algoritmoHash,
@@ -501,6 +519,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(dados);
+        ArgumentNullException.ThrowIfNull(versaoAtual);
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
         ArgumentNullException.ThrowIfNull(clock);
 
@@ -525,6 +544,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Processo publicado sem Edital vigente — estado inconsistente."));
         }
 
+        // A cadeia de versões não atravessa certames: uma versão corrente de
+        // outro processo emendaria a configuração de um certame na de outro, e a
+        // numeração — derivada dela — sairia do lugar.
+        if (versaoAtual.ProcessoSeletivoId != Id)
+        {
+            return Result<PublicacaoResultado>.Failure(new DomainError(
+                "VersaoConfiguracao.VersaoAnteriorDeOutroProcesso",
+                "A versão corrente informada pertence a outro Processo Seletivo."));
+        }
+
+        // A trava que impede uma SEGUNDA cadeia de configuração no mesmo certame
+        // (ADR-0104): o novo ato retifica o Edital vigente, logo o vigente tem de
+        // ser o ato que criou a versão corrente. Se as duas cadeias — a dos
+        // documentos e a das versões — divergiram, retificar aqui abriria uma
+        // linhagem paralela: duas configurações vigentes, cada uma se dizendo a
+        // atual. Recusa em vez de escolher uma.
+        if (versaoAtual.AtoCriadorId != vigente.Id)
+        {
+            return Result<PublicacaoResultado>.Failure(new DomainError(
+                "VersaoConfiguracao.CadeiaQuebrada",
+                $"A versão {versaoAtual.NumeroVersao} não foi criada pelo Edital vigente — a cadeia de configuração do certame divergiu da cadeia de atos."));
+        }
+
         Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, vigente.Id, motivo, clock);
         if (editalResult.IsFailure)
         {
@@ -533,30 +575,33 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         Edital edital = editalResult.Value!;
 
-        SnapshotPublicacao snapshot = SnapshotPublicacao.Congelar(
-            edital.Id,
+        VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
+            versaoAtual,
             configuracaoCongeladaCanonica,
             schemaVersion,
             algoritmoHash,
-            hashEdital,
+            atoCriadorId: edital.Id,
+            atoCriadorHash: hashEdital,
+            atoCriadorRetificaId: vigente.Id,
             atorUsuarioSub,
             clock);
 
         _editais.Add(edital);
 
         // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato
-        // de negócio drenado é "emitido novo Edital + snapshot", idêntico em
-        // forma ao da abertura — o payload (edital/snapshot/hashes/data) serve
-        // aos dois. Evita um segundo schema Avro/tópico sem consumidor.
+        // de negócio drenado é "emitido novo Edital + nova versão da
+        // configuração", idêntico em forma ao da abertura — o payload
+        // (edital/versão/hashes/data) serve aos dois. Evita um segundo schema
+        // Avro/tópico sem consumidor.
         AddDomainEvent(new ProcessoPublicadoEvent(
             Id,
             edital.Id,
-            snapshot.Id,
-            snapshot.HashConfiguracao,
-            snapshot.HashEdital,
+            versao.Id,
+            versao.HashConfiguracao,
+            versao.AtoCriadorHash,
             edital.DataPublicacao!.Value));
 
-        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, snapshot));
+        return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, versao));
     }
 
     /// <summary>
@@ -580,8 +625,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
 /// <summary>
 /// Resultado de <see cref="ProcessoSeletivo.Publicar"/> — o <see cref="Edital"/>
-/// e o <see cref="SnapshotPublicacao"/> recém-criados, para o handler
-/// persistir via repositório sem precisar recriá-los ou tocar a coleção
-/// interna do agregado.
+/// e a <see cref="VersaoConfiguracao"/> recém-criados, para o handler persistir
+/// via repositório sem precisar recriá-los ou tocar a coleção interna do
+/// agregado. A versão não é entidade filha desta raiz (ADR-0104): viaja no
+/// resultado justamente porque o handler a persiste por fora.
 /// </summary>
-public sealed record PublicacaoResultado(Edital Edital, SnapshotPublicacao Snapshot);
+public sealed record PublicacaoResultado(Edital Edital, VersaoConfiguracao Versao);

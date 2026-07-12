@@ -70,7 +70,7 @@ public sealed class SnapshotVigentePersistenciaTests : IClassFixture<ProcessoSel
     /// Publica a abertura em T0 e retifica em T0+1 dia, persistindo os dois
     /// Editais e snapshots com <c>data_publicacao</c> distintas (relógio manual).
     /// </summary>
-    private async Task<(Guid ProcessoId, SnapshotPublicacao SnapshotAbertura, SnapshotPublicacao SnapshotRetificacao)>
+    private async Task<(Guid ProcessoId, VersaoConfiguracao VersaoAbertura, VersaoConfiguracao VersaoRetificacao)>
         PublicarERetificarAsync(string nome)
     {
         RelogioManual clock = new(T0);
@@ -89,65 +89,66 @@ public sealed class SnapshotVigentePersistenciaTests : IClassFixture<ProcessoSel
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
-            await repository.AdicionarSnapshotPublicacaoAsync(publicar.Value!.Snapshot, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!.Versao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         clock.Avancar(TimeSpan.FromDays(1));
 
         DocumentoEdital docRetificacao = DocumentoConfirmado(processo.Id);
-        SnapshotPublicacao snapshotRetificacao;
+        VersaoConfiguracao versaoRetificacao;
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+            VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!,
                 new RetificacaoInfo(carregado.EditalVigente!.Id, "Correção do prazo de inscrição"));
             Result<PublicacaoResultado> retificar = carregado.Retificar(
-                dadosRetificacao, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
+                dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
                 docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
-            snapshotRetificacao = retificar.Value!.Snapshot;
+            versaoRetificacao = retificar.Value!.Versao;
 
             await writeContext.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
-            await repository.AdicionarSnapshotPublicacaoAsync(snapshotRetificacao, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(versaoRetificacao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        return (processo.Id, publicar.Value!.Snapshot, snapshotRetificacao);
+        return (processo.Id, publicar.Value!.Versao, versaoRetificacao);
     }
 
     [Fact(DisplayName = "Seletor resolve o snapshot de maior data_publicacao ≤ instante — retificação após ela, abertura em T0 (CA-08)")]
     public async Task ObterSnapshotVigente_ResolveMaiorDataAntesOuIgualAoInstante()
     {
-        (Guid processoId, SnapshotPublicacao snapshotAbertura, SnapshotPublicacao snapshotRetificacao) =
+        (Guid processoId, VersaoConfiguracao versaoAbertura, VersaoConfiguracao versaoRetificacao) =
             await PublicarERetificarAsync(nameof(ObterSnapshotVigente_ResolveMaiorDataAntesOuIgualAoInstante));
 
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
 
         // Instante posterior à retificação → resolve a retificação (maior data).
-        (Edital Edital, SnapshotPublicacao Snapshot)? posterior = await repository
+        (Edital Edital, VersaoConfiguracao Versao)? posterior = await repository
             .ObterSnapshotVigenteAsync(processoId, T0.AddDays(2), CancellationToken.None);
         posterior.Should().NotBeNull();
         posterior!.Value.Edital.Natureza.Should().Be(NaturezaEdital.Retificacao);
-        posterior.Value.Snapshot.HashConfiguracao.Should().Be(snapshotRetificacao.HashConfiguracao);
+        posterior.Value.Versao.HashConfiguracao.Should().Be(versaoRetificacao.HashConfiguracao);
 
         // Instante exatamente em T0 → resolve a abertura (retificação, em T0+1d, é excluída).
-        (Edital Edital, SnapshotPublicacao Snapshot)? emT0 = await repository
+        (Edital Edital, VersaoConfiguracao Versao)? emT0 = await repository
             .ObterSnapshotVigenteAsync(processoId, T0, CancellationToken.None);
         emT0.Should().NotBeNull();
         emT0!.Value.Edital.Natureza.Should().Be(NaturezaEdital.Abertura);
-        emT0.Value.Snapshot.HashConfiguracao.Should().Be(snapshotAbertura.HashConfiguracao);
+        emT0.Value.Versao.HashConfiguracao.Should().Be(versaoAbertura.HashConfiguracao);
 
         // Mesmo instante de T0, expresso em offset não-UTC (-03:00) — Npgsql
         // exige UTC para timestamptz; o seletor normaliza e resolve o mesmo.
-        (Edital Edital, SnapshotPublicacao Snapshot)? emT0OffsetNaoUtc = await repository
+        (Edital Edital, VersaoConfiguracao Versao)? emT0OffsetNaoUtc = await repository
             .ObterSnapshotVigenteAsync(processoId, T0.ToOffset(TimeSpan.FromHours(-3)), CancellationToken.None);
         emT0OffsetNaoUtc.Should().NotBeNull();
-        emT0OffsetNaoUtc!.Value.Snapshot.HashConfiguracao.Should().Be(snapshotAbertura.HashConfiguracao);
+        emT0OffsetNaoUtc!.Value.Versao.HashConfiguracao.Should().Be(versaoAbertura.HashConfiguracao);
     }
 
     [Fact(DisplayName = "Seletor não resolve nada quando o instante antecede toda publicação (base do 422)")]
@@ -159,7 +160,7 @@ public sealed class SnapshotVigentePersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
 
-        (Edital Edital, SnapshotPublicacao Snapshot)? vigente = await repository
+        (Edital Edital, VersaoConfiguracao Versao)? vigente = await repository
             .ObterSnapshotVigenteAsync(processoId, T0.AddSeconds(-1), CancellationToken.None);
 
         vigente.Should().BeNull();
@@ -184,7 +185,7 @@ public sealed class SnapshotVigentePersistenciaTests : IClassFixture<ProcessoSel
 
         // Edital não é soft-deletable, mas o EXISTS através de ProcessosSeletivos
         // herda o filtro global — o snapshot de um processo excluído não vaza.
-        (Edital Edital, SnapshotPublicacao Snapshot)? vigente = await repository
+        (Edital Edital, VersaoConfiguracao Versao)? vigente = await repository
             .ObterSnapshotVigenteAsync(processoId, T0.AddDays(5), CancellationToken.None);
 
         vigente.Should().BeNull("um processo excluído logicamente cai no mesmo 404 do resto da API");
@@ -197,7 +198,7 @@ public sealed class SnapshotVigentePersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
 
-        (Edital Edital, SnapshotPublicacao Snapshot)? vigente = await repository
+        (Edital Edital, VersaoConfiguracao Versao)? vigente = await repository
             .ObterSnapshotVigenteAsync(Guid.CreateVersion7(), T0.AddDays(5), CancellationToken.None);
 
         vigente.Should().BeNull();

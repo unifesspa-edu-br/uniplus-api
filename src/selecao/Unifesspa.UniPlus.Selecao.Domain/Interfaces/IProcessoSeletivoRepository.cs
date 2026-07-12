@@ -35,24 +35,38 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Adiciona o <see cref="SnapshotPublicacao"/> congelado por
-    /// <see cref="ProcessoSeletivo.Publicar"/> (Story #759, T4 #785). Sem
-    /// repositório próprio para a entidade forense — a issue #759 §4
-    /// estabelece que <see cref="IProcessoSeletivoRepository"/> persiste o
-    /// agregado inteiro, incluindo <see cref="Edital"/> e <see cref="SnapshotPublicacao"/>.
+    /// Adiciona a <see cref="VersaoConfiguracao"/> congelada por
+    /// <see cref="ProcessoSeletivo.Publicar"/>/<see cref="ProcessoSeletivo.Retificar"/>.
+    /// A versão é agregado próprio (ADR-0104) sem repositório dedicado: é o
+    /// repositório do certame que a persiste, na mesma transação da publicação.
     /// </summary>
-    Task AdicionarSnapshotPublicacaoAsync(SnapshotPublicacao snapshot, CancellationToken cancellationToken = default);
+    Task AdicionarVersaoConfiguracaoAsync(VersaoConfiguracao versao, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Versão de configuração corrente do processo — a de maior
+    /// <see cref="VersaoConfiguracao.NumeroVersao"/>. <see langword="null"/>
+    /// quando o processo nunca foi publicado. É o insumo de
+    /// <see cref="ProcessoSeletivo.Retificar"/>, que sucede a cadeia a partir
+    /// dela. Leitura <c>AsNoTracking</c>.
+    /// </summary>
+    Task<VersaoConfiguracao?> ObterVersaoAtualAsync(
+        Guid processoSeletivoId,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Resolve a publicação vigente num instante (RN08, Story #759 T6 #787,
     /// ADR-0075/0076): o <see cref="Edital"/> publicado (<c>DataPublicacao</c>
-    /// não nula) de MAIOR data ≤ <paramref name="instante"/> e o seu
-    /// <see cref="SnapshotPublicacao"/>. <see langword="null"/> quando não há
-    /// Edital publicado ≤ o instante (inclusive processo inexistente ou ainda
-    /// em rascunho). O empate é impossível por
+    /// não nula) de MAIOR data ≤ <paramref name="instante"/> e a
+    /// <see cref="VersaoConfiguracao"/> que ele criou. <see langword="null"/>
+    /// quando não há Edital publicado ≤ o instante (inclusive processo
+    /// inexistente ou ainda em rascunho). O empate é impossível por
     /// <c>ux_editais_processo_data_publicacao</c>. Leitura <c>AsNoTracking</c>.
+    /// <para>
+    /// O mecanismo ainda passa pelo documento — ordenar as VERSÕES por
+    /// <c>VigenteAPartirDe</c>, sem tocar em <c>Editais</c>, é a story #803.
+    /// </para>
     /// </summary>
-    Task<(Edital Edital, SnapshotPublicacao Snapshot)?> ObterSnapshotVigenteAsync(
+    Task<(Edital Edital, VersaoConfiguracao Versao)?> ObterSnapshotVigenteAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,
         CancellationToken cancellationToken = default);

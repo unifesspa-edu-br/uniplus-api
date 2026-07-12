@@ -29,6 +29,9 @@ public static class ProcessoPublicadoToAvroMapper
             OccurredOn = evt.OccurredOn.UtcDateTime,
             ProcessoSeletivoId = evt.ProcessoSeletivoId.ToString(),
             EditalId = evt.EditalId.ToString(),
+            // Desde a ADR-0104, o identificador é o da VersaoConfiguracao congelada
+            // na publicação; o nome do campo (aqui e no evento) é o histórico, que
+            // o schema Avro e a fila durável já carregam.
             SnapshotPublicacaoId = evt.SnapshotPublicacaoId.ToString(),
             HashConfiguracao = evt.HashConfiguracao,
             HashEdital = evt.HashEdital,

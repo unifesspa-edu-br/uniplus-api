@@ -60,6 +60,8 @@ public sealed class ProcessoPublicadoAvroTests
         avro.OccurredOn.Should().Be(evt.OccurredOn.UtcDateTime);
         avro.ProcessoSeletivoId.Should().Be(evt.ProcessoSeletivoId.ToString());
         avro.EditalId.Should().Be(evt.EditalId.ToString());
+        // O campo wire preserva o nome histórico (compat BACKWARD do Schema
+        // Registry) — o mapper faz a ponte entre os dois vocabulários.
         avro.SnapshotPublicacaoId.Should().Be(evt.SnapshotPublicacaoId.ToString());
         avro.HashConfiguracao.Should().Be(evt.HashConfiguracao);
         avro.HashEdital.Should().Be(evt.HashEdital);

@@ -33,7 +33,13 @@ public sealed class ProcessoSeletivoDbFixture : IAsyncLifetime
         .WithPassword("uniplus_test")
         .Build();
 
-    private string ConnectionString => _postgres.GetConnectionString();
+    /// <summary>
+    /// Conexão do container — pública para os testes que provam garantias do
+    /// BANCO (triggers, constraints, catálogo) e por isso precisam falar SQL
+    /// cru via <c>NpgsqlConnection</c>, sem passar pelo EF Core: o que se está
+    /// provando é justamente que o banco recusa o que o agregado nunca faria.
+    /// </summary>
+    public string ConnectionString => _postgres.GetConnectionString();
 
     public async Task InitializeAsync()
     {

@@ -121,10 +121,10 @@ public sealed class PublicacaoConcorrenciaTests
                 .Where(e => e.ProcessoSeletivoId == processoId)
                 .Select(e => e.Id)
                 .SingleAsync();
-            SnapshotPublicacao snapshot = await readDb.SnapshotsPublicacao
+            VersaoConfiguracao versao = await readDb.VersoesConfiguracao
                 .AsNoTracking()
-                .SingleAsync(s => s.EditalId == editalId);
-            JsonNode configuracao = JsonNode.Parse(snapshot.ConfiguracaoCongelada)!;
+                .SingleAsync(v => v.AtoCriadorId == editalId);
+            JsonNode configuracao = JsonNode.Parse(versao.ConfiguracaoCongelada)!;
             JsonArray etapasNoSnapshot = configuracao["etapas"]!.AsArray();
             etapasNoSnapshot.Should().ContainSingle();
             etapasNoSnapshot[0]!["nome"]!.GetValue<string>().Should().Be(

@@ -104,9 +104,9 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         Edital retificacao = await db.Set<Edital>().AsNoTracking()
             .SingleAsync(e => e.ProcessoSeletivoId == processoId && e.Natureza == NaturezaEdital.Retificacao);
-        SnapshotPublicacao snapshot = await db.SnapshotsPublicacao.AsNoTracking()
-            .SingleAsync(s => s.EditalId == retificacao.Id);
-        string motivoNoSnapshot = JsonNode.Parse(snapshot.ConfiguracaoCongelada)!
+        VersaoConfiguracao versao = await db.VersoesConfiguracao.AsNoTracking()
+            .SingleAsync(v => v.AtoCriadorId == retificacao.Id);
+        string motivoNoSnapshot = JsonNode.Parse(versao.ConfiguracaoCongelada)!
             .AsObject()["retificacao"]!["motivo"]!.GetValue<string>();
 
         // A coluna do Edital e o bloco congelado guardam o MESMO valor NFC — a

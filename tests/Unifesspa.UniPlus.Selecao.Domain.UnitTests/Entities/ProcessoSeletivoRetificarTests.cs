@@ -33,6 +33,23 @@ public sealed class ProcessoSeletivoRetificarTests
     // precisa diferir da abertura (unicidade por processo, ux_editais_processo_data_publicacao).
     private static RelogioManual Relogio() => new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
 
+    /// <summary>
+    /// Versão de configuração avulsa, sem vínculo com nenhum processo real —
+    /// usada só no teste que recusa retificação de um processo em rascunho:
+    /// a guarda de transição de status barra ANTES de qualquer uso do
+    /// conteúdo da versão, então o valor em si é irrelevante ali; o que
+    /// importa é satisfazer o parâmetro não nulo de <see cref="ProcessoSeletivo.Retificar"/>.
+    /// </summary>
+    private static VersaoConfiguracao VersaoQualquer() => VersaoConfiguracao.Abrir(
+        Guid.CreateVersion7(),
+        BytesCanonicos,
+        "1.0",
+        "canonical-json/sha256@v1",
+        Guid.CreateVersion7(),
+        HashFixo,
+        "user-sub-123",
+        Relogio());
+
     private static ProcessoSeletivo NovoProcessoConforme()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
@@ -81,13 +98,14 @@ public sealed class ProcessoSeletivoRetificarTests
         return processo;
     }
 
-    private static ProcessoSeletivo NovoProcessoPublicado(RelogioManual clock, out Edital abertura)
+    private static ProcessoSeletivo NovoProcessoPublicado(RelogioManual clock, out Edital abertura, out VersaoConfiguracao versaoAbertura)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Result<PublicacaoResultado> publicacao = processo.Publicar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         abertura = publicacao.Value!.Edital;
+        versaoAbertura = publicacao.Value!.Versao;
         return processo;
     }
 
@@ -95,11 +113,11 @@ public sealed class ProcessoSeletivoRetificarTests
     public void Retificar_ProcessoPublicado_EmiteEditalRetificacaoVinculado()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura, out VersaoConfiguracao versaoAbertura);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
             motivo: "Correção do prazo de inscrição", clock: clock);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -111,26 +129,26 @@ public sealed class ProcessoSeletivoRetificarTests
         retificacao.EditalRetificadoId.Should().Be(abertura.Id);
         retificacao.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
         retificacao.DataPublicacao.Should().NotBeNull().And.NotBe(abertura.DataPublicacao);
-        resultado.Value!.Snapshot.EditalId.Should().Be(retificacao.Id);
+        resultado.Value!.Versao.AtoCriadorId.Should().Be(retificacao.Id);
     }
 
     [Fact(DisplayName = "Retificacao_NovoEditalSnapshotMotivo — retificação emite evento com os identificadores do novo Edital/snapshot")]
     public void Retificar_ProcessoPublicado_EmiteEventoComNovosIdentificadores()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _, out VersaoConfiguracao versaoAbertura);
         processo.ClearDomainEvents(); // descarta o evento da abertura
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
             "Ajuste de vaga", clock);
 
         resultado.IsSuccess.Should().BeTrue();
         Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
             .OfType<Domain.Events.ProcessoPublicadoEvent>().Should().ContainSingle().Subject;
         evento.EditalId.Should().Be(resultado.Value!.Edital.Id);
-        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Snapshot.Id);
+        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Versao.Id);
     }
 
     [Fact(DisplayName = "Lifecycle — retificar processo ainda em rascunho é recusado (CA-09)")]
@@ -139,7 +157,7 @@ public sealed class ProcessoSeletivoRetificarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
             motivo: "qualquer", clock: Relogio());
 
         resultado.IsFailure.Should().BeTrue();
@@ -151,19 +169,21 @@ public sealed class ProcessoSeletivoRetificarTests
     public void Retificar_SegundaRetificacao_SucedeVigente_CadeiaLinear()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura);
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura, out VersaoConfiguracao versaoAbertura);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<PublicacaoResultado> primeira = processo.Retificar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
             motivo: "primeira retificação", clock: clock);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         // A segunda retificação sucede automaticamente o vigente (a 1ª
-        // retificação), não a abertura — o alvo é resolvido pela raiz.
+        // retificação), não a abertura — o alvo é resolvido pela raiz. A
+        // versão que ela sucede também é a da 1ª retificação, devolvida no
+        // resultado anterior — não a da abertura.
         Result<PublicacaoResultado> segunda = processo.Retificar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), primeira.Value!.Versao, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
             motivo: "segunda retificação", clock: clock);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
@@ -205,6 +225,60 @@ public sealed class ProcessoSeletivoRetificarTests
         resultado.Value!.Natureza.Should().Be(NaturezaEdital.Retificacao);
         resultado.Value!.EditalRetificadoId.Should().Be(retificadoId);
         resultado.Value!.MotivoRetificacao.Should().Be("Adequação a decisão superveniente", "o motivo é normalizado com Trim");
+    }
+
+    [Fact(DisplayName = "Retificar — versão corrente de OUTRO processo é recusada: a cadeia não atravessa certames")]
+    public void Retificar_VersaoDeOutroProcesso_Recusa()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _, out _);
+        clock.Avancar(TimeSpan.FromMinutes(1));
+
+        Result<PublicacaoResultado> resultado = processo.Retificar(
+            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "Correção de datas", clock: clock);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso");
+        processo.Editais.Should().ContainSingle("nada é mutado quando a versão informada não é deste certame");
+    }
+
+    [Fact(DisplayName = "Retificar — versão corrente que não foi criada pelo Edital vigente é recusada (trava da cadeia única)")]
+    public void Retificar_VersaoNaoCriadaPeloEditalVigente_Recusa()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _, out VersaoConfiguracao versaoAbertura);
+        clock.Avancar(TimeSpan.FromMinutes(1));
+
+        // Uma versão do MESMO processo, mas criada por um ato que não é o Edital
+        // vigente: as duas cadeias — a dos documentos e a das versões —
+        // divergiram. Retificar aqui abriria uma segunda linhagem de
+        // configuração no mesmo certame, com duas versões se dizendo a atual.
+        VersaoConfiguracao versaoForaDaCadeia = VersaoConfiguracao.Abrir(
+            processo.Id,
+            BytesCanonicos,
+            "1.0",
+            "canonical-json/sha256@v1",
+            Guid.CreateVersion7(),
+            HashFixo,
+            "user-sub-123",
+            clock);
+        versaoForaDaCadeia.AtoCriadorId.Should().NotBe(
+            versaoAbertura.AtoCriadorId,
+            "pré-condição do teste: o ato criador tem de ser outro");
+
+        // Drena o evento da publicação para que o assert final fale só da
+        // retificação recusada.
+        processo.DequeueDomainEvents();
+
+        Result<PublicacaoResultado> resultado = processo.Retificar(
+            NovosDados(), versaoForaDaCadeia, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "Correção de datas", clock: clock);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("VersaoConfiguracao.CadeiaQuebrada");
+        processo.Editais.Should().ContainSingle("o Edital de retificação não é emitido quando a cadeia não fecha");
+        processo.DequeueDomainEvents().Should().BeEmpty("nenhum evento é enfileirado numa retificação recusada");
     }
 
     /// <summary>

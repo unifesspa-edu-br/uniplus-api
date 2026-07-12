@@ -58,7 +58,7 @@ public sealed class FalharAposPublicarCascadingHandler
             atorUsuarioSub: "cascading-v9-test",
             timeProvider);
 
-        db.SnapshotsPublicacao.Add(publicarResult.Value!.Snapshot);
+        db.VersoesConfiguracao.Add(publicarResult.Value!.Versao);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         throw new InvalidOperationException(MensagemErro);

@@ -6,8 +6,8 @@ using Kernel.Results;
 /// <summary>
 /// Retifica um processo já publicado (RN08, Story #759, T5 #786, ADR-0101):
 /// emite um novo Edital de natureza retificação sucedendo o Edital vigente,
-/// com motivo obrigatório, e congela um novo <c>SnapshotPublicacao</c> — o
-/// snapshot anterior permanece imutável, tudo na mesma transação. O ator
+/// com motivo obrigatório, e sucede a <c>VersaoConfiguracao</c> corrente — a
+/// versão anterior permanece imutável, tudo na mesma transação. O ator
 /// (<c>IUserContext.UserId</c>) nunca é input do command — vem do contexto
 /// autenticado. O Edital sucedido é o vigente do próprio agregado, resolvido
 /// no servidor: como <c>Edital</c> é entidade interna do agregado

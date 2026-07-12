@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="ProcessoSeletivo.Publicar"/> (RN08, Story #759 T4
-/// #785) — gate de conformidade, transição atômica, congelamento do
-/// <see cref="SnapshotPublicacao"/> e bloqueio de mutação pós-publicação
+/// #785) — gate de conformidade, transição atômica, congelamento da
+/// <see cref="VersaoConfiguracao"/> e bloqueio de mutação pós-publicação
 /// (CA-04). Mapa de testes de #759: <c>Lifecycle_TransicaoInvalidaRecusada</c>,
 /// <c>Publicacao_RecusaSemParametrosObrigatorios</c>,
 /// <c>Publicacao_AtomicaStatusESnapshot</c>, <c>PosPublicacao_MutacaoBloqueada_422</c>.
@@ -101,8 +101,8 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.Editais.Single().Should().Be(resultado.Value!.Edital);
         resultado.Value!.Edital.Natureza.Should().Be(NaturezaEdital.Abertura);
         resultado.Value!.Edital.DataPublicacao.Should().NotBeNull();
-        resultado.Value!.Snapshot.EditalId.Should().Be(resultado.Value!.Edital.Id);
-        resultado.Value!.Snapshot.HashEdital.Should().Be(HashFixo);
+        resultado.Value!.Versao.AtoCriadorId.Should().Be(resultado.Value!.Edital.Id);
+        resultado.Value!.Versao.AtoCriadorHash.Should().Be(HashFixo);
     }
 
     [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — evento carrega os identificadores forenses completos")]
@@ -120,8 +120,8 @@ public sealed class ProcessoSeletivoPublicarTests
 
         evento.ProcessoSeletivoId.Should().Be(processo.Id);
         evento.EditalId.Should().Be(resultado.Value!.Edital.Id);
-        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Snapshot.Id);
-        evento.HashConfiguracao.Should().Be(resultado.Value!.Snapshot.HashConfiguracao);
+        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Versao.Id);
+        evento.HashConfiguracao.Should().Be(resultado.Value!.Versao.HashConfiguracao);
         evento.HashEdital.Should().Be(HashFixo);
     }
 
