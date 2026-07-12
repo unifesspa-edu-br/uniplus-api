@@ -7,9 +7,11 @@ decision-makers:
 
 # ADR-0102: Invariantes de coerência de processo como guard rails no banco, mapeadas a HTTP 422
 
+> **Emenda (ADR-0104):** a decisão — violação de guard rail de banco vira `DomainError` nomeado e 422, nunca 500 — permanece integralmente vigente, e ganhou guard rails novos (os da tabela `versoes_configuracao`). O que caducou foi um dos **exemplos**: a unicidade de `data_publicacao` entre editais do mesmo processo deixou de existir, e com ela o `Edital.DataPublicacaoDuplicada`. Aquela trava não era invariante de negócio — servia só para dar ordem total entre editais, papel que agora cabe a `UNIQUE(processo, numero_versao)` sobre as versões. Dois atos publicados no mesmo instante, e a retificação que republica a data do ato original, passam a ser estados válidos. Ver [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md).
+
 ## Contexto e enunciado do problema
 
-A publicação e a retificação do `ProcessoSeletivo` ([ADR-0100](0100-canonicalizacao-hash-snapshot-publicacao.md), [ADR-0101](0101-retificacao-novo-edital-novo-snapshot-motivo.md)) introduzem invariantes de coerência enforçadas por constraints e índices únicos parciais no banco — por exemplo, a unicidade de `data_publicacao` entre Editais vivos publicados do mesmo processo (que dá ao seletor de snapshot vigente do [ADR-0075](0075-snapshot-do-ato-resolvido-no-instante.md) a garantia de que nunca há empate), a constraint de contrato abertura×retificação, e a trava contra mutação direta de conteúdo congelável após a publicação. Quando uma dessas travas dispara, a violação não pode surfar como um erro genérico de infraestrutura (HTTP 500) — é uma regra de negócio sendo enforçada, ainda que o ponto físico de detecção seja o banco, não uma checagem em memória antes do save.
+A publicação e a retificação do `ProcessoSeletivo` ([ADR-0100](0100-canonicalizacao-hash-snapshot-publicacao.md), [ADR-0101](0101-retificacao-novo-edital-novo-snapshot-motivo.md)) introduzem invariantes de coerência enforçadas por constraints e índices únicos parciais no banco — por exemplo, a unicidade do Edital de abertura por processo, a linearidade da cadeia de retificação, a constraint de contrato abertura×retificação, e a trava contra mutação direta de conteúdo congelável após a publicação. Quando uma dessas travas dispara, a violação não pode surfar como um erro genérico de infraestrutura (HTTP 500) — é uma regra de negócio sendo enforçada, ainda que o ponto físico de detecção seja o banco, não uma checagem em memória antes do save.
 
 O módulo já tem uma convenção estabelecida: toda violação de regra de negócio é `DomainError`, mapeada por um par (chave `Contexto.CausaPascalCase`, `DomainErrorMapping(status, wire code, título)`) registrado em `SelecaoDomainErrorRegistration`, seguindo o mecanismo cross-module `IDomainErrorMapper`/`DomainErrorMapping` já decidido pelo [ADR-0024](0024-mapeamento-domain-error-http.md). Falta formalizar que essa mesma convenção — e o mesmo status HTTP — vale quando o ponto de detecção da violação é uma constraint de banco, e não deixar essa decisão implícita a cada nova trava que o ciclo de publicação introduzir.
 
@@ -35,7 +37,7 @@ Esta decisão **não substitui** validação em memória no domínio antes do sa
 
 ### Forma do contrato
 
-- Toda violação de guard rail de banco relevante ao ciclo de publicação — unicidade de `data_publicacao` entre Editais vivos publicados do processo, constraint de contrato abertura×retificação, trava de mutação de conteúdo congelável pós-publicação — é traduzida, no boundary de persistência (repository/Unit of Work, [ADR-0042](0042-application-nao-depende-diretamente-de-dbcontext.md)), de exceção de infraestrutura para `Result.Failure(DomainError)` nomeado.
+- Toda violação de guard rail de banco relevante ao ciclo de publicação — unicidade do Edital de abertura por processo, cadeia de retificação linear, contrato abertura×retificação, numeração e vigência das versões da configuração, trava de mutação de conteúdo congelável pós-publicação — é traduzida, no boundary de persistência (repository/Unit of Work, [ADR-0042](0042-application-nao-depende-diretamente-de-dbcontext.md)), de exceção de infraestrutura para `Result.Failure(DomainError)` nomeado.
 - Todo `DomainError` segue o par já estabelecido: chave `Contexto.CausaPascalCase` (ex.: `Snapshot.VigenteAusente`) + `DomainErrorMapping(status, wire code, título)` registrado em `SelecaoDomainErrorRegistration` — mesmo arquivo e mesmo mecanismo já usado pelos demais mapeamentos do módulo.
 - **Status: 422 Unprocessable Entity** para toda esta categoria — não 409, não 500. É o status já dominante do módulo para "requisição bem formada que viola uma regra de negócio".
 - **Wire code:** `uniplus.selecao.<contexto_snake_case>.<causa_snake_case>` — mesma taxonomia usada por todo o catálogo do módulo.
@@ -43,7 +45,7 @@ Esta decisão **não substitui** validação em memória no domínio antes do sa
 
 ### Caso concreto de referência
 
-`Snapshot.VigenteAusente` · wire code `uniplus.selecao.snapshot.vigente_ausente` · título "Nenhuma publicação vigente para o instante" · status **422**. É o erro do seletor de snapshot vigente ([ADR-0075](0075-snapshot-do-ato-resolvido-no-instante.md)) quando não há Edital vivo publicado com `data_publicacao` ≤ o instante consultado — nome canônico único, sem variações, distinto do erro de conformidade de edital ainda não publicado. Este caso ainda não está implementado no momento em que esta ADR é escrita; é o alvo de referência que a Task T6 da Story #759 vai consumir.
+`Snapshot.VigenteAusente` · wire code `uniplus.selecao.snapshot.vigente_ausente` · título "Nenhuma publicação vigente para o instante" · status **422**. É o erro do seletor de configuração vigente ([ADR-0075](0075-snapshot-do-ato-resolvido-no-instante.md), [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md)) quando não há versão da configuração com `vigente_a_partir_de` ≤ o instante consultado — nome canônico único, sem variações, distinto do erro de conformidade de edital ainda não publicado.
 
 ## Consequências
 
@@ -63,9 +65,9 @@ Esta decisão **não substitui** validação em memória no domínio antes do sa
 
 ## Confirmação
 
-- Teste de integração: inserir dois Editais vivos publicados com a mesma `data_publicacao` no mesmo processo retorna 422 nomeado, nunca 500.
+- Teste de integração: publicar um segundo Edital de abertura no mesmo processo retorna 422 nomeado, nunca 500.
 - Teste de integração: tentar mutação direta de conteúdo congelável de um processo publicado retorna 422 nomeado.
-- Teste de unidade: o seletor de snapshot vigente sem publicação retorna exatamente `Snapshot.VigenteAusente`.
+- Teste de unidade: o seletor de configuração vigente sem publicação retorna exatamente `Snapshot.VigenteAusente`.
 - Fitness test de cobertura do registry ([ADR-0024](0024-mapeamento-domain-error-http.md)): todo `DomainError` novo introduzido pelo ciclo de publicação está registrado em `SelecaoDomainErrorRegistration`.
 
 ## Prós e contras das opções

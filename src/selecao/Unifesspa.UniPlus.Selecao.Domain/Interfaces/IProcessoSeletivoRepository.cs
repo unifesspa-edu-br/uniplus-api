@@ -54,21 +54,45 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Resolve a publicação vigente num instante (RN08, Story #759 T6 #787,
-    /// ADR-0075/0076): o <see cref="Edital"/> publicado (<c>DataPublicacao</c>
-    /// não nula) de MAIOR data ≤ <paramref name="instante"/> e a
-    /// <see cref="VersaoConfiguracao"/> que ele criou. <see langword="null"/>
-    /// quando não há Edital publicado ≤ o instante (inclusive processo
-    /// inexistente ou ainda em rascunho). O empate é impossível por
-    /// <c>ux_editais_processo_data_publicacao</c>. Leitura <c>AsNoTracking</c>.
+    /// Resolve a <see cref="VersaoConfiguracao"/> vigente num instante (RN08,
+    /// ADR-0075/0076/0104): a de maior
+    /// <see cref="VersaoConfiguracao.VigenteAPartirDe"/> ≤
+    /// <paramref name="instante"/>, desempatada por
+    /// <see cref="VersaoConfiguracao.NumeroVersao"/> decrescente.
+    /// <see langword="null"/> antes da primeira publicação — a ausência aflora,
+    /// sem recorrer a nada (ADR-0076) — e também quando o processo não existe
+    /// ou foi excluído logicamente. Leitura <c>AsNoTracking</c>.
     /// <para>
-    /// O mecanismo ainda passa pelo documento — ordenar as VERSÕES por
-    /// <c>VigenteAPartirDe</c>, sem tocar em <c>Editais</c>, é a story #803.
+    /// Quem ordena é a VERSÃO, pelo relógio do sistema: este seletor não lê
+    /// atributo algum do ato (natureza, número, data documental) e por isso é
+    /// imune a tipos de ato e à data que o documento declara — que a
+    /// retificação republica inalterada, e que um acervo migrado pode trazer
+    /// regredida. O instante entra explicitamente: nunca há relógio lido por
+    /// dentro (ADR-0068).
     /// </para>
     /// </summary>
-    Task<(Edital Edital, VersaoConfiguracao Versao)?> ObterSnapshotVigenteAsync(
+    Task<VersaoConfiguracao?> ObterVersaoVigenteAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Dados documentais do ato que criou uma versão — os campos que o contrato
+    /// de leitura publica sobre o documento, e nada além deles.
+    /// <see langword="null"/> quando o ato não existe ou não pertence a
+    /// <paramref name="processoSeletivoId"/>: <c>ato_criador_id</c> é referência
+    /// por VALOR, sem chave estrangeira (ADR-0061), então a pertença é
+    /// verificada aqui, não pelo banco.
+    /// <para>
+    /// Projeção estreita — não devolve o <see cref="Edital"/> — porque esta é a
+    /// única superfície que a #804 troca: quando o ato migrar para o módulo
+    /// <c>Publicacoes</c>, muda a origem destes dois campos, não o seletor de
+    /// vigência acima, que jamais tocou no ato.
+    /// </para>
+    /// </summary>
+    Task<DadosDocumentaisAto?> ObterDadosDocumentaisDoAtoAsync(
+        Guid processoSeletivoId,
+        Guid atoCriadorId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -79,3 +103,11 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     /// </summary>
     Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Dados que o snapshot vigente publica sobre o DOCUMENTO do ato — a data que
+/// o documento declara e a natureza do ato. Deliberadamente não é o
+/// <see cref="Edital"/>: nenhum deles ordena coisa alguma (ADR-0104), e o
+/// contrato de leitura não deve depender da entidade que a #804 substitui.
+/// </summary>
+public sealed record DadosDocumentaisAto(DateTimeOffset DataPublicacao, string Natureza);

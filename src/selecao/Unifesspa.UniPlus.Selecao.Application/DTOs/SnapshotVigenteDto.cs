@@ -4,9 +4,15 @@ using System.Text.Json.Nodes;
 
 /// <summary>
 /// Snapshot congelado vigente de um Processo Seletivo num instante (RN08,
-/// Story #759 T6 #787, ADR-0075/0076). É o contrato de LEITURA que o runtime e
-/// os incrementos downstream (inscrição, homologação, classificação) consomem
-/// — a configuração CONGELADA, nunca a viva.
+/// ADR-0075/0076/0104). É o contrato de LEITURA que o runtime e os incrementos
+/// downstream (inscrição, homologação, classificação) consomem — a configuração
+/// CONGELADA, nunca a viva.
+/// <para>
+/// <see cref="DataPublicacao"/> e <see cref="Natureza"/> são dados do DOCUMENTO
+/// — o que o ato declara. Não ordenam coisa alguma: a versão vigente é
+/// resolvida por <c>VersaoConfiguracao.VigenteAPartirDe</c>, e estes dois campos
+/// são hidratados depois, a partir do ato que criou a versão eleita.
+/// </para>
 /// <para>
 /// <see cref="SnapshotPublicacaoId"/> é a referência forense DURÁVEL da
 /// <c>VersaoConfiguracao</c> que governa o ato: por ADR-0075 o ato grava esse

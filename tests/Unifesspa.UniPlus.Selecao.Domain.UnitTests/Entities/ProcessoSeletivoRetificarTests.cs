@@ -29,8 +29,9 @@ public sealed class ProcessoSeletivoRetificarTests
         periodoInscricaoFim: new DateOnly(2026, 1, 31),
         documentoEditalId: Guid.CreateVersion7()).Value!;
 
-    // Relógio que avança a cada leitura — a data de publicação da retificação
-    // precisa diferir da abertura (unicidade por processo, ux_editais_processo_data_publicacao).
+    // Relógio manual: os testes avançam (ou regridem) o instante explicitamente
+    // quando o cenário exige. Datas de publicação iguais entre atos do mesmo
+    // processo são um estado válido (ADR-0104) — a data documental não ordena.
     private static RelogioManual Relogio() => new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>
@@ -190,7 +191,8 @@ public sealed class ProcessoSeletivoRetificarTests
         primeira.Value!.Edital.EditalRetificadoId.Should().Be(abertura.Id, "R1 sucede a abertura");
         segunda.Value!.Edital.EditalRetificadoId.Should().Be(primeira.Value!.Edital.Id, "R2 sucede R1 — cada Edital retificado uma única vez");
         processo.Editais.Should().HaveCount(3);
-        processo.EditalVigente!.Id.Should().Be(segunda.Value!.Edital.Id, "o vigente avança para a última retificação");
+        segunda.Value!.Versao.NumeroVersao.Should().Be(3, "o topo da cadeia de configuração avança com a última retificação");
+        segunda.Value!.Versao.AtoCriadorId.Should().Be(segunda.Value!.Edital.Id, "a versão do topo foi criada pelo último ato");
     }
 
     [Fact(DisplayName = "Edital_ContratoAberturaRetificacao — EmitirRetificacao sem motivo é recusado")]
@@ -295,9 +297,12 @@ public sealed class ProcessoSeletivoRetificarTests
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
             motivo: "primeira retificação", clock: clock);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
-        processo.EditalVigente!.Id.Should().Be(
-            abertura.Id,
-            "pré-condição do teste: por DATA, o topo voltou a ser a abertura — é essa divergência que não pode decidir nada");
+        primeira.Value!.Edital.DataPublicacao.Should().BeBefore(
+            abertura.DataPublicacao!.Value,
+            "pré-condição do teste: a data DOCUMENTAL da retificação regrediu para antes da abertura — é essa divergência que não pode decidir nada");
+        primeira.Value!.Versao.VigenteAPartirDe.Should().Be(
+            versaoAbertura.VigenteAPartirDe,
+            "a vigência da sucessora é ancorada na anterior quando o relógio regride — nunca precede o passado");
 
         // A segunda retificação continua possível, e sucede R1 — o ato que criou a
         // versão corrente —, não a abertura. Ordenar o alvo por data tornaria uma

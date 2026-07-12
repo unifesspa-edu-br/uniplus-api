@@ -55,15 +55,13 @@ internal sealed class EditalConfiguration : IEntityTypeConfiguration<Edital>
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("fk_editais_edital_retificado_id");
 
-        // CA-08/ADR-0075: unicidade de data_publicacao entre editais vivos
-        // publicados do mesmo processo — dá ao seletor de snapshot vigente
-        // (T6, #787) a garantia de que nunca há empate.
-        builder.HasIndex(e => new { e.ProcessoSeletivoId, e.DataPublicacao })
-            .IsUnique()
-            .HasFilter("data_publicacao IS NOT NULL")
-            .HasDatabaseName("ux_editais_processo_data_publicacao");
+        // Não há unicidade sobre data_publicacao (ADR-0104): a data é DOCUMENTAL
+        // — o que o ato declara — e a retificação a republica inalterada. A ordem
+        // total da configuração vem de UNIQUE(processo, numero_versao) sobre as
+        // versões, não daqui; exigir datas distintas serializava o conjunto
+        // errado e recusava dois atos publicados no mesmo instante.
 
-        // Revisão de plano (Fase 6, P2): fecha a corrida de duas publicações
+        // Fecha a corrida de duas publicações
         // concorrentes do mesmo processo — só um Edital de abertura por
         // processo, nunca dois, mesmo com duas requisições simultâneas lendo
         // Status=Rascunho antes de qualquer commit.

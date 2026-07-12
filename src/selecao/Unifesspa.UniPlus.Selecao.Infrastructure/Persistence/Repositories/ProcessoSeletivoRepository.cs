@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -105,7 +106,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .ConfigureAwait(false);
     }
 
-    public async Task<(Edital Edital, VersaoConfiguracao Versao)?> ObterSnapshotVigenteAsync(
+    public async Task<VersaoConfiguracao?> ObterVersaoVigenteAsync(
         Guid processoSeletivoId,
         DateTimeOffset instante,
         CancellationToken cancellationToken = default)
@@ -117,43 +118,62 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         // mesmo instante; qualquer chamador fica DB-safe.
         DateTimeOffset instanteUtc = instante.ToUniversalTime();
 
-        // Publicação vigente = Edital publicado de MAIOR data ≤ instante
-        // (ADR-0075/0076). ux_editais_processo_data_publicacao garante que não
-        // há empate, então OrderByDescending().FirstOrDefault() é determinístico.
-        // O EXISTS através de ProcessosSeletivos herda o filtro global de
-        // soft-delete (ProcessoSeletivo é SoftDeletableEntity; Edital não é):
-        // um processo excluído logicamente não vaza sua configuração congelada
-        // — cai no mesmo caminho 404 que o resto da API, coerente com ExisteAsync.
+        // Configuração vigente = VERSÃO de maior vigente_a_partir_de ≤ instante,
+        // desempatada pelo número (ADR-0075/0076/0104). A tabela de editais não
+        // entra na query: o que ordena é o relógio do sistema, e não a data que
+        // o documento declara — que a retificação republica inalterada, e que um
+        // acervo migrado pode trazer regredida. O seletor é, por isso, imune a
+        // tipos de ato; ix_versoes_configuracao_processo_vigencia o cobre.
         //
-        // O mecanismo continua passando pelo DOCUMENTO (data documental do
-        // Edital). Ordenar as VERSÕES por vigente_a_partir_de, sem tocar em
-        // Editais, é a story #803 — aqui muda o que se carrega, não como se
-        // escolhe.
-        Edital? edital = await _context.Editais
+        // O empate de instante é permitido por desenho (não há unicidade sobre
+        // vigente_a_partir_de): quando o relógio regride, VersaoConfiguracao.Suceder
+        // ancora a sucessora no instante da anterior, e é o número decrescente que
+        // elege a mais nova.
+        //
+        // O EXISTS através de ProcessosSeletivos herda o filtro global de
+        // soft-delete (ProcessoSeletivo é SoftDeletableEntity; VersaoConfiguracao
+        // é forense, sem exclusão lógica própria): um processo excluído
+        // logicamente não vaza sua configuração congelada — cai no mesmo caminho
+        // 404 que o resto da API, coerente com ExisteAsync.
+        return await _context.VersoesConfiguracao
             .AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processoSeletivoId
-                && e.DataPublicacao != null
-                && e.DataPublicacao <= instanteUtc
+            .Where(v => v.ProcessoSeletivoId == processoSeletivoId
+                && v.VigenteAPartirDe <= instanteUtc
                 && _context.ProcessosSeletivos.Any(p => p.Id == processoSeletivoId))
-            .OrderByDescending(e => e.DataPublicacao)
+            .OrderByDescending(v => v.VigenteAPartirDe)
+            .ThenByDescending(v => v.NumeroVersao)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
-        if (edital is null)
-        {
-            return null;
-        }
+    }
 
-        // Todo Edital publicado é o ato criador de exatamente uma versão
-        // (ux_versoes_configuracao_ato_criador) — a ausência aqui seria estado
-        // inconsistente e é tratada como "sem vigente" pelo handler. A busca é
-        // pelo ato criador, referência POR VALOR: não há join por FK (ADR-0061).
-        VersaoConfiguracao? versao = await _context.VersoesConfiguracao
+    public async Task<DadosDocumentaisAto?> ObterDadosDocumentaisDoAtoAsync(
+        Guid processoSeletivoId,
+        Guid atoCriadorId,
+        CancellationToken cancellationToken = default)
+    {
+        // Hidratação dos campos documentais DEPOIS da seleção — nunca dentro
+        // dela. A pertença ao processo é filtrada aqui porque ato_criador_id é
+        // referência por valor, sem FK (ADR-0061): a unicidade global do ato
+        // criador não diz de qual certame ele é, e um id trocado por INSERT cru
+        // misturaria o documento de um certame com a configuração de outro.
+        // A natureza é convertida para texto DEPOIS da consulta: a coluna é o
+        // enum como int (EditalConfiguration), e ToString() sobre ela não tem
+        // tradução SQL.
+        LinhaDocumental? linha = await _context.Editais
             .AsNoTracking()
-            .FirstOrDefaultAsync(v => v.AtoCriadorId == edital.Id, cancellationToken)
+            .Where(e => e.Id == atoCriadorId
+                && e.ProcessoSeletivoId == processoSeletivoId
+                && e.DataPublicacao != null)
+            .Select(e => new LinhaDocumental(e.DataPublicacao!.Value, e.Natureza))
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return versao is null ? null : (edital, versao);
+        return linha is null
+            ? null
+            : new DadosDocumentaisAto(linha.DataPublicacao, linha.Natureza.ToString());
     }
+
+    private sealed record LinhaDocumental(DateTimeOffset DataPublicacao, NaturezaEdital Natureza);
 
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {
