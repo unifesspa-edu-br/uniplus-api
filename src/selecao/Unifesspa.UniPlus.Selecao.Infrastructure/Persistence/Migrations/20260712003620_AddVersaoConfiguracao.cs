@@ -229,18 +229,62 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             // consumidores guardaram como referência forense durável).
             //
             // O que se deriva da cadeia de editais:
-            //   - numero_versao: a ordem da publicação dentro do processo. A cadeia
-            //     legada é linear e ux_editais_processo_data_publicacao garantia
-            //     unicidade da data, então ordenar por ela é determinístico;
-            //   - ato_criador_id/hash: o Edital que emitiu o snapshot, por valor;
-            //   - ato_criador_retifica_id: o Edital que aquele Edital retifica — nulo
-            //     na abertura, que é exatamente o contrato simétrico da nova tabela.
+            //   - numero_versao: a posição do Edital na CADEIA de retificação — a
+            //     abertura é a raiz (edital_retificado_id nulo) e cada retificação
+            //     sucede a anterior. NÃO se ordena pela data de publicação: o modelo
+            //     antigo a tomava de um TimeProvider.GetUtcNow() a cada publicação, sem
+            //     guarda de monotonicidade, então um retrocesso do relógio do host pode
+            //     ter gravado uma retificação com data ANTERIOR à do Edital que ela
+            //     retifica. Ordenar por data daria à retificação o número 1 — e ela
+            //     carrega ato_criador_retifica_id, o que o contrato da abertura recusa,
+            //     abortando a migration para um dado que o esquema antigo aceitava;
+            //   - vigente_a_partir_de: a data de publicação, com o mesmo clamp
+            //     monotônico que o domínio aplica — o máximo corrente ao longo da
+            //     cadeia. Uma vigência que regredisse seria recusada pelo trigger, e o
+            //     empate é permitido por desenho (desempata o número da versão);
+            //   - ato_criador_id/hash: o Edital que emitiu o congelamento, por valor;
+            //   - ato_criador_retifica_id: o Edital que aquele Edital retifica — nulo na
+            //     abertura, que é exatamente o contrato simétrico da nova tabela.
             //
-            // O INSERT passa pelo trigger de sucessão: dados legados incoerentes
-            // (buraco, cadeia quebrada, vigência regressiva) FALHAM a migration em vez
-            // de entrar como evidência corrompida. O ORDER BY garante que a versão N
-            // seja inserida depois da N-1, como o trigger exige.
+            // O INSERT passa pelo trigger de sucessão: dados legados genuinamente
+            // incoerentes (cadeia quebrada, Edital publicado sem congelamento) FALHAM a
+            // migration, em vez de entrar como evidência corrompida. O ORDER BY pelo
+            // número garante que a versão N seja inserida depois da N-1, como o trigger
+            // exige.
             migrationBuilder.Sql("""
+                WITH RECURSIVE cadeia AS (
+                    SELECT
+                        e.id,
+                        e.processo_seletivo_id,
+                        e.edital_retificado_id,
+                        1 AS numero_versao
+                    FROM selecao.editais e
+                    WHERE e.edital_retificado_id IS NULL
+
+                    UNION ALL
+
+                    SELECT
+                        r.id,
+                        r.processo_seletivo_id,
+                        r.edital_retificado_id,
+                        c.numero_versao + 1
+                    FROM selecao.editais r
+                    JOIN cadeia c ON r.edital_retificado_id = c.id
+                ),
+                versao AS (
+                    SELECT
+                        c.id AS edital_id,
+                        c.processo_seletivo_id,
+                        c.edital_retificado_id,
+                        c.numero_versao,
+                        MAX(s.data_publicacao) OVER (
+                            PARTITION BY c.processo_seletivo_id
+                            ORDER BY c.numero_versao
+                            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                        ) AS vigente_a_partir_de
+                    FROM cadeia c
+                    JOIN selecao.snapshot_publicacao s ON s.edital_id = c.id
+                )
                 INSERT INTO selecao.versoes_configuracao (
                     id, processo_seletivo_id, numero_versao, vigente_a_partir_de,
                     schema_version, algoritmo_hash,
@@ -248,23 +292,21 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     ato_criador_id, ato_criador_hash, ato_criador_retifica_id, ator_usuario_sub)
                 SELECT
                     s.id,
-                    e.processo_seletivo_id,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY e.processo_seletivo_id
-                        ORDER BY e.data_publicacao, e.id)::int,
-                    s.data_publicacao,
+                    v.processo_seletivo_id,
+                    v.numero_versao,
+                    v.vigente_a_partir_de,
                     s.schema_version,
                     s.algoritmo_hash,
                     s.configuracao_congelada_canonica,
                     s.configuracao_congelada,
                     s.hash_configuracao,
-                    s.edital_id,
+                    v.edital_id,
                     s.hash_edital,
-                    e.edital_retificado_id,
+                    v.edital_retificado_id,
                     s.ator_usuario_sub
-                FROM selecao.snapshot_publicacao s
-                JOIN selecao.editais e ON e.id = s.edital_id
-                ORDER BY e.processo_seletivo_id, e.data_publicacao, e.id;
+                FROM versao v
+                JOIN selecao.snapshot_publicacao s ON s.edital_id = v.edital_id
+                ORDER BY v.processo_seletivo_id, v.numero_versao;
                 """);
 
             migrationBuilder.DropTable(

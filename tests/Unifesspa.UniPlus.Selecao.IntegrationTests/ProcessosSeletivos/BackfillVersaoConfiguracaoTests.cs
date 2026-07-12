@@ -74,7 +74,7 @@ public sealed class BackfillVersaoConfiguracaoTests : IAsyncLifetime
             // com os dois congelamentos presos ao Edital por chave estrangeira.
             IMigrator migrator = contextoLegado.GetService<IMigrator>();
             await migrator.MigrateAsync(MigrationAnterior);
-            await SemearCertamePublicadoERetificadoAsync();
+            await SemearCertamePublicadoERetificadoAsync(dataDaRetificacaoAntesDaAbertura: false);
         }
 
         await using (SelecaoDbContext contextoNovo = CriarContexto())
@@ -115,6 +115,48 @@ public sealed class BackfillVersaoConfiguracaoTests : IAsyncLifetime
         tabelaAntigaExiste.Should().BeFalse("a tabela antiga só é dropada DEPOIS de as suas linhas serem transportadas");
     }
 
+    [Fact(DisplayName = "Retificação legada com data ANTERIOR à abertura: a ordem vem da cadeia, e a vigência é ancorada")]
+    public async Task Migration_RetificacaoComDataAnteriorAAbertura_OrdenaPelaCadeia()
+    {
+        await using (SelecaoDbContext contextoLegado = CriarContexto())
+        {
+            IMigrator migrator = contextoLegado.GetService<IMigrator>();
+            await migrator.MigrateAsync(MigrationAnterior);
+
+            // O modelo antigo tomava a data de publicação de um GetUtcNow() a cada
+            // publicação, sem guarda de monotonicidade: um retrocesso do relógio do
+            // host podia gravar a retificação ANTES, no relógio, do Edital que ela
+            // retifica. Ordenar as versões por essa data daria o número 1 à
+            // retificação — que carrega ato retificado, o que o contrato da abertura
+            // recusa —, abortando a migration para um dado que o esquema antigo aceitava.
+            await SemearCertamePublicadoERetificadoAsync(dataDaRetificacaoAntesDaAbertura: true);
+        }
+
+        await using (SelecaoDbContext contextoNovo = CriarContexto())
+        {
+            await contextoNovo.Database.MigrateAsync();
+        }
+
+        await using SelecaoDbContext leitura = CriarContexto();
+        List<VersaoConfiguracao> versoes = await leitura.VersoesConfiguracao
+            .AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == ProcessoId)
+            .OrderBy(v => v.NumeroVersao)
+            .ToListAsync(CancellationToken.None);
+
+        versoes.Should().HaveCount(2);
+        versoes[0].AtoCriadorId.Should().Be(
+            EditalAberturaId,
+            "a versão 1 é a raiz da CADEIA (o Edital que não retifica ninguém), não a de menor data");
+        versoes[0].AtoCriadorRetificaId.Should().BeNull();
+        versoes[1].AtoCriadorId.Should().Be(EditalRetificacaoId);
+        versoes[1].AtoCriadorRetificaId.Should().Be(EditalAberturaId);
+
+        versoes[1].VigenteAPartirDe.Should().Be(
+            versoes[0].VigenteAPartirDe,
+            "a vigência da sucessora é ancorada na da anterior quando a data legada regride — o mesmo clamp que o domínio aplica; o empate é permitido, e o desempate por número elege a mais nova");
+    }
+
     private SelecaoDbContext CriarContexto()
     {
         DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
@@ -131,8 +173,17 @@ public sealed class BackfillVersaoConfiguracaoTests : IAsyncLifetime
     /// cada um. Não há entidade C# para isso — o tipo foi removido nesta story, e é
     /// justamente esse o ponto.
     /// </summary>
-    private async Task SemearCertamePublicadoERetificadoAsync()
+    /// <param name="dataDaRetificacaoAntesDaAbertura">
+    /// Quando <see langword="true"/>, grava a retificação com data de publicação
+    /// ANTERIOR à da abertura — o estado que o modelo antigo admitia, por tomar a
+    /// data de um relógio sem guarda de monotonicidade.
+    /// </param>
+    private async Task SemearCertamePublicadoERetificadoAsync(bool dataDaRetificacaoAntesDaAbertura)
     {
+        string dataDaRetificacao = dataDaRetificacaoAntesDaAbertura
+            ? "now() - interval '3 hours'"
+            : "now() - interval '1 hour'";
+
         await using NpgsqlConnection conexao = new(_postgres.GetConnectionString());
         await conexao.OpenAsync();
 
@@ -151,7 +202,7 @@ public sealed class BackfillVersaoConfiguracaoTests : IAsyncLifetime
             VALUES
                 ('{{EditalAberturaId}}', '{{ProcessoId}}', 1, '001/2026', now() - interval '2 hours',
                  '{{DocumentoId}}', NULL, NULL, now()),
-                ('{{EditalRetificacaoId}}', '{{ProcessoId}}', 2, '001/2026', now() - interval '1 hour',
+                ('{{EditalRetificacaoId}}', '{{ProcessoId}}', 2, '001/2026', {{dataDaRetificacao}},
                  '{{DocumentoId}}', '{{EditalAberturaId}}', 'Correção de datas', now());
 
             INSERT INTO selecao.snapshot_publicacao (
@@ -164,7 +215,7 @@ public sealed class BackfillVersaoConfiguracaoTests : IAsyncLifetime
                  'legado-user', now() - interval '2 hours'),
                 ('{{SnapshotRetificacaoId}}', '{{EditalRetificacaoId}}', '1.0', 'canonical-json/sha256@v1',
                  '\x7b7d'::bytea, '{}'::jsonb, repeat('c', 64), repeat('d', 64),
-                 'legado-user', now() - interval '1 hour');
+                 'legado-user', {{dataDaRetificacao}});
             """);
     }
 
