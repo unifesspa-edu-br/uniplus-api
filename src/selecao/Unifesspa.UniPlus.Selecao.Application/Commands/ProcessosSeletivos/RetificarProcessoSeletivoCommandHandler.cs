@@ -75,25 +75,11 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         DadosEdital dados = dadosResult.Value!;
 
-        // O Edital sucedido é o vigente do próprio agregado — não um id vindo
-        // do cliente (Edital é entidade interna do agregado ProcessoSeletivo e
-        // a cadeia é linear). Precisamos do id do vigente já aqui para congelar
-        // o bloco 'retificacao' do snapshot; se o processo não foi publicado
-        // não há vigente e a retificação é inválida — mesma transição barrada
-        // por ProcessoSeletivo.Retificar, antecipada para não canonicalizar em
-        // vão.
-        if (processo.EditalVigente is not { } vigente)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.TransicaoInvalida",
-                $"Só é possível retificar um processo publicado — status atual: {processo.Status}.")), []);
-        }
-
-        // A versão de configuração é agregado próprio (ADR-0104) — não coleção
-        // da raiz. O handler carrega a corrente (maior NumeroVersao) e a entrega
-        // a Retificar, que sucede a cadeia a partir dela. Um processo publicado
-        // sem versão é estado inconsistente: mesmo tratamento do Edital vigente
-        // ausente logo acima.
+        // A versão de configuração é agregado próprio (ADR-0104) — não coleção da
+        // raiz. O handler carrega a corrente (maior NumeroVersao) e a entrega a
+        // Retificar, que sucede a cadeia a partir dela. Sem versão corrente, ou o
+        // processo não foi publicado, ou está inconsistente — a mesma transição
+        // que Retificar barra, antecipada aqui para não canonicalizar em vão.
         VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
             .ObterVersaoAtualAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
@@ -101,7 +87,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         {
             return (Result.Failure(new DomainError(
                 "ProcessoSeletivo.TransicaoInvalida",
-                "Processo publicado sem versão de configuração — estado inconsistente.")), []);
+                $"Só é possível retificar um processo publicado — status atual: {processo.Status}.")), []);
         }
 
         // Normaliza o motivo UMA vez, aqui (Trim + NFC), e usa o mesmo valor
@@ -115,11 +101,15 @@ public static class RetificarProcessoSeletivoCommandHandler
         // idempotente — reaplicá-lo no canonicalizer não altera o valor.
         string motivo = HashCanonicalComputer.NormalizeNfc(command.Motivo.Trim());
 
+        // O ato retificado é o que criou a versão corrente — o topo da cadeia de
+        // CONFIGURAÇÃO (ADR-0104), não o Edital de maior data documental. É o mesmo
+        // alvo que ProcessoSeletivo.Retificar elege; congelar aqui um id diferente
+        // faria o bloco 'retificacao' do snapshot apontar para outro documento.
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             processo,
             dados,
             documento.HashSha256!,
-            new RetificacaoInfo(vigente.Id, motivo));
+            new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
