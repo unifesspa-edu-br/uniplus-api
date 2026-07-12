@@ -442,7 +442,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(p => p.Item))}."));
         }
 
-        Result<Edital> editalResult = Edital.EmitirAbertura(Id, dados, clock);
+        // UMA leitura do relógio para o ato e para a versão que ele cria. Duas
+        // leituras deixariam a vigência alguns ticks à frente da data documental
+        // — e o instante que o ProcessoPublicadoEvent publica é o do ato, de modo
+        // que resolver a configuração NESSE instante (ADR-0075: o ato é avaliado
+        // contra o que vigia quando ocorreu) cairia antes da vigência da versão
+        // criada pelo próprio ato, aflorando VigenteAusente. Mesma razão pela qual
+        // a ADR-0106 passa o InstantePublicacao às factories em vez de deixá-las
+        // derivar um GetUtcNow() próprio.
+        DateTimeOffset instantePublicacao = clock.GetUtcNow();
+
+        Result<Edital> editalResult = Edital.EmitirAbertura(Id, dados, instantePublicacao);
         if (editalResult.IsFailure)
         {
             return Result<PublicacaoResultado>.Failure(editalResult.Error!);
@@ -458,7 +468,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             atoCriadorId: edital.Id,
             atoCriadorHash: hashEdital,
             atorUsuarioSub,
-            clock);
+            instantePublicacao);
 
         _editais.Add(edital);
         Status = StatusProcesso.Publicado;
@@ -547,7 +557,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"O ato que criou a versão {versaoAtual.NumeroVersao} não está entre os Editais deste processo — estado inconsistente."));
         }
 
-        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, atoCriadorCorrente.Id, motivo, clock);
+        // Uma única leitura do relógio para o ato e para a versão que ele cria —
+        // ver a nota em Publicar. Quando o instante regride, a vigência da
+        // sucessora é ancorada na da anterior (Suceder), e só então ela passa a
+        // divergir da data documental: é o retrocesso de relógio aflorando, não
+        // duas leituras discordando.
+        DateTimeOffset instantePublicacao = clock.GetUtcNow();
+
+        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, atoCriadorCorrente.Id, motivo, instantePublicacao);
         if (editalResult.IsFailure)
         {
             return Result<PublicacaoResultado>.Failure(editalResult.Error!);
@@ -564,7 +581,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             atoCriadorHash: hashEdital,
             atoCriadorRetificaId: atoCriadorCorrente.Id,
             atorUsuarioSub,
-            clock);
+            instantePublicacao);
 
         _editais.Add(edital);
 

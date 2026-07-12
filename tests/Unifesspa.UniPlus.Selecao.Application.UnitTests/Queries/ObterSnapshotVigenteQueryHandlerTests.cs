@@ -31,7 +31,7 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
             atoCriadorId: Guid.CreateVersion7(),
             atoCriadorHash: HashFixo,
             atorUsuarioSub: "user-sub-123",
-            clock: new RelogioFixo(vigenteAPartirDe));
+            instante: vigenteAPartirDe);
 
     [Fact(DisplayName = "Instante omitido usa o relógio injetado — o seletor jamais lê um relógio por dentro (ADR-0068)")]
     public async Task Handle_InstanteOmitido_PassaORelogioInjetadoAoSeletor()

@@ -100,9 +100,8 @@ public sealed class VersaoConfiguracao : IForensicEntity
         Guid atoCriadorId,
         string atoCriadorHash,
         string atorUsuarioSub,
-        TimeProvider clock)
+        DateTimeOffset instante)
     {
-        ArgumentNullException.ThrowIfNull(clock);
         GuardarFormato(
             processoSeletivoId,
             configuracaoCongeladaCanonica,
@@ -122,7 +121,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
             atoCriadorHash,
             atoCriadorRetificaId: null,
             atorUsuarioSub,
-            clock.GetUtcNow());
+            instante);
     }
 
     /// <summary>
@@ -150,10 +149,9 @@ public sealed class VersaoConfiguracao : IForensicEntity
         string atoCriadorHash,
         Guid atoCriadorRetificaId,
         string atorUsuarioSub,
-        TimeProvider clock)
+        DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(anterior);
-        ArgumentNullException.ThrowIfNull(clock);
         GuardarFormato(
             anterior.ProcessoSeletivoId,
             configuracaoCongeladaCanonica,
@@ -184,10 +182,9 @@ public sealed class VersaoConfiguracao : IForensicEntity
         // depois de a N+1 existir. Empatar no instante da anterior é seguro por
         // desenho: o empate é permitido (não há unicidade de instante) e o
         // desempate por NumeroVersao decrescente elege a mais nova (ADR-0104).
-        DateTimeOffset agora = clock.GetUtcNow();
-        DateTimeOffset vigenteAPartirDe = agora < anterior.VigenteAPartirDe
+        DateTimeOffset vigenteAPartirDe = instante < anterior.VigenteAPartirDe
             ? anterior.VigenteAPartirDe
-            : agora;
+            : instante;
 
         return Congelar(
             anterior.ProcessoSeletivoId,

@@ -40,7 +40,7 @@ public sealed class VersaoConfiguracaoTests
             atoCriadorId,
             atoCriadorHash: HashAto,
             atorUsuarioSub: "user-sub-123",
-            TimeProvider.System);
+            TimeProvider.System.GetUtcNow());
 
     [Fact(DisplayName = "Abrir — a versão 1 abre a cadeia e não retifica ato algum")]
     public void Abrir_VersaoUm_NaoRetificaNinguem()
@@ -83,7 +83,7 @@ public sealed class VersaoConfiguracaoTests
             Guid.CreateVersion7(),
             HashAto,
             "user-sub-123",
-            TimeProvider.System);
+            TimeProvider.System.GetUtcNow());
 
         bytesDoCaller[0] = (byte)'X';
 
@@ -109,7 +109,7 @@ public sealed class VersaoConfiguracaoTests
             OutroHashAto,
             atoCriadorRetificaId: atoAbertura,
             "user-sub-123",
-            TimeProvider.System);
+            TimeProvider.System.GetUtcNow());
 
         versao2.NumeroVersao.Should().Be(2, "o número é derivado da versão anterior — buraco é impossível por construção");
         versao2.ProcessoSeletivoId.Should().Be(processoId, "a sucessora herda o certame da versão que sucede");
@@ -131,7 +131,7 @@ public sealed class VersaoConfiguracaoTests
             atoAbertura,
             HashAto,
             "user-sub-123",
-            clock);
+            clock.GetUtcNow());
 
         // Ajuste NTP em degrau: o relógio do host recua entre a abertura e a
         // retificação. Como é a VIGÊNCIA que ordena as versões (ADR-0104), deixar
@@ -148,7 +148,7 @@ public sealed class VersaoConfiguracaoTests
             OutroHashAto,
             atoCriadorRetificaId: atoAbertura,
             "user-sub-123",
-            clock);
+            clock.GetUtcNow());
 
         versao2.VigenteAPartirDe.Should().Be(
             versao1.VigenteAPartirDe,
@@ -170,7 +170,7 @@ public sealed class VersaoConfiguracaoTests
             OutroHashAto,
             atoCriadorRetificaId: Guid.CreateVersion7(),
             "user-sub-123",
-            TimeProvider.System);
+            TimeProvider.System.GetUtcNow());
 
         sucederForaDaCadeia.Should().Throw<ArgumentException>()
             .WithParameterName("atoCriadorRetificaId");
@@ -191,7 +191,7 @@ public sealed class VersaoConfiguracaoTests
             HashAto,
             atoCriadorRetificaId: atoAbertura,
             "user-sub-123",
-            TimeProvider.System);
+            TimeProvider.System.GetUtcNow());
 
         sucederComOMesmoAto.Should().Throw<ArgumentException>()
             .WithParameterName("atoCriadorId");
@@ -217,7 +217,7 @@ public sealed class VersaoConfiguracaoTests
             Guid.CreateVersion7(),
             "NAO-E-UM-HASH",
             "user-sub-123",
-            TimeProvider.System);
+            TimeProvider.System.GetUtcNow());
 
         abrirComHashInvalido.Should().Throw<ArgumentException>()
             .WithParameterName("atoCriadorHash");
@@ -234,7 +234,7 @@ public sealed class VersaoConfiguracaoTests
             Guid.CreateVersion7(),
             HashAto,
             "user-sub-123",
-            TimeProvider.System);
+            TimeProvider.System.GetUtcNow());
 
         abrirSemBytes.Should().Throw<ArgumentException>()
             .WithParameterName("configuracaoCongeladaCanonica");
