@@ -54,6 +54,19 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Atos que criaram as versões da configuração do processo — a linhagem de atos do
+    /// certame (ADR-0107). Vazio antes da primeira publicação.
+    /// </summary>
+    /// <remarks>
+    /// É contra ela que a conferência da vaga do objeto se faz: uma retificação não disputa a
+    /// vaga que a sua própria linhagem já ocupa. Sem esta lista, a conferência não distingue
+    /// "a vaga está ocupada por mim" de "a vaga está ocupada por outro".
+    /// </remarks>
+    Task<IReadOnlyList<Guid>> ObterAtosCriadoresAsync(
+        Guid processoSeletivoId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Resolve a <see cref="VersaoConfiguracao"/> vigente num instante (RN08,
     /// ADR-0075/0076/0104): a de maior
     /// <see cref="VersaoConfiguracao.VigenteAPartirDe"/> ≤

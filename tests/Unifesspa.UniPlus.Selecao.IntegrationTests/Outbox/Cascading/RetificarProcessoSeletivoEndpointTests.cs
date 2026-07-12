@@ -41,6 +41,8 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     public async Task Retificar_FluxoCompleto_EmiteRetificacaoEDispatchaCascading()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
@@ -84,6 +86,8 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     public async Task Retificar_MotivoUnicodeDecomposto_SnapshotEEditalReconciliam()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoAbertura) = await SemearAsync(api, nameof(Retificar_MotivoUnicodeDecomposto_SnapshotEEditalReconciliam));
@@ -141,6 +145,8 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     public async Task Retificar_ProcessoRascunho_Retorna422()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         (Guid processoId, Guid documentoId) = await SemearAsync(api, nameof(Retificar_ProcessoRascunho_Retorna422));
@@ -159,6 +165,8 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     public async Task Retificar_ProcessoInexistente_Retorna404()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient client = api.CreateClient();
 
         HttpResponseMessage response = await PostRetificarAsync(
@@ -176,6 +184,15 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2026,
+                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = "EDITAL_ABERTURA",
+            },
     };
 
     private static object NovoCorpoRetificacao(Guid documentoEditalId, string motivo) => new
@@ -185,6 +202,15 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(40)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
+            ato = new
+            {
+                orgao = "CEPS",
+                serie = "EDITAL",
+                ano = 2026,
+                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                assinante = "Diretor do CEPS",
+                tipoAtoCodigo = "EDITAL_RETIFICACAO",
+            },
     };
 
     private static async Task<HttpResponseMessage> PostPublicarAsync(

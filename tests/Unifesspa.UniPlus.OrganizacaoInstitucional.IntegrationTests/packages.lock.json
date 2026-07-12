@@ -1433,8 +1433,16 @@
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )",
           "WolverineFx": "[5.39.5, )"
+        }
+      },
+      "unifesspa.uniplus.publicacoes.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.publicacoes.domain": {
@@ -1451,7 +1459,9 @@
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.2, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )"
+          "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )",
+          "WolverineFx.EntityFrameworkCore": "[5.39.5, )"
         }
       },
       "unifesspa.uniplus.selecao.api": {
@@ -1474,6 +1484,7 @@
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Configuracao.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )"
         }
       },

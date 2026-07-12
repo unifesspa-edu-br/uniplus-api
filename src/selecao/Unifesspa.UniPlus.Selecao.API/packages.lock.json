@@ -1048,6 +1048,13 @@
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },
+      "unifesspa.uniplus.publicacoes.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.selecao.application": {
         "type": "Project",
         "dependencies": {
@@ -1056,6 +1063,7 @@
           "Unifesspa.UniPlus.Application.Abstractions": "[1.0.0, )",
           "Unifesspa.UniPlus.Configuracao.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )"
         }
       },

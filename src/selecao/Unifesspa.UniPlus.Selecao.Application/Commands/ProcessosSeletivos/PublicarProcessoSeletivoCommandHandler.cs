@@ -6,6 +6,7 @@ using Domain.Interfaces;
 using Domain.ValueObjects;
 using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Handler convention-based do <see cref="PublicarProcessoSeletivoCommand"/>
@@ -25,6 +26,8 @@ public static class PublicarProcessoSeletivoCommandHandler
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
+        ITipoAtoPublicadoReader tipoDeAtoReader,
+        IVagaDeLinhagemReader vagaDeLinhagemReader,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -34,6 +37,8 @@ public static class PublicarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(canonicalizer);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
+        ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -75,6 +80,37 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         DadosEdital dados = dadosResult.Value!;
 
+        // O ato é registrado depois, por mensagem durável (ADR-0108). O que o catálogo de
+        // Publicações recusaria tem de ser recusado AQUI, com 422, antes de qualquer escrita
+        // — senão o Edital sai publicado, o cliente recebe 204, e a recusa vira dead letter.
+        Result<TipoAtoPublicadoView> conferenciaDoAto = await ConferenciaDoTipoDeAto
+            .CongelaConfiguracaoAsync(tipoDeAtoReader, command.Ato, cancellationToken)
+            .ConfigureAwait(false);
+        if (conferenciaDoAto.IsFailure)
+        {
+            return (Result.Failure(conferenciaDoAto.Error!), []);
+        }
+
+        // Os atributos CONFERIDOS viajam na mensagem: o catálogo é editável, e reler no
+        // consumo faria a decisão tomada aqui (que já devolveu 204) valer outra coisa.
+        TipoAtoPublicadoView tipoConferido = conferenciaDoAto.Value!;
+
+        // A vaga que a linhagem reserva sobre o certame (ADR-0107) é monotônica: ocupada,
+        // nunca se libera. Se já estiver tomada por outra linhagem, o registro do ato seria
+        // recusado no consumo da fila e o certame ficaria publicado sem ato — a recusa tem
+        // de vir agora.
+        IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
+            .ObterAtosCriadoresAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
+
+        Result conferenciaDaVaga = await ConferenciaDoTipoDeAto
+            .VagaDoObjetoAsync(vagaDeLinhagemReader, tipoConferido, command.ProcessoSeletivoId, atosDaLinhagem, cancellationToken)
+            .ConfigureAwait(false);
+        if (conferenciaDaVaga.IsFailure)
+        {
+            return (Result.Failure(conferenciaDaVaga.Error!), []);
+        }
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(processo, dados, documento.HashSha256!);
 
         string atorUsuarioSub = userContext.UserId ?? "system";
@@ -86,6 +122,10 @@ public static class PublicarProcessoSeletivoCommandHandler
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub,
+            // A data que o DOCUMENTO declara (ADR-0108) — a mesma que Publicações registra no
+            // ato. Sem isto, o mesmo documento teria uma data aqui e outra lá. Quem ordena as
+            // versões continua sendo o relógio do sistema (ADR-0104); esta data não ordena nada.
+            DataDocumental(command.Ato),
             timeProvider);
         if (publicarResult.IsFailure)
         {
@@ -128,8 +168,34 @@ public static class PublicarProcessoSeletivoCommandHandler
             throw;
         }
 
-        // ADR-0005 + ADR-0041: drenagem por cascading messages, DEPOIS do
-        // SaveChanges bem-sucedido — nunca antes (janela de perda em rollback).
-        return (Result.Success(), processo.DequeueDomainEvents().Cast<object>());
+        // ADR-0108: a requisição de registro do ato viaja como cascading message, junto dos
+        // domain events — o Wolverine instala o envelope no outbox DENTRO da transação que
+        // acabou de gravar o Edital e a versão (ADR-0004). Ou os dois existem, ou nenhum.
+        //
+        // É essa atomicidade que a chamada síncrona não conseguia dar, e é o que impede o
+        // ato órfão: a vaga de linhagem do certame (ADR-0107) é monotônica, e um ato
+        // registrado para uma publicação que falhou depois deixaria o certame impublicável
+        // para sempre.
+        //
+        // O ato ainda não existe quando esta linha roda — e não precisa existir: o id é
+        // decidido AQUI, e a versão já o referencia por VALOR, sem chave estrangeira
+        // (ADR-0061). O modelo sempre previu que o ato viveria noutro módulo.
+        return (Result.Success(), MensagensDaPublicacao.Montar(
+            processo,
+            publicarResult.Value!,
+            command.Ato,
+            tipoConferido,
+            dados.Numero,
+            documento.HashSha256!,
+            atoRetificadoId: null,
+            motivoRetificacao: null));
     }
+
+    /// <summary>
+    /// A data documental declarada, no instante convencional de início do dia em UTC. O ato
+    /// a declara como data (<c>DateOnly</c>); o Edital a guarda como instante — a conversão é
+    /// convencional e não carrega hora, porque o documento declara um DIA.
+    /// </summary>
+    private static DateTimeOffset DataDocumental(DadosDoAto ato) =>
+        new(ato.DataPublicacao.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
 }

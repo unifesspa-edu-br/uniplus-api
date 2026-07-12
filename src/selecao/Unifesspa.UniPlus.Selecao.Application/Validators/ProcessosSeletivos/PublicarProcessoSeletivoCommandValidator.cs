@@ -13,6 +13,14 @@ public sealed class PublicarProcessoSeletivoCommandValidator : AbstractValidator
 
     public PublicarProcessoSeletivoCommandValidator()
     {
+        // O bloco documental do ato é validado ANTES da publicação ser gravada: o
+        // registro do ato acontece depois, por mensagem durável (ADR-0108), e o que o
+        // formato pode recusar tem de virar 422 na hora — não incidente na dead letter.
+        RuleFor(x => x.Ato)
+            .NotNull()
+            .WithMessage("Dados do ato normativo são obrigatórios.")
+            .SetValidator(new DadosDoAtoValidator()!);
+
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("Id do processo seletivo é obrigatório.");

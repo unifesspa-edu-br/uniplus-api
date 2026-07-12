@@ -40,6 +40,8 @@ public sealed class PublicacaoConcorrenciaTests
     public async Task DefinirEtapasConcorrenteComPublicar_NuncaDeixaEstadoInconsistente()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
         using HttpClient _ = api.CreateClient();
 
         Guid processoId;
@@ -61,7 +63,8 @@ public sealed class PublicacaoConcorrenciaTests
             Numero: null,
             PeriodoInscricaoInicio: new DateOnly(2026, 1, 1),
             PeriodoInscricaoFim: new DateOnly(2026, 1, 31),
-            DocumentoEditalId: documentoId);
+            DocumentoEditalId: documentoId,
+            Ato: DadosDoAtoDeTeste.Padrao);
 
         // Cada lado da corrida usa seu próprio scope/IMessageBus — os dois
         // scopes só são descartados no fim do método (após ambas as tasks

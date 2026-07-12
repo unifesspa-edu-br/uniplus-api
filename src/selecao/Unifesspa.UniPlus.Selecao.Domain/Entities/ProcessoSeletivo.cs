@@ -421,6 +421,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string algoritmoHash,
         string hashEdital,
         string atorUsuarioSub,
+        DateTimeOffset dataDocumental,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(dados);
@@ -452,7 +453,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // derivar um GetUtcNow() próprio.
         DateTimeOffset instantePublicacao = clock.GetUtcNow();
 
-        Result<Edital> editalResult = Edital.EmitirAbertura(Id, dados, instantePublicacao);
+        Result<Edital> editalResult = Edital.EmitirAbertura(Id, dados, dataDocumental);
         if (editalResult.IsFailure)
         {
             return Result<PublicacaoResultado>.Failure(editalResult.Error!);
@@ -479,7 +480,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             versao.Id,
             versao.HashConfiguracao,
             versao.AtoCriadorHash,
-            edital.DataPublicacao!.Value));
+            // OccurredOn é o instante em que o fato ocorreu — o do SISTEMA, que é o da
+            // vigência da versão. NÃO a data que o documento declara: ela é informada pelo
+            // operador (ADR-0108) e pode ser retroativa (importação de acervo). Um consumidor
+            // que resolvesse a configuração vigente no instante do ato (ADR-0075) usando a data
+            // documental cairia antes da vigência e não acharia a versão que o próprio ato
+            // criou — foi o defeito que a #803 corrigiu, e usar a data declarada aqui o
+            // ressuscitaria por outra porta.
+            versao.VigenteAPartirDe));
 
         return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, versao));
     }
@@ -512,6 +520,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string hashEdital,
         string atorUsuarioSub,
         string motivo,
+        DateTimeOffset dataDocumental,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(dados);
@@ -564,7 +573,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // duas leituras discordando.
         DateTimeOffset instantePublicacao = clock.GetUtcNow();
 
-        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, atoCriadorCorrente.Id, motivo, instantePublicacao);
+        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, atoCriadorCorrente.Id, motivo, dataDocumental);
         if (editalResult.IsFailure)
         {
             return Result<PublicacaoResultado>.Failure(editalResult.Error!);
@@ -596,7 +605,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             versao.Id,
             versao.HashConfiguracao,
             versao.AtoCriadorHash,
-            edital.DataPublicacao!.Value));
+            // OccurredOn é o instante em que o fato ocorreu — o do SISTEMA, que é o da
+            // vigência da versão. NÃO a data que o documento declara: ela é informada pelo
+            // operador (ADR-0108) e pode ser retroativa (importação de acervo). Um consumidor
+            // que resolvesse a configuração vigente no instante do ato (ADR-0075) usando a data
+            // documental cairia antes da vigência e não acharia a versão que o próprio ato
+            // criou — foi o defeito que a #803 corrigiu, e usar a data declarada aqui o
+            // ressuscitaria por outra porta.
+            versao.VigenteAPartirDe));
 
         return Result<PublicacaoResultado>.Success(new PublicacaoResultado(edital, versao));
     }

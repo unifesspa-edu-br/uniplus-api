@@ -93,7 +93,7 @@ public sealed class ProcessoSeletivoPublicarTests
         DadosEdital dados = NovosDados();
 
         Result<PublicacaoResultado> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado);
@@ -112,7 +112,7 @@ public sealed class ProcessoSeletivoPublicarTests
         DadosEdital dados = NovosDados();
 
         Result<PublicacaoResultado> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
 
         resultado.IsSuccess.Should().BeTrue();
         Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
@@ -132,7 +132,7 @@ public sealed class ProcessoSeletivoPublicarTests
         // Nenhuma dimensão obrigatória definida — Etapas/Atendimento/Distribuição/Classificação ausentes.
 
         Result<PublicacaoResultado> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -144,11 +144,11 @@ public sealed class ProcessoSeletivoPublicarTests
     public void Publicar_ProcessoJaPublicado_RecusaTransicaoInvalida()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System)
+        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System)
             .IsSuccess.Should().BeTrue();
 
         Result<PublicacaoResultado> segundaTentativa = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
 
         segundaTentativa.IsFailure.Should().BeTrue();
         segundaTentativa.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
@@ -165,7 +165,7 @@ public sealed class ProcessoSeletivoPublicarTests
     public void DefinirX_ProcessoPublicado_RecusaMutacao(string dimensao)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System)
+        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System)
             .IsSuccess.Should().BeTrue();
 
         Result resultado = dimensao switch

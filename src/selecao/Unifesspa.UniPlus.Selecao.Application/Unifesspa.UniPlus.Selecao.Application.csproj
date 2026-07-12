@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <ProjectReference Include="..\..\publicacoes\Unifesspa.UniPlus.Publicacoes.Contracts\Unifesspa.UniPlus.Publicacoes.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

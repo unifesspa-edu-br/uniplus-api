@@ -42,6 +42,8 @@ public sealed class CascadingScenariosTests
     {
         CascadingApiFactory api = _fixture.Factory;
 
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+
         using HttpClient _ = api.CreateClient();
 
         DomainEventCollector collector = api.Services.GetRequiredService<DomainEventCollector>();
@@ -67,7 +69,8 @@ public sealed class CascadingScenariosTests
             Numero: null,
             PeriodoInscricaoInicio: DateOnly.FromDateTime(DateTime.UtcNow),
             PeriodoInscricaoFim: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)),
-            DocumentoEditalId: documentoId);
+            DocumentoEditalId: documentoId,
+            Ato: DadosDoAtoDeTeste.Padrao);
 
         await bus.InvokeAsync(command);
 
@@ -91,6 +94,8 @@ public sealed class CascadingScenariosTests
     public async Task V9_RollbackCascading_DeixaEntidadeEEnvelopeAusentes()
     {
         CascadingApiFactory api = _fixture.Factory;
+
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
 
         using HttpClient _ = api.CreateClient();
 

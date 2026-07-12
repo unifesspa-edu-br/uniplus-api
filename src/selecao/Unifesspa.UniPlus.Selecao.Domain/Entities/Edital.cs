@@ -42,15 +42,18 @@ public sealed class Edital : EntityBase
     /// sempre nulos (contrato abertura×retificação, ADR-0101); a T5 (#786)
     /// introduz <c>EmitirRetificacao</c> para a variante que os exige.
     /// </summary>
-    /// <param name="instante">
-    /// Instante da publicação, lido UMA vez pela raiz e compartilhado com a
-    /// <see cref="VersaoConfiguracao"/> que este ato cria (ADR-0106). Derivar um
-    /// <c>GetUtcNow()</c> próprio aqui faria a data documental e a vigência da
-    /// versão divergirem por alguns ticks — e o instante que o
-    /// <c>ProcessoPublicadoEvent</c> publica cairia ANTES da vigência da versão
-    /// criada pelo mesmo ato, que então não resolveria no seu próprio instante.
+    /// <param name="dataDocumental">
+    /// A data que o DOCUMENTO declara — não o relógio. É o operador quem a informa
+    /// (ADR-0108), e é ela que Publicações registra no ato: as duas pontas têm de falar da
+    /// mesma data, ou o mesmo documento teria uma data aqui e outra lá.
+    /// <para>
+    /// Nada disto ordena coisa alguma: quem ordena as versões é
+    /// <c>VersaoConfiguracao.VigenteAPartirDe</c>, do relógio do sistema (ADR-0104). Foi
+    /// justamente para separar as duas grandezas que a data documental deixou de ser lida do
+    /// relógio.
+    /// </para>
     /// </param>
-    public static Result<Edital> EmitirAbertura(Guid processoSeletivoId, DadosEdital dados, DateTimeOffset instante)
+    public static Result<Edital> EmitirAbertura(Guid processoSeletivoId, DadosEdital dados, DateTimeOffset dataDocumental)
     {
         ArgumentNullException.ThrowIfNull(dados);
 
@@ -66,7 +69,7 @@ public sealed class Edital : EntityBase
             ProcessoSeletivoId = processoSeletivoId,
             Natureza = NaturezaEdital.Abertura,
             Numero = dados.Numero,
-            DataPublicacao = instante,
+            DataPublicacao = dataDocumental,
             DocumentoEditalId = dados.DocumentoEditalId,
             EditalRetificadoId = null,
             MotivoRetificacao = null,
@@ -88,7 +91,7 @@ public sealed class Edital : EntityBase
         DadosEdital dados,
         Guid editalRetificadoId,
         string motivo,
-        DateTimeOffset instante)
+        DateTimeOffset dataDocumental)
     {
         ArgumentNullException.ThrowIfNull(dados);
 
@@ -118,7 +121,7 @@ public sealed class Edital : EntityBase
             ProcessoSeletivoId = processoSeletivoId,
             Natureza = NaturezaEdital.Retificacao,
             Numero = dados.Numero,
-            DataPublicacao = instante,
+            DataPublicacao = dataDocumental,
             DocumentoEditalId = dados.DocumentoEditalId,
             EditalRetificadoId = editalRetificadoId,
             MotivoRetificacao = motivo.Trim(),

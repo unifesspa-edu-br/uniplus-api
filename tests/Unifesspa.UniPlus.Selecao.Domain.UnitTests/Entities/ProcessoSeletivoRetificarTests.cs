@@ -34,6 +34,11 @@ public sealed class ProcessoSeletivoRetificarTests
     // processo são um estado válido (ADR-0104) — a data documental não ordena.
     private static RelogioManual Relogio() => new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
 
+    // A data que o DOCUMENTO declara (ADR-0108) — deixou de sair do relógio. A da abertura e a
+    // da retificação são declaradas separadamente, como o operador as informa.
+    private static readonly DateTimeOffset DataDocumentalDaAbertura = new(2026, 3, 13, 0, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset DataDocumentalDaRetificacao = new(2026, 3, 20, 0, 0, 0, TimeSpan.Zero);
+
     /// <summary>
     /// Versão de configuração avulsa, sem vínculo com nenhum processo real —
     /// usada só no teste que recusa retificação de um processo em rascunho:
@@ -103,7 +108,7 @@ public sealed class ProcessoSeletivoRetificarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Result<PublicacaoResultado> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", DataDocumentalDaAbertura, clock);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         abertura = publicacao.Value!.Edital;
         versaoAbertura = publicacao.Value!.Versao;
@@ -119,7 +124,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção do prazo de inscrição", clock: clock);
+            motivo: "Correção do prazo de inscrição", DataDocumentalDaRetificacao, clock: clock);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado, "retificar não altera o status Publicado");
@@ -143,7 +148,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            "Ajuste de vaga", clock);
+            "Ajuste de vaga", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock);
 
         resultado.IsSuccess.Should().BeTrue();
         Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
@@ -159,7 +164,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "qualquer", clock: Relogio());
+            motivo: "qualquer", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock: Relogio());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
@@ -175,7 +180,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> primeira = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "primeira retificação", clock: clock);
+            motivo: "primeira retificação", DataDocumentalDaRetificacao, clock: clock);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
@@ -185,7 +190,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // resultado anterior — não a da abertura.
         Result<PublicacaoResultado> segunda = processo.Retificar(
             NovosDados(), primeira.Value!.Versao, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "segunda retificação", clock: clock);
+            motivo: "segunda retificação", DataDocumentalDaRetificacao, clock: clock);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
         primeira.Value!.Edital.EditalRetificadoId.Should().Be(abertura.Id, "R1 sucede a abertura");
@@ -199,7 +204,7 @@ public sealed class ProcessoSeletivoRetificarTests
     public void EmitirRetificacao_MotivoVazio_Recusa()
     {
         Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), Guid.CreateVersion7(), motivo: "   ", instante: Relogio().GetUtcNow());
+            Guid.CreateVersion7(), NovosDados(), Guid.CreateVersion7(), motivo: "   ", dataDocumental: Relogio().GetUtcNow());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Edital.MotivoRetificacaoObrigatorio");
@@ -209,7 +214,7 @@ public sealed class ProcessoSeletivoRetificarTests
     public void EmitirRetificacao_SemEditalRetificado_Recusa()
     {
         Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), editalRetificadoId: Guid.Empty, motivo: "motivo", instante: Relogio().GetUtcNow());
+            Guid.CreateVersion7(), NovosDados(), editalRetificadoId: Guid.Empty, motivo: "motivo", dataDocumental: Relogio().GetUtcNow());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Edital.EditalRetificadoObrigatorio");
@@ -221,7 +226,7 @@ public sealed class ProcessoSeletivoRetificarTests
         Guid retificadoId = Guid.CreateVersion7();
 
         Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), retificadoId, motivo: "  Adequação a decisão superveniente  ", instante: Relogio().GetUtcNow());
+            Guid.CreateVersion7(), NovosDados(), retificadoId, motivo: "  Adequação a decisão superveniente  ", dataDocumental: Relogio().GetUtcNow());
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Natureza.Should().Be(NaturezaEdital.Retificacao);
@@ -238,7 +243,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção de datas", clock: clock);
+            motivo: "Correção de datas", DataDocumentalDaRetificacao, clock: clock);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso");
@@ -275,7 +280,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Result<PublicacaoResultado> resultado = processo.Retificar(
             NovosDados(), versaoForaDaCadeia, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "Correção de datas", clock: clock);
+            motivo: "Correção de datas", DataDocumentalDaRetificacao, clock: clock);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("VersaoConfiguracao.CadeiaQuebrada");
@@ -289,13 +294,14 @@ public sealed class ProcessoSeletivoRetificarTests
         RelogioManual clock = Relogio();
         ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura, out VersaoConfiguracao versaoAbertura);
 
-        // Primeira retificação num instante ANTERIOR ao da abertura — o que um
-        // ajuste NTP em degrau produz. A data documental do Edital passa a ordenar
-        // ao contrário da cadeia: o "vigente por data" volta a ser a abertura.
+        // A retificação DECLARA uma data documental anterior à da abertura — o que a
+        // importação de um acervo produz. E o relógio também regride (ajuste NTP em degrau).
+        // Nenhuma das duas coisas pode mover a cadeia: quem ordena é a versão.
         clock.Avancar(TimeSpan.FromMinutes(-10));
+        DateTimeOffset dataDocumentalRegredida = DataDocumentalDaAbertura.AddDays(-1);
         Result<PublicacaoResultado> primeira = processo.Retificar(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "primeira retificação", clock: clock);
+            motivo: "primeira retificação", dataDocumentalRegredida, clock: clock);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         primeira.Value!.Edital.DataPublicacao.Should().BeBefore(
             abertura.DataPublicacao!.Value,
@@ -309,7 +315,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // cadeia perfeitamente linear irretificável.
         Result<PublicacaoResultado> segunda = processo.Retificar(
             NovosDados(), primeira.Value!.Versao, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
-            motivo: "segunda retificação", clock: clock);
+            motivo: "segunda retificação", DataDocumentalDaRetificacao, clock: clock);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
         segunda.Value!.Edital.EditalRetificadoId.Should().Be(

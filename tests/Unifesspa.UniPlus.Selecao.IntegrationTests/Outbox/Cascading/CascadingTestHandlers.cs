@@ -56,7 +56,7 @@ public sealed class FalharAposPublicarCascadingHandler
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "cascading-v9-test",
-            timeProvider);
+            new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), timeProvider);
 
         db.VersoesConfiguracao.Add(publicarResult.Value!.Versao);
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
