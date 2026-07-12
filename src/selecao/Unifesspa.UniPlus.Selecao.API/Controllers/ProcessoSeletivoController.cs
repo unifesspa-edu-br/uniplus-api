@@ -375,13 +375,15 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Resolve o snapshot congelado vigente do processo num instante (RN08, T6
-    /// #787, ADR-0075/0076): a publicação de maior <c>data_publicacao</c> ≤ o
-    /// instante. Quando <paramref name="instante"/> é omitido, usa o relógio do
+    /// Resolve o snapshot congelado vigente do processo num instante (RN08,
+    /// ADR-0075/0076/0104): a VERSÃO da configuração de maior
+    /// <c>vigente_a_partir_de</c> ≤ o instante, desempatada pelo número da
+    /// versão. Quem ordena é o relógio do sistema, não a data que o documento
+    /// declara. Quando <paramref name="instante"/> é omitido, usa o relógio do
     /// servidor (ADR-0068). É o contrato de LEITURA que o runtime e os
     /// incrementos downstream consomem — a configuração congelada, não a viva.
-    /// 422 (<c>Snapshot.VigenteAusente</c>) quando não há publicação vigente ≤
-    /// o instante; 404 quando o processo não existe — nunca retorno silencioso.
+    /// 422 (<c>Snapshot.VigenteAusente</c>) quando não há versão vigente ≤ o
+    /// instante; 404 quando o processo não existe — nunca retorno silencioso.
     /// </summary>
     [HttpGet("{id:guid}/snapshot-vigente")]
     [VendorMediaType(Resource = "snapshot-vigente-processo-seletivo", Versions = [1])]

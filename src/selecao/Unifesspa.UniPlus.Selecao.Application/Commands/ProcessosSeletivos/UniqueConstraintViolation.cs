@@ -22,7 +22,6 @@ internal static class UniqueConstraintViolation
     private const string UniqueViolationSqlState = "23505";
     private const string CheckViolationSqlState = "23514";
 
-    private const string DataPublicacaoConstraint = "ux_editais_processo_data_publicacao";
     private const string AberturaUnicaConstraint = "ux_editais_processo_abertura_unica";
     private const string ContratoNaturezaConstraint = "ck_editais_contrato_natureza";
     private const string RetificadoUnicoConstraint = "ux_editais_edital_retificado_unico";
@@ -59,10 +58,6 @@ internal static class UniqueConstraintViolation
 
         return innerType.GetProperty("ConstraintName")?.GetValue(inner) as string;
     }
-
-    /// <summary><see langword="true"/> quando a constraint violada é a de unicidade de <c>data_publicacao</c> por processo (CA-08).</summary>
-    public static bool IsDataPublicacaoDuplicada(string? constraint) =>
-        string.Equals(constraint, DataPublicacaoConstraint, StringComparison.Ordinal);
 
     /// <summary><see langword="true"/> quando a constraint violada é a de abertura única por processo (corrida de publicações concorrentes).</summary>
     public static bool IsAberturaJaExiste(string? constraint) =>

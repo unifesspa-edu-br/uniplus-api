@@ -7,6 +7,8 @@ decision-makers:
 
 # ADR-0075: O snapshot que governa um ato é resolvido deterministicamente no instante do ato e gravado nele
 
+> **Emenda (ADR-0104):** o núcleo desta decisão — seletor determinístico, instante sempre explícito, snapshot gravado no ato, ausência exposta — permanece vigente. O **mecanismo** de ordenação, não: a configuração vigente passou a ser resolvida sobre `VersaoConfiguracao.VigenteAPartirDe` (o relógio do sistema), e não mais ordenando editais por `DataPublicacao` (a data documental). Duas consequências desta ADR caducam com isso: a seleção deixou de ser "em duas etapas" (primeiro o edital vigente, depois o snapshot dele), e o empate deixou de ser impedido por unicidade sobre `(processo, data de publicação)` — o índice foi removido. O empate de instante passa a ser possível e é desempatado por `NumeroVersao` decrescente, o que preserva o determinismo que esta ADR exige. Ver [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md).
+
 ## Contexto e enunciado do problema
 
 Com a validação documental lendo o snapshot congelado ([ADR-0070](0070-validacao-runtime-avalia-snapshot-congelado.md)), é preciso definir **qual snapshot governa cada ato**.

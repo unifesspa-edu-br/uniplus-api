@@ -142,13 +142,6 @@ public static class RetificarProcessoSeletivoCommandHandler
             // duas retificações concorrentes do mesmo processo, ou gap de
             // validação em memória. Filtro do `when` garante que outras
             // exceções não mapeadas propagam intactas.
-            if (UniqueConstraintViolation.IsDataPublicacaoDuplicada(constraint))
-            {
-                return (Result.Failure(new DomainError(
-                    "Edital.DataPublicacaoDuplicada",
-                    "Já existe um Edital publicado neste processo com a mesma data de publicação.")), []);
-            }
-
             if (UniqueConstraintViolation.IsContratoNaturezaInvalido(constraint))
             {
                 return (Result.Failure(new DomainError(

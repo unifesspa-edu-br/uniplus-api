@@ -68,8 +68,9 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
     /// <summary>
     /// Publica um processo e o retifica em seguida — persistindo os dois
-    /// Editais e os dois snapshots. Usa um relógio manual para dar instantes
-    /// distintos à abertura e à retificação (ux_editais_processo_data_publicacao).
+    /// Editais e as duas versões da configuração. Usa um relógio manual para
+    /// dar instantes distintos à abertura e à retificação, como o certame real
+    /// faz; a ordem, porém, vem da cadeia de versões, não desses instantes.
     /// </summary>
     private async Task<(ProcessoSeletivo Processo, Edital Abertura, VersaoConfiguracao VersaoAbertura, Edital Retificacao, VersaoConfiguracao VersaoRetificacao)>
         PublicarERetificarAsync(string nome)
@@ -108,7 +109,9 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!,
-                new RetificacaoInfo(carregado.EditalVigente!.Id, "Correção do prazo de inscrição"));
+                // O alvo da retificação é o ato que criou a versão corrente — o
+                // topo da cadeia de CONFIGURAÇÃO —, como o handler faz.
+                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"));
             Result<PublicacaoResultado> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
                 docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);

@@ -113,13 +113,6 @@ public static class PublicarProcessoSeletivoCommandHandler
                     "Este processo já tem um Edital de abertura publicado.")), []);
             }
 
-            if (UniqueConstraintViolation.IsDataPublicacaoDuplicada(constraint))
-            {
-                return (Result.Failure(new DomainError(
-                    "Edital.DataPublicacaoDuplicada",
-                    "Já existe um Edital publicado neste processo com a mesma data de publicação.")), []);
-            }
-
             if (UniqueConstraintViolation.IsContratoNaturezaInvalido(constraint))
             {
                 return (Result.Failure(new DomainError(

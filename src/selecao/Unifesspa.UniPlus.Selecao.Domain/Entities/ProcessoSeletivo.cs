@@ -62,20 +62,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<Edital> _editais = [];
     public IReadOnlyCollection<Edital> Editais => _editais.AsReadOnly();
 
-    /// <summary>
-    /// Edital vigente da cadeia de publicação: o de maior data de publicação
-    /// (topo da cadeia linear, ADR-0101) — único por instante graças a
-    /// <c>ux_editais_processo_data_publicacao</c>. <see langword="null"/>
-    /// enquanto o processo não foi publicado. É a raiz — não o cliente — quem
-    /// determina qual Edital uma retificação sucede; este acessor é a fonte
-    /// única dessa definição, consumida pela raiz e pelo handler (que precisa
-    /// do id do vigente para congelar o bloco de retificação do snapshot).
-    /// </summary>
-    public Edital? EditalVigente => _editais
-        .Where(static e => e.DataPublicacao is not null)
-        .OrderByDescending(static e => e.DataPublicacao!.Value)
-        .FirstOrDefault();
-
     private ProcessoSeletivo() { }
 
     public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo)
