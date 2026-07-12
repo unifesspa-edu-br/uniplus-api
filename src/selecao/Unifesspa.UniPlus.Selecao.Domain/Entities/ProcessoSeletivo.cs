@@ -500,10 +500,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <remarks>
     /// O novo Edital é o ato criador da versão <c>N + 1</c>, e retifica o ato
     /// criador da versão <c>N</c> — invariante que <see cref="VersaoConfiguracao.Suceder"/>
-    /// verifica (ADR-0104). Se o Edital vigente da cadeia documental não for o
-    /// ato criador da versão corrente, as duas cadeias divergiram e a
-    /// retificação é recusada, em vez de abrir uma segunda linhagem de
-    /// configuração no mesmo certame.
+    /// verifica (ADR-0104). O alvo da retificação é lido da CADEIA DE VERSÕES, não
+    /// da data documental: é a versão que ordena a configuração, e a data pode
+    /// regredir (relógio do host, importação de acervo) sem que isso mova o topo
+    /// da cadeia.
     /// </remarks>
     /// <param name="versaoAtual">Versão de configuração corrente do processo (maior <c>NumeroVersao</c>), carregada pelo handler — <see cref="VersaoConfiguracao"/> é agregado próprio, não coleção desta raiz.</param>
     /// <param name="motivo">Justificativa obrigatória do ato de retificação (ADR-0101).</param>
@@ -530,20 +530,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Só é possível retificar um processo publicado — status atual: {Status}."));
         }
 
-        // ADR-0101: a retificação sempre sucede o Edital VIGENTE (topo da
-        // cadeia — maior data de publicação, único por
-        // ux_editais_processo_data_publicacao). O alvo é estado do agregado,
-        // não input do cliente: qual Edital interno é sucedido é decisão da
-        // raiz, e mantê-la no vigente garante que a cadeia permaneça linear.
-        // Publicado implica ao menos um Edital publicado — o null aqui só
-        // cobriria um estado inconsistente.
-        if (EditalVigente is not { } vigente)
-        {
-            return Result<PublicacaoResultado>.Failure(new DomainError(
-                "ProcessoSeletivo.TransicaoInvalida",
-                "Processo publicado sem Edital vigente — estado inconsistente."));
-        }
-
         // A cadeia de versões não atravessa certames: uma versão corrente de
         // outro processo emendaria a configuração de um certame na de outro, e a
         // numeração — derivada dela — sairia do lugar.
@@ -554,20 +540,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A versão corrente informada pertence a outro Processo Seletivo."));
         }
 
-        // A trava que impede uma SEGUNDA cadeia de configuração no mesmo certame
-        // (ADR-0104): o novo ato retifica o Edital vigente, logo o vigente tem de
-        // ser o ato que criou a versão corrente. Se as duas cadeias — a dos
-        // documentos e a das versões — divergiram, retificar aqui abriria uma
-        // linhagem paralela: duas configurações vigentes, cada uma se dizendo a
-        // atual. Recusa em vez de escolher uma.
-        if (versaoAtual.AtoCriadorId != vigente.Id)
+        // ADR-0101/0104: a retificação sucede o ato que criou a VERSÃO CORRENTE —
+        // o topo da cadeia de configuração —, e não o Edital de maior data
+        // documental. O alvo continua sendo estado do agregado, nunca input do
+        // cliente; o que muda é de onde se lê o topo.
+        //
+        // Ordenar por data para achar o alvo é frágil: a data de publicação vem do
+        // relógio, e um retrocesso (ajuste NTP em degrau, importação de acervo)
+        // pode dar ao ato mais NOVO uma data mais ANTIGA. O topo por data e o topo
+        // por versão divergiriam, e uma cadeia perfeitamente linear ficaria
+        // irretificável. É a versão que ordena a configuração (ADR-0104) — inclusive
+        // para decidir o que se retifica.
+        //
+        // Publicado implica versão corrente com ato criador entre os Editais do
+        // processo; o null aqui só cobriria estado inconsistente.
+        if (_editais.FirstOrDefault(e => e.Id == versaoAtual.AtoCriadorId) is not { } atoCriadorCorrente)
         {
             return Result<PublicacaoResultado>.Failure(new DomainError(
                 "VersaoConfiguracao.CadeiaQuebrada",
-                $"A versão {versaoAtual.NumeroVersao} não foi criada pelo Edital vigente — a cadeia de configuração do certame divergiu da cadeia de atos."));
+                $"O ato que criou a versão {versaoAtual.NumeroVersao} não está entre os Editais deste processo — estado inconsistente."));
         }
 
-        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, vigente.Id, motivo, clock);
+        Result<Edital> editalResult = Edital.EmitirRetificacao(Id, dados, atoCriadorCorrente.Id, motivo, clock);
         if (editalResult.IsFailure)
         {
             return Result<PublicacaoResultado>.Failure(editalResult.Error!);
@@ -582,7 +576,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             algoritmoHash,
             atoCriadorId: edital.Id,
             atoCriadorHash: hashEdital,
-            atoCriadorRetificaId: vigente.Id,
+            atoCriadorRetificaId: atoCriadorCorrente.Id,
             atorUsuarioSub,
             clock);
 

@@ -243,17 +243,17 @@ public sealed class ProcessoSeletivoRetificarTests
         processo.Editais.Should().ContainSingle("nada é mutado quando a versão informada não é deste certame");
     }
 
-    [Fact(DisplayName = "Retificar — versão corrente que não foi criada pelo Edital vigente é recusada (trava da cadeia única)")]
-    public void Retificar_VersaoNaoCriadaPeloEditalVigente_Recusa()
+    [Fact(DisplayName = "Retificar — versão corrente cujo ato criador não está entre os Editais do processo é recusada")]
+    public void Retificar_VersaoComAtoCriadorDesconhecido_Recusa()
     {
         RelogioManual clock = Relogio();
         ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _, out VersaoConfiguracao versaoAbertura);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        // Uma versão do MESMO processo, mas criada por um ato que não é o Edital
-        // vigente: as duas cadeias — a dos documentos e a das versões —
-        // divergiram. Retificar aqui abriria uma segunda linhagem de
-        // configuração no mesmo certame, com duas versões se dizendo a atual.
+        // Uma versão do MESMO processo, mas criada por um ato que este processo
+        // não conhece: não há Edital a retificar, e emitir a retificação
+        // apontando para um documento inexistente deixaria a cadeia pendurada
+        // no vazio.
         VersaoConfiguracao versaoForaDaCadeia = VersaoConfiguracao.Abrir(
             processo.Id,
             BytesCanonicos,
@@ -279,6 +279,39 @@ public sealed class ProcessoSeletivoRetificarTests
         resultado.Error!.Code.Should().Be("VersaoConfiguracao.CadeiaQuebrada");
         processo.Editais.Should().ContainSingle("o Edital de retificação não é emitido quando a cadeia não fecha");
         processo.DequeueDomainEvents().Should().BeEmpty("nenhum evento é enfileirado numa retificação recusada");
+    }
+
+    [Fact(DisplayName = "Retificar — relógio que regride não move o alvo: a retificação sucede o ato criador da versão corrente, não o Edital de maior data")]
+    public void Retificar_RelogioRegride_AlvoVemDaCadeiaDeVersoes()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out Edital abertura, out VersaoConfiguracao versaoAbertura);
+
+        // Primeira retificação num instante ANTERIOR ao da abertura — o que um
+        // ajuste NTP em degrau produz. A data documental do Edital passa a ordenar
+        // ao contrário da cadeia: o "vigente por data" volta a ser a abertura.
+        clock.Avancar(TimeSpan.FromMinutes(-10));
+        Result<PublicacaoResultado> primeira = processo.Retificar(
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "primeira retificação", clock: clock);
+        primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
+        processo.EditalVigente!.Id.Should().Be(
+            abertura.Id,
+            "pré-condição do teste: por DATA, o topo voltou a ser a abertura — é essa divergência que não pode decidir nada");
+
+        // A segunda retificação continua possível, e sucede R1 — o ato que criou a
+        // versão corrente —, não a abertura. Ordenar o alvo por data tornaria uma
+        // cadeia perfeitamente linear irretificável.
+        Result<PublicacaoResultado> segunda = processo.Retificar(
+            NovosDados(), primeira.Value!.Versao, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            motivo: "segunda retificação", clock: clock);
+
+        segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
+        segunda.Value!.Edital.EditalRetificadoId.Should().Be(
+            primeira.Value!.Edital.Id,
+            "o alvo é o ato criador da versão corrente — a cadeia manda, não o relógio");
+        segunda.Value!.Versao.NumeroVersao.Should().Be(3);
+        segunda.Value!.Versao.AtoCriadorRetificaId.Should().Be(primeira.Value!.Edital.Id);
     }
 
     /// <summary>
