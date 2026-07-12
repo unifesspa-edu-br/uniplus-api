@@ -134,14 +134,14 @@ public sealed class SnapshotVigentePersistenciaTests : IClassFixture<ProcessoSel
             .ObterSnapshotVigenteAsync(processoId, T0.AddDays(2), CancellationToken.None);
         posterior.Should().NotBeNull();
         posterior!.Value.Edital.Natureza.Should().Be(NaturezaEdital.Retificacao);
-        posterior.Value.Versao.HashConfiguracao.Should().Be(versaoRetificacao.HashConfiguracao);
+        posterior!.Value.Versao.HashConfiguracao.Should().Be(versaoRetificacao.HashConfiguracao);
 
         // Instante exatamente em T0 → resolve a abertura (retificação, em T0+1d, é excluída).
         (Edital Edital, VersaoConfiguracao Versao)? emT0 = await repository
             .ObterSnapshotVigenteAsync(processoId, T0, CancellationToken.None);
         emT0.Should().NotBeNull();
         emT0!.Value.Edital.Natureza.Should().Be(NaturezaEdital.Abertura);
-        emT0.Value.Versao.HashConfiguracao.Should().Be(versaoAbertura.HashConfiguracao);
+        emT0!.Value.Versao.HashConfiguracao.Should().Be(versaoAbertura.HashConfiguracao);
 
         // Mesmo instante de T0, expresso em offset não-UTC (-03:00) — Npgsql
         // exige UTC para timestamptz; o seletor normaliza e resolve o mesmo.

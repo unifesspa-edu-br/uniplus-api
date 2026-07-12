@@ -11,10 +11,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "snapshot_publicacao",
-                schema: "selecao");
-
             migrationBuilder.CreateTable(
                 name: "versoes_configuracao",
                 schema: "selecao",
@@ -223,6 +219,57 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     FOR EACH ROW
                     EXECUTE FUNCTION selecao.fn_versoes_configuracao_sucessao();
                 """);
+
+            // Transporta os congelamentos já existentes para o novo modelo ANTES de
+            // dropar a tabela antiga. A configuração congelada é prova do que valia
+            // no certame (RN08): perdê-la deixaria um processo publicado sem versão —
+            // o seletor devolveria "vigente ausente", e a retificação, estado
+            // inconsistente. Cada snapshot vira uma versão, preservando o seu próprio
+            // id (é ele que o ProcessoPublicadoEvent já publicou no Kafka e que os
+            // consumidores guardaram como referência forense durável).
+            //
+            // O que se deriva da cadeia de editais:
+            //   - numero_versao: a ordem da publicação dentro do processo. A cadeia
+            //     legada é linear e ux_editais_processo_data_publicacao garantia
+            //     unicidade da data, então ordenar por ela é determinístico;
+            //   - ato_criador_id/hash: o Edital que emitiu o snapshot, por valor;
+            //   - ato_criador_retifica_id: o Edital que aquele Edital retifica — nulo
+            //     na abertura, que é exatamente o contrato simétrico da nova tabela.
+            //
+            // O INSERT passa pelo trigger de sucessão: dados legados incoerentes
+            // (buraco, cadeia quebrada, vigência regressiva) FALHAM a migration em vez
+            // de entrar como evidência corrompida. O ORDER BY garante que a versão N
+            // seja inserida depois da N-1, como o trigger exige.
+            migrationBuilder.Sql("""
+                INSERT INTO selecao.versoes_configuracao (
+                    id, processo_seletivo_id, numero_versao, vigente_a_partir_de,
+                    schema_version, algoritmo_hash,
+                    configuracao_congelada_canonica, configuracao_congelada, hash_configuracao,
+                    ato_criador_id, ato_criador_hash, ato_criador_retifica_id, ator_usuario_sub)
+                SELECT
+                    s.id,
+                    e.processo_seletivo_id,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY e.processo_seletivo_id
+                        ORDER BY e.data_publicacao, e.id)::int,
+                    s.data_publicacao,
+                    s.schema_version,
+                    s.algoritmo_hash,
+                    s.configuracao_congelada_canonica,
+                    s.configuracao_congelada,
+                    s.hash_configuracao,
+                    s.edital_id,
+                    s.hash_edital,
+                    e.edital_retificado_id,
+                    s.ator_usuario_sub
+                FROM selecao.snapshot_publicacao s
+                JOIN selecao.editais e ON e.id = s.edital_id
+                ORDER BY e.processo_seletivo_id, e.data_publicacao, e.id;
+                """);
+
+            migrationBuilder.DropTable(
+                name: "snapshot_publicacao",
+                schema: "selecao");
         }
 
         /// <inheritdoc />
@@ -234,10 +281,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             migrationBuilder.Sql("DROP FUNCTION IF EXISTS selecao.fn_versoes_configuracao_sucessao();");
             migrationBuilder.Sql("DROP FUNCTION IF EXISTS selecao.fn_versoes_configuracao_bloqueia_truncate();");
             migrationBuilder.Sql("DROP FUNCTION IF EXISTS selecao.fn_versoes_configuracao_somente_insercao();");
-
-            migrationBuilder.DropTable(
-                name: "versoes_configuracao",
-                schema: "selecao");
 
             migrationBuilder.CreateTable(
                 name: "snapshot_publicacao",
@@ -273,6 +316,26 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 table: "snapshot_publicacao",
                 column: "edital_id",
                 unique: true);
+
+            // Devolve os congelamentos ao modelo antigo antes de dropar o novo — o
+            // reverso do backfill do Up. Perde-se apenas o que o modelo antigo não
+            // sabe representar (o número da versão, e a vigência separada da data
+            // documental), porque lá as duas grandezas eram a mesma coluna.
+            migrationBuilder.Sql("""
+                INSERT INTO selecao.snapshot_publicacao (
+                    id, edital_id, schema_version, algoritmo_hash,
+                    configuracao_congelada_canonica, configuracao_congelada,
+                    hash_configuracao, hash_edital, ator_usuario_sub, data_publicacao)
+                SELECT
+                    v.id, v.ato_criador_id, v.schema_version, v.algoritmo_hash,
+                    v.configuracao_congelada_canonica, v.configuracao_congelada,
+                    v.hash_configuracao, v.ato_criador_hash, v.ator_usuario_sub, v.vigente_a_partir_de
+                FROM selecao.versoes_configuracao v;
+                """);
+
+            migrationBuilder.DropTable(
+                name: "versoes_configuracao",
+                schema: "selecao");
         }
     }
 }
