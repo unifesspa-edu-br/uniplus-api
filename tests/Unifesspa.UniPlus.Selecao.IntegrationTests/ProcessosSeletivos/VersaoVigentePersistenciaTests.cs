@@ -224,6 +224,54 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         vigente.NumeroVersao.Should().Be(2);
     }
 
+    [Fact(DisplayName = "A versão criada por um ato resolve NO INSTANTE do próprio ato — relógio de parede, sem relógio manual (ADR-0075)")]
+    public async Task ObterVersaoVigente_NoInstanteDoProprioAto_ResolveAVersaoQueEleCriou()
+    {
+        // O instante que o ProcessoPublicadoEvent publica é o do ATO
+        // (Edital.DataPublicacao). Um consumidor que reavalie o ato contra a
+        // configuração vigente naquele instante — que é o que a ADR-0075 manda
+        // fazer — precisa encontrar a versão que o próprio ato criou.
+        //
+        // Com o relógio REAL (não o manual dos demais testes), duas leituras de
+        // GetUtcNow() dentro de Publicar deixariam VigenteAPartirDe alguns ticks à
+        // frente de DataPublicacao, e a consulta no instante do ato não acharia
+        // nada. A raiz lê o relógio uma única vez — este teste é o que trava isso.
+        ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_NoInstanteDoProprioAto_ResolveAVersaoQueEleCriou));
+        DocumentoEdital documento = DocumentoConfirmado(processo.Id);
+        DadosEdital dados = NovosDados(documento.Id);
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dados, documento.HashSha256!);
+
+        Result<PublicacaoResultado> publicar = processo.Publicar(
+            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
+            documento.HashSha256!, "integration-test-user", TimeProvider.System);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+
+        Edital edital = publicar.Value!.Edital;
+        VersaoConfiguracao versao = publicar.Value!.Versao;
+        versao.VigenteAPartirDe.Should().Be(
+            edital.DataPublicacao!.Value,
+            "o ato e a versão que ele cria compartilham o instante — não são duas leituras do relógio");
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository leitura = new(context, TimeProvider.System);
+
+        // O instante do ato, tal como o evento o publica.
+        VersaoConfiguracao? noInstanteDoAto = await leitura
+            .ObterVersaoVigenteAsync(processo.Id, edital.DataPublicacao!.Value, CancellationToken.None);
+
+        noInstanteDoAto.Should().NotBeNull("o ato deve resolver a configuração que ele próprio congelou");
+        noInstanteDoAto!.Id.Should().Be(versao.Id);
+    }
+
     [Fact(DisplayName = "Relógio do host atrás da vigência: a consulta corrente aflora a ausência (422) — nunca devolve versão que ainda não vigora")]
     public async Task Handle_RelogioCorrenteAtrasDaVigencia_AfloraVigenteAusente()
     {
@@ -288,16 +336,16 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
 
-        Edital abertura = Edital.EmitirAbertura(processo.Id, dadosAbertura, relogioDocumental).Value!;
+        Edital abertura = Edital.EmitirAbertura(processo.Id, dadosAbertura, relogioDocumental.GetUtcNow()).Value!;
         Edital retificacao = Edital
-            .EmitirRetificacao(processo.Id, dadosRetificacao, abertura.Id, "Correção do prazo", relogioDocumental)
+            .EmitirRetificacao(processo.Id, dadosRetificacao, abertura.Id, "Correção do prazo", relogioDocumental.GetUtcNow())
             .Value!;
         retificacao.DataPublicacao.Should().Be(abertura.DataPublicacao, "pré-condição: a retificação republica a data do ato original");
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dadosAbertura, docAbertura.HashSha256!);
         VersaoConfiguracao v1 = VersaoConfiguracao.Abrir(
             processo.Id, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            abertura.Id, docAbertura.HashSha256!, "integration-test-user", relogioDoSistema);
+            abertura.Id, docAbertura.HashSha256!, "integration-test-user", relogioDoSistema.GetUtcNow());
 
         relogioDoSistema.Avancar(TimeSpan.FromDays(1));
         SnapshotCanonico canonicoR = Canonicalizer.Canonicalizar(
@@ -305,7 +353,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             new RetificacaoInfo(abertura.Id, "Correção do prazo"));
         VersaoConfiguracao v2 = VersaoConfiguracao.Suceder(
             v1, canonicoR.Bytes, canonicoR.SchemaVersion, canonicoR.AlgoritmoHash,
-            retificacao.Id, docRetificacao.HashSha256!, abertura.Id, "integration-test-user", relogioDoSistema);
+            retificacao.Id, docRetificacao.HashSha256!, abertura.Id, "integration-test-user", relogioDoSistema.GetUtcNow());
 
         // As duas versões vão em SaveChanges distintos, como no fluxo real (a
         // publicação e a retificação são transações separadas): o trigger de
@@ -380,7 +428,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         Guid atoInexistente = Guid.CreateVersion7();
         VersaoConfiguracao orfa = VersaoConfiguracao.Abrir(
             processo.Id, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            atoInexistente, HashFixo, "integration-test-user", new RelogioManual(T0));
+            atoInexistente, HashFixo, "integration-test-user", T0);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {

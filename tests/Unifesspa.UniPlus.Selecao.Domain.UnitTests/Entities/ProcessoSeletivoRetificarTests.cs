@@ -49,7 +49,7 @@ public sealed class ProcessoSeletivoRetificarTests
         Guid.CreateVersion7(),
         HashFixo,
         "user-sub-123",
-        Relogio());
+        Relogio().GetUtcNow());
 
     private static ProcessoSeletivo NovoProcessoConforme()
     {
@@ -199,7 +199,7 @@ public sealed class ProcessoSeletivoRetificarTests
     public void EmitirRetificacao_MotivoVazio_Recusa()
     {
         Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), Guid.CreateVersion7(), motivo: "   ", clock: Relogio());
+            Guid.CreateVersion7(), NovosDados(), Guid.CreateVersion7(), motivo: "   ", instante: Relogio().GetUtcNow());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Edital.MotivoRetificacaoObrigatorio");
@@ -209,7 +209,7 @@ public sealed class ProcessoSeletivoRetificarTests
     public void EmitirRetificacao_SemEditalRetificado_Recusa()
     {
         Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), editalRetificadoId: Guid.Empty, motivo: "motivo", clock: Relogio());
+            Guid.CreateVersion7(), NovosDados(), editalRetificadoId: Guid.Empty, motivo: "motivo", instante: Relogio().GetUtcNow());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Edital.EditalRetificadoObrigatorio");
@@ -221,7 +221,7 @@ public sealed class ProcessoSeletivoRetificarTests
         Guid retificadoId = Guid.CreateVersion7();
 
         Result<Edital> resultado = Edital.EmitirRetificacao(
-            Guid.CreateVersion7(), NovosDados(), retificadoId, motivo: "  Adequação a decisão superveniente  ", clock: Relogio());
+            Guid.CreateVersion7(), NovosDados(), retificadoId, motivo: "  Adequação a decisão superveniente  ", instante: Relogio().GetUtcNow());
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Natureza.Should().Be(NaturezaEdital.Retificacao);
@@ -264,7 +264,7 @@ public sealed class ProcessoSeletivoRetificarTests
             Guid.CreateVersion7(),
             HashFixo,
             "user-sub-123",
-            clock);
+            clock.GetUtcNow());
         versaoForaDaCadeia.AtoCriadorId.Should().NotBe(
             versaoAbertura.AtoCriadorId,
             "pré-condição do teste: o ato criador tem de ser outro");
