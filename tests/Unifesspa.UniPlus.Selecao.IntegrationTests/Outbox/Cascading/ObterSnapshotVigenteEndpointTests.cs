@@ -80,8 +80,8 @@ public sealed class ObterSnapshotVigenteEndpointTests
             .Where(e => e.ProcessoSeletivoId == processoId && e.Natureza == Domain.Enums.NaturezaEdital.Retificacao)
             .Select(e => e.Id)
             .SingleAsync();
-        SnapshotPublicacao esperado = await db.SnapshotsPublicacao.AsNoTracking()
-            .SingleAsync(s => s.EditalId == editalRetificacaoId);
+        VersaoConfiguracao esperado = await db.VersoesConfiguracao.AsNoTracking()
+            .SingleAsync(v => v.AtoCriadorId == editalRetificacaoId);
         doc.RootElement.GetProperty("hashConfiguracao").GetString().Should().Be(esperado.HashConfiguracao);
         // A referência forense durável (ADR-0075) — mesmo id do ProcessoPublicadoEvent.
         doc.RootElement.GetProperty("snapshotPublicacaoId").GetGuid().Should().Be(esperado.Id);

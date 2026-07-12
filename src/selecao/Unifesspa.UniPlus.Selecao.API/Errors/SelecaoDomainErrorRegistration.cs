@@ -154,10 +154,21 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("Edital.EditalRetificadoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.edital_retificado_obrigatorio", "A retificação deve referenciar o Edital anterior")),
         new("Edital.MotivoRetificacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.motivo_retificacao_obrigatorio", "O motivo da retificação é obrigatório")),
         new("Edital.RetificacaoJaExiste", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.retificacao_ja_existe", "Este Edital já foi retificado — a cadeia de retificação é linear")),
-        // SnapshotPublicacao.Congelar (ADR-0063): entidade forensic — guards
-        // de invariante lançam ArgumentException (defesa em profundidade
-        // contra erro de programação do caller, nunca alcançável a partir de
-        // input do usuário), não DomainError. Sem entradas de registry aqui.
+        // VersaoConfiguracao (ADR-0104/0063): entidade forensic — os guards de
+        // SHAPE (bytes vazios, hash malformado, id zerado) lançam
+        // ArgumentException (defesa em profundidade contra erro de programação
+        // do caller, nunca alcançável a partir de input do usuário) e não têm
+        // entrada aqui. Já as invariantes de NEGÓCIO da cadeia de versões
+        // afloram como DomainError → 422, tanto pelo domínio quanto pelos guard
+        // rails de banco que fecham a corrida check-then-act (ADR-0102).
+        new("VersaoConfiguracao.CadeiaQuebrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.cadeia_quebrada", "O ato criador da versão não retifica o ato criador da versão anterior")),
+        new("VersaoConfiguracao.AtoCriadorRepetido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_repetido", "Um ato congela a configuração no máximo uma vez")),
+        new("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.versao_anterior_de_outro_processo", "A cadeia de versões não atravessa certames")),
+        new("VersaoConfiguracao.NumeroDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.numero_duplicado", "Outra publicação concorrente já criou esta versão da configuração")),
+        new("VersaoConfiguracao.AtoCriadorJaCriouVersao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_ja_criou_versao", "O ato informado já criou uma versão da configuração")),
+        new("VersaoConfiguracao.NumeracaoComBuraco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.numeracao_com_buraco", "A numeração das versões da configuração é contígua")),
+        new("VersaoConfiguracao.ContratoAberturaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.contrato_abertura_invalido", "A versão 1 não retifica ato algum; toda versão seguinte retifica")),
+        new("VersaoConfiguracao.VigenciaRegressiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.vigencia_regressiva", "A vigência de uma versão não pode preceder a da versão anterior")),
         new("ProcessoSeletivo.TransicaoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.transicao_invalida", "Só é possível publicar um processo em rascunho")),
         new("ProcessoSeletivo.ConformidadeInsuficiente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conformidade_insuficiente", "Processo não conforme para publicação")),
         new("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada", "Processo publicado não aceita mutação direta da configuração")),

@@ -93,7 +93,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         }
 
         await processoSeletivoRepository
-            .AdicionarSnapshotPublicacaoAsync(publicarResult.Value!.Snapshot, cancellationToken)
+            .AdicionarVersaoConfiguracaoAsync(publicarResult.Value!.Versao, cancellationToken)
             .ConfigureAwait(false);
 
         try
@@ -125,6 +125,11 @@ public static class PublicarProcessoSeletivoCommandHandler
                 return (Result.Failure(new DomainError(
                     "Edital.ContratoNaturezaInvalido",
                     "Abertura não carrega edital retificado nem motivo; retificação exige ambos.")), []);
+            }
+
+            if (VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
+            {
+                return (Result.Failure(erroVersao), []);
             }
 
             throw;

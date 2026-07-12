@@ -284,7 +284,7 @@ public static class HashCanonicalComputer
     /// chaves) e serializa via <see cref="Utf8JsonWriter"/> byte-estável,
     /// retornando os BYTES — não o hash. É a base do
     /// <c>configuracao_congelada_canonica</c> persistido pelo
-    /// <c>SnapshotPublicacao</c> (ADR-0100 item 6): a aplicação produz os
+    /// <c>VersaoConfiguracao</c> (ADR-0100 item 6): a aplicação produz os
     /// bytes uma vez, na publicação; o hash é derivado deles (nunca
     /// recalculado a partir de uma forma intermediária).
     /// </summary>

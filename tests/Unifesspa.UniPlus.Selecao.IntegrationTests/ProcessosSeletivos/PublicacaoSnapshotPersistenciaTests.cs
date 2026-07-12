@@ -115,10 +115,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
-        await repository.AdicionarSnapshotPublicacaoAsync(publicarResult.Value!.Snapshot, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!.Versao, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 
-        return (processo.Id, publicarResult.Value!.Edital.Id, publicarResult.Value!.Snapshot.Id);
+        return (processo.Id, publicarResult.Value!.Edital.Id, publicarResult.Value!.Versao.Id);
     }
 
     [Fact(DisplayName = "Snapshot_HashConfereAppEBanco — re-hashear os bytes lidos do banco bate com o hash persistido pela app")]
@@ -127,13 +127,13 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_HashConfereAppEBanco));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
-        SnapshotPublicacao snapshot = await readContext.SnapshotsPublicacao
+        VersaoConfiguracao versao = await readContext.VersoesConfiguracao
             .AsNoTracking()
-            .FirstAsync(s => s.Id == snapshotId, CancellationToken.None);
+            .FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
 
-        string hashRecalculado = HashCanonicalComputer.ComputeSha256Hex(snapshot.ConfiguracaoCongeladaCanonica);
+        string hashRecalculado = HashCanonicalComputer.ComputeSha256Hex(versao.ConfiguracaoCongeladaCanonica);
 
-        hashRecalculado.Should().Be(snapshot.HashConfiguracao,
+        hashRecalculado.Should().Be(versao.HashConfiguracao,
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
@@ -143,11 +143,11 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
-        SnapshotPublicacao snapshot = await readContext.SnapshotsPublicacao
+        VersaoConfiguracao versao = await readContext.VersoesConfiguracao
             .AsNoTracking()
-            .FirstAsync(s => s.Id == snapshotId, CancellationToken.None);
+            .FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
 
-        JsonNode payload = JsonNode.Parse(snapshot.ConfiguracaoCongelada)!;
+        JsonNode payload = JsonNode.Parse(versao.ConfiguracaoCongelada)!;
 
         string[] blocosEsperados =
         [

@@ -97,12 +97,12 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<Edital> Editais => Set<Edital>();
 
     /// <summary>
-    /// Congelamento append-only da configuração de negócio no momento da
-    /// publicação (RN08, ADR-0100) — <see cref="SnapshotPublicacao"/> é
-    /// <c>IForensicEntity</c>, capturado explicitamente dentro de
-    /// <see cref="ProcessoSeletivo.Publicar"/> (Story #759, T4 #785).
+    /// Versões congeladas da configuração do certame (RN08, ADR-0104/0100) —
+    /// <see cref="VersaoConfiguracao"/> é <c>IForensicEntity</c> e agregado
+    /// próprio: referencia o ato que a criou por valor, sem chave estrangeira,
+    /// e é persistida pelo <c>IProcessoSeletivoRepository</c> por fora da raiz.
     /// </summary>
-    public DbSet<SnapshotPublicacao> SnapshotsPublicacao => Set<SnapshotPublicacao>();
+    public DbSet<VersaoConfiguracao> VersoesConfiguracao => Set<VersaoConfiguracao>();
 
     /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado

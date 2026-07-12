@@ -71,7 +71,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
     /// Editais e os dois snapshots. Usa um relógio manual para dar instantes
     /// distintos à abertura e à retificação (ux_editais_processo_data_publicacao).
     /// </summary>
-    private async Task<(ProcessoSeletivo Processo, Edital Abertura, SnapshotPublicacao SnapshotAbertura, Edital Retificacao, SnapshotPublicacao SnapshotRetificacao)>
+    private async Task<(ProcessoSeletivo Processo, Edital Abertura, VersaoConfiguracao VersaoAbertura, Edital Retificacao, VersaoConfiguracao VersaoRetificacao)>
         PublicarERetificarAsync(string nome)
     {
         RelogioManual clock = new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
@@ -90,7 +90,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
-            await repository.AdicionarSnapshotPublicacaoAsync(publicar.Value!.Snapshot, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!.Versao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -98,29 +98,30 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         // Recarrega o agregado tracked (com a cadeia de Editais) — como o handler faz.
         DocumentoEdital docRetificacao = DocumentoConfirmado(processo.Id);
-        SnapshotPublicacao snapshotRetificacao;
+        VersaoConfiguracao versaoRetificacao;
         Edital retificacaoEdital;
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+            VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!,
                 new RetificacaoInfo(carregado.EditalVigente!.Id, "Correção do prazo de inscrição"));
             Result<PublicacaoResultado> retificar = carregado.Retificar(
-                dadosRetificacao, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
+                dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
                 docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
-            snapshotRetificacao = retificar.Value!.Snapshot;
+            versaoRetificacao = retificar.Value!.Versao;
             retificacaoEdital = retificar.Value!.Edital;
 
             await writeContext.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
-            await repository.AdicionarSnapshotPublicacaoAsync(snapshotRetificacao, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(versaoRetificacao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        return (processo, publicar.Value!.Edital, publicar.Value!.Snapshot, retificacaoEdital, snapshotRetificacao);
+        return (processo, publicar.Value!.Edital, publicar.Value!.Versao, retificacaoEdital, versaoRetificacao);
     }
 
     [Fact(DisplayName = "Retificacao persiste um segundo Edital (retificação) vinculado ao vigente + segundo snapshot")]
@@ -142,22 +143,22 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         retificacaoPersistida.EditalRetificadoId.Should().Be(abertura.Id);
         retificacaoPersistida.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
 
-        int totalSnapshots = await readContext.SnapshotsPublicacao
+        int totalVersoes = await readContext.VersoesConfiguracao
             .AsNoTracking()
-            .CountAsync(s => s.EditalId == abertura.Id || s.EditalId == retificacao.Id, CancellationToken.None);
-        totalSnapshots.Should().Be(2);
+            .CountAsync(v => v.AtoCriadorId == abertura.Id || v.AtoCriadorId == retificacao.Id, CancellationToken.None);
+        totalVersoes.Should().Be(2);
     }
 
     [Fact(DisplayName = "Snapshot de retificação carrega o bloco retificacao + os 17 blocos; o snapshot da abertura permanece imutável")]
     public async Task Retificacao_SnapshotComBlocoRetificacao_AnteriorImutavel()
     {
-        (_, _, SnapshotPublicacao snapshotAbertura, _, SnapshotPublicacao snapshotRetificacao) =
+        (_, _, VersaoConfiguracao versaoAbertura, _, VersaoConfiguracao versaoRetificacao) =
             await PublicarERetificarAsync(nameof(Retificacao_SnapshotComBlocoRetificacao_AnteriorImutavel));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
 
-        SnapshotPublicacao retificacaoLida = await readContext.SnapshotsPublicacao
-            .AsNoTracking().FirstAsync(s => s.Id == snapshotRetificacao.Id, CancellationToken.None);
+        VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao
+            .AsNoTracking().FirstAsync(v => v.Id == versaoRetificacao.Id, CancellationToken.None);
         JsonObject payloadRetificacao = JsonNode.Parse(retificacaoLida.ConfiguracaoCongelada)!.AsObject();
 
         // Os 17 blocos canônicos continuam presentes...
@@ -176,10 +177,10 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         payloadRetificacao["retificacao"]!["motivo"]!.GetValue<string>().Should().Be("Correção do prazo de inscrição");
 
         // O snapshot da abertura permanece byte-a-byte idêntico (append-only).
-        SnapshotPublicacao aberturaLida = await readContext.SnapshotsPublicacao
-            .AsNoTracking().FirstAsync(s => s.Id == snapshotAbertura.Id, CancellationToken.None);
-        aberturaLida.HashConfiguracao.Should().Be(snapshotAbertura.HashConfiguracao);
-        aberturaLida.ConfiguracaoCongeladaCanonica.Should().Equal(snapshotAbertura.ConfiguracaoCongeladaCanonica);
+        VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao
+            .AsNoTracking().FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
+        aberturaLida.HashConfiguracao.Should().Be(versaoAbertura.HashConfiguracao);
+        aberturaLida.ConfiguracaoCongeladaCanonica.Should().Equal(versaoAbertura.ConfiguracaoCongeladaCanonica);
         JsonNode.Parse(aberturaLida.ConfiguracaoCongelada)!.AsObject().Should().NotContainKey("retificacao",
             "o snapshot da abertura nunca carrega o bloco de retificação");
     }
@@ -187,12 +188,12 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
     [Fact(DisplayName = "Snapshot_HashConfereAppEBanco (retificação) — re-hashear os bytes lidos do banco bate com o hash persistido")]
     public async Task Retificacao_HashConfereAppEBanco()
     {
-        (_, _, _, _, SnapshotPublicacao snapshotRetificacao) =
+        (_, _, _, _, VersaoConfiguracao versaoRetificacao) =
             await PublicarERetificarAsync(nameof(Retificacao_HashConfereAppEBanco));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
-        SnapshotPublicacao lida = await readContext.SnapshotsPublicacao
-            .AsNoTracking().FirstAsync(s => s.Id == snapshotRetificacao.Id, CancellationToken.None);
+        VersaoConfiguracao lida = await readContext.VersoesConfiguracao
+            .AsNoTracking().FirstAsync(v => v.Id == versaoRetificacao.Id, CancellationToken.None);
 
         HashCanonicalComputer.ComputeSha256Hex(lida.ConfiguracaoCongeladaCanonica)
             .Should().Be(lida.HashConfiguracao);

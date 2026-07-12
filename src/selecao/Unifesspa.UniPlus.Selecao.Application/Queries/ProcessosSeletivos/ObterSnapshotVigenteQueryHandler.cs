@@ -31,13 +31,13 @@ public static class ObterSnapshotVigenteQueryHandler
         // relógio lido dentro do repositório por trás do contrato.
         DateTimeOffset instante = query.Instante ?? timeProvider.GetUtcNow();
 
-        (Edital Edital, SnapshotPublicacao Snapshot)? vigente = await processoSeletivoRepository
+        (Edital Edital, VersaoConfiguracao Versao)? vigente = await processoSeletivoRepository
             .ObterSnapshotVigenteAsync(query.ProcessoSeletivoId, instante, cancellationToken)
             .ConfigureAwait(false);
 
         if (vigente is { } resolvido)
         {
-            return Result<SnapshotVigenteDto>.Success(MapearDto(resolvido.Edital, resolvido.Snapshot));
+            return Result<SnapshotVigenteDto>.Success(MapearDto(resolvido.Edital, resolvido.Versao));
         }
 
         // Só quando não há vigente distingue 404 de 422 — o caminho comum
@@ -55,13 +55,18 @@ public static class ObterSnapshotVigenteQueryHandler
                 $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
     }
 
-    private static SnapshotVigenteDto MapearDto(Edital edital, SnapshotPublicacao snapshot) => new(
-        snapshot.Id,
+    // O contrato de leitura não muda com a ADR-0104 (o mecanismo, sim): o
+    // identificador forense devolvido é o da VERSÃO congelada — a mesma
+    // referência durável que o ProcessoPublicadoEvent carrega —, e o hash do ato
+    // criador é o hash do documento do Edital que a criou. #803 revisita os
+    // campos que ainda vêm do documento (data e natureza).
+    private static SnapshotVigenteDto MapearDto(Edital edital, VersaoConfiguracao versao) => new(
+        versao.Id,
         edital.DataPublicacao!.Value,
         edital.Natureza.ToString(),
-        snapshot.SchemaVersion,
-        snapshot.AlgoritmoHash,
-        snapshot.HashConfiguracao,
-        snapshot.HashEdital,
-        JsonNode.Parse(snapshot.ConfiguracaoCongelada)!);
+        versao.SchemaVersion,
+        versao.AlgoritmoHash,
+        versao.HashConfiguracao,
+        versao.AtoCriadorHash,
+        JsonNode.Parse(versao.ConfiguracaoCongelada)!);
 }

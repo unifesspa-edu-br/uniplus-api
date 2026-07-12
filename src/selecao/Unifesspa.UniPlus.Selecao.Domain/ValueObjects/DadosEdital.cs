@@ -5,8 +5,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Dados de entrada do ato de publicação (Story #759, T4 #785): número do
 /// Edital, período de inscrição e a referência ao documento (PDF) confirmado
-/// da T3 (#784) — cujo <c>HashSha256</c> vira <c>hash_edital</c> do
-/// <see cref="Entities.SnapshotPublicacao"/>. Não é persistido isoladamente —
+/// da T3 (#784) — cujo <c>HashSha256</c> vira o <c>ato_criador_hash</c> da
+/// <see cref="Entities.VersaoConfiguracao"/>. Não é persistido isoladamente —
 /// só existe como entrada de <see cref="Entities.ProcessoSeletivo.Publicar"/>.
 /// </summary>
 public sealed record DadosEdital
