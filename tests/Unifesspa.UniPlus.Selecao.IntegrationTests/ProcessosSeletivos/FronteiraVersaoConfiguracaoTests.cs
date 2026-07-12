@@ -9,11 +9,9 @@ using Npgsql;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// Prova, contra o catálogo do Postgres real, que a
-/// <see cref="VersaoConfiguracao"/> referencia o ato criador <b>por valor</b>
-/// (ADR-0061/0104): nem hoje, quando o ato é o <see cref="Edital"/> interno do
-/// módulo, nem depois de #804, quando ele migrar para <c>Publicacoes</c>, existe
-/// chave estrangeira ligando a versão ao ato.
+/// Prova, contra o catálogo do Postgres real, que a <see cref="VersaoConfiguracao"/>
+/// referencia o ato criador <b>por valor</b> (ADR-0061/0103/0104): o ato vive em
+/// <c>Publicacoes</c>, e nenhuma chave estrangeira liga a versão a ele.
 /// </summary>
 /// <remarks>
 /// Cada teste planta um <b>canário</b> antes de assegurar a ausência: cria a
@@ -64,15 +62,21 @@ public sealed class FronteiraVersaoConfiguracaoTests : IClassFixture<ProcessoSel
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
 
-        // Canário: o banco ACEITARIA uma FK do ato criador para os editais, e o
-        // detector a enxergaria. É o que torna a ausência, abaixo, uma decisão —
-        // e não um acidente de esquema.
+        // Canário: o banco ACEITARIA uma FK do ato criador para uma tabela local, e o
+        // detector a enxergaria. É o que torna a ausência, abaixo, uma decisão — e não
+        // um acidente de esquema. (Antes da #804 o alvo do canário era `selecao.editais`;
+        // com a tabela eliminada, qualquer tabela do módulo serve — o que se prova é que
+        // NÃO HÁ integridade referencial sobre o ato criador, seja para onde for.)
         await using (NpgsqlTransaction canario = await conexao.BeginTransactionAsync())
         {
             await ExecutarAsync(conexao, canario, """
+                CREATE TABLE selecao.canario_atos (id uuid PRIMARY KEY);
+                """);
+            await ExecutarAsync(conexao, canario, """
                 ALTER TABLE selecao.versoes_configuracao
                 ADD CONSTRAINT canario_fk_ato_criador
-                FOREIGN KEY (ato_criador_id) REFERENCES selecao.editais (id)
+                FOREIGN KEY (ato_criador_id) REFERENCES selecao.canario_atos (id)
+                NOT VALID
                 """);
 
             IReadOnlyList<string> comCanario = await ListarAsync(conexao, canario, ListaChavesEstrangeirasSobreOAto);
@@ -85,8 +89,8 @@ public sealed class FronteiraVersaoConfiguracaoTests : IClassFixture<ProcessoSel
         IReadOnlyList<string> noSchemaReal = await ListarAsync(conexao, transacao: null, ListaChavesEstrangeirasSobreOAto);
 
         noSchemaReal.Should().BeEmpty(
-            "o ato criador é referenciado por VALOR (ADR-0061): hoje é o Edital interno, amanhã o ato em Publicacoes — "
-            + "em nenhum dos dois casos há integridade referencial cruzando o vínculo");
+            "o ato criador é referenciado por VALOR (ADR-0061): ele vive em Publicacoes, e não há "
+            + "integridade referencial cruzando a fronteira do módulo");
     }
 
     [Fact(DisplayName = "A única chave estrangeira da tabela é a do processo — e não sai do schema do módulo")]

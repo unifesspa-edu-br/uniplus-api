@@ -88,15 +88,6 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<DocumentoEdital> DocumentosEdital => Set<DocumentoEdital>();
 
     /// <summary>
-    /// Editais emitidos pela publicação/retificação do processo (Story #759,
-    /// T4 #785) — entidade interna do agregado, exposta como <c>DbSet</c>
-    /// para consulta e para o mapeamento EF da coleção
-    /// <see cref="ProcessoSeletivo.Editais"/>; a escrita passa sempre pela
-    /// raiz via <c>IProcessoSeletivoRepository</c>.
-    /// </summary>
-    public DbSet<Edital> Editais => Set<Edital>();
-
-    /// <summary>
     /// Versões congeladas da configuração do certame (RN08, ADR-0104/0100) —
     /// <see cref="VersaoConfiguracao"/> é <c>IForensicEntity</c> e agregado
     /// próprio: referencia o ato que a criou por valor, sem chave estrangeira,

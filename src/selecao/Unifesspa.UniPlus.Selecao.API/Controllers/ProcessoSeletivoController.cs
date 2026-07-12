@@ -269,11 +269,17 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Publica o Edital de abertura do processo (RN08, Story #759, T4 #785):
-    /// valida a conformidade, congela a versão 1 da configuração (append-only)
-    /// e transita o status para Publicado, tudo na mesma transação. Quando a
-    /// publicação é recusada por conformidade insuficiente (CA-03), o corpo
-    /// do 422 carrega <c>Extensions["pendencias"]</c> com o checklist.
+    /// Publica o processo (RN08): valida a conformidade, congela a versão 1 da
+    /// configuração (append-only) e transita o status para Publicado, tudo na mesma
+    /// transação — junto da requisição durável que registra o ato em Publicações
+    /// (ADR-0108). Quando a publicação é recusada por conformidade insuficiente
+    /// (CA-03), o corpo do 422 carrega <c>Extensions["pendencias"]</c> com o checklist.
+    /// <para>
+    /// O bloco <c>ato</c> é o MESMO que a retificação recebe: o tipo do ato vem
+    /// declarado pelo operador e é conferido contra o catálogo de Publicações — nunca
+    /// inferido do contexto. Retificar não é um tipo de ato, é uma relação entre atos
+    /// (ADR-0103).
+    /// </para>
     /// </summary>
     [HttpPost("{id:guid}/publicacao")]
     [RequiresIdempotencyKey]
@@ -323,10 +329,15 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Retifica o processo já publicado (RN08, Story #759, T5 #786, ADR-0101):
-    /// emite um novo Edital de natureza retificação vinculado ao Edital
-    /// vigente, com motivo obrigatório, e sucede a versão corrente da
-    /// configuração — a versão anterior permanece imutável.
+    /// Retifica o processo já publicado (RN08, ADR-0101/0103): registra um novo ato,
+    /// que emenda o ato criador da versão corrente e a sucede — a versão anterior
+    /// permanece imutável. O motivo é obrigatório.
+    /// <para>
+    /// O corpo é o de <see cref="Publicar"/> mais o <c>motivo</c>: o alvo da retificação
+    /// NÃO é informado pelo cliente — o servidor o infere do topo da cadeia de versões
+    /// (ADR-0101). E o tipo do ato continua vindo declarado: uma convocação retificada
+    /// continua convocação.
+    /// </para>
     /// </summary>
     [HttpPost("{id:guid}/retificacoes")]
     [RequiresIdempotencyKey]

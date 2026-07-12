@@ -153,7 +153,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         string motivo = HashCanonicalComputer.NormalizeNfc(command.Motivo.Trim());
 
         // O ato retificado é o que criou a versão corrente — o topo da cadeia de
-        // CONFIGURAÇÃO (ADR-0104), não o Edital de maior data documental. É o mesmo
+        // CONFIGURAÇÃO (ADR-0104), não o ato de maior data documental. É o mesmo
         // alvo que ProcessoSeletivo.Retificar elege; congelar aqui um id diferente
         // faria o bloco 'retificacao' do snapshot apontar para outro documento.
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
@@ -164,7 +164,7 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
-        Result<PublicacaoResultado> retificarResult = processo.Retificar(
+        Result<VersaoConfiguracao> retificarResult = processo.Retificar(
             dados,
             versaoAtual,
             canonico.Bytes,
@@ -173,57 +173,44 @@ public static class RetificarProcessoSeletivoCommandHandler
             documento.HashSha256!,
             atorUsuarioSub,
             motivo,
-            DataDocumental(command.Ato),
             timeProvider);
         if (retificarResult.IsFailure)
         {
             return (Result.Failure(retificarResult.Error!), []);
         }
 
+        VersaoConfiguracao versao = retificarResult.Value!;
+
         await processoSeletivoRepository
-            .AdicionarVersaoConfiguracaoAsync(retificarResult.Value!.Versao, cancellationToken)
+            .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
             .ConfigureAwait(false);
 
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint)
+        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
+            && VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
         {
-            // Traduz violação de guard rail de banco (ADR-0102) — corrida de
-            // duas retificações concorrentes do mesmo processo, ou gap de
-            // validação em memória. Filtro do `when` garante que outras
-            // exceções não mapeadas propagam intactas.
-            if (UniqueConstraintViolation.IsContratoNaturezaInvalido(constraint))
-            {
-                return (Result.Failure(new DomainError(
-                    "Edital.ContratoNaturezaInvalido",
-                    "Abertura não carrega edital retificado nem motivo; retificação exige ambos.")), []);
-            }
-
-            if (UniqueConstraintViolation.IsRetificacaoDuplicada(constraint))
-            {
-                return (Result.Failure(new DomainError(
-                    "Edital.RetificacaoJaExiste",
-                    "Este Edital já foi retificado — a cadeia de retificação é linear.")), []);
-            }
-
-            if (VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
-            {
-                return (Result.Failure(erroVersao), []);
-            }
-
-            throw;
+            // Traduz violação de guard rail de banco (ADR-0102). Duas retificações
+            // concorrentes do mesmo processo elegem o MESMO ato criador como alvo e
+            // derivam o mesmo N+1: ux_versoes_configuracao_processo_numero e o trigger de
+            // sucessão (ck_versoes_configuracao_cadeia) deixam passar uma só, na mesma
+            // transação. É aqui que a linearidade da cadeia é garantida — Publicações
+            // também a barra, mas só no consumo da fila, depois do commit.
+            // Filtro do `when` garante que outras exceções propagam intactas.
+            return (Result.Failure(erroVersao), []);
         }
 
         // ADR-0108: a retificação segue a MESMA orquestração da abertura — a requisição do
-        // ato viaja no outbox, na transação que acabou de gravar o novo Edital e a nova
-        // versão. O que muda é o par (ato retificado, motivo): em Publicações, retificar é
-        // publicar um ato que emenda outro (ADR-0103), e o ato emendado é o que criou a
-        // versão anterior — o mesmo alvo que o agregado elegeu, não o de maior data.
+        // ato viaja no outbox, na transação que acabou de gravar a nova versão. O que muda
+        // é o par (ato retificado, motivo): em Publicações, retificar é publicar um ato que
+        // emenda outro (ADR-0103), e o ato emendado é o que criou a versão anterior — o
+        // mesmo alvo que o agregado elegeu, não o de maior data. O tipo do ato continua
+        // vindo declarado pelo operador: uma convocação retificada continua convocação.
         return (Result.Success(), MensagensDaPublicacao.Montar(
             processo,
-            retificarResult.Value!,
+            versao,
             command.Ato,
             tipoConferido,
             dados.Numero,
@@ -231,12 +218,4 @@ public static class RetificarProcessoSeletivoCommandHandler
             atoRetificadoId: versaoAtual.AtoCriadorId,
             motivoRetificacao: motivo));
     }
-
-    /// <summary>
-    /// A data documental declarada, no instante convencional de início do dia em UTC. O ato
-    /// a declara como data (<c>DateOnly</c>); o Edital a guarda como instante — a conversão é
-    /// convencional e não carrega hora, porque o documento declara um DIA.
-    /// </summary>
-    private static DateTimeOffset DataDocumental(DadosDoAto ato) =>
-        new(ato.DataPublicacao.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
 }

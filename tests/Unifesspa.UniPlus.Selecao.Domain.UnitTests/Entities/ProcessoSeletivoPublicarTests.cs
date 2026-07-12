@@ -86,23 +86,48 @@ public sealed class ProcessoSeletivoPublicarTests
         return processo;
     }
 
-    [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — processo conforme publica, congela snapshot e transita status")]
-    public void Publicar_ProcessoConforme_TransitaStatusECongelaSnapshot()
+    [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — processo conforme publica, congela a versão 1 e transita status")]
+    public void Publicar_ProcessoConforme_TransitaStatusECongelaVersao()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         DadosEdital dados = NovosDados();
 
-        Result<PublicacaoResultado> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado);
-        processo.Editais.Should().ContainSingle();
-        processo.Editais.Single().Should().Be(resultado.Value!.Edital);
-        resultado.Value!.Edital.Natureza.Should().Be(NaturezaEdital.Abertura);
-        resultado.Value!.Edital.DataPublicacao.Should().NotBeNull();
-        resultado.Value!.Versao.AtoCriadorId.Should().Be(resultado.Value!.Edital.Id);
-        resultado.Value!.Versao.AtoCriadorHash.Should().Be(HashFixo);
+
+        VersaoConfiguracao versao = resultado.Value!;
+        versao.NumeroVersao.Should().Be(1, "a abertura abre a cadeia de configuração");
+        versao.ProcessoSeletivoId.Should().Be(processo.Id);
+        versao.AtoCriadorHash.Should().Be(HashFixo, "o hash do documento publicado é a metade-hash da referência por valor ao ato");
+        versao.AtoCriadorId.Should().NotBeEmpty("a raiz decide o id do ato — a versão precisa referenciá-lo antes de o ato existir (ADR-0108)");
+        versao.AtoCriadorRetificaId.Should().BeNull("a abertura não emenda ato algum: retificar é uma relação, e aqui não há a quem se relacionar");
+    }
+
+    [Fact(DisplayName = "Publicar — o id do ato é um Guid v7 ancorado no MESMO instante da vigência da versão que ele cria")]
+    public void Publicar_IdDoAto_AncoradoNoInstanteDaVersao()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        DateTimeOffset instante = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new RelogioFixo(instante));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        VersaoConfiguracao versao = resultado.Value!;
+
+        versao.VigenteAPartirDe.Should().Be(instante);
+        versao.AtoCriadorId.Version.Should().Be(7, "Guid v7 — o id carrega o instante, e é ordenável por ele (ADR-0032)");
+
+        // O id do ato e a vigência da versão descrevem o mesmo fato: se cada um viesse de
+        // uma leitura de relógio própria, discordariam. O timestamp embutido no v7 tem
+        // resolução de milissegundo — é a granularidade em que a igualdade é verificável.
+        DateTimeOffset instanteNoId = InstanteDoGuidV7(versao.AtoCriadorId);
+        instanteNoId.Should().Be(
+            new DateTimeOffset(instante.UtcDateTime.AddTicks(-(instante.UtcDateTime.Ticks % TimeSpan.TicksPerMillisecond)), TimeSpan.Zero),
+            "uma leitura do relógio por operação atômica — o ato e a versão que ele cria nascem do mesmo instante");
     }
 
     [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — evento carrega os identificadores forenses completos")]
@@ -111,18 +136,23 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         DadosEdital dados = NovosDados();
 
-        Result<PublicacaoResultado> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
 
         resultado.IsSuccess.Should().BeTrue();
         Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
             .OfType<Domain.Events.ProcessoPublicadoEvent>().Should().ContainSingle().Subject;
 
         evento.ProcessoSeletivoId.Should().Be(processo.Id);
-        evento.EditalId.Should().Be(resultado.Value!.Edital.Id);
-        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Versao.Id);
-        evento.HashConfiguracao.Should().Be(resultado.Value!.Versao.HashConfiguracao);
+        // EditalId é o nome histórico do membro — contrato do envelope durável e do schema
+        // Avro (ver ProcessoPublicadoEvent). O VALOR sempre foi o do ato criador, e continua.
+        evento.EditalId.Should().Be(resultado.Value!.AtoCriadorId);
+        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Id);
+        evento.HashConfiguracao.Should().Be(resultado.Value!.HashConfiguracao);
         evento.HashEdital.Should().Be(HashFixo);
+        evento.OccurredOn.Should().Be(
+            resultado.Value!.VigenteAPartirDe,
+            "o fato ocorreu no instante do SISTEMA — o mesmo que ordena as versões (ADR-0104)");
     }
 
     [Fact(DisplayName = "Publicacao_RecusaSemParametrosObrigatorios — processo sem etapas recusa com checklist de pendências (CA-03)")]
@@ -131,28 +161,29 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS incompleto", TipoProcesso.SiSU);
         // Nenhuma dimensão obrigatória definida — Etapas/Atendimento/Distribuição/Classificação ausentes.
 
-        Result<PublicacaoResultado> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
         processo.Status.Should().Be(StatusProcesso.Rascunho, "publicação recusada não transita o status");
-        processo.Editais.Should().BeEmpty();
+        processo.DequeueDomainEvents().Should().BeEmpty("nada é enfileirado numa publicação recusada");
     }
 
     [Fact(DisplayName = "Lifecycle_TransicaoInvalidaRecusada — publicar processo já publicado é recusado (CA-09)")]
     public void Publicar_ProcessoJaPublicado_RecusaTransicaoInvalida()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System)
+        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System)
             .IsSuccess.Should().BeTrue();
+        processo.DequeueDomainEvents();
 
-        Result<PublicacaoResultado> segundaTentativa = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
+        Result<VersaoConfiguracao> segundaTentativa = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
 
         segundaTentativa.IsFailure.Should().BeTrue();
         segundaTentativa.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
-        processo.Editais.Should().ContainSingle("a segunda tentativa não deve emitir um segundo Edital");
+        processo.DequeueDomainEvents().Should().BeEmpty("a segunda tentativa não emite ato nem versão");
     }
 
     [Theory(DisplayName = "PosPublicacao_MutacaoBloqueada_422 — todo Definir* recusa mutação após publicação (CA-04)")]
@@ -165,7 +196,7 @@ public sealed class ProcessoSeletivoPublicarTests
     public void DefinirX_ProcessoPublicado_RecusaMutacao(string dimensao)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System)
+        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System)
             .IsSuccess.Should().BeTrue();
 
         Result resultado = dimensao switch
@@ -185,5 +216,30 @@ public sealed class ProcessoSeletivoPublicarTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+    }
+
+    /// <summary>
+    /// Lê o timestamp Unix em milissegundos dos 48 bits mais significativos de um Guid v7
+    /// (RFC 9562 §5.7). Existe para provar que o id do ato nasce do MESMO instante que a
+    /// vigência da versão — não para o domínio usá-lo de volta.
+    /// </summary>
+    private static DateTimeOffset InstanteDoGuidV7(Guid id)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        id.TryWriteBytes(bytes, bigEndian: true, out _);
+
+        long milissegundos = 0;
+        for (int i = 0; i < 6; i++)
+        {
+            milissegundos = (milissegundos << 8) | bytes[i];
+        }
+
+        return DateTimeOffset.FromUnixTimeMilliseconds(milissegundos);
+    }
+
+    /// <summary>Relógio fixo — o teste precisa de um instante determinístico, não de um TimeProvider real.</summary>
+    private sealed class RelogioFixo(DateTimeOffset agora) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => agora;
     }
 }

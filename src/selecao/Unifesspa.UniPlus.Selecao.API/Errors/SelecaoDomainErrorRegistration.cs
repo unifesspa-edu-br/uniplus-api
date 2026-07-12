@@ -147,16 +147,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // inclusive quando a origem física é constraint de banco (ADR-0102).
         new("DadosEdital.DocumentoEditalIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.documento_edital_id_obrigatorio", "Referência ao documento do Edital é obrigatória")),
         new("DadosEdital.PeriodoInscricaoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.periodo_inscricao_invalido", "O fim do período de inscrição não pode anteceder o início")),
-        new("Edital.ProcessoSeletivoIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.processo_seletivo_id_obrigatorio", "O Edital deve estar vinculado a um Processo Seletivo")),
         new("ProcessoSeletivo.TipoDeAtoSemVersaoVigente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_de_ato_sem_versao_vigente", "Não há versão vigente do tipo de ato declarado na data de publicação")),
         new("ProcessoSeletivo.TipoDeAtoNaoCongelaConfiguracao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_de_ato_nao_congela_configuracao", "O ato que cria a versão da configuração precisa ser de um tipo que congela configuração")),
         new("ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.objeto_ja_tem_ato_vivo_do_tipo", "Este Processo Seletivo já tem um ato vivo do tipo declarado, de outra linhagem")),
         new("ProcessoSeletivo.AtoJaRetificado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ato_ja_retificado", "O ato que esta retificação emendaria já foi retificado — a cadeia de atos é linear")),
-        new("Edital.AberturaJaExiste", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.abertura_ja_existe", "Este processo já tem um Edital de abertura publicado")),
-        new("Edital.ContratoNaturezaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.contrato_natureza_invalido", "Abertura não carrega edital retificado nem motivo; retificação exige ambos")),
-        new("Edital.EditalRetificadoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.edital_retificado_obrigatorio", "A retificação deve referenciar o Edital anterior")),
-        new("Edital.MotivoRetificacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.motivo_retificacao_obrigatorio", "O motivo da retificação é obrigatório")),
-        new("Edital.RetificacaoJaExiste", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.retificacao_ja_existe", "Este Edital já foi retificado — a cadeia de retificação é linear")),
+        new("ProcessoSeletivo.MotivoRetificacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.motivo_retificacao_obrigatorio", "O motivo da retificação é obrigatório")),
         // VersaoConfiguracao (ADR-0104/0063): entidade forensic — os guards de
         // SHAPE (bytes vazios, hash malformado, id zerado) lançam
         // ArgumentException (defesa em profundidade contra erro de programação

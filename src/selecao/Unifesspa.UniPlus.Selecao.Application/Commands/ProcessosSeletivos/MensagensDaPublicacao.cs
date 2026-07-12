@@ -20,7 +20,7 @@ internal static class MensagensDaPublicacao
 
     public static object[] Montar(
         ProcessoSeletivo processo,
-        PublicacaoResultado resultado,
+        VersaoConfiguracao versao,
         DadosDoAto ato,
         TipoAtoPublicadoView tipoConferido,
         string? numeroDeclarado,
@@ -29,7 +29,7 @@ internal static class MensagensDaPublicacao
         string? motivoRetificacao)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        ArgumentNullException.ThrowIfNull(resultado);
+        ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(tipoConferido);
 
@@ -37,21 +37,25 @@ internal static class MensagensDaPublicacao
         [
             .. processo.DequeueDomainEvents().Cast<object>(),
             new RegistrarAtoNormativoRequisicao(
-                // O id do ato é o do Edital que o originou: decidido por Seleção, dentro da
-                // transação, e já gravado em VersaoConfiguracao.AtoCriadorId. É o que torna a
-                // reentrega da fila (at-least-once) idempotente — o segundo processamento
-                // reencontra o mesmo id e não faz nada.
-                AtoId: resultado.Versao.AtoCriadorId,
+                // O id do ato é decidido por Seleção, dentro da transação, e já gravado em
+                // VersaoConfiguracao.AtoCriadorId. É o que torna a reentrega da fila
+                // (at-least-once) idempotente — o segundo processamento reencontra o mesmo
+                // id e não faz nada.
+                AtoId: versao.AtoCriadorId,
                 Orgao: ato.Orgao,
                 Serie: ato.Serie,
                 Ano: ato.Ano,
                 Numero: numeroDeclarado,
                 TipoCodigo: ato.TipoAtoCodigo,
+                // A data que o DOCUMENTO declara (ADR-0108). Não ordena coisa alguma: quem
+                // ordena as versões é o relógio do sistema (ADR-0104). É por isso que ela
+                // viaja daqui direto para Publicações, sem passar pela configuração — a
+                // Seleção não guarda atributo documental de um ato que não é seu.
                 DataPublicacao: ato.DataPublicacao,
                 DocumentoHash: documentoHash,
                 Assinante: ato.Assinante,
-                VersaoInvocadaId: resultado.Versao.Id,
-                VersaoInvocadaHash: resultado.Versao.HashConfiguracao,
+                VersaoInvocadaId: versao.Id,
+                VersaoInvocadaHash: versao.HashConfiguracao,
                 AtoRetificadoId: atoRetificadoId,
                 MotivoRetificacao: motivoRetificacao,
                 Vinculos: [new VinculoEntidadeRequisicao(EntidadeProcessoSeletivo, processo.Id)],

@@ -10,16 +10,16 @@ using DTOs;
 /// <summary>
 /// Handler convention-based do <see cref="ObterSnapshotVigenteQuery"/> (RN08,
 /// ADR-0075/0076/0068/0104): resolve o instante (explícito ou default do
-/// <c>TimeProvider</c>), seleciona a VERSÃO vigente da configuração e projeta o
-/// snapshot congelado, hidratando os campos documentais a partir do ato que a
-/// criou. Distingue 404 (processo inexistente) de 422
-/// (<c>Snapshot.VigenteAusente</c>) — nunca retorno silencioso.
+/// <c>TimeProvider</c>), seleciona a VERSÃO vigente da configuração e a projeta.
+/// Distingue 404 (processo inexistente) de 422 (<c>Snapshot.VigenteAusente</c>) —
+/// nunca retorno silencioso.
 /// </summary>
 /// <remarks>
-/// A ordem das duas leituras é a decisão da ADR-0104 em código: primeiro a
-/// versão — que é o que ordena a configuração —, depois o documento, e só para
-/// projetar o que o contrato de leitura já publicava sobre ele. Não existe
-/// caminho em que um atributo do ato decida qual configuração vale.
+/// Uma leitura, e uma só: a versão. Não há mais uma segunda consulta para hidratar
+/// atributos do documento, porque o documento não é de Seleção (ADR-0103/0105) — o
+/// contrato publica dele apenas o par <c>{id, hash}</c>, que a própria versão já
+/// carrega por valor (ADR-0061). Não existe, nem existia, caminho em que um atributo
+/// do ato decida qual configuração vale.
 /// </remarks>
 public static class ObterSnapshotVigenteQueryHandler
 {
@@ -66,29 +66,13 @@ public static class ObterSnapshotVigenteQueryHandler
                     $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
-        DadosDocumentaisAto? ato = await processoSeletivoRepository
-            .ObterDadosDocumentaisDoAtoAsync(query.ProcessoSeletivoId, versao.AtoCriadorId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (ato is null)
-        {
-            // Uma versão sem o ato que a criou é corrupção, não ausência: as duas
-            // linhas nascem na mesma transação. Mascarar como VigenteAusente (422)
-            // diria ao cliente que o certame não tem configuração vigente — quando
-            // tem, e o que falta é o documento. A ausência que a ADR-0076 manda
-            // aflorar é a de configuração, não a de evidência corrompida.
-            throw new InvalidOperationException(
-                $"A versão {versao.Id} do processo {query.ProcessoSeletivoId} referencia o ato {versao.AtoCriadorId}, que não existe neste processo.");
-        }
-
-        // O contrato de leitura não muda com a ADR-0104 (o mecanismo, sim): o
-        // identificador forense devolvido continua sendo o da VERSÃO congelada — a
-        // mesma referência durável que o ProcessoPublicadoEvent carrega — e o hash
-        // do ato criador, o hash do documento que a congelou.
+        // O identificador forense devolvido é o da VERSÃO congelada — a mesma
+        // referência durável que o ProcessoPublicadoEvent carrega. O ato entra por
+        // VALOR, com o par {id, hash} que a versão já guarda: nenhuma consulta a
+        // Publicações, e portanto nenhuma espera pela drenagem do outbox (ADR-0108).
         return Result<SnapshotVigenteDto>.Success(new SnapshotVigenteDto(
             versao.Id,
-            ato.DataPublicacao,
-            ato.Natureza,
+            versao.AtoCriadorId,
             versao.SchemaVersion,
             versao.AlgoritmoHash,
             versao.HashConfiguracao,

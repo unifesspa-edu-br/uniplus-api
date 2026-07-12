@@ -46,7 +46,11 @@ public sealed class ObterSnapshotVigenteEndpointTests
 
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         JsonElement root = doc.RootElement;
-        root.GetProperty("natureza").GetString().Should().Be("Abertura");
+
+        // O ato entra por VALOR — o par {id, hash} (ADR-0061). O contrato não republica
+        // atributo documental algum: o documento é o ato publicado, e vive em Publicações.
+        root.GetProperty("atoId").GetGuid().Should().NotBeEmpty();
+        root.GetProperty("hashEdital").GetString().Should().NotBeNullOrEmpty();
         root.GetProperty("schemaVersion").GetString().Should().NotBeNullOrEmpty();
         root.GetProperty("hashConfiguracao").GetString().Should().NotBeNullOrEmpty();
         // A configuração congelada volta como objeto aninhado (não string escapada).
@@ -75,20 +79,28 @@ public sealed class ObterSnapshotVigenteEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("natureza").GetString().Should().Be("Retificacao");
 
-        // Confere que o hash bate com o snapshot de retificação persistido.
+        // O vigente é a versão do TOPO da cadeia — a que a retificação criou. Note o que o
+        // corpo NÃO carrega: não há campo dizendo "isto é uma retificação". Retificar é uma
+        // relação entre atos (ADR-0103), e a relação vive no ato, que é de Publicações. O
+        // contrato de leitura da Seleção publica do ato apenas o par {id, hash}.
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        Guid editalRetificacaoId = await db.Editais.AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processoId && e.Natureza == Domain.Enums.NaturezaEdital.Retificacao)
-            .Select(e => e.Id)
-            .SingleAsync();
         VersaoConfiguracao esperado = await db.VersoesConfiguracao.AsNoTracking()
-            .SingleAsync(v => v.AtoCriadorId == editalRetificacaoId);
+            .Where(v => v.ProcessoSeletivoId == processoId)
+            .OrderByDescending(v => v.NumeroVersao)
+            .FirstAsync();
+        esperado.NumeroVersao.Should().Be(2, "pré-condição: a retificação sucedeu a abertura");
+        esperado.AtoCriadorRetificaId.Should().NotBeNull("a versão do topo foi criada por um ato que emenda outro");
+
         doc.RootElement.GetProperty("hashConfiguracao").GetString().Should().Be(esperado.HashConfiguracao);
         // A referência forense durável (ADR-0075) — mesmo id do ProcessoPublicadoEvent.
         doc.RootElement.GetProperty("snapshotPublicacaoId").GetGuid().Should().Be(esperado.Id);
+        // E a referência por valor ao ato: o par {id, hash} (ADR-0061).
+        doc.RootElement.GetProperty("atoId").GetGuid().Should().Be(esperado.AtoCriadorId);
+        doc.RootElement.GetProperty("hashEdital").GetString().Should().Be(esperado.AtoCriadorHash);
+        doc.RootElement.TryGetProperty("natureza", out _).Should().BeFalse(
+            "o enum de natureza não existe mais no contrato: acrescentar um tipo de ato é linha de cadastro");
     }
 
     [Fact(DisplayName =

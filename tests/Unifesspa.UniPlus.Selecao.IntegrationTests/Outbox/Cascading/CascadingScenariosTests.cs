@@ -81,8 +81,11 @@ public sealed class CascadingScenariosTests
         evento!.ProcessoSeletivoId.Should().Be(processoId);
         evento.EditalId.Should().NotBeEmpty();
 
-        bool persistido = await db.Editais.AsNoTracking()
-            .AnyAsync(e => e.Id == evento.EditalId);
+        // EditalId é o nome histórico do membro (contrato do envelope durável e do schema
+        // Avro); o VALOR é o id do ato criador, e é por ele que a versão o referencia — por
+        // valor, sem FK (ADR-0061). O ato em si vive em Publicações e chega lá pela fila.
+        bool persistido = await db.VersoesConfiguracao.AsNoTracking()
+            .AnyAsync(v => v.AtoCriadorId == evento.EditalId);
         persistido.Should().BeTrue();
     }
 

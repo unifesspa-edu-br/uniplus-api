@@ -3696,8 +3696,7 @@
       "SnapshotVigenteDto": {
         "required": [
           "snapshotPublicacaoId",
-          "dataPublicacao",
-          "natureza",
+          "atoId",
           "schemaVersion",
           "algoritmoHash",
           "hashConfiguracao",
@@ -3710,12 +3709,9 @@
             "type": "string",
             "format": "uuid"
           },
-          "dataPublicacao": {
+          "atoId": {
             "type": "string",
-            "format": "date-time"
-          },
-          "natureza": {
-            "type": "string"
+            "format": "uuid"
           },
           "schemaVersion": {
             "type": "string"

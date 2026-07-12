@@ -17,10 +17,9 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da retificação
-/// (RN08, ADR-0101, Story #759 T5 #786): a retificação emite um novo Edital
-/// vinculado ao vigente + novo snapshot com o bloco de retificação preservando
-/// os 17 blocos anteriores; o snapshot da abertura permanece imutável. Mapa de
-/// testes de #759: <c>Retificacao_NovoEditalSnapshotMotivo</c>.
+/// (RN08, ADR-0101/0103/0104): a retificação sucede a versão corrente com um ato que
+/// emenda o ato criador dela, e o novo snapshot acrescenta o bloco de retificação
+/// preservando os 17 anteriores; o snapshot da abertura permanece imutável.
 /// </summary>
 public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
@@ -67,12 +66,12 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), documentoId).Value!;
 
     /// <summary>
-    /// Publica um processo e o retifica em seguida — persistindo os dois
-    /// Editais e as duas versões da configuração. Usa um relógio manual para
-    /// dar instantes distintos à abertura e à retificação, como o certame real
-    /// faz; a ordem, porém, vem da cadeia de versões, não desses instantes.
+    /// Publica um processo e o retifica em seguida — persistindo as duas versões da
+    /// configuração. Usa um relógio manual para dar instantes distintos à abertura e à
+    /// retificação, como o certame real faz; a ordem, porém, vem da cadeia de versões,
+    /// não desses instantes.
     /// </summary>
-    private async Task<(ProcessoSeletivo Processo, Edital Abertura, VersaoConfiguracao VersaoAbertura, Edital Retificacao, VersaoConfiguracao VersaoRetificacao)>
+    private async Task<(ProcessoSeletivo Processo, VersaoConfiguracao VersaoAbertura, VersaoConfiguracao VersaoRetificacao)>
         PublicarERetificarAsync(string nome)
     {
         RelogioManual clock = new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
@@ -81,9 +80,9 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
         SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(processo, dadosAbertura, docAbertura.HashSha256!);
-        Result<PublicacaoResultado> publicar = processo.Publicar(
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
-            docAbertura.HashSha256!, "integration-test-user", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock);
+            docAbertura.HashSha256!, "integration-test-user", clock);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -91,16 +90,15 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
-            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!.Versao, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         clock.Avancar(TimeSpan.FromDays(1));
 
-        // Recarrega o agregado tracked (com a cadeia de Editais) — como o handler faz.
+        // Recarrega o agregado tracked — como o handler faz.
         DocumentoEdital docRetificacao = DocumentoConfirmado(processo.Id);
         VersaoConfiguracao versaoRetificacao;
-        Edital retificacaoEdital;
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
@@ -112,50 +110,52 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
                 // O alvo da retificação é o ato que criou a versão corrente — o
                 // topo da cadeia de CONFIGURAÇÃO —, como o handler faz.
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"));
-            Result<PublicacaoResultado> retificar = carregado.Retificar(
+            Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
-                docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), clock);
+                docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
-            versaoRetificacao = retificar.Value!.Versao;
-            retificacaoEdital = retificar.Value!.Edital;
+            versaoRetificacao = retificar.Value!;
 
             await writeContext.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versaoRetificacao, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        return (processo, publicar.Value!.Edital, publicar.Value!.Versao, retificacaoEdital, versaoRetificacao);
+        return (processo, publicar.Value!, versaoRetificacao);
     }
 
-    [Fact(DisplayName = "Retificacao persiste um segundo Edital (retificação) vinculado ao vigente + segundo snapshot")]
-    public async Task Retificacao_PersisteNovoEditalESnapshot()
+    [Fact(DisplayName = "A retificação persiste uma segunda versão, criada por um ato que emenda o ato criador da primeira")]
+    public async Task Retificacao_PersisteVersaoQueEmendaAAnterior()
     {
-        (ProcessoSeletivo processo, Edital abertura, _, Edital retificacao, _) =
-            await PublicarERetificarAsync(nameof(Retificacao_PersisteNovoEditalESnapshot));
+        (ProcessoSeletivo processo, VersaoConfiguracao abertura, VersaoConfiguracao retificacao) =
+            await PublicarERetificarAsync(nameof(Retificacao_PersisteVersaoQueEmendaAAnterior));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
-        List<Edital> editais = await readContext.Set<Edital>()
+        List<VersaoConfiguracao> versoes = await readContext.VersoesConfiguracao
             .AsNoTracking()
-            .Where(e => e.ProcessoSeletivoId == processo.Id)
+            .Where(v => v.ProcessoSeletivoId == processo.Id)
+            .OrderBy(v => v.NumeroVersao)
             .ToListAsync(CancellationToken.None);
 
-        editais.Should().HaveCount(2);
-        editais.Should().ContainSingle(e => e.Natureza == NaturezaEdital.Abertura && e.Id == abertura.Id);
-        Edital retificacaoPersistida = editais.Single(e => e.Natureza == NaturezaEdital.Retificacao);
-        retificacaoPersistida.Id.Should().Be(retificacao.Id);
-        retificacaoPersistida.EditalRetificadoId.Should().Be(abertura.Id);
-        retificacaoPersistida.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
+        versoes.Should().HaveCount(2);
+        versoes[0].AtoCriadorId.Should().Be(abertura.AtoCriadorId);
+        versoes[0].AtoCriadorRetificaId.Should().BeNull("a raiz da cadeia não emenda ninguém");
 
-        int totalVersoes = await readContext.VersoesConfiguracao
-            .AsNoTracking()
-            .CountAsync(v => v.AtoCriadorId == abertura.Id || v.AtoCriadorId == retificacao.Id, CancellationToken.None);
-        totalVersoes.Should().Be(2);
+        versoes[1].AtoCriadorId.Should().Be(retificacao.AtoCriadorId);
+        versoes[1].AtoCriadorRetificaId.Should().Be(
+            abertura.AtoCriadorId,
+            "a linhagem sobrevive à ida e volta do banco: a versão 2 foi criada por um ato que emenda o ato criador da versão 1");
+
+        // O motivo não se perdeu com a tabela de editais: ele está congelado nos bytes
+        // canônicos (ADR-0100) e viaja para Publicações na mensagem durável (ADR-0108).
+        JsonNode.Parse(versoes[1].ConfiguracaoCongelada)!["retificacao"]!["motivo"]!
+            .GetValue<string>().Should().Be("Correção do prazo de inscrição");
     }
 
     [Fact(DisplayName = "Snapshot de retificação carrega o bloco retificacao + os 17 blocos; o snapshot da abertura permanece imutável")]
     public async Task Retificacao_SnapshotComBlocoRetificacao_AnteriorImutavel()
     {
-        (_, _, VersaoConfiguracao versaoAbertura, _, VersaoConfiguracao versaoRetificacao) =
+        (_, VersaoConfiguracao versaoAbertura, VersaoConfiguracao versaoRetificacao) =
             await PublicarERetificarAsync(nameof(Retificacao_SnapshotComBlocoRetificacao_AnteriorImutavel));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
@@ -191,7 +191,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
     [Fact(DisplayName = "Snapshot_HashConfereAppEBanco (retificação) — re-hashear os bytes lidos do banco bate com o hash persistido")]
     public async Task Retificacao_HashConfereAppEBanco()
     {
-        (_, _, _, _, VersaoConfiguracao versaoRetificacao) =
+        (_, _, VersaoConfiguracao versaoRetificacao) =
             await PublicarERetificarAsync(nameof(Retificacao_HashConfereAppEBanco));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();

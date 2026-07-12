@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -76,9 +75,6 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.BonusRegional)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            // Editais carregados para a retificação (T5 #786) validar que o
-            // edital retificado é o vigente deste processo (ProcessoSeletivo.Retificar).
-            .Include(p => p.Editais)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -132,11 +128,11 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         DateTimeOffset instanteUtc = instante.ToUniversalTime();
 
         // Configuração vigente = VERSÃO de maior vigente_a_partir_de ≤ instante,
-        // desempatada pelo número (ADR-0075/0076/0104). A tabela de editais não
-        // entra na query: o que ordena é o relógio do sistema, e não a data que
-        // o documento declara — que a retificação republica inalterada, e que um
-        // acervo migrado pode trazer regredida. O seletor é, por isso, imune a
-        // tipos de ato; ix_versoes_configuracao_processo_vigencia o cobre.
+        // desempatada pelo número (ADR-0075/0076/0104). Nenhum atributo do ato entra
+        // na query: o que ordena é o relógio do sistema, e não a data que o documento
+        // declara — que a retificação republica inalterada, e que um acervo migrado
+        // pode trazer regredida. O seletor é, por isso, imune a tipos de ato;
+        // ix_versoes_configuracao_processo_vigencia o cobre.
         //
         // O empate de instante é permitido por desenho (não há unicidade sobre
         // vigente_a_partir_de): quando o relógio regride, VersaoConfiguracao.Suceder
@@ -158,35 +154,6 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }
-
-    public async Task<DadosDocumentaisAto?> ObterDadosDocumentaisDoAtoAsync(
-        Guid processoSeletivoId,
-        Guid atoCriadorId,
-        CancellationToken cancellationToken = default)
-    {
-        // Hidratação dos campos documentais DEPOIS da seleção — nunca dentro
-        // dela. A pertença ao processo é filtrada aqui porque ato_criador_id é
-        // referência por valor, sem FK (ADR-0061): a unicidade global do ato
-        // criador não diz de qual certame ele é, e um id trocado por INSERT cru
-        // misturaria o documento de um certame com a configuração de outro.
-        // A natureza é convertida para texto DEPOIS da consulta: a coluna é o
-        // enum como int (EditalConfiguration), e ToString() sobre ela não tem
-        // tradução SQL.
-        LinhaDocumental? linha = await _context.Editais
-            .AsNoTracking()
-            .Where(e => e.Id == atoCriadorId
-                && e.ProcessoSeletivoId == processoSeletivoId
-                && e.DataPublicacao != null)
-            .Select(e => new LinhaDocumental(e.DataPublicacao!.Value, e.Natureza))
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return linha is null
-            ? null
-            : new DadosDocumentaisAto(linha.DataPublicacao, linha.Natureza.ToString());
-    }
-
-    private sealed record LinhaDocumental(DateTimeOffset DataPublicacao, NaturezaEdital Natureza);
 
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
     {

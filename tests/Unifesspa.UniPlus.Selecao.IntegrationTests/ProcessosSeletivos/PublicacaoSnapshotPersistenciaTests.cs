@@ -101,24 +101,24 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dadosResult.Value!, documento.HashSha256!);
 
-        Result<PublicacaoResultado> publicarResult = processo.Publicar(
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
             canonico.Bytes,
             canonico.SchemaVersion,
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
-            new DateTimeOffset(2026, 3, 13, 0, 0, 0, TimeSpan.Zero), TimeProvider.System);
+            TimeProvider.System);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
-        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!.Versao, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 
-        return (processo.Id, publicarResult.Value!.Edital.Id, publicarResult.Value!.Versao.Id);
+        return (processo.Id, publicarResult.Value!.AtoCriadorId, publicarResult.Value!.Id);
     }
 
     [Fact(DisplayName = "Snapshot_HashConfereAppEBanco — re-hashear os bytes lidos do banco bate com o hash persistido pela app")]

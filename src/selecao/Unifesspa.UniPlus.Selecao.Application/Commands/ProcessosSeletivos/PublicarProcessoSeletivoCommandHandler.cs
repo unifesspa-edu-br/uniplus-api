@@ -115,62 +115,44 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
-        Result<PublicacaoResultado> publicarResult = processo.Publicar(
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dados,
             canonico.Bytes,
             canonico.SchemaVersion,
             canonico.AlgoritmoHash,
             documento.HashSha256!,
             atorUsuarioSub,
-            // A data que o DOCUMENTO declara (ADR-0108) — a mesma que Publicações registra no
-            // ato. Sem isto, o mesmo documento teria uma data aqui e outra lá. Quem ordena as
-            // versões continua sendo o relógio do sistema (ADR-0104); esta data não ordena nada.
-            DataDocumental(command.Ato),
             timeProvider);
         if (publicarResult.IsFailure)
         {
             return (Result.Failure(publicarResult.Error!), []);
         }
 
+        VersaoConfiguracao versao = publicarResult.Value!;
+
         await processoSeletivoRepository
-            .AdicionarVersaoConfiguracaoAsync(publicarResult.Value!.Versao, cancellationToken)
+            .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
             .ConfigureAwait(false);
 
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint)
+        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
+            && VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
         {
-            // Traduz violação de guard rail de banco (ADR-0102) — corrida de
-            // duas publicações concorrentes do mesmo processo, ou gap de
-            // validação em memória. Filtro do `when` garante que outras
-            // exceções não mapeadas propagam intactas.
-            if (UniqueConstraintViolation.IsAberturaJaExiste(constraint))
-            {
-                return (Result.Failure(new DomainError(
-                    "Edital.AberturaJaExiste",
-                    "Este processo já tem um Edital de abertura publicado.")), []);
-            }
-
-            if (UniqueConstraintViolation.IsContratoNaturezaInvalido(constraint))
-            {
-                return (Result.Failure(new DomainError(
-                    "Edital.ContratoNaturezaInvalido",
-                    "Abertura não carrega edital retificado nem motivo; retificação exige ambos.")), []);
-            }
-
-            if (VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
-            {
-                return (Result.Failure(erroVersao), []);
-            }
-
-            throw;
+            // Traduz violação de guard rail de banco (ADR-0102): a corrida de duas
+            // publicações concorrentes do mesmo processo cai em
+            // ux_versoes_configuracao_processo_numero — as duas derivam a versão 1, e o
+            // índice deixa passar uma só. É o backstop transacional que substitui o
+            // antigo índice de abertura única, e sem literal de tipo de ato no filtro.
+            // Filtro do `when` garante que outras exceções propagam intactas.
+            return (Result.Failure(erroVersao), []);
         }
 
         // ADR-0108: a requisição de registro do ato viaja como cascading message, junto dos
         // domain events — o Wolverine instala o envelope no outbox DENTRO da transação que
-        // acabou de gravar o Edital e a versão (ADR-0004). Ou os dois existem, ou nenhum.
+        // acabou de gravar a versão (ADR-0004). Ou os dois existem, ou nenhum.
         //
         // É essa atomicidade que a chamada síncrona não conseguia dar, e é o que impede o
         // ato órfão: a vaga de linhagem do certame (ADR-0107) é monotônica, e um ato
@@ -178,11 +160,12 @@ public static class PublicarProcessoSeletivoCommandHandler
         // para sempre.
         //
         // O ato ainda não existe quando esta linha roda — e não precisa existir: o id é
-        // decidido AQUI, e a versão já o referencia por VALOR, sem chave estrangeira
-        // (ADR-0061). O modelo sempre previu que o ato viveria noutro módulo.
+        // decidido pelo agregado, e a versão já o referencia por VALOR, sem chave
+        // estrangeira (ADR-0061). O documento normativo é de Publicações (ADR-0103/0105);
+        // Seleção guarda dele apenas o par {id, hash}.
         return (Result.Success(), MensagensDaPublicacao.Montar(
             processo,
-            publicarResult.Value!,
+            versao,
             command.Ato,
             tipoConferido,
             dados.Numero,
@@ -190,12 +173,4 @@ public static class PublicarProcessoSeletivoCommandHandler
             atoRetificadoId: null,
             motivoRetificacao: null));
     }
-
-    /// <summary>
-    /// A data documental declarada, no instante convencional de início do dia em UTC. O ato
-    /// a declara como data (<c>DateOnly</c>); o Edital a guarda como instante — a conversão é
-    /// convencional e não carrega hora, porque o documento declara um DIA.
-    /// </summary>
-    private static DateTimeOffset DataDocumental(DadosDoAto ato) =>
-        new(ato.DataPublicacao.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
 }
