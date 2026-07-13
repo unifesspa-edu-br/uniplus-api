@@ -181,6 +181,17 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.RestauracaoForaDePublicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.restauracao_fora_de_publicado", "Só um processo publicado tem configuração congelada a restaurar")),
         new("ProcessoSeletivo.IdEtapaAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_ausente", "Toda etapa restaurada declara o Id congelado no envelope")),
         new("VersaoConfiguracao.VersaoDeOutroProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.versao_de_outro_processo", "A configuração congelada de um certame não se repõe em outro")),
+        // Codec do envelope (Story #859, ADR-0110 D1/D8). A recusa é NOMEADA: um descarte
+        // que falha precisa distinguir uma versão que o sistema não conhece, uma que ele
+        // conhece e não reidrata, e uma evidência que não prova o que diz provar.
+        new("EnvelopeCodec.VersaoDesconhecida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.versao_desconhecida", "A versão do envelope congelado não está no registro de codecs")),
+        new("EnvelopeCodec.VersaoNaoReidratavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.versao_nao_reidratavel", "A versão do envelope é conhecida, mas não pode ser reidratada")),
+        new("EnvelopeCodec.AlgoritmoNaoSuportado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.algoritmo_nao_suportado", "O algoritmo de hash da versão não é o que o codec daquela forma emite")),
+        new("EnvelopeCodec.IntegridadeViolada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.integridade_violada", "Os bytes congelados não produzem o hash registrado na versão")),
+        new("EnvelopeCodec.EnvelopeMalformado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.envelope_malformado", "O envelope congelado não tem a forma que a versão dele declara")),
+        new("EnvelopeCodec.EnvelopeIncoerenteComAVersao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.envelope_incoerente_com_a_versao", "O envelope contradiz a versão que o guarda")),
+        new("EnvelopeCodec.BlocosDerivadosIncoerentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.blocos_derivados_incoerentes", "Distribuição, modalidades e ofertas não declaram o mesmo conjunto de ofertas de curso")),
+        new("EnvelopeCodec.RegraDesconhecida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.regra_desconhecida", "O envelope referencia um código de regra fora do rol conhecido")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];
