@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Canonicalization;
 using Domain.Interfaces;
 using ExternalServices;
@@ -52,6 +53,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
         services.AddScoped<ISnapshotPublicacaoCanonicalizer, SnapshotPublicacaoCanonicalizer>();
         services.AddScoped<IRegistroCodecsEnvelope, RegistroCodecsEnvelope>();
+        services.AddScoped<IRestauradorDeConfiguracao, RestauradorDeConfiguracao>();
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
         services.AddScoped<IDocumentoEditalRepository, DocumentoEditalRepository>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
