@@ -10,6 +10,8 @@ informed:
 
 # ADR-0059: Decomposição da Sprint 3 e estratégia paralela para entrega de Parametrizacao
 
+> **Nota de atualização.** Esta ADR registra o **plano de execução** de uma sprint encerrada; a estratégia de paralelização decidida aqui não muda. Parte dos símbolos citados na Lane C, porém, **não existe mais**: `ValidadorConformidadeEdital` e `EditalGovernanceSnapshot` foram removidos (#782), e as rotas `/api/editais/{id}/conformidade` não existem — o agregado `Edital` foi eliminado da Seleção (ver [ADR-0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) e [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md)). A avaliação de conformidade legal contra o `ProcessoSeletivo` é trabalho em aberto. Leia a Lane C como registro histórico do plano, não como descrição do código atual.
+
 ## Contexto e enunciado do problema
 
 A estratégia do módulo Parametrizacao (per ADRs [0055](0055-organizacao-institucional-bounded-context.md), [0056](0056-modulo-configuracao-e-read-side-via-reader.md), [0057](0057-areas-rbac-snapshot-historia-invariantes.md) e [0058](0058-obrigatoriedade-legal-validacao-data-driven.md)) envolve seis sub-features identificadas:

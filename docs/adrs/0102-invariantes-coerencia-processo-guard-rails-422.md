@@ -8,6 +8,8 @@ decision-makers:
 # ADR-0102: Invariantes de coerência de processo como guard rails no banco, mapeadas a HTTP 422
 
 > **Emenda (ADR-0104):** a decisão — violação de guard rail de banco vira `DomainError` nomeado e 422, nunca 500 — permanece integralmente vigente, e ganhou guard rails novos (os da tabela `versoes_configuracao`). O que caducou foi um dos **exemplos**: a unicidade de `data_publicacao` entre editais do mesmo processo deixou de existir, e com ela o `Edital.DataPublicacaoDuplicada`. Aquela trava não era invariante de negócio — servia só para dar ordem total entre editais, papel que agora cabe a `UNIQUE(processo, numero_versao)` sobre as versões. Dois atos publicados no mesmo instante, e a retificação que republica a data do ato original, passam a ser estados válidos. Ver [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md).
+>
+> **Emenda 2 (ADR-0103):** com a eliminação do agregado `Edital`, **todos** os guard rails citados abaixo que se ancoravam nele mudaram de casa — a unicidade do edital de abertura por processo passou a ser `UNIQUE(processo, numero_versao)`; a linearidade da cadeia de retificação e o contrato abertura×retificação passaram a ser `UNIQUE(ato_criador)` mais o trigger de sucessão sobre `versoes_configuracao`, na **mesma transação**. A decisão (guard rail de banco → 422 nomeado) é que não mudou; os exemplos concretos abaixo devem ser lidos pelo seu equivalente em `versoes_configuracao`.
 
 ## Contexto e enunciado do problema
 

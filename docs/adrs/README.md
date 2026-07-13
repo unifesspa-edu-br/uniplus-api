@@ -129,12 +129,12 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0098](0098-politica-de-service-location-do-codegen-wolverine.md) | Política de service location do codegen Wolverine (`NotAllowed` + allow-list por tipo) | accepted | 2026-06-26 |
 | [0099](0099-geo-como-repositorio-dedicado.md) | Geo como repositório e serviço transversal dedicado | accepted | 2026-06-26 |
 | [0100](0100-canonicalizacao-hash-snapshot-publicacao.md) | Contrato de canonicalização e hash do snapshot de publicação (RN08) | accepted | 2026-07-07 |
-| [0101](0101-retificacao-novo-edital-novo-snapshot-motivo.md) | Retificação de processo publicado é sempre novo Edital + novo snapshot + motivo | accepted | 2026-07-07 |
+| [0101](0101-retificacao-novo-edital-novo-snapshot-motivo.md) | Retificação de processo publicado é sempre novo Edital + novo snapshot + motivo | superseded by ADR-0103 | 2026-07-07 |
 | [0102](0102-invariantes-coerencia-processo-guard-rails-422.md) | Invariantes de coerência de processo como guard rails no banco, mapeadas a HTTP 422 | accepted | 2026-07-07 |
 | [0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) | Retificação é uma relação entre atos publicados, não um tipo de ato | accepted | 2026-07-09 |
 | [0104](0104-versao-configuracao-como-agregado-proprio.md) | A vigência da configuração ordena versões, não documentos | accepted | 2026-07-09 |
 | [0105](0105-modulo-publicacoes-registro-central-dos-atos.md) | O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios | accepted | 2026-07-09 |
-| [0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md) | Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir | accepted | 2026-07-10 |
+| [0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md) | Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir | superseded by ADR-0108 | 2026-07-10 |
 | [0107](0107-vaga-de-linhagem-unica-por-objeto.md) | A unicidade de ato por objeto é uma vaga que a linhagem reserva, não um índice sobre o ato | accepted | 2026-07-11 |
 | [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) | accepted | 2026-07-12 |
 
@@ -142,7 +142,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0106`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0108`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.

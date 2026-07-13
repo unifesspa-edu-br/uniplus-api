@@ -7,6 +7,8 @@ decision-makers:
 
 # ADR-0100: Contrato de canonicalização e hash do snapshot de publicação (RN08)
 
+> **Nota de atualização.** A decisão desta ADR — o contrato de canonicalização e o hash reproduzível do congelamento — permanece **integralmente vigente**. Mudou apenas **onde o congelado mora**: a entidade `SnapshotPublicacao` citada abaixo não existe mais; o congelamento é uma **[`VersaoConfiguracao`](0104-versao-configuracao-como-agregado-proprio.md)**, agregado próprio e append-only, cujo par de bytes canônicos e hash é derivado exatamente pelas regras aqui definidas. O nome sobrevive no código apenas no `ISnapshotPublicacaoCanonicalizer` — resíduo de vocabulário, não uma entidade. Leia "snapshot de publicação" como "a configuração congelada de uma versão".
+
 ## Contexto e enunciado do problema
 
 RN08 exige que a publicação do `ProcessoSeletivo` (Story #759) congele a configuração de negócio num `SnapshotPublicacao` append-only, com um hash reproduzível: a mesma configuração deve produzir sempre o mesmo hash, em qualquer runtime, máquina ou momento — é a evidência que sustenta a integridade jurídica do resultado perante mandado de segurança ou processo administrativo. Sem contrato de canonicalização explícito, "mesma configuração" é ambíguo: strings com codificação Unicode equivalente mas bytes diferentes, decimais representados com precisão variável, instantes serializados com ou sem fração de segundo, ou apenas a ordem de serialização de um objeto já produzem hashes distintos para conteúdo logicamente idêntico.
