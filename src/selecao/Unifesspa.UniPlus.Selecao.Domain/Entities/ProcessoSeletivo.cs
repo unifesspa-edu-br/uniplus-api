@@ -634,6 +634,276 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Repõe integralmente a configuração viva a partir do grafo reconstruído de uma
+    /// <see cref="VersaoConfiguracao"/> congelada deste processo (ADR-0110 D2) — a
+    /// operação que torna o descarte de uma sessão editorial <b>verificável</b>: o que
+    /// volta é exatamente o que o documento publicado diz, não uma aproximação dele.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Não é um <c>Definir*</c>, e não passa pela trava de mutação pós-publicação.</b>
+    /// Os <c>Definir*</c> são edição — mudam o que a configuração diz. Esta reposição
+    /// é o contrário: devolve a configuração ao que a versão congelada já dizia. Por
+    /// isso ela exige o processo <b>publicado</b> (só aí existe versão a restaurar) e é
+    /// ancorada na própria evidência forense — <b>a versão é a credencial</b>, no mesmo
+    /// desenho de <see cref="Retificar"/>, que também recebe a versão corrente e confia
+    /// ao handler a escolha dela (<see cref="VersaoConfiguracao"/> é agregado próprio,
+    /// ADR-0104; a raiz não conhece a cadeia).
+    /// </para>
+    /// <para>
+    /// <b>Reposição integral, validada no estado final.</b> Não é uma sequência de
+    /// <c>Definir*</c>: eles validam referências cruzadas contra o estado <i>corrente</i>
+    /// (o desempate contra as etapas de agora, a classificação contra as etapas de
+    /// agora) e recusariam um grafo meio-construído — a ordem em que as dimensões
+    /// entrassem decidiria se a reposição passa. Aqui o grafo é validado <b>inteiro,
+    /// como ele ficará</b>, e só então aplicado: uma restauração que falha não deixa o
+    /// agregado meio-reposto.
+    /// </para>
+    /// <para>
+    /// <b>Identidade (D2).</b> As etapas são reconciliadas <b>por <c>Id</c></b>: uma
+    /// etapa que ainda existe na instância <i>tracked</i> é atualizada nela mesma —
+    /// substituí-la por uma instância nova com o mesmo <c>Id</c> colidiria com o
+    /// identity map do EF, e o <c>CreatedAt</c> original se perderia. As demais filhas
+    /// são recriadas: os ids técnicos e o <c>CreatedAt</c> delas <b>não sobrevivem</b> —
+    /// perda de informação <b>declarada</b> (ADR-0110 D2), não silenciosa. A auditoria
+    /// com peso jurídico vive na <see cref="VersaoConfiguracao"/>, que é append-only e
+    /// não é tocada aqui.
+    /// </para>
+    /// </remarks>
+    /// <param name="versao">Versão congelada de onde o grafo foi reconstruído — deste processo, e a que o handler elegeu como vigente.</param>
+    /// <param name="grafo">As seis dimensões reconstruídas pelo codec do envelope (ADR-0110 D1).</param>
+    public Result RestaurarConfiguracaoCongelada(VersaoConfiguracao versao, GrafoConfiguracao grafo)
+    {
+        ArgumentNullException.ThrowIfNull(versao);
+        ArgumentNullException.ThrowIfNull(grafo);
+
+        if (Status != StatusProcesso.Publicado)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.RestauracaoForaDePublicado",
+                $"Só é possível restaurar a configuração congelada de um processo publicado — status atual: {Status}."));
+        }
+
+        // A cadeia de versões não atravessa certames: restaurar aqui a configuração
+        // congelada de OUTRO processo sobrescreveria este com uma configuração que
+        // nunca foi dele — e o envelope da próxima publicação congelaria a troca.
+        if (versao.ProcessoSeletivoId != Id)
+        {
+            return Result.Failure(new DomainError(
+                "VersaoConfiguracao.VersaoDeOutroProcesso",
+                "A versão de configuração informada pertence a outro Processo Seletivo."));
+        }
+
+        if (ValidarGrafo(grafo) is { } erro)
+        {
+            return Result.Failure(erro);
+        }
+
+        AplicarGrafo(grafo);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Uma <b>sombra</b> deste processo — mesma identidade, mesmo tipo, mesmo status, mas
+    /// <b>sem configuração</b> e <b>fora do change tracker</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Existe por uma razão só: a fidelidade de uma reidratação só é demonstrável
+    /// <b>recanonicalizando o agregado já reposto</b> — e fazer isso na raiz viva
+    /// significaria mutá-la <b>antes</b> de saber se a reposição é boa. Uma prova que
+    /// falhasse deixaria o agregado <i>tracked</i> empobrecido, e bastaria um
+    /// <c>SaveChanges</c> adiante no mesmo escopo para gravar o estrago — a atomicidade
+    /// dependeria da disciplina de quem chama, não do código.
+    /// </para>
+    /// <para>
+    /// Com a sombra, a ordem se inverte: <b>prova primeiro, aplica depois</b>. A raiz viva
+    /// só é tocada quando os bytes já bateram. O <c>Id</c> é o mesmo de propósito — é ele
+    /// que as filhas recebem em <c>VincularProcesso</c>, e é ele que a versão congelada
+    /// referencia.
+    /// </para>
+    /// </remarks>
+    public ProcessoSeletivo SombraParaVerificacao() => new()
+    {
+        Id = Id,
+        Nome = Nome,
+        Tipo = Tipo,
+        Status = Status,
+    };
+
+    /// <summary>
+    /// Valida o grafo <b>como ele ficará</b> — as referências cruzadas são resolvidas
+    /// contra as etapas do PRÓPRIO grafo, não contra as do agregado, que estão prestes
+    /// a ser substituídas. Nenhuma escrita acontece antes desta função devolver
+    /// <see langword="null"/>.
+    /// </summary>
+    private DomainError? ValidarGrafo(GrafoConfiguracao grafo)
+    {
+        if (grafo.Etapas.Count == 0)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.EtapasVazias",
+                "O processo deve ter ao menos uma etapa pontuada.");
+        }
+
+        // O Id vem congelado do envelope (D2) — e nem EtapaProcesso nem o agregado o
+        // validavam: a unicidade era garantida só pelo handler de PUT /etapas. Um
+        // envelope com dois ids iguais produziria duas etapas que o etapa_ref não
+        // consegue distinguir, e o INSERT colidiria na chave primária.
+        List<Guid> idsEtapas = [.. grafo.Etapas.Select(e => e.Id)];
+        if (idsEtapas.Any(id => id == Guid.Empty))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.IdEtapaAusente",
+                "Toda etapa restaurada deve declarar o Id congelado no envelope.");
+        }
+
+        if (idsEtapas.Distinct().Count() != idsEtapas.Count)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.IdEtapaDuplicado",
+                "O mesmo Id de etapa não pode aparecer mais de uma vez na configuração restaurada.");
+        }
+
+        List<int> ordensEtapas = [.. grafo.Etapas.Where(e => e.Ordem.HasValue).Select(e => e.Ordem!.Value)];
+        if (ordensEtapas.Distinct().Count() != ordensEtapas.Count)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.OrdemEtapaDuplicada",
+                "Cada etapa deve ter uma ordem única dentro do processo.");
+        }
+
+        if (!grafo.Etapas.Any(e => e.ComponeNota))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.NenhumaEtapaComponeNota",
+                "Ao menos uma etapa deve ter caráter classificatória ou ambas, com peso, para compor a nota final.");
+        }
+
+        if (grafo.DistribuicaoVagas.Count == 0)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.DistribuicaoVagasVazia",
+                "O processo deve ter ao menos uma distribuição de vagas configurada.");
+        }
+
+        List<Guid> ofertas = [.. grafo.DistribuicaoVagas.Select(d => d.OfertaCursoOrigemId)];
+        if (ofertas.Distinct().Count() != ofertas.Count)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.OfertaCursoDuplicada",
+                "Cada oferta de curso só pode ter uma distribuição de vagas no processo.");
+        }
+
+        List<int> ordensDesempate = [.. grafo.CriteriosDesempate.Select(c => c.Ordem)];
+        if (ordensDesempate.Distinct().Count() != ordensDesempate.Count)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.OrdemDesempateDuplicada",
+                "Cada critério de desempate deve ter uma ordem única dentro do processo.");
+        }
+
+        // INV-B6 — contra as etapas DO GRAFO. Se o codec regenerasse o etapa.Id em vez
+        // de preservá-lo, é aqui que a restauração pararia: o etapaRef congelado deixa
+        // de resolver.
+        IEnumerable<CriterioDesempate> porEtapa = grafo.CriteriosDesempate
+            .Where(static c => c.Args is ArgsDesempateMaiorNotaEtapa);
+        foreach (CriterioDesempate criterio in porEtapa)
+        {
+            ArgsDesempateMaiorNotaEtapa args = (ArgsDesempateMaiorNotaEtapa)criterio.Args;
+            if (!idsEtapas.Contains(args.EtapaRef))
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.EtapaRefDesempateInexistente",
+                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe na configuração restaurada (INV-B6).");
+            }
+        }
+
+        bool baseadoEmEnem = Tipo is TipoProcesso.SiSU or TipoProcesso.PSVR;
+        foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)
+        {
+            // INV-B4 — mesma proteção do INV-B6, para a eliminação por nota mínima.
+            if (regra.Args is ArgsElimNotaMinimaEtapa notaMinima && !idsEtapas.Contains(notaMinima.EtapaRef))
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
+                    $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe na configuração restaurada (INV-B4).");
+            }
+
+            if (regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea && !baseadoEmEnem)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
+                    $"A regra {regra.Regra.Codigo} só se aplica a processo baseado em ENEM (SiSU/PSVR).");
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Aplica o grafo já validado. Chamado <b>só</b> depois de <see cref="ValidarGrafo"/>
+    /// devolver <see langword="null"/> — a partir daqui não há caminho de falha, e é o
+    /// que garante que uma restauração recusada não altere nada (ADR-0110 D2).
+    /// </summary>
+    private void AplicarGrafo(GrafoConfiguracao grafo)
+    {
+        // Reconciliação por Id (a armadilha do EF): a instância tracked é REUSADA e
+        // atualizada, nunca substituída por uma instância nova com o mesmo Id — isso
+        // colidiria com o identity map. Mesmo padrão de DefinirEtapasCommandHandler, e
+        // é também o que preserva o CreatedAt original das etapas sobreviventes (D2).
+        Dictionary<Guid, EtapaProcesso> tracked = _etapas.ToDictionary(e => e.Id);
+        List<EtapaProcesso> etapas = [];
+        foreach (EtapaProcesso congelada in grafo.Etapas)
+        {
+            if (tracked.TryGetValue(congelada.Id, out EtapaProcesso? viva))
+            {
+                viva.AtualizarDados(
+                    congelada.Nome,
+                    congelada.Carater,
+                    congelada.Peso,
+                    congelada.NotaMinima,
+                    congelada.Ordem);
+                etapas.Add(viva);
+            }
+            else
+            {
+                etapas.Add(congelada);
+            }
+        }
+
+        _etapas.Clear();
+        foreach (EtapaProcesso etapa in etapas)
+        {
+            etapa.VincularProcesso(Id);
+            _etapas.Add(etapa);
+        }
+
+        grafo.OfertaAtendimento.VincularProcesso(Id);
+        OfertaAtendimento = grafo.OfertaAtendimento;
+
+        _distribuicaoVagas.Clear();
+        foreach (ConfiguracaoDistribuicaoVagas configuracao in grafo.DistribuicaoVagas)
+        {
+            configuracao.VincularProcesso(Id);
+            _distribuicaoVagas.Add(configuracao);
+        }
+
+        grafo.BonusRegional?.VincularProcesso(Id);
+        BonusRegional = grafo.BonusRegional;
+
+        _criteriosDesempate.Clear();
+        foreach (CriterioDesempate criterio in grafo.CriteriosDesempate)
+        {
+            criterio.VincularProcesso(Id);
+            _criteriosDesempate.Add(criterio);
+        }
+
+        grafo.Classificacao.VincularProcesso(Id);
+        Classificacao = grafo.Classificacao;
+    }
+
+    /// <summary>
     /// Decide o identificador do ato que cria uma versão. Guid v7 ancorado no
     /// <b>mesmo instante</b> já lido para a versão (ADR-0068) — nunca num relógio
     /// próprio: o id do ato e a vigência da versão que ele cria descrevem o mesmo

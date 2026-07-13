@@ -175,6 +175,12 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Seletor de snapshot vigente (T6 #787, ADR-0075/0076): não há publicação
         // vigente ≤ o instante consultado — 422, nunca retorno silencioso.
         new("Snapshot.VigenteAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.snapshot.vigente_ausente", "Nenhuma publicação vigente para o instante")),
+        // Reposição da configuração congelada (Story #859, ADR-0110 D2). Todos 422: são
+        // regras de negócio, e o operador que dispara um descarte precisa saber por que ele
+        // foi recusado — reidratar mal é pior do que não reidratar.
+        new("ProcessoSeletivo.RestauracaoForaDePublicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.restauracao_fora_de_publicado", "Só um processo publicado tem configuração congelada a restaurar")),
+        new("ProcessoSeletivo.IdEtapaAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_ausente", "Toda etapa restaurada declara o Id congelado no envelope")),
+        new("VersaoConfiguracao.VersaoDeOutroProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.versao_de_outro_processo", "A configuração congelada de um certame não se repõe em outro")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];
