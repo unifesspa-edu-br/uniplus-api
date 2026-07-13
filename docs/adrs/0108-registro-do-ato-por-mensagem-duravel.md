@@ -109,8 +109,8 @@ Quatro propriedades, e nenhuma delas é suposta — todas foram **medidas** cont
 branch `spike/820-outbox-durable-queue`):
 
 1. **Atomicidade onde importa.** O envelope é persistido na mesma transação do agregado
-   ([ADR-0004](0004-outbox-transacional-via-wolverine.md)). Ou o Edital e a mensagem existem, ou nenhum dos
-   dois.
+   ([ADR-0004](0004-outbox-transacional-via-wolverine.md)). Ou a versão de configuração e a mensagem existem,
+   ou nenhuma das duas.
 2. **O órfão que trava o certame deixa de ser possível.** A vaga só é reservada quando o ato é criado. O modo
    de falha residual é o **inverso** — versão de configuração publicada com o ato ainda por registrar —, que é transitório,
    visível na dead letter e **recuperável**, e que **não impede** a publicação do certame.
