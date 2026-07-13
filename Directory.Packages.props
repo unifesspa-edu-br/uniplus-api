@@ -71,7 +71,7 @@
     <!-- EntityFrameworkCore instrumentation só publica como beta — alinhado com prática do ecossistema OTel .NET. -->
     <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.1-beta.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.16.0" />
 
     <!-- Testing -->
     <PackageVersion Include="xunit" Version="2.9.3" />
