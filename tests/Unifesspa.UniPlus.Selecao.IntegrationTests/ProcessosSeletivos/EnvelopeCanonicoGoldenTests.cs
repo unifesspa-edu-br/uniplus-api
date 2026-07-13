@@ -412,15 +412,24 @@ public sealed class EnvelopeCanonicoGoldenTests
     private static string LerFixture(string schemaVersion) =>
         File.ReadAllText(CaminhoDaFixture(schemaVersion)).Trim();
 
+    /// <summary>
+    /// Nome do arquivo da fixture. A versão é tratada como <b>nome</b>, nunca como
+    /// caminho: um separador ou uma raiz em <paramref name="schemaVersion"/> faria o
+    /// <see cref="Path.Combine(string[])"/> descartar os segmentos anteriores em
+    /// silêncio e o teste passar a ler outro arquivo.
+    /// </summary>
+    private static string NomeDaFixture(string schemaVersion) =>
+        $"envelope-{Path.GetFileName(schemaVersion)}.json";
+
     private static string CaminhoDaFixture(string schemaVersion) => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        $"envelope-{schemaVersion}.json");
+        NomeDaFixture(schemaVersion));
 
     /// <summary>Caminho da fixture na ÁRVORE-FONTE — só usado na regeneração explícita.</summary>
     private static string CaminhoDaFixtureNoFonte(string schemaVersion, [CallerFilePath] string origem = "") => Path.Combine(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        $"envelope-{schemaVersion}.json");
+        NomeDaFixture(schemaVersion));
 }
