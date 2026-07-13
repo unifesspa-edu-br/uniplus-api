@@ -111,7 +111,18 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(conferenciaDaVaga.Error!), []);
         }
 
-        SnapshotCanonico canonico = canonicalizer.Canonicalizar(processo, dados, documento.HashSha256!);
+        // O gate precede a canonicalização (ADR-0109 D5): um processo não conforme
+        // não chega a ser projetado. Sem isso, a canonicalização de uma dimensão
+        // obrigatória ausente falharia alto (D8) em vez de devolver o DomainError
+        // que o contrato HTTP promete. A raiz reavalia — este é o guarda antecipado,
+        // não a autoridade.
+        if (processo.PendenciaDeConformidade() is { } pendencia)
+        {
+            return (Result.Failure(pendencia), []);
+        }
+
+        SnapshotCanonico canonico = canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(processo, dados, documento.HashSha256!));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

@@ -386,6 +386,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     ];
 
     /// <summary>
+    /// Pendência de conformidade do processo, ou <see langword="null"/> quando
+    /// ele está conforme. É a <b>fonte única</b> do gate: <see cref="Publicar"/>
+    /// e <see cref="Retificar"/> chamam este método — não há segunda lista de
+    /// itens em lugar nenhum, e as duas transições recusam com o <b>mesmo</b>
+    /// <c>DomainError</c>.
+    /// </summary>
+    /// <remarks>
+    /// Publicar e retificar abrem, ambos, uma <see cref="VersaoConfiguracao"/>
+    /// append-only e juridicamente vinculante. Uma versão congelada a partir de
+    /// configuração incompleta é irreparável — o passado não se muta. Por isso o
+    /// checklist vale para as <b>duas</b> transições, não só para a primeira.
+    /// </remarks>
+    public DomainError? PendenciaDeConformidade()
+    {
+        IReadOnlyList<ItemConformidade> pendencias = [.. AvaliarConformidade().Where(static item => !item.Ok)];
+        if (pendencias.Count == 0)
+        {
+            return null;
+        }
+
+        return new DomainError(
+            "ProcessoSeletivo.ConformidadeInsuficiente",
+            $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Item))}.");
+    }
+
+    /// <summary>
     /// Publica o processo (RN08, Story #759 T4): valida a transição e a
     /// conformidade estrutural, abre a cadeia de <see cref="VersaoConfiguracao"/>
     /// a partir dos bytes canônicos já produzidos pelo
@@ -437,12 +463,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Só é possível publicar um processo em rascunho — status atual: {Status}."));
         }
 
-        IReadOnlyList<ItemConformidade> pendencias = [.. AvaliarConformidade().Where(item => !item.Ok)];
-        if (pendencias.Count > 0)
+        if (PendenciaDeConformidade() is { } pendencia)
         {
-            return Result<VersaoConfiguracao>.Failure(new DomainError(
-                "ProcessoSeletivo.ConformidadeInsuficiente",
-                $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(p => p.Item))}."));
+            return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
         // UMA leitura do relógio para o ato e para a versão que ele cria. O instante
@@ -545,6 +568,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(new DomainError(
                 "VersaoConfiguracao.VersaoAnteriorDeOutroProcesso",
                 "A versão corrente informada pertence a outro Processo Seletivo."));
+        }
+
+        // O checklist vale para as DUAS transições que congelam. A retificação também
+        // abre uma versão append-only e vinculante; congelar configuração incompleta
+        // aqui produz um documento irreparável, exatamente como na publicação. Mesma
+        // fonte, mesmo DomainError.
+        if (PendenciaDeConformidade() is { } pendencia)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
         // Uma única leitura do relógio para o ato e para a versão que ele cria — ver a nota

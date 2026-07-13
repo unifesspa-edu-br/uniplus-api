@@ -152,15 +152,23 @@ public static class RetificarProcessoSeletivoCommandHandler
         // idempotente — reaplicá-lo no canonicalizer não altera o valor.
         string motivo = HashCanonicalComputer.NormalizeNfc(command.Motivo.Trim());
 
+        // O gate precede a canonicalização, igual à publicação (ADR-0109 D5) — a
+        // retificação também congela uma versão append-only e vinculante.
+        if (processo.PendenciaDeConformidade() is { } pendencia)
+        {
+            return (Result.Failure(pendencia), []);
+        }
+
         // O ato retificado é o que criou a versão corrente — o topo da cadeia de
         // CONFIGURAÇÃO (ADR-0104), não o ato de maior data documental. É o mesmo
         // alvo que ProcessoSeletivo.Retificar elege; congelar aqui um id diferente
-        // faria o bloco 'retificacao' do snapshot apontar para outro documento.
+        // faria o bloco 'retificacao' do envelope apontar para outro documento.
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
-            processo,
-            dados,
-            documento.HashSha256!,
-            new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo));
+            new EntradaCanonicalizacao(
+                processo,
+                dados,
+                documento.HashSha256!,
+                new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo)));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

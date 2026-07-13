@@ -8,12 +8,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Implementação do serializador canônico dos 17 blocos do snapshot de
-/// publicação (ADR-0100). Projeta a configuração viva do agregado num
-/// payload canônico — 11 blocos reais + 6 stubs
-/// <c>{"status":"nao_construido"}</c> para dimensões que a Feature #40 ainda
-/// não implementou (ADR-0100 item 10) — e devolve os bytes via
-/// <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/>.
+/// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
+/// ADR-0109). Projeta a configuração viva do agregado num payload de 17 chaves
+/// — <b>10 blocos reais + 7 stubs</b> <c>{"status":"nao_construido"}</c> para as
+/// dimensões que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
+/// devolve os bytes via <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -34,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <c>nao_construido</c> e "distribuição" carrega os inputs reais.
 /// </para>
 /// <para>
-/// <strong>Ordenação determinística das coleções (achado de review, PR #791):</strong>
+/// <strong>Ordenação determinística das coleções (ADR-0109 D9):</strong>
 /// <c>IProcessoSeletivoRepository.ObterComConfiguracaoAsync</c> não aplica
 /// <c>ORDER BY</c> aos <c>Include</c> das coleções filhas — a ordem física
 /// devolvida pelo Postgres para a MESMA linha pode variar entre leituras
@@ -42,31 +41,48 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// hash, todo bloco baseado em coleção é ordenado por uma chave estável
 /// antes de serializar: campo <c>Ordem</c> quando ele é semântico (etapas,
 /// critérios de desempate), identidade de negócio única quando existe
-/// (oferta/modalidade/condição/recurso por seus <c>*OrigemId</c>), ou
-/// <see cref="Kernel.Domain.Entities.EntityBase.Id"/> como fallback quando
-/// não há chave semântica (regras de eliminação — cardinalidade múltipla
-/// sem unicidade natural). Isso garante que reler e recanonicalizar o MESMO
-/// processo sempre produz os mesmos bytes (ADR-0100 §Confirmação).
+/// (oferta/modalidade/condição/recurso por seus <c>*OrigemId</c>), e — onde
+/// não há chave natural — pela <b>chave de conteúdo</b>: os bytes canônicos
+/// do próprio item. Ordenar por <c>EntityBase.Id</c> era determinístico entre
+/// leituras da MESMA linha, mas não entre <b>configurações equivalentes</b>:
+/// duas regras de eliminação idênticas inseridas em ordem inversa recebem
+/// Guids v7 distintos e produziriam bytes distintos para a mesma configuração.
+/// A chave de conteúdo faz o envelope depender só do que ele diz.
 /// </para>
 /// </remarks>
 public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonicalizer
 {
-    private const string SchemaVersionAtual = "1.0";
+    /// <summary>
+    /// Versão da <b>forma</b> do envelope (ADR-0109 D1). Sobe a cada mudança de
+    /// forma — chave nova, ou um stub virando conteúdo real. Não há CHECK de
+    /// <c>schema_version</c> no banco: o bump é livre e não pede migration. Toda
+    /// versão aqui declarada tem de ter a sua golden fixture correspondente —
+    /// um teste de política falha o build se não tiver.
+    /// </summary>
+    internal const string SchemaVersionAtual = "1.1";
+
     private const string AlgoritmoHashAtual = "canonical-json/sha256@v1";
     private const int EscalaPadrao = 4;
     private const int EscalaPercentual = 2;
 
+    /// <summary>
+    /// Os 7 blocos que ainda não têm dono (ADR-0109 D8). Um bloco <b>real</b>
+    /// nunca emite este literal: se a dimensão é obrigatória, a ausência é
+    /// pendência de conformidade e o gate recusa antes de canonicalizar.
+    /// </summary>
     private static readonly JsonObject NaoConstruido = new() { ["status"] = "nao_construido" };
 
-    public SnapshotCanonico Canonicalizar(
-        ProcessoSeletivo processo,
-        DadosEdital dados,
-        string hashEdital,
-        RetificacaoInfo? retificacao = null)
+    public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
     {
+        ArgumentNullException.ThrowIfNull(entrada);
+
+        ProcessoSeletivo processo = entrada.Processo;
+        DadosEdital dados = entrada.Dados;
+        RetificacaoInfo? retificacao = entrada.Retificacao;
+
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(dados);
-        ArgumentException.ThrowIfNullOrWhiteSpace(hashEdital);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entrada.HashDocumento);
 
         JsonObject payload = new()
         {
@@ -80,7 +96,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["bonusRegional"] = SerializarBonusRegional(processo),
             ["criteriosDesempate"] = SerializarCriteriosDesempate(processo),
             ["classificacao"] = SerializarClassificacao(processo),
-            ["hashesEdital"] = SerializarHashesEdital(dados, hashEdital),
+            ["hashesEdital"] = SerializarHashesEdital(dados, entrada.HashDocumento),
             ["documentosExigidos"] = NaoConstruido.DeepClone(),
             ["formulario"] = NaoConstruido.DeepClone(),
             ["cascataRemanejamento"] = NaoConstruido.DeepClone(),
@@ -224,9 +240,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     private static JsonObject SerializarAtendimento(ProcessoSeletivo processo)
     {
+        // D8 — um bloco REAL nunca emite `nao_construido`. O atendimento é
+        // dimensão obrigatória: a sua ausência é pendência de conformidade, e
+        // o gate (ProcessoSeletivo.PendenciaDeConformidade) recusa a transição
+        // antes de a canonicalização acontecer. Chegar aqui sem oferta é
+        // invariante quebrada — falha alto, não congela um stub em silêncio.
         if (processo.OfertaAtendimento is not { } oferta)
         {
-            return NaoConstruido.DeepClone().AsObject();
+            throw new InvalidOperationException(
+                "Canonicalização de processo sem oferta de atendimento especializado — o gate de conformidade deveria ter recusado a transição antes deste ponto.");
         }
 
         return new JsonObject
@@ -306,9 +328,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     private static JsonObject SerializarClassificacao(ProcessoSeletivo processo)
     {
+        // D8 — ver a nota em SerializarAtendimento. A classificação é o bloco que
+        // determina o resultado do certame; congelá-la como `nao_construido` num
+        // documento juridicamente vinculante é o pior modo de falha do envelope.
         if (processo.Classificacao is not { } classificacao)
         {
-            return NaoConstruido.DeepClone().AsObject();
+            throw new InvalidOperationException(
+                "Canonicalização de processo sem configuração de classificação — o gate de conformidade deveria ter recusado a transição antes deste ponto.");
         }
 
         return new JsonObject
@@ -320,17 +346,20 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["casasArredondamento"] = classificacao.CasasArredondamento,
             ["regraOrdemAlocacao"] = SerializarReferenciaRegra(classificacao.RegraOrdemAlocacao),
             ["nOpcoesAlocacao"] = classificacao.NOpcoesAlocacao,
-            // RegrasEliminacao não tem chave de negócio única (cardinalidade
-            // múltipla — duas ELIM-NOTA-MINIMA-ETAPA distintas são válidas,
-            // ex. PS Convênios); Id (Guid v7, estável por linha) é o fallback
-            // determinístico contra reordenação física do Postgres entre leituras.
-            ["regrasEliminacao"] = new JsonArray([.. classificacao.RegrasEliminacao
-                .OrderBy(static r => r.Id)
-                .Select(static r => (JsonNode)new JsonObject
+            // D9 — RegrasEliminacao não tem chave de negócio única (cardinalidade
+            // múltipla: duas ELIM-NOTA-MINIMA-ETAPA distintas são válidas, ex. PS
+            // Convênios). Ordenar por `Id` era determinístico entre leituras da
+            // mesma linha, mas NÃO entre configurações equivalentes — dois processos
+            // com as mesmas regras inseridas em ordem inversa recebem Guids v7
+            // distintos e produziriam envelopes distintos para a mesma configuração.
+            // A ordenação é pela CHAVE DE CONTEÚDO: os bytes canônicos do próprio
+            // item. O envelope passa a depender só do que ele diz.
+            ["regrasEliminacao"] = OrdenarPorConteudo(classificacao.RegrasEliminacao
+                .Select(static r => new JsonObject
                 {
                     ["regra"] = SerializarReferenciaRegra(r.Regra),
                     ["args"] = SerializarArgsRegraEliminacao(r.Args),
-                })]),
+                })),
         };
     }
 
@@ -354,6 +383,22 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["documentoEditalId"] = dados.DocumentoEditalId,
         ["hashSha256"] = hashEdital,
     };
+
+    /// <summary>
+    /// Ordena um array pela <b>chave de conteúdo</b> de cada item — os seus
+    /// próprios bytes canônicos (ADR-0109 D9). Usado onde a coleção não tem
+    /// chave de negócio natural: sem isso, a identidade técnica da linha (um
+    /// Guid) vazaria para dentro do hash e duas configurações equivalentes
+    /// produziriam envelopes distintos.
+    /// </summary>
+    private static JsonArray OrdenarPorConteudo(IEnumerable<JsonObject> itens)
+    {
+        IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
+            static item => System.Text.Encoding.UTF8.GetString(HashCanonicalComputer.ComputeSnapshotBytes(item)),
+            StringComparer.Ordinal);
+
+        return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
+    }
 
     private static JsonObject SerializarReferenciaRegra(ReferenciaRegra regra) => new()
     {

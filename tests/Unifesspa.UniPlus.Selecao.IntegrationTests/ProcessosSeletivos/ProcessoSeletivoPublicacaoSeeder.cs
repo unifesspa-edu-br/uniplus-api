@@ -104,7 +104,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             periodoInscricaoFim: new DateOnly(2026, 1, 31),
             documentoEditalId: documento.Id).Value!;
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dados, documento.HashSha256!);
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dados,
