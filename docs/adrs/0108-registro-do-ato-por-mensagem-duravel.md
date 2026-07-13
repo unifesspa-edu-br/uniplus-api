@@ -95,7 +95,7 @@ que publicou.**
 ```text
 Seleção, UMA transação (a que o Wolverine já abre):
     AtoId = Guid.CreateVersion7()            ← o domínio decide o id
-    Edital + VersaoConfiguracao(AtoCriadorId = AtoId)
+    VersaoConfiguracao(AtoCriadorId = AtoId)
     + envelope RegistrarAtoNormativoRequisicao(AtoId, …) no OUTBOX
     COMMIT                                   ← ou tudo, ou nada
 

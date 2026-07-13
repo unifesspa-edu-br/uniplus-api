@@ -1,11 +1,15 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0103"
 date: "2026-07-07"
 decision-makers:
   - "Tech Lead"
 ---
 
 # ADR-0101: Retificação de processo publicado é sempre novo Edital + novo snapshot + motivo
+
+> **Superada.** O *comportamento* decidido aqui continua valendo **no escopo em que foi decidido** — retificar o **ato congelante** de um processo publicado produz um novo ato, com motivo obrigatório, que congela uma nova configuração, e o congelado anterior permanece imutável. (A [ADR-0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) generalizou o alcance: retificar um ato **não** congelante — uma convocação, por exemplo — **não** cria versão de configuração.) O que caducou é o **modelo** em que a decisão foi expressa: `Edital` como entidade da Seleção, `NaturezaEdital` e `SnapshotPublicacao` não existem mais.
+>
+> A decisão vigente está em **[ADR-0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md)** — a retificação é uma **relação entre atos**, não um tipo de ato, e o ato normativo vive no módulo `Publicacoes` — e em **[ADR-0104](0104-versao-configuracao-como-agregado-proprio.md)** — o congelamento é uma `VersaoConfiguracao` própria, cuja **vigência ordena as versões**. Leia esta ADR como registro histórico do raciocínio, não como contrato.
 
 ## Contexto e enunciado do problema
 
