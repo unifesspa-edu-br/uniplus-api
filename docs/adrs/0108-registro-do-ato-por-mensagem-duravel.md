@@ -34,7 +34,7 @@ sobre o objeto errado "ocupa a vaga daquele objeto **para sempre**", e que o mec
 assunto de story própria, ainda não decidido.
 
 Compondo as duas ADRs: um ato registrado + uma falha na escrita de Seleção (crash entre os dois commits,
-erro inesperado no `SaveChanges`) deixa a vaga do certame ocupada por uma linhagem cujo Edital não existe.
+erro inesperado no `SaveChanges`) deixa a vaga do certame ocupada por uma linhagem cuja versão de configuração não existe.
 **O processo seletivo fica impublicável em definitivo.** A recuperação dependeria de o cliente retentar com
 exatamente a mesma `Idempotency-Key`; se ele desistir, o certame morre.
 
@@ -112,7 +112,7 @@ branch `spike/820-outbox-durable-queue`):
    ([ADR-0004](0004-outbox-transacional-via-wolverine.md)). Ou o Edital e a mensagem existem, ou nenhum dos
    dois.
 2. **O órfão que trava o certame deixa de ser possível.** A vaga só é reservada quando o ato é criado. O modo
-   de falha residual é o **inverso** — Edital publicado com o ato ainda por registrar —, que é transitório,
+   de falha residual é o **inverso** — versão de configuração publicada com o ato ainda por registrar —, que é transitório,
    visível na dead letter e **recuperável**, e que **não impede** a publicação do certame.
 3. **Idempotência por chave primária.** O `AtoId` é decidido pelo domínio e viaja na mensagem; uma reentrega
    (at-least-once) tenta gravar o mesmo id e não faz nada. Sem tabela de idempotência, sem hash do efeito.
@@ -135,7 +135,7 @@ para um ato de outro módulo. Não é contorno — é o desenho, agora usado com
 
 ### Negativas
 
-- **Consistência eventual.** Existe uma janela — tipicamente milissegundos — em que o Edital está publicado e
+- **Consistência eventual.** Existe uma janela — tipicamente milissegundos — em que a versão já está publicada e
   o ato ainda não aparece na consulta unificada de Publicações. É o preço, e é qualitativamente menor do que
   um certame impublicável para sempre.
 - Uma recusa legítima (tipo sem versão vigente, vaga já ocupada) só aflora **depois** do 2xx da publicação.
@@ -156,6 +156,6 @@ para um ato de outro módulo. Não é contorno — é o desenho, agora usado com
 Medido no spike, contra o host real, e replicado na implementação:
 
 - publicar registra o ato pela fila durável, com vínculo e vaga;
-- registro recusado **não** reserva a vaga do certame, e o Edital permanece publicado;
+- registro recusado **não** reserva a vaga do certame, e a versão de configuração permanece publicada;
 - reentrega da mesma requisição não duplica o ato;
 - a falha do handler chega à **dead letter** (verificado em `wolverine.wolverine_dead_letters`).
