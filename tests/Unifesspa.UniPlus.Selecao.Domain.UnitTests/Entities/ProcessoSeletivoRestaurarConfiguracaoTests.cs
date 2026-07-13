@@ -1,0 +1,292 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
+using Xunit;
+
+/// <summary>
+/// Reposição da configuração congelada (Story #859 CA-07; ADR-0110 D2).
+/// </summary>
+/// <remarks>
+/// A propriedade central aqui é <b>tudo ou nada</b>: uma restauração que falha não pode
+/// deixar o agregado meio-reposto. Se a validação fosse feita dimensão a dimensão,
+/// enquanto se aplica, um grafo que falhasse na <b>última</b> checagem já teria trocado
+/// etapas e distribuição — e o certame ficaria numa configuração que <b>nunca existiu</b>:
+/// nem a viva, nem a congelada.
+/// </remarks>
+public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
+{
+    private static readonly Guid EtapaOriginal = new("aaaa0000-0000-4000-8000-000000000001");
+    private static readonly Guid EtapaCongelada = new("aaaa0000-0000-4000-8000-000000000002");
+
+    [Fact(DisplayName = "CA-07 — uma restauração que falha na ÚLTIMA validação não altera NADA")]
+    public void RestauracaoQueFalha_NaoAlteraEstado()
+    {
+        // A falha é TARDIA de propósito: a classificação é a última dimensão validada.
+        // Um caso trivial (etapas vazias) passaria mesmo numa implementação que aplicasse
+        // etapas e distribuição antes de chegar à classificação — e não testaria nada.
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        Estado antes = Estado.De(processo);
+
+        // PSIQ não é baseado em ENEM — ELIM-CORTE-REDACAO não se aplica (INV-B13).
+        GrafoConfiguracao invalido = Grafo(
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            eliminacoes: [
+                RegraEliminacao.Criar(
+                    Regra(RegraEliminacaoCodigo.ElimCorteRedacao, 'e'),
+                    new ArgsElimCorteRedacao(400m)).Value!,
+            ]);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem");
+
+        Estado.De(processo).Should().BeEquivalentTo(antes,
+            "a validação acontece INTEIRA antes de qualquer escrita. Se a reposição aplicasse dimensão a dimensão, " +
+            "este grafo já teria trocado etapas e distribuição antes de falhar na classificação — e o certame " +
+            "ficaria numa configuração que nunca existiu.");
+    }
+
+    [Fact(DisplayName = "CA-07 — etapaRef órfão também falha sem tocar no estado")]
+    public void EtapaRefOrfao_NaoAlteraEstado()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+        Estado antes = Estado.De(processo);
+
+        GrafoConfiguracao invalido = Grafo(
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            criterios: [
+                CriterioDesempate.Criar(
+                    1,
+                    Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'),
+                    // Aponta para uma etapa que NÃO está no grafo — é o que aconteceria se o
+                    // decoder regenerasse o etapa.Id em vez de preservá-lo.
+                    new ArgsDesempateMaiorNotaEtapa(Guid.NewGuid())).Value!,
+            ]);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
+        Estado.De(processo).Should().BeEquivalentTo(antes);
+    }
+
+    [Fact(DisplayName = "Ids de etapa duplicados no grafo são recusados — a entidade não os validava")]
+    public void IdsDeEtapaDuplicados_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        GrafoConfiguracao invalido = Grafo(etapas: [
+            EtapaProcesso.Reidratar(EtapaCongelada, "Prova A", CaraterEtapa.Classificatoria, 1m, null, 1),
+            EtapaProcesso.Reidratar(EtapaCongelada, "Prova B", CaraterEtapa.Classificatoria, 2m, null, 2),
+        ]);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
+
+        resultado.IsFailure.Should().BeTrue(
+            "duas etapas com o mesmo Id são indistinguíveis para o etapa_ref, e o INSERT colidiria na chave " +
+            "primária. A unicidade era garantida só pelo handler de PUT /etapas — a reposição não passa por ele.");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.IdEtapaDuplicado");
+    }
+
+    [Fact(DisplayName = "Restaurar a configuração de OUTRO processo é recusado")]
+    public void VersaoDeOutroProcesso_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo alheio = ProcessoPublicado(TipoProcesso.SiSU);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(alheio), Grafo());
+
+        resultado.IsFailure.Should().BeTrue(
+            "repor num certame a configuração congelada de outro sobrescreveria o primeiro com uma configuração que " +
+            "nunca foi dele — e a próxima publicação congelaria a troca");
+        resultado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoDeOutroProcesso");
+    }
+
+    [Fact(DisplayName = "Um processo em rascunho não tem configuração congelada a restaurar")]
+    public void ProcessoEmRascunho_Recusa()
+    {
+        ProcessoSeletivo rascunho = ProcessoConforme(TipoProcesso.SiSU);
+        ProcessoSeletivo publicado = ProcessoPublicado(TipoProcesso.SiSU);
+
+        Result resultado = rascunho.RestaurarConfiguracaoCongelada(VersaoDo(publicado), Grafo());
+
+        resultado.IsFailure.Should().BeTrue(
+            "a reposição não é edição — ela devolve a configuração ao que a versão congelada já dizia. Num processo " +
+            "que nunca publicou não há versão nenhuma, e a operação não tem sentido.");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.RestauracaoForaDePublicado");
+    }
+
+    [Fact(DisplayName = "D2 — a etapa que sobrevive é RECONCILIADA na mesma instância (o CreatedAt não se perde)")]
+    public void EtapaSobrevivente_EReconciliada()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        EtapaProcesso instanciaViva = processo.Etapas.Single();
+
+        // A etapa congelada tem o MESMO Id da viva, mas dados diferentes.
+        GrafoConfiguracao grafo = Grafo(etapas: [
+            EtapaProcesso.Reidratar(EtapaOriginal, "Nome Restaurado", CaraterEtapa.Ambas, 7m, 20m, 3),
+        ]);
+
+        processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
+
+        EtapaProcesso depois = processo.Etapas.Single();
+
+        depois.Should().BeSameAs(instanciaViva,
+            "substituir a instância tracked por outra com o mesmo Id colide com o identity map do EF — e o CreatedAt " +
+            "original se perderia. A etapa é atualizada NA MESMA instância (ADR-0110 D2).");
+        depois.Nome.Should().Be("Nome Restaurado", "os dados vêm do grafo congelado, não da instância viva");
+        depois.Peso.Should().Be(7m);
+        depois.Ordem.Should().Be(3);
+    }
+
+    [Fact(DisplayName = "D2 — a etapa que NÃO existe mais é reinserida com o Id congelado")]
+    public void EtapaAusente_EReinseridaComOIdCongelado()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        GrafoConfiguracao grafo = Grafo(etapas: [
+            EtapaProcesso.Reidratar(EtapaCongelada, "Etapa Que Voltou", CaraterEtapa.Classificatoria, 1m, null, 1),
+        ]);
+
+        processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
+
+        processo.Etapas.Should().ContainSingle()
+            .Which.Id.Should().Be(EtapaCongelada,
+                "o Id congelado é preservado mesmo quando a etapa foi removida durante a sessão editorial — é ele " +
+                "que o etapaRef do desempate e da eliminação referenciam");
+    }
+
+    // ── Fábrica de cenários ──
+
+    private static ReferenciaRegra Regra(string codigo, char semente) =>
+        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+
+    private static ProcessoSeletivo ProcessoConforme(TipoProcesso tipo)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restauração", tipo);
+
+        processo.DefinirEtapas([
+            EtapaProcesso.Reidratar(EtapaOriginal, "Prova Original", CaraterEtapa.Classificatoria, 1m, null, 1),
+        ]);
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirDistribuicaoVagas([Distribuicao()]);
+        processo.DefinirClassificacao(Classificacao([]));
+
+        return processo;
+    }
+
+    private static ProcessoSeletivo ProcessoPublicado(TipoProcesso tipo)
+    {
+        ProcessoSeletivo processo = ProcessoConforme(tipo);
+
+        processo.Publicar(
+            Dados(),
+            configuracaoCongeladaCanonica: [1, 2, 3],
+            schemaVersion: "1.1",
+            algoritmoHash: "canonical-json/sha256@v1",
+            hashDocumento: new string('a', 64),
+            atorUsuarioSub: "testes",
+            clock: TimeProvider.System).IsSuccess.Should().BeTrue();
+
+        processo.ClearDomainEvents();
+        return processo;
+    }
+
+    /// <summary>
+    /// A versão que autentica a reposição. Os bytes não importam neste nível — a prova de
+    /// que o grafo veio <b>daquela</b> versão é do <c>RestauradorDeConfiguracao</c>
+    /// (Application), que recanonicaliza; o Domain não canonicaliza (ADR-0042).
+    /// </summary>
+    private static VersaoConfiguracao VersaoDo(ProcessoSeletivo processo) => VersaoConfiguracao.Abrir(
+        processo.Id,
+        [1, 2, 3],
+        schemaVersion: "1.1",
+        algoritmoHash: "canonical-json/sha256@v1",
+        atoCriadorId: Guid.CreateVersion7(),
+        atoCriadorHash: new string('a', 64),
+        atorUsuarioSub: "testes",
+        instante: DateTimeOffset.UnixEpoch);
+
+    private static GrafoConfiguracao Grafo(
+        IReadOnlyList<EtapaProcesso>? etapas = null,
+        IReadOnlyList<CriterioDesempate>? criterios = null,
+        IReadOnlyList<RegraEliminacao>? eliminacoes = null) => new(
+            etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            distribuicaoVagas: [Distribuicao()],
+            bonusRegional: null,
+            criteriosDesempate: criterios ?? [],
+            classificacao: Classificacao(eliminacoes ?? []));
+
+    private static ConfiguracaoDistribuicaoVagas Distribuicao() =>
+        ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: new Guid("bbbb0000-0000-4000-8000-000000000001"),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+            referenciaDemografica: null,
+            modalidades: [
+                ModalidadeSelecionada.Criar(
+                    new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
+                    NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+                    RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+                    [], null, "Res. Unifesspa 532/2021").Value!,
+            ]).Value!;
+
+    private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>
+        ConfiguracaoClassificacao.Criar(
+            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
+            casasArredondamento: 2,
+            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'd'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: eliminacoes).Value!;
+
+    private static DadosEdital Dados() => DadosEdital.Criar(
+        "001/2026",
+        new DateOnly(2026, 1, 1),
+        new DateOnly(2026, 1, 31),
+        new Guid("dddd0000-0000-4000-8000-000000000001")).Value!;
+
+    /// <summary>
+    /// Snapshot das <b>seis dimensões</b> mais o status — é sobre ele que o CA-07 asserta.
+    /// Comparar só o <c>Result</c> deixaria passar exatamente a implementação que o CA-07
+    /// existe para proibir: a que aplica e depois falha.
+    /// </summary>
+    private sealed record Estado(
+        StatusProcesso Status,
+        IReadOnlyList<(Guid Id, string Nome, decimal? Peso, int? Ordem)> Etapas,
+        int Condicoes,
+        IReadOnlyList<(Guid Oferta, int VoBase, decimal Pr, int Modalidades)> Distribuicao,
+        bool TemBonus,
+        IReadOnlyList<int> OrdensDesempate,
+        string RegraCalculo,
+        int Eliminacoes)
+    {
+        internal static Estado De(ProcessoSeletivo processo) => new(
+            processo.Status,
+            [.. processo.Etapas.Select(e => (e.Id, e.Nome, e.Peso, e.Ordem)).OrderBy(e => e.Id)],
+            processo.OfertaAtendimento!.Condicoes.Count,
+            [.. processo.DistribuicaoVagas
+                .Select(d => (d.OfertaCursoOrigemId, d.VoBase, d.Pr, d.Modalidades.Count))
+                .OrderBy(d => d.OfertaCursoOrigemId)],
+            processo.BonusRegional is not null,
+            [.. processo.CriteriosDesempate.Select(c => c.Ordem).Order()],
+            processo.Classificacao!.RegraCalculo.Codigo,
+            processo.Classificacao.RegrasEliminacao.Count);
+    }
+}
