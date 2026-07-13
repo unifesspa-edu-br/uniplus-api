@@ -8,6 +8,22 @@ decision-makers:
 # ADR-0100: Contrato de canonicalização e hash do snapshot de publicação (RN08)
 
 > **Nota de atualização.** A decisão desta ADR — o contrato de canonicalização e o hash reproduzível do congelamento — permanece **integralmente vigente**. Mudou apenas **onde o congelado mora**: a entidade `SnapshotPublicacao` citada abaixo não existe mais; o congelamento é uma **[`VersaoConfiguracao`](0104-versao-configuracao-como-agregado-proprio.md)**, agregado próprio e append-only, cujo par de bytes canônicos e hash é derivado exatamente pelas regras aqui definidas. O nome sobrevive no código apenas no `ISnapshotPublicacaoCanonicalizer` — resíduo de vocabulário, não uma entidade. Leia "snapshot de publicação" como "a configuração congelada de uma versão".
+>
+> **Emenda ao item 4 ([ADR-0109](0109-envelope-canonico-v2-do-congelamento.md) D4) — o item 4 descreve apenas o interior do predicado; `null` explícito é canônico em todo o resto.**
+>
+> O item 4, como escrito, foi lido como regra geral. **Não é** — e nunca foi, nem no caminho de entidade. A semântica real, verificada no código, é **mista**:
+>
+> | Onde | Serializador | `null` de campo opcional |
+> |---|---|---|
+> | **Interior do predicado** (`PredicadoObrigatoriedade`, serializado em `Compute`) | `CanonicalOptions` (`DefaultIgnoreCondition = WhenWritingNull`) | **omitido** — é o item 4, e só aqui |
+> | **Campos de topo do hash de entidade** (`portariaInternaCodigo`, `vigenciaFim` em `Compute`) | `JsonObject` → `HashCanonicalPayload` → `CanonicalizeRecursive` | **`null` explícito, preservado** |
+> | **Envelope do congelamento** (`ComputeSnapshotBytes` → `CanonicalizeRecursive`) | `Utf8JsonWriter`, sem `CanonicalOptions` | **`null` explícito, preservado** |
+>
+> Ou seja: `CanonicalOptions` governa a serialização do **predicado**, não a montagem do payload que o contém. `Compute` escreve `"portariaInternaCodigo": null` e `"vigenciaFim": null` no `JsonObject` de topo, e esses nulls **entram no hash**.
+>
+> A regra passa a ser, em uma linha: **`null` explícito é a forma canônica da ausência, exceto dentro do predicado, onde o serializador o omite.** É coerente com o **item 10** desta mesma ADR ("todo bloco canônico está presente"): se o bloco está sempre lá, o campo do bloco também está — com `null` quando não tem valor.
+>
+> **Nada nos bytes muda.** Esta emenda **descreve** o comportamento que sempre existiu; não o altera. Alterar `CanonicalOptions` — ou passar a omitir os nulls de topo — mudaria os hashes de `ObrigatoriedadeLegal` já gravados, e a `UNIQUE (hash)` parcial e a trilha forense quebrariam. Um teste congela o hash de uma regra de referência por valor literal, justamente para que essa quebra não passe em silêncio.
 
 ## Contexto e enunciado do problema
 
@@ -40,7 +56,7 @@ O snapshot de publicação tem escopo maior que `ObrigatoriedadeLegal`: cobre ma
 1. **Normalização Unicode NFC.** Toda string de negócio (nomes, descrições, textos livres) é normalizada para a forma NFC antes de entrar no payload — sequências combinantes e formas pré-compostas do mesmo texto colapsam para os mesmos bytes.
 2. **Decimais com escala declarada e arredondamento half-even.** Cada campo decimal declara sua escala (número de casas decimais) no schema do bloco; o valor é arredondado por half-even para essa escala antes de entrar no payload, e serializado como string decimal de largura fixa — nunca como `number` JSON de ponto flutuante, que reintroduziria ambiguidade de representação entre runtimes.
 3. **Instantes em UTC, RFC 3339, sem fração de segundo.** Todo instante é convertido para UTC e serializado com sufixo `Z`, granularidade de segundo — sem frações que variem por precisão de relógio ou serializador.
-4. **Omissão de campos opcionais ausentes.** Um campo opcional sem valor é omitido do payload, nunca serializado como `null` explícito — mesma convenção já aplicada por `CanonicalOptions.DefaultIgnoreCondition = WhenWritingNull`.
+4. **Omissão de campos opcionais ausentes.** Um campo opcional sem valor é omitido do payload, nunca serializado como `null` explícito — mesma convenção já aplicada por `CanonicalOptions.DefaultIgnoreCondition = WhenWritingNull`. **(Emendado — ver a nota abaixo: este item vale para o caminho de hash de ENTIDADE, não para o envelope.)**
 5. **Ordenação lexicográfica de chaves por unidades de código UTF-16, recursiva, sem espaço insignificante.** Mesma regra do `CanonicalizeRecursive` existente — este contrato formaliza o comportamento já produzido pelo `Utf8JsonWriter` sem indentação e por `StringComparer.Ordinal` (que já compara por unidade de código UTF-16 no .NET), em vez de alterá-lo.
 6. **Bytes canônicos como base do hash.** O resultado da serialização acima — os bytes, não uma representação intermediária — é persistido em `configuracao_congelada_canonica bytea`. `hash_configuracao = sha256(configuracao_congelada_canonica)`, hex minúsculo.
 7. **`jsonb` de consulta derivado por parsing.** A coluna `configuracao_congelada jsonb` é obtida fazendo parse dos bytes canônicos — nunca o inverso. O banco não re-serializa nem reordena chaves para produzir o `jsonb`; ele só converte bytes já canônicos para um formato consultável por SQL. Se uma versão futura do motor de banco reordenar ou renormalizar o `jsonb` internamente, o hash permanece correto porque foi calculado sobre os bytes persistidos, nunca sobre o `jsonb`.

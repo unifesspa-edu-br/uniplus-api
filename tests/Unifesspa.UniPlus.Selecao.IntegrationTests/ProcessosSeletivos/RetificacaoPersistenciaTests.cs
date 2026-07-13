@@ -79,7 +79,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(processo, dadosAbertura, docAbertura.HashSha256!);
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", clock);
@@ -105,11 +105,11 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
             VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
-            SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
+            SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!,
                 // O alvo da retificação é o ato que criou a versão corrente — o
                 // topo da cadeia de CONFIGURAÇÃO —, como o handler faz.
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"));
+                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição")));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,
                 docRetificacao.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock);

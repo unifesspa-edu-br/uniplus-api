@@ -91,7 +91,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(processo, dadosAbertura, docAbertura.HashSha256!);
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", clock);
@@ -116,9 +116,9 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
             VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
-            SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
+            SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!,
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"));
+                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição")));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
                 canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
@@ -231,7 +231,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_NoInstanteDoProprioAto_ResolveAVersaoQueEleCriou));
         DocumentoEdital documento = DocumentoConfirmado(processo.Id);
         DadosEdital dados = NovosDados(documento.Id);
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dados, documento.HashSha256!);
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!));
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
@@ -359,7 +359,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         // já existe do outro lado.
         ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_AtoAindaNaoRegistrado_AindaResolve));
         DocumentoEdital documento = DocumentoConfirmado(processo.Id);
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, NovosDados(documento.Id), documento.HashSha256!);
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, NovosDados(documento.Id), documento.HashSha256!));
 
         Guid atoAindaNaoRegistrado = Guid.CreateVersion7();
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(

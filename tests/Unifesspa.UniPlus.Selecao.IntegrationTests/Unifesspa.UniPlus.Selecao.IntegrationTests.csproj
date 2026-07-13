@@ -30,4 +30,13 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!--
+    Golden fixtures do envelope canônico (ADR-0109). Uma por schema_version;
+    comparadas byte a byte. É o único gate de regressão do congelamento — a
+    baseline OpenAPI não o enxerga (o DTO expõe a configuração como JsonNode).
+  -->
+  <ItemGroup>
+    <Content Include="ProcessosSeletivos/Fixtures/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

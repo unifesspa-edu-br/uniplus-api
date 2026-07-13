@@ -99,7 +99,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(processo, dadosResult.Value!, documento.HashSha256!);
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
@@ -137,7 +137,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (11 reais + 6 stubs) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (10 reais + 7 stubs) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -156,28 +156,38 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "documentosExigidos", "formulario", "cascataRemanejamento", "divulgacao",
             "cronogramaFases", "identidadesUnidade",
         ];
-        blocosEsperados.Should().HaveCount(17, "pré-condição do próprio teste — ADR-0100 define 17 blocos canônicos");
+        blocosEsperados.Should().HaveCount(17, "pré-condição do próprio teste — o envelope tem 17 chaves");
 
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
         {
-            objeto.Should().ContainKey(bloco, $"o bloco canônico '{bloco}' deve estar presente no snapshot");
+            objeto.Should().ContainKey(bloco, $"o bloco canônico '{bloco}' deve estar presente no envelope");
         }
 
-        string[] stubsNaoConstruidos =
-        [
-            "documentosExigidos", "formulario", "cascataRemanejamento",
-            "divulgacao", "cronogramaFases", "identidadesUnidade",
-        ];
-        foreach (string stub in stubsNaoConstruidos)
-        {
-            objeto[stub]!["status"]!.GetValue<string>().Should().Be("nao_construido",
-                $"dimensão '{stub}' ainda não implementada — ADR-0100 item 10");
-        }
+        // CA-07: a contagem é DERIVADA do envelope, não escrita à mão. Um bloco
+        // que sai de stub sem que este teste seja atualizado faz a contagem
+        // divergir — que é exatamente o sinal que se quer.
+        objeto.Should().HaveCount(17, "o envelope de abertura tem exatamente 17 chaves — nem mais, nem menos");
 
-        // Bloco "vagas" também é stub nesta fatia — o motor de cálculo de
-        // vagas ainda não existe (ver comentário do SnapshotPublicacaoCanonicalizer).
-        objeto["vagas"]!["status"]!.GetValue<string>().Should().Be("nao_construido");
+        string[] stubs = [.. objeto
+            .Where(static kvp => kvp.Value is JsonObject bloco
+                && bloco.TryGetPropertyValue("status", out JsonNode? status)
+                && status?.GetValue<string>() == "nao_construido")
+            .Select(static kvp => kvp.Key)
+            .Order(StringComparer.Ordinal)];
+
+        stubs.Should().BeEquivalentTo(
+            [
+                "cascataRemanejamento", "cronogramaFases", "divulgacao",
+                "documentosExigidos", "formulario", "identidadesUnidade", "vagas",
+            ],
+            "são exatamente as 7 dimensões da Feature #40 ainda sem dono — e os 10 restantes são reais");
+
+        // D8 — nenhum bloco REAL emite `nao_construido`. Atendimento e classificação
+        // são dimensões obrigatórias: a ausência é pendência de conformidade, não um
+        // stub silencioso.
+        objeto["atendimento"]!.AsObject().Should().NotContainKey("status");
+        objeto["classificacao"]!.AsObject().Should().NotContainKey("status");
 
         // Blocos reais carregam dado de negócio, não o marcador de stub.
         objeto["etapas"]!.AsArray().Should().NotBeEmpty();
