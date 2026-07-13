@@ -77,6 +77,18 @@ Resultados possíveis:
 
 Tanto **2xx** quanto **4xx** são cacheados. A motivação é a convenção Stripe: se 4xx não fosse cacheado, um atacante poderia retry com diferentes keys até encontrar uma sequência que muda o estado, ou esgotar quotas indiretamente. **5xx não é cacheado** — cliente deve poder retry após falha transitória do servidor.
 
+> **Emenda ([ADR-0110](0110-retificacao-como-sessao-editorial.md) D6) — `412` e `428` são a exceção: não são armazenáveis.**
+>
+> Eles não são **resultado da operação** — a operação **não executou**. São falhas de **precondição da requisição**, avaliadas antes de o handler rodar.
+>
+> Cachear um `412` **prende o cliente legítimo**: ele releria o `ETag`, corrigiria o `If-Match`, retentaria com a mesma `Idempotency-Key` — e receberia o **412 em replay, por 24 horas**. A precondição envenenaria a idempotência.
+>
+> E não protege de nada. A motivação anti-abuso acima é sobre *retry com **keys diferentes** até achar uma sequência que muda o estado*; cachear a resposta de **uma** key não impede isso — o atacante troca a key de qualquer modo.
+>
+> Para o **428**, a [RFC 6585 §3](https://www.rfc-editor.org/rfc/rfc6585.html#section-3) já o resolve: a resposta depende de um header **ausente** — armazená-la é incoerente.
+>
+> Efeito no filtro: `412` e `428` **liberam a reserva** (como as `>= 500`), em vez de completar a entrada. E o header **`ETag` passa a ser persistido** junto de `Content-Type` e `Location` — sem ele, o replay de uma abertura não devolveria a precondição da chamada seguinte.
+
 ### Cifragem at-rest
 
 O payload do cache (request body + response body) pode conter PII (CPF, nome social, email do candidato). Cifragem AES-GCM com chave gerenciada externamente (HashiCorp Vault transit em produção; fixture local em CI), mesma infraestrutura usada pelo cursor de paginação ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)). Chave nunca sai do gerenciador. Rotação de chave não invalida entradas existentes — TTL de 24 horas as expira naturalmente.

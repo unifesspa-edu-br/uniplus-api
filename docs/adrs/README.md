@@ -138,12 +138,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0107](0107-vaga-de-linhagem-unica-por-objeto.md) | A unicidade de ato por objeto é uma vaga que a linhagem reserva, não um índice sobre o ato | accepted | 2026-07-11 |
 | [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) | accepted | 2026-07-12 |
 | [0109](0109-envelope-canonico-v2-do-congelamento.md) | Contrato do envelope canônico do congelamento (v2) | accepted | 2026-07-13 |
+| [0110](0110-retificacao-como-sessao-editorial.md) | A retificação é uma sessão editorial sobre a configuração, não um estado do certame | accepted | 2026-07-13 |
 
-> **Nota de numeração:** a sequência de `0001` a `0109` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0110+`.
+> **Nota de numeração:** a sequência de `0001` a `0110` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0111+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0109`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0110`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
