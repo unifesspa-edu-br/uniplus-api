@@ -500,6 +500,85 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// <b>Descarta</b> a sessão editorial: o administrador abriu e desistiu (Story #861).
+    /// </summary>
+    /// <remarks>
+    /// Repõe a configuração ao que a versão congelada diz — <b>com prova de round-trip byte a
+    /// byte</b> — e encerra a sessão, na mesma transação. Não devolve <c>ETag</c>: a sessão
+    /// deixou de existir.
+    /// </remarks>
+    [HttpDelete("{id:guid}/retificacao-em-curso")]
+    [RequiresIdempotencyKey]
+    [PrecondicaoObrigatoria]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> DescartarRetificacao(
+        Guid id,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result resultado = await _commandBus.Send(
+            new DescartarRetificacaoCommand(id, precondicao), cancellationToken);
+
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// <b>Fecha</b> a sessão editorial: congela a versão N+1 <b>com a configuração editada</b>
+    /// e registra o ato (Story #862).
+    /// </summary>
+    /// <remarks>
+    /// O corpo é o do atalho atômico <b>menos o motivo</b> — ele já está no rascunho, declarado
+    /// na abertura. Não devolve <c>ETag</c>: a sessão deixou de existir.
+    /// <para>
+    /// O <c>POST /{id}/retificacoes</c> continua existindo e inalterado: ele é a retificação
+    /// em <b>um ato só</b>, para quem não precisa de sessão. Com sessão aberta, ele recusa.
+    /// </para>
+    /// </remarks>
+    [HttpPost("{id:guid}/retificacao-em-curso/fechamento")]
+    [RequiresIdempotencyKey]
+    [PrecondicaoObrigatoria]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> FecharRetificacao(
+        Guid id,
+        [FromBody] FecharRetificacaoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result resultado = await _commandBus.Send(
+            new FecharRetificacaoCommand(
+                id,
+                request.Numero,
+                request.PeriodoInscricaoInicio,
+                request.PeriodoInscricaoFim,
+                request.DocumentoEditalId,
+                MapearAto(request.Ato),
+                precondicao),
+            cancellationToken);
+
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// Consulta a conformidade estrutural do processo (CA-07): checklist com
     /// cada item obrigatório marcado ok/pendente, sem alterar o processo.
     /// </summary>
@@ -652,6 +731,17 @@ public sealed record AbrirRetificacaoRequest(string Motivo);
 /// Corpo de <see cref="ProcessoSeletivoController.AlterarMotivoRetificacao"/>.
 /// </summary>
 public sealed record AlterarMotivoRetificacaoRequest(string Motivo);
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.FecharRetificacao"/> — o do atalho atômico
+/// <b>menos o motivo</b>, que já foi declarado na abertura e vive no rascunho.
+/// </summary>
+public sealed record FecharRetificacaoRequest(
+    string? Numero,
+    DateOnly PeriodoInscricaoInicio,
+    DateOnly PeriodoInscricaoFim,
+    Guid DocumentoEditalId,
+    DadosDoAtoRequest Ato);
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoController.DefinirOfertaAtendimento"/>

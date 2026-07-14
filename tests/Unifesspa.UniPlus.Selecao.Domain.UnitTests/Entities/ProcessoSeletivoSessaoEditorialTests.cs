@@ -354,8 +354,64 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
+    // O descarte sem reposição é IRREPRESENTÁVEL — não apenas desencorajado
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    [Fact(DisplayName = "Descartar SEM ter reposto a configuração congelada é RECUSADO pelo próprio agregado — encerrar a sessão agora deixaria o certame servindo a configuração editada")]
+    public void Descartar_SemRestauracao_Recusa()
+    {
+        ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
+
+        // O administrador editou. A configuração viva já diverge do que o edital publicou.
+        processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+            .IsSuccess.Should().BeTrue();
+
+        // E alguém tenta encerrar a sessão sem repor.
+        Result resultado = processo.DescartarRetificacao(PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue(
+            "um fitness test diz 'ninguém faz isso hoje'; ele não diz 'isso não pode acontecer'. O agregado precisa recusar");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.DescarteSemRestauracao");
+        processo.Rascunho.Should().NotBeNull("a sessão sobrevive a um descarte recusado");
+    }
+
+    [Fact(DisplayName = "Descartar DEPOIS de repor a configuração congelada é aceito — e a sessão morre")]
+    public void Descartar_ComRestauracao_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
+        RascunhoRetificacao rascunho = processo
+            .AbrirRetificacao("Correção", versao, "user-sub-1", Agora).Value!;
+
+        processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+            .IsSuccess.Should().BeTrue();
+
+        // A reposição carimba a versão que repôs — é a prova que o descarte exige.
+        processo.RestaurarConfiguracaoCongelada(versao, GrafoDoProcesso(processo))
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DescartarRetificacao(PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.Rascunho.Should().BeNull();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
     // D7 — o atalho atômico recusa com sessão aberta
     // ══════════════════════════════════════════════════════════════════════════════
+
+    [Fact(DisplayName = "O atalho atômico continua conferindo os contratos ANTES da sessão — argumento nulo lança, mesmo com retificação aberta")]
+    public void Retificar_ComSessaoAberta_AindaConfereContratosPrimeiro()
+    {
+        ProcessoSeletivo processo = ComSessaoAberta(out _);
+
+        // Antes desta Feature, um `dados` nulo lançava. Antepor a recusa por RetificacaoJaAberta
+        // faria o atalho mudar de comportamento — e ele prometeu não mudar.
+        Action nulo = () => processo.Retificar(
+            dados: null!, VersaoQualquerDoProcesso(processo), BytesCanonicos, "1.1",
+            "canonical-json/sha256@v1", HashFixo, "user-sub-1", "motivo", new RelogioFixo(Agora));
+
+        nulo.Should().Throw<ArgumentNullException>();
+    }
 
     [Fact(DisplayName = "D7: o atalho POST /retificacoes RECUSA quando há sessão editorial aberta — invariante do domínio")]
     public void Retificar_ComSessaoAberta_Recusa()
@@ -382,6 +438,25 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         rascunho = processo.AbrirRetificacao("Correção do prazo", versao, "user-sub-1", Agora).Value!;
         return processo;
     }
+
+    /// <summary>
+    /// O grafo das seis dimensões <b>como o agregado as tem agora</b>. Estes testes provam a
+    /// mecânica do <b>carimbo de restauração</b>, não a fidelidade da reidratação — essa é do
+    /// <c>RestauradorDeConfiguracao</c>, e tem prova de round-trip byte a byte própria.
+    /// </summary>
+    private static GrafoConfiguracao GrafoDoProcesso(ProcessoSeletivo processo) => new(
+        [.. processo.Etapas],
+        processo.OfertaAtendimento!,
+        [.. processo.DistribuicaoVagas],
+        processo.BonusRegional,
+        [.. processo.CriteriosDesempate],
+        processo.Classificacao!);
+
+    /// <summary>Uma versão qualquer DESTE processo — o teste que a usa lança antes de tocá-la.</summary>
+    private static VersaoConfiguracao VersaoQualquerDoProcesso(ProcessoSeletivo processo) =>
+        VersaoConfiguracao.Abrir(
+            processo.Id, BytesCanonicos, "1.1", "canonical-json/sha256@v1",
+            Guid.CreateVersion7(), HashFixo, "user-sub-1", Agora);
 
     /// <summary>
     /// O descarte é da S4 (#861) — aqui só se precisa do EFEITO dele sobre o agregado (a
