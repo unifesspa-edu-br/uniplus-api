@@ -600,6 +600,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor."
           }
         },
         "x-uniplus-idempotent": true
@@ -991,6 +994,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor."
           }
         },
         "x-uniplus-idempotent": true
