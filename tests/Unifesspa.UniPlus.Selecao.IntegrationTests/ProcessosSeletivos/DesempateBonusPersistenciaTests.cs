@@ -36,7 +36,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TipoProcesso.PSVR);
         EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate maiorNotaEtapa = CriterioDesempate.Criar(
             1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!;
@@ -47,12 +47,12 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         CriterioDesempate predicadoFato = CriterioDesempate.Criar(
             4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ArgsDesempatePredicadoFato("PROFESSOR_RURAL", "IGUAL", "S")).Value!;
 
-        Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato]);
+        Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato], PrecondicaoIfMatch.Ausente);
         desempateResult.IsSuccess.Should().BeTrue();
 
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, "Marabá", "RN05 + decisão PO Jairo").Value!;
-        processo.DefinirBonusRegional(bonus).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -97,11 +97,11 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     public async Task ReconfigurarDesempateBonusSobreAgregadoTracked_InsereFilhos()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026 — Reconfig", TipoProcesso.PSIQ);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!]);
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirBonusRegional(
-            ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, null).Value!);
+            ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, null).Value!, PrecondicaoIfMatch.Ausente);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -119,11 +119,11 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             [
                 CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, "c"), new ArgsDesempateIdoso(65)).Value!,
                 CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorIdade, "d"), new ArgsDesempateMaiorIdade()).Value!,
-            ]);
+            ], PrecondicaoIfMatch.Ausente);
             desempateResult.IsSuccess.Should().BeTrue();
 
             Result bonusResult = carregado.DefinirBonusRegional(
-                ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, "Marabá", null).Value!);
+                ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, "Marabá", null).Value!, PrecondicaoIfMatch.Ausente);
             bonusResult.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -146,9 +146,9 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TipoProcesso.PSVR);
         EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!]);
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!], PrecondicaoIfMatch.Ausente);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -169,7 +169,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             EtapaProcesso etapaTracked = carregado.Etapas.Single();
             etapaTracked.AtualizarDados("Redação (revisada)", CaraterEtapa.Classificatoria, 2m, null, 1);
 
-            Result result = carregado.DefinirEtapas([etapaTracked]);
+            Result result = carregado.DefinirEtapas([etapaTracked], PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);

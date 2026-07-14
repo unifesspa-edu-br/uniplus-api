@@ -56,6 +56,14 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey<ConfiguracaoClassificacao>(c => c.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // A sessão editorial (ADR-0110 D3) — 1:1, como as demais filhas singulares. Ela é
+        // efêmera (apagada no fechamento e no descarte) e não é evidência forense: a
+        // auditoria com peso jurídico vive na VersaoConfiguracao, que é append-only.
+        builder.HasOne(p => p.Rascunho)
+            .WithOne()
+            .HasForeignKey<RascunhoRetificacao>(r => r.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Navigation(p => p.Etapas)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 

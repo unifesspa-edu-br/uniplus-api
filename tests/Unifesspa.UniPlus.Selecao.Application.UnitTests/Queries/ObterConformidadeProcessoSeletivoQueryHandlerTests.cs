@@ -30,7 +30,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     public async Task Handle_EtapasSemAtendimento_ChecklistParcial()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -47,8 +47,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     public async Task Handle_TodosOsItens_SemPendencia()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1)]);
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
@@ -57,7 +57,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, referenciaDemografica: null, [ampla]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao]);
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente);
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('b', 64)).Value!,
@@ -66,7 +66,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('d', 64)).Value!,
             1,
             []).Value!;
-        processo.DefinirClassificacao(classificacao);
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);

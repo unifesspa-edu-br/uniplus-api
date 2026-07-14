@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do agregado
@@ -39,7 +40,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         [
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1),
             EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, peso: 2m, notaMinima: 5m, ordem: 2),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
         etapasResult.IsSuccess.Should().BeTrue();
 
         Result<OfertaAtendimentoEspecializado> ofertaResult = OfertaAtendimentoEspecializado.Criar(
@@ -47,7 +48,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             recursos: [OfertaRecurso.Criar(recursoOrigemId, "Ledor")],
             tiposDeficiencia: [OfertaTipoDeficiencia.Criar(tipoDeficienciaOrigemId, "Deficiência visual")]);
         ofertaResult.IsSuccess.Should().BeTrue();
-        processo.DefinirOfertaAtendimento(ofertaResult.Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOfertaAtendimento(ofertaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -84,7 +85,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         // salva. Sem a correção, DbSet.Update marcaria os filhos novos como
         // Modified e o SaveChanges emitiria UPDATE de linhas nunca inseridas.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -102,7 +103,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             [
                 EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1),
                 EtapaProcesso.Criar("Entrevista", CaraterEtapa.Ambas, peso: 2m, ordem: 2),
-            ]);
+            ], PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
 
             // Persistência por change detection sobre o agregado tracked.

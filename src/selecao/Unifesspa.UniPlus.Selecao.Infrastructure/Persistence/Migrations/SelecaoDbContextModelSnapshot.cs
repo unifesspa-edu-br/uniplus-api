@@ -814,6 +814,62 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("processos_seletivos", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AbertoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aberto_em");
+
+                    b.Property<string>("AbertoPorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("aberto_por_sub");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("motivo");
+
+                    b.Property<int>("NumeroVersaoBase")
+                        .HasColumnType("integer")
+                        .HasColumnName("numero_versao_base");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<int>("Revisao")
+                        .HasColumnType("integer")
+                        .HasColumnName("revisao");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("VersaoBaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_base_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rascunhos_retificacao");
+
+                    b.HasIndex("ProcessoSeletivoId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_rascunhos_retificacao_processo");
+
+                    b.ToTable("rascunhos_retificacao", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraCatalogo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1621,6 +1677,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_ofertas_tipo_deficiencia_ofertas_atendimento_especializado_");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithOne("Rascunho")
+                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", "ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_rascunhos_retificacao_processos_seletivos_processo_seletivo");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraEliminacao", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", null)
@@ -1710,6 +1776,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Navigation("Etapas");
 
                     b.Navigation("OfertaAtendimento");
+
+                    b.Navigation("Rascunho");
                 });
 #pragma warning restore 612, 618
         }

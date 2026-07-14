@@ -56,6 +56,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Configuração de classificação (15º bloco canônico, Story #775) — compõe por referência a fórmula, precisão, eliminação e ordem de alocação.</summary>
     public ConfiguracaoClassificacao? Classificacao { get; private set; }
 
+    /// <summary>
+    /// A sessão editorial aberta sobre a configuração — o <b>portador</b> da retificação
+    /// (ADR-0110 D3). <see langword="null"/> quando não há retificação em curso.
+    /// </summary>
+    /// <remarks>
+    /// É a <b>existência</b> dela que autoriza a mutação de um processo publicado — não um
+    /// status. O <see cref="Status"/> continua <see cref="StatusProcesso.Publicado"/>
+    /// durante toda a edição: o certame <b>está</b> publicado, e o candidato continua
+    /// vendo a versão congelada vigente.
+    /// <para>
+    /// <b>Cuidado ao carregar:</b> <see langword="null"/> aqui significa tanto "não existe"
+    /// quanto "não foi carregado". É por isso que a mutação tem carregamento próprio —
+    /// <c>IProcessoSeletivoRepository.ObterParaMutacaoAsync</c>, o único que a inclui — e
+    /// um fitness test que prova que todo handler de mutação passa por ele. Sem isso, um
+    /// comando futuro que usasse um carregamento sem esta navegação recusaria uma edição
+    /// legítima: fail-closed <b>indevido</b>.
+    /// </para>
+    /// </remarks>
+    public RascunhoRetificacao? Rascunho { get; private set; }
+
     private ProcessoSeletivo() { }
 
     public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo)
@@ -79,11 +99,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// caráter e o peso definem o divisor da média
     /// (<see cref="CalcularDivisorMedia"/>).
     /// </summary>
-    public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas)
+    public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
@@ -160,6 +180,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _etapas.Add(etapa);
         }
 
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -169,17 +190,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// garantida na montagem da oferta
     /// (<see cref="OfertaAtendimentoEspecializado.Criar"/>).
     /// </summary>
-    public Result DefinirOfertaAtendimento(OfertaAtendimentoEspecializado oferta)
+    public Result DefinirOfertaAtendimento(OfertaAtendimentoEspecializado oferta, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(oferta);
 
-        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
 
         oferta.VincularProcesso(Id);
         OfertaAtendimento = oferta;
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -191,11 +213,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// modalidades federais) já foram validadas em
     /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/>.
     /// </summary>
-    public Result DefinirDistribuicaoVagas(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas)
+    public Result DefinirDistribuicaoVagas(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(distribuicaoVagas);
 
-        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
@@ -222,6 +244,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _distribuicaoVagas.Add(configuracao);
         }
 
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -230,9 +253,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <see langword="null"/> remove o bônus — a ausência da entidade já é o
     /// toggle "sem bônus" (INV-B5); não existe um "BONUS-NENHUM".
     /// </summary>
-    public Result DefinirBonusRegional(ConfiguracaoBonusRegional? bonus)
+    public Result DefinirBonusRegional(ConfiguracaoBonusRegional? bonus, PrecondicaoIfMatch precondicao)
     {
-        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
@@ -240,11 +263,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (bonus is null)
         {
             BonusRegional = null;
+            Rascunho?.IncrementarRevisao();
             return Result.Success();
         }
 
         bonus.VincularProcesso(Id);
         BonusRegional = bonus;
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -256,11 +281,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// as etapas deste processo — senão a config congelaria um desempate
     /// inexecutável.
     /// </summary>
-    public Result DefinirCriteriosDesempate(IReadOnlyList<CriterioDesempate> criterios)
+    public Result DefinirCriteriosDesempate(IReadOnlyList<CriterioDesempate> criterios, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(criterios);
 
-        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
@@ -295,6 +320,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _criteriosDesempate.Add(criterio);
         }
 
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -309,11 +335,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// configuração (INV-B8, limites de <c>NOpcoesAlocacao</c>) já foram
     /// validadas em <see cref="ConfiguracaoClassificacao.Criar"/>.
     /// </summary>
-    public Result DefinirClassificacao(ConfiguracaoClassificacao classificacao)
+    public Result DefinirClassificacao(ConfiguracaoClassificacao classificacao, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(classificacao);
 
-        if (MutacaoBloqueadaPosPublicacao() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
@@ -340,6 +366,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         classificacao.VincularProcesso(Id);
         Classificacao = classificacao;
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -551,6 +578,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(new DomainError(
                 "ProcessoSeletivo.TransicaoInvalida",
                 $"Só é possível retificar um processo publicado — status atual: {Status}."));
+        }
+
+        // O atalho atômico e a sessão editorial retificam o MESMO ato — o criador da versão
+        // corrente. Deixá-los correr juntos publicaria a versão N+1 a partir da configuração
+        // viva (que a sessão está no meio de editar), e o rascunho sobreviveria apontando
+        // para uma base que deixou de ser o topo da cadeia: fechá-lo depois emendaria um ato
+        // já emendado. A recusa é invariante do agregado, não `if` do handler (ADR-0110 D7).
+        if (Rascunho is not null)
+        {
+            return Result<VersaoConfiguracao>.Failure(RetificacaoJaAberta());
         }
 
         if (string.IsNullOrWhiteSpace(motivo))
@@ -919,20 +956,172 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private static Guid NovoIdDeAto(DateTimeOffset instante) => Guid.CreateVersion7(instante);
 
     /// <summary>
-    /// Trava de mutação pós-publicação (CA-04): todo <c>Definir*</c> recusa
-    /// quando o processo já foi publicado — mudança em conteúdo congelável só
-    /// via retificação. Reaproveitada por todos os métodos <c>Definir*</c>;
-    /// <see langword="null"/> quando a mutação é permitida.
+    /// Abre a <b>sessão editorial</b> sobre a configuração de um certame publicado
+    /// (ADR-0110 D3) — o que destrava os seis <c>Definir*</c> sem que o certame mude de
+    /// estado.
     /// </summary>
-    private DomainError? MutacaoBloqueadaPosPublicacao()
+    /// <remarks>
+    /// <para>
+    /// <b>O <see cref="Status"/> não muda</b>, e é a decisão central da ADR: um certame
+    /// juridicamente publicado que exibisse um status sugerindo o contrário mentiria para
+    /// o candidato — e um rascunho abandonado o deixaria assim indefinidamente. O que
+    /// muda é a <b>existência</b> do <see cref="Rascunho"/>.
+    /// </para>
+    /// <para>
+    /// <b>Nada é congelado aqui.</b> Abrir não emite ato, não abre
+    /// <see cref="VersaoConfiguracao"/> e não drena evento nenhum — a versão nova nasce só
+    /// no fechamento. Enquanto a sessão está aberta, o que vale para o mundo continua
+    /// sendo a versão congelada vigente.
+    /// </para>
+    /// </remarks>
+    /// <param name="motivo">Justificativa do ato de retificação — normalizada e validada em <see cref="RascunhoRetificacao"/>.</param>
+    /// <param name="versaoBase">A versão corrente do processo, eleita pelo handler (<see cref="VersaoConfiguracao"/> é agregado próprio — ADR-0104).</param>
+    /// <param name="abertoPorSub">Sub do usuário autenticado (via <c>IUserContext</c>, nunca input do command).</param>
+    /// <param name="abertoEm">Instante lido do relógio injetado (ADR-0068).</param>
+    public Result<RascunhoRetificacao> AbrirRetificacao(
+        string motivo,
+        VersaoConfiguracao versaoBase,
+        string abertoPorSub,
+        DateTimeOffset abertoEm)
     {
+        ArgumentNullException.ThrowIfNull(versaoBase);
+
         if (Status != StatusProcesso.Publicado)
         {
-            return null;
+            return Result<RascunhoRetificacao>.Failure(new DomainError(
+                "ProcessoSeletivo.TransicaoInvalida",
+                $"Só é possível retificar um processo publicado — status atual: {Status}."));
         }
 
-        return new DomainError(
-            "ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
-            "Processo publicado não aceita mutação direta da configuração — utilize a retificação.");
+        if (versaoBase.ProcessoSeletivoId != Id)
+        {
+            return Result<RascunhoRetificacao>.Failure(new DomainError(
+                "VersaoConfiguracao.VersaoDeOutroProcesso",
+                "A versão de configuração informada pertence a outro Processo Seletivo."));
+        }
+
+        if (Rascunho is not null)
+        {
+            return Result<RascunhoRetificacao>.Failure(RetificacaoJaAberta());
+        }
+
+        Result<RascunhoRetificacao> rascunho = RascunhoRetificacao.Criar(
+            Id, motivo, versaoBase, abertoPorSub, abertoEm);
+        if (rascunho.IsFailure)
+        {
+            return rascunho;
+        }
+
+        Rascunho = rascunho.Value!;
+        return rascunho;
     }
+
+    /// <summary>
+    /// Altera o motivo da sessão editorial em curso. Como toda mutação sob sessão, exige a
+    /// precondição e <b>incrementa a revisão</b> (D5).
+    /// </summary>
+    public Result AlterarMotivoRetificacao(string motivo, PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        // A inexistência da sessão vem ANTES da precondição (D9): responder 412 para um
+        // rascunho que não existe mandaria o cliente recarregar um ETag inexistente.
+        if (Rascunho is null)
+        {
+            return Result.Failure(RetificacaoNaoAberta());
+        }
+
+        // E daqui em diante é o MESMO guard dos seis Definir* — não uma checagem paralela.
+        // Alterar o motivo é mutação como as outras, e precisa da allowlist inteira: um
+        // processo que saísse de Publicado com a sessão ainda aberta continuaria aceitando
+        // esta rota se ela só conferisse a precondição, e a edição escaparia por uma porta
+        // que os Definir* já tinham fechado.
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        Result alterado = Rascunho.AlterarMotivo(motivo);
+        if (alterado.IsFailure)
+        {
+            return alterado;
+        }
+
+        Rascunho.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// O <c>ETag</c> forte da sessão editorial em curso, ou <see langword="null"/> quando
+    /// não há sessão — é o que o cliente devolve no <c>If-Match</c> da próxima mutação.
+    /// </summary>
+    public string? ETagDaSessaoEditorial => Rascunho?.ETag;
+
+    /// <summary>
+    /// <b>Allowlist</b> de mutação da configuração (ADR-0110 D4). O que era uma
+    /// <b>denylist de um elemento</b> — "bloqueia se, e só se, está publicado" — e por
+    /// isso <b>falhava aberta</b>: <see cref="StatusProcesso.Nenhum"/>,
+    /// <see cref="StatusProcesso.Encerrado"/> e <see cref="StatusProcesso.Cancelado"/>
+    /// eram silenciosamente mutáveis, e todo estado futuro nasceria mutável por omissão.
+    /// </summary>
+    /// <remarks>
+    /// <c>MutacaoPermitida() ⟺ Status == Rascunho || (Status == Publicado &amp;&amp; rascunho aberto)</c>
+    /// </remarks>
+    private bool MutacaoPermitida() =>
+        Status == StatusProcesso.Rascunho
+        || (Status == StatusProcesso.Publicado && Rascunho is not null);
+
+    /// <summary>
+    /// Guard único de todo <c>Definir*</c>: a allowlist acima <b>mais</b> a precondição de
+    /// concorrência quando há sessão editorial aberta. <see langword="null"/> quando a
+    /// mutação pode prosseguir.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A obrigatoriedade do <c>If-Match</c> é condicional ao estado</b>, e é por isso
+    /// que ela vive aqui e não no filtro de transporte: os mesmos seis <c>Definir*</c>
+    /// servem um processo em <see cref="StatusProcesso.Rascunho"/> (pré-publicação — sem
+    /// sessão, e portanto sem ETag a fornecer) e a edição <b>durante</b> uma retificação
+    /// (com sessão, e com precondição obrigatória). Só quem carregou o agregado sabe em
+    /// qual dos dois está.
+    /// </para>
+    /// <para>
+    /// Os handlers chamam este guard <b>logo após</b> resolverem o 404 — antes de validar
+    /// payload —, porque a precondição precede a regra de negócio na ordem de avaliação
+    /// (D9). Mas ele continua sendo chamado <b>aqui dentro</b> por cada <c>Definir*</c>:
+    /// a antecipação dá a ordem correta, e o guard no domínio garante que ela não seja
+    /// contornável por um handler futuro que esqueça de antecipá-la.
+    /// </para>
+    /// </remarks>
+    public DomainError? MutacaoBloqueada(PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        if (Status == StatusProcesso.Publicado && Rascunho is null)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
+                "Processo publicado não aceita mutação direta da configuração — utilize a retificação.");
+        }
+
+        if (!MutacaoPermitida())
+        {
+            return new DomainError(
+                "ProcessoSeletivo.MutacaoForaDeEstadoEditavel",
+                $"Um processo em {Status} não aceita mutação da configuração.");
+        }
+
+        // Processo em Rascunho: não há sessão editorial, e portanto não há ETag que o
+        // cliente pudesse fornecer. Exigir a precondição aqui quebraria toda a edição
+        // pré-publicação.
+        return Rascunho?.ConferirPrecondicao(precondicao);
+    }
+
+    internal static DomainError RetificacaoJaAberta() => new(
+        "RascunhoRetificacao.JaAberta",
+        "Já existe uma retificação em curso neste processo — feche-a ou descarte-a antes de abrir outra.");
+
+    private static DomainError RetificacaoNaoAberta() => new(
+        "RascunhoRetificacao.NaoAberta",
+        "Não há retificação em curso neste processo.");
 }

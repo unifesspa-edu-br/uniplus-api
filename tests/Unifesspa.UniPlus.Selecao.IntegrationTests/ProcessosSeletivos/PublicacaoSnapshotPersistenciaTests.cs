@@ -44,10 +44,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
@@ -70,7 +70,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
@@ -79,7 +79,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
             nOpcoesAlocacao: 1,
             regrasEliminacao: []).Value!;
-        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

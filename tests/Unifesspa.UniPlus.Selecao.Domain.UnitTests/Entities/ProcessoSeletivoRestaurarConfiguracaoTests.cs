@@ -181,10 +181,10 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         processo.DefinirEtapas([
             EtapaProcesso.Reidratar(EtapaOriginal, "Prova Original", CaraterEtapa.Classificatoria, 1m, null, 1),
-        ]);
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!);
-        processo.DefinirDistribuicaoVagas([Distribuicao()]);
-        processo.DefinirClassificacao(Classificacao([]));
+        ], PrecondicaoIfMatch.Ausente);
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Distribuicao()], PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(Classificacao([]), PrecondicaoIfMatch.Ausente);
 
         return processo;
     }

@@ -14,6 +14,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de concorrência (revisão do PR #791, achado P1): dois handlers
@@ -57,7 +58,7 @@ public sealed class PublicacaoConcorrenciaTests
 
         var definirEtapasCommand = new DefinirEtapasCommand(
             processoId,
-            [new EtapaProcessoInput("Prova Discursiva (revisada)", CaraterEtapa.Classificatoria, Peso: 1m, NotaMinima: null, Ordem: 1)]);
+            [new EtapaProcessoInput("Prova Discursiva (revisada)", CaraterEtapa.Classificatoria, Peso: 1m, NotaMinima: null, Ordem: 1)], PrecondicaoIfMatch.Ausente);
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
@@ -76,12 +77,15 @@ public sealed class PublicacaoConcorrenciaTests
         IMessageBus definirEtapasBus = definirEtapasScope.ServiceProvider.GetRequiredService<IMessageBus>();
         IMessageBus publicarBus = publicarScope.ServiceProvider.GetRequiredService<IMessageBus>();
 
-        Task<Result> definirEtapasTask = definirEtapasBus.InvokeAsync<Result>(definirEtapasCommand);
+        // Os Definir* passaram a devolver o ETag da sessão editorial (ADR-0110 D5): o tipo de
+        // retorno é Result<MutacaoAceita>. Pedir Result nu ao bus devolveria null, e a corrida
+        // "provaria" o que quer que o NullReferenceException interrompesse primeiro.
+        Task<Result<MutacaoAceita>> definirEtapasTask = definirEtapasBus.InvokeAsync<Result<MutacaoAceita>>(definirEtapasCommand);
         Task<Result> publicarTask = publicarBus.InvokeAsync<Result>(publicarCommand);
 
         await Task.WhenAll(definirEtapasTask, publicarTask);
 
-        Result definirEtapasResultado = await definirEtapasTask;
+        Result<MutacaoAceita> definirEtapasResultado = await definirEtapasTask;
         Result publicarResultado = await publicarTask;
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
@@ -96,7 +100,7 @@ public sealed class PublicacaoConcorrenciaTests
             // Publicar venceu a corrida: DefinirEtapas viu Status=Publicado
             // (só possível porque o lock forçou seu load a esperar o commit
             // da publicação) e foi bloqueado — nunca uma mutação stale.
-            definirEtapasResultado.HasErrorCode("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada").Should().BeTrue();
+            definirEtapasResultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
             publicarResultado.IsSuccess.Should().BeTrue(publicarResultado.Error?.Message);
             processoFinal.Status.Should().Be(StatusProcesso.Publicado);
             processoFinal.Etapas.Should().ContainSingle(e => e.Nome == "Prova Objetiva",

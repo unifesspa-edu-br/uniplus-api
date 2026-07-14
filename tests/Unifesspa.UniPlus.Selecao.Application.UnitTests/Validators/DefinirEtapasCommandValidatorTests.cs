@@ -7,6 +7,7 @@ using FluentValidation.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirEtapasCommandValidatorTests
 {
@@ -16,7 +17,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     public void Aceita_ComandoValido()
     {
         ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [EtapaValida()]));
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [EtapaValida()], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -25,7 +26,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     public void Rejeita_ListaVazia()
     {
         ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), []));
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas");
@@ -37,7 +38,7 @@ public sealed class DefinirEtapasCommandValidatorTests
         EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Nenhum, 3m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].Carater");
@@ -49,7 +50,7 @@ public sealed class DefinirEtapasCommandValidatorTests
         EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, 0m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].Peso");
@@ -62,7 +63,7 @@ public sealed class DefinirEtapasCommandValidatorTests
         EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, 0.00001m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].Peso");
@@ -74,7 +75,7 @@ public sealed class DefinirEtapasCommandValidatorTests
         EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Eliminatoria, 3m, 5.00001m, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa]));
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].NotaMinima");
@@ -84,7 +85,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     public void Rejeita_ItemNulo()
     {
         ValidationResult result = new DefinirEtapasCommandValidator()
-            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [null!]));
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [null!], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
     }

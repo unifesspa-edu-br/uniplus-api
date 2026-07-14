@@ -112,12 +112,12 @@ public sealed class EnvelopeCanonicoGoldenTests
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
@@ -125,7 +125,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!).IsSuccess.Should().BeTrue();
+            regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -358,12 +358,12 @@ public sealed class EnvelopeCanonicoGoldenTests
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // A ORDEM DE CRIAÇÃO é a variável — os Guid v7 nascem crescentes.
         List<RegraEliminacao> eliminacoes = [];
@@ -397,7 +397,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             regrasEliminacao: eliminacoes);
         classificacao.IsSuccess.Should().BeTrue(classificacao.Error?.Message);
 
-        processo.DefinirClassificacao(classificacao.Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo)).Bytes;

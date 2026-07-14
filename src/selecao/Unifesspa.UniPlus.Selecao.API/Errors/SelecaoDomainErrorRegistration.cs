@@ -193,6 +193,22 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("EnvelopeCodec.BlocosDerivadosIncoerentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.blocos_derivados_incoerentes", "Distribuição, modalidades e ofertas não declaram o mesmo conjunto de ofertas de curso")),
         new("EnvelopeCodec.RegraDesconhecida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.regra_desconhecida", "O envelope referencia um código de regra fora do rol conhecido")),
         new("EnvelopeCodec.RoundTripDivergente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.round_trip_divergente", "A configuração reidratada não reproduz os bytes congelados")),
+        // Sessão editorial de retificação (Story #860, ADR-0110 D3/D5). A precondição é a
+        // ÚNICA família de erros do módulo que não é 4xx-de-negócio: 412 e 428 são de
+        // PROTOCOLO — a operação não chegou a ser tentada. É também por isso que elas são
+        // as únicas respostas < 500 que a idempotência NÃO armazena (D6): cachear um 412
+        // prenderia por 24h o cliente que apenas releu o ETag e retentou corretamente.
+        new("Precondicao.Requerida", new DomainErrorMapping(StatusCodes.Status428PreconditionRequired, "uniplus.selecao.precondicao_requerida", "Há uma retificação em curso — a mutação exige o If-Match com o ETag da sessão")),
+        new("Precondicao.Falhou", new DomainErrorMapping(StatusCodes.Status412PreconditionFailed, "uniplus.selecao.precondicao_falhou", "O If-Match não corresponde ao estado atual da sessão editorial")),
+        new("Precondicao.Malformada", new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.selecao.precondicao_malformada", "If-Match sintaticamente inválido (RFC 9110 §8.8.3)")),
+        new("RascunhoRetificacao.JaAberta", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_ja_aberta", "Já existe uma retificação em curso neste processo")),
+        new("RascunhoRetificacao.NaoAberta", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_nao_aberta", "Não há retificação em curso neste processo")),
+        new("RascunhoRetificacao.MotivoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.motivo_obrigatorio", "O motivo da retificação é obrigatório")),
+        new("RascunhoRetificacao.MotivoMuitoLongo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.motivo_muito_longo", "O motivo da retificação excede o limite de caracteres")),
+        // A allowlist que falha FECHADA (D4): antes, um processo Encerrado ou Cancelado
+        // aceitava mutação da configuração em silêncio — a trava era uma denylist de um
+        // elemento só, e todo estado novo nascia mutável por omissão.
+        new("ProcessoSeletivo.MutacaoForaDeEstadoEditavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_fora_de_estado_editavel", "O processo não está em um estado que aceite mutação da configuração")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

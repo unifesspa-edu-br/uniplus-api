@@ -36,11 +36,11 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
         Result etapasResult = processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
         etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
 
         Result ofertaResult = processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!);
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         ofertaResult.IsSuccess.Should().BeTrue(ofertaResult.Error?.Message);
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
@@ -67,7 +67,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             referenciaDemografica: null,
             modalidades: [modalidade]);
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
-        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!]);
+        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], PrecondicaoIfMatch.Ausente);
         distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(
@@ -82,7 +82,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             nOpcoesAlocacao: 1,
             regrasEliminacao: []);
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
-        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!);
+        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
 
         await db.ProcessosSeletivos.AddAsync(processo);

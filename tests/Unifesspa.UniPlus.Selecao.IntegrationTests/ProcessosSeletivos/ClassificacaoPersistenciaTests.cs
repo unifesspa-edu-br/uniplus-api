@@ -37,7 +37,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         RegraEliminacao notaMinima = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"),
@@ -57,7 +57,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             1,
             [notaMinima, corteRedacao, zeroEmArea]);
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -97,7 +97,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
     public async Task PersisteERecarrega_Importada_SemArredondamento()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Transferência", TipoProcesso.TransferenciaExterna);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Análise curricular", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)])
+        processo.DefinirEtapas([EtapaProcesso.Criar("Análise curricular", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
@@ -108,7 +108,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             2,
             []);
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -136,7 +136,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TipoProcesso.PSVR);
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao original = ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
@@ -145,7 +145,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
             1,
             []).Value!;
-        processo.DefinirClassificacao(original).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(original, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -170,7 +170,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 2,
                 [eliminacao]).Value!;
 
-            Result result = carregado.DefinirClassificacao(nova);
+            Result result = carregado.DefinirClassificacao(nova, PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -193,7 +193,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ArgsElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
@@ -204,7 +204,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "d"),
             1,
             [eliminacao]).Value!;
-        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -225,7 +225,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             EtapaProcesso etapaTracked = carregado.Etapas.Single();
             etapaTracked.AtualizarDados("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, 2m, null, 1);
 
-            Result result = carregado.DefinirEtapas([etapaTracked]);
+            Result result = carregado.DefinirEtapas([etapaTracked], PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);

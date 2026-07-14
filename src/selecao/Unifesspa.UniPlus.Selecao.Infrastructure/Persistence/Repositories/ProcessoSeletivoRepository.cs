@@ -52,21 +52,42 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
     public async Task<ProcessoSeletivo?> ObterComConfiguracaoAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // Lock pessimista da linha raiz do agregado (revisão do PR #791,
-        // Story #759 T4): serializa handlers concorrentes (todo Definir* e
-        // Publicar) que carregam o MESMO processo — sem isso, um Definir*
-        // que leu Status=Rascunho antes de uma publicação concorrente pode
-        // persistir mutação DEPOIS do SnapshotPublicacao já ter sido
-        // congelado, furando RN08/CA-04 sem que o guard em memória
-        // (MutacaoBloqueadaPosPublicacao) tenha visibilidade da publicação
-        // alheia. SELECT ... FOR UPDATE roda na MESMA transação ambiente do
-        // Wolverine (EnrollDbContextInTransaction) — a segunda transação
-        // concorrente bloqueia aqui até a primeira committar ou reverter.
+        // Carregamento de LEITURA: sem lock e sem a sessão editorial. O FOR UPDATE que
+        // vivia aqui existia para serializar os handlers de mutação — e eles agora têm
+        // carregamento próprio (ObterParaMutacaoAsync, ADR-0110 D4). Mantê-lo aqui faria
+        // duas consultas GET concorrentes ao mesmo processo se serializarem uma na outra,
+        // sem que nenhuma delas escreva coisa alguma.
+        return await ComConfiguracao(_context.ProcessosSeletivos)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<ProcessoSeletivo?> ObterParaMutacaoAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // Lock pessimista da linha raiz do agregado (revisão do PR #791, Story #759 T4):
+        // serializa handlers concorrentes (os seis Definir*, a abertura/fechamento da
+        // sessão editorial, Publicar e Retificar) que carregam o MESMO processo — sem
+        // isso, um Definir* que leu Status=Rascunho antes de uma publicação concorrente
+        // pode persistir mutação DEPOIS de a versão já ter sido congelada, furando a RN08
+        // sem que o guard em memória tenha visibilidade da publicação alheia. O
+        // SELECT ... FOR UPDATE roda na MESMA transação ambiente do Wolverine
+        // (EnrollDbContextInTransaction) — a segunda transação concorrente bloqueia aqui
+        // até a primeira committar ou reverter.
         await _context.Database
             .ExecuteSqlInterpolatedAsync($"SELECT 1 FROM selecao.processos_seletivos WHERE id = {id} FOR UPDATE", cancellationToken)
             .ConfigureAwait(false);
 
-        return await _context.ProcessosSeletivos
+        // O Rascunho é o que distingue este carregamento do de leitura: é dele que a
+        // allowlist da D4 depende, e um null "por não ter sido carregado" recusaria uma
+        // edição legítima.
+        return await ComConfiguracao(_context.ProcessosSeletivos)
+            .Include(p => p.Rascunho)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private static IQueryable<ProcessoSeletivo> ComConfiguracao(IQueryable<ProcessoSeletivo> query) =>
+        query
             .Include(p => p.Etapas)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
@@ -74,10 +95,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.BonusRegional)
             .Include(p => p.CriteriosDesempate)
-            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
-            .ConfigureAwait(false);
-    }
+            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao);
 
     public async Task AdicionarVersaoConfiguracaoAsync(VersaoConfiguracao versao, CancellationToken cancellationToken = default)
     {

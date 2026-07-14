@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 public static class DefinirDistribuicaoVagasCommandHandler
 {
-    public static async Task<Result> Handle(
+    public static async Task<Result<MutacaoAceita>> Handle(
         DefinirDistribuicaoVagasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -40,13 +40,31 @@ public static class DefinirDistribuicaoVagasCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterComConfiguracaoAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result.Failure(new DomainError(
+            return Result<MutacaoAceita>.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
+        }
+
+        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
+        // que este handler avalia (existência de cadastros, coerência de referências): ela
+        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
+        // disso antes de sair caçando um cadastro que ele não errou.
+        //
+        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
+        // como middleware do Wolverine, antes deste handler, e um command malformado morre
+        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
+        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
+        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
+        //
+        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
+        // não a garantia.
+        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        {
+            return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
         List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
@@ -62,25 +80,25 @@ public static class DefinirDistribuicaoVagasCommandHandler
 
             if (resultado.IsFailure)
             {
-                return Result.Failure(resultado.Error!);
+                return Result<MutacaoAceita>.Failure(resultado.Error!);
             }
 
             distribuicoes.Add(resultado.Value!);
         }
 
-        Result result = processo.DefinirDistribuicaoVagas(distribuicoes);
+        Result result = processo.DefinirDistribuicaoVagas(distribuicoes, command.Precondicao);
         if (result.IsFailure)
         {
-            return result;
+            return Result<MutacaoAceita>.Failure(result.Error!);
         }
 
-        // Agregado tracked (ObterComConfiguracaoAsync): a nova coleção e suas
+        // Agregado tracked (ObterParaMutacaoAsync): a nova coleção e suas
         // filhas (Guid v7 já preenchido) são persistidas por change detection.
         // NÃO chamar DbSet.Update — marcaria os filhos novos como Modified,
         // emitindo UPDATE de linhas nunca inseridas.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result.Success();
+        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
     private static async Task<Result<ConfiguracaoDistribuicaoVagas>> ResolverDistribuicaoAsync(

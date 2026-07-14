@@ -13,12 +13,44 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
 {
     /// <summary>
-    /// Obtém o processo com toda a configuração carregada (todas as coleções
-    /// filhas, inclusive as filhas da oferta de atendimento). É a forma
-    /// canônica de materializar o agregado para os comandos <c>Definir*</c> e
-    /// para a consulta de conformidade.
+    /// Obtém o processo com toda a configuração carregada, para <b>leitura</b> — a
+    /// consulta de conformidade e o DTO do recurso. Não trava a linha e <b>não</b> carrega
+    /// a sessão editorial.
     /// </summary>
+    /// <remarks>
+    /// <b>Não use em handler de mutação.</b> Sem o <see cref="ProcessoSeletivo.Rascunho"/>
+    /// carregado, a allowlist da ADR-0110 D4 leria <see langword="null"/> como "não há
+    /// sessão" quando na verdade ela só não foi carregada — e recusaria uma edição
+    /// legítima. Para mutar, é <see cref="ObterParaMutacaoAsync"/>, e um fitness test o
+    /// prova.
+    /// </remarks>
     Task<ProcessoSeletivo?> ObterComConfiguracaoAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Carregamento <b>de mutação</b> (ADR-0110 D4): a configuração completa, a
+    /// <b>sessão editorial</b> e o <b>lock pessimista</b> da linha raiz — tudo o que um
+    /// comando que altera o agregado precisa para decidir.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Por que é um método separado.</b> <see cref="ProcessoSeletivo.Rascunho"/> nulo é
+    /// ambíguo — significa "não existe" <b>e</b> "não foi carregado". Um comando que
+    /// usasse um carregamento sem essa navegação veria "sem sessão" num processo publicado
+    /// que tem uma, e recusaria a edição: <b>fail-closed indevido</b>. Tornar o
+    /// carregamento de mutação explícito, e provar por fitness test que todo handler passa
+    /// por ele, é o que fecha essa porta.
+    /// </para>
+    /// <para>
+    /// <b>O lock.</b> <c>SELECT ... FOR UPDATE</c> na raiz serializa os handlers
+    /// concorrentes que tocam o MESMO processo (os seis <c>Definir*</c>, a abertura e o
+    /// fechamento da sessão, publicar e retificar). Sem ele, um <c>Definir*</c> que leu
+    /// <c>Status = Rascunho</c> antes de uma publicação concorrente persistiria a mutação
+    /// <b>depois</b> de a versão já ter sido congelada — furando a RN08 sem que o guard em
+    /// memória tivesse visibilidade da publicação alheia. Roda na transação ambiente do
+    /// Wolverine: a segunda transação bloqueia aqui até a primeira committar.
+    /// </para>
+    /// </remarks>
+    Task<ProcessoSeletivo?> ObterParaMutacaoAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Lista processos paginados por cursor keyset bidirecional (ADR-0026 +
