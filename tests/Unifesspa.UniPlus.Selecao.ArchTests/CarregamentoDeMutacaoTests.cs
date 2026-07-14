@@ -211,6 +211,79 @@ public sealed class CarregamentoDeMutacaoTests
             $"configuração ter mudado debaixo dele (ADR-0110 D5). Infratores: {string.Join(", ", infratores)}");
     }
 
+    /// <summary>
+    /// <b>Quem descarta a sessão, restaura antes.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Este é o buraco mais perigoso da Feature inteira, e ele é <b>silencioso</b>. Enquanto a
+    /// sessão editorial existe, os seis <c>Definir*</c> escrevem <b>direto na configuração
+    /// viva</b> — não há staging, e todo <c>Definir*</c> substitui a coleção inteira. Um
+    /// descarte que apenas <b>encerrasse</b> a sessão, sem repor, devolveria o certame ao
+    /// estado "publicado normal" servindo uma configuração que <b>nunca foi publicada</b> e
+    /// que diverge do documento que o publicou. Ninguém acusaria: o status estaria certo, a
+    /// versão congelada estaria intacta, e só a configuração viva estaria mentindo.
+    /// </para>
+    /// <para>
+    /// O <b>fechamento</b> é o oposto — ele encerra a sessão <b>de propósito sem repor</b>,
+    /// porque é justamente a configuração editada que ele congela na versão N+1. Por isso os
+    /// dois são autorizados, e por razões contrárias.
+    /// </para>
+    /// </remarks>
+    [Fact(DisplayName = "Quem DESCARTA a sessão repõe a configuração congelada antes — encerrar sem repor deixaria o certame servindo o que nunca foi publicado")]
+    public void Descarte_RestauraAntesDeEncerrarASessao()
+    {
+        string handler = Path.Join(
+            RaizDoSrc(), "selecao", "Unifesspa.UniPlus.Selecao.Application", "Commands", "ProcessosSeletivos",
+            "DescartarRetificacaoCommandHandler.cs");
+
+        File.Exists(handler).Should().BeTrue();
+        string fonte = File.ReadAllText(handler);
+
+        fonte.Should().Contain("restaurador.Restaurar(",
+            "sem a reposição, o descarte não desfaz nada — ele só remove a trava e deixa a configuração alterada de pé");
+
+        int restaura = fonte.IndexOf("restaurador.Restaurar(", StringComparison.Ordinal);
+        int encerra = fonte.IndexOf(".DescartarRetificacao(", StringComparison.Ordinal);
+
+        encerra.Should().BeGreaterThan(0, "o handler precisa encerrar a sessão");
+        restaura.Should().BeLessThan(
+            encerra,
+            "a reposição vem ANTES de encerrar a sessão: se ela falhar (round-trip divergente), o Failure sai com o " +
+            "rascunho ainda aberto e nada é salvo — a sessão sobrevive para ser tentada de novo. Invertida, uma prova " +
+            "que falhasse já teria destruído a sessão");
+    }
+
+    [Fact(DisplayName = "Só o descarte e o fechamento encerram a sessão editorial")]
+    public void EncerrarSessao_SoPelosCallersAutorizados()
+    {
+        string[] autorizados =
+        [
+            // A declaração, no agregado.
+            "Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs",
+
+            // Descartar: restaura a configuração congelada e encerra.
+            "Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DescartarRetificacaoCommandHandler.cs",
+        ];
+
+        // A CHAMADA de instância — `processo.DescartarRetificacao(...)`. O identificador nu
+        // apareceria também no nome da action do controller e no do command, que não encerram
+        // sessão nenhuma: são o transporte. O ponto cego (capturar o método como method group)
+        // é aceitável aqui, porque o outro fitness — o que exige a restauração ANTES — já
+        // guarda o único caller legítimo.
+        Regex descarte = new(@"\.DescartarRetificacao\(", RegexOptions.None, TimeSpan.FromSeconds(5));
+
+        List<string> infratores = [.. ArquivosDeProducao()
+            .Where(a => !autorizados.Any(x => Normalizar(a).EndsWith(x, StringComparison.Ordinal)))
+            .Where(a => descarte.IsMatch(CodigoSemComentarios(a)))
+            .Select(a => Path.GetRelativePath(RaizDoSrc(), a))];
+
+        infratores.Should().BeEmpty(
+            "encerrar a sessão sem repor a configuração congelada devolve o certame ao estado 'publicado normal' " +
+            "servindo, em silêncio, uma configuração que nunca foi publicada. O único caminho que encerra SEM repor é " +
+            $"o FECHAMENTO — e ele o faz de propósito, porque congela a edição. Infratores: {string.Join(", ", infratores)}");
+    }
+
     private static IEnumerable<string> ArquivosDeProducao() =>
         Directory.EnumerateFiles(RaizDoSrc(), "*.cs", SearchOption.AllDirectories)
             .Where(static a =>

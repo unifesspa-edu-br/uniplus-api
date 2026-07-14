@@ -568,6 +568,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string motivo,
         TimeProvider clock)
     {
+        // A ordem é a de sempre, e ela importa: os contratos do método (argumentos não nulos)
+        // e o estado do certame são conferidos ANTES da sessão editorial. Antepor a recusa por
+        // `RetificacaoJaAberta` faria um `dados` nulo deixar de lançar, e um processo em estado
+        // inválido deixar de acusar a transição — o atalho passaria a mentir sobre o motivo da
+        // recusa, e mudaria de comportamento numa Feature que prometeu não tocá-lo.
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentNullException.ThrowIfNull(versaoAtual);
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
@@ -588,6 +593,190 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (Rascunho is not null)
         {
             return Result<VersaoConfiguracao>.Failure(RetificacaoJaAberta());
+        }
+
+        return SucederVersao(
+            dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
+            hashDocumento, atorUsuarioSub, motivo, clock);
+    }
+
+    /// <summary>
+    /// <b>Fecha</b> a sessão editorial: congela a versão N+1 <b>com a configuração editada</b>
+    /// e encerra a sessão — na mesma transação (ADR-0110).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// É <b>aqui</b> que a Feature entrega o que ela existe para entregar. Abrir e descartar
+    /// deixam o certame como estava; só o fechamento faz a configuração alterada virar
+    /// documento — e é o que desbloqueia as dimensões que faltam ao Módulo Seleção.
+    /// </para>
+    /// <para>
+    /// <b>O motivo vem do rascunho</b>, não do chamador: ele foi declarado na abertura,
+    /// normalizado uma única vez, e é o mesmo que o bloco <c>retificacao</c> do envelope
+    /// congela. Recebê-lo de novo aqui abriria a porta para os dois divergirem.
+    /// </para>
+    /// <para>
+    /// <b>A sessão só morre depois de a versão estar decidida.</b> Se o congelamento for
+    /// recusado — conformidade insuficiente, cadeia quebrada —, o rascunho <b>permanece
+    /// aberto</b> e o administrador corrige e tenta de novo. Encerrá-la antes faria uma
+    /// recusa de negócio destruir a sessão inteira.
+    /// </para>
+    /// </remarks>
+    public Result<VersaoConfiguracao> FecharRetificacao(
+        DadosEdital dados,
+        VersaoConfiguracao versaoAtual,
+        byte[] configuracaoCongeladaCanonica,
+        string schemaVersion,
+        string algoritmoHash,
+        string hashDocumento,
+        string atorUsuarioSub,
+        PrecondicaoIfMatch precondicao,
+        TimeProvider clock)
+    {
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        if (PendenciaDaSessaoEditorial(precondicao) is { } pendencia)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendencia);
+        }
+
+        Result<VersaoConfiguracao> versao = SucederVersao(
+            dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
+            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock);
+        if (versao.IsFailure)
+        {
+            return versao;
+        }
+
+        Rascunho = null;
+        return versao;
+    }
+
+    /// <summary>
+    /// <b>Descarta</b> a sessão editorial: o administrador abriu e desistiu (ADR-0110).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Este método não repõe nada — e é o ponto mais delicado da Feature.</b> Ele
+    /// apenas <b>encerra</b> a sessão. A reposição da configuração congelada é da Application
+    /// (o Domain não canonicaliza — ADR-0042) e tem de acontecer <b>antes</b>, via
+    /// <c>IRestauradorDeConfiguracao</c>, que repõe <b>e prova</b> o round-trip byte a byte.
+    /// </para>
+    /// <para>
+    /// <b>Encerrar a sessão sem repor é o pior desfecho possível</b>, e é preciso dizê-lo
+    /// alto: enquanto a sessão existe, os seis <c>Definir*</c> escrevem <b>direto na
+    /// configuração viva</b> — não há staging. Uma sessão encerrada sem reposição deixaria o
+    /// certame de volta ao estado "publicado normal", servindo, em silêncio, uma configuração
+    /// que <b>nunca foi publicada</b> e que diverge do documento que o publicou. Um fitness
+    /// test prova que o único caller deste método restaura antes.
+    /// </para>
+    /// </remarks>
+    public Result DescartarRetificacao(PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        if (PendenciaDaSessaoEditorial(precondicao) is { } pendencia)
+        {
+            return Result.Failure(pendencia);
+        }
+
+        // O ESTADO INVÁLIDO É IRREPRESENTÁVEL, e não apenas desencorajado por um fitness test.
+        //
+        // Descartar sem repor devolveria o certame ao estado "publicado normal" servindo, em
+        // silêncio, a configuração EDITADA — que nunca foi publicada. Um teste textual de
+        // callers diz "ninguém faz isso hoje"; ele não diz "isso não pode acontecer". A
+        // diferença aparece no dia em que um caminho novo esquecer a reposição, e o defeito é
+        // dos que ninguém percebe: o status está certo, a versão congelada está intacta, e só
+        // a configuração viva está mentindo.
+        //
+        // A prova é o próprio agregado: RestaurarConfiguracaoCongelada — que só o
+        // IRestauradorDeConfiguracao chama, e que só repõe DEPOIS de provar o round-trip byte
+        // a byte — carimba aqui a versão que repôs. O descarte exige esse carimbo, e exige que
+        // ele seja o da versão que ESTA sessão tomou como base.
+        if (_versaoRestaurada is null)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.DescarteSemRestauracao",
+                "A sessão editorial não pode ser encerrada sem que a configuração congelada seja reposta — "
+                + "encerrá-la agora deixaria o certame servindo a configuração editada como se ela tivesse sido publicada."));
+        }
+
+        if (_versaoRestaurada != Rascunho!.VersaoBaseId)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.DescarteComVersaoErrada",
+                "A configuração reposta não é a da versão sobre a qual esta retificação foi aberta."));
+        }
+
+        Rascunho = null;
+        _versaoRestaurada = null;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// A versão cuja configuração foi <b>reposta e provada</b> nesta unidade de trabalho —
+    /// o carimbo que o descarte exige.
+    /// </summary>
+    /// <remarks>
+    /// <b>Transiente de propósito.</b> Não é persistido nem mapeado: ele vive apenas dentro da
+    /// transação, entre a reposição e o encerramento da sessão, e é justamente essa vida curta
+    /// que o torna uma prova — um flag que sobrevivesse ao escopo autorizaria um descarte
+    /// futuro com base numa restauração antiga.
+    /// </remarks>
+    private Guid? _versaoRestaurada;
+
+    /// <summary>
+    /// O que impede <b>encerrar</b> a sessão editorial (fechar ou descartar):
+    /// <see langword="null"/> quando ela pode ser encerrada.
+    /// </summary>
+    /// <remarks>
+    /// A ordem é a da ADR-0110 D9: a <b>inexistência</b> da sessão (409) precede a
+    /// <b>precondição</b> (428/412) — responder 412 para um rascunho que não existe mandaria
+    /// o cliente recarregar um ETag inexistente. A obrigatoriedade do <c>If-Match</c> aqui é
+    /// <b>incondicional</b>: as duas rotas existem <i>para</i> a sessão.
+    /// </remarks>
+    private DomainError? PendenciaDaSessaoEditorial(PrecondicaoIfMatch precondicao)
+    {
+        if (Rascunho is null)
+        {
+            return RetificacaoNaoAberta();
+        }
+
+        return MutacaoBloqueada(precondicao);
+    }
+
+    /// <summary>
+    /// O núcleo comum do <b>atalho atômico</b> (<see cref="Retificar"/>) e do
+    /// <b>fechamento da sessão</b> (<see cref="FecharRetificacao"/>): sucede a cadeia de
+    /// versões, decide o ato que emenda o anterior e drena o evento.
+    /// </summary>
+    /// <remarks>
+    /// Os dois caminhos congelam <b>a mesma coisa</b> — a configuração viva, no estado em que
+    /// ela está. O que os distingue é <b>de onde vem o motivo</b> e <b>o que acontece com a
+    /// sessão</b>; tudo o mais é idêntico, e duplicá-lo faria as duas cadeias divergirem no
+    /// dia em que uma delas mudasse.
+    /// </remarks>
+    private Result<VersaoConfiguracao> SucederVersao(
+        DadosEdital dados,
+        VersaoConfiguracao versaoAtual,
+        byte[] configuracaoCongeladaCanonica,
+        string schemaVersion,
+        string algoritmoHash,
+        string hashDocumento,
+        string atorUsuarioSub,
+        string motivo,
+        TimeProvider clock)
+    {
+        ArgumentNullException.ThrowIfNull(dados);
+        ArgumentNullException.ThrowIfNull(versaoAtual);
+        ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
+        ArgumentNullException.ThrowIfNull(clock);
+
+        if (Status != StatusProcesso.Publicado)
+        {
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
+                "ProcessoSeletivo.TransicaoInvalida",
+                $"Só é possível retificar um processo publicado — status atual: {Status}."));
         }
 
         if (string.IsNullOrWhiteSpace(motivo))
@@ -737,6 +926,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         AplicarGrafo(grafo);
+
+        // Carimba a reposição. É o que torna o descarte sem restauração IRREPRESENTÁVEL: sem
+        // este registro, DescartarRetificacao recusa. A sombra de verificação carimba a si
+        // mesma e morre com o escopo — só a raiz viva leva o carimbo adiante.
+        _versaoRestaurada = versao.Id;
+
         return Result.Success();
     }
 

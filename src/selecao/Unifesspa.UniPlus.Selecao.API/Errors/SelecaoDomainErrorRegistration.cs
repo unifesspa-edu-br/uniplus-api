@@ -205,6 +205,19 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RascunhoRetificacao.NaoAberta", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_nao_aberta", "Não há retificação em curso neste processo")),
         new("RascunhoRetificacao.MotivoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.motivo_obrigatorio", "O motivo da retificação é obrigatório")),
         new("RascunhoRetificacao.MotivoMuitoLongo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.retificacao.motivo_muito_longo", "O motivo da retificação excede o limite de caracteres")),
+        // A base do rascunho deixou de ser o topo da cadeia. Hoje é inalcançável por
+        // invariante (o atalho recusa com sessão aberta; o fechamento encerra a sessão na
+        // mesma transação; o FOR UPDATE serializa) — é guard rail contra o dia em que um
+        // caminho novo quebre isso. Restaurar ou emendar a versão ERRADA é o tipo de defeito
+        // que o round-trip NÃO pega: os bytes de uma versão sempre batem com ela mesma.
+        new("RascunhoRetificacao.BaseDesatualizada", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.retificacao_base_desatualizada", "A versão sobre a qual a retificação foi aberta não é mais o topo da cadeia")),
+        // O agregado recusa encerrar a sessão sem que a configuração congelada tenha sido
+        // reposta — descartar sem repor deixaria o certame servindo a configuração EDITADA
+        // como se ela tivesse sido publicada. São 500 de propósito: não é decisão do usuário
+        // nem input dele, é erro de PROGRAMAÇÃO (um handler que esqueceu a reposição), e um
+        // 422 o disfarçaria de recusa de negócio.
+        new("ProcessoSeletivo.DescarteSemRestauracao", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.processo_seletivo.descarte_sem_restauracao", "A sessão editorial não pode ser encerrada sem repor a configuração congelada")),
+        new("ProcessoSeletivo.DescarteComVersaoErrada", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.processo_seletivo.descarte_com_versao_errada", "A configuração reposta não é a da versão base da retificação")),
         // A allowlist que falha FECHADA (D4): antes, um processo Encerrado ou Cancelado
         // aceitava mutação da configuração em silêncio — a trava era uma denylist de um
         // elemento só, e todo estado novo nascia mutável por omissão.
