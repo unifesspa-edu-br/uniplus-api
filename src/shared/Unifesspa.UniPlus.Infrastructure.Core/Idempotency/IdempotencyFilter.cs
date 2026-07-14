@@ -211,7 +211,8 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // ficaria preso em 409 ProcessingConflict por 24h. CancellationToken
             // None no DeleteAsync porque RequestAborted já está disparado quando
             // o request foi cancelado pelo cliente.
-            if (status >= 500 || executed.Canceled)
+            //
+            if (status >= 500 || RespostaDePrecondicao(status, httpContext.Request) || executed.Canceled)
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                     .ConfigureAwait(false);
@@ -463,13 +464,61 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         // recurso novo).
         if (headers is not null && headers.TryGetValue("Location", out string? loc))
             context.HttpContext.Response.Headers.Location = loc;
+
+        // E o ETag (ADR-0110 D6). É o que torna o replay UTILIZÁVEL numa sessão editorial:
+        // o cliente que retenta a abertura por timeout de rede recebe a mesma resposta —
+        // e, junto, a precondição de que precisa para a próxima mutação.
+        if (headers is not null && headers.TryGetValue("ETag", out string? etag))
+            context.HttpContext.Response.Headers.ETag = etag;
     }
+
+    /// <summary>
+    /// A resposta é fruto de uma <b>precondição</b> — e por isso <b>não é armazenável</b>
+    /// (ADR-0110 D6, exceção formal à ADR-0027).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A ADR-0027 manda cachear todo 4xx, pela convenção Stripe, cuja motivação é
+    /// anti-abuso: impedir que um cliente varie a key até achar uma sequência que muda o
+    /// estado. Mas estas respostas <b>não são o resultado da operação</b> — a operação
+    /// <b>não executou</b>. Cachear não impede o abuso de jeito nenhum (o atacante troca a
+    /// key), e <b>prende o cliente legítimo</b>.
+    /// </para>
+    /// <para>
+    /// <b>A raiz do problema é que a entrada é identificada pelo hash do BODY.</b> Uma
+    /// resposta cuja causa está num <b>header</b> é insegura de gravar: o cliente corrige o
+    /// header, mantém o mesmo body e a mesma key — e o lookup casa, devolvendo em replay a
+    /// falha que ele acabou de consertar. É o caso das três:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><b>412</b> — o <c>If-Match</c> estava defasado; o cliente relê o ETag e retenta.</item>
+    /// <item><b>428</b> — o <c>If-Match</c> faltava. A RFC 6585 §3 é explícita: a resposta depende de um header <b>ausente</b>; armazená-la é incoerente.</item>
+    /// <item><b>400 com <c>If-Match</c> presente</b> — a precondição veio malformada. O defeito está no header, não no corpo, e o hash do corpo não o distingue.</item>
+    /// </list>
+    /// <para>
+    /// O 400 só é liberado <b>quando há <c>If-Match</c> na requisição</b>: um 400 de JSON
+    /// malformado continua cacheado, e corretamente — ali o defeito está no <b>corpo</b>, o
+    /// hash muda quando o cliente o corrige, e a entrada nova nasce sozinha.
+    /// </para>
+    /// </remarks>
+    private static bool RespostaDePrecondicao(int status, HttpRequest request) =>
+        status is StatusCodes.Status412PreconditionFailed or StatusCodes.Status428PreconditionRequired
+        || (status == StatusCodes.Status400BadRequest && request.Headers.ContainsKey("If-Match"));
 
     private static string SerializeCachedHeaders(HttpResponse response)
     {
-        // Cacheamos apenas Content-Type e Location (ADR-0027 §"Esta ADR não decide"
-        // permite expansão futura). Outros headers são sensíveis a contexto
-        // (Set-Cookie, ETag dinâmico, traceId).
+        // Content-Type, Location e ETag (ADR-0027 §"Esta ADR não decide" permite a
+        // expansão). Os demais continuam de fora por serem sensíveis a contexto
+        // (Set-Cookie, traceId).
+        //
+        // O ETag era excluído POR ESCRITO — "ETag dinâmico" —, e a exclusão fazia sentido
+        // enquanto nenhum recurso o emitia. Com a sessão editorial (ADR-0110 D5) ele deixou
+        // de ser decorativo: é a PRECONDIÇÃO da chamada seguinte. Um replay que devolvesse
+        // 201 sem ETag deixaria o cliente sem como mutar — ele teria de adivinhar que
+        // precisa de um GET, num caminho em que a primeira execução lhe deu o tag de graça.
+        // O tag não é "dinâmico" no sentido que preocupava: ele descreve o estado que
+        // ESTA resposta gravada representa, e é exatamente esse o estado que o replay
+        // reproduz.
         Dictionary<string, string> cached = new(StringComparer.OrdinalIgnoreCase);
 
         if (response.ContentType is { Length: > 0 } ct)
@@ -477,6 +526,9 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
 
         if (response.Headers.TryGetValue("Location", out Microsoft.Extensions.Primitives.StringValues loc) && loc.Count > 0 && !string.IsNullOrEmpty(loc[0]))
             cached["Location"] = loc[0]!;
+
+        if (response.Headers.TryGetValue("ETag", out Microsoft.Extensions.Primitives.StringValues etag) && etag.Count > 0 && !string.IsNullOrEmpty(etag[0]))
+            cached["ETag"] = etag[0]!;
 
         return JsonSerializer.Serialize(cached);
     }

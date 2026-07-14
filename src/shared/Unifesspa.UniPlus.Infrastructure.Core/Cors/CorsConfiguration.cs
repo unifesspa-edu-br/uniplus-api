@@ -39,6 +39,22 @@ public static class CorsConfiguration
         "If-None-Match",
     ];
 
+    // Headers de RESPOSTA que o browser deixa o JavaScript ler. Por default, uma resposta
+    // cross-origin só expõe sete headers "seguros" — e ETag não é um deles. Sem esta lista,
+    // o servidor emite o ETag corretamente, o browser o recebe, e o fetch() do frontend
+    // simplesmente NÃO O ENXERGA: response.headers.get('ETag') devolve null.
+    //
+    // - ETag: a precondição da sessão editorial de retificação (ADR-0110 D5). O cliente lê
+    //   o tag daqui e o devolve no If-Match da próxima mutação. Sem expô-lo, toda edição
+    //   sob retificação sairia 428 no browser — correta no servidor, inoperável na SPA.
+    // - Idempotency-Replayed: diagnóstico de replay (ADR-0027); o frontend distingue
+    //   "executou agora" de "resposta gravada".
+    private static readonly string[] DefaultExposedHeaders =
+    [
+        "ETag",
+        "Idempotency-Replayed",
+    ];
+
     /// <summary>
     /// Binds <see cref="CorsOptions"/> and registers the default CORS policy.
     /// Outside Development, startup fails if <see cref="CorsOptions.AllowedOrigins"/> is empty.
@@ -84,5 +100,6 @@ public static class CorsConfiguration
             .WithConfiguredOrigins(options.AllowedOrigins, environment)
             .WithConfiguredMethods(options.AllowAnyMethod, DefaultMethods)
             .WithConfiguredHeaders(options.AllowAnyHeader, DefaultHeaders)
+            .WithExposedHeaders(DefaultExposedHeaders)
             .WithCredentialsIfConfigured(options.AllowCredentials, hasExplicitOrigins: options.AllowedOrigins.Count > 0);
 }
