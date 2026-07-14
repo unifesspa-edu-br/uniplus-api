@@ -375,11 +375,19 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// (ADR-0101). E o tipo do ato continua vindo declarado: uma convocação retificada
     /// continua convocação.
     /// </para>
+    /// <para>
+    /// <b>Com uma sessão editorial aberta, este atalho recusa</b> (409): os dois caminhos
+    /// retificam o mesmo ato, e deixá-los correr juntos congelaria a versão N+1 a partir da
+    /// configuração que a sessão está no meio de editar. Quem tem sessão aberta a fecha por
+    /// <see cref="FecharRetificacao"/>.
+    /// </para>
     /// </summary>
     [HttpPost("{id:guid}/retificacoes")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Retificar(
         Guid id,
@@ -414,6 +422,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [HttpPost("{id:guid}/retificacao-em-curso")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(RetificacaoEmCursoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
