@@ -308,13 +308,23 @@ jobs:
         run: |
           set -euo pipefail
           MIN_TESTS=15
+          # `set -e` aborta em falha do dotnet test, e com a saída capturada em $out o log
+          # ficava SEM NENHUMA pista de qual teste quebrou. Guarda o status, imprime sempre,
+          # e só então decide — o diagnóstico é a razão de o step existir.
+          set +e
           out=$(dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
             --configuration ${{ env.BUILD_CONFIG }} \
             --no-build \
             --no-restore \
             --filter "Category=OutboxCapability" \
-            --logger "console;verbosity=minimal")
+            --logger "console;verbosity=normal" 2>&1)
+          status=$?
+          set -e
           echo "$out"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Filtro Category=OutboxCapability falhou (exit $status) — ver a saída acima."
+            exit 1
+          fi
           passed=$(echo "$out" | grep -oP 'Aprovado:\s*\K[0-9]+' | head -1 || true)
           if [ -z "${passed:-}" ]; then
             passed=$(echo "$out" | grep -oP 'Passed:\s*\K[0-9]+' | head -1 || echo 0)
@@ -328,13 +338,23 @@ jobs:
         run: |
           set -euo pipefail
           MIN_TESTS=10
+          # `set -e` aborta em falha do dotnet test, e com a saída capturada em $out o log
+          # ficava SEM NENHUMA pista de qual teste quebrou. Guarda o status, imprime sempre,
+          # e só então decide — o diagnóstico é a razão de o step existir.
+          set +e
           out=$(dotnet test tests/Unifesspa.UniPlus.Selecao.IntegrationTests \
             --configuration ${{ env.BUILD_CONFIG }} \
             --no-build \
             --no-restore \
             --filter "Category=OutboxCascading" \
-            --logger "console;verbosity=minimal")
+            --logger "console;verbosity=normal" 2>&1)
+          status=$?
+          set -e
           echo "$out"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Filtro Category=OutboxCascading falhou (exit $status) — ver a saída acima."
+            exit 1
+          fi
           passed=$(echo "$out" | grep -oP 'Aprovado:\s*\K[0-9]+' | head -1 || true)
           if [ -z "${passed:-}" ]; then
             passed=$(echo "$out" | grep -oP 'Passed:\s*\K[0-9]+' | head -1 || echo 0)

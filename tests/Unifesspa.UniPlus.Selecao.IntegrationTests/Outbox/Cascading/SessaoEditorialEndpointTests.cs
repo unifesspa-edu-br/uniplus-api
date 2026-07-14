@@ -250,6 +250,15 @@ public sealed class SessaoEditorialEndpointTests
         bool abriu = resultadoAbrir.StatusCode == HttpStatusCode.Created;
         bool retificou = resultadoAtalho.StatusCode == HttpStatusCode.NoContent;
 
+        // Um 5xx aqui é BUG, e ele precisa se anunciar como tal. Sem esta guarda, duas
+        // respostas 500 fariam `abriu` e `retificou` serem ambos `false`, e a asserção de
+        // exclusividade abaixo falharia dizendo "os dois perderam" — escondendo a causa real
+        // (um deadlock, um lock timeout) atrás de uma mensagem que fala de outra coisa.
+        ((int)resultadoAbrir.StatusCode).Should().BeLessThan(
+            500, $"a abertura não pode falhar com erro de servidor numa corrida — veio {resultadoAbrir.StatusCode}");
+        ((int)resultadoAtalho.StatusCode).Should().BeLessThan(
+            500, $"o atalho não pode falhar com erro de servidor numa corrida — veio {resultadoAtalho.StatusCode}");
+
         abriu.Should().NotBe(
             retificou,
             $"exatamente um dos dois vence — abrir={resultadoAbrir.StatusCode}, atalho={resultadoAtalho.StatusCode}");
