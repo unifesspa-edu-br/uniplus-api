@@ -40,10 +40,10 @@ public sealed class ProcessoSeletivoPublicarTests
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!;
@@ -68,7 +68,7 @@ public sealed class ProcessoSeletivoPublicarTests
             regraDistribuicao: regraDistribuicao,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(
             RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!;
@@ -81,7 +81,7 @@ public sealed class ProcessoSeletivoPublicarTests
             regraOrdemAlocacao: regraOrdemAlocacao,
             nOpcoesAlocacao: 1,
             regrasEliminacao: []).Value!;
-        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -201,16 +201,16 @@ public sealed class ProcessoSeletivoPublicarTests
 
         Result resultado = dimensao switch
         {
-            "etapas" => processo.DefinirEtapas([EtapaProcesso.Criar("Nova Etapa", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]),
-            "ofertaAtendimento" => processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!),
-            "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([]),
-            "bonusRegional" => processo.DefinirBonusRegional(null),
-            "criteriosDesempate" => processo.DefinirCriteriosDesempate([]),
+            "etapas" => processo.DefinirEtapas([EtapaProcesso.Criar("Nova Etapa", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente),
+            "ofertaAtendimento" => processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente),
+            "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([], PrecondicaoIfMatch.Ausente),
+            "bonusRegional" => processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente),
+            "criteriosDesempate" => processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente),
             "classificacao" => processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
                 ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
                 null, null,
                 ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
-                1, []).Value!),
+                1, []).Value!, PrecondicaoIfMatch.Ausente),
             _ => throw new InvalidOperationException("Dimensão desconhecida."),
         };
 

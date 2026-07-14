@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Kernel.Results;
+using Domain.ValueObjects;
 
 /// <summary>
 /// Define (ou remove) o bônus regional do processo (RN05, Story #774,
@@ -16,4 +17,5 @@ public sealed record DefinirBonusRegionalCommand(
     decimal? Fator,
     decimal? Teto,
     string? MunicipioConvenio,
-    string? BaseLegal) : ICommand<Result>;
+    string? BaseLegal,
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

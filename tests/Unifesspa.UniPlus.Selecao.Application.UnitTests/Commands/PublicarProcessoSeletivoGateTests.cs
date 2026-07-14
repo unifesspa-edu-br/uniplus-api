@@ -54,7 +54,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+        processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
             .Returns(processo);
 
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();

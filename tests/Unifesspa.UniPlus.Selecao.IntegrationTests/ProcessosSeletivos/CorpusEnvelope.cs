@@ -93,7 +93,7 @@ internal static class CorpusEnvelope
             EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),
             EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, peso: 2.2500m, notaMinima: null, ordem: 2),
             EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 60.0000m, ordem: 3),
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
             condicoes: [
@@ -107,16 +107,16 @@ internal static class CorpusEnvelope
             tiposDeficiencia: [
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "Deficiência visual"),
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "Deficiência auditiva"),
-            ]).Value!).IsSuccess.Should().BeTrue();
+            ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoLei12711(), DistribuicaoInstitucional()]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoLei12711(), DistribuicaoInstitucional()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
             fator: 1.2000m,
             teto: 95.5000m,
             municipioConvenio: "Marabá",
-            baseLegal: "Res. Unifesspa 414/2020").Value!).IsSuccess.Should().BeTrue();
+            baseLegal: "Res. Unifesspa 414/2020").Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // As QUATRO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
         // ordens distintas), que um decoder indexado por código colapsaria em uma.
@@ -126,7 +126,7 @@ internal static class CorpusEnvelope
             CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(redacao)).Value!,
             CriterioDesempate.Criar(4, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), new ArgsDesempatePredicadoFato("escola_publica", "igual", "true")).Value!,
             CriterioDesempate.Criar(5, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
@@ -140,7 +140,7 @@ internal static class CorpusEnvelope
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(redacao, 30.5000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteRedacao, '5'), new ArgsElimCorteRedacao(400.0000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
-            ]).Value!).IsSuccess.Should().BeTrue();
+            ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

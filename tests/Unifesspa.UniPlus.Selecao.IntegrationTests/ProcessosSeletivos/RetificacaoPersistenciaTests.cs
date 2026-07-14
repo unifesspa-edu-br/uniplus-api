@@ -41,17 +41,17 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU);
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ]).IsSuccess.Should().BeTrue();
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021").Value!;
         processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"), null, [modalidade]).Value!])
+            Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"), null, [modalidade]).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"), 1, []).Value!).IsSuccess.Should().BeTrue();
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"), 1, []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
 

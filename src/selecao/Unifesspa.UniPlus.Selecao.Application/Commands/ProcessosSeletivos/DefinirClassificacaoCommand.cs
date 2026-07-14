@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Kernel.Results;
+using Domain.ValueObjects;
 
 /// <summary>
 /// Item de entrada de uma regra de eliminação, usado por
@@ -37,4 +38,5 @@ public sealed record DefinirClassificacaoCommand(
     string RegraOrdemAlocacaoCodigo,
     string RegraOrdemAlocacaoVersao,
     int NOpcoesAlocacao,
-    IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao) : ICommand<Result>;
+    IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

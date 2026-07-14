@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Canonicalization;
 using Domain.Interfaces;
@@ -57,6 +58,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
         services.AddScoped<IDocumentoEditalRepository, DocumentoEditalRepository>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
+        services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();
         services.AddScoped<IGovBrAuthService, GovBrAuthService>();
 
         // Storage de documento do Edital (Story #759, T3 #784) — envolve o

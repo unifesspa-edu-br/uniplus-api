@@ -10,11 +10,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Application.Commands.ProcessosSeletivos;
 using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
+using Http;
 
 /// <summary>
 /// Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015): o
@@ -123,15 +126,21 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
     public async Task<IActionResult> DefinirEtapas(
         Guid id,
         [FromBody] IReadOnlyList<EtapaProcessoInput> etapas,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        Result resultado = await _commandBus.Send(new DefinirEtapasCommand(id, etapas), cancellationToken);
-        if (resultado.IsSuccess)
-            return NoContent();
-        return resultado.ToActionResult(_mapper);
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirEtapasCommand(id, etapas, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
     }
 
     /// <summary>
@@ -145,19 +154,24 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
     public async Task<IActionResult> DefinirOfertaAtendimento(
         Guid id,
         [FromBody] DefinirOfertaAtendimentoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Result resultado = await _commandBus.Send(
-            new DefinirOfertaAtendimentoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds),
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirOfertaAtendimentoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds, precondicao),
             cancellationToken);
-        if (resultado.IsSuccess)
-            return NoContent();
-        return resultado.ToActionResult(_mapper);
+        return ResponderMutacao(resultado);
     }
 
     /// <summary>
@@ -172,15 +186,21 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
     public async Task<IActionResult> DefinirDistribuicaoVagas(
         Guid id,
         [FromBody] IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> distribuicaoVagas,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        Result resultado = await _commandBus.Send(new DefinirDistribuicaoVagasCommand(id, distribuicaoVagas), cancellationToken);
-        if (resultado.IsSuccess)
-            return NoContent();
-        return resultado.ToActionResult(_mapper);
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirDistribuicaoVagasCommand(id, distribuicaoVagas, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
     }
 
     /// <summary>
@@ -194,15 +214,21 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
     public async Task<IActionResult> DefinirCriteriosDesempate(
         Guid id,
         [FromBody] IReadOnlyList<CriterioDesempateInput> criterios,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        Result resultado = await _commandBus.Send(new DefinirCriteriosDesempateCommand(id, criterios), cancellationToken);
-        if (resultado.IsSuccess)
-            return NoContent();
-        return resultado.ToActionResult(_mapper);
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirCriteriosDesempateCommand(id, criterios, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
     }
 
     /// <summary>
@@ -216,19 +242,24 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
     public async Task<IActionResult> DefinirBonusRegional(
         Guid id,
         [FromBody] DefinirBonusRegionalRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Result resultado = await _commandBus.Send(
-            new DefinirBonusRegionalCommand(id, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.MunicipioConvenio, request.BaseLegal),
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirBonusRegionalCommand(id, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.MunicipioConvenio, request.BaseLegal, precondicao),
             cancellationToken);
-        if (resultado.IsSuccess)
-            return NoContent();
-        return resultado.ToActionResult(_mapper);
+        return ResponderMutacao(resultado);
     }
 
     /// <summary>
@@ -243,14 +274,21 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
     public async Task<IActionResult> DefinirClassificacao(
         Guid id,
         [FromBody] DefinirClassificacaoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Result resultado = await _commandBus.Send(
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirClassificacaoCommand(
                 id,
                 request.RegraCalculoCodigo,
@@ -261,11 +299,10 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.RegraOrdemAlocacaoCodigo,
                 request.RegraOrdemAlocacaoVersao,
                 request.NOpcoesAlocacao,
-                request.RegrasEliminacao),
+                request.RegrasEliminacao,
+                precondicao),
             cancellationToken);
-        if (resultado.IsSuccess)
-            return NoContent();
-        return resultado.ToActionResult(_mapper);
+        return ResponderMutacao(resultado);
     }
 
     /// <summary>
@@ -366,6 +403,103 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Abre a <b>sessão editorial</b> de retificação (ADR-0110 D3): o certame publicado
+    /// volta a aceitar os seis <c>Definir*</c>, <b>sem</b> mudar de status e <b>sem</b>
+    /// congelar nada. A versão nova nasce só no fechamento.
+    /// </summary>
+    /// <remarks>
+    /// Devolve o <c>ETag</c> da sessão recém-criada — o cliente já sai apto a mutar, sem um
+    /// <c>GET</c> no meio.
+    /// </remarks>
+    [HttpPost("{id:guid}/retificacao-em-curso")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(typeof(RetificacaoEmCursoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [EmiteETag]
+    public async Task<IActionResult> AbrirRetificacao(
+        Guid id,
+        [FromBody] AbrirRetificacaoRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result<RetificacaoEmCursoDto> resultado = await _commandBus.Send(
+            new AbrirRetificacaoCommand(id, request.Motivo), cancellationToken);
+
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        RetificacaoEmCursoDto rascunho = resultado.Value!;
+        Response.Headers.ETag = rascunho.ETag;
+        return CreatedAtAction(nameof(ObterRetificacaoEmCurso), new { id }, rascunho);
+    }
+
+    /// <summary>
+    /// Consulta a sessão editorial em curso — é por aqui que o cliente <b>relê o ETag</b>
+    /// depois de um 412.
+    /// </summary>
+    [HttpGet("{id:guid}/retificacao-em-curso")]
+    [VendorMediaType(Resource = "retificacao-em-curso", Versions = [1])]
+    [ProducesResponseType(typeof(RetificacaoEmCursoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [EmiteETag]
+    public async Task<IActionResult> ObterRetificacaoEmCurso(Guid id, CancellationToken cancellationToken)
+    {
+        RetificacaoEmCursoDto? rascunho = await _queryBus
+            .Send(new ObterRetificacaoEmCursoQuery(id), cancellationToken)
+            .ConfigureAwait(false);
+        if (rascunho is null)
+        {
+            return NotFound();
+        }
+
+        Response.Headers.ETag = rascunho.ETag;
+        return Ok(rascunho);
+    }
+
+    /// <summary>
+    /// Altera o motivo da sessão editorial em curso — mutação como qualquer outra: exige a
+    /// precondição e devolve o <c>ETag</c> novo.
+    /// </summary>
+    /// <remarks>
+    /// Aqui o <c>If-Match</c> é <b>sempre</b> obrigatório, e não condicional como nos seis
+    /// <c>Definir*</c>: esta rota só existe <b>para</b> a sessão. Um cliente que a chama sem
+    /// precondição cometeu falha de protocolo, e recebe <b>428</b> — antes mesmo de o
+    /// servidor conferir se há sessão (ADR-0110 D9, precedência "3 antes de 10").
+    /// </remarks>
+    [HttpPut("{id:guid}/retificacao-em-curso")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    [PrecondicaoObrigatoria]
+    public async Task<IActionResult> AlterarMotivoRetificacao(
+        Guid id,
+        [FromBody] AlterarMotivoRetificacaoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new AlterarMotivoRetificacaoCommand(id, request.Motivo, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Consulta a conformidade estrutural do processo (CA-07): checklist com
     /// cada item obrigatório marcado ok/pendente, sem alterar o processo.
     /// </summary>
@@ -402,6 +536,51 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(ato);
         return new DadosDoAto(ato.Orgao, ato.Serie, ato.Ano, ato.DataPublicacao, ato.Assinante, ato.TipoAtoCodigo);
+    }
+
+    /// <summary>
+    /// Decodifica o <c>If-Match</c> — <b>só a sintaxe</b> (ADR-0110 D5). Se ele é
+    /// <b>obrigatório</b>, e se ele <b>casa</b>, quem decide é o handler, sob o lock: a
+    /// obrigatoriedade depende de haver sessão editorial aberta, e o transporte não carrega
+    /// o agregado.
+    /// </summary>
+    private bool TentarLerPrecondicao(string? ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada)
+    {
+        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
+        if (analise.IsFailure)
+        {
+            precondicao = PrecondicaoIfMatch.Ausente;
+            malformada = analise.ToActionResult(_mapper);
+            return false;
+        }
+
+        precondicao = analise.Value!;
+        malformada = null;
+        return true;
+    }
+
+    /// <summary>
+    /// 204 com o <c>ETag</c> <b>novo</b> quando a mutação correu sob sessão editorial; 204
+    /// nu quando o processo está em rascunho (não há sessão, não há tag).
+    /// </summary>
+    /// <remarks>
+    /// Devolver o tag novo é o que permite ao cliente encadear a próxima edição sem um
+    /// <c>GET</c> no meio — a revisão acabou de ser incrementada, e o tag que ele tinha em
+    /// mãos já não vale.
+    /// </remarks>
+    private IActionResult ResponderMutacao(Result<MutacaoAceita> resultado)
+    {
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        if (resultado.Value!.ETag is { } etag)
+        {
+            Response.Headers.ETag = etag;
+        }
+
+        return NoContent();
     }
 
     [HttpGet("{id:guid}/snapshot-vigente")]
@@ -461,6 +640,18 @@ public sealed record DadosDoAtoRequest(
     DateOnly DataPublicacao,
     string Assinante,
     string TipoAtoCodigo);
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.AbrirRetificacao"/> — só o motivo. A
+/// versão que a sessão retifica <b>não</b> é informada pelo cliente: o servidor a infere do
+/// topo da cadeia (ADR-0101), sob o mesmo lock que abre o rascunho.
+/// </summary>
+public sealed record AbrirRetificacaoRequest(string Motivo);
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.AlterarMotivoRetificacao"/>.
+/// </summary>
+public sealed record AlterarMotivoRetificacaoRequest(string Motivo);
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoController.DefinirOfertaAtendimento"/>

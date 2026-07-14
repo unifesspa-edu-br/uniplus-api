@@ -96,6 +96,13 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<VersaoConfiguracao> VersoesConfiguracao => Set<VersaoConfiguracao>();
 
     /// <summary>
+    /// Sessões editoriais de retificação em curso (ADR-0110 D3) — filha 1:1 do agregado,
+    /// exposta como DbSet para consultas e asserções de teste; a escrita passa sempre pela
+    /// raiz. É <b>efêmera</b>: apagada no fechamento e no descarte, sem histórico.
+    /// </summary>
+    public DbSet<RascunhoRetificacao> RascunhosRetificacao => Set<RascunhoRetificacao>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do agregado
     /// para permitir gravação adjacente no outbox; entries cifradas at-rest
     /// via <c>IUniPlusEncryptionService</c>.

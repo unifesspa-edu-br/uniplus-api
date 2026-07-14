@@ -50,7 +50,7 @@ public sealed class ProcessoSeletivoTests
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1),
             EtapaProcesso.Criar("Redação", CaraterEtapa.Ambas, peso: 2m, notaMinima: 5m, ordem: 2),
             EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, ordem: 3),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
         // Só as etapas que pontuam (classificatória/ambas, com peso) entram
@@ -67,7 +67,7 @@ public sealed class ProcessoSeletivoTests
         [
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m, ordem: 1),
             EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 2m, ordem: 1),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemEtapaDuplicada");
@@ -81,7 +81,7 @@ public sealed class ProcessoSeletivoTests
         Result result = processo.DefinirEtapas(
         [
             EtapaProcesso.Criar("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, ordem: 1),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
@@ -95,7 +95,7 @@ public sealed class ProcessoSeletivoTests
         Result result = processo.DefinirEtapas(
         [
             EtapaProcesso.Criar("Análise de histórico", CaraterEtapa.Classificatoria, peso: null, ordem: 1),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
@@ -105,9 +105,9 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_Substitui()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 3m)], PrecondicaoIfMatch.Ausente);
 
-        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Ambas, peso: 1m)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Ambas, peso: 1m)], PrecondicaoIfMatch.Ausente);
 
         processo.Etapas.Should().HaveCount(1);
         processo.Etapas.Single().Nome.Should().Be("Entrevista");
@@ -196,7 +196,7 @@ public sealed class ProcessoSeletivoTests
             recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "Prova ampliada")],
             tiposDeficiencia: []).Value!;
 
-        Result result = processo.DefinirOfertaAtendimento(oferta);
+        Result result = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
         processo.OfertaAtendimento.Should().NotBeNull();
@@ -224,7 +224,7 @@ public sealed class ProcessoSeletivoTests
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoDistribuicaoVagas configuracao = NovaDistribuicao(Guid.CreateVersion7());
 
-        Result result = processo.DefinirDistribuicaoVagas([configuracao]);
+        Result result = processo.DefinirDistribuicaoVagas([configuracao], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
         processo.DistribuicaoVagas.Should().ContainSingle();
@@ -236,7 +236,7 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirDistribuicaoVagas([]);
+        Result result = processo.DefinirDistribuicaoVagas([], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia");
@@ -252,7 +252,7 @@ public sealed class ProcessoSeletivoTests
         [
             NovaDistribuicao(ofertaCursoId),
             NovaDistribuicao(ofertaCursoId),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OfertaCursoDuplicada");
@@ -269,11 +269,11 @@ public sealed class ProcessoSeletivoTests
             ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
             1.20m, null, "Marabá", "RN05").Value!;
 
-        processo.DefinirBonusRegional(bonus).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().NotBeNull();
         processo.BonusRegional!.ProcessoSeletivoId.Should().Be(processo.Id);
 
-        processo.DefinirBonusRegional(null).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().BeNull();
     }
 
@@ -284,7 +284,7 @@ public sealed class ProcessoSeletivoTests
         CriterioDesempate idoso = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(60)).Value!;
         CriterioDesempate maiorIdade = CriterioDesempate.Criar(2, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
 
-        Result result = processo.DefinirCriteriosDesempate([idoso, maiorIdade]);
+        Result result = processo.DefinirCriteriosDesempate([idoso, maiorIdade], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().HaveCount(2);
@@ -296,9 +296,9 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         CriterioDesempate maiorIdade = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
-        processo.DefinirCriteriosDesempate([maiorIdade]);
+        processo.DefinirCriteriosDesempate([maiorIdade], PrecondicaoIfMatch.Ausente);
 
-        Result result = processo.DefinirCriteriosDesempate([]);
+        Result result = processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().BeEmpty();
@@ -311,7 +311,7 @@ public sealed class ProcessoSeletivoTests
         CriterioDesempate a = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
         CriterioDesempate b = CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(60)).Value!;
 
-        Result result = processo.DefinirCriteriosDesempate([a, b]);
+        Result result = processo.DefinirCriteriosDesempate([a, b], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemDesempateDuplicada");
@@ -322,12 +322,12 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
             1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!;
 
-        Result result = processo.DefinirCriteriosDesempate([criterio]);
+        Result result = processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -336,12 +336,12 @@ public sealed class ProcessoSeletivoTests
     public void DefinirCriteriosDesempate_EtapaRefInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
             1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
 
-        Result result = processo.DefinirCriteriosDesempate([criterio]);
+        Result result = processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
@@ -352,16 +352,16 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([redacao]);
+        processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
             1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(redacao.Id)).Value!;
-        processo.DefinirCriteriosDesempate([criterio]);
+        processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
 
         // Troca as etapas por uma completamente nova — a antiga (referenciada
         // pelo desempate) desaparece do conjunto.
         Result result = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorDesempate");
@@ -374,11 +374,11 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([redacao]);
+        processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate criterio = CriterioDesempate.Criar(
             1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(redacao.Id)).Value!;
-        processo.DefinirCriteriosDesempate([criterio]);
+        processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente);
 
         // Redefine as etapas incluindo a MESMA instância (mesmo Id) — não deve
         // ser bloqueado, já que o desempate continua executável.
@@ -386,7 +386,7 @@ public sealed class ProcessoSeletivoTests
         [
             redacao,
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 2m, ordem: 2),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -405,7 +405,7 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao());
+        Result result = processo.DefinirClassificacao(NovaClassificacao(), PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
         processo.Classificacao.Should().NotBeNull();
@@ -417,13 +417,13 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
             new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -433,15 +433,15 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
             new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
-        processo.DefinirClassificacao(NovaClassificacao([eliminacao])).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorClassificacao");
@@ -452,14 +452,14 @@ public sealed class ProcessoSeletivoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
             new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
-        processo.DefinirClassificacao(NovaClassificacao([eliminacao])).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirEtapas([etapa]);
+        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -468,13 +468,13 @@ public sealed class ProcessoSeletivoTests
     public void DefinirClassificacao_EtapaRefEliminacaoInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
             new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!;
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
@@ -489,7 +489,7 @@ public sealed class ProcessoSeletivoTests
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
             new ArgsElimCorteRedacao(400m)).Value!;
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem");
@@ -504,7 +504,7 @@ public sealed class ProcessoSeletivoTests
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
             new ArgsElimCorteRedacao(400m)).Value!;
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]));
+        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -513,7 +513,7 @@ public sealed class ProcessoSeletivoTests
     public void ConcorrenciaDuplaAplicavel_SemCotaReservada_Falsa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirDistribuicaoVagas([NovaDistribuicao(Guid.CreateVersion7())]);
+        processo.DefinirDistribuicaoVagas([NovaDistribuicao(Guid.CreateVersion7())], PrecondicaoIfMatch.Ausente);
 
         processo.ConcorrenciaDuplaAplicavel().Should().BeFalse();
     }
@@ -539,7 +539,7 @@ public sealed class ProcessoSeletivoTests
             ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('f', 64)).Value!,
             referenciaDemografica: null, [ampla, cotaReservada]).Value!;
 
-        processo.DefinirDistribuicaoVagas([distribuicao]);
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente);
 
         processo.ConcorrenciaDuplaAplicavel().Should().BeTrue();
     }

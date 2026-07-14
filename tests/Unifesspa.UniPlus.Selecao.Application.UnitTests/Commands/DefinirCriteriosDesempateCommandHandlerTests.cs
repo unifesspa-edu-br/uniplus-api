@@ -31,7 +31,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
+        repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
         return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), Substitute.For<ISelecaoUnitOfWork>());
     }
 
@@ -39,9 +39,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirCriteriosDesempateCommand command = new(Guid.CreateVersion7(), []);
+        DefinirCriteriosDesempateCommand command = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -53,16 +53,16 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
         EtapaProcesso etapa = EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
-        processo.DefinirEtapas([etapa]);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.MaiorNotaEtapa, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaEtapa, TipoRegra.CriterioDesempate));
 
         DefinirCriteriosDesempateCommand command = new(
-            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorNotaEtapa, "v1", etapa.Id, null, null, null, null)]);
+            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorNotaEtapa, "v1", etapa.Id, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -80,9 +80,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             .Returns(Regra(CriterioDesempateCodigo.MaiorNotaEtapa, TipoRegra.CriterioDesempate));
 
         DefinirCriteriosDesempateCommand command = new(
-            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorNotaEtapa, "v1", null, null, null, null, null)]);
+            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorNotaEtapa, "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -98,9 +98,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             .Returns(Regra(CriterioDesempateCodigo.Idoso, TipoRegra.CriterioDesempate));
 
         DefinirCriteriosDesempateCommand command = new(
-            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.Idoso, "v1", null, 60, null, null, null)]);
+            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.Idoso, "v1", null, 60, null, null, null)], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -116,9 +116,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             .Returns(Regra(CriterioDesempateCodigo.PredicadoFato, TipoRegra.CriterioDesempate));
 
         DefinirCriteriosDesempateCommand command = new(
-            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.PredicadoFato, "v1", null, null, "PROFESSOR_RURAL", null, null)]);
+            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.PredicadoFato, "v1", null, null, "PROFESSOR_RURAL", null, null)], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -134,9 +134,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             .Returns((RegraCatalogo?)null);
 
         DefinirCriteriosDesempateCommand command = new(
-            processo.Id, [new CriterioDesempateInput(1, "INEXISTENTE", "v1", null, null, null, null, null)]);
+            processo.Id, [new CriterioDesempateInput(1, "INEXISTENTE", "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -152,9 +152,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             .Returns(Regra(CriterioDesempateCodigo.MaiorIdade, TipoRegra.RegraCalculo));
 
         DefinirCriteriosDesempateCommand command = new(
-            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorIdade, "v1", null, null, null, null, null)]);
+            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorIdade, "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -167,9 +167,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        DefinirCriteriosDesempateCommand command = new(processo.Id, []);
+        DefinirCriteriosDesempateCommand command = new(processo.Id, [], PrecondicaoIfMatch.Ausente);
 
-        Result result = await DefinirCriteriosDesempateCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();

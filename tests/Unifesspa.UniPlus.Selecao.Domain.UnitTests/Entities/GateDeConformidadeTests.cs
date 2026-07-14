@@ -31,10 +31,10 @@ public sealed class GateDeConformidadeTests
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas([
             ConfiguracaoDistribuicaoVagas.Criar(
@@ -59,7 +59,7 @@ public sealed class GateDeConformidadeTests
                         acaoQuandoIndeferido: null,
                         baseLegal: "Res. Unifesspa 532/2021").Value!,
                 ]).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
@@ -67,7 +67,7 @@ public sealed class GateDeConformidadeTests
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!).IsSuccess.Should().BeTrue();
+            regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

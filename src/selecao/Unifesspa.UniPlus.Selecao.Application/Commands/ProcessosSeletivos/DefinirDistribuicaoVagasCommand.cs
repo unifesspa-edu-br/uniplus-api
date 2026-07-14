@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Kernel.Results;
+using Domain.ValueObjects;
 
 /// <summary>
 /// Item de entrada de uma distribuição de vagas por oferta, usado por
@@ -29,4 +30,5 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
 /// </summary>
 public sealed record DefinirDistribuicaoVagasCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> DistribuicaoVagas) : ICommand<Result>;
+    IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> DistribuicaoVagas,
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

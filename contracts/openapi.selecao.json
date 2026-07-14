@@ -1106,6 +1106,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -1149,7 +1156,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1173,6 +1188,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1201,6 +1236,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -1235,7 +1277,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1259,6 +1309,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1287,6 +1357,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -1330,7 +1407,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1354,6 +1439,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1382,6 +1487,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -1425,7 +1537,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1449,6 +1569,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1477,6 +1617,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -1511,7 +1658,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1535,6 +1690,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1563,6 +1738,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -1597,7 +1779,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1621,6 +1811,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1785,6 +1995,314 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/retificacao-em-curso": {
+      "post": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbrirRetificacaoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbrirRetificacaoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AbrirRetificacaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      },
+      "get": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Precondi\u00E7\u00E3o de concorr\u00EAncia (RFC 9110 \u00A713.1.1) \u2014 o ETag da sess\u00E3o editorial em curso. OBRIGAT\u00D3RIO nesta rota: ela existe para a sess\u00E3o, e sem a precondi\u00E7\u00E3o responde 428. Compara\u00E7\u00E3o FORTE: uma weak tag (W/\u0022...\u0022) nunca casa, e produz 412.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarMotivoRetificacaoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarMotivoRetificacaoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarMotivoRetificacaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/conformidade": {
       "get": {
         "tags": [
@@ -1926,6 +2444,28 @@
   },
   "components": {
     "schemas": {
+      "AbrirRetificacaoRequest": {
+        "required": [
+          "motivo"
+        ],
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string"
+          }
+        }
+      },
+      "AlterarMotivoRetificacaoRequest": {
+        "required": [
+          "motivo"
+        ],
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string"
+          }
+        }
+      },
       "AtualizarObrigatoriedadeLegalCommand": {
         "required": [
           "id",
@@ -3653,6 +4193,63 @@
               "string"
             ],
             "format": "double"
+          }
+        }
+      },
+      "RetificacaoEmCursoDto": {
+        "required": [
+          "id",
+          "processoSeletivoId",
+          "motivo",
+          "versaoBaseId",
+          "numeroVersaoBase",
+          "abertoEm",
+          "abertoPorSub",
+          "revisao",
+          "eTag"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "processoSeletivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "versaoBaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroVersaoBase": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "abertoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "abertoPorSub": {
+            "type": "string"
+          },
+          "revisao": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "eTag": {
+            "type": "string"
           }
         }
       },

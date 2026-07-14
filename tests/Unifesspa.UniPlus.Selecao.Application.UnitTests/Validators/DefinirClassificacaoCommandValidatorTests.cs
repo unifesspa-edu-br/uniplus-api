@@ -6,12 +6,13 @@ using FluentValidation.Results;
 
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirClassificacaoCommandValidatorTests
 {
     private static DefinirClassificacaoCommand ComandoValido(IReadOnlyList<RegraEliminacaoInput> regrasEliminacao) => new(
         Guid.CreateVersion7(), "FORMULA-MEDIA-PONDERADA", "v1", "PRECISAO-TRUNCAR", "v1", 2,
-        "ALOCACAO-OPCOES-RN04", "v1", 1, regrasEliminacao);
+        "ALOCACAO-OPCOES-RN04", "v1", 1, regrasEliminacao, PrecondicaoIfMatch.Ausente);
 
     [Fact(DisplayName = "Validator passa com comando válido e lista de eliminação vazia")]
     public void Aceita_ComandoValido()

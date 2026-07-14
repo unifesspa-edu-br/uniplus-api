@@ -42,7 +42,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     public async Task PersisteERecarrega_Lei12711ComDemografica()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", new string('a', 64)).Value!;
         ReferenciaReservaDemograficaSnapshot demografica = ReferenciaReservaDemograficaSnapshot.Criar(
@@ -62,7 +62,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase: 50, pr: 0.5m, regra, demografica, modalidades);
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([configResult.Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([configResult.Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -101,14 +101,14 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     public async Task PersisteERecarrega_InstitucionalSemDemografica()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
         Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, referenciaDemografica: null,
             [NovaModalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal)]);
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([configResult.Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([configResult.Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -132,14 +132,14 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     public async Task ReconfigurarDistribuicaoSobreAgregadoTracked_InsereFilhos()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSE Campo", TipoProcesso.PSECampo);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)]);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('c', 64)).Value!;
         Guid ofertaCursoId = Guid.CreateVersion7();
         ConfiguracaoDistribuicaoVagas original = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase: 40, pr: 1m, regra, null,
             [NovaModalidade("QUIL", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal)]).Value!;
-        processo.DefinirDistribuicaoVagas([original]).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([original], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -160,7 +160,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
                     NovaModalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal),
                 ]).Value!;
 
-            Result result = carregado.DefinirDistribuicaoVagas([nova]);
+            Result result = carregado.DefinirDistribuicaoVagas([nova], PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);

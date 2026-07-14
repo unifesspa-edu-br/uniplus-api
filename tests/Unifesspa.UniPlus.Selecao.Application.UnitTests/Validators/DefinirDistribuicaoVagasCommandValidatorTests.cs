@@ -6,6 +6,7 @@ using FluentValidation.Results;
 
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirDistribuicaoVagasCommandValidatorTests
 {
@@ -17,7 +18,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     [Fact(DisplayName = "Command válido não gera erros")]
     public void Validar_Valido_SemErros()
     {
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [ItemValido()]);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [ItemValido()], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -27,7 +28,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     [Fact(DisplayName = "Lista de distribuição vazia gera erro")]
     public void Validar_ListaVazia_GeraErro()
     {
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), []);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -40,7 +41,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     public void Validar_VoBaseInvalido_GeraErro(int voBase)
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { VoBase = voBase };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -53,7 +54,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     public void Validar_PrForaDoLimite_GeraErro(double pr)
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Pr = (decimal)pr };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -64,7 +65,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     public void Validar_ModalidadeIdsVazio_GeraErro()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { ModalidadeIds = [] };
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item]);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 
@@ -74,7 +75,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     [Fact(DisplayName = "Item nulo na lista gera erro, sem lançar exceção")]
     public void Validar_ItemNulo_GeraErro()
     {
-        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [null!]);
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [null!], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
 

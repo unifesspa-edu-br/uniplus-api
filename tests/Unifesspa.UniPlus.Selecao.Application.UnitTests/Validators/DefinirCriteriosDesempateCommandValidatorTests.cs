@@ -6,6 +6,7 @@ using FluentValidation.Results;
 
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirCriteriosDesempateCommandValidatorTests
 {
@@ -13,7 +14,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
     public void Aceita_ListaVazia()
     {
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator()
-            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), []));
+            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -22,7 +23,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
     public void Rejeita_CriteriosNulo()
     {
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator()
-            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), null!));
+            .Validate(new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), null!, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Criterios");
@@ -34,7 +35,7 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator().Validate(
             new DefinirCriteriosDesempateCommand(
                 Guid.CreateVersion7(),
-                [new CriterioDesempateInput(0, "DESEMPATE-MAIOR-IDADE", "v1", null, null, null, null, null)]));
+                [new CriterioDesempateInput(0, "DESEMPATE-MAIOR-IDADE", "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Criterios[0].Ordem");

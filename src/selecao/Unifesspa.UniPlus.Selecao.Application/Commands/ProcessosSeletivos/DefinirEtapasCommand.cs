@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Domain.Enums;
 using Kernel.Results;
+using Domain.ValueObjects;
 
 /// <summary>
 /// Item de entrada de uma etapa pontuada, usado por
@@ -28,4 +29,5 @@ public sealed record EtapaProcessoInput(
 /// </summary>
 public sealed record DefinirEtapasCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<EtapaProcessoInput> Etapas) : ICommand<Result>;
+    IReadOnlyList<EtapaProcessoInput> Etapas,
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

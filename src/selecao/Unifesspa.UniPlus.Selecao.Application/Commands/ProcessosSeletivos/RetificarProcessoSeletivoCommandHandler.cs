@@ -42,7 +42,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterComConfiguracaoAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         if (processo is null)
         {

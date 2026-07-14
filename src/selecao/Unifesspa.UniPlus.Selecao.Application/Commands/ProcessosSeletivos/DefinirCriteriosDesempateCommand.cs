@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Kernel.Results;
+using Domain.ValueObjects;
 
 /// <summary>
 /// Item de entrada de um critério de desempate, usado por
@@ -33,4 +34,5 @@ public sealed record CriterioDesempateInput(
 /// </summary>
 public sealed record DefinirCriteriosDesempateCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<CriterioDesempateInput> Criterios) : ICommand<Result>;
+    IReadOnlyList<CriterioDesempateInput> Criterios,
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

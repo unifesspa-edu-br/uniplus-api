@@ -21,9 +21,9 @@ internal static class CorpusFitness
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         processo.DefinirDistribuicaoVagas([
             ConfiguracaoDistribuicaoVagas.Criar(
@@ -39,7 +39,7 @@ internal static class CorpusFitness
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                         [], null, "Res. Unifesspa 532/2021").Value!,
                 ]).Value!,
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
@@ -47,7 +47,7 @@ internal static class CorpusFitness
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!);
+            regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente);
 
         DadosEdital dados = DadosEdital.Criar(
             numero: "001/2026",

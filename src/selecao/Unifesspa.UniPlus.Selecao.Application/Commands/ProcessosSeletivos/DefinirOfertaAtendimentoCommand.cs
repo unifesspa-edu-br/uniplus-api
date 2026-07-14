@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Kernel.Results;
+using Domain.ValueObjects;
 
 /// <summary>
 /// Define (ou substitui) a oferta de atendimento especializado do processo
@@ -14,4 +15,5 @@ public sealed record DefinirOfertaAtendimentoCommand(
     Guid ProcessoSeletivoId,
     IReadOnlyList<Guid> CondicaoIds,
     IReadOnlyList<Guid> RecursoIds,
-    IReadOnlyList<Guid> TipoDeficienciaIds) : ICommand<Result>;
+    IReadOnlyList<Guid> TipoDeficienciaIds,
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
