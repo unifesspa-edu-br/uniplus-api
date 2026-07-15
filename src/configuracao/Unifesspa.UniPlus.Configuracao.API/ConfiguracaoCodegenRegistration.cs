@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.API;
 using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 
 using Wolverine;
 
@@ -37,5 +38,11 @@ public static class ConfiguracaoCodegenRegistration
         ArgumentNullException.ThrowIfNull(opts);
 
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IConfiguracaoUnitOfWork>();
+
+        // O leitor do catálogo de fatos é injetado no handler de query e sua
+        // implementação é internal — o codegen do Wolverine não a instancia
+        // diretamente, então o service location é o opt-in sancionado (ADR-0098),
+        // mesmo mecanismo dos readers cross-módulo consumidos pela Seleção.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
     }
 }
