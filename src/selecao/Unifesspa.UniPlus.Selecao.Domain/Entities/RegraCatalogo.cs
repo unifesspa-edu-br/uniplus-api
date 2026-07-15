@@ -21,9 +21,19 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// as regras são semeadas (governadas por código) e a versão de uma regra é
 /// <em>imutável</em> — corrigir/evoluir o comportamento é publicar uma nova
 /// versão, nunca mutar a existente. Por isso a entidade deriva de
-/// <see cref="EntityBase"/> puro (sem soft-delete) e a imutabilidade é imposta
-/// no banco por gatilho <c>BEFORE UPDATE OR DELETE</c>; a própria linhagem de
-/// versões é a trilha de auditoria (sem histórico forense adicional).
+/// <see cref="EntityBase"/> puro (sem soft-delete). O append-only é imposto por
+/// <em>convenção</em> — ausência de API de mutação, leitura por
+/// <c>IRegraCatalogoReader</c> e fitness test —, não por gatilho de banco: não
+/// há <c>trigger</c> sobre <c>rol_de_regras</c> em migration alguma. A própria
+/// linhagem de versões é a trilha de auditoria (sem histórico forense adicional).
+/// </para>
+/// <para>
+/// <strong>Fronteira da correção do seed (ADR-0112).</strong> Enquanto nenhuma
+/// configuração congelada (<see cref="VersaoConfiguracao"/>) referenciar uma
+/// linha por <c>(codigo, versao)</c>, essa linha ainda é vocabulário de seed e
+/// pode ser corrigida por substituição. A partir do primeiro congelamento que a
+/// referencia, ela vira fato e vale append-only estrito (RN08) — o passado não
+/// se muta. A verificação é mecânica, contra o conjunto de versões congeladas.
 /// </para>
 /// <para>
 /// <strong>Hash content-addressable.</strong> O <see cref="Hash"/> é o SHA-256
