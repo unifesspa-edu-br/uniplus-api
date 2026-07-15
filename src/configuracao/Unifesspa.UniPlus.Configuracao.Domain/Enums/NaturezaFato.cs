@@ -15,9 +15,9 @@ public enum NaturezaFato
     /// <summary>Respondido pelo candidato (PCD, COR_RACA, RENDA_PER_CAPITA).</summary>
     BrutoInformado,
 
-    /// <summary>Declaração de desejo, não de elegibilidade (ex.: optar por concorrer numa cota).</summary>
+    /// <summary>Declaração de desejo, não de elegibilidade — uma opção ou aceite manifestado pelo candidato, que não afirma um fato apurável.</summary>
     DeVontade,
 
-    /// <summary>Computado pelo motor — não é coletado, é saída (ex.: modalidade derivada, cotista).</summary>
+    /// <summary>Computado pelo motor — não é coletado, é saída (ex.: a condição de cotista, derivada da renda e das cotas).</summary>
     Derivado,
 }

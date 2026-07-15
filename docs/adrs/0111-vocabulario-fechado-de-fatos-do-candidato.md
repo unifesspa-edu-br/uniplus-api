@@ -89,7 +89,7 @@ deliberadamente, o oposto ("quando a lei muda, edita o catálogo — sem deploy"
 catálogo editável por administrador. O vocabulário de fatos diverge nesse ponto de
 propósito: um fato editável por tela nasceria inoperante.
 
-**Como versiona.** `Codigo`, `Dominio` e `Natureza` (quando categórico) são
+**Como versiona.** `Codigo`, `Dominio`, `Natureza` e `Cardinalidade` são
 **imutáveis desde a semeadura** — só o código entra, por valor, num predicado
 congelado (RN08); se o domínio de um código existente mudasse, um predicado antigo
 seria reinterpretado com outra semântica (a classe de risco que a ADR-0073 já
@@ -102,10 +102,30 @@ não uma regra executável — uma mudança incompatível é um **código novo**
 `RENDA_PER_CAPITA_V2`), não uma nova versão do mesmo código.
 
 **Domínios (enum fixado por esta ADR): três** — `Categorico`, `Booleano`,
-`Numerico`. Um fato categórico declara sua **Natureza**: `Estatico` (a lista de
-valores vive no próprio catálogo) ou `Dinamico` (os valores válidos vêm de um
-cadastro vivo, nomeado). Não há um quarto domínio "texto": um fato sem domínio
-decidível não é avaliável por predicado.
+`Numerico`. Não há um quarto domínio "texto": um fato sem domínio decidível não é
+avaliável por predicado.
+
+Um fato categórico é **estático** ou de **escopo-processo**, e essa distinção não
+é um campo próprio — é a **nulidade de `ValoresDominio`**: quando o conjunto de
+valores vive no próprio catálogo (ex.: `COR_RACA`, `SEXO`), `ValoresDominio` os
+enumera; quando os valores válidos vêm da oferta congelada do próprio processo
+(ex.: `MODALIDADE`, `CONDICAO_ATENDIMENTO`), `ValoresDominio` é **nulo** e quem os
+resolve é o consumidor, contra o snapshot. Booleano e numérico têm `ValoresDominio`
+sempre nulo. O nulo é significante — nunca confundido com lista vazia (proibida).
+
+Ortogonais ao domínio, cada fato declara ainda dois eixos próprios, ambos
+imutáveis desde a semeadura:
+
+- **`Natureza`** (origem do dado): `BrutoInformado` (respondido pelo candidato),
+  `DeVontade` (opção ou aceite manifestado, não afirmação de elegibilidade) ou
+  `Derivado` (computado pelo motor). Sustenta a invariante — feita cumprir pelo
+  avaliador — de que um fato `Derivado` não é insumo de si mesmo nem de um gatilho
+  avaliado antes da etapa que o produz. Os nove fatos desta colheita são todos
+  `BrutoInformado`; o eixo existe para fatos futuros de outra origem.
+- **`Cardinalidade`**: `Escalar` (um único valor) ou `Multivalorado` (um
+  conjunto). Torna a semântica dos operadores decidível sem que o avaliador
+  conheça o catálogo por dentro (ver "Cardinalidade e átomo canônico do predicado",
+  abaixo).
 
 ### Matriz de compatibilidade operador × domínio
 
@@ -113,7 +133,7 @@ decidível não é avaliável por predicado.
 |---|---|---|
 | `Booleano` | `IGUAL` | escalar `sim`/`não` |
 | `Numerico` | `IGUAL`, `MAIOR_IGUAL`, `MENOR_IGUAL` | escalar **inteiro** — decimal é rejeitado |
-| `Categorico` (estático ou dinâmico) | `IGUAL`, `EM` | `IGUAL`: um código do domínio; `EM`: lista **não vazia** de códigos do domínio |
+| `Categorico` (estático ou de escopo-processo) | `IGUAL`, `EM` | `IGUAL`: um código do domínio; `EM`: lista **não vazia** de códigos do domínio |
 
 A restrição "numérico é inteiro, rejeita decimal" aplica-se ao **valor configurado
 no predicado** e evita comparação de ponto flutuante no avaliador. A resolução do
@@ -134,9 +154,11 @@ condição para que o desempate a honre por inteiro.
 
 ### Cardinalidade e átomo canônico do predicado
 
-Fatos categóricos estáticos são escalares. `MODALIDADE` e
-`CONDICAO_ATENDIMENTO`, contudo, são **multivalorados**: uma inscrição pode ter
-mais de uma modalidade ou mais de uma condição de atendimento. Para esses fatos,
+O campo `Cardinalidade` do catálogo registra se o fato é escalar ou
+multivalorado. Os categóricos estáticos, o booleano e o numérico são escalares.
+`MODALIDADE` e `CONDICAO_ATENDIMENTO`, contudo, são **multivalorados**: uma
+inscrição pode ter mais de uma modalidade ou mais de uma condição de atendimento.
+Para esses fatos,
 `IGUAL X` significa que `X` pertence ao conjunto de valores do candidato e
 `EM [X, Y, ...]` significa que a interseção entre os valores do candidato e a
 lista configurada não é vazia. A lista de `EM` nunca é vazia. Não há redução
@@ -152,21 +174,27 @@ migração, um consumidor que só aceite string não pode configurar `EM`.
 
 ### O vocabulário (nove fatos)
 
-| Código | Domínio | Natureza | Valores / fonte | Base legal / observação |
+Todos os nove são de `Natureza` `BrutoInformado`; a coluna abaixo mostra a
+`Cardinalidade`, e a distinção estático × escopo-processo aparece na coluna
+"Valores / fonte" (valores enumerados = estático; "fonte: cadastro vivo" =
+escopo-processo, `ValoresDominio` nulo).
+
+| Código | Domínio | Cardinalidade | Valores / fonte | Base legal / observação |
 |---|---|---|---|---|
-| `COR_RACA` | Categórico | Estático | `BRANCA`, `PRETA`, `PARDA`, `AMARELA`, `INDIGENA`, `NAO_INFORMADO` (quesito IBGE, autodeclaração) | `NAO_INFORMADO` representa a opção válida de não declarar; o subconjunto `{PRETA, PARDA}` é o sujeito à banca de heteroidentificação da autodeclaração (Lei 12.711/2012 art. 3º e resoluções da Unifesspa que disciplinam o procedimento) |
-| `QUILOMBOLA` | Booleano | — | sim/não (autodeclaração) | Lei 12.711/2012 art. 3º (red. Lei 14.723/2023) — categoria autodeclarada **distinta** de cor/raça |
-| `PCD` | Booleano | — | sim/não | Lei 12.711/2012 art. 3º (red. Lei 14.723/2023) c/c Lei 13.409/2016 |
-| `MODALIDADE` | Categórico | Dinâmico | fonte: `Modalidade.Codigo` (cadastro vivo, `Configuracao`) | Validado no instante de configuração contra os códigos vivos, via leitor cross-módulo |
-| `CONDICAO_ATENDIMENTO` | Categórico | Dinâmico | fonte: `CondicaoAtendimentoEspecializado.Codigo` | Inclui o código reservado `PCD` (ADR-0067) |
-| `RENDA_PER_CAPITA` | Numérico | — | limiar inteiro em **centavos de real**; valor do candidato preserva a razão `renda_familiar_centavos / numero_integrantes` | Lei 12.711/2012 art. 1º, § único (red. Lei 14.723/2023) — comparação exata em moeda (ver nota abaixo) |
-| `EGRESSO_ESCOLA_PUBLICA` | Booleano | — | sim/não | Lei 12.711/2012 art. 1º |
-| `FAIXA_ETARIA` | Numérico | — | inteiro; anos completos calculados contra `dataReferenciaFatos` congelada | Consumido pela regra `DESEMPATE-IDOSO` (Lei 10.741/2003 art. 27); nunca é calculado contra o relógio da execução |
-| `SEXO` | Categórico | Estático | `FEMININO`, `MASCULINO`, `INTERSEXO` | Fato ativo: habilita gatilhos condicionados ao sexo — ex.: exigir o documento de reservista apenas quando `SEXO = MASCULINO` (Lei 4.375/1964, Serviço Militar). Dado sensível — ver nota LGPD |
+| `COR_RACA` | Categórico | Escalar | `BRANCA`, `PRETA`, `PARDA`, `AMARELA`, `INDIGENA`, `NAO_INFORMADO` (quesito IBGE, autodeclaração) | `NAO_INFORMADO` representa a opção válida de não declarar; o subconjunto `{PRETA, PARDA}` é o sujeito à banca de heteroidentificação da autodeclaração (Lei 12.711/2012 art. 3º e resoluções da Unifesspa que disciplinam o procedimento) |
+| `QUILOMBOLA` | Booleano | Escalar | sim/não (autodeclaração) | Lei 12.711/2012 art. 3º (red. Lei 14.723/2023) — categoria autodeclarada **distinta** de cor/raça |
+| `PCD` | Booleano | Escalar | sim/não | Lei 12.711/2012 art. 3º (red. Lei 14.723/2023) c/c Lei 13.409/2016 |
+| `MODALIDADE` | Categórico | Multivalorado | fonte: `Modalidade.Codigo` (cadastro vivo, `Configuracao`) | Validado no instante de configuração contra os códigos vivos, via leitor cross-módulo |
+| `CONDICAO_ATENDIMENTO` | Categórico | Multivalorado | fonte: `CondicaoAtendimentoEspecializado.Codigo` | Inclui o código reservado `PCD` (ADR-0067) |
+| `RENDA_PER_CAPITA` | Numérico | Escalar | limiar inteiro em **centavos de real**; valor do candidato preserva a razão `renda_familiar_centavos / numero_integrantes` | Lei 12.711/2012 art. 1º, § único (red. Lei 14.723/2023) — comparação exata em moeda (ver nota abaixo) |
+| `EGRESSO_ESCOLA_PUBLICA` | Booleano | Escalar | sim/não | Lei 12.711/2012 art. 1º |
+| `FAIXA_ETARIA` | Numérico | Escalar | inteiro; anos completos calculados contra `dataReferenciaFatos` congelada | Consumido pela regra `DESEMPATE-IDOSO` (Lei 10.741/2003 art. 27); nunca é calculado contra o relógio da execução |
+| `SEXO` | Categórico | Escalar | `FEMININO`, `MASCULINO`, `INTERSEXO` | Fato ativo: habilita gatilhos condicionados ao sexo — ex.: exigir o documento de reservista apenas quando `SEXO = MASCULINO` (Lei 4.375/1964, Serviço Militar). Dado sensível — ver nota LGPD |
 
-### Fato de domínio dinâmico: validação no cadastro é de configuração; o predicado publicado congela o código
+### Fato categórico de escopo-processo: validação no cadastro é de configuração; o predicado publicado congela o código
 
-Os dois fatos de domínio dinâmico (`MODALIDADE`, `CONDICAO_ATENDIMENTO`) resolvem
+Os dois fatos categóricos de escopo-processo (`MODALIDADE`,
+`CONDICAO_ATENDIMENTO`) — aqueles cujo `ValoresDominio` é nulo — resolvem
 seus valores válidos a partir de cadastros vivos de `Configuracao`
 (`Modalidade.Codigo`, `CondicaoAtendimentoEspecializado.Codigo`), que **são
 editáveis** — códigos não reservados podem ser renomeados ou removidos. O domínio
@@ -320,9 +348,9 @@ os protege.
 
 - O seed do catálogo (story seguinte) materializa, linha a linha, as nove entradas
   desta ADR; um teste confere seed contra ADR.
-- A entidade `FatoCandidato` (story seguinte) não expõe mutação de
-  `Codigo`/`Dominio`/`Natureza`, e `ValoresDominio` é só-aditivo — coberto por
-  testes de unidade.
+- A entidade `FatoCandidato` não expõe mutação de
+  `Codigo`/`Dominio`/`Natureza`/`Cardinalidade`, e `ValoresDominio` é só-aditivo —
+  coberto por testes de unidade.
 - O validador de `PredicadoDnf` (story seguinte) aplica a matriz operador ×
   domínio desta ADR.
 
