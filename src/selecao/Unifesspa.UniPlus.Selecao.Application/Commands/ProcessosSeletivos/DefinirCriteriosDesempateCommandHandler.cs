@@ -1,11 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
+using System.Text.Json;
+
 using Abstractions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 using Kernel.Results;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774):
@@ -13,7 +16,11 @@ using Kernel.Results;
 /// (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args tipados
 /// conforme o código da regra e congela a referência — a existência do
 /// <c>etapa_ref</c> no processo (INV-B6) é garantida pela raiz
-/// (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>).
+/// (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>). Quando algum
+/// critério referencia <c>DESEMPATE-PREDICADO-FATO</c>, resolve também o
+/// vocabulário fechado de fatos do candidato (<see cref="IFatoCandidatoReader"/>,
+/// #846, ADR-0111) para que <see cref="CriterioDesempate.Criar"/> valide a
+/// condição contra ele (fecha o INV-B6 do <c>Fato</c>).
 /// </summary>
 public static class DefinirCriteriosDesempateCommandHandler
 {
@@ -21,12 +28,14 @@ public static class DefinirCriteriosDesempateCommandHandler
         DefinirCriteriosDesempateCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
+        IFatoCandidatoReader fatoCandidatoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -57,10 +66,18 @@ public static class DefinirCriteriosDesempateCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        // O vocabulário só é resolvido (I/O cross-módulo) quando algum critério de fato
+        // referencia DESEMPATE-PREDICADO-FATO — o caso comum (demais 3 regras) não paga
+        // esse custo.
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = command.Criterios
+            .Any(static c => c.RegraCodigo == CriterioDesempateCodigo.PredicadoFato)
+                ? await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false)
+                : null;
+
         List<CriterioDesempate> criterios = [];
         foreach (CriterioDesempateInput input in command.Criterios)
         {
-            Result<CriterioDesempate> resultado = await ResolverCriterioAsync(input, regraCatalogoReader, cancellationToken)
+            Result<CriterioDesempate> resultado = await ResolverCriterioAsync(input, regraCatalogoReader, vocabularioFatos, cancellationToken)
                 .ConfigureAwait(false);
             if (resultado.IsFailure)
             {
@@ -83,9 +100,52 @@ public static class DefinirCriteriosDesempateCommandHandler
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
+    /// <summary>
+    /// Mapeia <see cref="FatoCandidatoView"/> (o DTO cross-módulo real do #846)
+    /// para o <see cref="DescritorFatoCandidato"/> próprio do Domain de
+    /// Selecao. Um fato categórico de <b>escopo-processo</b> (<c>Dominio ==
+    /// "CATEGORICO"</c> com <c>ValoresDominio</c> nulo — ex.: <c>MODALIDADE</c>,
+    /// <c>CONDICAO_ATENDIMENTO</c>) não é representável nesta Story (domínio
+    /// dinâmico, fora de escopo — ADR-0111) e fica de fora do vocabulário
+    /// fechado: um predicado que o cite reprova como fato desconhecido.
+    /// </summary>
+    private static async Task<IReadOnlyDictionary<string, DescritorFatoCandidato>> ResolverVocabularioFatosAsync(
+        IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
+            .ListarAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        Dictionary<string, DescritorFatoCandidato> vocabulario = [];
+        foreach (FatoCandidatoView fato in fatos)
+        {
+            TipoDominioFato? tipoDominio = fato switch
+            {
+                { Dominio: "BOOLEANO" } => TipoDominioFato.Booleano,
+                { Dominio: "NUMERICO" } => TipoDominioFato.Numerico,
+                { Dominio: "CATEGORICO", ValoresDominio.Count: > 0 } => TipoDominioFato.CategoricoEstatico,
+                _ => null,
+            };
+
+            if (tipoDominio is not { } tipo)
+            {
+                continue;
+            }
+
+            Result<DescritorFatoCandidato> descritorResult = DescritorFatoCandidato.Criar(fato.Codigo, tipo, fato.ValoresDominio);
+            if (descritorResult.IsSuccess)
+            {
+                vocabulario[fato.Codigo] = descritorResult.Value!;
+            }
+        }
+
+        return vocabulario;
+    }
+
     private static async Task<Result<CriterioDesempate>> ResolverCriterioAsync(
         CriterioDesempateInput input,
         IRegraCatalogoReader regraCatalogoReader,
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
         CancellationToken cancellationToken)
     {
         RegraCatalogo? regra = await regraCatalogoReader
@@ -117,7 +177,7 @@ public static class DefinirCriteriosDesempateCommandHandler
             return Result<CriterioDesempate>.Failure(referenciaRegraResult.Error!);
         }
 
-        return CriterioDesempate.Criar(input.Ordem, referenciaRegraResult.Value!, argsResult.Value!);
+        return CriterioDesempate.Criar(input.Ordem, referenciaRegraResult.Value!, argsResult.Value!, vocabularioFatos);
     }
 
     private static Result<ArgsCriterioDesempate> MontarArgs(CriterioDesempateInput input, string regraCodigo) =>
@@ -138,15 +198,49 @@ public static class DefinirCriteriosDesempateCommandHandler
                     "CriterioDesempate.IdadeMinimaObrigatoria",
                     $"O critério na ordem {input.Ordem} exige IdadeMinima para a regra {CriterioDesempateCodigo.Idoso}.")),
 
-            CriterioDesempateCodigo.PredicadoFato =>
-                !string.IsNullOrWhiteSpace(input.Fato) && !string.IsNullOrWhiteSpace(input.Operador) && !string.IsNullOrWhiteSpace(input.Valor)
-                    ? Result<ArgsCriterioDesempate>.Success(new ArgsDesempatePredicadoFato(input.Fato, input.Operador, input.Valor))
-                    : Result<ArgsCriterioDesempate>.Failure(new DomainError(
-                        "CriterioDesempate.PredicadoFatoIncompleto",
-                        $"O critério na ordem {input.Ordem} exige Fato, Operador e Valor para a regra {CriterioDesempateCodigo.PredicadoFato}.")),
+            CriterioDesempateCodigo.PredicadoFato => MontarArgsPredicadoFato(input),
 
             _ => Result<ArgsCriterioDesempate>.Failure(new DomainError(
                 "CriterioDesempate.RegraTipoInvalido",
                 $"Código de regra de desempate desconhecido: {regraCodigo}.")),
         };
+
+    private static Result<ArgsCriterioDesempate> MontarArgsPredicadoFato(CriterioDesempateInput input)
+    {
+        if (string.IsNullOrWhiteSpace(input.Fato) || string.IsNullOrWhiteSpace(input.Operador) || string.IsNullOrWhiteSpace(input.Valor))
+        {
+            return Result<ArgsCriterioDesempate>.Failure(new DomainError(
+                "CriterioDesempate.PredicadoFatoIncompleto",
+                $"O critério na ordem {input.Ordem} exige Fato, Operador e Valor para a regra {CriterioDesempateCodigo.PredicadoFato}."));
+        }
+
+        Operador operador = OperadorCodigo.FromCodigo(input.Operador);
+        JsonElement valor = InterpretarValor(input.Valor);
+
+        Result<CondicaoDnf> condicaoResult = CondicaoDnf.Criar(input.Fato, operador, valor);
+        return condicaoResult.IsFailure
+            ? Result<ArgsCriterioDesempate>.Failure(condicaoResult.Error!)
+            : Result<ArgsCriterioDesempate>.Success(new ArgsDesempatePredicadoFato(condicaoResult.Value!));
+    }
+
+    /// <summary>
+    /// <see cref="CriterioDesempateInput.Valor"/> permanece texto plano (mesma forma
+    /// flat do wire de comando) — mas quando o texto já É um JSON válido (booleano,
+    /// número, string entre aspas, ou array para o operador EM), ele é interpretado
+    /// como tal, para que a matriz operador × domínio (ADR-0111) tenha o tipo correto
+    /// a validar. Texto que não é JSON válido (ex.: um código categórico sem aspas)
+    /// é tratado como o escalar de string que representa.
+    /// </summary>
+    private static JsonElement InterpretarValor(string valor)
+    {
+        try
+        {
+            using JsonDocument documento = JsonDocument.Parse(valor);
+            return documento.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return JsonSerializer.SerializeToElement(valor);
+        }
+    }
 }

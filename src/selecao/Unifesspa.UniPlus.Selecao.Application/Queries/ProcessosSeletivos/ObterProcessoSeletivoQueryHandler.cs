@@ -1,7 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
+using System.Text.Json;
+
 using DTOs;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
@@ -93,10 +96,21 @@ public static class ObterProcessoSeletivoQueryHandler
             ArgsDesempateIdoso args => new CriterioDesempateDto(
                 criterio.Id, criterio.Ordem, regra, null, args.IdadeMinima, null, null, null),
             ArgsDesempatePredicadoFato args => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, null, null, args.Fato, args.Operador, args.Valor),
+                criterio.Id, criterio.Ordem, regra, null, null,
+                args.Condicao.Fato,
+                args.Condicao.Operador.ToCodigo(),
+                ProjetarValorCondicao(args.Condicao.Valor)),
             _ => new CriterioDesempateDto(criterio.Id, criterio.Ordem, regra, null, null, null, null, null),
         };
     }
+
+    /// <summary>
+    /// Achata <c>CondicaoDnf.Valor</c> (JSON escalar ou array) para o formato
+    /// textual de <see cref="DTOs.CriterioDesempateDto.Valor"/> — projeção de
+    /// leitura, não round-trip byte-a-byte (esse é o do envelope canônico).
+    /// </summary>
+    private static string ProjetarValorCondicao(JsonElement valor) =>
+        valor.ValueKind == JsonValueKind.String ? valor.GetString()! : valor.GetRawText();
 
     private static ConfiguracaoClassificacaoDto? ProjectClassificacao(ProcessoSeletivo processo)
     {

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -26,13 +27,24 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal").Value!;
 
     private sealed record Mocks(
-        IProcessoSeletivoRepository Repository, IRegraCatalogoReader RegraCatalogoReader, ISelecaoUnitOfWork UnitOfWork);
+        IProcessoSeletivoRepository Repository,
+        IRegraCatalogoReader RegraCatalogoReader,
+        IFatoCandidatoReader FatoCandidatoReader,
+        ISelecaoUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
-        return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), Substitute.For<ISelecaoUnitOfWork>());
+
+        IFatoCandidatoReader fatoCandidatoReader = Substitute.For<IFatoCandidatoReader>();
+        fatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
+            (IReadOnlyList<FatoCandidatoView>)
+            [
+                new FatoCandidatoView(Guid.CreateVersion7(), "PROFESSOR_RURAL", "Professor da rede pública rural", null, "BOOLEANO", "BRUTO_INFORMADO", "ESCALAR", null),
+            ]);
+
+        return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), fatoCandidatoReader, Substitute.For<ISelecaoUnitOfWork>());
     }
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
@@ -42,7 +54,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         DefinirCriteriosDesempateCommand command = new(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -63,7 +75,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorNotaEtapa, "v1", etapa.Id, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().ContainSingle();
@@ -83,7 +95,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorNotaEtapa, "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.EtapaRefObrigatorio");
@@ -101,10 +113,48 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.Idoso, "v1", null, 60, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         ((ArgsDesempateIdoso)processo.CriteriosDesempate.Single().Args).IdadeMinima.Should().Be(60);
+    }
+
+    [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato do vocabulário fechado resolve e persiste")]
+    public async Task Handle_PredicadoFato_FatoConhecido_Persiste()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.PredicadoFato, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(CriterioDesempateCodigo.PredicadoFato, TipoRegra.CriterioDesempate));
+
+        DefinirCriteriosDesempateCommand command = new(
+            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.PredicadoFato, "v1", null, null, "PROFESSOR_RURAL", "IGUAL", "true")], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        ArgsDesempatePredicadoFato args = (ArgsDesempatePredicadoFato)processo.CriteriosDesempate.Single().Args;
+        args.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
+        args.Condicao.Valor.GetBoolean().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato fora do vocabulário fechado recusa")]
+    public async Task Handle_PredicadoFato_FatoDesconhecido_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSE 2026", TipoProcesso.PSECampo);
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.RegraCatalogoReader.ObterAsync(CriterioDesempateCodigo.PredicadoFato, "v1", Arg.Any<CancellationToken>())
+            .Returns(Regra(CriterioDesempateCodigo.PredicadoFato, TipoRegra.CriterioDesempate));
+
+        DefinirCriteriosDesempateCommand command = new(
+            processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.PredicadoFato, "v1", null, null, "FATO_INEXISTENTE", "IGUAL", "S")], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
     }
 
     [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO incompleto recusa")]
@@ -119,7 +169,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.PredicadoFato, "v1", null, null, "PROFESSOR_RURAL", null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.PredicadoFatoIncompleto");
@@ -137,7 +187,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             processo.Id, [new CriterioDesempateInput(1, "INEXISTENTE", "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.RegraNaoEncontrada");
@@ -155,7 +205,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
             processo.Id, [new CriterioDesempateInput(1, CriterioDesempateCodigo.MaiorIdade, "v1", null, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.RegraTipoInvalido");
@@ -170,7 +220,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         DefinirCriteriosDesempateCommand command = new(processo.Id, [], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirCriteriosDesempateCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().BeEmpty();

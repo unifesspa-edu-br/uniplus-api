@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -11,6 +13,9 @@ public sealed class CriterioDesempateTests
 {
     private static ReferenciaRegra Regra(string codigo) =>
         ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
+
+    private static CondicaoDnf CondicaoProfessorRural() =>
+        CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
     [Fact(DisplayName = "Criar DESEMPATE-MAIOR-NOTA-ETAPA com args compatíveis tem sucesso")]
     public void Criar_MaiorNotaEtapa_Sucesso()
@@ -45,7 +50,38 @@ public sealed class CriterioDesempateTests
     public void Criar_PredicadoFato_Sucesso()
     {
         Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ArgsDesempatePredicadoFato("PROFESSOR_RURAL", "IGUAL", "S"));
+            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ArgsDesempatePredicadoFato(CondicaoProfessorRural()));
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Criar DESEMPATE-PREDICADO-FATO com fato fora do vocabulário fechado falha")]
+    public void Criar_PredicadoFato_FatoDesconhecido_Falha()
+    {
+        Dictionary<string, DescritorFatoCandidato> vocabulario = new()
+        {
+            ["PROFESSOR_RURAL"] = DescritorFatoCandidato.Criar("PROFESSOR_RURAL", TipoDominioFato.Booleano, null).Value!,
+        };
+
+        CondicaoDnf condicaoDesconhecida = CondicaoDnf.Criar("FATO_INEXISTENTE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
+
+        Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
+            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ArgsDesempatePredicadoFato(condicaoDesconhecida), vocabulario);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
+    }
+
+    [Fact(DisplayName = "Criar DESEMPATE-PREDICADO-FATO com fato do vocabulário fechado tem sucesso")]
+    public void Criar_PredicadoFato_FatoConhecido_Sucesso()
+    {
+        Dictionary<string, DescritorFatoCandidato> vocabulario = new()
+        {
+            ["PROFESSOR_RURAL"] = DescritorFatoCandidato.Criar("PROFESSOR_RURAL", TipoDominioFato.Booleano, null).Value!,
+        };
+
+        Result<CriterioDesempate> resultado = CriterioDesempate.Criar(
+            1, Regra(CriterioDesempateCodigo.PredicadoFato), new ArgsDesempatePredicadoFato(CondicaoProfessorRural()), vocabulario);
 
         resultado.IsSuccess.Should().BeTrue();
     }

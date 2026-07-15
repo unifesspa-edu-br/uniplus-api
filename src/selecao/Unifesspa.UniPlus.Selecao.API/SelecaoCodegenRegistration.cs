@@ -78,5 +78,10 @@ public static class SelecaoCodegenRegistration
         // público, o concreto vive na Infrastructure do outro módulo.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.ITipoAtoPublicadoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IVagaDeLinhagemReader>();
+
+        // Vocabulário fechado de fatos do candidato (#846, ADR-0111), consumido pelo
+        // handler de critérios de desempate para validar DESEMPATE-PREDICADO-FATO
+        // (Story #847). Mesmo motivo dos demais readers cross-módulo acima.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
     }
 }

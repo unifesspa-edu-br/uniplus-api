@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -34,7 +35,25 @@ public sealed class CriterioDesempate : EntityBase
     /// existência do <c>etapa_ref</c> no processo (INV-B6) é validada pela
     /// raiz, que tem acesso às etapas.
     /// </summary>
-    public static Result<CriterioDesempate> Criar(int ordem, ReferenciaRegra regra, ArgsCriterioDesempate args)
+    /// <param name="vocabularioFatos">
+    /// O vocabulário fechado de fatos do candidato (ADR-0111, Story #847),
+    /// já resolvido por quem chama (Application, via o leitor cross-módulo
+    /// do #846). Só é consultado quando <paramref name="args"/> é
+    /// <see cref="ArgsDesempatePredicadoFato"/>. Omitido (<see langword="null"/>)
+    /// no caminho de <b>reidratação</b> do envelope congelado — RN08 proíbe
+    /// revalidar um predicado já publicado contra o vocabulário vivo.
+    /// </param>
+    /// <param name="fatosColetadosPeloProcesso">
+    /// Repassado a <see cref="PredicadoDnfValidador.Validar"/> — ver
+    /// documentação lá. Só tem efeito quando <paramref name="vocabularioFatos"/>
+    /// é informado.
+    /// </param>
+    public static Result<CriterioDesempate> Criar(
+        int ordem,
+        ReferenciaRegra regra,
+        ArgsCriterioDesempate args,
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null,
+        IReadOnlySet<string>? fatosColetadosPeloProcesso = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(args);
@@ -65,6 +84,21 @@ public sealed class CriterioDesempate : EntityBase
         {
             return Result<CriterioDesempate>.Failure(new DomainError(
                 "CriterioDesempate.IdadeMinimaInvalida", "A idade mínima do critério IDOSO deve ser maior que zero."));
+        }
+
+        if (args is ArgsDesempatePredicadoFato predicadoFato && vocabularioFatos is not null)
+        {
+            Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, predicadoFato.Condicao)]);
+            if (predicadoResult.IsFailure)
+            {
+                return Result<CriterioDesempate>.Failure(predicadoResult.Error!);
+            }
+
+            Result validacaoResult = PredicadoDnfValidador.Validar(predicadoResult.Value!, vocabularioFatos, fatosColetadosPeloProcesso);
+            if (validacaoResult.IsFailure)
+            {
+                return Result<CriterioDesempate>.Failure(validacaoResult.Error!);
+            }
         }
 
         return Result<CriterioDesempate>.Success(new CriterioDesempate
