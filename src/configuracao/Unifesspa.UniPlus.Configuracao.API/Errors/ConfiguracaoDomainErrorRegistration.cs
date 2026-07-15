@@ -688,11 +688,90 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fase_canonica.base_legal_tamanho",
                 "Tamanho da base legal da fase canônica inválido")),
 
+        new(FaseCanonicaErrorCodes.OrigemDataObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.origem_data_obrigatoria",
+                "Origem da data da fase canônica é obrigatória")),
+
+        new(FaseCanonicaErrorCodes.OrigemDataInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.origem_data_invalida",
+                "Origem da data da fase canônica fora do domínio fechado")),
+
+        new(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fase_canonica.resultado_definitivo_sem_produzir_resultado",
+                "Uma fase só pode ter resultado definitivo se também produzir resultado")),
+
         new(FaseCanonicaErrorCodes.NaoEncontrada,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.fase_canonica.nao_encontrada",
                 "Fase canônica não encontrada")),
+
+        // ── Precedência de fase (UNI-REQ-0064, story #851) ────────────────
+        new(PrecedenciaFaseErrorCodes.AntecessoraCodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.antecessora_codigo_obrigatorio",
+                "Código da fase antecessora é obrigatório")),
+
+        new(PrecedenciaFaseErrorCodes.AntecessoraCodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.antecessora_codigo_formato_invalido",
+                "Código da fase antecessora em formato inválido")),
+
+        new(PrecedenciaFaseErrorCodes.AntecessoraForaDoConjuntoCanonico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.antecessora_fora_do_conjunto_canonico",
+                "Código da fase antecessora fora do conjunto canônico das quatorze fases")),
+
+        new(PrecedenciaFaseErrorCodes.SucessoraCodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.sucessora_codigo_obrigatorio",
+                "Código da fase sucessora é obrigatório")),
+
+        new(PrecedenciaFaseErrorCodes.SucessoraCodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.sucessora_codigo_formato_invalido",
+                "Código da fase sucessora em formato inválido")),
+
+        new(PrecedenciaFaseErrorCodes.SucessoraForaDoConjuntoCanonico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.sucessora_fora_do_conjunto_canonico",
+                "Código da fase sucessora fora do conjunto canônico das quatorze fases")),
+
+        new(PrecedenciaFaseErrorCodes.SelfLoop,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.self_loop",
+                "A fase antecessora não pode ser igual à fase sucessora")),
+
+        new(PrecedenciaFaseErrorCodes.ArestaDuplicada,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.aresta_duplicada",
+                "Já existe uma aresta de precedência viva com este par de fases")),
+
+        new(PrecedenciaFaseErrorCodes.CicloDetectado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.precedencia_fase.ciclo_detectado",
+                "A aresta fecharia um ciclo no grafo de precedências")),
+
+        new(PrecedenciaFaseErrorCodes.NaoEncontrada,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.precedencia_fase.nao_encontrada",
+                "Aresta de precedência não encontrada")),
 
         // ── Tipo de banca (UNI-REQ-0064) ──────────────────────────────────
         new(TipoBancaErrorCodes.CodigoObrigatorio,

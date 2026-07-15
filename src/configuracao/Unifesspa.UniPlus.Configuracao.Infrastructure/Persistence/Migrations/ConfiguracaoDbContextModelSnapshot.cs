@@ -297,6 +297,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(60)")
                         .HasColumnName("codigo");
 
+                    b.Property<bool>("ColetaInscricao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("coleta_inscricao");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -335,11 +341,29 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
 
+                    b.Property<string>("OrigemData")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("origem_data");
+
                     b.Property<bool>("PermiteComplementacao")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("permite_complementacao");
+
+                    b.Property<bool>("ProduzResultado")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("produz_resultado");
+
+                    b.Property<bool>("ResultadoDefinitivo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("resultado_definitivo");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -369,6 +393,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_fase_canonica_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO', 'RECURSOS')");
 
                             t.HasCheckConstraint("ck_fase_canonica_dono_tipico", "dono_tipico IN ('CEPS', 'CRCA', 'MEC', 'CONSEPE')");
+
+                            t.HasCheckConstraint("ck_fase_canonica_origem_data", "origem_data IN ('PROPRIA', 'DELEGADA')");
+
+                            t.HasCheckConstraint("ck_fase_canonica_resultado_definitivo", "resultado_definitivo = false OR produz_resultado = true");
                         });
                 });
 
@@ -972,6 +1000,139 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_peso_area_enem_peso_matematica", "peso_matematica >= 0");
 
                             t.HasCheckConstraint("ck_peso_area_enem_peso_redacao", "peso_redacao >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.PrecedenciaFase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AntecessoraCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("antecessora_codigo");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("PermiteSobreposicao")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("permite_sobreposicao");
+
+                    b.Property<string>("SucessoraCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("sucessora_codigo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_precedencia_fase");
+
+                    b.HasIndex("AntecessoraCodigo", "SucessoraCodigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_precedencia_fase_par_vivo")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("precedencia_fase", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_precedencia_fase_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+
+                            t.HasCheckConstraint("ck_precedencia_fase_antecessora_formato", "antecessora_codigo ~ '^[A-Z_]+$'");
+
+                            t.HasCheckConstraint("ck_precedencia_fase_sem_self_loop", "antecessora_codigo <> sucessora_codigo");
+
+                            t.HasCheckConstraint("ck_precedencia_fase_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+
+                            t.HasCheckConstraint("ck_precedencia_fase_sucessora_formato", "sucessora_codigo ~ '^[A-Z_]+$'");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("93ec0000-0000-7000-8000-000000000001"),
+                            AntecessoraCodigo = "INSCRICAO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            PermiteSobreposicao = false,
+                            SucessoraCodigo = "HOMOLOGACAO"
+                        },
+                        new
+                        {
+                            Id = new Guid("93ec0000-0000-7000-8000-000000000002"),
+                            AntecessoraCodigo = "RESULTADO_PRELIMINAR",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            PermiteSobreposicao = false,
+                            SucessoraCodigo = "RECURSOS"
+                        },
+                        new
+                        {
+                            Id = new Guid("93ec0000-0000-7000-8000-000000000003"),
+                            AntecessoraCodigo = "RECURSOS",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            PermiteSobreposicao = false,
+                            SucessoraCodigo = "RESULTADO_FINAL"
+                        },
+                        new
+                        {
+                            Id = new Guid("93ec0000-0000-7000-8000-000000000004"),
+                            AntecessoraCodigo = "RESULTADO_FINAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            PermiteSobreposicao = false,
+                            SucessoraCodigo = "HABILITACAO"
+                        },
+                        new
+                        {
+                            Id = new Guid("93ec0000-0000-7000-8000-000000000005"),
+                            AntecessoraCodigo = "HABILITACAO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            PermiteSobreposicao = false,
+                            SucessoraCodigo = "MATRICULA"
+                        },
+                        new
+                        {
+                            Id = new Guid("93ec0000-0000-7000-8000-000000000006"),
+                            AntecessoraCodigo = "HETEROIDENTIFICACAO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            PermiteSobreposicao = false,
+                            SucessoraCodigo = "HOMOLOGACAO_RESULTADO_FINAL"
                         });
                 });
 

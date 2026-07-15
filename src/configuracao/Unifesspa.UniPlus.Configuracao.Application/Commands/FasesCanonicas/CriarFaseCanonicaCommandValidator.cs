@@ -51,5 +51,20 @@ public sealed class CriarFaseCanonicaCommandValidator : AbstractValidator<CriarF
         RuleFor(x => x.BaseLegal)
             .MaximumLength(500).WithMessage("Base legal da fase deve ter no máximo 500 caracteres.")
             .When(x => x.BaseLegal is not null);
+
+        // Origem da data obrigatória (sempre) + domínio fechado (só quando informada).
+        RuleFor(x => x.OrigemData)
+            .NotEmpty().WithMessage("Origem da data da fase é obrigatória.");
+
+        RuleFor(x => x.OrigemData)
+            .Must(OrigensDataFase.EhValido)
+            .WithMessage($"Origem da data deve ser uma de: {string.Join(", ", OrigensDataFase.TokensCanonicos)}.")
+            .When(x => !string.IsNullOrWhiteSpace(x.OrigemData));
+
+        // CA-04: resultado definitivo verdadeiro implica produzir resultado.
+        RuleFor(x => x)
+            .Must(x => !x.ResultadoDefinitivo || x.ProduzResultado)
+            .WithMessage("Uma fase só pode ter resultado definitivo se também produzir resultado.")
+            .WithName(nameof(CriarFaseCanonicaCommand.ResultadoDefinitivo));
     }
 }

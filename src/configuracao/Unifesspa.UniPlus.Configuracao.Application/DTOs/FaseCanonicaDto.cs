@@ -4,8 +4,8 @@ using System.Text.Json.Serialization;
 
 /// <summary>
 /// DTO de resposta HTTP para <c>FaseCanonica</c>. Suporta HATEOAS Level 1 via
-/// <c>_links</c> (ADR-0029). O <c>DonoTipico</c> é exposto como token canônico
-/// UPPER_SNAKE.
+/// <c>_links</c> (ADR-0029). O <c>DonoTipico</c> e o <c>OrigemData</c> são
+/// expostos como token canônico UPPER_SNAKE.
 /// </summary>
 public sealed record FaseCanonicaDto(
     Guid Id,
@@ -16,6 +16,10 @@ public sealed record FaseCanonicaDto(
     bool AgrupaEtapas,
     bool PermiteComplementacao,
     string? BaseLegal,
+    bool ProduzResultado,
+    bool ResultadoDefinitivo,
+    bool ColetaInscricao,
+    string OrigemData,
     DateTimeOffset CriadoEm)
 {
     [JsonPropertyName("_links")]

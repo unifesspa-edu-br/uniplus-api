@@ -25,4 +25,7 @@ public static class FaseCanonicaErrorCodes
     public const string ComplementacaoApenasFasesPermitidas = "FaseCanonica.ComplementacaoApenasFasesPermitidas";
     public const string BaseLegalTamanho = "FaseCanonica.BaseLegalTamanho";
     public const string NaoEncontrada = "FaseCanonica.NaoEncontrada";
+    public const string OrigemDataObrigatoria = "FaseCanonica.OrigemDataObrigatoria";
+    public const string OrigemDataInvalida = "FaseCanonica.OrigemDataInvalida";
+    public const string ResultadoDefinitivoSemProduzirResultado = "FaseCanonica.ResultadoDefinitivoSemProduzirResultado";
 }

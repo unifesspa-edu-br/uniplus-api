@@ -46,6 +46,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ITipoBancaRepository, TipoBancaRepository>();
         services.AddScoped<ICursoRepository, CursoRepository>();
         services.AddScoped<IOfertaCursoRepository, OfertaCursoRepository>();
+        services.AddScoped<IPrecedenciaFaseRepository, PrecedenciaFaseRepository>();
 
         // Readers cross-módulo (ADR-0056).
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
@@ -61,6 +62,7 @@ public static class ConfiguracaoInfrastructureRegistration
         // Catálogo seed-governado de fatos do candidato (ADR-0111): só leitura,
         // sem repositório (não há escrita em runtime).
         services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();
+        services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
 
         return services;
     }

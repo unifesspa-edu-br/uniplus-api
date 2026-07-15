@@ -17,7 +17,7 @@ public sealed class RemoverFaseCanonicaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static FaseCanonica Fase() =>
-        FaseCanonica.Criar("INSCRICAO", "Inscrição", null, "CEPS", false, false, null).Value!;
+        FaseCanonica.Criar("INSCRICAO", "Inscrição", null, "CEPS", false, false, null, false, false, false, "PROPRIA").Value!;
 
     [Fact(DisplayName = "Fase existente faz soft-delete (Remover + Salvar), nunca bloqueada")]
     public async Task Handle_Existente_FazSoftDelete()

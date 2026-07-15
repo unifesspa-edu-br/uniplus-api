@@ -37,7 +37,11 @@ public static class CriarFaseCanonicaCommandHandler
             command.DonoTipico,
             command.AgrupaEtapas,
             command.PermiteComplementacao,
-            command.BaseLegal);
+            command.BaseLegal,
+            command.ProduzResultado,
+            command.ResultadoDefinitivo,
+            command.ColetaInscricao,
+            command.OrigemData);
 
         if (faseResult.IsFailure)
         {
