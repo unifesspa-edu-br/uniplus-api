@@ -19,13 +19,13 @@ using System.Text.Json.Serialization;
 /// variante tipada explícita.
 /// </para>
 /// <para>
-/// <strong>Gap conhecido (<see cref="PredicadoFato"/>):</strong> a modelagem
-/// P-B reusa o vocabulário de fatos do candidato (<c>rol_de_fatos_candidato</c>,
-/// eixo P-C de documentos) para validar que <see cref="ArgsDesempatePredicadoFato.Fato"/>
-/// é um fato reconhecido e coletado pelo processo (INV-B6). Esse catálogo
-/// ainda não existe neste repositório (P-C não construído) — o campo é
-/// tipado mas não validado contra um vocabulário fechado nesta fatia,
-/// documentado como follow-up para quando o eixo de documentos existir.
+/// <see cref="ArgsDesempatePredicadoFato"/> reusa literalmente
+/// <see cref="CondicaoDnf"/> (ADR-0111, Story #847) em vez de carregar três
+/// strings soltas — fecha o gap que a modelagem P-B documentava
+/// (<c>Fato</c> tipado mas não validado contra o vocabulário fechado de
+/// fatos do candidato): <c>CriterioDesempate.Criar</c> agora confere a
+/// condição contra o vocabulário resolvido do catálogo <c>rol_de_fatos_candidato</c>
+/// (#846), fechando o INV-B6.
 /// </para>
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
@@ -44,5 +44,5 @@ public sealed record ArgsDesempateMaiorIdade : ArgsCriterioDesempate;
 /// <summary>Prioriza quem satisfaz <c>FAIXA_ETARIA ≥ IdadeMinima</c> (Lei 10.741/2003 art. 27).</summary>
 public sealed record ArgsDesempateIdoso(int IdadeMinima) : ArgsCriterioDesempate;
 
-/// <summary>Prioriza quem satisfaz o predicado <c>Fato Operador Valor</c> sobre o fato do candidato.</summary>
-public sealed record ArgsDesempatePredicadoFato(string Fato, string Operador, string Valor) : ArgsCriterioDesempate;
+/// <summary>Prioriza quem satisfaz a <see cref="CondicaoDnf"/> sobre um fato do candidato (ADR-0111).</summary>
+public sealed record ArgsDesempatePredicadoFato(CondicaoDnf Condicao) : ArgsCriterioDesempate;
