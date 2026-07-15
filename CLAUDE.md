@@ -62,6 +62,7 @@ Application NUNCA depende de Infrastructure ou API.
 - **PII masking** em logs: CPF `***.999.999-**` (padrão CGU/IN Unifesspa, Parecer DPO 002/2026 — oculta 3 primeiros dígitos e verificadores), nunca logar dados sensíveis — aplicado automaticamente pelo `PiiMaskingEnricher` (registrado no pipeline Serilog via `ConfigurarSerilog`) a todas as propriedades estruturadas, inclusive aninhadas (`StructureValue`, `SequenceValue`, `DictionaryValue`)
 - **Result pattern** para retorno de operações: `Result<T>` com `DomainError`
 - **CQRS** via Wolverine: commands escritos via `ICommandBus.Send`, queries via `IQueryBus.Send` (handlers convention-based, classes static) ou diretamente via repositório quando a leitura for trivial. Validação e logging são aplicados pelo middleware Wolverine — handlers nunca invocam validator manualmente. Slice de referência: o slice `Edital` usado historicamente foi removido (#782 — agregado legado); reescrita com um slice vivo (`ProcessoSeletivo`) está planejada para a T4 (#785). Domain events (`AddDomainEvent` em `EntityBase`) são drenados via cascading messages explícitas ([ADR-0005](docs/adrs/0005-cascading-messages-para-drenagem-de-domain-events.md)): o handler retorna `(Result, IEnumerable<object>)` contendo `entidade.DequeueDomainEvents().Cast<object>()`, e o Wolverine instala os envelopes no outbox dentro da `IEnvelopeTransaction` ativa, garantindo atomicidade write+evento. **Invariante:** `PublishDomainEventsFromEntityFrameworkCore` está desabilitado por configuração — não há scraper EF varrendo `EntityBase.DomainEvents` ao final da transação. Eventos só são entregues ao bus quando o handler os retorna explicitamente; um handler que muta entidade e retorna apenas `Result` deixa os eventos acumulados sem nunca despachá-los.
+  - **Codegen do Wolverine — opt-in de service location (ADR-0098):** um handler (`Handle` convention-based) que injeta um concreto `internal` — `Repository`, `UnitOfWork` (`I{Modulo}UnitOfWork`) ou `Reader` cross-módulo (`I{Xxx}Reader`, ADR-0056) — exige `opts.CodeGeneration.AlwaysUseServiceLocationFor<TInterface>()` no `{Modulo}CodegenRegistration` (composto pelo host). É o **padrão estabelecido** (já presente em todos os módulos), não workaround: o codegen gera o call site em compile-time sob `ServiceLocationPolicy.NotAllowed` e recusa `new` de um tipo não-público. Adicionar o opt-in **no mesmo commit** do handler — não esperar o `InvalidServiceLocationException` (HTTP 500) da suíte de integração, que os testes unitários com mock não pegam. Registrar na interface **realmente injetada no handler** (a porta), não em `ICommandBus` genérico.
 - **Value objects** para dados de domínio: `Cpf`, `Email`, `NomeSocial`, `NotaFinal`
 - **Factory methods** com construtores privados em todas as entidades
 - **Sealed classes** por padrão (exceto bases abstratas)
@@ -183,8 +184,18 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.ym
   up -d postgres redis kafka minio apicurio keycloak uniplus-api geo-api portal-api
 
 # Migrations EF Core — ver CONTRIBUTING.md §Entity Framework + docs/guia-banco-de-dados.md (ADR-0054).
-dotnet ef migrations add <Nome> --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure --context SelecaoDbContext --output-dir Persistence/Migrations
+# --startup-project src/host/...Host é OBRIGATÓRIO: desde o ADR-0097 os .Infrastructure dos
+# módulos internos (Selecao/Ingresso/Configuracao/OrganizacaoInstitucional) são class libraries
+# puras, sem Program.cs/runtimeconfig; o Host é o único executável com o setup design-time do EF.
+# Sem ele: System.IO.FileNotFoundException (System.Runtime 10.0.0.0). Geo e Portal são exceção
+# (deployables autônomos com Program.cs próprio).
+dotnet ef migrations add <Nome> \
+  --project src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure \
+  --startup-project src/host/Unifesspa.UniPlus.Host \
+  --context SelecaoDbContext --output-dir Persistence/Migrations
 ```
+
+**Iterar numa migration ainda não mergeada** (mudou a config depois do `add`): `dotnet ef migrations remove` **conecta ao banco** (design-time factory usa a connection string do compose — falha offline com `Name or service not known`). Para regerar localmente, faça manual: apague o `<ts>_<Nome>.cs` + `.Designer.cs`, `git checkout origin/main -- .../<Ctx>ModelSnapshot.cs`, **recompile** (o `--no-build` lê o assembly antigo e ainda "vê" a migration apagada), e rode `migrations add` de novo. Se a migration tem SQL não-trivial (CHECK com jsonpath, expressão Postgres), **valide a expressão contra um Postgres real antes** (`docker run postgres:18-alpine` + `psql -c`) — ex.: o `like_regex` do jsonpath do Postgres não aceita `\p{Z}`.
 
 ## Workflow obrigatório
 
