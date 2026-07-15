@@ -19,13 +19,16 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// <remarks>
 /// <para>
 /// A tabela é <strong>append-only e seed-governada</strong>: não há CRUD de
-/// administrador, a versão de uma regra é imutável e a única escrita é o seed.
-/// Por isso a entidade deriva de <c>EntityBase</c> puro (sem soft-delete) e o
-/// índice <c>UNIQUE (codigo, versao)</c> é <strong>total</strong> (não parcial)
-/// — é justamente o que habilita <c>v1</c>/<c>v2</c> coexistentes referenciáveis.
-/// O append-only é imposto por convenção (ausência de API de mutação; leitura
-/// via <c>IRegraCatalogoReader</c>) e por fitness test, na linha do ADR-0063 —
-/// não por gatilho de banco (o repositório não usa gatilhos).
+/// administrador e a única escrita é o seed. Uma linha congelada por alguma
+/// <c>VersaoConfiguracao</c> é imutável; enquanto nenhuma a referencia, ainda é
+/// vocabulário de seed e pode ser corrigida por substituição (ADR-0112). Por isso
+/// a entidade deriva de <c>EntityBase</c> puro (sem soft-delete) e o índice
+/// <c>UNIQUE (codigo, versao)</c> é <strong>total</strong> (não parcial) — é
+/// justamente o que habilita versões coexistentes referenciáveis. O append-only é
+/// imposto por convenção (ausência de API de mutação; leitura via
+/// <c>IRegraCatalogoReader</c>) e por fitness test, na linha do ADR-0063 — não por
+/// gatilho de banco: não há gatilho sobre <c>rol_de_regras</c> (ao contrário de
+/// outras tabelas do módulo, como <c>versoes_configuracao</c>, que têm os seus).
 /// </para>
 /// <para>
 /// <c>esquema_args</c> (schema dos argumentos) e <c>invariantes</c> são
