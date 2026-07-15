@@ -160,12 +160,10 @@ public sealed class PrecedenciaFase : SoftDeletableEntity, IAuditableEntity
                 continue;
             }
 
-            foreach (PrecedenciaFase aresta in arestasVivas)
+            foreach (PrecedenciaFase aresta in arestasVivas.Where(
+                a => string.Equals(a.AntecessoraCodigo, atual, StringComparison.Ordinal)))
             {
-                if (string.Equals(aresta.AntecessoraCodigo, atual, StringComparison.Ordinal))
-                {
-                    pilha.Push(aresta.SucessoraCodigo);
-                }
+                pilha.Push(aresta.SucessoraCodigo);
             }
         }
 
