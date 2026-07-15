@@ -61,5 +61,9 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
             DonosTipicos.ParaTokenCanonico(f.DonoTipico),
             f.AgrupaEtapas,
             f.PermiteComplementacao,
-            f.BaseLegal);
+            f.BaseLegal,
+            f.ProduzResultado,
+            f.ResultadoDefinitivo,
+            f.ColetaInscricao,
+            OrigensDataFase.ParaTokenCanonico(f.OrigemData));
 }

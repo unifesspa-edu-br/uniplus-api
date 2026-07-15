@@ -62,6 +62,12 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<FatoCandidato> FatosCandidato => Set<FatoCandidato>();
 
     /// <summary>
+    /// Grafo de precedências entre fases canônicas (UNI-REQ-0064, story #851):
+    /// CRUD-administrado e seed-governado com as seis arestas estruturais de §3.3.
+    /// </summary>
+    public DbSet<PrecedenciaFase> PrecedenciasFase => Set<PrecedenciaFase>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
     /// </summary>

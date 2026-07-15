@@ -17,7 +17,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static CriarFaseCanonicaCommand Comando() =>
-        new("INSCRICAO", Nome: "Inscrição", DonoTipico: "CEPS");
+        new("INSCRICAO", Nome: "Inscrição", DonoTipico: "CEPS", OrigemData: "PROPRIA");
 
     [Fact(DisplayName = "Código livre cria a fase, persiste e retorna o Id")]
     public async Task Handle_CodigoLivre_CriaEPersiste()
@@ -51,7 +51,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     {
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
-        var comando = new CriarFaseCanonicaCommand("ENTREVISTA_FINAL", Nome: "x", DonoTipico: "CEPS");
+        var comando = new CriarFaseCanonicaCommand("ENTREVISTA_FINAL", Nome: "x", DonoTipico: "CEPS", OrigemData: "PROPRIA");
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
@@ -66,13 +66,30 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     {
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
-        var comando = new CriarFaseCanonicaCommand("HOMOLOGACAO", Nome: "Homologação", DonoTipico: "CEPS", AgrupaEtapas: true);
+        var comando = new CriarFaseCanonicaCommand("HOMOLOGACAO", Nome: "Homologação", DonoTipico: "CEPS", AgrupaEtapas: true, OrigemData: "PROPRIA");
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "CA-04: resultado definitivo sem produzir resultado propaga o erro sem persistir")]
+    public async Task Handle_ResultadoDefinitivoSemProduzirResultado_RetornaErroSemPersistir()
+    {
+        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
+
+        var comando = new CriarFaseCanonicaCommand(
+            "RESULTADO_FINAL", Nome: "Resultado final", DonoTipico: "CEPS", OrigemData: "PROPRIA",
+            ProduzResultado: false, ResultadoDefinitivo: true);
+
+        Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

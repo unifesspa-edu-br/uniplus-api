@@ -109,6 +109,7 @@ public sealed class FaseCanonicaEndpointTests
             nome = "Chamada",
             donoTipico = "CEPS",
             descricao = "Convocação de aprovados",
+            origemData = "PROPRIA",
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -156,7 +157,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
     public async Task Criar_CodigoDuplicado_Retorna409()
     {
-        var body = new { codigo = "LISTA_ESPERA", nome = "Lista de espera", donoTipico = "CEPS" };
+        var body = new { codigo = "LISTA_ESPERA", nome = "Lista de espera", donoTipico = "CEPS", origemData = "PROPRIA" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeiro = await EnviarPostAdmin(client, body);
@@ -164,6 +165,25 @@ public sealed class FaseCanonicaEndpointTests
 
         HttpResponseMessage segundo = await EnviarPostAdmin(client, body);
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact(DisplayName = "POST com resultado definitivo sem produzir resultado retorna 422 (CA-04)")]
+    public async Task Criar_ResultadoDefinitivoSemProduzirResultado_Retorna422()
+    {
+        var body = new
+        {
+            codigo = "RESULTADO_FINAL",
+            nome = "Resultado final",
+            donoTipico = "CEPS",
+            origemData = "PROPRIA",
+            produzResultado = false,
+            resultadoDefinitivo = true,
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)

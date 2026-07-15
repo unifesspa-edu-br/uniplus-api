@@ -18,6 +18,10 @@ public static class FaseCanonicaMapping
             fase.AgrupaEtapas,
             fase.PermiteComplementacao,
             fase.BaseLegal,
+            fase.ProduzResultado,
+            fase.ResultadoDefinitivo,
+            fase.ColetaInscricao,
+            OrigensDataFase.ParaTokenCanonico(fase.OrigemData),
             fase.CreatedAt);
     }
 }

@@ -18,7 +18,7 @@ public sealed class FaseCanonicaValidatorTests
     private readonly AtualizarFaseCanonicaCommandValidator _atualizarValidator = new();
 
     private static CriarFaseCanonicaCommand Base() =>
-        new("INSCRICAO", Nome: "Inscrição", DonoTipico: "CEPS");
+        new("INSCRICAO", Nome: "Inscrição", DonoTipico: "CEPS", OrigemData: "PROPRIA");
 
     [Fact(DisplayName = "Comando válido passa no validator de criação")]
     public void Criar_Valido_Passa()
@@ -87,7 +87,7 @@ public sealed class FaseCanonicaValidatorTests
     public void Atualizar_IdVazio_Rejeita()
     {
         ValidationResult resultado = _atualizarValidator.Validate(
-            new AtualizarFaseCanonicaCommand(Guid.Empty, Nome: "Inscrição", DonoTipico: "CEPS"));
+            new AtualizarFaseCanonicaCommand(Guid.Empty, Nome: "Inscrição", DonoTipico: "CEPS", OrigemData: "PROPRIA"));
 
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(AtualizarFaseCanonicaCommand.Id));
@@ -97,7 +97,46 @@ public sealed class FaseCanonicaValidatorTests
     public void Atualizar_Valido_Passa()
     {
         _atualizarValidator.Validate(
-            new AtualizarFaseCanonicaCommand(Guid.CreateVersion7(), Nome: "Inscrição", DonoTipico: "CEPS"))
+            new AtualizarFaseCanonicaCommand(Guid.CreateVersion7(), Nome: "Inscrição", DonoTipico: "CEPS", OrigemData: "PROPRIA"))
             .IsValid.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Origem da data ausente é rejeitada")]
+    public void Criar_SemOrigemData_Rejeita()
+    {
+        ValidationResult resultado = _criarValidator.Validate(Base() with { OrigemData = "" });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarFaseCanonicaCommand.OrigemData));
+    }
+
+    [Theory(DisplayName = "Origem da data fora do domínio é rejeitada")]
+    [InlineData("EXTERNA")]
+    [InlineData("propria")]
+    public void Criar_OrigemDataInvalida_Rejeita(string origemData)
+    {
+        ValidationResult resultado = _criarValidator.Validate(Base() with { OrigemData = origemData });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarFaseCanonicaCommand.OrigemData));
+    }
+
+    [Fact(DisplayName = "CA-04: resultado definitivo sem produzir resultado é rejeitado")]
+    public void Criar_ResultadoDefinitivoSemProduzirResultado_Rejeita()
+    {
+        ValidationResult resultado = _criarValidator.Validate(
+            Base() with { ResultadoDefinitivo = true, ProduzResultado = false });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarFaseCanonicaCommand.ResultadoDefinitivo));
+    }
+
+    [Fact(DisplayName = "CA-04: resultado definitivo com produzir resultado é aceito")]
+    public void Criar_ResultadoDefinitivoComProduzirResultado_Passa()
+    {
+        ValidationResult resultado = _criarValidator.Validate(
+            Base() with { ResultadoDefinitivo = true, ProduzResultado = true });
+
+        resultado.IsValid.Should().BeTrue();
     }
 }

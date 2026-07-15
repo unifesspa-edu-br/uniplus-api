@@ -39,7 +39,11 @@ public static class AtualizarFaseCanonicaCommandHandler
             command.DonoTipico,
             command.AgrupaEtapas,
             command.PermiteComplementacao,
-            command.BaseLegal);
+            command.BaseLegal,
+            command.ProduzResultado,
+            command.ResultadoDefinitivo,
+            command.ColetaInscricao,
+            command.OrigemData);
 
         if (atualizarResult.IsFailure)
         {

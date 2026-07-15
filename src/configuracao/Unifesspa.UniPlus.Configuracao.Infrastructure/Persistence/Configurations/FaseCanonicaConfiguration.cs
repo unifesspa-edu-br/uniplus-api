@@ -53,6 +53,17 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.Property(f => f.BaseLegal).HasMaxLength(BaseLegalMaxLength);
 
+        builder.Property(f => f.ProduzResultado).IsRequired().HasDefaultValue(false);
+
+        builder.Property(f => f.ResultadoDefinitivo).IsRequired().HasDefaultValue(false);
+
+        builder.Property(f => f.ColetaInscricao).IsRequired().HasDefaultValue(false);
+
+        builder.Property(f => f.OrigemData)
+            .HasConversion<OrigemDataFaseValueConverter>()
+            .HasMaxLength(EnumTokenMaxLength)
+            .IsRequired();
+
         // Auditoria (IAuditableEntity)
         builder.Property(f => f.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(f => f.UpdatedBy).HasMaxLength(AuditUserMaxLength);
@@ -82,6 +93,11 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             "ck_fase_canonica_dono_tipico",
             $"dono_tipico IN ({TokensSql(DonosTipicos.TokensCanonicos)})");
 
+        // Domínio fechado da origem da data (dois valores).
+        table.HasCheckConstraint(
+            "ck_fase_canonica_origem_data",
+            $"origem_data IN ({TokensSql(OrigensDataFase.TokensCanonicos)})");
+
         // Coerência: agrupa_etapas verdadeiro apenas para a fase de avaliação.
         table.HasCheckConstraint(
             "ck_fase_canonica_agrupa_etapas",
@@ -91,6 +107,11 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         table.HasCheckConstraint(
             "ck_fase_canonica_complementacao",
             $"permite_complementacao = false OR codigo IN ({TokensSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
+
+        // Coerência (CA-04): resultado definitivo verdadeiro implica produzir resultado.
+        table.HasCheckConstraint(
+            "ck_fase_canonica_resultado_definitivo",
+            "resultado_definitivo = false OR produz_resultado = true");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

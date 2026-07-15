@@ -59,6 +59,7 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<TipoBancaDto>, TipoBancaLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<CursoDto>, CursoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<OfertaCursoDto>, OfertaCursoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<PrecedenciaFaseDto>, PrecedenciaFaseLinksBuilder>();
 
         // Idempotency-Key (ADR-0027) sobre o DbContext do módulo.
         services.AddIdempotency<ConfiguracaoDbContext, ConfiguracaoApiAssemblyMarker>(configuration);
