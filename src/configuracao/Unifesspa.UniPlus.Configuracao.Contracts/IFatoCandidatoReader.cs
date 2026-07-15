@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
-/// Leitor cross-módulo do catálogo <c>fato_candidato</c> (ADR-0056, ADR-0111).
+/// Leitor cross-módulo do catálogo <c>rol_de_fatos_candidato</c> (ADR-0056, ADR-0111).
 /// Expõe o vocabulário fechado de fatos do candidato para consumo por outros
 /// bounded contexts (ex.: o validador de predicado de desempate e o gatilho de
 /// exigência documental do Módulo Seleção) sem acesso direto ao banco de

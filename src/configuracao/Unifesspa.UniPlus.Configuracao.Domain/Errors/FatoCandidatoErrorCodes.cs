@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 
 /// <summary>
 /// Códigos de erro de domínio do <see cref="Entities.FatoCandidato"/> — o catálogo
-/// <c>fato_candidato</c> (UNI-REQ-0077), prefixados por <c>FatoCandidato.</c>.
+/// <c>rol_de_fatos_candidato</c> (UNI-REQ-0077), prefixados por <c>FatoCandidato.</c>.
 /// Mapeados para status HTTP em <c>ConfiguracaoDomainErrorRegistration</c>:
 /// <list type="bullet">
 ///   <item><description><see cref="NaoEncontrado"/> → 404 Not Found</description></item>

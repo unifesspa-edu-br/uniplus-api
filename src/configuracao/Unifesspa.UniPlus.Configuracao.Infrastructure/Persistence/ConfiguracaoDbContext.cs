@@ -56,6 +56,12 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<OfertaCurso> OfertasCurso => Set<OfertaCurso>();
 
     /// <summary>
+    /// Catálogo seed-governado do vocabulário fechado de fatos do candidato
+    /// (UNI-REQ-0077, ADR-0111). Metadado de classificação, sem PII.
+    /// </summary>
+    public DbSet<FatoCandidato> FatosCandidato => Set<FatoCandidato>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
     /// </summary>

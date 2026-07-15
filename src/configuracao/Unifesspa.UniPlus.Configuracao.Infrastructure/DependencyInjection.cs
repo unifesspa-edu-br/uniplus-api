@@ -58,6 +58,9 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IFaseCanonicaReader, FaseCanonicaReader>();
         services.AddScoped<ITipoBancaReader, TipoBancaReader>();
         services.AddScoped<IOfertaCursoReader, OfertaCursoReader>();
+        // Catálogo seed-governado de fatos do candidato (ADR-0111): só leitura,
+        // sem repositório (não há escrita em runtime).
+        services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();
 
         return services;
     }
