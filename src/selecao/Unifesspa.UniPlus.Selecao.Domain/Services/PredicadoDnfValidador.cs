@@ -149,14 +149,14 @@ public static class PredicadoDnfValidador
 
     private static Result ValidarValorCategoricoEm(CondicaoDnf condicao, IReadOnlyList<string> dominio)
     {
-        foreach (JsonElement item in condicao.Valor.EnumerateArray())
+        bool possuiItemNaoString = condicao.Valor.EnumerateArray()
+            .Any(static item => item.ValueKind != JsonValueKind.String);
+
+        if (possuiItemNaoString)
         {
-            if (item.ValueKind != JsonValueKind.String)
-            {
-                return Result.Failure(new DomainError(
-                    "PredicadoDnf.ValorIncompativelComTipo",
-                    $"Os valores da condição EM sobre '{condicao.Fato}' devem ser strings JSON."));
-            }
+            return Result.Failure(new DomainError(
+                "PredicadoDnf.ValorIncompativelComTipo",
+                $"Os valores da condição EM sobre '{condicao.Fato}' devem ser strings JSON."));
         }
 
         string? foraDoDominio = condicao.Valor.EnumerateArray()
