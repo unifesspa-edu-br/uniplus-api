@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Entrada do vocabulário fechado de fatos do candidato — o catálogo
-/// <c>fato_candidato</c> (UNI-REQ-0077, ADR-0111). Descreve o que o sistema
+/// <c>rol_de_fatos_candidato</c> (UNI-REQ-0077, ADR-0111). Descreve o que o sistema
 /// <em>sabe perguntar</em> sobre um candidato: para cada fato, o seu
 /// <see cref="Dominio"/> (tipo de dado), a sua <see cref="Natureza"/> (origem do
 /// dado), a sua <see cref="Cardinalidade"/> (um valor ou um conjunto) e, quando
@@ -123,14 +123,29 @@ public sealed class FatoCandidato : EntityBase
             return Falha(FatoCandidatoErrorCodes.DominioObrigatorio, "Domínio do fato é obrigatório.");
         }
 
+        if (!Enum.IsDefined(dominio))
+        {
+            return Falha(FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado.");
+        }
+
         if (natureza == NaturezaFato.Nenhuma)
         {
             return Falha(FatoCandidatoErrorCodes.NaturezaObrigatoria, "Natureza do fato é obrigatória.");
         }
 
+        if (!Enum.IsDefined(natureza))
+        {
+            return Falha(FatoCandidatoErrorCodes.NaturezaInvalida, "Natureza do fato fora do vocabulário fechado.");
+        }
+
         if (cardinalidade == CardinalidadeFato.Nenhuma)
         {
             return Falha(FatoCandidatoErrorCodes.CardinalidadeObrigatoria, "Cardinalidade do fato é obrigatória.");
+        }
+
+        if (!Enum.IsDefined(cardinalidade))
+        {
+            return Falha(FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado.");
         }
 
         Result<IReadOnlyList<string>?> valoresResult = ValidarValoresDominio(dominio, valoresDominio);
