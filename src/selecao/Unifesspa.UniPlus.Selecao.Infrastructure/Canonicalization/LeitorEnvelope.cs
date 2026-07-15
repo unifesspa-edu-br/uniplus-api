@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -525,6 +526,28 @@ internal sealed class LeitorEnvelope
         }
 
         return valores;
+    }
+
+    /// <summary>
+    /// Valor JSON bruto — escalar ou array, na forma exata em que foi escrito —
+    /// usado pelos campos que o Domain trata como <see cref="System.Text.Json.JsonElement"/>
+    /// (<c>CondicaoDnf.Valor</c>, ADR-0111). Sem interpretação estrutural nesta
+    /// camada: a forma é conferida pela factory do domínio (<c>CondicaoDnf.Criar</c>).
+    /// </summary>
+    public System.Text.Json.JsonElement Valor(JsonObject pai, string chave, string path)
+    {
+        if (Falhou)
+        {
+            return default;
+        }
+
+        JsonNode? node = pai[chave];
+        if (node is null)
+        {
+            return Malformado<System.Text.Json.JsonElement>($"{path}.{chave}", "esperado um valor, encontrado null.");
+        }
+
+        return node.Deserialize<System.Text.Json.JsonElement>();
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -319,9 +320,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ArgsDesempateIdoso idoso => new JsonObject { ["idadeMinima"] = idoso.IdadeMinima },
         ArgsDesempatePredicadoFato predicadoFato => new JsonObject
         {
-            ["fato"] = HashCanonicalComputer.NormalizeNfc(predicadoFato.Fato),
-            ["operador"] = HashCanonicalComputer.NormalizeNfc(predicadoFato.Operador),
-            ["valor"] = HashCanonicalComputer.NormalizeNfc(predicadoFato.Valor),
+            ["fato"] = HashCanonicalComputer.NormalizeNfc(predicadoFato.Condicao.Fato),
+            ["operador"] = predicadoFato.Condicao.Operador.ToCodigo(),
+            ["valor"] = JsonNode.Parse(predicadoFato.Condicao.Valor.GetRawText()),
         },
         _ => throw new InvalidOperationException($"Variante de {nameof(ArgsCriterioDesempate)} não reconhecida: {args.GetType()}."),
     };
