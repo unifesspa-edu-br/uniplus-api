@@ -131,13 +131,11 @@ public sealed class EnvelopeCodecTiposTests
     [InlineData("distribuicao.0.referenciaDemografica.censoReferencia")]
     [InlineData("distribuicao.0.referenciaDemografica.baseLegal")]
     [InlineData("distribuicao.0.regraDistribuicao.versao")]
-    // As três do predicado de fato: o handler de comando as exige não-brancas
-    // (DefinirCriteriosDesempateCommandHandler.MontarArgs), mas nem CriterioDesempate.Criar
-    // — que só casa o TIPO dos args — nem o record as validam. Um `fato: ""` faria round-trip
-    // PERFEITO e restauraria um desempate que não decide nada.
+    // As duas primeiras do predicado de fato (fato/operador) passam por leitor.TextoNaoVazio,
+    // que recusa em branco ANTES de chegar a CondicaoDnf.Criar — mesma família de erro
+    // (EnvelopeMalformado) dos demais campos deste teorema.
     [InlineData("criteriosDesempate.3.args.fato")]
     [InlineData("criteriosDesempate.3.args.operador")]
-    [InlineData("criteriosDesempate.3.args.valor")]
     public void TextoVazio_Recusa(string caminho)
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope => Definir(envelope, caminho, "   "));
@@ -147,6 +145,26 @@ public sealed class EnvelopeCodecTiposTests
             "reemite a string vazia tal qual, de modo que o round-trip PASSA. Sem a guarda no leitor, o descarte " +
             "restauraria configuração inválida (ou explodiria numa factory como 500).");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    /// <summary>
+    /// <c>criteriosDesempate[].args.valor</c> (ADR-0111, Story #847) não passa por
+    /// <c>leitor.TextoNaoVazio</c> — <c>Valor</c> é polimórfico (escalar ou array, via
+    /// <c>leitor.Valor</c>) — mas <c>CondicaoDnf.Criar</c> recusa uma string em branco como
+    /// forma incoerente com o operador, com o código de domínio (não o genérico
+    /// <c>EnvelopeMalformado</c>): é a mesma família de recusa nomeada (nunca 500), só que
+    /// mais específica — <c>ReferenciaRegra.Criar</c> já propaga seu próprio código pelo
+    /// mesmo caminho (<see cref="LeitorEnvelope.Propagar{T}"/>).
+    /// </summary>
+    [Fact(DisplayName = "Texto vazio em criteriosDesempate.args.valor é recusado pelo código de domínio de CondicaoDnf")]
+    public void TextoVazio_NoValorDoPredicado_RecusaComCodigoDeDominio()
+    {
+        Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
+            Definir(envelope, "criteriosDesempate.3.args.valor", "   "));
+
+        resultado.IsFailure.Should().BeTrue(
+            "um valor em branco no predicado de fato faria round-trip PERFEITO e restauraria um desempate que não decide nada");
+        resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
     }
 
     /// <summary>

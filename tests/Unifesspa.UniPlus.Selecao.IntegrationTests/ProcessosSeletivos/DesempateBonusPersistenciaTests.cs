@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +33,9 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
 
+    private static CondicaoDnf CondicaoProfessorRural() =>
+        CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
+
     [Fact(DisplayName = "Persiste e recarrega os 4 critérios de desempate (args polimórficos) e o bônus regional")]
     public async Task PersisteERecarrega_DesempateEBonus()
     {
@@ -45,7 +50,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         CriterioDesempate maiorIdade = CriterioDesempate.Criar(
             3, Regra(CriterioDesempateCodigo.MaiorIdade, "c"), new ArgsDesempateMaiorIdade()).Value!;
         CriterioDesempate predicadoFato = CriterioDesempate.Criar(
-            4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ArgsDesempatePredicadoFato("PROFESSOR_RURAL", "IGUAL", "S")).Value!;
+            4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ArgsDesempatePredicadoFato(CondicaoProfessorRural())).Value!;
 
         Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato], PrecondicaoIfMatch.Ausente);
         desempateResult.IsSuccess.Should().BeTrue();
@@ -82,9 +87,9 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
 
         CriterioDesempate predicadoFatoRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 4);
         ArgsDesempatePredicadoFato predicadoArgs = (ArgsDesempatePredicadoFato)predicadoFatoRecarregado.Args;
-        predicadoArgs.Fato.Should().Be("PROFESSOR_RURAL");
-        predicadoArgs.Operador.Should().Be("IGUAL");
-        predicadoArgs.Valor.Should().Be("S");
+        predicadoArgs.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
+        predicadoArgs.Condicao.Operador.Should().Be(Operador.Igual);
+        predicadoArgs.Condicao.Valor.GetBoolean().Should().BeTrue();
 
         recarregado.BonusRegional.Should().NotBeNull();
         recarregado.BonusRegional!.Regra.Codigo.Should().Be(RegraBonusCodigo.Multiplicativo);

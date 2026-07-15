@@ -890,16 +890,25 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
 
             case CriterioDesempateCodigo.PredicadoFato:
                 leitor.ExigirChaves(args, path, "fato", "operador", "valor");
-                // Não-vazios: o caminho de comando os exige assim
-                // (DefinirCriteriosDesempateCommandHandler.MontarArgs), mas nem
-                // CriterioDesempate.Criar (que só casa o TIPO dos args) nem o record os
-                // validam — e o encoder reemite a string vazia tal qual. Um predicado com
-                // `fato: ""` faria round-trip PERFEITO e restauraria um desempate
-                // inexecutável: o certame teria um critério que não decide nada.
+                // A validação de FORMA (fato não-vazio, operador reconhecido, valor coerente
+                // com o operador) é feita por CondicaoDnf.Criar — a mesma factory que o
+                // caminho de comando usa (DefinirCriteriosDesempateCommandHandler). O decoder
+                // não revalida SEMÂNTICA (fato pertence ao vocabulário vivo): RN08 proíbe
+                // reinterpretar um predicado já congelado contra um catálogo que pode ter
+                // mudado — só a forma é exigida aqui.
                 string fato = leitor.TextoNaoVazio(args, "fato", path);
-                string operador = leitor.TextoNaoVazio(args, "operador", path);
-                string valor = leitor.TextoNaoVazio(args, "valor", path);
-                return leitor.Falhou ? null : new ArgsDesempatePredicadoFato(fato, operador, valor);
+                string operadorCodigo = leitor.TextoNaoVazio(args, "operador", path);
+                System.Text.Json.JsonElement valor = leitor.Valor(args, "valor", path);
+                if (leitor.Falhou)
+                {
+                    return null;
+                }
+
+                Operador operador = OperadorCodigo.FromCodigo(operadorCodigo);
+                Result<CondicaoDnf> condicaoResult = CondicaoDnf.Criar(fato, operador, valor);
+                return condicaoResult.IsFailure
+                    ? leitor.Propagar<ArgsCriterioDesempate>(condicaoResult.Error!)
+                    : new ArgsDesempatePredicadoFato(condicaoResult.Value!);
 
             default:
                 return leitor.Propagar<ArgsCriterioDesempate>(new DomainError(

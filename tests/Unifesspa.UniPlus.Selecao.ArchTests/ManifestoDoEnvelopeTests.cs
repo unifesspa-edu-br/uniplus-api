@@ -115,7 +115,11 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(ArgsDesempateMaiorNotaEtapa)] = (["EtapaRef"], []),
         [typeof(ArgsDesempateMaiorIdade)] = ([], []),
         [typeof(ArgsDesempateIdoso)] = (["IdadeMinima"], []),
-        [typeof(ArgsDesempatePredicadoFato)] = (["Fato", "Operador", "Valor"], []),
+        [typeof(ArgsDesempatePredicadoFato)] = (["Condicao"], []),
+        // CondicaoDnf (ADR-0111, Story #847): átomo tipado { Fato, Operador, Valor }
+        // reusado literalmente pela variante acima — mesmo cuidado de propriedade
+        // esquecida se aplica aqui.
+        [typeof(CondicaoDnf)] = (["Fato", "Operador", "Valor"], []),
         [typeof(ArgsElimNotaMinimaEtapa)] = (["EtapaRef", "NotaMinima"], []),
         [typeof(ArgsElimCorteRedacao)] = (["Minimo"], []),
         [typeof(ArgsElimZeroEmArea)] = ([], []),
