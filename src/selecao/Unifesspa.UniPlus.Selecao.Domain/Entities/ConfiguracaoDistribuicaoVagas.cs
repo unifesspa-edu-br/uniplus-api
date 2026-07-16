@@ -160,6 +160,22 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
                     "ConfiguracaoDistribuicaoVagas.ModalidadesFederaisIncompletas",
                     $"A distribuição pela Lei 12.711 exige as 8 modalidades federais e AC; faltam: {string.Join(", ", faltantes)} (INV-6)."));
             }
+
+            // A fórmula do ramo federal (issue #848 §3.3.5) retira sempre da ampla
+            // concorrência: AC = VO − Σ(sub-reservas) − Σ(retiradas). O domínio permite
+            // ComposicaoOrigemCodigo apontar para qualquer modalidade selecionada (para
+            // servir também o ramo institucional/remanejamento), mas uma retirada
+            // federal com origem diferente de AC descontaria de AC no cálculo sem
+            // nunca reduzir a modalidade que ela alega retirar — achado Codex.
+            ModalidadeSelecionada? retiradaForaDeAc = modalidades.FirstOrDefault(
+                m => m.ComposicaoVagas == ComposicaoVagasModalidade.RetiraDe
+                    && !string.Equals(m.ComposicaoOrigemCodigo, ModalidadesFederaisLei12711.Ac, StringComparison.Ordinal));
+            if (retiradaForaDeAc is not null)
+            {
+                return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
+                    "ConfiguracaoDistribuicaoVagas.RetiradaFederalDeveSerDeAmplaConcorrencia",
+                    $"No ramo federal, a modalidade {retiradaForaDeAc.Codigo} (RETIRA_DE) só pode retirar da ampla concorrência (AC) — a fórmula do art. 10 desconta toda retirada de AC."));
+            }
         }
         else if (referenciaDemografica is not null)
         {
