@@ -28,6 +28,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         IUserContext userContext,
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -39,6 +40,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
+        ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -121,8 +123,18 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
+        // Segunda dimensão de conformidade, ao lado da estrutural — mesma antecipação,
+        // mesmo motivo (ADR-0109 D5): um processo não conforme não chega a ser projetado.
+        Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, cancellationToken)
+            .ConfigureAwait(false);
+        if (conformidadeLegal.IsFailure)
+        {
+            return (Result.Failure(conformidadeLegal.Error!), []);
+        }
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, documento.HashSha256!));
+            new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, Conformidade: conformidadeLegal.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

@@ -42,6 +42,7 @@ public static class FecharRetificacaoCommandHandler
         IUserContext userContext,
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -53,6 +54,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
+        ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -173,6 +175,14 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
+        Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, cancellationToken)
+            .ConfigureAwait(false);
+        if (conformidadeLegal.IsFailure)
+        {
+            return (Result.Failure(conformidadeLegal.Error!), []);
+        }
+
         // A configuração canonicalizada é a VIVA — que é, agora, a EDITADA pela sessão. É a
         // diferença inteira em relação ao que a retificação fazia antes desta Feature: ela
         // recanonicalizava a mesma configuração de sempre, e a versão N+1 saía idêntica à N.
@@ -181,7 +191,8 @@ public static class FecharRetificacaoCommandHandler
                 processo,
                 dados,
                 documento.HashSha256!,
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo)));
+                new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
+                conformidadeLegal.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
