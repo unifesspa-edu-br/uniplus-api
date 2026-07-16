@@ -17,11 +17,33 @@ internal static class CorpusFitness
 
     internal static EntradaCanonicalizacao Entrada()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fitness", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fitness", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
         ], PrecondicaoIfMatch.Ausente);
+
+        // Cronograma mínimo (Story #851): UMA fase satisfaz as duas exigências do corpus —
+        // AgrupaEtapas (há etapa acima) e ProduzResultado (há vagas ofertadas abaixo).
+        processo.DefinirCronogramaFases([
+            FaseCronograma.Criar(
+                ordem: 1,
+                faseCanonicaOrigemId: new Guid("44444444-4444-4444-4444-444444444444"),
+                codigo: "RESULTADO_FINAL",
+                donoInstitucional: "CEPS",
+                origemData: OrigemDataFase.Propria,
+                agrupaEtapas: true,
+                permiteComplementacao: false,
+                produzResultado: true,
+                resultadoDefinitivo: true,
+                coletaInscricao: false,
+                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+                atoProduzidoCodigo: "RESULTADO_FINAL",
+                atoProduzidoEfeitoIrreversivel: false,
+                bancasRequeridas: [],
+                regraRecurso: null).Value!,
+        ], [], PrecondicaoIfMatch.Ausente);
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 

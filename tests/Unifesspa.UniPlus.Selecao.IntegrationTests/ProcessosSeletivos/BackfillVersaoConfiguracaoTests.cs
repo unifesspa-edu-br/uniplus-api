@@ -13,6 +13,7 @@ using Npgsql;
 using Testcontainers.PostgreSql;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
@@ -110,6 +111,12 @@ public sealed class BackfillVersaoConfiguracaoTests : IAsyncLifetime
         versao2.VigenteAPartirDe.Should().BeAfter(
             versao1.VigenteAPartirDe,
             "a vigência herda a ordem da publicação legada e não regride");
+
+        ProcessoSeletivo processoLegado = await leitura.ProcessosSeletivos
+            .AsNoTracking()
+            .SingleAsync(p => p.Id == ProcessoId, CancellationToken.None);
+        processoLegado.OrigemCandidatos.Should().Be(OrigemCandidatos.InscricaoPropria,
+            "a migration não pode preencher o sentinela Nenhuma: certames legados preservam o comportamento conservador de exigir coleta própria");
 
         bool tabelaAntigaExiste = await TabelaAntigaExisteAsync();
         tabelaAntigaExiste.Should().BeFalse("a tabela antiga só é dropada DEPOIS de as suas linhas serem transportadas");

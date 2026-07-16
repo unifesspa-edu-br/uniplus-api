@@ -39,8 +39,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public TipoProcesso Tipo { get; private set; }
     public StatusProcesso Status { get; private set; }
 
+    /// <summary>
+    /// De onde vêm os candidatos deste certame (§3.4, Story #851) — NOT NULL, exigido na
+    /// criação. Deriva o piso mínimo do cronograma de fases; nunca ramifica por
+    /// <see cref="Tipo"/>.
+    /// </summary>
+    public OrigemCandidatos OrigemCandidatos { get; private set; }
+
     private readonly List<EtapaProcesso> _etapas = [];
     public IReadOnlyCollection<EtapaProcesso> Etapas => _etapas.AsReadOnly();
+
+    /// <summary>Cronograma de fases do certame (1..*, Story #851) — o eixo temporal, distinto das <see cref="Etapas"/> (eixo de pontuação).</summary>
+    private readonly List<FaseCronograma> _cronogramaFases = [];
+    public IReadOnlyCollection<FaseCronograma> CronogramaFases => _cronogramaFases.AsReadOnly();
 
     public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
 
@@ -78,7 +89,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private ProcessoSeletivo() { }
 
-    public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo)
+    public static ProcessoSeletivo Criar(string nome, TipoProcesso tipo, OrigemCandidatos origemCandidatos)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         if (tipo == TipoProcesso.Nenhum)
@@ -86,10 +97,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             throw new ArgumentException("Tipo do processo é obrigatório.", nameof(tipo));
         }
 
+        if (origemCandidatos == OrigemCandidatos.Nenhuma)
+        {
+            throw new ArgumentException("Origem dos candidatos é obrigatória.", nameof(origemCandidatos));
+        }
+
         return new ProcessoSeletivo
         {
             Nome = nome.Trim(),
             Tipo = tipo,
+            OrigemCandidatos = origemCandidatos,
             Status = StatusProcesso.Rascunho,
         };
     }
@@ -108,13 +125,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        if (etapas.Count == 0)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.EtapasVazias",
-                "O processo deve ter ao menos uma etapa pontuada."));
-        }
-
         List<int> ordensInformadas = [.. etapas.Where(e => e.Ordem.HasValue).Select(e => e.Ordem!.Value)];
         if (ordensInformadas.Distinct().Count() != ordensInformadas.Count)
         {
@@ -123,11 +133,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Cada etapa deve ter uma ordem única dentro do processo."));
         }
 
-        // Sem ao menos uma etapa que componha a nota, CalcularDivisorMedia()
-        // retorna 0 — um processo só com etapas eliminatórias (ou
-        // classificatórias sem peso) prepararia divisão por zero na fórmula
-        // da nota final (NOTA FINAL = Soma(Etapa×peso) / divisor).
-        if (!etapas.Any(e => e.ComponeNota))
+        // §3.5 (Story #851, bicondicional fase×etapa): uma lista vazia é agora um estado
+        // VÁLIDO — o processo sem prova (SiSU, classificação importada) não tem etapa. A
+        // guarda "ao menos uma etapa compõe a nota" só vale QUANDO há etapas: sem ao menos
+        // uma que componha a nota, CalcularDivisorMedia() retorna 0 — um processo só com
+        // etapas eliminatórias (ou classificatórias sem peso) prepararia divisão por zero
+        // na fórmula da nota final (NOTA FINAL = Soma(Etapa×peso) / divisor). O caminho de
+        // lista vazia NÃO pula as guardas abaixo (desempate/eliminação órfãos) — elas
+        // continuam valendo mesmo removendo todas as etapas.
+        if (etapas.Count > 0 && !etapas.Any(e => e.ComponeNota))
         {
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NenhumaEtapaComponeNota",
@@ -371,6 +385,122 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Substitui integralmente o cronograma de fases do processo (Story #851, §3.7):
+    /// mesmo padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/> primeiro,
+    /// <see cref="Result"/> nunca exceção, substituição integral da coleção.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>O grafo de precedências é parâmetro, não navegação</b> (ADR-0042): o domínio
+    /// nunca injeta <c>IPrecedenciaFaseReader</c> — o handler resolve o grafo vigente
+    /// (módulo Configuração, cross-módulo) e o passa já pronto.
+    /// </para>
+    /// <para>
+    /// Valida aqui o que só a raiz consegue provar (referências entre fases do MESMO
+    /// cronograma e contra as etapas do MESMO processo): ordem/fase-canônica únicas
+    /// (CA-06), a direção "fase de avaliação sem etapa" da bicondicional §3.5 (a
+    /// direção "etapa sem fase" é lazy — só aflora no gate de publicação, porque uma
+    /// etapa pode ser declarada DEPOIS do cronograma) e a precedência entre fases
+    /// (§3.3, CA-08/CA-09) — <b>ausência de uma das duas fases de uma aresta não é
+    /// violação</b> (contraprova CA-08).
+    /// </para>
+    /// </remarks>
+    public Result DefinirCronogramaFases(
+        IReadOnlyList<FaseCronograma> fases,
+        IReadOnlyList<ArestaPrecedencia> precedencias,
+        PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+        ArgumentNullException.ThrowIfNull(precedencias);
+
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (fases.Count == 0)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.CronogramaFasesVazio",
+                "O processo deve ter ao menos uma fase no cronograma."));
+        }
+
+        List<int> ordens = [.. fases.Select(f => f.Ordem)];
+        if (ordens.Distinct().Count() != ordens.Count)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.OrdemFaseDuplicada",
+                "Cada fase deve ter uma ordem única dentro do cronograma."));
+        }
+
+        List<Guid> origens = [.. fases.Select(f => f.FaseCanonicaOrigemId)];
+        if (origens.Distinct().Count() != origens.Count)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.FaseCanonicaDuplicada",
+                "A mesma fase canônica não pode aparecer duas vezes no cronograma."));
+        }
+
+        // §3.5 — direção "fase de avaliação sem etapa": bloqueante e IMEDIATA (a fase que
+        // agrupa etapas existe se e somente se há etapa pontuada JÁ declarada no
+        // processo). A direção inversa ("etapa sem fase de avaliação") é validada no
+        // gate de publicação (PendenciaDoCronograma) — uma etapa pode ser declarada
+        // depois do cronograma, e bloquear aqui recusaria uma ordem de montagem legítima.
+        if (fases.Any(static f => f.AgrupaEtapas) && _etapas.Count == 0)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.AvaliacaoSemEtapa",
+                "Uma fase que agrupa etapas foi declarada, mas o processo não tem nenhuma etapa pontuada."));
+        }
+
+        // §3.3 — precedência é dado de cadastro, não código: para toda aresta cujas DUAS
+        // fases estão presentes no cronograma, Ordem(A) < Ordem(B); e, quando a aresta não
+        // permite sobreposição e ambas têm janela, Fim(A) ≤ Inicio(B). A ausência de uma
+        // das duas fases NÃO é violação (CA-08) — o `continue` abaixo é a prova disso.
+        Dictionary<string, FaseCronograma> porCodigo = new(StringComparer.Ordinal);
+        foreach (FaseCronograma fase in fases)
+        {
+            porCodigo[fase.Codigo] = fase;
+        }
+
+        foreach (ArestaPrecedencia aresta in precedencias)
+        {
+            if (!porCodigo.TryGetValue(aresta.AntecessoraCodigo, out FaseCronograma? antecessora)
+                || !porCodigo.TryGetValue(aresta.SucessoraCodigo, out FaseCronograma? sucessora))
+            {
+                continue;
+            }
+
+            if (antecessora.Ordem >= sucessora.Ordem)
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.PrecedenciaFaseViolada",
+                    $"A fase '{aresta.AntecessoraCodigo}' (ordem {antecessora.Ordem}) precede '{aresta.SucessoraCodigo}' (ordem {sucessora.Ordem}) — a ordem declarada viola a precedência do cadastro."));
+            }
+
+            if (!aresta.PermiteSobreposicao
+                && antecessora.Fim is { } fimAntecessora
+                && sucessora.Inicio is { } inicioSucessora
+                && fimAntecessora > inicioSucessora)
+            {
+                return Result.Failure(new DomainError(
+                    "ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida",
+                    $"A janela da fase '{aresta.SucessoraCodigo}' ({sucessora.Inicio:O}–{sucessora.Fim:O}) se sobrepõe à da fase '{aresta.AntecessoraCodigo}' ({antecessora.Inicio:O}–{antecessora.Fim:O}), e o cadastro não permite sobreposição entre elas."));
+            }
+        }
+
+        _cronogramaFases.Clear();
+        foreach (FaseCronograma fase in fases)
+        {
+            fase.VincularProcesso(Id);
+            _cronogramaFases.Add(fase);
+        }
+
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
     /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
     /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
@@ -395,22 +525,42 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Checklist de conformidade estrutural (Story #758 CA-07; reusado por
     /// <see cref="Publicar"/>, Story #759 CA-03) — cobre as dimensões
-    /// estruturalmente OBRIGATÓRIAS do agregado: Etapas (1..*), Oferta de
-    /// atendimento especializado (1), Distribuição de vagas (1..*) e
-    /// Classificação (1). Bônus regional (0..1) e critérios de desempate
-    /// (0..*) são deliberadamente opcionais e NÃO entram — a ausência é um
-    /// estado válido (RN05: ausência de bônus = sem bônus), não uma
-    /// pendência. Única fonte de verdade do checklist: tanto
+    /// estruturalmente OBRIGATÓRIAS do agregado: Oferta de atendimento
+    /// especializado (1), Distribuição de vagas (1..*), Classificação (1) e
+    /// Cronograma de fases (1..*, Story #851). Bônus regional (0..1) e
+    /// critérios de desempate (0..*) são deliberadamente opcionais e NÃO
+    /// entram — a ausência é um estado válido (RN05: ausência de bônus = sem
+    /// bônus), não uma pendência. Única fonte de verdade do checklist: tanto
     /// <c>ObterConformidadeProcessoSeletivoQueryHandler</c> quanto
     /// <see cref="Publicar"/> chamam este método, nunca duplicam a lista.
     /// </summary>
-    public IReadOnlyList<ItemConformidade> AvaliarConformidade() =>
-    [
-        new ItemConformidade("Etapas", _etapas.Count > 0),
-        new ItemConformidade("Atendimento especializado", OfertaAtendimento is not null),
-        new ItemConformidade("Distribuição de vagas", _distribuicaoVagas.Count > 0),
-        new ItemConformidade("Classificação", Classificacao is not null),
-    ];
+    /// <remarks>
+    /// <b>"Etapas" deixou de ser item incondicional (Story #851 §3.5).</b> Um processo
+    /// sem prova (SiSU, <c>CLASSIFICACAO-IMPORTADA</c>) publica sem etapa — a fase que
+    /// agrupa etapas existe se e somente se há etapa, e essa bicondicional é gate à
+    /// parte (<see cref="PendenciaDoCronograma"/>), não item do checklist booleano. O
+    /// que sobrevive aqui é a exigência de <see cref="RegraCalculoCodigo.FormulaMediaPonderada"/>:
+    /// sob essa fórmula, o divisor da média (<see cref="CalcularDivisorMedia"/>) tem de
+    /// ser maior que zero. Sob <see cref="RegraCalculoCodigo.ClassificacaoImportada"/>, a
+    /// classificação dispensa etapa, fórmula e precisão locais — nenhum item aqui.
+    /// </remarks>
+    public IReadOnlyList<ItemConformidade> AvaliarConformidade()
+    {
+        List<ItemConformidade> itens =
+        [
+            new ItemConformidade("Atendimento especializado", OfertaAtendimento is not null),
+            new ItemConformidade("Distribuição de vagas", _distribuicaoVagas.Count > 0),
+            new ItemConformidade("Classificação", Classificacao is not null),
+            new ItemConformidade("Cronograma de fases", _cronogramaFases.Count > 0),
+        ];
+
+        if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })
+        {
+            itens.Add(new ItemConformidade("Divisor da média (fórmula local)", CalcularDivisorMedia() > 0));
+        }
+
+        return itens;
+    }
 
     /// <summary>
     /// Pendência de conformidade do processo, ou <see langword="null"/> quando
@@ -436,6 +586,59 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return new DomainError(
             "ProcessoSeletivo.ConformidadeInsuficiente",
             $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Item))}.");
+    }
+
+    /// <summary>
+    /// Pendências do cronograma que não cabem no checklist booleano de
+    /// <see cref="AvaliarConformidade"/> — cada uma tem o seu próprio <c>DomainError</c>
+    /// nomeado (Story #851 §3.4/§3.5, CA-11/CA-13/CA-14). Chamado por
+    /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/FecharRetificacao),
+    /// sempre <b>depois</b> de <see cref="PendenciaDeConformidade"/>.
+    /// </summary>
+    private DomainError? PendenciaDoCronograma()
+    {
+        bool existeFaseDeAvaliacao = _cronogramaFases.Any(static f => f.AgrupaEtapas);
+
+        // §3.5, direção "fase de avaliação sem etapa" — defesa em profundidade: o mesmo
+        // sentido já é bloqueado eagerly em DefinirCronogramaFases, mas uma etapa
+        // removida DEPOIS (via DefinirEtapas) deixaria uma fase de avaliação órfã sem
+        // que nada a pegasse na hora — o gate de publicação é a rede de segurança.
+        if (existeFaseDeAvaliacao && _etapas.Count == 0)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.AvaliacaoSemEtapa",
+                "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.");
+        }
+
+        // §3.5, direção "etapa sem fase de avaliação" — lazy por natureza (a etapa pode
+        // ser declarada depois do cronograma).
+        if (_etapas.Count > 0 && !existeFaseDeAvaliacao)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",
+                "O processo tem etapa pontuada, mas nenhuma fase do cronograma agrupa etapas.");
+        }
+
+        // §3.4 — piso mínimo derivado da ORIGEM DOS CANDIDATOS, nunca do tipo.
+        if (OrigemCandidatos == OrigemCandidatos.InscricaoPropria
+            && !_cronogramaFases.Any(static f => f.ColetaInscricao))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta",
+                "A origem dos candidatos é inscrição própria, e nenhuma fase do cronograma coleta inscrição.");
+        }
+
+        // §3.4 — havendo vagas ofertadas, o cronograma precisa de ao menos uma fase que
+        // produza resultado.
+        bool temVagasOfertadas = _distribuicaoVagas.Any(static d => d.VoBase > 0);
+        if (temVagasOfertadas && !_cronogramaFases.Any(static f => f.ProduzResultado))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.VagasSemFaseQueProduzResultado",
+                "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado.");
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -493,6 +696,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDeConformidade() is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
+        }
+
+        if (PendenciaDoCronograma() is { } pendenciaCronograma)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
 
         // UMA leitura do relógio para o ato e para a versão que ele cria. O instante
@@ -805,6 +1013,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
+        if (PendenciaDoCronograma() is { } pendenciaCronograma)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
+        }
+
         // Uma única leitura do relógio para o ato e para a versão que ele cria — ver a nota
         // em Publicar.
         //
@@ -961,6 +1174,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         Nome = Nome,
         Tipo = Tipo,
         Status = Status,
+        OrigemCandidatos = OrigemCandidatos,
     };
 
     /// <summary>
@@ -971,13 +1185,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     private DomainError? ValidarGrafo(GrafoConfiguracao grafo)
     {
-        if (grafo.Etapas.Count == 0)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.EtapasVazias",
-                "O processo deve ter ao menos uma etapa pontuada.");
-        }
-
+        // Story #851 §3.5: lista de etapas vazia é estado válido (processo sem prova,
+        // ex. SiSU) — a antiga recusa incondicional foi removida também aqui, espelhando
+        // a mudança em DefinirEtapas.
+        //
         // O Id vem congelado do envelope (D2) — e nem EtapaProcesso nem o agregado o
         // validavam: a unicidade era garantida só pelo handler de PUT /etapas. Um
         // envelope com dois ids iguais produziria duas etapas que o etapa_ref não
@@ -1005,7 +1216,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Cada etapa deve ter uma ordem única dentro do processo.");
         }
 
-        if (!grafo.Etapas.Any(e => e.ComponeNota))
+        if (grafo.Etapas.Count > 0 && !grafo.Etapas.Any(e => e.ComponeNota))
         {
             return new DomainError(
                 "ProcessoSeletivo.NenhumaEtapaComponeNota",
@@ -1068,6 +1279,49 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
                     $"A regra {regra.Regra.Codigo} só se aplica a processo baseado em ENEM (SiSU/PSVR).");
             }
+        }
+
+        // Story #851 — cronograma restaurado: checagens estruturais equivalentes às de
+        // DefinirCronogramaFases, sobre o GRAFO (não sobre o agregado corrente). O grafo
+        // de precedências e a resolução de regra/ato âncora NÃO são reconferidos aqui —
+        // são I/O, e RN08 proíbe reinterpretar um passado legitimamente publicado contra
+        // o catálogo de hoje (mesma doutrina de LeitorEnvelope.Regra).
+        if (grafo.CronogramaFases.Count == 0)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.CronogramaFasesVazio",
+                "O processo deve ter ao menos uma fase no cronograma.");
+        }
+
+        List<int> ordensFases = [.. grafo.CronogramaFases.Select(f => f.Ordem)];
+        if (ordensFases.Distinct().Count() != ordensFases.Count)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.OrdemFaseDuplicada",
+                "Cada fase deve ter uma ordem única dentro do cronograma.");
+        }
+
+        List<Guid> origensFases = [.. grafo.CronogramaFases.Select(f => f.FaseCanonicaOrigemId)];
+        if (origensFases.Distinct().Count() != origensFases.Count)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.FaseCanonicaDuplicada",
+                "A mesma fase canônica não pode aparecer duas vezes no cronograma.");
+        }
+
+        bool existeFaseDeAvaliacaoNoGrafo = grafo.CronogramaFases.Any(static f => f.AgrupaEtapas);
+        if (existeFaseDeAvaliacaoNoGrafo && grafo.Etapas.Count == 0)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.AvaliacaoSemEtapa",
+                "Há uma fase que agrupa etapas no cronograma restaurado, mas nenhuma etapa pontuada.");
+        }
+
+        if (grafo.Etapas.Count > 0 && !existeFaseDeAvaliacaoNoGrafo)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",
+                "Há etapa pontuada no grafo restaurado, mas nenhuma fase agrupa etapas.");
         }
 
         return null;
@@ -1133,6 +1387,53 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         grafo.Classificacao.VincularProcesso(Id);
         Classificacao = grafo.Classificacao;
+
+        // Cronograma de fases (Story #851): nenhuma referência externa aponta para
+        // FaseCronograma.Id (diferente das etapas) — o Id não é congelado no envelope
+        // (§3.7) e nunca sobrevive à reidratação. Por isso a reconciliação é por
+        // ORDEM, não por Id: reusa a instância TRACKED cuja Ordem bate com a da fase
+        // congelada, atualizando-a no lugar (mesmo cuidado do EF que as etapas já
+        // tomam — ver a nota em FaseCronograma.AtualizarSnapshot). Sem isso, o caso
+        // comum de restauração (mesmas ordens, dados diferentes) faria DELETE+INSERT
+        // do mesmo valor de Ordem na mesma transação, colidindo em
+        // ux_fases_cronograma_processo_ordem — o EF não infere essa ordem entre
+        // entidades sem relação de FK.
+        Dictionary<int, FaseCronograma> fasesTracked = _cronogramaFases.ToDictionary(f => f.Ordem);
+        List<FaseCronograma> fases = [];
+        foreach (FaseCronograma congelada in grafo.CronogramaFases)
+        {
+            if (fasesTracked.TryGetValue(congelada.Ordem, out FaseCronograma? viva))
+            {
+                viva.AtualizarSnapshot(
+                    congelada.FaseCanonicaOrigemId,
+                    congelada.Codigo,
+                    congelada.DonoInstitucional,
+                    congelada.OrigemData,
+                    congelada.AgrupaEtapas,
+                    congelada.PermiteComplementacao,
+                    congelada.ProduzResultado,
+                    congelada.ResultadoDefinitivo,
+                    congelada.ColetaInscricao,
+                    congelada.Inicio,
+                    congelada.Fim,
+                    congelada.AtoProduzidoCodigo,
+                    congelada.AtoProduzidoEfeitoIrreversivel,
+                    [.. congelada.BancasRequeridas],
+                    congelada.RegraRecurso);
+                fases.Add(viva);
+            }
+            else
+            {
+                fases.Add(congelada);
+            }
+        }
+
+        _cronogramaFases.Clear();
+        foreach (FaseCronograma fase in fases)
+        {
+            fase.VincularProcesso(Id);
+            _cronogramaFases.Add(fase);
+        }
     }
 
     /// <summary>

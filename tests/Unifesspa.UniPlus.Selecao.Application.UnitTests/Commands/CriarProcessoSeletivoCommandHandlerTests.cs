@@ -18,7 +18,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
-        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU);
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, unitOfWork, CancellationToken.None);

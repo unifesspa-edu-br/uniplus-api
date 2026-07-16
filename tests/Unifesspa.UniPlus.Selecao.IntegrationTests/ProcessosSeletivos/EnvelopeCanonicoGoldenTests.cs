@@ -108,7 +108,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     /// <summary>Agregado de referência — conforme, com as 10 dimensões reais preenchidas.</summary>
     private static ProcessoSeletivo ProcessoDeReferencia()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -354,7 +354,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     private static byte[] CanonicalizarComEliminacoes(bool corteRedacaoPrimeiro)
     {
         // SiSU é baseado em ENEM — é o que admite as duas regras abaixo.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Ordem", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Ordem", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),

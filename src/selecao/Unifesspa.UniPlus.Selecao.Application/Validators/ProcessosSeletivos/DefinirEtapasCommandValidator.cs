@@ -13,9 +13,11 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
 
+        // Story #851 §3.5: lista vazia passa a ser um payload válido (processo sem
+        // prova, ex. SiSU) — só a nulidade do array em si é recusada aqui.
         RuleFor(x => x.Etapas)
-            .NotEmpty()
-            .WithMessage("O processo deve ter ao menos uma etapa pontuada.");
+            .NotNull()
+            .WithMessage("O campo Etapas é obrigatório (pode ser uma lista vazia).");
 
         // Rejeita item nulo no array (ex.: `[null]`) antes das regras de campo —
         // sem isso o ChildRules não gera falha para o elemento nulo e o handler

@@ -12,12 +12,14 @@ public sealed record ProcessoSeletivoDto(
     string Nome,
     string Tipo,
     string Status,
+    string OrigemCandidatos,
     IReadOnlyList<EtapaProcessoDto> Etapas,
     OfertaAtendimentoEspecializadoDto? OfertaAtendimento,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
     ConfiguracaoBonusRegionalDto? BonusRegional,
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
     ConfiguracaoClassificacaoDto? Classificacao,
+    IReadOnlyList<FaseCronogramaDto> CronogramaFases,
     DateTimeOffset CriadoEm)
 {
     /// <summary>

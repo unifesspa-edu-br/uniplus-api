@@ -36,7 +36,7 @@ public sealed class ProcessoSeletivoPublicarTests
     /// </summary>
     private static ProcessoSeletivo NovoProcessoConforme()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -83,8 +83,29 @@ public sealed class ProcessoSeletivoPublicarTests
             regrasEliminacao: []).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         return processo;
     }
+
+    /// <summary>Fase mínima e conforme: agrupa etapas (há 1 acima), produz resultado e coleta inscrição (há vagas e a origem é InscricaoPropria).</summary>
+    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: Guid.CreateVersion7(),
+        codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        produzResultado: true,
+        resultadoDefinitivo: true,
+        coletaInscricao: true,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        atoProduzidoCodigo: "RESULTADO_FINAL",
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
 
     [Fact(DisplayName = "Publicacao_AtomicaStatusESnapshot — processo conforme publica, congela a versão 1 e transita status")]
     public void Publicar_ProcessoConforme_TransitaStatusECongelaVersao()
@@ -158,7 +179,7 @@ public sealed class ProcessoSeletivoPublicarTests
     [Fact(DisplayName = "Publicacao_RecusaSemParametrosObrigatorios — processo sem etapas recusa com checklist de pendências (CA-03)")]
     public void Publicar_SemEtapas_RecusaComConformidadeInsuficiente()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS incompleto", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS incompleto", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         // Nenhuma dimensão obrigatória definida — Etapas/Atendimento/Distribuição/Classificação ausentes.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -193,6 +214,7 @@ public sealed class ProcessoSeletivoPublicarTests
     [InlineData("bonusRegional")]
     [InlineData("criteriosDesempate")]
     [InlineData("classificacao")]
+    [InlineData("cronogramaFases")]
     public void DefinirX_ProcessoPublicado_RecusaMutacao(string dimensao)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -211,6 +233,7 @@ public sealed class ProcessoSeletivoPublicarTests
                 null, null,
                 ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
                 1, []).Value!, PrecondicaoIfMatch.Ausente),
+            "cronogramaFases" => processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente),
             _ => throw new InvalidOperationException("Dimensão desconhecida."),
         };
 

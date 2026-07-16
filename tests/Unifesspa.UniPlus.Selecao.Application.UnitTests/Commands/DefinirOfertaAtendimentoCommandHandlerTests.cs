@@ -35,7 +35,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
     [Fact(DisplayName = "Handle com tipo de deficiência sob condição PcD persiste (CA-06, ADR-0067)")]
     public async Task Handle_TipoDeficienciaSobPcd_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         Guid condicaoId = Guid.CreateVersion7();
         Guid tipoDeficienciaId = Guid.CreateVersion7();
 
@@ -59,7 +59,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
     [Fact(DisplayName = "Handle com tipo de deficiência sem condição PcD recusa (CA-06, ADR-0067)")]
     public async Task Handle_TipoDeficienciaSemPcd_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         Guid condicaoId = Guid.CreateVersion7();
         Guid tipoDeficienciaId = Guid.CreateVersion7();
 
@@ -82,7 +82,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
     [Fact(DisplayName = "Handle com condição inexistente recusa sem persistir")]
     public async Task Handle_CondicaoInexistente_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         Guid condicaoId = Guid.CreateVersion7();
 
         (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, ISelecaoUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);

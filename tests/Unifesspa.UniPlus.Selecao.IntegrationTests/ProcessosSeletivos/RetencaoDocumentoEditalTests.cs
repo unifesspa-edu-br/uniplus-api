@@ -143,7 +143,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
     private async Task<Guid> SemearDocumentoAsync(bool confirmado)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            $"Retenção {Guid.CreateVersion7()}", Domain.Enums.TipoProcesso.SiSU);
+            $"Retenção {Guid.CreateVersion7()}", Domain.Enums.TipoProcesso.SiSU, Domain.Enums.OrigemCandidatos.InscricaoPropria);
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(
             processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));

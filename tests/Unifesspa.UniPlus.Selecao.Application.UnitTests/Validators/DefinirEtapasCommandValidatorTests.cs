@@ -22,11 +22,20 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha quando a lista de etapas é vazia")]
-    public void Rejeita_ListaVazia()
+    [Fact(DisplayName = "Validator aceita lista de etapas vazia (Story #851 §3.5 — processo sem prova é válido)")]
+    public void Aceita_ListaVazia()
     {
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Validator falha quando a lista de etapas é nula")]
+    public void Rejeita_ListaNula()
+    {
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), null!, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas");

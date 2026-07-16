@@ -47,7 +47,7 @@ public sealed class PublicarProcessoSeletivoGateTests
     public async Task Publicar_ProcessoNaoConforme_NaoCanonicaliza()
     {
         // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(
             processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));

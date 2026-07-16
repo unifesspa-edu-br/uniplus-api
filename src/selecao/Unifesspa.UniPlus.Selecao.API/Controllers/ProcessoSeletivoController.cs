@@ -306,6 +306,36 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):
+    /// janela, dono institucional, origem da data, permissão de complementação, ato
+    /// produzido e regra de recurso, por fase. O <c>GET</c> vem do endpoint agregado
+    /// (<see cref="ObterPorId"/>), que passa a devolver <c>CronogramaFases</c> como parte
+    /// do recurso — não há rota aninhada própria de leitura.
+    /// </summary>
+    [HttpPut("{id:guid}/cronograma-fases")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirCronogramaFases(
+        Guid id,
+        [FromBody] IReadOnlyList<FaseCronogramaInput> fases,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirCronogramaFasesCommand(id, fases, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Publica o processo (RN08): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
     /// transação — junto da requisição durável que registra o ato em Publicações

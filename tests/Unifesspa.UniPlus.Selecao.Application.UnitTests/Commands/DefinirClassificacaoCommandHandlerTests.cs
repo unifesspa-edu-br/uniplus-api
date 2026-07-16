@@ -62,7 +62,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com FORMULA-MEDIA-PONDERADA + arredondamento resolve e persiste")]
     public async Task Handle_MediaPonderadaComArredondamento_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
         Mocks mocks = NovosMocks(processo, processo.Id);
         MockRegrasBasicas(mocks);
 
@@ -85,7 +85,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com CLASSIFICACAO-IMPORTADA sem arredondamento resolve e persiste (INV-B8)")]
     public async Task Handle_Importada_SemArredondamento_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(RegraCalculoCodigo.ClassificacaoImportada, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo));
@@ -109,7 +109,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com ELIM-NOTA-MINIMA-ETAPA resolve args e persiste")]
     public async Task Handle_ComEliminacaoNotaMinimaEtapa_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
         EtapaProcesso etapa = EtapaProcesso.Criar("Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
@@ -136,7 +136,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com ELIM-NOTA-MINIMA-ETAPA sem EtapaRef/NotaMinima recusa")]
     public async Task Handle_EliminacaoSemEtapaRef_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
         Mocks mocks = NovosMocks(processo, processo.Id);
         MockRegrasBasicas(mocks);
         mocks.RegraCatalogoReader.ObterAsync(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", Arg.Any<CancellationToken>())
@@ -159,7 +159,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com ELIM-ZERO-EM-AREA e Minimo estranho ao args recusa (payload contraditório)")]
     public async Task Handle_ZeroEmAreaComArgsEstranhos_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         Mocks mocks = NovosMocks(processo, processo.Id);
         MockRegrasBasicas(mocks);
         mocks.RegraCatalogoReader.ObterAsync(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", Arg.Any<CancellationToken>())
@@ -182,7 +182,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com regra de cálculo inexistente recusa")]
     public async Task Handle_RegraCalculoNaoEncontrada_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((RegraCatalogo?)null);
@@ -200,7 +200,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     [Fact(DisplayName = "Handle com regra de cálculo de tipo inválido recusa")]
     public async Task Handle_RegraCalculoTipoInvalido_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.RegraCatalogoReader.ObterAsync(RegraCalculoCodigo.FormulaMediaPonderada, "v1", Arg.Any<CancellationToken>())
             .Returns(Regra(RegraCalculoCodigo.FormulaMediaPonderada, TipoRegra.RegraArredondamento));

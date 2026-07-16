@@ -54,6 +54,12 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(OfertaTipoDeficiencia), nameof(OfertaTipoDeficiencia.TipoDeficienciaNome)),
         ("MunicipioConvenio", LimitesDoEnvelope.MunicipioConvenio, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.MunicipioConvenio)),
         ("BaseLegal", LimitesDoEnvelope.BaseLegal, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.BaseLegal)),
+
+        // Story #851 — cronograma de fases.
+        ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.Codigo)),
+        ("DonoInstitucional", LimitesDoEnvelope.DonoInstitucional, typeof(FaseCronograma), nameof(FaseCronograma.DonoInstitucional)),
+        ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(FaseCronograma), nameof(FaseCronograma.AtoProduzidoCodigo)),
+        ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
     ];
 
     private static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =
@@ -142,6 +148,28 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             demografica.FindProperty(percentual)!.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPercentual, $"LimitesDoEnvelope.PrecisaoPercentual espelha a coluna de {percentual}");
         }
+
+        // Story #851 — ArgsRegraPrazoRecurso.AtoAncoraCodigo e as precisões do prazo/das
+        // duas suspensividades.
+        IEntityType argsPrazoRecurso = contexto.Model
+            .FindEntityType(typeof(RegraRecursoFase))!
+            .GetNavigations()
+            .Single(n => n.Name == nameof(RegraRecursoFase.Args))
+            .TargetEntityType;
+
+        argsPrazoRecurso.FindProperty(nameof(ArgsRegraPrazoRecurso.AtoAncoraCodigo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.TipoAtoCodigo, "LimitesDoEnvelope.TipoAtoCodigo espelha a coluna do código do ato âncora");
+
+        foreach (string campoPrazo in new[]
+        {
+            nameof(ArgsRegraPrazoRecurso.PrazoValor),
+            nameof(ArgsRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
+            nameof(ArgsRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
+        })
+        {
+            argsPrazoRecurso.FindProperty(campoPrazo)!.GetPrecision()
+                .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo}");
+        }
     }
 
     /// <summary>
@@ -162,7 +190,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             .. Comprimentos.Select(static c => c.Nome),
             .. Precisoes.Select(static p => p.Nome),
             // Exercidas em OwnedTypes_BatemComOSchema.
-            "RegraCodigo", "RegraVersao", "CensoReferencia", "PrecisaoPercentual",
+            "RegraCodigo", "RegraVersao", "CensoReferencia", "PrecisaoPercentual", "PrecisaoPrazo",
 
             // NumeroDoAto não é coluna do agregado — os DadosEdital são do ato, não da
             // configuração. O limite vem dos validators de publicar e de retificar (60), e é

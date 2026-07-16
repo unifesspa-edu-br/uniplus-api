@@ -23,6 +23,8 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Property(p => p.Nome).HasMaxLength(300).IsRequired();
         builder.Property(p => p.Tipo).HasConversion<int>().IsRequired();
         builder.Property(p => p.Status).HasConversion<int>().IsRequired();
+        // Story #851 §3.4: NOT NULL, exigido na criação — sem produção, migration direta.
+        builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();
 
         // Coleções filhas do agregado: entidades próprias com FK para a raiz
         // (nunca owned types).
@@ -56,6 +58,12 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey<ConfiguracaoClassificacao>(c => c.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Cronograma de fases (Story #851) — 1..*, mesmo padrão de Etapas/DistribuicaoVagas.
+        builder.HasMany(p => p.CronogramaFases)
+            .WithOne()
+            .HasForeignKey(f => f.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // A sessão editorial (ADR-0110 D3) — 1:1, como as demais filhas singulares. Ela é
         // efêmera (apagada no fechamento e no descarte) e não é evidência forense: a
         // auditoria com peso jurídico vive na VersaoConfiguracao, que é append-only.
@@ -71,6 +79,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Navigation(p => p.CriteriosDesempate)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(p => p.CronogramaFases)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

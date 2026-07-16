@@ -47,9 +47,28 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int NumeroDoAto = 60;
 
+    // Story #851 — cronograma de fases.
+    /// <summary><c>FaseCronograma.Codigo</c> — snapshot-copy do código canônico de <c>FaseCanonica</c>.</summary>
+    public const int FaseCodigo = 60;
+
+    /// <summary><c>FaseCronograma.DonoInstitucional</c> — snapshot-copy do dono típico.</summary>
+    public const int DonoInstitucional = 60;
+
+    /// <summary>
+    /// Código de tipo de ato de Publicações — <c>FaseCronograma.AtoProduzidoCodigo</c> e
+    /// <c>ArgsRegraPrazoRecurso.AtoAncoraCodigo</c> compartilham o mesmo limite.
+    /// </summary>
+    public const int TipoAtoCodigo = 60;
+
+    /// <summary><c>BancaRequerida.Codigo</c> — snapshot-copy do código classificatório de <c>TipoBanca</c>.</summary>
+    public const int TipoBancaCodigo = 60;
+
     // Decimais — precisão total (o `p` de numeric(p,s)).
     public const int PrecisaoEtapa = 18;
     public const int PrecisaoBonus = 6;
     public const int PrecisaoPr = 5;
     public const int PrecisaoPercentual = 5;
+
+    /// <summary>Precisão de <c>ArgsRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
+    public const int PrecisaoPrazo = 18;
 }

@@ -1906,6 +1906,142 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/cronograma-fases": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FaseCronogramaInput"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FaseCronogramaInput"
+                }
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FaseCronogramaInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Requisi\u00E7\u00E3o concorrente com a mesma Idempotency-Key ainda em processamento (uniplus.idempotency.processing_conflict). Repetir depois \u2014 a opera\u00E7\u00E3o anterior ainda n\u00E3o concluiu."
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor."
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/publicacao": {
       "post": {
         "tags": [
@@ -2811,6 +2947,64 @@
           }
         }
       },
+      "ArgsRegraPrazoRecursoDto": {
+        "required": [
+          "prazoValor",
+          "prazoUnidade",
+          "atoAncoraCodigo",
+          "suspensividadePrimeiraInstanciaValor",
+          "suspensividadePrimeiraInstanciaUnidade",
+          "suspensividadeSegundaInstanciaValor",
+          "suspensividadeSegundaInstanciaUnidade"
+        ],
+        "type": "object",
+        "properties": {
+          "prazoValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "prazoUnidade": {
+            "type": "string"
+          },
+          "atoAncoraCodigo": {
+            "type": "string"
+          },
+          "suspensividadePrimeiraInstanciaValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "suspensividadePrimeiraInstanciaUnidade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "suspensividadeSegundaInstanciaValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "suspensividadeSegundaInstanciaUnidade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AtualizarObrigatoriedadeLegalCommand": {
         "required": [
           "id",
@@ -2911,6 +3105,27 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "BancaRequeridaDto": {
+        "required": [
+          "id",
+          "tipoBancaOrigemId",
+          "codigo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoBancaOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           }
         }
       },
@@ -3237,7 +3452,8 @@
       "CriarProcessoSeletivoCommand": {
         "required": [
           "nome",
-          "tipo"
+          "tipo",
+          "origemCandidatos"
         ],
         "type": "object",
         "properties": {
@@ -3246,6 +3462,9 @@
           },
           "tipo": {
             "$ref": "#/components/schemas/TipoProcesso"
+          },
+          "origemCandidatos": {
+            "$ref": "#/components/schemas/OrigemCandidatos"
           }
         }
       },
@@ -3703,6 +3922,172 @@
           }
         }
       },
+      "FaseCronogramaDto": {
+        "required": [
+          "id",
+          "ordem",
+          "faseCanonicaOrigemId",
+          "codigo",
+          "donoInstitucional",
+          "origemData",
+          "agrupaEtapas",
+          "permiteComplementacao",
+          "produzResultado",
+          "resultadoDefinitivo",
+          "coletaInscricao",
+          "inicio",
+          "fim",
+          "atoProduzidoCodigo",
+          "atoProduzidoEfeitoIrreversivel",
+          "bancasRequeridas",
+          "regraRecurso"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "faseCanonicaOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "donoInstitucional": {
+            "type": "string"
+          },
+          "origemData": {
+            "type": "string"
+          },
+          "agrupaEtapas": {
+            "type": "boolean"
+          },
+          "permiteComplementacao": {
+            "type": "boolean"
+          },
+          "produzResultado": {
+            "type": "boolean"
+          },
+          "resultadoDefinitivo": {
+            "type": "boolean"
+          },
+          "coletaInscricao": {
+            "type": "boolean"
+          },
+          "inicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "fim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "atoProduzidoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "atoProduzidoEfeitoIrreversivel": {
+            "type": "boolean"
+          },
+          "bancasRequeridas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BancaRequeridaDto"
+            }
+          },
+          "regraRecurso": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraRecursoFaseDto"
+              }
+            ]
+          }
+        }
+      },
+      "FaseCronogramaInput": {
+        "required": [
+          "ordem",
+          "faseCanonicaId",
+          "inicio",
+          "fim",
+          "atoProduzidoCodigo",
+          "tiposBancaIds",
+          "regraRecurso"
+        ],
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "faseCanonicaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inicio": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "fim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "atoProduzidoCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tiposBancaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "regraRecurso": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraRecursoFaseInput"
+              }
+            ]
+          }
+        }
+      },
       "FecharRetificacaoRequest": {
         "required": [
           "numero",
@@ -4049,6 +4434,14 @@
           }
         }
       },
+      "OrigemCandidatos": {
+        "enum": [
+          "nenhuma",
+          "inscricaoPropria",
+          "importacaoExterna"
+        ],
+        "type": "string"
+      },
       "PredicadoObrigatoriedade": {
         "required": [
           "$tipo"
@@ -4273,12 +4666,14 @@
           "nome",
           "tipo",
           "status",
+          "origemCandidatos",
           "etapas",
           "ofertaAtendimento",
           "distribuicaoVagas",
           "bonusRegional",
           "criteriosDesempate",
           "classificacao",
+          "cronogramaFases",
           "criadoEm"
         ],
         "type": "object",
@@ -4294,6 +4689,9 @@
             "type": "string"
           },
           "status": {
+            "type": "string"
+          },
+          "origemCandidatos": {
             "type": "string"
           },
           "etapas": {
@@ -4343,6 +4741,12 @@
                 "$ref": "#/components/schemas/ConfiguracaoClassificacaoDto"
               }
             ]
+          },
+          "cronogramaFases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FaseCronogramaDto"
+            }
           },
           "criadoEm": {
             "type": "string",
@@ -4574,6 +4978,100 @@
           }
         }
       },
+      "RegraRecursoFaseDto": {
+        "required": [
+          "id",
+          "regra",
+          "args"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regra": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "args": {
+            "$ref": "#/components/schemas/ArgsRegraPrazoRecursoDto"
+          }
+        }
+      },
+      "RegraRecursoFaseInput": {
+        "required": [
+          "regraCodigo",
+          "regraVersao",
+          "prazoValor",
+          "prazoUnidade",
+          "atoAncoraCodigo",
+          "suspensividadePrimeiraInstanciaValor",
+          "suspensividadePrimeiraInstanciaUnidade",
+          "suspensividadeSegundaInstanciaValor",
+          "suspensividadeSegundaInstanciaUnidade"
+        ],
+        "type": "object",
+        "properties": {
+          "regraCodigo": {
+            "type": "string"
+          },
+          "regraVersao": {
+            "type": "string"
+          },
+          "prazoValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "prazoUnidade": {
+            "$ref": "#/components/schemas/UnidadePrazo"
+          },
+          "atoAncoraCodigo": {
+            "type": "string"
+          },
+          "suspensividadePrimeiraInstanciaValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "suspensividadePrimeiraInstanciaUnidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
+            ]
+          },
+          "suspensividadeSegundaInstanciaValor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "suspensividadeSegundaInstanciaUnidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
+            ]
+          }
+        }
+      },
       "RetificacaoEmCursoDto": {
         "required": [
           "id",
@@ -4716,6 +5214,15 @@
           "transferenciaExterna",
           "portadorDiploma",
           "reopcao"
+        ],
+        "type": "string"
+      },
+      "UnidadePrazo": {
+        "enum": [
+          "nenhuma",
+          "horas",
+          "dias",
+          "diasUteis"
         ],
         "type": "string"
       },

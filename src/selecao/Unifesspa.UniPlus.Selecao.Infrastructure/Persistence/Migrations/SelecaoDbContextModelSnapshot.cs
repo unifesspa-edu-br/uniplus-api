@@ -92,6 +92,43 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("idempotency_cache", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FaseCronogramaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fase_cronograma_id");
+
+                    b.Property<Guid>("TipoBancaOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tipo_banca_origem_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_bancas_requeridas");
+
+                    b.HasIndex("FaseCronogramaId")
+                        .HasDatabaseName("ix_bancas_requeridas_fase_cronograma_id");
+
+                    b.ToTable("bancas_requeridas", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
                 {
                     b.Property<Guid>("Id")
@@ -363,6 +400,99 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_etapas_processo_processo_seletivo_id_ordem");
 
                     b.ToTable("etapas_processo", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AgrupaEtapas")
+                        .HasColumnType("boolean")
+                        .HasColumnName("agrupa_etapas");
+
+                    b.Property<string>("AtoProduzidoCodigo")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("ato_produzido_codigo");
+
+                    b.Property<bool>("AtoProduzidoEfeitoIrreversivel")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ato_produzido_efeito_irreversivel");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("codigo");
+
+                    b.Property<bool>("ColetaInscricao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("coleta_inscricao");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DonoInstitucional")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("dono_institucional");
+
+                    b.Property<Guid>("FaseCanonicaOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fase_canonica_origem_id");
+
+                    b.Property<DateTimeOffset?>("Fim")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fim");
+
+                    b.Property<DateTimeOffset?>("Inicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<int>("OrigemData")
+                        .HasColumnType("integer")
+                        .HasColumnName("origem_data");
+
+                    b.Property<bool>("PermiteComplementacao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("permite_complementacao");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<bool>("ProduzResultado")
+                        .HasColumnType("boolean")
+                        .HasColumnName("produz_resultado");
+
+                    b.Property<bool>("ResultadoDefinitivo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("resultado_definitivo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fases_cronograma");
+
+                    b.HasIndex("ProcessoSeletivoId", "FaseCanonicaOrigemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_fases_cronograma_processo_fase_canonica");
+
+                    b.HasIndex("ProcessoSeletivoId", "Ordem")
+                        .IsUnique()
+                        .HasDatabaseName("ux_fases_cronograma_processo_ordem");
+
+                    b.ToTable("fases_cronograma", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
@@ -796,6 +926,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("nome");
 
+                    b.Property<int>("OrigemCandidatos")
+                        .HasColumnType("integer")
+                        .HasColumnName("origem_candidatos");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -1188,6 +1322,34 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("regras_eliminacao", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraRecursoFase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FaseCronogramaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fase_cronograma_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_regras_recurso_fase");
+
+                    b.HasIndex("FaseCronogramaId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_regras_recurso_fase_fase_cronograma");
+
+                    b.ToTable("regras_recurso_fase", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.VersaoConfiguracao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1286,6 +1448,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_versoes_configuracao_numero_positivo", "numero_versao > 0");
                         });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", null)
+                        .WithMany("BancasRequeridas")
+                        .HasForeignKey("FaseCronogramaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_bancas_requeridas_fases_cronograma_fase_cronograma_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
@@ -1617,6 +1789,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_etapas_processo_processos_seletivos_processo_seletivo_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithMany("CronogramaFases")
+                        .HasForeignKey("ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_fases_cronograma_processos_seletivos_processo_seletivo_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDistribuicaoVagas", null)
@@ -1734,6 +1916,104 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraRecursoFase", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", null)
+                        .WithOne("RegraRecurso")
+                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraRecursoFase", "FaseCronogramaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_regras_recurso_fase_fases_cronograma_fase_cronograma_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
+                        {
+                            b1.Property<Guid>("RegraRecursoFaseId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(128)
+                                .HasColumnType("character varying(128)")
+                                .HasColumnName("regra_codigo");
+
+                            b1.Property<string>("Hash")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("regra_hash")
+                                .IsFixedLength();
+
+                            b1.Property<string>("Versao")
+                                .IsRequired()
+                                .HasMaxLength(16)
+                                .HasColumnType("character varying(16)")
+                                .HasColumnName("regra_versao");
+
+                            b1.HasKey("RegraRecursoFaseId");
+
+                            b1.ToTable("regras_recurso_fase", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RegraRecursoFaseId")
+                                .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ArgsRegraPrazoRecurso", "Args", b1 =>
+                        {
+                            b1.Property<Guid>("RegraRecursoFaseId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("AtoAncoraCodigo")
+                                .IsRequired()
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)")
+                                .HasColumnName("ato_ancora_codigo");
+
+                            b1.Property<int>("PrazoUnidade")
+                                .HasColumnType("integer")
+                                .HasColumnName("prazo_unidade");
+
+                            b1.Property<decimal>("PrazoValor")
+                                .HasPrecision(18, 4)
+                                .HasColumnType("numeric(18,4)")
+                                .HasColumnName("prazo_valor");
+
+                            b1.Property<int?>("SuspensividadePrimeiraInstanciaUnidade")
+                                .HasColumnType("integer")
+                                .HasColumnName("suspensividade_1a_instancia_unidade");
+
+                            b1.Property<decimal?>("SuspensividadePrimeiraInstanciaValor")
+                                .HasPrecision(18, 4)
+                                .HasColumnType("numeric(18,4)")
+                                .HasColumnName("suspensividade_1a_instancia_valor");
+
+                            b1.Property<int?>("SuspensividadeSegundaInstanciaUnidade")
+                                .HasColumnType("integer")
+                                .HasColumnName("suspensividade_2a_instancia_unidade");
+
+                            b1.Property<decimal?>("SuspensividadeSegundaInstanciaValor")
+                                .HasPrecision(18, 4)
+                                .HasColumnType("numeric(18,4)")
+                                .HasColumnName("suspensividade_2a_instancia_valor");
+
+                            b1.HasKey("RegraRecursoFaseId");
+
+                            b1.ToTable("regras_recurso_fase", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RegraRecursoFaseId")
+                                .HasConstraintName("fk_regras_recurso_fase_regras_recurso_fase_id");
+                        });
+
+                    b.Navigation("Args")
+                        .IsRequired();
+
+                    b.Navigation("Regra")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.VersaoConfiguracao", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
@@ -1754,6 +2034,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Navigation("Modalidades");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", b =>
+                {
+                    b.Navigation("BancasRequeridas");
+
+                    b.Navigation("RegraRecurso");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", b =>
                 {
                     b.Navigation("Condicoes");
@@ -1770,6 +2057,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Navigation("Classificacao");
 
                     b.Navigation("CriteriosDesempate");
+
+                    b.Navigation("CronogramaFases");
 
                     b.Navigation("DistribuicaoVagas");
 

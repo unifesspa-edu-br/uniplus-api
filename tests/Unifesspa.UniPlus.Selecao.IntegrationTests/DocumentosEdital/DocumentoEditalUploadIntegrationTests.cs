@@ -74,7 +74,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
     private async Task<(SelecaoDbContext Context, ProcessoSeletivo Processo)> NovoProcessoAsync()
     {
         SelecaoDbContext context = _dbFixture.CreateDbContext();
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU (teste #784)", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU (teste #784)", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         context.ProcessosSeletivos.Add(processo);
         await context.SaveChangesAsync();
         return (context, processo);

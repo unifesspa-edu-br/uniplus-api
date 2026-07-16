@@ -177,7 +177,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
     private static ProcessoSeletivo ProcessoConforme(TipoProcesso tipo)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restauração", tipo);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restauração", tipo, OrigemCandidatos.ImportacaoExterna);
 
         processo.DefinirEtapas([
             EtapaProcesso.Reidratar(EtapaOriginal, "Prova Original", CaraterEtapa.Classificatoria, 1m, null, 1),
@@ -185,6 +185,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao()], PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(Classificacao([]), PrecondicaoIfMatch.Ausente);
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente);
 
         return processo;
     }
@@ -224,13 +225,34 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     private static GrafoConfiguracao Grafo(
         IReadOnlyList<EtapaProcesso>? etapas = null,
         IReadOnlyList<CriterioDesempate>? criterios = null,
-        IReadOnlyList<RegraEliminacao>? eliminacoes = null) => new(
+        IReadOnlyList<RegraEliminacao>? eliminacoes = null,
+        IReadOnlyList<FaseCronograma>? cronogramaFases = null) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
             criteriosDesempate: criterios ?? [],
-            classificacao: Classificacao(eliminacoes ?? []));
+            classificacao: Classificacao(eliminacoes ?? []),
+            cronogramaFases: cronogramaFases ?? [FaseConforme()]);
+
+    /// <summary>Uma fase mínima e conforme: agrupa etapas (há 1 etapa por padrão) e produz resultado (há vagas por padrão).</summary>
+    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000001"),
+        codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        produzResultado: true,
+        resultadoDefinitivo: true,
+        coletaInscricao: false,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        atoProduzidoCodigo: "RESULTADO_FINAL",
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
 
     private static ConfiguracaoDistribuicaoVagas Distribuicao() =>
         ConfiguracaoDistribuicaoVagas.Criar(

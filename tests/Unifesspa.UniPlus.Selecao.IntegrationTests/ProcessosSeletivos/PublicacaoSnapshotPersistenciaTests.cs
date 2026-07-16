@@ -40,7 +40,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
     private static ProcessoSeletivo NovoProcessoConforme(string nome)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -80,6 +80,25 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             nOpcoesAlocacao: 1,
             regrasEliminacao: []).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FaseCronograma faseConforme = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_FINAL",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: false,
+            produzResultado: true,
+            resultadoDefinitivo: true,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "RESULTADO_FINAL",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -137,7 +156,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (10 reais + 7 stubs) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (11 reais + 6 stubs) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -178,19 +197,21 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
         stubs.Should().BeEquivalentTo(
             [
-                "cascataRemanejamento", "cronogramaFases", "divulgacao",
+                "cascataRemanejamento", "divulgacao",
                 "documentosExigidos", "formulario", "identidadesUnidade", "vagas",
             ],
-            "são exatamente as 7 dimensões da Feature #40 ainda sem dono — e os 10 restantes são reais");
+            "são exatamente as 6 dimensões da Feature #40 ainda sem dono — e os 11 restantes (Story #851 promoveu cronogramaFases) são reais");
 
         // D8 — nenhum bloco REAL emite `nao_construido`. Atendimento e classificação
         // são dimensões obrigatórias: a ausência é pendência de conformidade, não um
         // stub silencioso.
         objeto["atendimento"]!.AsObject().Should().NotContainKey("status");
         objeto["classificacao"]!.AsObject().Should().NotContainKey("status");
+        objeto["cronogramaFases"]!.AsObject().Should().NotContainKey("status");
 
         // Blocos reais carregam dado de negócio, não o marcador de stub.
         objeto["etapas"]!.AsArray().Should().NotBeEmpty();
         objeto["bonusRegional"]!["presente"]!.GetValue<bool>().Should().BeFalse();
+        objeto["cronogramaFases"]!["fases"]!.AsArray().Should().NotBeEmpty();
     }
 }

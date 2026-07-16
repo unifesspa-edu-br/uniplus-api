@@ -35,7 +35,7 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
     [Fact(DisplayName = "Handle com processo existente cria documento pendente e devolve URL pre-assinada")]
     public async Task Handle_ProcessoExistente_CriaPendenteEDevolveUrl()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
         IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
@@ -60,7 +60,7 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
     [Fact(DisplayName = "Handle não persiste nada quando a geração da URL pre-assinada falha")]
     public async Task Handle_FalhaAoGerarUrl_NaoPersisteRegistroOrfao()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
         IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
