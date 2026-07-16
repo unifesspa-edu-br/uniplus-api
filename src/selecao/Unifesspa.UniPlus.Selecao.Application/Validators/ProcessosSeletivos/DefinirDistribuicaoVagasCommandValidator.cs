@@ -54,7 +54,9 @@ public sealed class DefinirDistribuicaoVagasCommandValidator : AbstractValidator
                 .WithMessage("A oferta deve ter ao menos uma modalidade selecionada.");
 
             item.RuleFor(d => d.Quadro)
-                .Must(quadro => quadro.Select(q => q.ModalidadeId).Distinct().Count() == quadro.Count)
+                .NotNull()
+                .WithMessage("O quadro é obrigatório — envie lista vazia quando não houver quantidade a fixar.")
+                .Must(quadro => quadro is null || quadro.Select(q => q.ModalidadeId).Distinct().Count() == quadro.Count)
                 .WithMessage("O quadro não pode repetir o mesmo ModalidadeId.");
 
             item.RuleForEach(d => d.Quadro).ChildRules(quantidade =>
