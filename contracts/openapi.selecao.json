@@ -3367,8 +3367,15 @@
           "voBase",
           "pr",
           "regraDistribuicao",
+          "regraAjuste",
           "referenciaDemografica",
-          "modalidades"
+          "modalidades",
+          "quadro",
+          "vrNominal",
+          "vrFinal",
+          "estouro",
+          "capadoEmVo",
+          "totalPublicado"
         ],
         "type": "object",
         "properties": {
@@ -3399,6 +3406,16 @@
           "regraDistribuicao": {
             "$ref": "#/components/schemas/ReferenciaRegraDto"
           },
+          "regraAjuste": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaRegraDto"
+              }
+            ]
+          },
           "referenciaDemografica": {
             "oneOf": [
               {
@@ -3414,6 +3431,47 @@
             "items": {
               "$ref": "#/components/schemas/ModalidadeSelecionadaDto"
             }
+          },
+          "quadro": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VagaOfertadaDto"
+            }
+          },
+          "vrNominal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "vrFinal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "estouro": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "capadoEmVo": {
+            "type": "boolean"
+          },
+          "totalPublicado": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -4334,7 +4392,8 @@
           "remanejamentoFallback",
           "criteriosCumulativos",
           "acaoQuandoIndeferido",
-          "baseLegal"
+          "baseLegal",
+          "quantidadeDeclarada"
         ],
         "type": "object",
         "properties": {
@@ -4402,6 +4461,15 @@
           },
           "baseLegal": {
             "type": "string"
+          },
+          "quantidadeDeclarada": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -5506,6 +5574,36 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "VagaOfertadaDto": {
+        "required": [
+          "id",
+          "modalidadeOrigemId",
+          "modalidadeCodigo",
+          "quantidade"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modalidadeOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modalidadeCodigo": {
+            "type": "string"
+          },
+          "quantidade": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       }
