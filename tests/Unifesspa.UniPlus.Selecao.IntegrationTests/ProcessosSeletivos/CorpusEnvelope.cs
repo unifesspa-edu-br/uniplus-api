@@ -259,6 +259,7 @@ internal static class CorpusEnvelope
             voBase: 60,
             pr: 0.7500m,
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'),
+            regraAjuste: Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'),
             referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(
                 ReferenciaDemografica,
                 censoReferencia: "Censo IBGE 2022",
@@ -280,28 +281,29 @@ internal static class CorpusEnvelope
             voBase: 40,
             pr: 0.5000m,
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, '8'),
+            regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                    [], null, "Res. Unifesspa 532/2021").Value!,
+                    [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000002"), "V", "PcD em ampla concorrência",
                     NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, null,
                     RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null,
-                    ["laudo_medico"], "RECLASSIFICAR_AC", "Lei 13.146/2015").Value!,
+                    ["laudo_medico"], "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000003"), "IND", "Indígena",
                     NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "QUI", "AC",
-                    ["autodeclaracao", "documento_funai"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019").Value!,
+                    ["autodeclaracao", "documento_funai"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000004"), "QUI", "Quilombola",
                     NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
-                    ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019").Value!,
+                    ["autodeclaracao"], "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
             ]).Value!;
 
     internal static DadosEdital DadosRicos() => DadosEdital.Criar(

@@ -34,6 +34,16 @@ public sealed class ModalidadeSelecionada : EntityBase
     public string? AcaoQuandoIndeferido { get; private set; }
     public string BaseLegal { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// Quantidade de vagas fixada pelo edital para esta modalidade (issue
+    /// #848/ADR-0115) — só um campo de transporte. A obrigatoriedade/vedação
+    /// (fixa no ramo institucional e nas composições RETIRA_DE/SUPLEMENTAR_AO_TOTAL;
+    /// proibida nas calculadas) é validada em
+    /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/>, que é quem conhece o
+    /// ramo de distribuição — esta factory não tem essa informação.
+    /// </summary>
+    public int? QuantidadeDeclarada { get; private set; }
+
     private ModalidadeSelecionada() { }
 
     /// <summary>
@@ -55,7 +65,8 @@ public sealed class ModalidadeSelecionada : EntityBase
         string? remanejamentoFallback,
         IReadOnlyList<string> criteriosCumulativos,
         string? acaoQuandoIndeferido,
-        string baseLegal)
+        string baseLegal,
+        int? quantidadeDeclarada = null)
     {
         ArgumentNullException.ThrowIfNull(criteriosCumulativos);
 
@@ -63,6 +74,13 @@ public sealed class ModalidadeSelecionada : EntityBase
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.CodigoObrigatorio", "Código da modalidade é obrigatório."));
+        }
+
+        if (quantidadeDeclarada is < 0)
+        {
+            return Result<ModalidadeSelecionada>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa",
+                $"A quantidade de vagas declarada para {codigo} não pode ser negativa ({quantidadeDeclarada})."));
         }
 
         // INV-2: natureza_legal, composicao_vagas e base_legal completos.
@@ -161,6 +179,7 @@ public sealed class ModalidadeSelecionada : EntityBase
             CriteriosCumulativos = [.. criteriosCumulativos],
             AcaoQuandoIndeferido = acaoQuandoIndeferido,
             BaseLegal = baseLegal.Trim(),
+            QuantidadeDeclarada = quantidadeDeclarada,
         });
     }
 

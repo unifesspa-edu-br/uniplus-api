@@ -142,6 +142,28 @@ public static class DefinirDistribuicaoVagasCommandHandler
             return Result<ConfiguracaoDistribuicaoVagas>.Failure(referenciaRegraResult.Error!);
         }
 
+        Result<ReferenciaRegra?> regraAjusteResult = await ResolverRegraAjusteAsync(
+            input, regraCatalogoReader, cancellationToken).ConfigureAwait(false);
+        if (regraAjusteResult.IsFailure)
+        {
+            return Result<ConfiguracaoDistribuicaoVagas>.Failure(regraAjusteResult.Error!);
+        }
+
+        // Achado Codex (revisão do plano, ADR-0115 §2.1): o quadro traz um código que não
+        // é modalidade selecionada é reconciliação de IDs crus — Application, não Domain.
+        DomainError? erroQuadroOrfao = input.Quadro
+            .Where(q => !input.ModalidadeIds.Contains(q.ModalidadeId))
+            .Select(q => new DomainError(
+                "ConfiguracaoDistribuicaoVagas.QuadroModalidadeNaoSelecionada",
+                $"A modalidade {q.ModalidadeId} no quadro não está entre as modalidades selecionadas desta oferta."))
+            .FirstOrDefault();
+        if (erroQuadroOrfao is not null)
+        {
+            return Result<ConfiguracaoDistribuicaoVagas>.Failure(erroQuadroOrfao);
+        }
+
+        Dictionary<Guid, int> quadroPorModalidade = input.Quadro.ToDictionary(q => q.ModalidadeId, q => q.Quantidade);
+
         ReferenciaReservaDemograficaSnapshot? demografica = null;
         if (input.ReferenciaReservaDemograficaId is { } referenciaId)
         {
@@ -178,6 +200,8 @@ public static class DefinirDistribuicaoVagasCommandHandler
                     $"Modalidade {modalidadeId} não encontrada ou não está mais viva."));
             }
 
+            int? quantidadeDeclarada = quadroPorModalidade.TryGetValue(modalidadeId, out int quantidade) ? quantidade : null;
+
             Result<ModalidadeSelecionada> modalidadeResult = ModalidadeSelecionada.Criar(
                 view.Id,
                 view.Codigo,
@@ -191,7 +215,8 @@ public static class DefinirDistribuicaoVagasCommandHandler
                 view.RemanejamentoFallback,
                 view.CriteriosCumulativos,
                 view.AcaoQuandoIndeferido,
-                view.BaseLegal ?? string.Empty);
+                view.BaseLegal ?? string.Empty,
+                quantidadeDeclarada);
 
             if (modalidadeResult.IsFailure)
             {
@@ -206,7 +231,46 @@ public static class DefinirDistribuicaoVagasCommandHandler
             input.VoBase,
             input.Pr,
             referenciaRegraResult.Value!,
+            regraAjusteResult.Value,
             demografica,
             modalidades);
+    }
+
+    /// <summary>
+    /// Resolve a regra de ajuste (<c>TipoRegra.RegraAjusteDistribuicaoVagas</c>)
+    /// no catálogo, quando informada. Ausência é válida — o Domain decide se é
+    /// obrigatória conforme o ramo (federal exige, institucional não).
+    /// </summary>
+    private static async Task<Result<ReferenciaRegra?>> ResolverRegraAjusteAsync(
+        ConfiguracaoDistribuicaoVagasInput input,
+        IRegraCatalogoReader regraCatalogoReader,
+        CancellationToken cancellationToken)
+    {
+        if (input.RegraAjusteCodigo is null)
+        {
+            return Result<ReferenciaRegra?>.Success(null);
+        }
+
+        RegraCatalogo? regraAjuste = await regraCatalogoReader
+            .ObterAsync(input.RegraAjusteCodigo, input.RegraAjusteVersao!, cancellationToken)
+            .ConfigureAwait(false);
+        if (regraAjuste is null)
+        {
+            return Result<ReferenciaRegra?>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.RegraAjusteNaoEncontrada",
+                $"Regra de ajuste {input.RegraAjusteCodigo}/{input.RegraAjusteVersao} não encontrada no rol_de_regras."));
+        }
+
+        if (regraAjuste.Tipo != TipoRegra.RegraAjusteDistribuicaoVagas)
+        {
+            return Result<ReferenciaRegra?>.Failure(new DomainError(
+                "ConfiguracaoDistribuicaoVagas.RegraAjusteTipoInvalido",
+                $"A regra {input.RegraAjusteCodigo}/{input.RegraAjusteVersao} não é do tipo regra_ajuste_distribuicao_vagas."));
+        }
+
+        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(regraAjuste.Codigo, regraAjuste.Versao, regraAjuste.Hash);
+        return referencia.IsFailure
+            ? Result<ReferenciaRegra?>.Failure(referencia.Error!)
+            : Result<ReferenciaRegra?>.Success(referencia.Value);
     }
 }

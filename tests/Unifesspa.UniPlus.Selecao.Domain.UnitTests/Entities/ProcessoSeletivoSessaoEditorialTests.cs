@@ -526,13 +526,15 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             remanejamentoFallback: null,
             criteriosCumulativos: [],
             acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021").Value!;
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
 
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(),
             voBase: 40,
             pr: 1m,
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+            regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente)

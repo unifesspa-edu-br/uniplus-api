@@ -15,15 +15,19 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     private static ReferenciaRegra RegraInstitucional() =>
         ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
 
+    private static ReferenciaRegra RegraAjuste() =>
+        ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", new string('c', 64)).Value!;
+
     private static ReferenciaReservaDemograficaSnapshot Demografica() =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;
 
-    private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, ComposicaoVagasModalidade composicao) =>
+    private static ModalidadeSelecionada Modalidade(
+        string codigo, NaturezaLegalModalidade natureza, ComposicaoVagasModalidade composicao, int? quantidadeDeclarada = null) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza, composicao,
             composicaoOrigemCodigo: null,
             natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
-            null, null, null, [], null, "base legal").Value!;
+            null, null, null, [], null, "base legal", quantidadeDeclarada).Value!;
 
     private static List<ModalidadeSelecionada> AsOitoFederaisMaisAc() =>
     [
@@ -42,7 +46,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_Lei12711Completa_Sucesso()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), Demografica(), AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc());
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Modalidades.Should().HaveCount(9);
@@ -53,14 +57,16 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     {
         List<ModalidadeSelecionada> modalidades =
         [
-            Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal),
-            Modalidade("QUIL", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal),
+            Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
+            Modalidade("QUIL", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 30),
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), referenciaDemografica: null, modalidades);
+            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), regraAjuste: null, referenciaDemografica: null, modalidades);
 
         resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.VagasOfertadas.Should().HaveCount(2);
+        resultado.Value!.TotalPublicado.Should().Be(60);
     }
 
     [Theory(DisplayName = "Criar com VO_base não positivo falha")]
@@ -69,7 +75,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_VoBaseInvalido_Falha(int voBase)
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase, pr: 0.5m, RegraLei12711(), Demografica(), AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.VoBaseInvalido");
@@ -81,7 +87,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_PrForaDoLimite_Falha(double pr)
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, (decimal)pr, RegraLei12711(), Demografica(), AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase: 50, (decimal)pr, RegraLei12711(), RegraAjuste(), Demografica(), AsOitoFederaisMaisAc());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.PrForaDoLimite");
@@ -91,7 +97,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_ModalidadesVazias_Falha()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), Demografica(), []);
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadesVazias");
@@ -107,7 +113,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         ];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, modalidades);
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, modalidades);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
@@ -123,7 +129,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         // "AC" não está selecionado nesta oferta — a origem do RETIRA_DE
         // aponta para uma modalidade ausente do conjunto.
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, [retiraDeSemOrigemSelecionada]);
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, [retiraDeSemOrigemSelecionada]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ComposicaoOrigemNaoSelecionada");
@@ -141,7 +147,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         // "QUIL" (o par) não está selecionado — só "IND" e "AC" (o fallback).
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, [indSemParSelecionado, ac]);
+            Guid.CreateVersion7(), voBase: 50, pr: 1m, RegraInstitucional(), null, null, [indSemParSelecionado, ac]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RemanejamentoParNaoSelecionado");
@@ -151,7 +157,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     public void Criar_Lei12711SemDemografica_Falha()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), referenciaDemografica: null, AsOitoFederaisMaisAc());
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), referenciaDemografica: null, AsOitoFederaisMaisAc());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaObrigatoria");
@@ -163,7 +169,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades = [.. AsOitoFederaisMaisAc().Where(m => m.Codigo != ModalidadesFederaisLei12711.LiEp)];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), Demografica(), modalidades);
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadesFederaisIncompletas");
@@ -175,7 +181,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         List<ModalidadeSelecionada> modalidades = [Modalidade("IND", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal)];
 
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), Demografica(), modalidades);
+            Guid.CreateVersion7(), voBase: 60, pr: 1m, RegraInstitucional(), null, Demografica(), modalidades);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaIndevida");

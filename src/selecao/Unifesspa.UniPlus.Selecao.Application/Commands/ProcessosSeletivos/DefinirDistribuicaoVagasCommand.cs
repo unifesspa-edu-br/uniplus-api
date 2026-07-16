@@ -19,14 +19,25 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
     decimal Pr,
     string RegraDistribuicaoCodigo,
     string RegraDistribuicaoVersao,
+    string? RegraAjusteCodigo,
+    string? RegraAjusteVersao,
     Guid? ReferenciaReservaDemograficaId,
-    IReadOnlyList<Guid> ModalidadeIds);
+    IReadOnlyList<Guid> ModalidadeIds,
+    IReadOnlyList<QuantidadeVagaInput> Quadro);
+
+/// <summary>
+/// Quantidade que o edital fixa para uma modalidade — obrigatória para as
+/// modalidades de retirada/suplemento no ramo federal, e para todas no ramo
+/// institucional; recusada para as modalidades calculadas do ramo federal
+/// (issue #848/ADR-0115).
+/// </summary>
+public sealed record QuantidadeVagaInput(Guid ModalidadeId, int Quantidade);
 
 /// <summary>
 /// Substitui integralmente a distribuição de vagas do processo (Story #773,
-/// modelagem P-A): uma <c>ConfiguracaoDistribuicaoVagas</c> por oferta de
-/// curso. O <c>QuadroDeVagas</c> (quantidade calculada por modalidade) não é
-/// definido aqui — é output derivado de um motor futuro sobre estes inputs.
+/// modelagem P-A + issue #848/ADR-0115): uma <c>ConfiguracaoDistribuicaoVagas</c>
+/// por oferta de curso, com o quadro de vagas (calculado no ramo federal,
+/// fixado no institucional) materializado na mesma operação.
 /// </summary>
 public sealed record DefinirDistribuicaoVagasCommand(
     Guid ProcessoSeletivoId,

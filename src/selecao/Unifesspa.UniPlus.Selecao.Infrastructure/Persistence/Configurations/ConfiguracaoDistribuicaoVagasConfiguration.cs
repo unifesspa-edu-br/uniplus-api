@@ -65,6 +65,16 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         });
         builder.Navigation(c => c.ReferenciaDemografica).IsRequired(false);
 
+        // RegraAjuste (issue #848/ADR-0115) — obrigatória no ramo federal, opcional
+        // no institucional (quadro fixo não reconcilia).
+        builder.OwnsOne(c => c.RegraAjuste, regraAjuste =>
+        {
+            regraAjuste.Property(r => r.Codigo).HasColumnName("regra_ajuste_codigo").HasMaxLength(RegraCodigoMaxLength).IsRequired();
+            regraAjuste.Property(r => r.Versao).HasColumnName("regra_ajuste_versao").HasMaxLength(RegraVersaoMaxLength).IsRequired();
+            regraAjuste.Property(r => r.Hash).HasColumnName("regra_ajuste_hash").HasMaxLength(HashLength).IsFixedLength().IsRequired();
+        });
+        builder.Navigation(c => c.RegraAjuste).IsRequired(false);
+
         // Coleção filha: entidade própria com FK para a raiz (nunca owned types).
         builder.HasMany(c => c.Modalidades)
             .WithOne()
@@ -72,6 +82,18 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.Modalidades)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // O quadro de vagas (issue #848/ADR-0115) — output derivado, materializado
+        // dentro da mesma factory que os insumos (ADR-0115), nunca por comando
+        // separado. Mesma forma de mapeamento das Modalidades: entidade própria,
+        // FK para a raiz, substituída por inteiro a cada redefinição.
+        builder.HasMany(c => c.VagasOfertadas)
+            .WithOne()
+            .HasForeignKey(v => v.ConfiguracaoDistribuicaoVagasId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(c => c.VagasOfertadas)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // UNIQUE parcial: uma configuração de distribuição por oferta de curso

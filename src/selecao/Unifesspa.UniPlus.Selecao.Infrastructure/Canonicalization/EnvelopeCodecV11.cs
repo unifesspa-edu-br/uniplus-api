@@ -35,7 +35,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class EnvelopeCodecV11 : IEnvelopeCodec
 {
     /// <summary>
-    /// Os 5 blocos sem dono (ADR-0109 D8). Um bloco <b>real</b> nunca emite
+    /// Os 4 blocos sem dono (ADR-0109 D8). Um bloco <b>real</b> nunca emite
     /// <c>nao_construido</c> na raiz; um stub que virou objeto rico é forma nova, e forma
     /// nova é bump de versão. <c>documentosExigidos</c> saiu daqui na Story #853 — ele
     /// próprio virou bloco real, com a sub-chave <c>exigencias</c> (#554) ainda stub
@@ -43,7 +43,6 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// </summary>
     private static readonly string[] Stubs =
     [
-        "vagas",
         "formulario",
         "cascataRemanejamento",
         "divulgacao",
@@ -66,6 +65,8 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         "cronogramaFases",
         // Story #853 — documentosExigidos deixa de ser stub (obrigatoriedades[] real).
         "documentosExigidos",
+        // issue #848/ADR-0115 — vagas deixa de ser stub (quadro sempre materializado).
+        "vagas",
     ];
 
     /// <summary>
@@ -360,10 +361,54 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     {
         JsonArray arrayDistribuicao = leitor.Array(payload, "distribuicao", "$");
         JsonArray arrayModalidades = leitor.Array(payload, "modalidades", "$");
+        JsonArray arrayVagas = leitor.Array(payload, "vagas", "$");
         IReadOnlyList<string> ofertasDeclaradas = leitor.Textos(payload, "ofertas", "$");
         if (leitor.Falhou)
         {
             return [];
+        }
+
+        // O bloco `vagas` (issue #848/ADR-0115) é validado por forma — cada entrada tem de
+        // existir, ter chave estrutural correta e cobrir a mesma oferta que `distribuicao`.
+        // O VALOR (o quadro em si) NÃO é lido daqui: ele é recomputado por
+        // ConfiguracaoDistribuicaoVagas.Criar a partir dos insumos (voBase/pr/regras/
+        // modalidades com quantidadeDeclarada), que é o que prova a reprodutibilidade
+        // não-circular (CA-13) — ler e injetar o valor congelado tornaria a prova tautológica.
+        List<Guid> ofertasEmVagas = [];
+        for (int i = 0; i < arrayVagas.Count; i++)
+        {
+            string path = $"vagas[{i}]";
+            JsonObject item = leitor.ItemObjeto(arrayVagas, i, "vagas");
+            leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "quadro", "vrNominal", "vrFinal", "estouro", "capadoEmVo", "totalPublicado");
+
+            Guid ofertaVagaId = leitor.Identificador(item, "ofertaCursoOrigemId", path);
+            JsonArray quadroArray = leitor.Array(item, "quadro", path);
+            leitor.Inteiro(item, "vrNominal", path);
+            leitor.Inteiro(item, "vrFinal", path);
+            leitor.Inteiro(item, "estouro", path);
+            leitor.Booleano(item, "capadoEmVo", path);
+            leitor.Inteiro(item, "totalPublicado", path);
+
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            for (int j = 0; j < quadroArray.Count; j++)
+            {
+                string quadroPath = $"{path}.quadro[{j}]";
+                JsonObject linha = leitor.ItemObjeto(quadroArray, j, $"{path}.quadro");
+                leitor.ExigirChaves(linha, quadroPath, "modalidadeCodigo", "quantidade");
+                leitor.TextoNaoVazio(linha, "modalidadeCodigo", quadroPath, LimitesDoEnvelope.ModalidadeCodigo);
+                leitor.Inteiro(linha, "quantidade", quadroPath);
+            }
+
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            ofertasEmVagas.Add(ofertaVagaId);
         }
 
         Dictionary<Guid, List<ModalidadeSelecionada>> modalidadesPorOferta = [];
@@ -390,12 +435,12 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         }
 
         List<Guid> ofertasEmDistribuicao = [];
-        List<(Guid Oferta, int VoBase, decimal Pr, ReferenciaRegra Regra, ReferenciaReservaDemograficaSnapshot? Demografica)> inputs = [];
+        List<(Guid Oferta, int VoBase, decimal Pr, ReferenciaRegra Regra, ReferenciaRegra? RegraAjuste, ReferenciaReservaDemograficaSnapshot? Demografica)> inputs = [];
         for (int i = 0; i < arrayDistribuicao.Count; i++)
         {
             string path = $"distribuicao[{i}]";
             JsonObject item = leitor.ItemObjeto(arrayDistribuicao, i, "distribuicao");
-            leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "voBase", "pr", "regraDistribuicao", "referenciaDemografica");
+            leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "voBase", "pr", "regraDistribuicao", "regraAjuste", "referenciaDemografica");
 
             Guid ofertaId = leitor.Identificador(item, "ofertaCursoOrigemId", path);
             int voBase = leitor.Inteiro(item, "voBase", path);
@@ -406,6 +451,11 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
                 path,
                 RegraDistribuicaoVagasCodigo.Lei12711,
                 RegraDistribuicaoVagasCodigo.Institucional);
+            ReferenciaRegra? regraAjuste = leitor.RegraOpcional(
+                item,
+                "regraAjuste",
+                path,
+                RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico);
             ReferenciaReservaDemograficaSnapshot? demografica = LerReferenciaDemografica(leitor, item, path);
 
             if (leitor.Falhou)
@@ -414,19 +464,19 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             }
 
             ofertasEmDistribuicao.Add(ofertaId);
-            inputs.Add((ofertaId, voBase, pr, regra, demografica));
+            inputs.Add((ofertaId, voBase, pr, regra, regraAjuste, demografica));
         }
 
-        if (VerificarBlocosDerivados(ofertasEmDistribuicao, ofertasEmModalidades, ofertasDeclaradas) is { } incoerencia)
+        if (VerificarBlocosDerivados(ofertasEmDistribuicao, ofertasEmModalidades, ofertasEmVagas, ofertasDeclaradas) is { } incoerencia)
         {
             return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(incoerencia) ?? [];
         }
 
         List<ConfiguracaoDistribuicaoVagas> distribuicao = [];
-        foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaReservaDemograficaSnapshot? demografica) in inputs)
+        foreach ((Guid oferta, int voBase, decimal pr, ReferenciaRegra regra, ReferenciaRegra? regraAjuste, ReferenciaReservaDemograficaSnapshot? demografica) in inputs)
         {
             Result<ConfiguracaoDistribuicaoVagas> configuracao = ConfiguracaoDistribuicaoVagas.Criar(
-                oferta, voBase, pr, regra, demografica, modalidadesPorOferta[oferta]);
+                oferta, voBase, pr, regra, regraAjuste, demografica, modalidadesPorOferta[oferta]);
             if (configuracao.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(configuracao.Error!) ?? [];
@@ -441,6 +491,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     private static DomainError? VerificarBlocosDerivados(
         List<Guid> emDistribuicao,
         List<Guid> emModalidades,
+        List<Guid> emVagas,
         IReadOnlyList<string> emOfertas)
     {
         if (emDistribuicao.Distinct().Count() != emDistribuicao.Count)
@@ -448,6 +499,13 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             return new DomainError(
                 ErrosCodecEnvelope.BlocosDerivadosIncoerentes,
                 "O bloco 'distribuicao' repete uma oferta de curso — cada oferta tem no máximo uma distribuição.");
+        }
+
+        if (emVagas.Distinct().Count() != emVagas.Count)
+        {
+            return new DomainError(
+                ErrosCodecEnvelope.BlocosDerivadosIncoerentes,
+                "O bloco 'vagas' repete uma oferta de curso — cada oferta tem no máximo um quadro.");
         }
 
         List<Guid> ofertas = [];
@@ -475,12 +533,15 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         HashSet<Guid> conjuntoDistribuicao = [.. emDistribuicao];
         HashSet<Guid> conjuntoOfertas = [.. ofertas];
         HashSet<Guid> conjuntoModalidades = [.. emModalidades];
+        HashSet<Guid> conjuntoVagas = [.. emVagas];
 
-        if (!conjuntoDistribuicao.SetEquals(conjuntoOfertas) || !conjuntoDistribuicao.SetEquals(conjuntoModalidades))
+        if (!conjuntoDistribuicao.SetEquals(conjuntoOfertas)
+            || !conjuntoDistribuicao.SetEquals(conjuntoModalidades)
+            || !conjuntoDistribuicao.SetEquals(conjuntoVagas))
         {
             return new DomainError(
                 ErrosCodecEnvelope.BlocosDerivadosIncoerentes,
-                "Os blocos 'distribuicao', 'modalidades' e 'ofertas' derivam da mesma coleção e não declaram o mesmo conjunto de ofertas de curso (ADR-0110 D8).");
+                "Os blocos 'distribuicao', 'modalidades', 'vagas' e 'ofertas' derivam da mesma coleção e não declaram o mesmo conjunto de ofertas de curso (ADR-0110 D8).");
         }
 
         return null;
@@ -546,7 +607,8 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             "remanejamentoFallback",
             "criteriosCumulativos",
             "acaoQuandoIndeferido",
-            "baseLegal");
+            "baseLegal",
+            "quantidadeDeclarada");
 
         Guid modalidadeOrigemId = leitor.Identificador(item, "modalidadeOrigemId", path);
         string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.ModalidadeCodigo);
@@ -565,6 +627,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         IReadOnlyList<string> criterios = leitor.Textos(item, "criteriosCumulativos", path);
         string? acaoQuandoIndeferido = leitor.TextoOpcional(item, "acaoQuandoIndeferido", path, LimitesDoEnvelope.Token);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegal);
+        int? quantidadeDeclarada = leitor.InteiroOpcional(item, "quantidadeDeclarada", path);
 
         if (leitor.Falhou)
         {
@@ -594,7 +657,8 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             fallback,
             criterios,
             acaoQuandoIndeferido,
-            baseLegal);
+            baseLegal,
+            quantidadeDeclarada);
 
         return modalidade.IsFailure ? leitor.Propagar<ModalidadeSelecionada>(modalidade.Error!) : modalidade.Value;
     }

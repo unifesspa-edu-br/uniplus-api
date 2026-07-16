@@ -260,13 +260,14 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             voBase: 40,
             pr: 1m,
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+            regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [
                 ModalidadeSelecionada.Criar(
                     new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                    [], null, "Res. Unifesspa 532/2021").Value!,
+                    [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
             ]).Value!;
 
     private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>

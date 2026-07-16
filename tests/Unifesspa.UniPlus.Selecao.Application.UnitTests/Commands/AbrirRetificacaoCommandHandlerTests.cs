@@ -203,7 +203,8 @@ public sealed class AbrirRetificacaoCommandHandlerTests
             remanejamentoFallback: null,
             criteriosCumulativos: [],
             acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021").Value!;
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
 
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
@@ -211,6 +212,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
                 voBase: 40,
                 pr: 1m,
                 regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+                regraAjuste: null,
                 referenciaDemografica: null,
                 modalidades: [modalidade]).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

@@ -64,7 +64,10 @@ public sealed class ManifestoDoEnvelopeTests
             [("OfertaAtendimentoEspecializadoId", "FK interna.")]),
 
         [typeof(ConfiguracaoDistribuicaoVagas)] = (
-            ["OfertaCursoOrigemId", "VoBase", "Pr", "RegraDistribuicao", "ReferenciaDemografica", "Modalidades"],
+            [
+                "OfertaCursoOrigemId", "VoBase", "Pr", "RegraDistribuicao", "RegraAjuste", "ReferenciaDemografica",
+                "Modalidades", "VrNominal", "VrFinal", "Estouro", "CapadoEmVo", "TotalPublicado", "VagasOfertadas",
+            ],
             [("ProcessoSeletivoId", "FK interna.")]),
 
         [typeof(ModalidadeSelecionada)] = (
@@ -72,7 +75,14 @@ public sealed class ManifestoDoEnvelopeTests
                 "ModalidadeOrigemId", "Codigo", "Descricao", "NaturezaLegal", "ComposicaoVagas",
                 "ComposicaoOrigemCodigo", "RegraRemanejamento", "RemanejamentoDestino", "RemanejamentoPar",
                 "RemanejamentoFallback", "CriteriosCumulativos", "AcaoQuandoIndeferido", "BaseLegal",
+                "QuantidadeDeclarada",
             ],
+            [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),
+
+        // issue #848/ADR-0115 — o quadro de vagas: output derivado, materializado dentro da
+        // mesma factory que os insumos (não um comando separado).
+        [typeof(VagaOfertada)] = (
+            ["ModalidadeOrigemId", "ModalidadeCodigo", "Quantidade"],
             [("ConfiguracaoDistribuicaoVagasId", "FK interna.")]),
 
         [typeof(ConfiguracaoBonusRegional)] = (

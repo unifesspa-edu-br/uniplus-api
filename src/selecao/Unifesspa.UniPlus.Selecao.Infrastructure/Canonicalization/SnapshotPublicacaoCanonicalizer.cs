@@ -11,12 +11,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
 /// ADR-0109). Projeta a configuração viva do agregado num payload de 17 chaves
-/// — <b>12 blocos reais + 5 stubs</b> <c>{"status":"nao_construido"}</c> para as
+/// — <b>13 blocos reais + 4 stubs</b> <c>{"status":"nao_construido"}</c> para as
 /// dimensões que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
 /// devolve os bytes via <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/>.
-/// <c>documentosExigidos</c> (Story #853) é um dos 12: já carrega
+/// <c>documentosExigidos</c> (Story #853) é um dos 13: já carrega
 /// <c>obrigatoriedades[]</c> real, com <c>exigencias[]</c> (#554) ainda
-/// aninhada como stub — o bloco nasce parcialmente real.
+/// aninhada como stub — o bloco nasce parcialmente real. <c>vagas</c> (issue
+/// #848/ADR-0115) é outro: o quadro por oferta, calculado no ramo federal ou
+/// fixado no institucional, sempre materializado junto da configuração.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -70,12 +72,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private const int EscalaPercentual = 2;
 
     /// <summary>
-    /// Os 5 blocos que ainda não têm dono (ADR-0109 D8): <c>vagas</c>,
-    /// <c>formulario</c>, <c>cascataRemanejamento</c>, <c>divulgacao</c>,
-    /// <c>identidadesUnidade</c> — mais a sub-chave <c>exigencias</c> dentro de
-    /// <c>documentosExigidos</c> (#554). Um bloco de topo <b>real</b> nunca emite
-    /// este literal na raiz: se a dimensão é obrigatória, a ausência é pendência
-    /// de conformidade e o gate recusa antes de canonicalizar.
+    /// Os 4 blocos que ainda não têm dono (ADR-0109 D8): <c>formulario</c>,
+    /// <c>cascataRemanejamento</c>, <c>divulgacao</c>, <c>identidadesUnidade</c>
+    /// — mais a sub-chave <c>exigencias</c> dentro de <c>documentosExigidos</c>
+    /// (#554). <c>vagas</c> saiu daqui na issue #848 — virou bloco real, sempre
+    /// materializado junto da configuração (ADR-0115). Um bloco de topo
+    /// <b>real</b> nunca emite este literal na raiz: se a dimensão é
+    /// obrigatória, a ausência é pendência de conformidade e o gate recusa
+    /// antes de canonicalizar.
     /// </summary>
     private static readonly JsonObject NaoConstruido = new() { ["status"] = "nao_construido" };
 
@@ -95,7 +99,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         {
             ["periodo"] = SerializarPeriodo(dados),
             ["etapas"] = SerializarEtapas(processo),
-            ["vagas"] = NaoConstruido.DeepClone(),
+            ["vagas"] = SerializarVagas(processo),
             ["distribuicao"] = SerializarDistribuicao(processo),
             ["modalidades"] = SerializarModalidades(processo),
             ["ofertas"] = SerializarOfertas(processo),
@@ -176,9 +180,46 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["voBase"] = configuracao.VoBase,
                 ["pr"] = HashCanonicalComputer.SerializeDecimalCanonical(configuracao.Pr, EscalaPadrao),
                 ["regraDistribuicao"] = SerializarReferenciaRegra(configuracao.RegraDistribuicao),
+                ["regraAjuste"] = configuracao.RegraAjuste is { } regraAjuste ? SerializarReferenciaRegra(regraAjuste) : null,
                 ["referenciaDemografica"] = configuracao.ReferenciaDemografica is { } referencia
                     ? SerializarReferenciaDemografica(referencia)
                     : null,
+            });
+        }
+
+        return array;
+    }
+
+    /// <summary>
+    /// O quadro de vagas (issue #848/ADR-0115) — output derivado, congelado
+    /// separadamente dos insumos (<see cref="SerializarDistribuicao"/>) para
+    /// que a prova de reprodutibilidade não seja tautológica: recomputa-se o
+    /// quadro a partir dos insumos congelados e compara-se a este bloco.
+    /// </summary>
+    private static JsonArray SerializarVagas(ProcessoSeletivo processo)
+    {
+        JsonArray array = [];
+        foreach (ConfiguracaoDistribuicaoVagas configuracao in OrdenarPorOfertaCursoOrigemId(processo.DistribuicaoVagas))
+        {
+            JsonArray quadro = [];
+            foreach (VagaOfertada vaga in configuracao.VagasOfertadas.OrderBy(static v => v.ModalidadeCodigo, StringComparer.Ordinal))
+            {
+                quadro.Add(new JsonObject
+                {
+                    ["modalidadeCodigo"] = HashCanonicalComputer.NormalizeNfc(vaga.ModalidadeCodigo),
+                    ["quantidade"] = vaga.Quantidade,
+                });
+            }
+
+            array.Add(new JsonObject
+            {
+                ["ofertaCursoOrigemId"] = configuracao.OfertaCursoOrigemId,
+                ["quadro"] = quadro,
+                ["vrNominal"] = configuracao.VrNominal,
+                ["vrFinal"] = configuracao.VrFinal,
+                ["estouro"] = configuracao.Estouro,
+                ["capadoEmVo"] = configuracao.CapadoEmVo,
+                ["totalPublicado"] = configuracao.TotalPublicado,
             });
         }
 
@@ -220,6 +261,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                     ["criteriosCumulativos"] = new JsonArray([.. modalidade.CriteriosCumulativos.Select(static c => (JsonNode?)JsonValue.Create(c))]),
                     ["acaoQuandoIndeferido"] = modalidade.AcaoQuandoIndeferido,
                     ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(modalidade.BaseLegal),
+                    ["quantidadeDeclarada"] = modalidade.QuantidadeDeclarada,
                 });
             }
         }

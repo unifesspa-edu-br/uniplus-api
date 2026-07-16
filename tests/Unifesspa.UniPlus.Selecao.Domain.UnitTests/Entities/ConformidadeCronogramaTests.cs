@@ -27,12 +27,13 @@ public sealed class ConformidadeCronogramaTests
             voBase: voBase,
             pr: 1m,
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+            regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
                     ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
-                    null, null, null, [], null, "Res. Unifesspa 532/2021").Value!,
+                    null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: voBase).Value!,
             ]).Value!;
 
     private static Result<FaseCronograma> Fase(

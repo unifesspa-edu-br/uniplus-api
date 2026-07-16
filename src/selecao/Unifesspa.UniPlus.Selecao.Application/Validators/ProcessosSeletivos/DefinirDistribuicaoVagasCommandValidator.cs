@@ -52,6 +52,21 @@ public sealed class DefinirDistribuicaoVagasCommandValidator : AbstractValidator
             item.RuleFor(d => d.ModalidadeIds)
                 .NotEmpty()
                 .WithMessage("A oferta deve ter ao menos uma modalidade selecionada.");
+
+            item.RuleFor(d => d.Quadro)
+                .Must(quadro => quadro.Select(q => q.ModalidadeId).Distinct().Count() == quadro.Count)
+                .WithMessage("O quadro não pode repetir o mesmo ModalidadeId.");
+
+            item.RuleForEach(d => d.Quadro).ChildRules(quantidade =>
+            {
+                quantidade.RuleFor(q => q.ModalidadeId)
+                    .NotEmpty()
+                    .WithMessage("ModalidadeId do quadro é obrigatório.");
+
+                quantidade.RuleFor(q => q.Quantidade)
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("A quantidade de vagas de uma modalidade não pode ser negativa.");
+            });
         });
     }
 }

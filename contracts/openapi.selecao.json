@@ -3424,8 +3424,11 @@
           "pr",
           "regraDistribuicaoCodigo",
           "regraDistribuicaoVersao",
+          "regraAjusteCodigo",
+          "regraAjusteVersao",
           "referenciaReservaDemograficaId",
-          "modalidadeIds"
+          "modalidadeIds",
+          "quadro"
         ],
         "type": "object",
         "properties": {
@@ -3455,6 +3458,18 @@
           "regraDistribuicaoVersao": {
             "type": "string"
           },
+          "regraAjusteCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraAjusteVersao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "referenciaReservaDemograficaId": {
             "type": [
               "null",
@@ -3467,6 +3482,12 @@
             "items": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          "quadro": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuantidadeVagaInput"
             }
           }
         }
@@ -4929,6 +4950,27 @@
           },
           "ato": {
             "$ref": "#/components/schemas/DadosDoAtoRequest"
+          }
+        }
+      },
+      "QuantidadeVagaInput": {
+        "required": [
+          "modalidadeId",
+          "quantidade"
+        ],
+        "type": "object",
+        "properties": {
+          "modalidadeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantidade": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
