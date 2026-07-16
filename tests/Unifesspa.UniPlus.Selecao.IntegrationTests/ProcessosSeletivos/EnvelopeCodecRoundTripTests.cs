@@ -11,6 +11,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
@@ -93,6 +94,67 @@ public sealed class EnvelopeCodecRoundTripTests
         AssertRoundTrip(processo, versao, congelado);
     }
 
+    [Fact(DisplayName = "CA-13/CA-20 — o round-trip preserva obrigatoriedades[] com Conformidade não vazia, ordenada por RegraId mesmo com regras fora de ordem na entrada")]
+    public void RoundTrip_ComConformidadeLegalCongelada_PreservaObrigatoriedadesOrdenadasPorRegraId()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+
+        RegraAvaliada regraMaisRecente = new(
+            RegraId: new Guid("aaaaaaaa-0000-7000-8000-000000000002"),
+            RegraCodigo: "REGRA-B",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            TipoProcessoCodigoAvaliado: "SiSU",
+            Predicado: new EtapaObrigatoria("Prova Objetiva"),
+            Aprovada: true,
+            Motivo: null,
+            BaseLegal: "Lei de teste B",
+            AtoNormativoUrl: null,
+            PortariaInterna: null,
+            DescricaoHumana: "Regra B",
+            VigenciaInicio: new DateOnly(2020, 1, 1),
+            VigenciaFim: null,
+            Hash: new string('b', 64));
+
+        RegraAvaliada regraMaisAntiga = new(
+            RegraId: new Guid("aaaaaaaa-0000-7000-8000-000000000001"),
+            RegraCodigo: "REGRA-A",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            TipoProcessoCodigoAvaliado: "SiSU",
+            Predicado: new ConcorrenciaDuplaObrigatoria(),
+            Aprovada: true,
+            Motivo: null,
+            BaseLegal: "Lei de teste A",
+            AtoNormativoUrl: "https://example.org/ato",
+            PortariaInterna: "PORT-001",
+            DescricaoHumana: "Regra A",
+            VigenciaInicio: new DateOnly(2019, 1, 1),
+            VigenciaFim: new DateOnly(2030, 1, 1),
+            Hash: new string('a', 64));
+
+        // Deliberadamente fora de ordem: regraMaisRecente (id maior) vem PRIMEIRO na lista de
+        // entrada — se o encoder não ordenasse por RegraId, o array congelado sairia nesta
+        // mesma ordem "errada", e esta regressão (round-trip perdendo Conformidade no
+        // restaurador) não seria pega por nenhum outro teste desta suíte, que nunca
+        // exercitava uma Conformidade não vazia.
+        ResultadoConformidade conformidade = new([regraMaisRecente, regraMaisAntiga], []);
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
+            CorpusEnvelope.Entrada(processo, conformidade: conformidade));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
+
+        envelope.Conformidade.Should().NotBeNull(
+            "a fonte da regressão: o restaurador tem de repassar Conformidade adiante na recanonicalização");
+        envelope.Conformidade!.Regras.Select(r => r.RegraCodigo).Should().Equal(["REGRA-A", "REGRA-B"],
+            "o encoder ordena obrigatoriedades[] por RegraId, ascendente, mesmo que a entrada não venha ordenada (CA-13)");
+
+        JsonArray obrigatoriedadesJson = Envelope(congelado)["documentosExigidos"]!["obrigatoriedades"]!.AsArray();
+        obrigatoriedadesJson.Select(o => o!["regraCodigo"]!.GetValue<string>()).Should().Equal(["REGRA-A", "REGRA-B"]);
+    }
+
     /// <summary>
     /// Reidrata, repõe e recanonicaliza <b>com o encoder da versão dela</b> — nunca com o
     /// corrente. É o que torna a prova não-circular: no dia da <c>1.2</c>, recanonicalizar
@@ -114,7 +176,8 @@ public sealed class EnvelopeCodecRoundTripTests
 
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
-            new EntradaCanonicalizacao(processo, envelope.Dados, envelope.HashDocumento, envelope.Retificacao));
+            new EntradaCanonicalizacao(
+                processo, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
@@ -292,7 +355,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 processo,
                 reidratado.Value.Dados,
                 reidratado.Value.HashDocumento,
-                reidratado.Value.Retificacao)).Value!.Bytes;
+                reidratado.Value.Retificacao,
+                reidratado.Value.Conformidade)).Value!.Bytes;
 
         return (congelado.Bytes, bytesMutados, recodificados);
     }
@@ -340,7 +404,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 processo,
                 reidratado.Value.Dados,
                 reidratado.Value.HashDocumento,
-                reidratado.Value.Retificacao)).Value!.Bytes;
+                reidratado.Value.Retificacao,
+                reidratado.Value.Conformidade)).Value!.Bytes;
 
         recodificado.Should().Equal(fixture,
             "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +

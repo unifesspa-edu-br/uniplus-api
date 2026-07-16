@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
@@ -54,6 +55,50 @@ public sealed class RestauradorDeConfiguracaoTests
     }
 
     /// <summary>
+    /// Regressão: <c>Restaurar</c> montava a <see cref="EntradaCanonicalizacao"/> da prova
+    /// SEM repassar <see cref="EnvelopeReidratado.Conformidade"/> — o canonicalizador recebia
+    /// <see langword="null"/> e emitia <c>obrigatoriedades: []</c>, divergindo dos bytes
+    /// congelados sempre que a versão carregasse regras legais avaliadas (não vazio). Este
+    /// teste falha sem o campo repassado em <c>RestauradorDeConfiguracao.cs</c>.
+    /// </summary>
+    [Fact(DisplayName = "Restaurar repassa Conformidade adiante — a prova não diverge quando a versão congelou obrigatoriedades legais")]
+    public void Restaurar_ComConformidadeCongelada_ReporEProvar()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+
+        RegraAvaliada regra = new(
+            RegraId: Guid.CreateVersion7(),
+            RegraCodigo: "REGRA-RESTAURADOR",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            TipoProcessoCodigoAvaliado: "SiSU",
+            Predicado: new EtapaObrigatoria("Prova Objetiva"),
+            Aprovada: true,
+            Motivo: null,
+            BaseLegal: "Lei de teste",
+            AtoNormativoUrl: null,
+            PortariaInterna: null,
+            DescricaoHumana: "Regra de teste do restaurador",
+            VigenciaInicio: new DateOnly(2020, 1, 1),
+            VigenciaFim: null,
+            Hash: new string('r', 64));
+        ResultadoConformidade conformidade = new([regra], []);
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
+            CorpusEnvelope.Entrada(processo, conformidade: conformidade));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+
+        RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
+
+        Result resultado = restaurador.Restaurar(processo, versao);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    /// <summary>
     /// O teste decisivo desta classe: um codec que <b>perde um campo</b> não passa. Sem o
     /// guard, a restauração devolveria <c>Success</c> e a configuração empobrecida seria
     /// gravada.
@@ -75,7 +120,8 @@ public sealed class RestauradorDeConfiguracaoTests
             CorpusEnvelope.GrafoPobre(),
             CorpusEnvelope.DadosRicos(),
             CorpusEnvelope.HashDocumento,
-            retificacao: null)));
+            retificacao: null,
+            conformidade: null)));
         registroDefeituoso
             .Recodificar(Arg.Any<string>(), Arg.Any<EntradaCanonicalizacao>())
             .Returns(call => CorpusEnvelope.Registro.Recodificar(

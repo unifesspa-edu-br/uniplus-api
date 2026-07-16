@@ -152,6 +152,38 @@ public sealed class ManifestoDoEnvelopeTests
                 "SuspensividadeSegundaInstanciaValor", "SuspensividadeSegundaInstanciaUnidade",
             ],
             []),
+
+        // Conformidade legal (Story #853) — não pende de GrafoConfiguracao (não é reposta no
+        // agregado vivo); alcançada a partir de EnvelopeReidratado.Conformidade, semeada
+        // manualmente no traversal como DadosEdital já era.
+        [typeof(ResultadoConformidade)] = (
+            ["Regras"],
+            [("Avisos", "Diagnóstico transitório da avaliação (ex.: uso de Customizado), não evidência " +
+                "jurídica — reconstruído ao reavaliar, não precisa sobreviver ao congelamento.")]),
+
+        [typeof(RegraAvaliada)] = (
+            [
+                "RegraId", "RegraCodigo", "Categoria", "TipoProcessoCodigoAvaliado", "Predicado",
+                "Aprovada", "BaseLegal", "AtoNormativoUrl", "PortariaInterna", "DescricaoHumana",
+                "VigenciaInicio", "VigenciaFim", "Hash",
+            ],
+            [("Motivo", "Razão nomeada da reprovação (CA-02/CA-03/CA-09) — diagnóstico transitório, " +
+                "não evidência forense: só regras APROVADAS são congeladas (§3.4), logo é sempre nulo " +
+                "em qualquer entrada que chegue ao envelope.")]),
+
+        // As 7 variantes de PredicadoObrigatoriedade (ADR-0058, ADR-0114) — união discriminada
+        // pelo campo `tipo` no envelope (o próprio predicado já é a forma que o domínio
+        // serializa, ao contrário de ArgsCriterioDesempate/ArgsRegraEliminacao, cuja variante
+        // vem do código da regra externa). BonusObrigatorio, oitava variante original, foi
+        // descartada (ADR-0114, executado pela #853): ConfiguracaoBonusRegional é global ao
+        // processo, sem lista de modalidades.
+        [typeof(EtapaObrigatoria)] = (["TipoEtapaCodigo"], []),
+        [typeof(ModalidadesMinimas)] = (["Codigos"], []),
+        [typeof(DesempateDeveIncluir)] = (["Criterio"], []),
+        [typeof(DocumentoObrigatorioParaModalidade)] = (["Modalidade", "TipoDocumento"], []),
+        [typeof(AtendimentoDisponivel)] = (["Necessidades"], []),
+        [typeof(ConcorrenciaDuplaObrigatoria)] = ([], []),
+        [typeof(Customizado)] = (["Parametros"], []),
     };
 
     /// <summary>
@@ -160,7 +192,7 @@ public sealed class ManifestoDoEnvelopeTests
     /// variante uma chance a mais de o codec silenciosamente não conhecê-la.
     /// </summary>
     private static readonly Type[] UnioesDiscriminadas =
-        [typeof(ArgsCriterioDesempate), typeof(ArgsRegraEliminacao)];
+        [typeof(ArgsCriterioDesempate), typeof(ArgsRegraEliminacao), typeof(PredicadoObrigatoriedade)];
 
     [Fact(DisplayName = "Toda propriedade de negócio do grafo está declarada no manifesto — dentro ou fora do envelope")]
     public void TodaPropriedade_EstaNoManifesto()
@@ -256,6 +288,12 @@ public sealed class ManifestoDoEnvelopeTests
         // DadosEdital não pende do grafo — ele entra na canonicalização por fora (bloco
         // `periodo` + `hashesEdital`), mas é igualmente congelado e igualmente reidratado.
         Alcancar(typeof(DadosEdital), alcancados);
+
+        // Conformidade legal (Story #853) — idem: não é reposta no agregado vivo (não há
+        // propriedade "Conformidade" em ProcessoSeletivo), mas é igualmente congelada em
+        // `documentosExigidos.obrigatoriedades[]` e igualmente reidratada em
+        // EnvelopeReidratado.Conformidade.
+        Alcancar(typeof(ResultadoConformidade), alcancados);
 
         IEnumerable<Type> naoDeclarados = alcancados.Where(t => !Manifesto.ContainsKey(t));
 

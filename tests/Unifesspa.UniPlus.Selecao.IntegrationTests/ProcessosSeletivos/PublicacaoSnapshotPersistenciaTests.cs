@@ -20,8 +20,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 17 blocos — 11
-/// reais + 6 stubs <c>nao_construido</c> — estão presentes).
+/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 17 blocos — 12
+/// reais + 5 stubs <c>nao_construido</c> na raiz — estão presentes).
 /// </summary>
 public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
@@ -156,7 +156,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (11 reais + 6 stubs) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (12 reais + 5 stubs na raiz) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -198,16 +198,24 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         stubs.Should().BeEquivalentTo(
             [
                 "cascataRemanejamento", "divulgacao",
-                "documentosExigidos", "formulario", "identidadesUnidade", "vagas",
+                "formulario", "identidadesUnidade", "vagas",
             ],
-            "são exatamente as 6 dimensões da Feature #40 ainda sem dono — e os 11 restantes (Story #851 promoveu cronogramaFases) são reais");
+            "são exatamente as 5 dimensões da Feature #40 ainda sem dono — os 12 restantes (Story #851 " +
+            "promoveu cronogramaFases; Story #853 promoveu documentosExigidos) são reais, mesmo que " +
+            "documentosExigidos ainda carregue a sub-chave 'exigencias' (#554) como stub aninhado");
 
-        // D8 — nenhum bloco REAL emite `nao_construido`. Atendimento e classificação
-        // são dimensões obrigatórias: a ausência é pendência de conformidade, não um
-        // stub silencioso.
+        // D8 — nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
+        // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
+        // pendência de conformidade, não stub silencioso; a segunda nunca foi stub.
+        // documentosExigidos é o único bloco PARCIALMENTE real (Story #853): sua raiz não é mais
+        // `nao_construido`, mas a sub-chave `exigencias` (#554) ainda é.
         objeto["atendimento"]!.AsObject().Should().NotContainKey("status");
         objeto["classificacao"]!.AsObject().Should().NotContainKey("status");
         objeto["cronogramaFases"]!.AsObject().Should().NotContainKey("status");
+        objeto["documentosExigidos"]!.AsObject().Should().NotContainKey("status");
+        objeto["documentosExigidos"]!["exigencias"]!["status"]!.GetValue<string>().Should().Be("nao_construido");
+        objeto["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Should().BeEmpty(
+            "nenhuma ObrigatoriedadeLegal vigente foi cadastrada para este processo neste teste");
 
         // Blocos reais carregam dado de negócio, não o marcador de stub.
         objeto["etapas"]!.AsArray().Should().NotBeEmpty();
