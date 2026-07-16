@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// Listagem paginada por chave (ADR-0026) com filtros admin
-/// (<c>tipoEditalCodigo</c>, <c>categoria</c>, <c>vigentes</c>). Consultas
-/// para o motor de conformidade (<c>ObterVigentesParaTipoEditalAsync</c>)
+/// (<c>tipoProcessoCodigo</c>, <c>categoria</c>, <c>vigentes</c>). Consultas
+/// para o motor de conformidade (<c>ObterVigentesParaTipoProcessoAsync</c>)
 /// carregam regras universais (<c>"*"</c>) + específicas do tipo.
 /// </remarks>
 public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLegal>
@@ -29,19 +29,19 @@ public interface IObrigatoriedadeLegalRepository : IRepository<ObrigatoriedadeLe
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        string? tipoEditalCodigo,
+        string? tipoProcessoCodigo,
         CategoriaObrigatoriedade? categoria,
         bool vigentes,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lê o conjunto de regras vigentes aplicáveis ao tipo de edital
-    /// (filtra <c>TipoEditalCodigo = '*' OR tipo</c>, vigência ativa,
+    /// Lê o conjunto de regras vigentes aplicáveis ao tipo de processo
+    /// (filtra <c>TipoProcessoCodigo = '*' OR tipo</c>, vigência ativa,
     /// não soft-deleted). Caminho do motor de conformidade.
     /// </summary>
-    Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoEditalAsync(
-        string tipoEditalCodigo,
-        DateOnly hoje,
+    Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoProcessoAsync(
+        string tipoProcessoCodigo,
+        DateOnly dataReferencia,
         CancellationToken cancellationToken = default);
 
     /// <summary>

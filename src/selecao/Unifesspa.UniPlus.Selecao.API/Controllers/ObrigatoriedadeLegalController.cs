@@ -67,7 +67,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
-        [FromQuery] string? tipoEdital,
+        [FromQuery] string? tipoProcesso,
         [FromQuery] CategoriaObrigatoriedade? categoria,
         [FromQuery] bool vigentes = true,
         CancellationToken cancellationToken = default)
@@ -79,7 +79,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
                 page.AfterId,
                 page.Limit,
                 page.Direction,
-                tipoEdital,
+                tipoProcesso,
                 categoria,
                 vigentes),
             cancellationToken).ConfigureAwait(false);

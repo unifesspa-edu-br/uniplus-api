@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 /// <remarks>
 /// Escritas (Adicionar/Atualizar/Remover) e leituras (listagem paginada,
-/// vigentes para tipo de edital, colisão de código) ocorrem dentro do
+/// vigentes para tipo de processo, colisão de código) ocorrem dentro do
 /// <c>SaveChangesAsync</c> do contexto — a captura de histórico append-only
 /// é responsabilidade do <c>ObrigatoriedadeLegalHistoricoInterceptor</c>.
 /// </remarks>
@@ -79,7 +79,7 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        string? tipoEditalCodigo,
+        string? tipoProcessoCodigo,
         CategoriaObrigatoriedade? categoria,
         bool vigentes,
         CancellationToken cancellationToken = default)
@@ -89,10 +89,10 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         IQueryable<ObrigatoriedadeLegal> query = _context.ObrigatoriedadesLegais
             .AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(tipoEditalCodigo))
+        if (!string.IsNullOrWhiteSpace(tipoProcessoCodigo))
         {
-            string normalizado = tipoEditalCodigo.Trim();
-            query = query.Where(o => o.TipoEditalCodigo == normalizado);
+            string normalizado = tipoProcessoCodigo.Trim();
+            query = query.Where(o => o.TipoProcessoCodigo == normalizado);
         }
 
         if (categoria is { } cat)
@@ -115,27 +115,23 @@ public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalReposi
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
 
-    public async Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoEditalAsync(
-        string tipoEditalCodigo,
-        DateOnly hoje,
+    public async Task<IReadOnlyList<ObrigatoriedadeLegal>> ObterVigentesParaTipoProcessoAsync(
+        string tipoProcessoCodigo,
+        DateOnly dataReferencia,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoEditalCodigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoProcessoCodigo);
 
-        // Comparação case-insensitive defensiva (Codex P2 round 2): mesmo
-        // que o caller já passe o lookup uppercased, a persistência aceita
-        // caixa livre — divergências de caixa entre Criar/Atualizar e o
-        // lookup quebrariam silenciosamente a conformidade. `EF.Functions.ILike`
-        // traduz para o operador case-insensitive nativo do PostgreSQL.
-        // Universal "*" segue por igualdade direta — sentinela ASCII sem
-        // letras.
+        // O normalizer fecha o vocabulário pela grafia do enum. A igualdade
+        // ordinal aqui preserva esse contrato e evita correspondência parcial
+        // ou case-insensitive entre regras cadastradas e o tipo do processo.
         return await _context.ObrigatoriedadesLegais
             .AsNoTracking()
             .Where(o =>
-                (o.TipoEditalCodigo == ObrigatoriedadeLegal.TipoEditalUniversal
-                    || EF.Functions.ILike(o.TipoEditalCodigo, tipoEditalCodigo))
-                && o.VigenciaInicio <= hoje
-                && (o.VigenciaFim == null || o.VigenciaFim > hoje))
+                (o.TipoProcessoCodigo == ObrigatoriedadeLegal.TipoProcessoUniversal
+                    || o.TipoProcessoCodigo == tipoProcessoCodigo)
+                && o.VigenciaInicio <= dataReferencia
+                && (o.VigenciaFim == null || o.VigenciaFim > dataReferencia))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }

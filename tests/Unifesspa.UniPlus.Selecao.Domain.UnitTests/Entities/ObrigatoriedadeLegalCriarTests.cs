@@ -21,7 +21,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     public void Criar_RegraUniversalGlobal_OK()
     {
         Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,
+            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -31,17 +31,61 @@ public sealed class ObrigatoriedadeLegalCriarTests
 
         r.IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = r.Value!;
-        regra.TipoEditalCodigo.Should().Be("*");
+        regra.TipoProcessoCodigo.Should().Be("*");
         regra.Categoria.Should().Be(CategoriaObrigatoriedade.Etapa);
         regra.RegraCodigo.Should().Be("ETAPA_OBRIGATORIA");
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "TipoProcessoCodigo aceita o sentinela e os nomes declarados do enum")]
+    [InlineData("*")]
+    [InlineData("SiSU")]
+    [InlineData("PSIQ")]
+    [InlineData("PSECampo")]
+    [InlineData("PSVR")]
+    [InlineData("TransferenciaInterna")]
+    [InlineData("TransferenciaExterna")]
+    [InlineData("PortadorDiploma")]
+    [InlineData("Reopcao")]
+    public void Criar_TipoProcessoCodigoUniversalOuValido_Aceita(string tipoProcessoCodigo)
+    {
+        Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
+            tipoProcessoCodigo,
+            CategoriaObrigatoriedade.Outros,
+            "TIPO_VALIDO",
+            PredicadoBase,
+            "Descrição",
+            "Lei",
+            new DateOnly(2026, 1, 1));
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.TipoProcessoCodigo.Should().Be(tipoProcessoCodigo);
+    }
+
+    [Theory(DisplayName = "TipoProcessoCodigo fora do vocabulário fechado é recusado")]
+    [InlineData("SISU_ANTIGO")]
+    [InlineData("sisu")]
+    [InlineData("Nenhum")]
+    public void Criar_TipoProcessoCodigoForaDoVocabulario_Recusa(string tipoProcessoCodigo)
+    {
+        Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
+            tipoProcessoCodigo,
+            CategoriaObrigatoriedade.Outros,
+            "TIPO_INVALIDO",
+            PredicadoBase,
+            "Descrição",
+            "Lei",
+            new DateOnly(2026, 1, 1));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoCodigoForaDoVocabulario");
     }
 
     [Fact(DisplayName = "VigenciaFim igual a VigenciaInicio é inválida")]
     public void Criar_VigenciaFimNaoPosterior_Falha()
     {
         Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Outros,
             regraCodigo: "X",
             predicado: PredicadoBase,
@@ -58,7 +102,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     public void Criar_PredicadoNull_RetornaFailure()
     {
         Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Outros,
             regraCodigo: "X",
             predicado: null!,
@@ -76,7 +120,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     public void Atualizar_PredicadoNull_RetornaFailure()
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "X",
             predicado: PredicadoBase,
@@ -85,7 +129,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
             vigenciaInicio: new DateOnly(2026, 1, 1)).Value!;
 
         Kernel.Results.Result r = regra.Atualizar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "X",
             predicado: null!,
@@ -104,7 +148,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     public void Criar_CategoriaNenhuma_Falha()
     {
         Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Nenhuma,
             regraCodigo: "X",
             predicado: PredicadoBase,
@@ -123,7 +167,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     public void Criar_ObrigatoriosVazios_Falha(string regra, string baseLegal, string descricao, string expectedCode)
     {
         Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Outros,
             regraCodigo: regra,
             predicado: PredicadoBase,
@@ -139,7 +183,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     public void Atualizar_AlteraBaseLegal_HashMuda()
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -150,7 +194,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
         string hashAntes = regra.Hash;
 
         Result r = regra.Atualizar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -170,7 +214,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
     public void Atualizar_FullReplace_LimpaOpcionaisNaoPassados()
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_FULL_REPLACE",
             predicado: PredicadoBase,
@@ -187,7 +231,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
         // Caller que NÃO repassa os opcionais aceita semântica full-replace:
         // o estado anterior dos opcionais é apagado.
         Result r = regra.Atualizar(
-            tipoEditalCodigo: regra.TipoEditalCodigo,
+            tipoProcessoCodigo: regra.TipoProcessoCodigo,
             categoria: regra.Categoria,
             regraCodigo: regra.RegraCodigo,
             predicado: regra.Predicado,
@@ -217,7 +261,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
 
         r.IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = r.Value!;
-        regra.TipoEditalCodigo.Should().Be(ObrigatoriedadeLegal.TipoEditalUniversal);
+        regra.TipoProcessoCodigo.Should().Be(ObrigatoriedadeLegal.TipoProcessoUniversal);
         regra.Categoria.Should().Be(CategoriaObrigatoriedade.Outros);
         regra.VigenciaFim.Should().BeNull();
     }

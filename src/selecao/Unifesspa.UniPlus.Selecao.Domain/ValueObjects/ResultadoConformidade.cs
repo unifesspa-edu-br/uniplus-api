@@ -2,10 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Resultado da avaliação de um conjunto de
-/// <see cref="Entities.ObrigatoriedadeLegal"/> contra um edital. Cada item
+/// <see cref="Entities.ObrigatoriedadeLegal"/> contra um processo seletivo. Cada item
 /// em <see cref="Regras"/> é uma evaluação independente; o veredicto
-/// agregado ("edital conforme") é responsabilidade do consumer (ex.:
-/// `GET /api/editais/{id}/conformidade` no <c>Selecao.API</c>).
+/// agregado ("processo conforme") é responsabilidade do consumer.
 /// </summary>
 /// <param name="Regras">Veredicto por regra avaliada.</param>
 /// <param name="Avisos">

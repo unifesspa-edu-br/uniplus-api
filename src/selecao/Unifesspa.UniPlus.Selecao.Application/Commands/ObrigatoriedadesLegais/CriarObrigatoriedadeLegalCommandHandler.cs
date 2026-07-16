@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -35,7 +35,7 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         }
 
         Result<ObrigatoriedadeLegal> regraResult = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: command.TipoEditalCodigo,
+            tipoProcessoCodigo: command.TipoProcessoCodigo,
             categoria: command.Categoria,
             regraCodigo: command.RegraCodigo,
             predicado: command.Predicado,

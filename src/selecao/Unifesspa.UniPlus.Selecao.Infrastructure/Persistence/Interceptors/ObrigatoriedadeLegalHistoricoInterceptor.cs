@@ -174,7 +174,7 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
         JsonObject payload = new()
         {
             ["id"] = regra.Id,
-            ["tipoEditalCodigo"] = regra.TipoEditalCodigo,
+            ["tipoProcessoCodigo"] = regra.TipoProcessoCodigo,
             ["categoria"] = regra.Categoria.ToString(),
             ["regraCodigo"] = regra.RegraCodigo,
             ["predicado"] = predicadoNode,

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Integração ponta-a-ponta da Story #460 contra Postgres real: cobertura
@@ -63,6 +64,10 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
         historico[0].SnapshotBy.Should().Be(AdminA);
         historico[0].ConteudoJson.Should().Contain(regra.Hash,
             "snapshot canônico deve incluir o hash recomputado da regra");
+        historico[0].ConteudoJson.Should().Contain("\"tipoProcessoCodigo\"",
+            "a chave renomeada precisa estar no payload forense");
+        historico[0].ConteudoJson.Should().NotContain("tipoEditalCodigo",
+            "a chave legada não pode sobreviver no histórico pós-rename");
     }
 
     [Fact(DisplayName = "Update gera 2ª linha de histórico e atualiza Hash quando BaseLegal muda")]
@@ -85,7 +90,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
                 ;
 
             tracked.Atualizar(
-                tipoEditalCodigo: tracked.TipoEditalCodigo,
+                tipoProcessoCodigo: tracked.TipoProcessoCodigo,
                 categoria: tracked.Categoria,
                 regraCodigo: tracked.RegraCodigo,
                 predicado: tracked.Predicado,
@@ -231,7 +236,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
         // Reconstrói o mesmo conteúdo em uma nova instância e re-computa
         // o hash sem passar pela persistência — deve bater com o persistido.
         string hashCalculadoDeNovo = HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_DETERMINISTIC",
             predicado: new EtapaObrigatoria("ProvaObjetiva"),
@@ -247,6 +252,38 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
         persistido.Should().Be(hashCalculadoDeNovo,
             "o hash do banco precisa bater com o computado fresh — invariante de evidência forense");
+    }
+
+    [Fact(DisplayName = "Ruleset reúne universal e específico, exclui outro tipo e respeita a data explícita")]
+    public async Task ObterVigentesParaTipoProcesso_UniaoEDataReferencia()
+    {
+        ObrigatoriedadeLegal universal = NovaRegraValida("RULESET_UNIVERSAL");
+        ObrigatoriedadeLegal psiq = ObrigatoriedadeLegal.Criar(
+            "PSIQ", CategoriaObrigatoriedade.Outros, "RULESET_PSIQ", new ConcorrenciaDuplaObrigatoria(),
+            "PSIQ", "Lei", new DateOnly(2026, 6, 1), new DateOnly(2026, 7, 1)).Value!;
+        ObrigatoriedadeLegal sisu = ObrigatoriedadeLegal.Criar(
+            "SiSU", CategoriaObrigatoriedade.Outros, "RULESET_SISU", new ConcorrenciaDuplaObrigatoria(),
+            "SiSU", "Lei", new DateOnly(2026, 6, 1), new DateOnly(2026, 7, 1)).Value!;
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext(AdminA))
+        {
+            context.ObrigatoriedadesLegais.AddRange(universal, psiq, sisu);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext(userId: null);
+        ObrigatoriedadeLegalRepository repository = new(readContext, TimeProvider.System);
+
+        IReadOnlyList<ObrigatoriedadeLegal> emVigencia = await repository
+            .ObterVigentesParaTipoProcessoAsync("PSIQ", new DateOnly(2026, 6, 15));
+        IReadOnlyList<ObrigatoriedadeLegal> foraDaVigencia = await repository
+            .ObterVigentesParaTipoProcessoAsync("PSIQ", new DateOnly(2026, 7, 5));
+
+        emVigencia.Select(static regra => regra.RegraCodigo).Should().Contain("RULESET_UNIVERSAL");
+        emVigencia.Select(static regra => regra.RegraCodigo).Should().Contain("RULESET_PSIQ");
+        emVigencia.Select(static regra => regra.RegraCodigo).Should().NotContain("RULESET_SISU");
+        foraDaVigencia.Select(static regra => regra.RegraCodigo).Should().Contain("RULESET_UNIVERSAL");
+        foraDaVigencia.Select(static regra => regra.RegraCodigo).Should().NotContain("RULESET_PSIQ");
     }
 
     [Fact(DisplayName = "FK historico→regra bloqueia INSERT de histórico órfão (Codex P2)")]
@@ -275,7 +312,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
     private static ObrigatoriedadeLegal NovaRegraValida(string regraCodigo) =>
         ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,
+            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: regraCodigo,
             predicado: new EtapaObrigatoria("ProvaObjetiva"),

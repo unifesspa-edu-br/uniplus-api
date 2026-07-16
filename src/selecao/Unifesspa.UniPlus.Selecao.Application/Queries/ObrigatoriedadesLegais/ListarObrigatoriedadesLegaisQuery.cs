@@ -14,6 +14,6 @@ public sealed record ListarObrigatoriedadesLegaisQuery(
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,
-    string? TipoEditalCodigo,
+    string? TipoProcessoCodigo,
     CategoriaObrigatoriedade? Categoria,
     bool Vigentes) : IQuery<ListarObrigatoriedadesLegaisResult>;

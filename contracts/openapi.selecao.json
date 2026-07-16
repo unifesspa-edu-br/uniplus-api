@@ -349,7 +349,7 @@
         ],
         "parameters": [
           {
-            "name": "tipoEdital",
+            "name": "tipoProcesso",
             "in": "query",
             "schema": {
               "type": "string"
@@ -3008,7 +3008,7 @@
       "AtualizarObrigatoriedadeLegalCommand": {
         "required": [
           "id",
-          "tipoEditalCodigo",
+          "tipoProcessoCodigo",
           "categoria",
           "regraCodigo",
           "predicado",
@@ -3025,7 +3025,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "tipoEditalCodigo": {
+          "tipoProcessoCodigo": {
             "type": "string"
           },
           "categoria": {
@@ -3393,7 +3393,7 @@
       },
       "CriarObrigatoriedadeLegalCommand": {
         "required": [
-          "tipoEditalCodigo",
+          "tipoProcessoCodigo",
           "categoria",
           "regraCodigo",
           "predicado",
@@ -3406,7 +3406,7 @@
         ],
         "type": "object",
         "properties": {
-          "tipoEditalCodigo": {
+          "tipoProcessoCodigo": {
             "type": "string"
           },
           "categoria": {
@@ -4257,7 +4257,7 @@
       "ObrigatoriedadeLegalDto": {
         "required": [
           "id",
-          "tipoEditalCodigo",
+          "tipoProcessoCodigo",
           "categoria",
           "regraCodigo",
           "predicado",
@@ -4276,7 +4276,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "tipoEditalCodigo": {
+          "tipoProcessoCodigo": {
             "type": "string"
           },
           "categoria": {
