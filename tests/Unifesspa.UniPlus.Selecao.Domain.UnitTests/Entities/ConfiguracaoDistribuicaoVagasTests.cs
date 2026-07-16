@@ -175,6 +175,23 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadesFederaisIncompletas");
     }
 
+    [Fact(DisplayName = "Criar Lei 12.711 com retirada de origem diferente de AC falha (achado Codex)")]
+    public void Criar_Lei12711RetiradaForaDeAc_Falha()
+    {
+        ModalidadeSelecionada retiradaDeSubReserva = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.OutraModalidade, ComposicaoVagasModalidade.RetiraDe,
+            composicaoOrigemCodigo: ModalidadesFederaisLei12711.LbPpi, RegraRemanejamentoModalidade.Nenhuma,
+            null, null, null, [], null, "base legal", quantidadeDeclarada: 1).Value!;
+
+        List<ModalidadeSelecionada> modalidades = [.. AsOitoFederaisMaisAc(), retiradaDeSubReserva];
+
+        Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 50, pr: 0.5m, RegraLei12711(), RegraAjuste(), Demografica(), modalidades);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RetiradaFederalDeveSerDeAmplaConcorrencia");
+    }
+
     [Fact(DisplayName = "Criar institucional com referência demográfica indevida falha")]
     public void Criar_InstitucionalComDemografica_Falha()
     {
