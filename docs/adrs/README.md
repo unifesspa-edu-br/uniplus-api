@@ -143,8 +143,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0112](0112-fronteira-append-only-do-catalogo-de-regras.md) | Fronteira do append-only na correção do catálogo de regras (substituível enquanto nada congelado referenciar) | accepted | 2026-07-14 |
 | [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro | accepted | 2026-07-15 |
 | [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
+| [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
 
-> **Nota de numeração:** a sequência de `0001` a `0114` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0115+`.
+> **Nota de numeração:** a sequência de `0001` a `0115` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0116+`.
 
 ## Como adicionar um novo ADR
 
