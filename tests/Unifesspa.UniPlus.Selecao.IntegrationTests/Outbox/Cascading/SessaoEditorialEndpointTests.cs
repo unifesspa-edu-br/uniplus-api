@@ -178,6 +178,10 @@ public sealed class SessaoEditorialEndpointTests
 
         DomainEventCollector collector = ctx.Api.Services.GetRequiredService<DomainEventCollector>();
         int versoesAntes = await ContarVersoesAsync(ctx);
+
+        // A publicação que monta o cenário entrega o evento pela fila durável. Só limpar o
+        // coletor depois de observar esse evento evita atribuí-lo às edições abaixo.
+        await AguardarEventoDaPublicacaoAsync(collector, ctx.ProcessoId);
         collector.Clear();
 
         HttpResponseMessage abertura = await ctx.AbrirAsync("Correção do prazo");
@@ -192,7 +196,9 @@ public sealed class SessaoEditorialEndpointTests
             versoesAntes,
             "a versão nova nasce só no FECHAMENTO — enquanto a sessão está aberta, o que vale para o candidato continua sendo a versão congelada vigente");
 
-        collector.Snapshot().Should().BeEmpty("nenhum ato é emitido: abrir e editar não são fatos publicáveis");
+        collector.Snapshot().Should().NotContain(
+            e => e.ProcessoSeletivoId == ctx.ProcessoId,
+            "nenhum ato é emitido: abrir e editar não são fatos publicáveis");
     }
 
     [Fact(DisplayName = "CA-10: o status do processo NÃO muda ao abrir a retificação — ele continua Publicado")]
@@ -507,6 +513,22 @@ public sealed class SessaoEditorialEndpointTests
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
         return await db.VersoesConfiguracao.AsNoTracking()
             .CountAsync(v => v.ProcessoSeletivoId == ctx.ProcessoId);
+    }
+
+    private static async Task AguardarEventoDaPublicacaoAsync(DomainEventCollector collector, Guid processoId)
+    {
+        DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(20);
+        while (DateTimeOffset.UtcNow < limite)
+        {
+            if (collector.Snapshot().Any(e => e.ProcessoSeletivoId == processoId))
+            {
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(150));
+        }
+
+        throw new TimeoutException("A publicação que monta o cenário não entregou o evento esperado.");
     }
 
     private static async Task<int> ContarRascunhosAsync(Contexto ctx)
