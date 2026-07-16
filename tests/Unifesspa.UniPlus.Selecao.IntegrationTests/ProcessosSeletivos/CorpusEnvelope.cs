@@ -310,8 +310,9 @@ internal static class CorpusEnvelope
         periodoInscricaoFim: new DateOnly(2026, 4, 15),
         documentoEditalId: Documento).Value!;
 
-    internal static EntradaCanonicalizacao Entrada(ProcessoSeletivo processo, RetificacaoInfo? retificacao = null) =>
-        new(processo, DadosRicos(), HashDocumento, retificacao);
+    internal static EntradaCanonicalizacao Entrada(
+        ProcessoSeletivo processo, RetificacaoInfo? retificacao = null, ResultadoConformidade? conformidade = null) =>
+        new(processo, DadosRicos(), HashDocumento, retificacao, conformidade);
 
     /// <summary>
     /// Uma <see cref="VersaoConfiguracao"/> montada com <b>ids de ato fixos</b>, para que

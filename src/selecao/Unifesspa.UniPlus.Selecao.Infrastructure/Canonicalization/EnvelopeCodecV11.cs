@@ -35,14 +35,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class EnvelopeCodecV11 : IEnvelopeCodec
 {
     /// <summary>
-    /// Os 6 blocos sem dono (ADR-0109 D8). Um bloco <b>real</b> nunca emite
-    /// <c>nao_construido</c>; um stub que virou objeto rico é forma nova, e forma nova é
-    /// bump de versão.
+    /// Os 5 blocos sem dono (ADR-0109 D8). Um bloco <b>real</b> nunca emite
+    /// <c>nao_construido</c> na raiz; um stub que virou objeto rico é forma nova, e forma
+    /// nova é bump de versão. <c>documentosExigidos</c> saiu daqui na Story #853 — ele
+    /// próprio virou bloco real, com a sub-chave <c>exigencias</c> (#554) ainda stub
+    /// <b>dentro</b> dele (ver <see cref="LerDocumentosExigidos"/>).
     /// </summary>
     private static readonly string[] Stubs =
     [
         "vagas",
-        "documentosExigidos",
         "formulario",
         "cascataRemanejamento",
         "divulgacao",
@@ -63,6 +64,8 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         "hashesEdital",
         // Story #851 — cronogramaFases deixa de ser stub.
         "cronogramaFases",
+        // Story #853 — documentosExigidos deixa de ser stub (obrigatoriedades[] real).
+        "documentosExigidos",
     ];
 
     /// <summary>
@@ -174,6 +177,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         IReadOnlyList<CriterioDesempate> desempate = LerCriteriosDesempate(leitor, payload);
         ConfiguracaoClassificacao? classificacao = LerClassificacao(leitor, payload);
         IReadOnlyList<FaseCronograma> cronogramaFases = LerCronogramaFases(leitor, payload);
+        ResultadoConformidade? conformidade = LerDocumentosExigidos(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -187,7 +191,8 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         }
 
         GrafoConfiguracao grafo = new(etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases);
-        return Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao));
+        return Result<EnvelopeReidratado>.Success(
+            new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao, conformidade));
     }
 
     /// <summary>
@@ -916,6 +921,142 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
                 return leitor.Propagar<ArgsCriterioDesempate>(new DomainError(
                     ErrosCodecEnvelope.RegraDesconhecida,
                     $"Não há variante de args conhecida para o critério de desempate '{codigo}' em '{path}'."));
+        }
+    }
+
+    /// <summary>
+    /// Story #853: o bloco tem DUAS chaves — <c>exigencias</c> (#554, ainda stub) e
+    /// <c>obrigatoriedades</c> (regras legais congeladas, reais). Devolve
+    /// <see langword="null"/> quando <c>obrigatoriedades</c> é um array vazio — nenhuma
+    /// regra vigia contra o processo no instante do congelamento, o que é conformidade
+    /// válida (CA-11), não ausência de dado.
+    /// </summary>
+    private static ResultadoConformidade? LerDocumentosExigidos(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "documentosExigidos", "$");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        leitor.ExigirChaves(bloco, "documentosExigidos", "exigencias", "obrigatoriedades");
+        leitor.ExigirStub(bloco, "exigencias");
+
+        JsonArray array = leitor.Array(bloco, "obrigatoriedades", "documentosExigidos");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        List<RegraAvaliada> regras = [];
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"documentosExigidos.obrigatoriedades[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, "documentosExigidos.obrigatoriedades");
+            leitor.ExigirChaves(
+                item, path,
+                "regraId", "regraCodigo", "categoria", "tipoProcessoCodigoAvaliado", "predicado",
+                "aprovada", "baseLegal", "atoNormativoUrl", "portariaInterna", "descricaoHumana",
+                "vigenciaInicio", "vigenciaFim", "hash");
+
+            Guid regraId = leitor.Identificador(item, "regraId", path);
+            string regraCodigo = leitor.TextoNaoVazio(item, "regraCodigo", path);
+            CategoriaObrigatoriedade categoria = leitor.Enumeracao<CategoriaObrigatoriedade>(item, "categoria", path);
+            string tipoProcessoCodigoAvaliado = leitor.TextoNaoVazio(item, "tipoProcessoCodigoAvaliado", path);
+            JsonObject predicadoJson = leitor.Objeto(item, "predicado", path);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            PredicadoObrigatoriedade? predicado = LerPredicadoObrigatoriedade(leitor, predicadoJson, $"{path}.predicado");
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            bool aprovada = leitor.Booleano(item, "aprovada", path);
+            string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path);
+            string? atoNormativoUrl = leitor.TextoOpcional(item, "atoNormativoUrl", path);
+            string? portariaInterna = leitor.TextoOpcional(item, "portariaInterna", path);
+            string descricaoHumana = leitor.TextoNaoVazio(item, "descricaoHumana", path);
+            DateOnly vigenciaInicio = leitor.Data(item, "vigenciaInicio", path);
+            DateOnly? vigenciaFim = leitor.DataOpcional(item, "vigenciaFim", path);
+            string hash = leitor.TextoNaoVazio(item, "hash", path);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            // Motivo nunca é congelado (só regras APROVADAS chegam ao envelope, §3.4) —
+            // reidratação sempre reconstrói com Motivo: null, mesmo valor que o encoder
+            // nunca escreveu.
+            regras.Add(new RegraAvaliada(
+                regraId, regraCodigo, categoria, tipoProcessoCodigoAvaliado, predicado!, aprovada, null,
+                baseLegal, atoNormativoUrl, portariaInterna, descricaoHumana, vigenciaInicio, vigenciaFim, hash));
+        }
+
+        return regras.Count == 0 ? null : new ResultadoConformidade(regras, []);
+    }
+
+    /// <summary>
+    /// A variante vem do campo <c>tipo</c> (o próprio envelope carrega o discriminador
+    /// aqui — ao contrário de <see cref="LerArgsDesempate"/>, não há um "código de regra"
+    /// externo ao args para decidir a forma; <c>PredicadoObrigatoriedade</c> já é a
+    /// discriminated union completa que o domínio serializa).
+    /// </summary>
+    private static PredicadoObrigatoriedade? LerPredicadoObrigatoriedade(LeitorEnvelope leitor, JsonObject predicado, string path)
+    {
+        leitor.ExigirChaves(predicado, path, "tipo", "args");
+        string tipo = leitor.TextoNaoVazio(predicado, "tipo", path);
+        JsonObject args = leitor.Objeto(predicado, "args", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        string argsPath = $"{path}.args";
+        switch (tipo)
+        {
+            case "etapaObrigatoria":
+                leitor.ExigirChaves(args, argsPath, "tipoEtapaCodigo");
+                string tipoEtapaCodigo = leitor.TextoNaoVazio(args, "tipoEtapaCodigo", argsPath);
+                return leitor.Falhou ? null : new EtapaObrigatoria(tipoEtapaCodigo);
+
+            case "modalidadesMinimas":
+                leitor.ExigirChaves(args, argsPath, "codigos");
+                IReadOnlyList<string> codigos = leitor.Textos(args, "codigos", argsPath);
+                return leitor.Falhou ? null : new ModalidadesMinimas(codigos);
+
+            case "desempateDeveIncluir":
+                leitor.ExigirChaves(args, argsPath, "criterio");
+                string criterio = leitor.TextoNaoVazio(args, "criterio", argsPath);
+                return leitor.Falhou ? null : new DesempateDeveIncluir(criterio);
+
+            case "documentoObrigatorioParaModalidade":
+                leitor.ExigirChaves(args, argsPath, "modalidade", "tipoDocumento");
+                string modalidade = leitor.TextoNaoVazio(args, "modalidade", argsPath);
+                string tipoDocumento = leitor.TextoNaoVazio(args, "tipoDocumento", argsPath);
+                return leitor.Falhou ? null : new DocumentoObrigatorioParaModalidade(modalidade, tipoDocumento);
+
+            case "atendimentoDisponivel":
+                leitor.ExigirChaves(args, argsPath, "necessidades");
+                IReadOnlyList<string> necessidades = leitor.Textos(args, "necessidades", argsPath);
+                return leitor.Falhou ? null : new AtendimentoDisponivel(necessidades);
+
+            case "concorrenciaDuplaObrigatoria":
+                leitor.ExigirChaves(args, argsPath);
+                return leitor.Falhou ? null : new ConcorrenciaDuplaObrigatoria();
+
+            case "customizado":
+                leitor.ExigirChaves(args, argsPath, "parametros");
+                System.Text.Json.JsonElement parametros = leitor.Valor(args, "parametros", argsPath);
+                return leitor.Falhou ? null : new Customizado(parametros);
+
+            default:
+                return leitor.Propagar<PredicadoObrigatoriedade>(new DomainError(
+                    ErrosCodecEnvelope.RegraDesconhecida,
+                    $"Não há variante de {nameof(PredicadoObrigatoriedade)} conhecida para o tipo '{tipo}' em '{path}'."));
         }
     }
 

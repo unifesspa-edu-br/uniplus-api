@@ -77,7 +77,7 @@ internal sealed class LeitorEnvelope
     }
 
     /// <summary>
-    /// Um dos sete blocos que ainda não têm dono — tem de ser exatamente
+    /// Um bloco (ou sub-chave) que ainda não tem dono — tem de ser exatamente
     /// <c>{"status":"nao_construido"}</c>. Um stub que virou objeto rico é envelope de
     /// outra <b>forma</b>, e forma nova é bump de versão (ADR-0109 D1), não leitura
     /// tolerante.
@@ -307,6 +307,35 @@ internal sealed class LeitorEnvelope
 
         return valor == default
             ? Malformado<DateOnly>($"{path}.{chave}", "a data não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.")
+            : valor;
+    }
+
+    /// <summary>
+    /// Data opcional no formato canônico (Story #853, <c>ObrigatoriedadeLegal.VigenciaFim</c>
+    /// — vigência aberta é estado válido). <see langword="null"/> quando a chave é
+    /// <c>null</c>; do contrário, mesma validação estrita de <see cref="Data"/> (nunca o
+    /// valor default).
+    /// </summary>
+    public DateOnly? DataOpcional(JsonObject pai, string chave, string path)
+    {
+        if (Falhou)
+        {
+            return null;
+        }
+
+        string? texto = TextoOpcional(pai, chave, path);
+        if (Falhou || texto is null)
+        {
+            return null;
+        }
+
+        if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly valor))
+        {
+            return Malformado<DateOnly?>($"{path}.{chave}", $"esperada uma data 'yyyy-MM-dd', encontrado '{texto}'.");
+        }
+
+        return valor == default
+            ? Malformado<DateOnly?>($"{path}.{chave}", "a data não pode ser o valor default (0001-01-01) — é assim que uma data omitida se materializa.")
             : valor;
     }
 

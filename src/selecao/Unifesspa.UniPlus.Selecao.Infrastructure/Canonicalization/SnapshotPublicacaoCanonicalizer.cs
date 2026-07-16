@@ -11,9 +11,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
 /// ADR-0109). Projeta a configuração viva do agregado num payload de 17 chaves
-/// — <b>11 blocos reais + 6 stubs</b> <c>{"status":"nao_construido"}</c> para as
+/// — <b>12 blocos reais + 5 stubs</b> <c>{"status":"nao_construido"}</c> para as
 /// dimensões que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
 /// devolve os bytes via <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/>.
+/// <c>documentosExigidos</c> (Story #853) é um dos 12: já carrega
+/// <c>obrigatoriedades[]</c> real, com <c>exigencias[]</c> (#554) ainda
+/// aninhada como stub — o bloco nasce parcialmente real.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -67,9 +70,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private const int EscalaPercentual = 2;
 
     /// <summary>
-    /// Os 7 blocos que ainda não têm dono (ADR-0109 D8). Um bloco <b>real</b>
-    /// nunca emite este literal: se a dimensão é obrigatória, a ausência é
-    /// pendência de conformidade e o gate recusa antes de canonicalizar.
+    /// Os 5 blocos que ainda não têm dono (ADR-0109 D8): <c>vagas</c>,
+    /// <c>formulario</c>, <c>cascataRemanejamento</c>, <c>divulgacao</c>,
+    /// <c>identidadesUnidade</c> — mais a sub-chave <c>exigencias</c> dentro de
+    /// <c>documentosExigidos</c> (#554). Um bloco de topo <b>real</b> nunca emite
+    /// este literal na raiz: se a dimensão é obrigatória, a ausência é pendência
+    /// de conformidade e o gate recusa antes de canonicalizar.
     /// </summary>
     private static readonly JsonObject NaoConstruido = new() { ["status"] = "nao_construido" };
 
@@ -98,7 +104,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["criteriosDesempate"] = SerializarCriteriosDesempate(processo),
             ["classificacao"] = SerializarClassificacao(processo),
             ["hashesEdital"] = SerializarHashesEdital(dados, entrada.HashDocumento),
-            ["documentosExigidos"] = NaoConstruido.DeepClone(),
+            ["documentosExigidos"] = SerializarDocumentosExigidos(entrada.Conformidade),
             ["formulario"] = NaoConstruido.DeepClone(),
             ["cascataRemanejamento"] = NaoConstruido.DeepClone(),
             ["divulgacao"] = NaoConstruido.DeepClone(),
@@ -384,6 +390,103 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["documentoEditalId"] = dados.DocumentoEditalId,
         ["hashSha256"] = hashEdital,
     };
+
+    /// <summary>
+    /// Story #853 §3.4: o bloco ganha DUAS chaves — <c>exigencias</c> (documentos exigidos
+    /// por fase, #554, ainda stub) e <c>obrigatoriedades</c> (regras legais avaliadas, esta
+    /// story). O bloco deixa de ser <c>nao_construido</c> na raiz: ele já tem conteúdo real
+    /// (as obrigatoriedades), mesmo com uma das duas dimensões ainda pendente — D8 fala do
+    /// bloco INTEIRO nunca fingir conteúdo, não impede que ele nasça parcialmente real.
+    /// </summary>
+    private static JsonObject SerializarDocumentosExigidos(ResultadoConformidade? conformidade) => new()
+    {
+        ["exigencias"] = NaoConstruido.DeepClone(),
+        ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
+    };
+
+    /// <summary>
+    /// Ordenação determinística por <c>RegraId</c> (Guid v7, cronológico) — mesma convenção
+    /// de chave estável já usada para coleções sem ordem semântica própria. Só regras
+    /// aprovadas chegam aqui: o gate já recusou a transição antes de canonicalizar se
+    /// qualquer uma reprovasse (§3.4) — o campo <c>aprovada</c> é mantido por paridade
+    /// estrutural, não porque possa vir falso num snapshot real.
+    /// </summary>
+    private static JsonArray SerializarObrigatoriedades(ResultadoConformidade? conformidade)
+    {
+        JsonArray array = [];
+        if (conformidade is null)
+        {
+            return array;
+        }
+
+        foreach (RegraAvaliada regra in conformidade.Regras.OrderBy(static r => r.RegraId))
+        {
+            array.Add(new JsonObject
+            {
+                ["regraId"] = regra.RegraId,
+                ["regraCodigo"] = HashCanonicalComputer.NormalizeNfc(regra.RegraCodigo),
+                ["categoria"] = regra.Categoria.ToString(),
+                ["tipoProcessoCodigoAvaliado"] = HashCanonicalComputer.NormalizeNfc(regra.TipoProcessoCodigoAvaliado),
+                ["predicado"] = SerializarPredicadoObrigatoriedade(regra.Predicado),
+                ["aprovada"] = regra.Aprovada,
+                ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(regra.BaseLegal),
+                ["atoNormativoUrl"] = regra.AtoNormativoUrl is { } url ? HashCanonicalComputer.NormalizeNfc(url) : null,
+                ["portariaInterna"] = regra.PortariaInterna is { } portaria ? HashCanonicalComputer.NormalizeNfc(portaria) : null,
+                ["descricaoHumana"] = HashCanonicalComputer.NormalizeNfc(regra.DescricaoHumana),
+                ["vigenciaInicio"] = regra.VigenciaInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                ["vigenciaFim"] = regra.VigenciaFim?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                ["hash"] = regra.Hash,
+            });
+        }
+
+        return array;
+    }
+
+    /// <summary>
+    /// A variante em <c>args</c> é decidida pelo TIPO da regra ($tipo), mesma técnica de
+    /// <see cref="SerializarArgsCriterioDesempate"/> e <see cref="SerializarArgsRegraEliminacao"/>
+    /// — nunca um discriminador JSON solto.
+    /// </summary>
+    private static JsonObject SerializarPredicadoObrigatoriedade(PredicadoObrigatoriedade predicado)
+    {
+        (string tipo, JsonObject args) = predicado switch
+        {
+            EtapaObrigatoria p => ("etapaObrigatoria", new JsonObject
+            {
+                ["tipoEtapaCodigo"] = HashCanonicalComputer.NormalizeNfc(p.TipoEtapaCodigo),
+            }),
+            ModalidadesMinimas p => ("modalidadesMinimas", new JsonObject
+            {
+                ["codigos"] = new JsonArray([.. p.Codigos.Select(static c => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(c)))]),
+            }),
+            DesempateDeveIncluir p => ("desempateDeveIncluir", new JsonObject
+            {
+                ["criterio"] = HashCanonicalComputer.NormalizeNfc(p.Criterio),
+            }),
+            DocumentoObrigatorioParaModalidade p => ("documentoObrigatorioParaModalidade", new JsonObject
+            {
+                ["modalidade"] = HashCanonicalComputer.NormalizeNfc(p.Modalidade),
+                ["tipoDocumento"] = HashCanonicalComputer.NormalizeNfc(p.TipoDocumento),
+            }),
+            AtendimentoDisponivel p => ("atendimentoDisponivel", new JsonObject
+            {
+                ["necessidades"] = new JsonArray([.. p.Necessidades.Select(static n => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(n)))]),
+            }),
+            ConcorrenciaDuplaObrigatoria => ("concorrenciaDuplaObrigatoria", []),
+            Customizado p => ("customizado", new JsonObject
+            {
+                ["parametros"] = JsonNode.Parse(p.Parametros.GetRawText()),
+            }),
+            _ => throw new InvalidOperationException(
+                $"Variante de {nameof(PredicadoObrigatoriedade)} não reconhecida: {predicado.GetType()}."),
+        };
+
+        return new JsonObject
+        {
+            ["tipo"] = tipo,
+            ["args"] = args,
+        };
+    }
 
     /// <summary>
     /// O cronograma de fases (Story #851): <c>origemCandidatos</c> — atributo de raiz do

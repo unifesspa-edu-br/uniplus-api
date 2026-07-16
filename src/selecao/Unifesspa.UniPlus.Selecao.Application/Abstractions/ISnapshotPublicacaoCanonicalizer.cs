@@ -43,16 +43,23 @@ public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 /// <param name="Dados">Dados documentais do ato (número, período, documento).</param>
 /// <param name="HashDocumento">SHA-256 do PDF confirmado do ato.</param>
 /// <param name="Retificacao">Presente apenas quando o ato é de retificação.</param>
+/// <param name="Conformidade">
+/// Veredicto da conformidade legal (Story #853 §3.4), montado pelo handler a partir do
+/// catálogo <c>ObrigatoriedadeLegal</c> — o canonicalizador não injeta repositório
+/// (ADR-0042). Só regras aprovadas chegam aqui: se qualquer uma reprovasse, o handler já
+/// teria recusado a transição antes de canonicalizar.
+/// </param>
 public sealed record EntradaCanonicalizacao(
     ProcessoSeletivo Processo,
     DadosEdital Dados,
     string HashDocumento,
-    RetificacaoInfo? Retificacao = null);
+    RetificacaoInfo? Retificacao = null,
+    ResultadoConformidade? Conformidade = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>17 chaves</b> — hoje <b>10 blocos reais + 7 stubs</b>
+/// <b>17 chaves</b> — hoje <b>12 blocos reais + 5 stubs</b>
 /// <c>{"status":"nao_construido"}</c> para as dimensões que a Feature #40 ainda
 /// não implementou — e devolve os bytes que <c>VersaoConfiguracao.Abrir</c>
 /// persiste como base do hash. Quando a entrada carrega

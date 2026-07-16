@@ -56,7 +56,8 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         // recanonicalizaria com 17 blocos em vez de 18.
         Result<SnapshotCanonico> recodificado = registro.Recodificar(
             versao.SchemaVersion,
-            new EntradaCanonicalizacao(sombra, envelope.Dados, envelope.HashDocumento, envelope.Retificacao));
+            new EntradaCanonicalizacao(
+                sombra, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade));
 
         if (recodificado.IsFailure)
         {

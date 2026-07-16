@@ -23,7 +23,8 @@ public sealed class EnvelopeReidratado
         GrafoConfiguracao grafo,
         DadosEdital dados,
         string hashDocumento,
-        RetificacaoInfo? retificacao)
+        RetificacaoInfo? retificacao,
+        ResultadoConformidade? conformidade)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -33,6 +34,7 @@ public sealed class EnvelopeReidratado
         Dados = dados;
         HashDocumento = hashDocumento;
         Retificacao = retificacao;
+        Conformidade = conformidade;
     }
 
     public GrafoConfiguracao Grafo { get; }
@@ -43,6 +45,15 @@ public sealed class EnvelopeReidratado
 
     /// <summary><see langword="null"/> na versão 1 — o envelope de abertura não tem o 18º bloco.</summary>
     public RetificacaoInfo? Retificacao { get; }
+
+    /// <summary>
+    /// Evidência forense da conformidade legal congelada (Story #853, §3.4/CA-18) — fora
+    /// de <see cref="GrafoConfiguracao"/> porque não é reposta no agregado vivo (o
+    /// processo não tem propriedade "Conformidade" para restaurar); serve à paridade
+    /// contra o cadastro vivo, não a
+    /// <see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>.
+    /// </summary>
+    public ResultadoConformidade? Conformidade { get; }
 }
 
 /// <summary>
