@@ -142,12 +142,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0111](0111-vocabulario-fechado-de-fatos-do-candidato.md) | Vocabulário fechado de fatos do candidato (catálogo seed-governado em Configuração, identidade imutável) | accepted | 2026-07-15 |
 | [0112](0112-fronteira-append-only-do-catalogo-de-regras.md) | Fronteira do append-only na correção do catálogo de regras (substituível enquanto nada congelado referenciar) | accepted | 2026-07-14 |
 | [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro | accepted | 2026-07-15 |
+| [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
 
-> **Nota de numeração:** a sequência de `0001` a `0113` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0114+`.
+> **Nota de numeração:** a sequência de `0001` a `0114` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0115+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0113`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0114`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
