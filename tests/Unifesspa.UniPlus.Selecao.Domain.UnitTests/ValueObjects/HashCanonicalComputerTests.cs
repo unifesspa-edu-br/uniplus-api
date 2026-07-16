@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -22,7 +23,7 @@ public sealed class HashCanonicalComputerTests
     public void Compute_MesmoConteudo_ProduzMesmoHash()
     {
         string h1 = HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -32,7 +33,7 @@ public sealed class HashCanonicalComputerTests
             vigenciaFim: new DateOnly(2027, 1, 1));
 
         string h2 = HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -45,11 +46,35 @@ public sealed class HashCanonicalComputerTests
         HashCanonicalComputer.IsValidHashShape(h1).Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Hash usa a chave tipoProcessoCodigo e muda em relação à chave legada")]
+    public void Compute_UsaChaveTipoProcessoCodigo()
+    {
+        string atual = HashCanonicalComputer.Compute(
+            "PSIQ", CategoriaObrigatoriedade.Etapa, "ETAPA_OBRIGATORIA", PredicadoBase,
+            "Lei 12.711/2012 art.1º", "Portaria 2026/14", new DateOnly(2026, 1, 1), new DateOnly(2027, 1, 1));
+
+        JsonObject payloadLegado = new()
+        {
+            ["baseLegal"] = "Lei 12.711/2012 art.1º",
+            ["categoria"] = CategoriaObrigatoriedade.Etapa.ToString(),
+            ["portariaInternaCodigo"] = "Portaria 2026/14",
+            ["predicado"] = JsonSerializer.SerializeToNode(PredicadoBase, HashCanonicalComputer.CanonicalOptions),
+            ["regraCodigo"] = "ETAPA_OBRIGATORIA",
+            ["tipoEditalCodigo"] = "PSIQ",
+            ["vigenciaFim"] = "2027-01-01",
+            ["vigenciaInicio"] = "2026-01-01",
+        };
+        string legado = HashCanonicalComputer.ComputeSha256Hex(
+            HashCanonicalComputer.ComputeSnapshotBytes(payloadLegado));
+
+        atual.Should().NotBe(legado, "a chave literal compõe o conteúdo canônico hasheado");
+    }
+
     [Theory(DisplayName = "Alteração em qualquer campo semântico muda o hash")]
     [InlineData("baseLegal")]
     [InlineData("categoria")]
     [InlineData("regraCodigo")]
-    [InlineData("tipoEditalCodigo")]
+    [InlineData("tipoProcessoCodigo")]
     [InlineData("predicado")]
     [InlineData("portariaInternaCodigo")]
     [InlineData("vigenciaInicio")]
@@ -57,7 +82,7 @@ public sealed class HashCanonicalComputerTests
     public void Compute_MudancaEmCampoSemantico_MudaHash(string campoAlterado)
     {
         string baseline = HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -77,7 +102,7 @@ public sealed class HashCanonicalComputerTests
             "regraCodigo" => HashCanonicalComputer.Compute(
                 "*", CategoriaObrigatoriedade.Etapa, "ETAPA_OBRIGATORIA_V2", PredicadoBase,
                 "Lei 12.711/2012 art.1º", "Portaria 2026/14", new DateOnly(2026, 1, 1), new DateOnly(2027, 1, 1)),
-            "tipoEditalCodigo" => HashCanonicalComputer.Compute(
+            "tipoProcessoCodigo" => HashCanonicalComputer.Compute(
                 "PSIQ", CategoriaObrigatoriedade.Etapa, "ETAPA_OBRIGATORIA", PredicadoBase,
                 "Lei 12.711/2012 art.1º", "Portaria 2026/14", new DateOnly(2026, 1, 1), new DateOnly(2027, 1, 1)),
             "predicado" => HashCanonicalComputer.Compute(
@@ -103,7 +128,7 @@ public sealed class HashCanonicalComputerTests
     public void Compute_PortariaNullVsVazio_HashIgual()
     {
         string h1 = HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -114,7 +139,7 @@ public sealed class HashCanonicalComputerTests
 
         // Verifica também que vigenciaFim null não muda comportamento.
         string h2 = HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: PredicadoBase,
@@ -130,7 +155,7 @@ public sealed class HashCanonicalComputerTests
     public void Compute_ShapeShaCorreto()
     {
         string hash = HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Outros,
             regraCodigo: "X",
             predicado: new ConcorrenciaDuplaObrigatoria(),
@@ -160,7 +185,7 @@ public sealed class HashCanonicalComputerTests
         h1.Should().NotBe(h3);
 
         static string Compute(PredicadoObrigatoriedade predicado) => HashCanonicalComputer.Compute(
-            tipoEditalCodigo: "*",
+            tipoProcessoCodigo: "*",
             categoria: CategoriaObrigatoriedade.Outros,
             regraCodigo: "R",
             predicado: predicado,

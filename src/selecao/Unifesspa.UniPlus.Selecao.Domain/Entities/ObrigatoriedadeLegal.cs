@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Regra legal data-driven que valida invariantes de um <see cref="Edital"/>
+/// Regra legal data-driven aplicável a um <see cref="ProcessoSeletivo"/>
 /// antes da publicação (ADR-0058). Carrega citação legal, vigência temporal e
 /// hash canônico para suportar evidência forense em mandados de segurança e
 /// processos administrativos.
@@ -37,13 +37,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 {
     /// <summary>
-    /// Valor sentinela aceito em <see cref="TipoEditalCodigo"/> para regras
-    /// universais (aplicam-se a qualquer tipo de edital). Alinha com a chave
-    /// de filtro pública <c>?tipoEdital=*</c> exposta em #461.
+    /// Valor sentinela aceito em <see cref="TipoProcessoCodigo"/> para regras
+    /// universais (aplicam-se a qualquer tipo de processo). Alinha com a chave
+    /// de filtro pública <c>?tipoProcesso=*</c>.
     /// </summary>
-    public const string TipoEditalUniversal = "*";
+    public const string TipoProcessoUniversal = "*";
 
-    public string TipoEditalCodigo { get; private set; } = null!;
+    public string TipoProcessoCodigo { get; private set; } = null!;
     public CategoriaObrigatoriedade Categoria { get; private set; }
     public string RegraCodigo { get; private set; } = null!;
     public PredicadoObrigatoriedade Predicado { get; private set; } = null!;
@@ -72,7 +72,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 
     private ObrigatoriedadeLegal(NormalizedPayload payload, PredicadoObrigatoriedade predicado)
     {
-        TipoEditalCodigo = payload.TipoEditalCodigo;
+        TipoProcessoCodigo = payload.TipoProcessoCodigo;
         Categoria = payload.Categoria;
         RegraCodigo = payload.RegraCodigo;
         Predicado = predicado;
@@ -91,7 +91,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// <see cref="ObrigatoriedadeLegalPayloadNormalizer"/>.
     /// </summary>
     public static Result<ObrigatoriedadeLegal> Criar(
-        string tipoEditalCodigo,
+        string tipoProcessoCodigo,
         CategoriaObrigatoriedade categoria,
         string regraCodigo,
         PredicadoObrigatoriedade predicado,
@@ -110,7 +110,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         }
 
         Result<NormalizedPayload> normalized = ObrigatoriedadeLegalPayloadNormalizer.Normalizar(
-            tipoEditalCodigo,
+            tipoProcessoCodigo,
             categoria,
             regraCodigo,
             descricaoHumana,
@@ -148,7 +148,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     {
         ArgumentNullException.ThrowIfNull(clock);
         return Criar(
-            tipoEditalCodigo: TipoEditalUniversal,
+            tipoProcessoCodigo: TipoProcessoUniversal,
             categoria: CategoriaObrigatoriedade.Outros,
             regraCodigo: regraCodigo,
             predicado: predicado,
@@ -177,7 +177,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// </para>
     /// </remarks>
     public Result Atualizar(
-        string tipoEditalCodigo,
+        string tipoProcessoCodigo,
         CategoriaObrigatoriedade categoria,
         string regraCodigo,
         PredicadoObrigatoriedade predicado,
@@ -196,7 +196,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         }
 
         Result<NormalizedPayload> normalized = ObrigatoriedadeLegalPayloadNormalizer.Normalizar(
-            tipoEditalCodigo,
+            tipoProcessoCodigo,
             categoria,
             regraCodigo,
             descricaoHumana,
@@ -217,7 +217,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 
     private void AplicarPayload(NormalizedPayload payload, PredicadoObrigatoriedade predicado)
     {
-        TipoEditalCodigo = payload.TipoEditalCodigo;
+        TipoProcessoCodigo = payload.TipoProcessoCodigo;
         Categoria = payload.Categoria;
         RegraCodigo = payload.RegraCodigo;
         Predicado = predicado;
@@ -243,7 +243,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     }
 
     private string ComputeHash() => HashCanonicalComputer.Compute(
-        TipoEditalCodigo,
+        TipoProcessoCodigo,
         Categoria,
         RegraCodigo,
         Predicado,

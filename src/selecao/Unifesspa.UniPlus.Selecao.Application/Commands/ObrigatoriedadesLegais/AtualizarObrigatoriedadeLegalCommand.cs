@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     Justification = "Construtor do record propaga o tipo string do payload — ver justificativa acima.")]
 public sealed record AtualizarObrigatoriedadeLegalCommand(
     Guid Id,
-    string TipoEditalCodigo,
+    string TipoProcessoCodigo,
     CategoriaObrigatoriedade Categoria,
     string RegraCodigo,
     PredicadoObrigatoriedade Predicado,

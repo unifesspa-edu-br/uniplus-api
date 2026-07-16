@@ -11,10 +11,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Outbox.Cascading;
+
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Outbox.Cascading;
 
 /// <summary>
 /// Integration tests do admin CRUD de <c>ObrigatoriedadeLegal</c>
@@ -58,7 +59,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
 
         object payload = new
         {
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo = "*",
             categoria = "etapa",
             regraCodigo,
             predicado = PredicadoEtapaProvaObjetiva,
@@ -91,7 +92,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
 
         object payload = new
         {
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo = "*",
             categoria = "outros",
             regraCodigo = UniqueRegraCodigo(),
             predicado = PredicadoConcorrenciaDupla,
@@ -111,6 +112,30 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
             "RequiresIdempotencyKey filter rejeita request sem header");
     }
 
+    [Fact(DisplayName = "POST com tipo de processo fora do vocabulário retorna 422 específico")]
+    public async Task Criar_TipoProcessoForaDoVocabulario_Retorna422()
+    {
+        using HttpClient client = ClientWithRoles(AdminPlataforma);
+
+        object payload = new
+        {
+            tipoProcessoCodigo = "SISU_ANTIGO",
+            categoria = "outros",
+            regraCodigo = UniqueRegraCodigo(),
+            predicado = PredicadoConcorrenciaDupla,
+            descricaoHumana = "Tipo inválido",
+            baseLegal = "Lei",
+            vigenciaInicio = "2026-01-01",
+        };
+
+        HttpResponseMessage response = await PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("type").GetString()
+            .Should().EndWith("uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_fora_do_vocabulario");
+    }
+
     [Fact(DisplayName = "POST com Idempotency-Key repetido retorna 200 com mesmo Id (idempotência)")]
     public async Task Criar_IdempotencyKeyRepetido_RetornaMesmaResposta()
     {
@@ -120,7 +145,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
 
         object payload = new
         {
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo = "*",
             categoria = "outros",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
@@ -154,7 +179,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
 
         object payload = new
         {
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo = "*",
             categoria = "outros",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
@@ -172,7 +197,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
         // o UNIQUE parcial sobre regra_codigo é o que defende).
         object duplicado = new
         {
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo = "*",
             categoria = "outros",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
@@ -201,7 +226,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
         object putPayload = new
         {
             id,
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo = "*",
             categoria = "outros",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
@@ -242,7 +267,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
         object putPayload = new
         {
             id = idDivergente,
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo = "*",
             categoria = "outros",
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,
@@ -309,6 +334,32 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
         regraCodigos.Should().NotContain(regraCodigoModalidade, "filtro categoria=Etapa exclui Modalidade");
     }
 
+    [Fact(DisplayName = "GET filtra por tipoProcesso e ignora o parâmetro legado")]
+    public async Task Listar_TipoProcessoFiltraEParametroLegadoEIgnorado()
+    {
+        using HttpClient client = ClientWithRoles(AdminPlataforma);
+        string regraSiSU = UniqueRegraCodigo();
+        string regraPSIQ = UniqueRegraCodigo();
+        await SeedRegraAsync(client, regraSiSU, tipoProcessoCodigo: "SiSU");
+        await SeedRegraAsync(client, regraPSIQ, tipoProcessoCodigo: "PSIQ");
+
+        HttpResponseMessage filtrada = await client.GetAsync(
+            new Uri("/api/selecao/obrigatoriedades-legais?tipoProcesso=SiSU&limit=50", UriKind.Relative));
+        using JsonDocument filtradaJson = JsonDocument.Parse(await filtrada.Content.ReadAsStringAsync());
+        IReadOnlyList<string> filtradas = [.. filtradaJson.RootElement.EnumerateArray()
+            .Select(static item => item.GetProperty("regraCodigo").GetString()!)];
+        filtradas.Should().Contain(regraSiSU);
+        filtradas.Should().NotContain(regraPSIQ);
+
+        HttpResponseMessage legado = await client.GetAsync(
+            new Uri("/api/selecao/obrigatoriedades-legais?tipoEdital=SiSU&limit=50", UriKind.Relative));
+        using JsonDocument legadoJson = JsonDocument.Parse(await legado.Content.ReadAsStringAsync());
+        IReadOnlyList<string> semFiltro = [.. legadoJson.RootElement.EnumerateArray()
+            .Select(static item => item.GetProperty("regraCodigo").GetString()!)];
+        semFiltro.Should().Contain(regraSiSU);
+        semFiltro.Should().Contain(regraPSIQ);
+    }
+
     private HttpClient ClientWithRoles(params string[] roles)
     {
         HttpClient client = _fixture.Factory.CreateClient();
@@ -345,11 +396,12 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests
         HttpClient client,
         string regraCodigo,
         string categoria = "outros",
-        string baseLegal = "Lei seed")
+        string baseLegal = "Lei seed",
+        string tipoProcessoCodigo = "*")
     {
         object payload = new
         {
-            tipoEditalCodigo = "*",
+            tipoProcessoCodigo,
             categoria,
             regraCodigo,
             predicado = PredicadoConcorrenciaDupla,

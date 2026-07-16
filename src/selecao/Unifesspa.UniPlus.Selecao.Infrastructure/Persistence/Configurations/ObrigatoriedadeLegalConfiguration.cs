@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal sealed class ObrigatoriedadeLegalConfiguration
     : IEntityTypeConfiguration<ObrigatoriedadeLegal>
 {
-    private const int TipoEditalCodigoMaxLength = 64;
+    private const int TipoProcessoCodigoMaxLength = 64;
     private const int RegraCodigoMaxLength = 128;
     private const int CategoriaMaxLength = 32;
     private const int DescricaoHumanaMaxLength = 1000;
@@ -47,8 +47,8 @@ internal sealed class ObrigatoriedadeLegalConfiguration
         builder.ToTable("obrigatoriedades_legais");
         builder.HasKey(o => o.Id);
 
-        builder.Property(o => o.TipoEditalCodigo)
-            .HasMaxLength(TipoEditalCodigoMaxLength)
+        builder.Property(o => o.TipoProcessoCodigo)
+            .HasMaxLength(TipoProcessoCodigoMaxLength)
             .IsRequired();
 
         builder.Property(o => o.Categoria)

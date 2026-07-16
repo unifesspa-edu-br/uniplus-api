@@ -19,7 +19,7 @@
   },
   "payload": {
     "create": {
-      "tipoEditalCodigo": "GRADUACAO",
+      "tipoProcessoCodigo": "*",
       "categoria": "documento",
       "regraCodigo": "SMOKE-CRUD-DOC-COMPROVANTE-RESIDENCIA",
       "predicado": {

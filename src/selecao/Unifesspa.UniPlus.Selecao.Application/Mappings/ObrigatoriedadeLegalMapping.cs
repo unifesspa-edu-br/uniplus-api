@@ -16,7 +16,7 @@ public static class ObrigatoriedadeLegalMapping
 
         return new ObrigatoriedadeLegalDto(
             Id: regra.Id,
-            TipoEditalCodigo: regra.TipoEditalCodigo,
+            TipoProcessoCodigo: regra.TipoProcessoCodigo,
             Categoria: regra.Categoria,
             RegraCodigo: regra.RegraCodigo,
             Predicado: regra.Predicado,

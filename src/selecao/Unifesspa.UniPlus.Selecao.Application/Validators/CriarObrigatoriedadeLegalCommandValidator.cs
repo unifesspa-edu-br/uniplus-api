@@ -18,9 +18,9 @@ public sealed class CriarObrigatoriedadeLegalCommandValidator
 {
     public CriarObrigatoriedadeLegalCommandValidator()
     {
-        RuleFor(x => x.TipoEditalCodigo)
+        RuleFor(x => x.TipoProcessoCodigo)
             .NotEmpty()
-            .WithMessage("TipoEditalCodigo é obrigatório — use \"*\" para regras universais.")
+            .WithMessage("TipoProcessoCodigo é obrigatório — use \"*\" para regras universais.")
             .MaximumLength(64);
 
         RuleFor(x => x.Categoria)

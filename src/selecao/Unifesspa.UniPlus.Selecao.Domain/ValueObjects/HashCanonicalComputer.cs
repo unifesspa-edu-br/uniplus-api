@@ -71,7 +71,7 @@ public static class HashCanonicalComputer
     /// <summary>
     /// Computa o hash canônico de uma regra a partir das suas partes
     /// semânticas. O caller é responsável por passar valores normalizados
-    /// (uppercase do <c>tipoEditalCodigo</c>, trim de strings, etc.).
+    /// (vocabulário de <c>tipoProcessoCodigo</c>, trim de strings, etc.).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -92,7 +92,7 @@ public static class HashCanonicalComputer
     /// sobre <c>hash</c>.
     /// </para>
     /// </remarks>
-    /// <param name="tipoEditalCodigo">Código do tipo de edital ou <c>"*"</c> para universal.</param>
+    /// <param name="tipoProcessoCodigo">Código do tipo de processo ou <c>"*"</c> para universal.</param>
     /// <param name="categoria">Categoria da regra.</param>
     /// <param name="regraCodigo">Código simbólico da regra (ex.: <c>ETAPA_OBRIGATORIA</c>).</param>
     /// <param name="predicado">Predicado tipado da regra (variante da discriminated union).</param>
@@ -102,7 +102,7 @@ public static class HashCanonicalComputer
     /// <param name="vigenciaFim">Fim de vigência, ou <see langword="null"/> para vigência aberta.</param>
     /// <returns>Hash SHA-256 em hex minúsculo (64 chars).</returns>
     public static string Compute(
-        string tipoEditalCodigo,
+        string tipoProcessoCodigo,
         CategoriaObrigatoriedade categoria,
         string regraCodigo,
         PredicadoObrigatoriedade predicado,
@@ -111,7 +111,7 @@ public static class HashCanonicalComputer
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tipoEditalCodigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoProcessoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(regraCodigo);
         ArgumentNullException.ThrowIfNull(predicado);
         ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
@@ -129,7 +129,7 @@ public static class HashCanonicalComputer
             ["portariaInternaCodigo"] = portariaInternaCodigo,
             ["predicado"] = predicadoNode,
             ["regraCodigo"] = regraCodigo,
-            ["tipoEditalCodigo"] = tipoEditalCodigo,
+            ["tipoProcessoCodigo"] = tipoProcessoCodigo,
             ["vigenciaFim"] = vigenciaFim is { } fim ? fim.ToString("O", CultureInfo.InvariantCulture) : null,
             ["vigenciaInicio"] = vigenciaInicio.ToString("O", CultureInfo.InvariantCulture),
         };

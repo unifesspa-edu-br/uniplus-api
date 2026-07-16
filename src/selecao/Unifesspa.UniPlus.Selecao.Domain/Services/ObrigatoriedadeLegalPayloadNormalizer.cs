@@ -34,7 +34,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
         + "o valor original informado pelo admin sem normalização forçada por System.Uri.")]
 public static class ObrigatoriedadeLegalPayloadNormalizer
 {
-    internal const int TipoEditalCodigoMaxLength = 64;
+    internal const int TipoProcessoCodigoMaxLength = 64;
     internal const int RegraCodigoMaxLength = 128;
     internal const int BaseLegalMaxLength = 500;
     internal const int DescricaoHumanaMaxLength = 1000;
@@ -47,7 +47,7 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
     /// retornados estão mapeados em <c>SelecaoDomainErrorRegistration</c>.
     /// </summary>
     public static Result<NormalizedPayload> Normalizar(
-        string tipoEditalCodigo,
+        string tipoProcessoCodigo,
         CategoriaObrigatoriedade categoria,
         string regraCodigo,
         string descricaoHumana,
@@ -57,10 +57,10 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim)
     {
-        Result<string> tipoEdital = NormalizarTipoEditalCodigo(tipoEditalCodigo);
-        if (tipoEdital.IsFailure)
+        Result<string> tipoProcesso = NormalizarTipoProcessoCodigo(tipoProcessoCodigo);
+        if (tipoProcesso.IsFailure)
         {
-            return Result<NormalizedPayload>.Failure(tipoEdital.Error!);
+            return Result<NormalizedPayload>.Failure(tipoProcesso.Error!);
         }
 
         Result categoriaValida = ValidarCategoria(categoria);
@@ -114,7 +114,7 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
         }
 
         return Result<NormalizedPayload>.Success(new NormalizedPayload(
-            tipoEdital.Value!,
+            tipoProcesso.Value!,
             categoria,
             regra.Value!,
             descricao.Value!,
@@ -125,14 +125,29 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
             vigenciaFim));
     }
 
-    private static Result<string> NormalizarTipoEditalCodigo(string? valor) =>
-        NormalizarObrigatorio(
+    private static Result<string> NormalizarTipoProcessoCodigo(string? valor)
+    {
+        Result<string> codigo = NormalizarObrigatorio(
             valor,
-            TipoEditalCodigoMaxLength,
-            "ObrigatoriedadeLegal.TipoEditalCodigoObrigatorio",
-            "TipoEditalCodigo é obrigatório — use \"*\" para regras universais.",
-            "ObrigatoriedadeLegal.TipoEditalCodigoInvalido",
-            $"TipoEditalCodigo deve ter no máximo {TipoEditalCodigoMaxLength} caracteres.");
+            TipoProcessoCodigoMaxLength,
+            "ObrigatoriedadeLegal.TipoProcessoCodigoObrigatorio",
+            "TipoProcessoCodigo é obrigatório — use \"*\" para regras universais.",
+            "ObrigatoriedadeLegal.TipoProcessoCodigoInvalido",
+            $"TipoProcessoCodigo deve ter no máximo {TipoProcessoCodigoMaxLength} caracteres.");
+        if (codigo.IsFailure)
+        {
+            return codigo;
+        }
+
+        string normalizado = codigo.Value!;
+        return normalizado == ObrigatoriedadeLegal.TipoProcessoUniversal
+            || Enum.GetNames<TipoProcesso>().Contains(normalizado, StringComparer.Ordinal)
+                && normalizado != nameof(TipoProcesso.Nenhum)
+            ? codigo
+            : Result<string>.Failure(new DomainError(
+                "ObrigatoriedadeLegal.TipoProcessoCodigoForaDoVocabulario",
+                "TipoProcessoCodigo deve ser \"*\" ou um nome válido de TipoProcesso."));
+    }
 
     private static Result<string> NormalizarRegraCodigo(string? valor) =>
         NormalizarObrigatorio(
@@ -237,7 +252,7 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
     "CA1054:URI-like parameters should not be strings",
     Justification = "Construtor do record propaga o tipo string do payload — ver justificativa acima.")]
 public sealed record NormalizedPayload(
-    string TipoEditalCodigo,
+    string TipoProcessoCodigo,
     CategoriaObrigatoriedade Categoria,
     string RegraCodigo,
     string DescricaoHumana,

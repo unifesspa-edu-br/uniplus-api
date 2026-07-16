@@ -10,20 +10,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Xunit;
 
 /// <summary>
-/// Contraprova da emenda ao item 4 da ADR-0100 (ADR-0109 D4).
+/// Contraprova do conteúdo canônico da ObrigatoriedadeLegal.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A ADR-0109 declara que o envelope do congelamento <b>preserva</b> <c>null</c>
-/// explícito, e delimita o item 4 da ADR-0100 ("campo opcional é omitido") ao
-/// caminho de hash de <b>entidade</b> — <c>CanonicalOptions</c>.
-/// </para>
-/// <para>
-/// Esta é a prova de que a emenda ficou <b>restrita</b>: o hash de uma
-/// <c>ObrigatoriedadeLegal</c> de referência não muda. Se mudasse, a
-/// <c>UNIQUE (hash)</c> parcial e a trilha forense do catálogo quebrariam — e é
-/// exatamente por isso que a decisão foi emendar a ADR, e não "corrigir" o
-/// canonicalizador para omitir <c>null</c> em toda parte.
+/// A chave <c>tipoProcessoCodigo</c> é conteúdo semântico do hash. Este valor
+/// literal é atualizado deliberadamente pela ADR-0114, que renomeia a chave;
+/// mudanças futuras sem nova decisão precisam falhar aqui.
 /// </para>
 /// <para>
 /// O valor abaixo é literal de propósito: um hash que muda sozinho tem de fazer
@@ -32,11 +25,11 @@ using Xunit;
 /// </remarks>
 public sealed class HashDeEntidadeImutavelTests
 {
-    [Fact(DisplayName = "HashDeObrigatoriedadeLegal_NaoMudou — CanonicalOptions permanece byte-idêntico (ADR-0109 D4)")]
-    public void HashDeObrigatoriedadeLegal_NaoMudou()
+    [Fact(DisplayName = "HashDeObrigatoriedadeLegal_PermaneceEstavelComAChaveTipoProcessoCodigo")]
+    public void HashDeObrigatoriedadeLegal_PermaneceEstavelComAChaveTipoProcessoCodigo()
     {
         Result<ObrigatoriedadeLegal> regra = ObrigatoriedadeLegal.Criar(
-            tipoEditalCodigo: ObrigatoriedadeLegal.TipoEditalUniversal,
+            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
             categoria: CategoriaObrigatoriedade.Etapa,
             regraCodigo: "ETAPA_OBRIGATORIA",
             predicado: new EtapaObrigatoria("ProvaObjetiva"),
@@ -45,11 +38,8 @@ public sealed class HashDeEntidadeImutavelTests
             vigenciaInicio: new DateOnly(2026, 1, 1));
 
         regra.IsSuccess.Should().BeTrue();
-
         regra.Value!.Hash.Should().Be(
-            "60add4b6533261d9747a3a9e46cff9999a4c04df3c8aade3ad6f824fdf15a442",
-            "o hash de entidade é computado por CanonicalOptions, que a emenda ao item 4 da ADR-0100 NÃO tocou. " +
-            "Se este valor mudou, a trilha forense do catálogo de obrigatoriedades legais foi quebrada — " +
-            "e a UNIQUE (hash) parcial deixou de valer para as linhas já gravadas.");
+            "5ca48e8d4d74dd61cd2ff1b0e76799b08a68836d63d8595d4fef21e8d4c11c23",
+            "a chave tipoProcessoCodigo integra o payload canônico; qualquer mudança posterior exige nova decisão explícita.");
     }
 }

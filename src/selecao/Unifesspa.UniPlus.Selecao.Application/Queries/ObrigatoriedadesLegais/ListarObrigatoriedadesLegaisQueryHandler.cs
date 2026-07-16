@@ -29,7 +29,7 @@ public static class ListarObrigatoriedadesLegaisQueryHandler
                 query.AfterId,
                 query.Limit,
                 query.Direction,
-                query.TipoEditalCodigo,
+                query.TipoProcessoCodigo,
                 query.Categoria,
                 query.Vigentes,
                 cancellationToken).ConfigureAwait(false);

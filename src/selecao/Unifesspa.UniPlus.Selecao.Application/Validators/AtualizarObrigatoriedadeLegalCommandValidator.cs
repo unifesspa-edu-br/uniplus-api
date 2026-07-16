@@ -20,9 +20,9 @@ public sealed class AtualizarObrigatoriedadeLegalCommandValidator
             .NotEqual(Guid.Empty)
             .WithMessage("Id é obrigatório.");
 
-        RuleFor(x => x.TipoEditalCodigo)
+        RuleFor(x => x.TipoProcessoCodigo)
             .NotEmpty()
-            .WithMessage("TipoEditalCodigo é obrigatório.")
+            .WithMessage("TipoProcessoCodigo é obrigatório.")
             .MaximumLength(64);
 
         RuleFor(x => x.Categoria)

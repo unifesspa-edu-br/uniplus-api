@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Command que cria uma <c>ObrigatoriedadeLegal</c> a partir do payload do
 /// <c>POST /api/selecao/admin/obrigatoriedades-legais</c>. Reflete o input
 /// integral da forma plena (ADR-0058 + Emenda 1) — full-replace por design.
-/// A regra é cross-cutting por tipo de processo (<c>TipoEditalCodigo</c>);
+/// A regra é cross-cutting por tipo de processo (<c>TipoProcessoCodigo</c>);
 /// não tem proprietário nem áreas de interesse.
 /// </summary>
 [SuppressMessage(
@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     "CA1054:URI-like parameters should not be strings",
     Justification = "Construtor do record propaga o tipo string do payload — ver justificativa acima.")]
 public sealed record CriarObrigatoriedadeLegalCommand(
-    string TipoEditalCodigo,
+    string TipoProcessoCodigo,
     CategoriaObrigatoriedade Categoria,
     string RegraCodigo,
     PredicadoObrigatoriedade Predicado,
