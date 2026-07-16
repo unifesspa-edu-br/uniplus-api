@@ -163,6 +163,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/uniplus-api-${{ matrix.module }}
+          # O checkout completo já contém os metadados Git necessários.
+          # Assim, a release não depende da API GitHub para a data do commit
+          # (contexto workflow), sem alterar a identidade da tag ou do SHA.
+          context: git
           # Política de tagging: ver ADR-0050.
           # - sha-<7>          : identidade imutável do commit (sempre)
           # - v<X>.<Y>.<Z>     : release exata (imutável)
@@ -171,15 +175,15 @@ jobs:
           # Sem `latest` e sem `main` — disciplina semver explícita.
           flavor: |
             latest=false
-          # Patterns prefixadas com `v` literal — `{{version}}` em
-          # docker/metadata-action remove o `v` da tag git, então
-          # `pattern={{version}}` em refs/tags/v1.2.3 produz `1.2.3`. Usar
-          # `pattern=v{{version}}` mantém o `v` exigido pela ADR-0050.
+          # `github.ref_name` é a tag do evento, fonte explícita para SemVer.
+          # Isso preserva o contexto Git para a data do commit sem depender
+          # das demais refs que também decoram o HEAD.
+          # Patterns prefixadas com `v` literal — `{{version}}` remove o `v`.
           tags: |
             type=sha,format=short,prefix=sha-
-            type=semver,pattern=v{{version}}
-            type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern=v{{major}}
+            type=semver,pattern=v{{version}},value=${{ github.ref_name }}
+            type=semver,pattern=v{{major}}.{{minor}},value=${{ github.ref_name }}
+            type=semver,pattern=v{{major}},value=${{ github.ref_name }}
           labels: |
             org.opencontainers.image.title=uniplus-api-${{ matrix.module }}
             org.opencontainers.image.description=Módulo ${{ matrix.module }} da API do Uni+ (Sistema Unificado Unifesspa)
