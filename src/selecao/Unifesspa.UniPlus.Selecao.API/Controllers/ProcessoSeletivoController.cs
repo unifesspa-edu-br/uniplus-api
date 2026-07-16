@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -371,16 +372,27 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
+        actionResult = await EnriquecerComPendenciasEstruturaisAsync(resultado, actionResult, id, cancellationToken)
+            .ConfigureAwait(false);
+        return await EnriquecerComObrigatoriedadesReprovadasAsync(
+            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// CA-03: enriquece o 422 de conformidade ESTRUTURAL insuficiente com o checklist de
+    /// pendências — reconsulta <see cref="ObterConformidadeProcessoSeletivoQuery"/> (mesmo
+    /// <c>ProcessoSeletivo.AvaliarConformidade()</c> por trás do gate, sem duplicar a regra)
+    /// para montar <c>Extensions["pendencias"]</c>.
+    /// </summary>
+    private async Task<IActionResult> EnriquecerComPendenciasEstruturaisAsync(
+        Result resultado, IActionResult actionResult, Guid id, CancellationToken cancellationToken)
+    {
         if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeInsuficiente")
             || actionResult is not ObjectResult { Value: ProblemDetails problem })
         {
             return actionResult;
         }
 
-        // CA-03: enriquece o 422 de conformidade insuficiente com o checklist
-        // de pendências — reconsulta ObterConformidadeProcessoSeletivoQuery
-        // (mesmo ProcessoSeletivo.AvaliarConformidade() por trás do gate de
-        // Publicar, sem duplicar a regra) para montar Extensions["pendencias"].
         ConformidadeProcessoSeletivoDto? conformidade = await _queryBus
             .Send(new ObterConformidadeProcessoSeletivoQuery(id), cancellationToken)
             .ConfigureAwait(false);
@@ -389,6 +401,35 @@ public sealed class ProcessoSeletivoController : ControllerBase
             problem.Extensions["pendencias"] = conformidade.Itens
                 .Where(item => !item.Ok)
                 .Select(item => item.Item)
+                .ToArray();
+        }
+
+        return actionResult;
+    }
+
+    /// <summary>
+    /// Story #853: enriquece o 422 de conformidade LEGAL insuficiente com as regras
+    /// reprovadas (código, descrição, base legal) — reconsulta
+    /// <see cref="ObterConformidadeLegalProcessoSeletivoQuery"/> na MESMA data de corte que
+    /// o gate usou (CA-16/CA-17), para montar <c>Extensions["obrigatoriedadesReprovadas"]</c>.
+    /// </summary>
+    private async Task<IActionResult> EnriquecerComObrigatoriedadesReprovadasAsync(
+        Result resultado, IActionResult actionResult, Guid id, DateOnly dataReferencia, CancellationToken cancellationToken)
+    {
+        if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeLegalInsuficiente")
+            || actionResult is not ObjectResult { Value: ProblemDetails problem })
+        {
+            return actionResult;
+        }
+
+        ConformidadeLegalProcessoSeletivoDto? conformidade = await _queryBus
+            .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, dataReferencia), cancellationToken)
+            .ConfigureAwait(false);
+        if (conformidade is not null)
+        {
+            problem.Extensions["obrigatoriedadesReprovadas"] = conformidade.Regras
+                .Where(regra => !regra.Aprovada)
+                .Select(regra => new { regra.RegraCodigo, regra.DescricaoHumana, regra.BaseLegal, regra.Motivo })
                 .ToArray();
         }
 
@@ -437,7 +478,14 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 MapearAto(request.Ato)),
             cancellationToken);
 
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+        if (resultado.IsSuccess)
+        {
+            return NoContent();
+        }
+
+        IActionResult actionResult = resultado.ToActionResult(_mapper);
+        return await EnriquecerComObrigatoriedadesReprovadasAsync(
+            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -614,7 +662,14 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 precondicao),
             cancellationToken);
 
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+        if (resultado.IsSuccess)
+        {
+            return NoContent();
+        }
+
+        IActionResult actionResult = resultado.ToActionResult(_mapper);
+        return await EnriquecerComObrigatoriedadesReprovadasAsync(
+            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -630,6 +685,42 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ConformidadeProcessoSeletivoDto? conformidade = await _queryBus
             .Send(new ObterConformidadeProcessoSeletivoQuery(id), cancellationToken)
+            .ConfigureAwait(false);
+        if (conformidade is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(conformidade);
+    }
+
+    /// <summary>
+    /// Consulta a conformidade LEGAL do processo (Story #853, CA-16) contra o catálogo
+    /// <c>ObrigatoriedadeLegal</c> vigente na <paramref name="dataReferencia"/> informada —
+    /// recurso distinto de <see cref="ObterConformidade"/> (checklist estrutural), com a
+    /// MESMA fonte que o gate de <c>Publicar</c>/<c>Retificar</c>/<c>FecharRetificacao</c>
+    /// usa: a regra que aparece reprovada aqui é a mesma que bloqueia a transição.
+    /// </summary>
+    [HttpGet("{id:guid}/conformidade-legal")]
+    [VendorMediaType(Resource = "conformidade-legal-processo-seletivo", Versions = [1])]
+    [ProducesResponseType(typeof(ConformidadeLegalProcessoSeletivoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterConformidadeLegal(
+        Guid id,
+        // BindRequired: DateOnly é value type não anulável — sem isto, uma requisição que
+        // omite dataReferencia não falha o model binding, e o parâmetro chega como
+        // DateOnly.MinValue (0001-01-01). O motor filtraria toda regra por vigência e
+        // devolveria "nenhuma regra vigente" — conformidade aprovada por engano, não pela
+        // ausência real de obrigatoriedades.
+        [FromQuery, BindRequired] DateOnly dataReferencia,
+        CancellationToken cancellationToken)
+    {
+        ConformidadeLegalProcessoSeletivoDto? conformidade = await _queryBus
+            .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, dataReferencia), cancellationToken)
             .ConfigureAwait(false);
         if (conformidade is null)
         {
