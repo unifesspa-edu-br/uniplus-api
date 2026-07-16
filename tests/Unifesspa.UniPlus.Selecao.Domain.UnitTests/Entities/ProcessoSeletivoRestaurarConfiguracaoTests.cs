@@ -152,6 +152,55 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         depois.Ordem.Should().Be(3);
     }
 
+    [Fact(DisplayName = "issue #848/ADR-0115 §3.7 — restauração com AcaoQuandoIndeferido divergente entre ofertas é recusada")]
+    public void RestauracaoComAcaoQuandoIndeferidoDivergenteEntreOfertas_Recusa()
+    {
+        // AplicarGrafo reconstrói _distribuicaoVagas diretamente do grafo decodificado,
+        // sem passar por DefinirDistribuicaoVagas — a checagem de consistência entre
+        // ofertas precisa estar também em ValidarGrafo, senão a restauração de um
+        // envelope congelado (que nunca poderia ter sido produzido pelo caminho normal
+        // de escrita) reintroduziria o mesmo código de modalidade com ações divergentes.
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+        Estado antes = Estado.De(processo);
+
+        static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
+            new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
+            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+            RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+            [], null, "base legal", quantidadeDeclarada: quantidade).Value!;
+
+        static ModalidadeSelecionada V(string acaoQuandoIndeferido, int quantidade) => ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, [], acaoQuandoIndeferido, "base legal",
+            quantidadeDeclarada: quantidade).Value!;
+
+        ReferenciaRegra regra = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a');
+
+        ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
+            new Guid("bbbb0000-0000-4000-8000-000000000001"), voBase: 10, pr: 1m, regra,
+            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_AC", 2), Ac(8)]).Value!;
+        ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(
+            new Guid("bbbb0000-0000-4000-8000-000000000002"), voBase: 10, pr: 1m, regra,
+            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)]).Value!;
+
+        GrafoConfiguracao invalido = new(
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            distribuicaoVagas: [ofertaA, ofertaB],
+            bonusRegional: null,
+            criteriosDesempate: [],
+            classificacao: Classificacao([]),
+            cronogramaFases: [FaseConforme()]);
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.AcaoQuandoIndeferidoDivergente");
+        Estado.De(processo).Should().BeEquivalentTo(antes,
+            "a restauração recusada não pode deixar o agregado meio-reposto (CA-07)");
+    }
+
     [Fact(DisplayName = "D2 — a etapa que NÃO existe mais é reinserida com o Id congelado")]
     public void EtapaAusente_EReinseridaComOIdCongelado()
     {
