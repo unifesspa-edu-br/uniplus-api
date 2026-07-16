@@ -28,6 +28,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         IUserContext userContext,
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
+        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -39,6 +40,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
+        ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -159,6 +161,14 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
+        Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
+            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, cancellationToken)
+            .ConfigureAwait(false);
+        if (conformidadeLegal.IsFailure)
+        {
+            return (Result.Failure(conformidadeLegal.Error!), []);
+        }
+
         // O ato retificado é o que criou a versão corrente — o topo da cadeia de
         // CONFIGURAÇÃO (ADR-0104), não o ato de maior data documental. É o mesmo
         // alvo que ProcessoSeletivo.Retificar elege; congelar aqui um id diferente
@@ -168,7 +178,8 @@ public static class RetificarProcessoSeletivoCommandHandler
                 processo,
                 dados,
                 documento.HashSha256!,
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo)));
+                new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
+                conformidadeLegal.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

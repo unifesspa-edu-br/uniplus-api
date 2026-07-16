@@ -101,6 +101,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             userContext,
             tipoDeAtoReader,
             vagaDeLinhagemReader,
+            Substitute.For<IObrigatoriedadeLegalRepository>(),
             TimeProvider.System,
             CancellationToken.None);
 
