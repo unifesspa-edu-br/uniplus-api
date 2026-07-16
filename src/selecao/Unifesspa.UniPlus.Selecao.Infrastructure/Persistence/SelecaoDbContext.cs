@@ -56,6 +56,15 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<RegraEliminacao> RegrasEliminacao => Set<RegraEliminacao>();
 
     /// <summary>
+    /// Cronograma de fases do processo (Story #851) — o eixo temporal, distinto das
+    /// etapas (eixo de pontuação). Exposta como DbSet para consultas e seeds de teste;
+    /// a escrita passa sempre pela raiz via <c>IProcessoSeletivoRepository</c>.
+    /// </summary>
+    public DbSet<FaseCronograma> FasesCronograma => Set<FaseCronograma>();
+    public DbSet<RegraRecursoFase> RegrasRecursoFase => Set<RegraRecursoFase>();
+    public DbSet<BancaRequerida> BancasRequeridas => Set<BancaRequerida>();
+
+    /// <summary>
     /// Biblioteca <c>rol_de_regras</c> (Story #772) — regras tipadas e
     /// versionadas que a configuração do Processo Seletivo referencia
     /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congeladas no snapshot de

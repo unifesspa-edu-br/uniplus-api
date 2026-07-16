@@ -32,7 +32,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         ArgumentNullException.ThrowIfNull(db);
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         Result etapasResult = processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, notaMinima: null, ordem: 1),
@@ -84,6 +84,26 @@ internal static class ProcessoSeletivoPublicavelSeeder
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
+
+        FaseCronograma faseConforme = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_FINAL",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: false,
+            produzResultado: true,
+            resultadoDefinitivo: true,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "RESULTADO_FINAL",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
+        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
 
         await db.ProcessosSeletivos.AddAsync(processo);
 

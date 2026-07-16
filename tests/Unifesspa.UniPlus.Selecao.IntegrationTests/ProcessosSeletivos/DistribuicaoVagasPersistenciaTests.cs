@@ -41,7 +41,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Persiste e recarrega distribuição Lei 12.711 com referência demográfica e modalidades")]
     public async Task PersisteERecarrega_Lei12711ComDemografica()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", new string('a', 64)).Value!;
@@ -100,7 +100,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Persiste e recarrega distribuição institucional sem referência demográfica")]
     public async Task PersisteERecarrega_InstitucionalSemDemografica()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
@@ -131,7 +131,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Reconfigurar distribuição sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarDistribuicaoSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSE Campo", TipoProcesso.PSECampo);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSE Campo", TipoProcesso.PSECampo, OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('c', 64)).Value!;

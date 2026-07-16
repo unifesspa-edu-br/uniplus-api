@@ -22,7 +22,7 @@ public static class CriarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(command.Nome, command.Tipo);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(command.Nome, command.Tipo, command.OrigemCandidatos);
 
         await processoSeletivoRepository.AdicionarAsync(processo, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

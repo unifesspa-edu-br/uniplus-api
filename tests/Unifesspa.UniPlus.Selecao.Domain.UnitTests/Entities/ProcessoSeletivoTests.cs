@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ProcessoSeletivoTests
 {
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
     [Fact(DisplayName = "Criar inicia o processo em rascunho (CA-01)")]
     public void CriarProcesso_IniciaEmRascunho()
@@ -35,9 +35,17 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem tipo lanca ArgumentException")]
     public void Criar_SemTipo_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.Nenhum);
+        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria);
 
         act.Should().Throw<ArgumentException>().WithParameterName("tipo");
+    }
+
+    [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (Story #851 §3.4)")]
+    public void Criar_SemOrigemCandidatos_Lanca()
+    {
+        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.Nenhuma);
+
+        act.Should().Throw<ArgumentException>().WithParameterName("origemCandidatos");
     }
 
     [Fact(DisplayName = "Etapa classificatoria ou ambas com peso compõe o divisor da media (CA-02)")]
@@ -483,7 +491,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO fora de processo ENEM é recusado")]
     public void DefinirClassificacao_EliminacaoEnemForaDeProcessoEnem_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
@@ -498,7 +506,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO em processo PSVR (baseado em ENEM) tem sucesso")]
     public void DefinirClassificacao_EliminacaoEnemEmProcessoEnem_Sucesso()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSVR 2026", TipoProcesso.PSVR);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSVR 2026", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,

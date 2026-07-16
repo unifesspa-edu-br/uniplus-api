@@ -14,7 +14,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Aceita_ComandoValido()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand("PS 2026 — SiSU", TipoProcesso.SiSU));
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria));
 
         result.IsValid.Should().BeTrue();
     }
@@ -23,7 +23,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Rejeita_NomeVazio()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand(string.Empty, TipoProcesso.SiSU));
+            .Validate(new CriarProcessoSeletivoCommand(string.Empty, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().ContainSingle(e => e.PropertyName == "Nome");
@@ -33,9 +33,19 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Rejeita_TipoNenhum()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TipoProcesso.Nenhum));
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Tipo");
+    }
+
+    [Fact(DisplayName = "Validator falha quando origem dos candidatos é Nenhuma (Story #851 §3.4)")]
+    public void Rejeita_OrigemCandidatosNenhuma()
+    {
+        ValidationResult result = new CriarProcessoSeletivoCommandValidator()
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.Nenhuma));
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "OrigemCandidatos");
     }
 }

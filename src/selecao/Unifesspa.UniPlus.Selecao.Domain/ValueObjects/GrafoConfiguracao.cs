@@ -31,13 +31,15 @@ public sealed class GrafoConfiguracao
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas,
         ConfiguracaoBonusRegional? bonusRegional,
         IReadOnlyList<CriterioDesempate> criteriosDesempate,
-        ConfiguracaoClassificacao classificacao)
+        ConfiguracaoClassificacao classificacao,
+        IReadOnlyList<FaseCronograma> cronogramaFases)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
         ArgumentNullException.ThrowIfNull(distribuicaoVagas);
         ArgumentNullException.ThrowIfNull(criteriosDesempate);
         ArgumentNullException.ThrowIfNull(classificacao);
+        ArgumentNullException.ThrowIfNull(cronogramaFases);
 
         // Cópias defensivas: o grafo é a fronteira entre os bytes congelados e o
         // agregado vivo. Guardar a referência do caller deixaria uma janela em que
@@ -49,6 +51,7 @@ public sealed class GrafoConfiguracao
         BonusRegional = bonusRegional;
         CriteriosDesempate = [.. criteriosDesempate];
         Classificacao = classificacao;
+        CronogramaFases = [.. cronogramaFases];
     }
 
     public IReadOnlyList<EtapaProcesso> Etapas { get; }
@@ -63,4 +66,7 @@ public sealed class GrafoConfiguracao
     public IReadOnlyList<CriterioDesempate> CriteriosDesempate { get; }
 
     public ConfiguracaoClassificacao Classificacao { get; }
+
+    /// <summary>O cronograma de fases (Story #851) — 7ª dimensão do grafo, 1..*.</summary>
+    public IReadOnlyList<FaseCronograma> CronogramaFases { get; }
 }

@@ -160,7 +160,8 @@ public sealed class EnvelopeCodecRoundTripTests
             distribuicaoVagas: envelope.Grafo.DistribuicaoVagas,
             bonusRegional: envelope.Grafo.BonusRegional,
             criteriosDesempate: envelope.Grafo.CriteriosDesempate,
-            classificacao: envelope.Grafo.Classificacao);
+            classificacao: envelope.Grafo.Classificacao,
+            cronogramaFases: envelope.Grafo.CronogramaFases);
 
         Result recusa = processo.RestaurarConfiguracaoCongelada(versao, comIdRegenerado);
 

@@ -38,7 +38,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
     private static ProcessoSeletivo NovoProcessoConforme(string nome)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -52,8 +52,27 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"), null, null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"), 1, []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
+
+    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: Guid.CreateVersion7(),
+        codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        produzResultado: true,
+        resultadoDefinitivo: true,
+        coletaInscricao: true,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        atoProduzidoCodigo: "RESULTADO_FINAL",
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
 
     private static DocumentoEdital DocumentoConfirmado(Guid processoId)
     {

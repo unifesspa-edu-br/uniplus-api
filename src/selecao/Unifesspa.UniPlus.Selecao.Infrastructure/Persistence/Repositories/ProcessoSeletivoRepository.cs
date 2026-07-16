@@ -95,7 +95,17 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.BonusRegional)
             .Include(p => p.CriteriosDesempate)
-            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao);
+            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
+            // Cronograma de fases (Story #851) — 2 coleções novas (bancas requeridas,
+            // regra de recurso 1:1) somadas às já existentes.
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
+            // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
+            // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
+            // modalidades × desempate × eliminação × fases × bancas) num único JOIN
+            // explode o tamanho do resultado — split query traz cada coleção em uma
+            // consulta própria.
+            .AsSplitQuery();
 
     public async Task AdicionarVersaoConfiguracaoAsync(VersaoConfiguracao versao, CancellationToken cancellationToken = default)
     {

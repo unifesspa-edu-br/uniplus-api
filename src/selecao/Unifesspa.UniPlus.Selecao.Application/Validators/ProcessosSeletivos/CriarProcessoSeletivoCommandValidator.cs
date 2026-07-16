@@ -20,5 +20,13 @@ public sealed class CriarProcessoSeletivoCommandValidator : AbstractValidator<Cr
             .WithMessage("Tipo do processo seletivo é obrigatório.")
             .IsInEnum()
             .WithMessage("Tipo do processo seletivo inválido.");
+
+        // Story #851 §3.4: OrigemCandidatos é NOT NULL e exigido na criação — o piso
+        // mínimo do cronograma deriva dela, nunca do Tipo.
+        RuleFor(x => x.OrigemCandidatos)
+            .NotEqual(OrigemCandidatos.Nenhuma)
+            .WithMessage("Origem dos candidatos é obrigatória.")
+            .IsInEnum()
+            .WithMessage("Origem dos candidatos inválida.");
     }
 }

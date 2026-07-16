@@ -310,6 +310,41 @@ internal sealed class LeitorEnvelope
             : valor;
     }
 
+    /// <summary>
+    /// Instante opcional na forma canônica (RFC 3339, UTC, sem fração —
+    /// <see cref="HashCanonicalComputer.SerializeInstantCanonical"/>), usado pela janela da
+    /// <c>FaseCronograma</c> (Story #851, CA-07). <see langword="null"/> quando a chave é
+    /// <c>null</c> — "sem data" é estado válido para fase de origem delegada.
+    /// </summary>
+    public DateTimeOffset? InstanteOpcional(JsonObject pai, string chave, string path)
+    {
+        if (Falhou)
+        {
+            return null;
+        }
+
+        string? texto = TextoOpcional(pai, chave, path);
+        if (Falhou || texto is null)
+        {
+            return null;
+        }
+
+        if (!DateTimeOffset.TryParseExact(
+                texto, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTimeOffset valor))
+        {
+            return Malformado<DateTimeOffset?>(
+                $"{path}.{chave}", $"esperado um instante canônico ('yyyy-MM-ddTHH:mm:ssZ'), encontrado '{texto}'.");
+        }
+
+        if (!string.Equals(HashCanonicalComputer.SerializeInstantCanonical(valor), texto, StringComparison.Ordinal))
+        {
+            return Malformado<DateTimeOffset?>($"{path}.{chave}", "o instante não está na forma canônica.");
+        }
+
+        return valor;
+    }
+
     public bool Booleano(JsonObject pai, string chave, string path)
     {
         if (Falhou)
@@ -465,6 +500,23 @@ internal sealed class LeitorEnvelope
         }
 
         return valor;
+    }
+
+    /// <summary>
+    /// Variante opcional de <see cref="Enumeracao{TEnum}"/> — usada pelos pares de
+    /// suspensividade de <c>ArgsRegraPrazoRecurso</c> (Story #851), em que
+    /// <see langword="null"/> é valor legítimo ("esta instância não bloqueia").
+    /// </summary>
+    public TEnum? EnumeracaoOpcional<TEnum>(JsonObject pai, string chave, string path)
+        where TEnum : struct, Enum
+    {
+        if (Falhou)
+        {
+            return null;
+        }
+
+        JsonNode? node = pai[chave];
+        return node is null ? null : Enumeracao<TEnum>(pai, chave, path);
     }
 
     /// <summary>

@@ -89,7 +89,7 @@ internal static class CorpusEnvelope
         Guid entrevista = EtapaId(3, variante);
 
         // SiSU é baseado em ENEM — é o que admite ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Rico 2026", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Rico 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         processo.DefinirEtapas([
             EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),
@@ -145,8 +145,66 @@ internal static class CorpusEnvelope
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
             ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        processo.DefinirCronogramaFases([FaseInscricao(), FaseResultadoPreliminarComRecurso()], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
         return processo;
     }
+
+    /// <summary>Fase 1: coleta inscrição, sem ato produzido — a origem é InscricaoPropria.</summary>
+    private static FaseCronograma FaseInscricao() => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"),
+        codigo: "INSCRICAO",
+        donoInstitucional: "CRCA",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: false,
+        permiteComplementacao: true,
+        produzResultado: false,
+        resultadoDefinitivo: false,
+        coletaInscricao: true,
+        inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
+        atoProduzidoCodigo: null,
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
+
+    /// <summary>
+    /// Fase 2: agrupa as três etapas, produz o resultado preliminar (efeito irreversível),
+    /// exige duas bancas e admite recurso — os DOIS pares de suspensividade exercitados: a
+    /// 1ª instância com valor (5 dias corridos), a 2ª <b>nula</b> (não bloqueia — o caso
+    /// normal do Ingresso via judicial). É o ramo mais rico do bloco <c>cronogramaFases</c>.
+    /// </summary>
+    private static FaseCronograma FaseResultadoPreliminarComRecurso() => FaseCronograma.Criar(
+        ordem: 2,
+        faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"),
+        codigo: "RESULTADO_PRELIMINAR",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        produzResultado: true,
+        resultadoDefinitivo: false,
+        coletaInscricao: false,
+        inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
+        atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+        atoProduzidoEfeitoIrreversivel: true,
+        bancasRequeridas: [
+            BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000001"), "BANCA_ANALISE_DOCUMENTAL"),
+            BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000002"), "BANCA_HETEROIDENTIFICACAO"),
+        ],
+        regraRecurso: RegraRecursoFase.Criar(
+            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
+            new ArgsRegraPrazoRecurso(
+                PrazoValor: 48.0000m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+                SuspensividadePrimeiraInstanciaValor: 5.0000m,
+                SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.Dias,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null)).Value!).Value!;
 
     /// <summary>
     /// Oferta sob a Lei 12.711: exige a referência demográfica (INV-5) e as 8 modalidades
@@ -338,7 +396,8 @@ internal static class CorpusEnvelope
                 casasArredondamento: null,
                 regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
                 nOpcoesAlocacao: 1,
-                regrasEliminacao: []).Value!);
+                regrasEliminacao: []).Value!,
+            cronogramaFases: [FaseCronogramaConforme(variante)]);
     }
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
@@ -354,5 +413,25 @@ internal static class CorpusEnvelope
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!);
+            regrasEliminacao: []).Value!,
+        cronogramaFases: [FaseCronogramaConforme(variante)]);
+
+    /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
+    private static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"),
+        codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        produzResultado: true,
+        resultadoDefinitivo: true,
+        coletaInscricao: false,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        atoProduzidoCodigo: "RESULTADO_FINAL",
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
 }

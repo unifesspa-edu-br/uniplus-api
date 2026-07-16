@@ -123,6 +123,35 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(ArgsElimNotaMinimaEtapa)] = (["EtapaRef", "NotaMinima"], []),
         [typeof(ArgsElimCorteRedacao)] = (["Minimo"], []),
         [typeof(ArgsElimZeroEmArea)] = ([], []),
+
+        // Cronograma de fases (Story #851) — o eixo temporal do certame.
+        [typeof(FaseCronograma)] = (
+            [
+                "Ordem", "FaseCanonicaOrigemId", "Codigo", "DonoInstitucional", "OrigemData",
+                "AgrupaEtapas", "PermiteComplementacao", "ProduzResultado", "ResultadoDefinitivo",
+                "ColetaInscricao", "Inicio", "Fim", "AtoProduzidoCodigo", "AtoProduzidoEfeitoIrreversivel",
+                "BancasRequeridas", "RegraRecurso",
+            ],
+            [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
+
+        [typeof(BancaRequerida)] = (
+            ["TipoBancaOrigemId", "Codigo"],
+            [("FaseCronogramaId", "FK interna.")]),
+
+        // RegraRecursoFase.Args NÃO é polimórfico (única variante — CA-02 recusa
+        // qualquer regra que não seja RECURSO-PRAZO-ANCORADO-EM-ATO), por isso não
+        // entra em UnioesDiscriminadas: é alcançado diretamente como ArgsRegraPrazoRecurso.
+        [typeof(RegraRecursoFase)] = (
+            ["Regra", "Args"],
+            [("FaseCronogramaId", "FK interna.")]),
+
+        [typeof(ArgsRegraPrazoRecurso)] = (
+            [
+                "PrazoValor", "PrazoUnidade", "AtoAncoraCodigo",
+                "SuspensividadePrimeiraInstanciaValor", "SuspensividadePrimeiraInstanciaUnidade",
+                "SuspensividadeSegundaInstanciaValor", "SuspensividadeSegundaInstanciaUnidade",
+            ],
+            []),
     };
 
     /// <summary>

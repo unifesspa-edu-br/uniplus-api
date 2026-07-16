@@ -35,7 +35,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class EnvelopeCodecV11 : IEnvelopeCodec
 {
     /// <summary>
-    /// Os 7 blocos sem dono (ADR-0109 D8). Um bloco <b>real</b> nunca emite
+    /// Os 6 blocos sem dono (ADR-0109 D8). Um bloco <b>real</b> nunca emite
     /// <c>nao_construido</c>; um stub que virou objeto rico é forma nova, e forma nova é
     /// bump de versão.
     /// </summary>
@@ -46,7 +46,6 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         "formulario",
         "cascataRemanejamento",
         "divulgacao",
-        "cronogramaFases",
         "identidadesUnidade",
     ];
 
@@ -62,6 +61,8 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         "criteriosDesempate",
         "classificacao",
         "hashesEdital",
+        // Story #851 — cronogramaFases deixa de ser stub.
+        "cronogramaFases",
     ];
 
     /// <summary>
@@ -172,6 +173,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         ConfiguracaoBonusRegional? bonus = LerBonusRegional(leitor, payload);
         IReadOnlyList<CriterioDesempate> desempate = LerCriteriosDesempate(leitor, payload);
         ConfiguracaoClassificacao? classificacao = LerClassificacao(leitor, payload);
+        IReadOnlyList<FaseCronograma> cronogramaFases = LerCronogramaFases(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -184,7 +186,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             return Result<EnvelopeReidratado>.Failure(incoerencia);
         }
 
-        GrafoConfiguracao grafo = new(etapas, atendimento!, distribuicao, bonus, desempate, classificacao!);
+        GrafoConfiguracao grafo = new(etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases);
         return Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao));
     }
 
@@ -1038,5 +1040,169 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         string motivo = leitor.TextoNaoVazio(bloco, "motivo", "retificacao");
 
         return leitor.Falhou ? null : new RetificacaoInfo(atoRetificado, motivo);
+    }
+
+    /// <summary>
+    /// O cronograma de fases (Story #851): <c>origemCandidatos</c> é lido e validado para
+    /// fechar a gramática, mas <b>não é propagado</b> — é atributo de raiz do agregado
+    /// (<c>ProcessoSeletivo.OrigemCandidatos</c>), imutável após a criação (nenhum
+    /// <c>Definir*</c> o altera), e por isso nada aqui precisa repô-lo.
+    /// </summary>
+    private static IReadOnlyList<FaseCronograma> LerCronogramaFases(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "cronogramaFases", "$");
+        leitor.ExigirChaves(bloco, "cronogramaFases", "origemCandidatos", "fases");
+
+        leitor.Enumeracao<OrigemCandidatos>(bloco, "origemCandidatos", "cronogramaFases");
+
+        JsonArray array = leitor.Array(bloco, "fases", "cronogramaFases");
+        if (leitor.Falhou)
+        {
+            return [];
+        }
+
+        List<FaseCronograma> fases = [];
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"cronogramaFases.fases[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, "cronogramaFases.fases");
+            leitor.ExigirChaves(
+                item, path,
+                "ordem", "faseCanonicaOrigemId", "codigo", "donoInstitucional", "origemData",
+                "agrupaEtapas", "permiteComplementacao", "produzResultado", "resultadoDefinitivo",
+                "coletaInscricao", "inicio", "fim", "atoProduzidoCodigo", "atoProduzidoEfeitoIrreversivel",
+                "bancasRequeridas", "regraRecurso");
+
+            int ordem = leitor.Inteiro(item, "ordem", path);
+            Guid faseCanonicaOrigemId = leitor.Identificador(item, "faseCanonicaOrigemId", path);
+            string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo);
+            string donoInstitucional = leitor.TextoNaoVazio(item, "donoInstitucional", path, LimitesDoEnvelope.DonoInstitucional);
+            OrigemDataFase origemData = leitor.Enumeracao<OrigemDataFase>(item, "origemData", path);
+            bool agrupaEtapas = leitor.Booleano(item, "agrupaEtapas", path);
+            bool permiteComplementacao = leitor.Booleano(item, "permiteComplementacao", path);
+            bool produzResultado = leitor.Booleano(item, "produzResultado", path);
+            bool resultadoDefinitivo = leitor.Booleano(item, "resultadoDefinitivo", path);
+            bool coletaInscricao = leitor.Booleano(item, "coletaInscricao", path);
+            DateTimeOffset? inicio = leitor.InstanteOpcional(item, "inicio", path);
+            DateTimeOffset? fim = leitor.InstanteOpcional(item, "fim", path);
+            string? atoProduzidoCodigo = leitor.TextoOpcional(item, "atoProduzidoCodigo", path, LimitesDoEnvelope.TipoAtoCodigo);
+            bool atoProduzidoEfeitoIrreversivel = leitor.Booleano(item, "atoProduzidoEfeitoIrreversivel", path);
+
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            IReadOnlyList<BancaRequerida> bancas = LerBancasRequeridas(leitor, item, path);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            RegraRecursoFase? regraRecurso = LerRegraRecursoFase(leitor, item, path);
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            Result<FaseCronograma> fase = FaseCronograma.Criar(
+                ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
+                agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
+                inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso);
+            if (fase.IsFailure)
+            {
+                return leitor.Propagar<IReadOnlyList<FaseCronograma>>(fase.Error!) ?? [];
+            }
+
+            fases.Add(fase.Value!);
+        }
+
+        return fases;
+    }
+
+    private static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
+    {
+        JsonArray array = leitor.Array(faseItem, "bancasRequeridas", pathPai);
+        if (leitor.Falhou)
+        {
+            return [];
+        }
+
+        List<BancaRequerida> bancas = [];
+        for (int i = 0; i < array.Count; i++)
+        {
+            string path = $"{pathPai}.bancasRequeridas[{i}]";
+            JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.bancasRequeridas");
+            leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo");
+
+            Guid tipoBancaOrigemId = leitor.Identificador(item, "tipoBancaOrigemId", path);
+            string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.TipoBancaCodigo);
+
+            if (leitor.Falhou)
+            {
+                return [];
+            }
+
+            bancas.Add(BancaRequerida.Criar(tipoBancaOrigemId, codigo));
+        }
+
+        return bancas;
+    }
+
+    /// <summary>
+    /// A regra de recurso da fase (0..1 — a PRESENÇA do bloco é o que faz a fase admitir
+    /// recurso, §3.6). O vocabulário de <c>regra.codigo</c> é fechado a
+    /// <see cref="RegraPrazoRecursoCodigo.AncoradoEmAto"/> — a única variante que
+    /// <see cref="RegraRecursoFase"/> admite (CA-02).
+    /// </summary>
+    private static RegraRecursoFase? LerRegraRecursoFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
+    {
+        JsonObject? bloco = leitor.ObjetoOpcional(faseItem, "regraRecurso", pathPai);
+        if (leitor.Falhou || bloco is null)
+        {
+            return null;
+        }
+
+        string path = $"{pathPai}.regraRecurso";
+        leitor.ExigirChaves(bloco, path, "regra", "args");
+
+        ReferenciaRegra regra = leitor.Regra(bloco, "regra", path, RegraPrazoRecursoCodigo.AncoradoEmAto);
+        JsonObject argsObjeto = leitor.Objeto(bloco, "args", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        string argsPath = $"{path}.args";
+        leitor.ExigirChaves(
+            argsObjeto, argsPath,
+            "prazoValor", "prazoUnidade", "atoAncoraCodigo",
+            "suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade",
+            "suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade");
+
+        decimal prazoValor = leitor.Decimal(argsObjeto, "prazoValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
+        UnidadePrazo prazoUnidade = leitor.Enumeracao<UnidadePrazo>(argsObjeto, "prazoUnidade", argsPath);
+        string atoAncoraCodigo = leitor.TextoNaoVazio(argsObjeto, "atoAncoraCodigo", argsPath, LimitesDoEnvelope.TipoAtoCodigo);
+        decimal? suspensividade1Valor = leitor.DecimalOpcional(
+            argsObjeto, "suspensividadePrimeiraInstanciaValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
+        UnidadePrazo? suspensividade1Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
+            argsObjeto, "suspensividadePrimeiraInstanciaUnidade", argsPath);
+        decimal? suspensividade2Valor = leitor.DecimalOpcional(
+            argsObjeto, "suspensividadeSegundaInstanciaValor", EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
+        UnidadePrazo? suspensividade2Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
+            argsObjeto, "suspensividadeSegundaInstanciaUnidade", argsPath);
+
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        ArgsRegraPrazoRecurso args = new(
+            prazoValor, prazoUnidade, atoAncoraCodigo,
+            suspensividade1Valor, suspensividade1Unidade,
+            suspensividade2Valor, suspensividade2Unidade);
+
+        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Criar(regra, args);
+        return regraRecurso.IsFailure ? leitor.Propagar<RegraRecursoFase>(regraRecurso.Error!) : regraRecurso.Value;
     }
 }

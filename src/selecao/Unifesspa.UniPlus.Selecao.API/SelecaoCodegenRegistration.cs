@@ -83,5 +83,14 @@ public static class SelecaoCodegenRegistration
         // handler de critérios de desempate para validar DESEMPATE-PREDICADO-FATO
         // (Story #847). Mesmo motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
+
+        // Cronograma de fases (Story #851): FaseCanonica/TipoBanca (Configuração) e o
+        // grafo de precedências (idem) — primeiro consumo real dos dois primeiros
+        // readers desde que a #40 os deixou registrados sem consumidor. Mesmo motivo
+        // dos demais readers cross-módulo acima — gap real, confirmado ausente antes
+        // desta entrega.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFaseCanonicaReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
     }
 }

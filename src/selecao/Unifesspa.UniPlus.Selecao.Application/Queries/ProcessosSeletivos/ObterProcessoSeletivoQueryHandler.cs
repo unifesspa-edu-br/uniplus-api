@@ -30,6 +30,7 @@ public static class ObterProcessoSeletivoQueryHandler
         processo.Nome,
         processo.Tipo.ToString(),
         processo.Status.ToString(),
+        processo.OrigemCandidatos.ToString(),
         [.. processo.Etapas
             .OrderBy(e => e.Ordem)
             .Select(e => new EtapaProcessoDto(e.Id, e.Nome, e.Carater.ToString(), e.Peso, e.NotaMinima, e.Ordem))],
@@ -38,6 +39,7 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectBonusRegional(processo.BonusRegional),
         [.. processo.CriteriosDesempate.OrderBy(c => c.Ordem).Select(ProjectCriterioDesempate)],
         ProjectClassificacao(processo),
+        [.. processo.CronogramaFases.OrderBy(f => f.Ordem).ThenBy(f => f.Id).Select(ProjectFaseCronograma)],
         processo.CreatedAt);
 
     private static OfertaAtendimentoEspecializadoDto? ProjectOfertaAtendimento(OfertaAtendimentoEspecializado? oferta)
@@ -144,4 +146,35 @@ public static class ObterProcessoSeletivoQueryHandler
             _ => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, null),
         };
     }
+
+    private static FaseCronogramaDto ProjectFaseCronograma(FaseCronograma fase) => new(
+        fase.Id,
+        fase.Ordem,
+        fase.FaseCanonicaOrigemId,
+        fase.Codigo,
+        fase.DonoInstitucional,
+        fase.OrigemData.ToString(),
+        fase.AgrupaEtapas,
+        fase.PermiteComplementacao,
+        fase.ProduzResultado,
+        fase.ResultadoDefinitivo,
+        fase.ColetaInscricao,
+        fase.Inicio,
+        fase.Fim,
+        fase.AtoProduzidoCodigo,
+        fase.AtoProduzidoEfeitoIrreversivel,
+        [.. fase.BancasRequeridas.Select(static b => new BancaRequeridaDto(b.Id, b.TipoBancaOrigemId, b.Codigo))],
+        fase.RegraRecurso is { } regraRecurso ? ProjectRegraRecursoFase(regraRecurso) : null);
+
+    private static RegraRecursoFaseDto ProjectRegraRecursoFase(RegraRecursoFase regraRecurso) => new(
+        regraRecurso.Id,
+        new ReferenciaRegraDto(regraRecurso.Regra.Codigo, regraRecurso.Regra.Versao, regraRecurso.Regra.Hash),
+        new ArgsRegraPrazoRecursoDto(
+            regraRecurso.Args.PrazoValor,
+            regraRecurso.Args.PrazoUnidade.ToString(),
+            regraRecurso.Args.AtoAncoraCodigo,
+            regraRecurso.Args.SuspensividadePrimeiraInstanciaValor,
+            regraRecurso.Args.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
+            regraRecurso.Args.SuspensividadeSegundaInstanciaValor,
+            regraRecurso.Args.SuspensividadeSegundaInstanciaUnidade?.ToString()));
 }

@@ -27,7 +27,7 @@ public sealed class GateDeConformidadeTests
 
     private static ProcessoSeletivo ProcessoConforme()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -69,8 +69,29 @@ public sealed class GateDeConformidadeTests
             nOpcoesAlocacao: 1,
             regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         return processo;
     }
+
+    /// <summary>Fase mínima e conforme: agrupa etapas (há 1 acima), produz resultado e coleta inscrição (há vagas e a origem é InscricaoPropria).</summary>
+    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: Guid.CreateVersion7(),
+        codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        produzResultado: true,
+        resultadoDefinitivo: true,
+        coletaInscricao: true,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        atoProduzidoCodigo: "RESULTADO_FINAL",
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         numero: "001/2026",
@@ -96,13 +117,16 @@ public sealed class GateDeConformidadeTests
     [Fact(DisplayName = "PendenciaDeConformidade_ProcessoIncompleto — nomeia as dimensões faltantes")]
     public void PendenciaDeConformidade_ProcessoIncompleto()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         DomainError? pendencia = processo.PendenciaDeConformidade();
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
-        pendencia.Message.Should().Contain("Etapas").And.Contain("Classificação");
+        // Story #851 §3.5: "Etapas" deixou de ser item incondicional do checklist — um
+        // processo sem prova (SiSU, CLASSIFICACAO-IMPORTADA) publica sem etapa. O que
+        // permanece obrigatório incondicionalmente inclui "Cronograma de fases" (1..*).
+        pendencia.Message.Should().Contain("Cronograma de fases").And.Contain("Classificação");
     }
 
     [Fact(DisplayName = "PendenciaDeConformidade_ProcessoConforme — não há pendência")]
@@ -158,7 +182,7 @@ public sealed class GateDeConformidadeTests
     [Fact(DisplayName = "Publicar_ProcessoNaoConforme_Recusa — o gate da publicação continua valendo")]
     public void Publicar_ProcessoNaoConforme_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             Dados(),

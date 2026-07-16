@@ -216,5 +216,8 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.BonusRegional)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
+            .AsSplitQuery()
             .FirstAsync(p => p.Id == id);
 }

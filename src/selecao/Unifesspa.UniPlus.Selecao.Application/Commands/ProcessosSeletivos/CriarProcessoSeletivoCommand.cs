@@ -9,6 +9,8 @@ using Kernel.Results;
 /// Story #758). Validado pelo middleware FluentValidation do Wolverine via
 /// <c>CriarProcessoSeletivoCommandValidator</c>.
 /// </summary>
+/// <param name="OrigemCandidatos">De onde vêm os candidatos (Story #851 §3.4) — NOT NULL, exigido na criação.</param>
 public sealed record CriarProcessoSeletivoCommand(
     string Nome,
-    TipoProcesso Tipo) : ICommand<Result<Guid>>;
+    TipoProcesso Tipo,
+    OrigemCandidatos OrigemCandidatos) : ICommand<Result<Guid>>;

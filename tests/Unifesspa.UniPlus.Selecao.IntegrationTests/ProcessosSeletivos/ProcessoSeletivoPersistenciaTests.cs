@@ -34,7 +34,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         Guid recursoOrigemId = Guid.CreateVersion7();
         Guid tipoDeficienciaOrigemId = Guid.CreateVersion7();
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         Result etapasResult = processo.DefinirEtapas(
         [
@@ -84,7 +84,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         // substitui a coleção de etapas por filhos com Guid v7 já preenchido e
         // salva. Sem a correção, DbSet.Update marcaria os filhos novos como
         // Modified e o SaveChanges emitiria UPDATE de linhas nunca inseridas.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())

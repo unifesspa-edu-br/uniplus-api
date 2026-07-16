@@ -251,10 +251,18 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
 
-        // Etapas vazias: recusa de REGRA DE NEGÓCIO, com a precondição correta.
-        Result resultado = processo.DefinirEtapas([], PrecondicaoIfMatch.DeTags([rascunho.ETag]));
+        // Ordem duplicada: recusa de REGRA DE NEGÓCIO, com a precondição correta. (Story
+        // #851 §3.5: lista VAZIA deixou de ser recusa — um processo sem prova é válido —
+        // por isso a contraprova de recusa de negócio migrou para ordem duplicada.)
+        Result resultado = processo.DefinirEtapas(
+            [
+                EtapaProcesso.Criar("Prova A", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+                EtapaProcesso.Criar("Prova B", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+            ],
+            PrecondicaoIfMatch.DeTags([rascunho.ETag]));
 
         resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.OrdemEtapaDuplicada");
         rascunho.Revisao.Should().Be(1, "a mutação não foi aceita — mover a revisão invalidaria o ETag de quem não mudou nada");
     }
 
@@ -450,7 +458,8 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         [.. processo.DistribuicaoVagas],
         processo.BonusRegional,
         [.. processo.CriteriosDesempate],
-        processo.Classificacao!);
+        processo.Classificacao!,
+        [.. processo.CronogramaFases]);
 
     /// <summary>Uma versão qualquer DESTE processo — o teste que a usa lança antes de tocá-la.</summary>
     private static VersaoConfiguracao VersaoQualquerDoProcesso(ProcessoSeletivo processo) =>
@@ -494,7 +503,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
 
     private static ProcessoSeletivo NovoProcessoConforme()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -539,8 +548,30 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
         return processo;
     }
+
+    /// <summary>Uma fase mínima que satisfaz as três exigências do piso mínimo do fixture: agrupa etapas, produz resultado e coleta inscrição.</summary>
+    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: Guid.CreateVersion7(),
+        codigo: "RESULTADO_FINAL",
+        donoInstitucional: "CEPS",
+        origemData: OrigemDataFase.Propria,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        produzResultado: true,
+        resultadoDefinitivo: true,
+        coletaInscricao: true,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        atoProduzidoCodigo: "RESULTADO_FINAL",
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
 
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {

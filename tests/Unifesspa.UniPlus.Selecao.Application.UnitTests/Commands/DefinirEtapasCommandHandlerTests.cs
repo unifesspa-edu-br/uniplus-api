@@ -36,7 +36,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Handle com etapas válidas persiste e retorna sucesso (CA-02)")]
     public async Task Handle_EtapasValidas_Persiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
             .Returns(processo);
@@ -60,7 +60,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Handle com Id de etapa existente atualiza a MESMA instância (preserva etapa_ref)")]
     public async Task Handle_ComIdExistente_AtualizaMesmaInstancia()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
         processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
 
@@ -85,7 +85,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Handle sem Id (ou com Id sem correspondência) cria etapa nova")]
     public async Task Handle_SemId_CriaEtapaNova()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
         processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
 
@@ -108,7 +108,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Handle com o mesmo Id de etapa repetido no payload é recusado")]
     public async Task Handle_ComIdEtapaRepetido_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
         processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
 
@@ -133,7 +133,7 @@ public sealed class DefinirEtapasCommandHandlerTests
     [Fact(DisplayName = "Handle com ordem de etapa duplicada não persiste (invariante do agregado)")]
     public async Task Handle_OrdemDuplicada_NaoPersiste()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
             .Returns(processo);
