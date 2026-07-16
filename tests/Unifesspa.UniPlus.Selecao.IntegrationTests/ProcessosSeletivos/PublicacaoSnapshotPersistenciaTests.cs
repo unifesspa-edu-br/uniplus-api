@@ -62,12 +62,14 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             remanejamentoFallback: null,
             criteriosCumulativos: [],
             acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021").Value!;
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(),
             voBase: 40,
             pr: 1m,
             regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
+            regraAjuste: null,
             referenciaDemografica: null,
             modalidades: [modalidade]).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -156,7 +158,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (12 reais + 5 stubs na raiz) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (13 reais + 4 stubs na raiz) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -198,11 +200,12 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         stubs.Should().BeEquivalentTo(
             [
                 "cascataRemanejamento", "divulgacao",
-                "formulario", "identidadesUnidade", "vagas",
+                "formulario", "identidadesUnidade",
             ],
-            "são exatamente as 5 dimensões da Feature #40 ainda sem dono — os 12 restantes (Story #851 " +
-            "promoveu cronogramaFases; Story #853 promoveu documentosExigidos) são reais, mesmo que " +
-            "documentosExigidos ainda carregue a sub-chave 'exigencias' (#554) como stub aninhado");
+            "são exatamente as 4 dimensões da Feature #40 ainda sem dono — os 13 restantes (Story #851 " +
+            "promoveu cronogramaFases; Story #853 promoveu documentosExigidos; issue #848 promoveu vagas) " +
+            "são reais, mesmo que documentosExigidos ainda carregue a sub-chave 'exigencias' (#554) como " +
+            "stub aninhado");
 
         // D8 — nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
@@ -212,6 +215,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         objeto["atendimento"]!.AsObject().Should().NotContainKey("status");
         objeto["classificacao"]!.AsObject().Should().NotContainKey("status");
         objeto["cronogramaFases"]!.AsObject().Should().NotContainKey("status");
+        objeto["vagas"]!.AsArray().Should().NotBeEmpty("issue #848: o quadro de vagas é sempre materializado junto da configuração");
         objeto["documentosExigidos"]!.AsObject().Should().NotContainKey("status");
         objeto["documentosExigidos"]!["exigencias"]!["status"]!.GetValue<string>().Should().Be("nao_construido");
         objeto["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Should().BeEmpty(

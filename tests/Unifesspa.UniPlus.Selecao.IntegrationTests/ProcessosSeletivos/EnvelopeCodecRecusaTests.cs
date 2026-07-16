@@ -245,7 +245,7 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("atendimento.recursos.0")]
     [InlineData("atendimento.tiposDeficiencia.0")]
     [InlineData("bonusRegional.regra")]
-    [InlineData("vagas")]
+    [InlineData("vagas.0")]
     public void ChaveDesconhecida_Recusa(string caminho)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>

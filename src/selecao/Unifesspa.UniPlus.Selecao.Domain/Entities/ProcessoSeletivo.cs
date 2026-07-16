@@ -251,6 +251,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Cada oferta de curso só pode ter uma distribuição de vagas no processo."));
         }
 
+        // issue #848/ADR-0115 §3.7: o mesmo código de modalidade não pode ter ações
+        // divergentes de vaga quando indeferido em ofertas distintas do processo —
+        // AcaoQuandoIndeferido já existe em ModalidadeSelecionada e já é congelado no
+        // bloco 'modalidades'; este guard só garante consistência entre ofertas, sem
+        // duplicar o campo em VagaOfertada.
+        if (distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .GroupBy(static m => m.Codigo, StringComparer.Ordinal)
+            .Any(static grupo => grupo.Select(static m => m.AcaoQuandoIndeferido).Distinct().Count() > 1))
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
+                "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo."));
+        }
+
         _distribuicaoVagas.Clear();
         foreach (ConfiguracaoDistribuicaoVagas configuracao in distribuicaoVagas)
         {

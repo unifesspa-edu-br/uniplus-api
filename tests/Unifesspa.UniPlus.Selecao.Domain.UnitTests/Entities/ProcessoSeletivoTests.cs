@@ -217,13 +217,13 @@ public sealed class ProcessoSeletivoTests
     {
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal").Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", quantidadeDeclarada: 50).Value!;
 
         ReferenciaRegra regra = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
 
         return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase: 50, pr: 1m, regra, referenciaDemografica: null, [ampla]).Value!;
+            ofertaCursoId, voBase: 50, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null, [ampla]).Value!;
     }
 
     [Fact(DisplayName = "DefinirDistribuicaoVagas vincula a configuração à raiz (Story #773)")]
@@ -237,6 +237,33 @@ public sealed class ProcessoSeletivoTests
         result.IsSuccess.Should().BeTrue();
         processo.DistribuicaoVagas.Should().ContainSingle();
         processo.DistribuicaoVagas.Single().ProcessoSeletivoId.Should().Be(processo.Id);
+    }
+
+    [Fact(DisplayName = "DefinirDistribuicaoVagas com AcaoQuandoIndeferido divergente para o mesmo código entre ofertas é recusada (CA-16)")]
+    public void DefinirDistribuicaoVagas_AcaoQuandoIndeferidoDivergente_Falha()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        ReferenciaRegra regra = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
+
+        static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", quantidadeDeclarada: quantidade).Value!;
+
+        static ModalidadeSelecionada V(string acaoQuandoIndeferido, int quantidade) => ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "V", null, NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal,
+            null, RegraRemanejamentoModalidade.DestinoUnico, "AC", null, null, [], acaoQuandoIndeferido, "base legal", quantidadeDeclarada: quantidade).Value!;
+
+        ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
+            [V("RECLASSIFICAR_AC", 2), Ac(8)]).Value!;
+        ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 10, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
+            [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)]).Value!;
+
+        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], PrecondicaoIfMatch.Ausente);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.AcaoQuandoIndeferidoDivergente");
     }
 
     [Fact(DisplayName = "DefinirDistribuicaoVagas vazia é recusada")]
@@ -533,10 +560,10 @@ public sealed class ProcessoSeletivoTests
 
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal").Value!;
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", quantidadeDeclarada: 30).Value!;
         ModalidadeSelecionada cotaReservada = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "LB_PPI", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
-            null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, [], null, "Lei 12.711/2012 art. 3º").Value!;
+            null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, [], null, "Lei 12.711/2012 art. 3º", quantidadeDeclarada: 20).Value!;
 
         // Só para exercitar o cenário mínimo de derivação — INV-6 (8 federais+AC)
         // não precisa estar satisfeita aqui, já que quem valida isso é
@@ -545,6 +572,7 @@ public sealed class ProcessoSeletivoTests
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 50, pr: 1m,
             ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('f', 64)).Value!,
+            regraAjuste: null,
             referenciaDemografica: null, [ampla, cotaReservada]).Value!;
 
         processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente);

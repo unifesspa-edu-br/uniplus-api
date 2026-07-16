@@ -279,11 +279,8 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("periodo.numero", "099/2026")]
     [InlineData("periodo.inicio", "2026-03-09")]
     [InlineData("periodo.fim", "2026-04-30")]
-    [InlineData("distribuicao.0.voBase", "77")]
-    [InlineData("distribuicao.0.pr", "0.9000")]
     [InlineData("distribuicao.0.regraDistribuicao.versao", "v9")]
     [InlineData("distribuicao.0.referenciaDemografica.censoReferencia", "Censo IBGE 2010")]
-    [InlineData("distribuicao.0.referenciaDemografica.ppiPercentual", "12.34")]
     [InlineData("distribuicao.0.referenciaDemografica.baseLegal", "Lei 14.723/2023 art. 3º")]
     [InlineData("modalidades.0.baseLegal", "Outra base legal inteiramente diversa")]
     [InlineData("modalidades.0.descricao", "Outra descrição")]
@@ -323,6 +320,28 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("classificacao.regrasEliminacao.0.args.notaMinima", "88.7500")]
     [InlineData("classificacao.regrasEliminacao.2.args.minimo", "555.0000")]
     public void Decoder_NaoPerdeCampoDeOrdenacao(string caminho, string valorNovo)
+    {
+        (byte[] originais, byte[] _, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);
+
+        recodificados.Should().NotEqual(originais,
+            $"o decoder tem de LER '{caminho}' — se o ignorasse, a recodificação traria o valor original de volta");
+    }
+
+    /// <summary>
+    /// <c>voBase</c> e <c>pr</c> (issue #848/ADR-0115) não são mais campos-folha: são
+    /// insumo do quadro de vagas, que <see cref="Domain.Entities.ConfiguracaoDistribuicaoVagas.Criar"/>
+    /// recalcula do zero a cada reidratação (a prova não-circular do CA-13 exige
+    /// exatamente isso — recomputar do insumo, não reler o output congelado). Mutar
+    /// qualquer um dos dois muda o bloco <c>vagas</c> recodificado de um jeito que o
+    /// "JSON mutado no lugar" não prevê (ele só tem o insumo alterado, não o quadro
+    /// recomputado a partir dele) — por isso, como os campos de ordenação, só cabe a
+    /// asserção primária.
+    /// </summary>
+    [Theory(DisplayName = "CA-02 — o decoder lê também os insumos que disparam recomputação do quadro de vagas")]
+    [InlineData("distribuicao.0.voBase", "77")]
+    [InlineData("distribuicao.0.pr", "0.9000")]
+    [InlineData("distribuicao.0.referenciaDemografica.ppiPercentual", "12.34")]
+    public void Decoder_NaoPerdeCampoQueDisparaRecomputacaoDoQuadro(string caminho, string valorNovo)
     {
         (byte[] originais, byte[] _, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);
 

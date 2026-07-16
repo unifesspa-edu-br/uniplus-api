@@ -13,7 +13,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     private readonly DefinirDistribuicaoVagasCommandValidator _validator = new();
 
     private static ConfiguracaoDistribuicaoVagasInput ItemValido() => new(
-        Guid.CreateVersion7(), 50, 0.5m, "DISTRIB-VAGAS-LEI-12711", "v1", null, [Guid.CreateVersion7()]);
+        Guid.CreateVersion7(), 50, 0.5m, "DISTRIB-VAGAS-LEI-12711", "v1", null, null, null, [Guid.CreateVersion7()], []);
 
     [Fact(DisplayName = "Command válido não gera erros")]
     public void Validar_Valido_SemErros()
@@ -80,5 +80,62 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         ValidationResult resultado = _validator.Validate(command);
 
         resultado.IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Quantidade negativa no quadro gera erro")]
+    public void Validar_QuadroComQuantidadeNegativa_GeraErro()
+    {
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with
+        {
+            Quadro = [new QuantidadeVagaInput(Guid.CreateVersion7(), -1)],
+        };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = _validator.Validate(command);
+
+        resultado.IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ModalidadeId vazio no quadro gera erro")]
+    public void Validar_QuadroComModalidadeIdVazio_GeraErro()
+    {
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with
+        {
+            Quadro = [new QuantidadeVagaInput(Guid.Empty, 10)],
+        };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = _validator.Validate(command);
+
+        resultado.IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ModalidadeId repetido no quadro gera erro")]
+    public void Validar_QuadroComModalidadeIdRepetido_GeraErro()
+    {
+        Guid modalidadeId = Guid.CreateVersion7();
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with
+        {
+            Quadro = [new QuantidadeVagaInput(modalidadeId, 10), new QuantidadeVagaInput(modalidadeId, 20)],
+        };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = _validator.Validate(command);
+
+        resultado.IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Quadro com quantidade válida não gera erro")]
+    public void Validar_QuadroValido_SemErros()
+    {
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with
+        {
+            Quadro = [new QuantidadeVagaInput(Guid.CreateVersion7(), 10)],
+        };
+        DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
+
+        ValidationResult resultado = _validator.Validate(command);
+
+        resultado.IsValid.Should().BeTrue();
     }
 }

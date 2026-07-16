@@ -117,6 +117,7 @@ public sealed class AvaliadorConformidadeLegalTests
             pr: 0.6m,
             regraDistribuicao: ReferenciaRegra.Criar(
                 "DISTRIBUICAO-PADRAO", "v1", new string('a', 64)).Value!,
+            regraAjuste: null,
             referenciaDemografica: null,
             modalidades: modalidades).Value!;
 

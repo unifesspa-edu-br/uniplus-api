@@ -53,13 +53,14 @@ internal static class CorpusFitness
                 voBase: 40,
                 pr: 1m,
                 regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+                regraAjuste: null,
                 referenciaDemografica: null,
                 modalidades: [
                     ModalidadeSelecionada.Criar(
                         new Guid("22222222-2222-2222-2222-222222222222"), "AC", null,
                         NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                        [], null, "Res. Unifesspa 532/2021").Value!,
+                        [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
                 ]).Value!,
         ], PrecondicaoIfMatch.Ausente);
 

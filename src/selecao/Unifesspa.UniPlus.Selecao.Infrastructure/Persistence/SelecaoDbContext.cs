@@ -34,11 +34,13 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     /// <summary>
     /// Distribuição de vagas por oferta de curso (Story #773, modelagem P-A):
     /// os inputs (VO_base, PR, referência à regra tipada, snapshot da
-    /// referência demográfica) e as modalidades selecionadas. O
-    /// <c>QuadroDeVagas</c> (output derivado) não é modelado aqui.
+    /// referência demográfica) e as modalidades selecionadas. O quadro de
+    /// vagas (output derivado, issue #848/ADR-0115) é materializado junto,
+    /// na mesma factory — ver <see cref="VagasOfertadas"/>.
     /// </summary>
     public DbSet<ConfiguracaoDistribuicaoVagas> ConfiguracoesDistribuicaoVagas => Set<ConfiguracaoDistribuicaoVagas>();
     public DbSet<ModalidadeSelecionada> ModalidadesSelecionadas => Set<ModalidadeSelecionada>();
+    public DbSet<VagaOfertada> VagasOfertadas => Set<VagaOfertada>();
 
     /// <summary>
     /// Bônus regional (RN05) e critérios de desempate (Story #774, modelagem

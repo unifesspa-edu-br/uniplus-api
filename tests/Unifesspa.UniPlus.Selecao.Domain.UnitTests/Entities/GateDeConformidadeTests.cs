@@ -42,6 +42,7 @@ public sealed class GateDeConformidadeTests
                 voBase: 40,
                 pr: 1m,
                 regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
+                regraAjuste: null,
                 referenciaDemografica: null,
                 modalidades: [
                     ModalidadeSelecionada.Criar(
@@ -57,7 +58,8 @@ public sealed class GateDeConformidadeTests
                         remanejamentoFallback: null,
                         criteriosCumulativos: [],
                         acaoQuandoIndeferido: null,
-                        baseLegal: "Res. Unifesspa 532/2021").Value!,
+                        baseLegal: "Res. Unifesspa 532/2021",
+                        quantidadeDeclarada: 40).Value!,
                 ]).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
