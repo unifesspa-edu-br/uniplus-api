@@ -19,18 +19,21 @@ using System.Text.Json.Serialization;
 /// não é desenhada — uso emite warning no avaliador.</para>
 /// <para>Persistência via System.Text.Json polimórfico (atributos abaixo).
 /// O discriminator <c>$tipo</c> bate com o ADR-0058 §"Discriminated union".
-/// Os 8 names são camelCase para alinhar com a política do projeto.</para>
+/// Os 7 names são camelCase para alinhar com a política do projeto —
+/// <c>BonusObrigatorio</c>, oitava variante original, foi descartada
+/// (ADR-0114, executado pela #853): <c>ConfiguracaoBonusRegional</c> é
+/// global ao processo, sem lista de modalidades, tornando a variante
+/// incompatível com o agregado real.</para>
 /// <para>Exhaustividade do pattern match consumidor é garantida em build:
 /// o switch expression no avaliador NÃO usa catch-all, e <c>CS8509</c> é
 /// promovido a erro via <c>TreatWarningsAsErrors</c>. Logo, adicionar
-/// uma 9ª variante quebra a build até o avaliador absorver o caso.</para>
+/// uma 8ª variante quebra a build até o avaliador absorver o caso.</para>
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
 [JsonDerivedType(typeof(EtapaObrigatoria), "etapaObrigatoria")]
 [JsonDerivedType(typeof(ModalidadesMinimas), "modalidadesMinimas")]
 [JsonDerivedType(typeof(DesempateDeveIncluir), "desempateDeveIncluir")]
 [JsonDerivedType(typeof(DocumentoObrigatorioParaModalidade), "documentoObrigatorioParaModalidade")]
-[JsonDerivedType(typeof(BonusObrigatorio), "bonusObrigatorio")]
 [JsonDerivedType(typeof(AtendimentoDisponivel), "atendimentoDisponivel")]
 [JsonDerivedType(typeof(ConcorrenciaDuplaObrigatoria), "concorrenciaDuplaObrigatoria")]
 [JsonDerivedType(typeof(Customizado), "customizado")]
@@ -83,12 +86,6 @@ public sealed record DesempateDeveIncluir(string Criterio) : PredicadoObrigatori
 public sealed record DocumentoObrigatorioParaModalidade(string Modalidade, string TipoDocumento) : PredicadoObrigatoriedade;
 
 /// <summary>
-/// Regra: o bônus regional DEVE estar ativo para as modalidades listadas
-/// em <paramref name="ModalidadesAplicaveis"/>.
-/// </summary>
-public sealed record BonusObrigatorio(IReadOnlyList<string> ModalidadesAplicaveis) : PredicadoObrigatoriedade;
-
-/// <summary>
 /// Regra: o edital DEVE oferecer atendimento PcD para todas as necessidades
 /// listadas em <paramref name="Necessidades"/>.
 /// </summary>
@@ -103,7 +100,7 @@ public sealed record ConcorrenciaDuplaObrigatoria : PredicadoObrigatoriedade;
 
 /// <summary>
 /// Válvula de escape para regras transitórias que não casam com nenhuma
-/// das 7 variantes tipadas acima. Uso é monitorado: o avaliador emite
+/// das 6 variantes tipadas acima. Uso é monitorado: o avaliador emite
 /// warning a cada execução. Revisão trimestral promove uma variante tipada
 /// se houver padrão emergente (ADR-0058 §"válvula de escape").
 /// </summary>

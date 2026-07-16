@@ -189,7 +189,7 @@ public static class HashCanonicalComputer
     /// <summary>
     /// Reordena alfabeticamente as chaves de todos os <see cref="JsonObject"/>
     /// aninhados. Arrays preservam a ordem (a ordem é semântica dentro de
-    /// <see cref="ModalidadesMinimas"/>, <see cref="BonusObrigatorio"/>, etc.).
+    /// <see cref="ModalidadesMinimas"/>, <see cref="AtendimentoDisponivel"/>, etc.).
     /// Exposto como API pública para que o
     /// <c>ObrigatoriedadeLegalHistoricoInterceptor</c> aplique a mesma
     /// canonicalização ao payload do snapshot — invariante de
