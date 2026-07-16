@@ -2844,6 +2844,105 @@
         }
       }
     },
+    "/api/selecao/processos-seletivos/{id}/conformidade-legal": {
+      "get": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dataReferencia",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeLegalProcessoSeletivoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeLegalProcessoSeletivoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformidadeLegalProcessoSeletivoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/snapshot-vigente": {
       "get": {
         "tags": [
@@ -3368,6 +3467,37 @@
             "items": {
               "type": "string",
               "format": "uuid"
+            }
+          }
+        }
+      },
+      "ConformidadeLegalProcessoSeletivoDto": {
+        "required": [
+          "processoSeletivoId",
+          "dataReferencia",
+          "regras",
+          "avisos"
+        ],
+        "type": "object",
+        "properties": {
+          "processoSeletivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataReferencia": {
+            "type": "string",
+            "format": "date"
+          },
+          "regras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraAvaliadaDto"
+            }
+          },
+          "avisos": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         }
@@ -4461,9 +4591,6 @@
             "$ref": "#/components/schemas/PredicadoObrigatoriedadeDocumentoObrigatorioParaModalidade"
           },
           {
-            "$ref": "#/components/schemas/PredicadoObrigatoriedadeBonusObrigatorio"
-          },
-          {
             "$ref": "#/components/schemas/PredicadoObrigatoriedadeAtendimentoDisponivel"
           },
           {
@@ -4480,7 +4607,6 @@
             "modalidadesMinimas": "#/components/schemas/PredicadoObrigatoriedadeModalidadesMinimas",
             "desempateDeveIncluir": "#/components/schemas/PredicadoObrigatoriedadeDesempateDeveIncluir",
             "documentoObrigatorioParaModalidade": "#/components/schemas/PredicadoObrigatoriedadeDocumentoObrigatorioParaModalidade",
-            "bonusObrigatorio": "#/components/schemas/PredicadoObrigatoriedadeBonusObrigatorio",
             "atendimentoDisponivel": "#/components/schemas/PredicadoObrigatoriedadeAtendimentoDisponivel",
             "concorrenciaDuplaObrigatoria": "#/components/schemas/PredicadoObrigatoriedadeConcorrenciaDuplaObrigatoria",
             "customizado": "#/components/schemas/PredicadoObrigatoriedadeCustomizado"
@@ -4499,25 +4625,6 @@
             "type": "string"
           },
           "necessidades": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "PredicadoObrigatoriedadeBonusObrigatorio": {
-        "required": [
-          "modalidadesAplicaveis"
-        ],
-        "properties": {
-          "$tipo": {
-            "enum": [
-              "bonusObrigatorio"
-            ],
-            "type": "string"
-          },
-          "modalidadesAplicaveis": {
             "type": "array",
             "items": {
               "type": "string"
@@ -4887,6 +4994,84 @@
             "format": "double"
           },
           "baseLegal": {
+            "type": "string"
+          }
+        }
+      },
+      "RegraAvaliadaDto": {
+        "required": [
+          "regraId",
+          "regraCodigo",
+          "categoria",
+          "tipoProcessoCodigoAvaliado",
+          "predicado",
+          "aprovada",
+          "motivo",
+          "baseLegal",
+          "atoNormativoUrl",
+          "portariaInterna",
+          "descricaoHumana",
+          "vigenciaInicio",
+          "vigenciaFim",
+          "hash"
+        ],
+        "type": "object",
+        "properties": {
+          "regraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "regraCodigo": {
+            "type": "string"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaObrigatoriedade"
+          },
+          "tipoProcessoCodigoAvaliado": {
+            "type": "string"
+          },
+          "predicado": {
+            "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+          },
+          "aprovada": {
+            "type": "boolean"
+          },
+          "motivo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "baseLegal": {
+            "type": "string"
+          },
+          "atoNormativoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "portariaInterna": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descricaoHumana": {
+            "type": "string"
+          },
+          "vigenciaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "vigenciaFim": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "hash": {
             "type": "string"
           }
         }
