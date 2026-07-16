@@ -15,8 +15,26 @@ informed:
 > parte desta ADR que descreve a validação **aplicada contra o agregado
 > `Edital`** (`ValidadorConformidadeEdital`, `Edital.Publicar()`,
 > `EditalGovernanceSnapshot`) foi removida por inteiro — demolição pré-inversão
-> ProcessoSeletivo↔Edital, sem produção, sem substituto imediato. A avaliação
-> de conformidade contra `ProcessoSeletivo` é escopo futuro, fora desta task.
+> ProcessoSeletivo↔Edital, sem produção, sem substituto imediato.
+>
+> **Nota de atualização (#853):** a avaliação de conformidade contra
+> `ProcessoSeletivo` foi entregue. `AvaliadorConformidadeLegal`
+> (`Selecao.Domain.Services`) é o domain service que sucede
+> `ValidadorConformidadeEdital` — puro, sem repositório nem `TimeProvider` —
+> recebe o processo, o tipo avaliado e a lista de `ObrigatoriedadeLegal`
+> vigentes já resolvida pelo chamador, e devolve um `ResultadoConformidade`
+> com uma `RegraAvaliada` por regra de entrada. `ConferenciaDeConformidadeLegal`
+> (Application) resolve as regras vigentes na data de corte
+> (`DadosEdital.PeriodoInscricaoInicio`, decidida pela #852) e aciona o
+> avaliador nos três handlers que congelam configuração —
+> `PublicarProcessoSeletivoCommandHandler`, `RetificarProcessoSeletivoCommandHandler`
+> e `FecharRetificacaoCommandHandler` — como uma segunda dimensão de
+> conformidade, ao lado da estrutural (`ProcessoSeletivo.PendenciaDeConformidade`,
+> que esta entrega não altera). Regras aprovadas são congeladas no bloco
+> `documentosExigidos.obrigatoriedades[]` do envelope de publicação (ADR-0100,
+> ADR-0109 D6), com a mesma leitura exposta publicamente por
+> `GET /processos-seletivos/{id}/conformidade-legal` — fonte única entre a
+> consulta e o gate.
 
 ## Contexto e enunciado do problema
 
@@ -89,7 +107,7 @@ AreasDeInteresse: IReadOnlySet<AreaCodigo> (governance per ADR-0057)
 2. `ModalidadesMinimas(IReadOnlyList<string> codigos)`
 3. `DesempateDeveIncluir(string criterio)`
 4. `DocumentoObrigatorioParaModalidade(string modalidade, string tipoDocumento)`
-5. `BonusObrigatorio(IReadOnlyList<string> modalidadesAplicaveis)`
+5. `BonusObrigatorio(IReadOnlyList<string> modalidadesAplicaveis)` — **descartada** (ADR-0114, executado pela #853): `ConfiguracaoBonusRegional` é global ao processo, sem lista de modalidades: a variante seria incompatível com o agregado real. O conjunto fechado tem hoje 7 variantes, não 8.
 6. `AtendimentoDisponivel(IReadOnlyList<string> necessidades)`
 7. `ConcorrenciaDuplaObrigatoria()`
 8. `Customizado(JsonDocument parametros)` — válvula de escape; emite warning na avaliação; revisão periódica triggera nova variante tipada.
