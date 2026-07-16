@@ -255,11 +255,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // divergentes de vaga quando indeferido em ofertas distintas do processo —
         // AcaoQuandoIndeferido já existe em ModalidadeSelecionada e já é congelado no
         // bloco 'modalidades'; este guard só garante consistência entre ofertas, sem
-        // duplicar o campo em VagaOfertada.
-        if (distribuicaoVagas
-            .SelectMany(static d => d.Modalidades)
-            .GroupBy(static m => m.Codigo, StringComparer.Ordinal)
-            .Any(static grupo => grupo.Select(static m => m.AcaoQuandoIndeferido).Distinct().Count() > 1))
+        // duplicar o campo em VagaOfertada. Compartilhado com ValidarGrafo — a
+        // restauração de envelope congelado reconstrói _distribuicaoVagas via
+        // AplicarGrafo, não por este método, e precisa da mesma checagem.
+        if (HaAcaoQuandoIndeferidoDivergenteEntreOfertas(distribuicaoVagas))
         {
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
@@ -1198,6 +1197,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// a ser substituídas. Nenhuma escrita acontece antes desta função devolver
     /// <see langword="null"/>.
     /// </summary>
+    private static bool HaAcaoQuandoIndeferidoDivergenteEntreOfertas(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicaoVagas) =>
+        distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .GroupBy(static m => m.Codigo, StringComparer.Ordinal)
+            .Any(static grupo => grupo.Select(static m => m.AcaoQuandoIndeferido).Distinct().Count() > 1);
+
     private DomainError? ValidarGrafo(GrafoConfiguracao grafo)
     {
         // Story #851 §3.5: lista de etapas vazia é estado válido (processo sem prova,
@@ -1251,6 +1256,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return new DomainError(
                 "ProcessoSeletivo.OfertaCursoDuplicada",
                 "Cada oferta de curso só pode ter uma distribuição de vagas no processo.");
+        }
+
+        // issue #848/ADR-0115 §3.7 — mesma checagem de DefinirDistribuicaoVagas: a
+        // restauração aplica o grafo diretamente via AplicarGrafo, sem passar por
+        // aquele método, então precisa repetir a validação de consistência.
+        if (HaAcaoQuandoIndeferidoDivergenteEntreOfertas(grafo.DistribuicaoVagas))
+        {
+            return new DomainError(
+                "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
+                "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo.");
         }
 
         List<int> ordensDesempate = [.. grafo.CriteriosDesempate.Select(c => c.Ordem)];
