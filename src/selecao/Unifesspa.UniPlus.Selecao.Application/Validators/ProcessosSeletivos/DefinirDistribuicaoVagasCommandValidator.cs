@@ -56,8 +56,17 @@ public sealed class DefinirDistribuicaoVagasCommandValidator : AbstractValidator
             item.RuleFor(d => d.Quadro)
                 .NotNull()
                 .WithMessage("O quadro é obrigatório — envie lista vazia quando não houver quantidade a fixar.")
-                .Must(quadro => quadro is null || quadro.Select(q => q.ModalidadeId).Distinct().Count() == quadro.Count)
+                .Must(quadro => quadro is null
+                    || quadro.Where(static q => q is not null).Select(static q => q.ModalidadeId).Distinct().Count()
+                        == quadro.Count(static q => q is not null))
                 .WithMessage("O quadro não pode repetir o mesmo ModalidadeId.");
+
+            // Rejeita item nulo no array antes das regras de campo — mesma proteção
+            // de DistribuicaoVagas acima (sem isso o Must de duplicidade e as
+            // ChildRules abaixo desreferenciariam o item, estourando como 500).
+            item.RuleForEach(d => d.Quadro)
+                .NotNull()
+                .WithMessage("Item do quadro não pode ser nulo.");
 
             item.RuleForEach(d => d.Quadro).ChildRules(quantidade =>
             {

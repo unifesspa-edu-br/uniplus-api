@@ -62,6 +62,9 @@ public static class ObterProcessoSeletivoQueryHandler
         configuracao.VoBase,
         configuracao.Pr,
         new ReferenciaRegraDto(configuracao.RegraDistribuicao.Codigo, configuracao.RegraDistribuicao.Versao, configuracao.RegraDistribuicao.Hash),
+        configuracao.RegraAjuste is { } regraAjuste
+            ? new ReferenciaRegraDto(regraAjuste.Codigo, regraAjuste.Versao, regraAjuste.Hash)
+            : null,
         configuracao.ReferenciaDemografica is { } demografica
             ? new ReferenciaReservaDemograficaSnapshotDto(
                 demografica.OrigemId, demografica.CensoReferencia, demografica.PpiPercentual, demografica.QuilombolaPercentual, demografica.PcdPercentual, demografica.BaseLegal)
@@ -69,7 +72,13 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. configuracao.Modalidades.Select(m => new ModalidadeSelecionadaDto(
             m.Id, m.ModalidadeOrigemId, m.Codigo, m.Descricao, m.NaturezaLegal.ToString(), m.ComposicaoVagas.ToString(),
             m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToString(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
-            m.CriteriosCumulativos, m.AcaoQuandoIndeferido, m.BaseLegal))]);
+            m.CriteriosCumulativos, m.AcaoQuandoIndeferido, m.BaseLegal, m.QuantidadeDeclarada))],
+        [.. configuracao.VagasOfertadas.Select(v => new VagaOfertadaDto(v.Id, v.ModalidadeOrigemId, v.ModalidadeCodigo, v.Quantidade))],
+        configuracao.VrNominal,
+        configuracao.VrFinal,
+        configuracao.Estouro,
+        configuracao.CapadoEmVo,
+        configuracao.TotalPublicado);
 
     private static ConfiguracaoBonusRegionalDto? ProjectBonusRegional(ConfiguracaoBonusRegional? bonus)
     {

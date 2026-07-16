@@ -15,7 +15,8 @@ public sealed record ModalidadeSelecionadaDto(
     string? RemanejamentoFallback,
     IReadOnlyList<string> CriteriosCumulativos,
     string? AcaoQuandoIndeferido,
-    string BaseLegal);
+    string BaseLegal,
+    int? QuantidadeDeclarada);
 
 /// <summary>Projeção de leitura de uma referência a regra do rol_de_regras (Story #772).</summary>
 public sealed record ReferenciaRegraDto(string Codigo, string Versao, string Hash);
@@ -29,10 +30,14 @@ public sealed record ReferenciaReservaDemograficaSnapshotDto(
     decimal PcdPercentual,
     string BaseLegal);
 
+/// <summary>Projeção de leitura de uma linha do quadro de vagas (issue #848/ADR-0115).</summary>
+public sealed record VagaOfertadaDto(Guid Id, Guid ModalidadeOrigemId, string ModalidadeCodigo, int Quantidade);
+
 /// <summary>
-/// Projeção de leitura de <c>ConfiguracaoDistribuicaoVagas</c> (Story #773). O
-/// <c>QuadroDeVagas</c> (quantidade calculada por modalidade) não aparece aqui
-/// — é output derivado de um motor futuro, não desta configuração.
+/// Projeção de leitura de <c>ConfiguracaoDistribuicaoVagas</c> (Story #773).
+/// O quadro de vagas (issue #848/ADR-0115) é output derivado, sempre
+/// materializado junto da configuração — <see cref="Quadro"/> e os derivados
+/// (<see cref="VrNominal"/> etc.) refletem exatamente o que foi congelado.
 /// </summary>
 public sealed record ConfiguracaoDistribuicaoVagasDto(
     Guid Id,
@@ -40,5 +45,12 @@ public sealed record ConfiguracaoDistribuicaoVagasDto(
     int VoBase,
     decimal Pr,
     ReferenciaRegraDto RegraDistribuicao,
+    ReferenciaRegraDto? RegraAjuste,
     ReferenciaReservaDemograficaSnapshotDto? ReferenciaDemografica,
-    IReadOnlyList<ModalidadeSelecionadaDto> Modalidades);
+    IReadOnlyList<ModalidadeSelecionadaDto> Modalidades,
+    IReadOnlyList<VagaOfertadaDto> Quadro,
+    int VrNominal,
+    int VrFinal,
+    int Estouro,
+    bool CapadoEmVo,
+    int TotalPublicado);
