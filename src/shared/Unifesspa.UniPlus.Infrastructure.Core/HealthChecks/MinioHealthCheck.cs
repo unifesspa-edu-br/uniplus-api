@@ -2,15 +2,19 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using Minio;
+
+using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 public sealed class MinioHealthCheck : IHealthCheck
 {
     private readonly IMinioClient _minioClient;
 
-    public MinioHealthCheck(IMinioClient minioClient)
+    public MinioHealthCheck(
+        [FromKeyedServices(StorageServiceCollectionExtensions.StorageInternalClientKey)] IMinioClient minioClient)
     {
         _minioClient = minioClient;
     }

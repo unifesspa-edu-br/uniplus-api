@@ -19,7 +19,7 @@ public sealed class MinioStorageService : IStorageService
     private readonly IHttpClientFactory _httpClientFactory;
 
     public MinioStorageService(
-        IMinioClient minioClient,
+        [FromKeyedServices(StorageServiceCollectionExtensions.StorageInternalClientKey)] IMinioClient minioClient,
         [FromKeyedServices(StorageServiceCollectionExtensions.StoragePublicClientKey)] IMinioClient presignClient,
         IHttpClientFactory httpClientFactory)
     {
@@ -146,6 +146,20 @@ public sealed class MinioStorageService : IStorageService
         // _presignClient: mesma razão de GerarUrlTemporariaAsync — o upload
         // direto é feito pelo cliente externo, então a URL precisa ser
         // alcançável e assinada por ele (endpoint público).
+        //
+        // Limitação conhecida do SDK Minio (achado de revisão, smoke test manual): a URL
+        // pré-assinada resultante traz um parâmetro de query espúrio
+        // `content-type=Minio.DataModel.Args.PresignedPutObjectArgs` — o SDK (todas as
+        // versões lançadas até 7.0.0, ObjectOperations.PresignedPutObjectAsync) passa
+        // `Convert.ToString(args.GetType())` (o NOME DO TIPO .NET) onde deveria passar o
+        // metaData real; o `Content-Type` de `WithHeaders` acima nunca chega lá. Inofensivo
+        // na prática: `X-Amz-SignedHeaders=host` só assina o header `Host`, então o servidor
+        // MinIO nunca valida esse parâmetro — confirmado que o PUT funciona normalmente com
+        // o `Content-Type` real enviado pelo cliente. NÃO reescrever a URL para remover o
+        // parâmetro: ele faz parte do canonical request da assinatura SigV4 (confirmado por
+        // teste: removê-lo devolve 403 SignatureDoesNotMatch). Sem correção disponível via
+        // versão do pacote — o `master` do SDK reescreveu esse trecho por completo, mas
+        // ainda não tem release; nenhuma versão publicada (6.x/7.0.0) está livre do bug.
         return await _presignClient.PresignedPutObjectAsync(args).ConfigureAwait(false);
     }
 
