@@ -19,9 +19,9 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
     private static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar("PS Documentos Exigidos", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
 
-    private static FaseCronograma Fase(int ordem, string codigo) => FaseCronograma.Criar(
+    private static FaseCronograma Fase(int ordem, string codigo, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
         ordem,
-        Guid.CreateVersion7(),
+        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
         codigo,
         "CEPS",
         OrigemDataFase.Delegada,
@@ -51,9 +51,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
 
-    private static FaseCronograma FaseComComplementacao(int ordem, string codigo, bool permiteComplementacao) => FaseCronograma.Criar(
+    private static FaseCronograma FaseComComplementacao(
+        int ordem, string codigo, bool permiteComplementacao, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
         ordem,
-        Guid.CreateVersion7(),
+        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
         codigo,
         "CEPS",
         OrigemDataFase.Delegada,
@@ -134,15 +135,35 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = Exigencia(fase.Id);
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        // Mesma Ordem (1), dados diferentes — o caso comum de uma sessão editorial que só
-        // ajusta datas: a reconciliação reusa a instância viva, preserva o Id, e a
-        // exigência continua referenciando uma fase que existe.
-        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO_REVISADA")], [], PrecondicaoIfMatch.Curinga);
+        // Mesma Ordem (1) E mesma FaseCanonicaOrigemId — "editar a mesma fase" (o caso
+        // comum de uma sessão editorial que só ajusta datas), não "trocar qual fase ocupa
+        // o slot" (achado Codex P2, PR #900): a reconciliação reusa a instância viva,
+        // preserva o Id, e a exigência continua referenciando uma fase que existe.
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "INSCRICAO_REVISADA", fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.CronogramaFases.Should().ContainSingle(f => f.Id == fase.Id, "a reconciliação por Ordem reusa a MESMA instância, preservando o Id");
         processo.CronogramaFases.Single().Codigo.Should().Be("INSCRICAO_REVISADA");
         exigencia.ExigidoNaFaseId.Should().Be(fase.Id, "a exigência nunca deixou de referenciar uma fase existente");
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900): trocar a fase canônica na MESMA Ordem, referenciada por exigência viva, é recusado — não retargeta o Id silenciosamente")]
+    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemComExigenciaViva_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DocumentoExigido exigencia = Exigencia(fase.Id);
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Mesma Ordem (1), mas FaseCanonicaOrigemId DIFERENTE (não informado — gera um
+        // novo) — é uma fase DIFERENTE ocupando o slot, não uma edição da mesma fase.
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue(
+            "sem exigir também o mesmo FaseCanonicaOrigemId, o Id seria reusado e a exigência silenciosamente retargetada para a fase nova");
+        resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
     }
 
     [Fact(DisplayName = "CA-04: redefinir o cronograma removendo (Ordem que desaparece) uma fase referenciada por exigência viva é recusado")]
@@ -182,7 +203,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: false)], [], PrecondicaoIfMatch.Curinga);
+            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: false, fase.FaseCanonicaOrigemId)],
+            [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
@@ -197,7 +219,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DefinirDocumentosExigidos([Exigencia(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: false)], [], PrecondicaoIfMatch.Curinga);
+            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: false, fase.FaseCanonicaOrigemId)],
+            [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -213,16 +236,18 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true)], [], PrecondicaoIfMatch.Curinga);
+            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true, fase.FaseCanonicaOrigemId)],
+            [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     // ── Story #554/issue #893 (achado Codex P2, PR #900) — IdadeMaximaEmissao.ReferenciaFaseId ──
 
-    private static FaseCronograma FaseComExtremo(int ordem, string codigo, DateTimeOffset? inicio, DateTimeOffset? fim) => FaseCronograma.Criar(
+    private static FaseCronograma FaseComExtremo(
+        int ordem, string codigo, DateTimeOffset? inicio, DateTimeOffset? fim, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
         ordem,
-        Guid.CreateVersion7(),
+        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
         codigo,
         "CEPS",
         OrigemDataFase.Delegada,
@@ -287,9 +312,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             [ExigenciaComIdadeAncoradaEmFase(fase.Id, fase.Id, ReferenciaTipoIdadeEmissao.FimFase)],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        // Mesma Ordem (1) — a fase sobrevive via reconciliação, mas perde o Fim.
+        // Mesma Ordem (1) E mesma FaseCanonicaOrigemId — a fase sobrevive via
+        // reconciliação, mas perde o Fim.
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseComExtremo(1, "ANALISE", inicio: null, fim: null)], [], PrecondicaoIfMatch.Curinga);
+            [FaseComExtremo(1, "ANALISE", inicio: null, fim: null, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
@@ -308,7 +334,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         DateTimeOffset novoFim = new(2026, 2, 15, 0, 0, 0, TimeSpan.Zero);
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseComExtremo(1, "ANALISE", inicio: null, fim: novoFim)], [], PrecondicaoIfMatch.Curinga);
+            [FaseComExtremo(1, "ANALISE", inicio: null, fim: novoFim, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "o Fim continua definido — só o valor mudou, o que é uma edição legítima");
     }
