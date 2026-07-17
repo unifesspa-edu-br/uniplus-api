@@ -191,7 +191,9 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             bonusRegional: null,
             criteriosDesempate: [],
             classificacao: Classificacao([]),
-            cronogramaFases: [FaseConforme()]);
+            cronogramaFases: [FaseConforme()],
+            documentosExigidos: [],
+            referenciaTemporalFatos: null);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
@@ -347,7 +349,9 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             bonusRegional: null,
             criteriosDesempate: criterios ?? [],
             classificacao: Classificacao(eliminacoes ?? []),
-            cronogramaFases: cronogramaFases ?? [FaseConforme()]);
+            cronogramaFases: cronogramaFases ?? [FaseConforme()],
+            documentosExigidos: [],
+            referenciaTemporalFatos: null);
 
     /// <summary>Uma fase mínima e conforme: agrupa etapas (há 1 etapa por padrão) e produz resultado (há vagas por padrão).</summary>
     private static FaseCronograma FaseConforme() => FaseCronograma.Criar(

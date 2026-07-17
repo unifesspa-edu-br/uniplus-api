@@ -400,7 +400,9 @@ internal static class CorpusEnvelope
                 regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
                 nOpcoesAlocacao: 1,
                 regrasEliminacao: []).Value!,
-            cronogramaFases: [FaseCronogramaConforme(variante)]);
+            cronogramaFases: [FaseCronogramaConforme(variante)],
+            documentosExigidos: [],
+            referenciaTemporalFatos: null);
     }
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
@@ -417,7 +419,9 @@ internal static class CorpusEnvelope
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
             nOpcoesAlocacao: 1,
             regrasEliminacao: []).Value!,
-        cronogramaFases: [FaseCronogramaConforme(variante)]);
+        cronogramaFases: [FaseCronogramaConforme(variante)],
+        documentosExigidos: [],
+        referenciaTemporalFatos: null);
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
     private static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(

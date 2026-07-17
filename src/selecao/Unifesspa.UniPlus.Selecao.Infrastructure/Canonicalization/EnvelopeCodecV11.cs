@@ -670,7 +670,13 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             return Result<EnvelopeReidratado>.Failure(incoerencia);
         }
 
-        GrafoConfiguracao grafo = new(etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases);
+        // documentosExigidos sempre vazio e referenciaTemporalFatos sempre nula na 1.1: a
+        // guarda B-01 (removida na PR-e, mas em vigor para toda versão publicada sob este
+        // schema) garantia que NENHUMA versão 1.1 chegava a ser congelada com
+        // DocumentoExigido configurado — sem gatilho por FAIXA_ETARIA possível, não há
+        // política a resolver, e não há bytes de exigência real neste schema para
+        // reconstruir.
+        GrafoConfiguracao grafo = new(etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases, [], null);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao, conformidade));
     }
@@ -682,7 +688,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// o parser escolheria uma) não é um envelope <c>1.1</c>, é outra coisa com o mesmo
     /// hash recomputado por quem o adulterou.
     /// </summary>
-    private static Result<JsonObject> Parsear(byte[] bytes)
+    internal static Result<JsonObject> Parsear(byte[] bytes)
     {
         JsonNode? node;
         try
@@ -721,7 +727,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// coluna aponta. Divergir aqui significa que uma das duas evidências está errada, e
     /// não há como saber qual.
     /// </summary>
-    private static DomainError? VerificarCoerenciaComAVersao(
+    internal static DomainError? VerificarCoerenciaComAVersao(
         VersaoConfiguracao versao,
         string hashDocumento,
         RetificacaoInfo? retificacao)
@@ -756,7 +762,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
                 "O ato retificado declarado no bloco 'retificacao' não é o que a versão registra ter emendado.");
     }
 
-    private static DadosEdital? LerDadosEdital(LeitorEnvelope leitor, JsonObject payload, out string hashDocumento)
+    internal static DadosEdital? LerDadosEdital(LeitorEnvelope leitor, JsonObject payload, out string hashDocumento)
     {
         hashDocumento = string.Empty;
 
@@ -782,7 +788,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         return dados.IsFailure ? leitor.Propagar<DadosEdital>(dados.Error!) : dados.Value;
     }
 
-    private static IReadOnlyList<EtapaProcesso> LerEtapas(LeitorEnvelope leitor, JsonObject payload)
+    internal static IReadOnlyList<EtapaProcesso> LerEtapas(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "etapas", "$");
         if (leitor.Falhou)
@@ -836,7 +842,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// em silêncio um envelope incoerente reconstruiria um agregado que <b>nunca
     /// existiu</b> — uma modalidade sem oferta, uma oferta sem vagas.
     /// </summary>
-    private static IReadOnlyList<ConfiguracaoDistribuicaoVagas> LerDistribuicao(LeitorEnvelope leitor, JsonObject payload)
+    internal static IReadOnlyList<ConfiguracaoDistribuicaoVagas> LerDistribuicao(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray arrayDistribuicao = leitor.Array(payload, "distribuicao", "$");
         JsonArray arrayModalidades = leitor.Array(payload, "modalidades", "$");
@@ -967,7 +973,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         return distribuicao;
     }
 
-    private static DomainError? VerificarBlocosDerivados(
+    internal static DomainError? VerificarBlocosDerivados(
         List<Guid> emDistribuicao,
         List<Guid> emModalidades,
         List<Guid> emVagas,
@@ -1026,7 +1032,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         return null;
     }
 
-    private static ReferenciaReservaDemograficaSnapshot? LerReferenciaDemografica(
+    internal static ReferenciaReservaDemograficaSnapshot? LerReferenciaDemografica(
         LeitorEnvelope leitor,
         JsonObject distribuicao,
         string pathPai)
@@ -1068,7 +1074,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             : referencia.Value;
     }
 
-    private static ModalidadeSelecionada? LerModalidade(LeitorEnvelope leitor, JsonObject item, string path)
+    internal static ModalidadeSelecionada? LerModalidade(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(
             item,
@@ -1152,7 +1158,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// de lá — mas um envelope adulterado o usaria como chave, e o motor de vagas do certame
     /// receberia um grafo de remanejamento cujos nós não existem no cadastro.
     /// </remarks>
-    private static DomainError? VocabularioDaModalidade(
+    internal static DomainError? VocabularioDaModalidade(
         string codigo,
         string? acaoQuandoIndeferido,
         string? composicaoOrigem,
@@ -1215,7 +1221,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// versão</b>, com o seu próprio codec.
     /// </para>
     /// </remarks>
-    private static DomainError? CoerenciaNaturezaRemanejamento(
+    internal static DomainError? CoerenciaNaturezaRemanejamento(
         string codigo,
         NaturezaLegalModalidade natureza,
         RegraRemanejamentoModalidade remanejamento) => natureza switch
@@ -1238,7 +1244,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             _ => null,
         };
 
-    private static OfertaAtendimentoEspecializado? LerAtendimento(LeitorEnvelope leitor, JsonObject payload)
+    internal static OfertaAtendimentoEspecializado? LerAtendimento(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "atendimento", "$");
         leitor.ExigirChaves(bloco, "atendimento", "condicoes", "recursos", "tiposDeficiencia");
@@ -1325,7 +1331,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// <c>{"presente":false,"fator":"1.2000",…}</c> lido como “sem bônus”
     /// <b>descartaria o bônus regional do certame</b> (RN05) sem deixar rastro.
     /// </summary>
-    private static ConfiguracaoBonusRegional? LerBonusRegional(LeitorEnvelope leitor, JsonObject payload)
+    internal static ConfiguracaoBonusRegional? LerBonusRegional(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "bonusRegional", "$");
         if (leitor.Falhou)
@@ -1362,7 +1368,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         return bonus.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(bonus.Error!) : bonus.Value;
     }
 
-    private static IReadOnlyList<CriterioDesempate> LerCriteriosDesempate(LeitorEnvelope leitor, JsonObject payload)
+    internal static IReadOnlyList<CriterioDesempate> LerCriteriosDesempate(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "criteriosDesempate", "$");
         if (leitor.Falhou)
@@ -1416,7 +1422,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// como <c>{}</c>. Exigir o objeto vazio <b>exatamente</b> é o que impede que args de
     /// uma variante entrem em outra sem que ninguém veja.
     /// </summary>
-    private static ArgsCriterioDesempate? LerArgsDesempate(
+    internal static ArgsCriterioDesempate? LerArgsDesempate(
         LeitorEnvelope leitor,
         string codigo,
         JsonObject args,
@@ -1548,7 +1554,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// externo ao args para decidir a forma; <c>PredicadoObrigatoriedade</c> já é a
     /// discriminated union completa que o domínio serializa).
     /// </summary>
-    private static PredicadoObrigatoriedade? LerPredicadoObrigatoriedade(LeitorEnvelope leitor, JsonObject predicado, string path)
+    internal static PredicadoObrigatoriedade? LerPredicadoObrigatoriedade(LeitorEnvelope leitor, JsonObject predicado, string path)
     {
         leitor.ExigirChaves(predicado, path, "tipo", "args");
         string tipo = leitor.TextoNaoVazio(predicado, "tipo", path);
@@ -1603,7 +1609,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         }
     }
 
-    private static ConfiguracaoClassificacao? LerClassificacao(LeitorEnvelope leitor, JsonObject payload)
+    internal static ConfiguracaoClassificacao? LerClassificacao(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "classificacao", "$");
         leitor.ExigirChaves(
@@ -1685,7 +1691,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             : classificacao.Value;
     }
 
-    private static ArgsRegraEliminacao? LerArgsEliminacao(
+    internal static ArgsRegraEliminacao? LerArgsEliminacao(
         LeitorEnvelope leitor,
         string codigo,
         JsonObject args,
@@ -1715,7 +1721,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         }
     }
 
-    private static RetificacaoInfo? LerRetificacao(LeitorEnvelope leitor, JsonObject payload)
+    internal static RetificacaoInfo? LerRetificacao(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "retificacao", "$");
         leitor.ExigirChaves(bloco, "retificacao", "editalRetificadoId", "motivo");
@@ -1732,7 +1738,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// (<c>ProcessoSeletivo.OrigemCandidatos</c>), imutável após a criação (nenhum
     /// <c>Definir*</c> o altera), e por isso nada aqui precisa repô-lo.
     /// </summary>
-    private static IReadOnlyList<FaseCronograma> LerCronogramaFases(LeitorEnvelope leitor, JsonObject payload)
+    internal static IReadOnlyList<FaseCronograma> LerCronogramaFases(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "cronogramaFases", "$");
         leitor.ExigirChaves(bloco, "cronogramaFases", "origemCandidatos", "fases");
@@ -1804,7 +1810,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         return fases;
     }
 
-    private static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
+    internal static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
         JsonArray array = leitor.Array(faseItem, "bancasRequeridas", pathPai);
         if (leitor.Falhou)
@@ -1839,7 +1845,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// <see cref="RegraPrazoRecursoCodigo.AncoradoEmAto"/> — a única variante que
     /// <see cref="RegraRecursoFase"/> admite (CA-02).
     /// </summary>
-    private static RegraRecursoFase? LerRegraRecursoFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
+    internal static RegraRecursoFase? LerRegraRecursoFase(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
         JsonObject? bloco = leitor.ObjetoOpcional(faseItem, "regraRecurso", pathPai);
         if (leitor.Falhou || bloco is null)

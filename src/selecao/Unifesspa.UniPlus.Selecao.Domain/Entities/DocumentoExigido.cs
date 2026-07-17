@@ -185,6 +185,83 @@ public sealed class DocumentoExigido : EntityBase
         return Result<DocumentoExigido>.Success(documento);
     }
 
+    /// <summary>
+    /// Reidrata uma exigência a partir de uma <see cref="VersaoConfiguracao"/> congelada,
+    /// <b>preservando o <see cref="EntityBase.Id"/></b> — que <see cref="Criar"/> não
+    /// aceita, por decisão (Story #554, PR-e, CA-09). Diferente das demais entidades-filhas
+    /// do agregado (ADR-0110 D2 — só <see cref="EtapaProcesso.Id"/> era preservado, porque
+    /// só ele era referenciado por outro bloco do envelope), <c>DocumentoExigido.Id</c>
+    /// passa a ser o segundo: é o <c>exigenciaId</c> que o resolvedor de exigências
+    /// documentais usa para correlacionar uma apresentação à exigência certa — sem
+    /// preservá-lo, cada retificação trocaria silenciosamente a identidade de exigências
+    /// inalteradas, e apresentações já vinculadas ao <c>exigenciaId</c> antigo deixariam de
+    /// resolver.
+    /// </summary>
+    /// <remarks>
+    /// Reidratar não é criar: os dados vêm de um documento com peso jurídico, já validado
+    /// quando foi congelado — as guardas aqui são a última linha contra erro de
+    /// programação, não revalidação de negócio (essa já rodou em <see cref="Criar"/>,
+    /// quando a exigência foi escrita pela primeira vez).
+    /// </remarks>
+    public static DocumentoExigido Reidratar(
+        Guid id,
+        Guid exigidoNaFaseId,
+        Guid tipoDocumentoOrigemId,
+        string tipoDocumentoCodigo,
+        string tipoDocumentoNome,
+        string tipoDocumentoCategoria,
+        Aplicabilidade aplicabilidade,
+        bool obrigatorio,
+        string? consequenciaIndeferimento,
+        Guid? grupoSatisfacaoId,
+        IReadOnlyList<CondicaoGatilho> condicoes,
+        IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
+        IdadeMaximaEmissao? idadeMaximaEmissao,
+        FormatoPermitido? formatoPermitido,
+        int? tamanhoMaximoBytes)
+    {
+        ArgumentNullException.ThrowIfNull(condicoes);
+        ArgumentNullException.ThrowIfNull(basesLegais);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("A exigência reidratada deve declarar o Id congelado no envelope (CA-09).", nameof(id));
+        }
+
+        DocumentoExigido documento = new()
+        {
+            Id = id,
+            ExigidoNaFaseId = exigidoNaFaseId,
+            TipoDocumentoOrigemId = tipoDocumentoOrigemId,
+            TipoDocumentoCodigo = tipoDocumentoCodigo.Trim(),
+            TipoDocumentoNome = tipoDocumentoNome.Trim(),
+            TipoDocumentoCategoria = tipoDocumentoCategoria.Trim(),
+            Aplicabilidade = aplicabilidade,
+            Obrigatorio = obrigatorio,
+            ConsequenciaIndeferimento = consequenciaIndeferimento,
+            GrupoSatisfacaoId = grupoSatisfacaoId,
+            IdadeMaximaEmissao = idadeMaximaEmissao,
+            FormatoPermitido = formatoPermitido,
+            TamanhoMaximoBytes = tamanhoMaximoBytes,
+        };
+
+        foreach (CondicaoGatilho condicao in condicoes)
+        {
+            condicao.VincularDocumentoExigido(documento.Id);
+            documento._condicoes.Add(condicao);
+        }
+
+        foreach (DocumentoExigidoBaseLegal baseLegal in basesLegais)
+        {
+            baseLegal.VincularDocumentoExigido(documento.Id);
+            documento._basesLegais.Add(baseLegal);
+        }
+
+        return documento;
+    }
+
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 

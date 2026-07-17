@@ -277,6 +277,35 @@ internal sealed class LeitorEnvelope
     }
 
     /// <summary>
+    /// Identificador opcional (Story #554, PR-e — <c>DocumentoExigido.GrupoSatisfacaoId</c>/
+    /// <c>IdadeMaximaEmissao.ReferenciaFaseId</c>, ambos <c>Guid?</c> por natureza).
+    /// <see langword="null"/> quando a chave é <c>null</c>; do contrário, mesma validação
+    /// estrita de <see cref="Identificador"/> (formato canônico, nunca o Guid vazio).
+    /// </summary>
+    public Guid? IdentificadorOpcional(JsonObject pai, string chave, string path)
+    {
+        if (Falhou)
+        {
+            return null;
+        }
+
+        string? texto = TextoOpcional(pai, chave, path);
+        if (Falhou || texto is null)
+        {
+            return null;
+        }
+
+        if (!Guid.TryParseExact(texto, "D", out Guid valor) || !string.Equals(valor.ToString(), texto, StringComparison.Ordinal))
+        {
+            return Malformado<Guid?>($"{path}.{chave}", $"esperado um Guid canônico (minúsculo, formato D), encontrado '{texto}'.");
+        }
+
+        return valor == Guid.Empty
+            ? Malformado<Guid?>($"{path}.{chave}", "o identificador não pode ser o Guid vazio.")
+            : valor;
+    }
+
+    /// <summary>
     /// Data no formato canônico — e <b>nunca</b> o <c>default(DateOnly)</c>.
     /// </summary>
     /// <remarks>

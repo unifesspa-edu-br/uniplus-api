@@ -60,6 +60,15 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("DonoInstitucional", LimitesDoEnvelope.DonoInstitucional, typeof(FaseCronograma), nameof(FaseCronograma.DonoInstitucional)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(FaseCronograma), nameof(FaseCronograma.AtoProduzidoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
+
+        // Story #554 (PR-e) — exigencias[] real.
+        ("TipoDocumentoCodigo", LimitesDoEnvelope.TipoDocumentoCodigo, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCodigo)),
+        ("TipoDocumentoNome", LimitesDoEnvelope.TipoDocumentoNome, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoNome)),
+        ("TipoDocumentoCategoria", LimitesDoEnvelope.TipoDocumentoCategoria, typeof(DocumentoExigido), nameof(DocumentoExigido.TipoDocumentoCategoria)),
+        ("Token", LimitesDoEnvelope.Token, typeof(DocumentoExigido), nameof(DocumentoExigido.ConsequenciaIndeferimento)),
+        ("BaseLegal", LimitesDoEnvelope.BaseLegal, typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Referencia)),
+        ("ObservacaoBaseLegal", LimitesDoEnvelope.ObservacaoBaseLegal, typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Observacao)),
+        ("Fato", LimitesDoEnvelope.Fato, typeof(CondicaoGatilho), nameof(CondicaoGatilho.Fato)),
     ];
 
     private static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =

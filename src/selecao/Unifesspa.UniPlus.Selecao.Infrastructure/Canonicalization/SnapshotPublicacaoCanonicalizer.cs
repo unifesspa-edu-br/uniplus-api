@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using System.Globalization;
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -65,7 +66,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// versão aqui declarada tem de ter a sua golden fixture correspondente —
     /// um teste de política falha o build se não tiver.
     /// </summary>
-    internal const string SchemaVersionAtual = "1.1";
+    internal const string SchemaVersionAtual = "1.2";
 
     private const string AlgoritmoHashAtual = "canonical-json/sha256@v1";
     private const int EscalaPadrao = 4;
@@ -108,7 +109,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["criteriosDesempate"] = SerializarCriteriosDesempate(processo),
             ["classificacao"] = SerializarClassificacao(processo),
             ["hashesEdital"] = SerializarHashesEdital(dados, entrada.HashDocumento),
-            ["documentosExigidos"] = SerializarDocumentosExigidos(entrada.Conformidade),
+            ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade),
             ["formulario"] = NaoConstruido.DeepClone(),
             ["cascataRemanejamento"] = NaoConstruido.DeepClone(),
             ["divulgacao"] = NaoConstruido.DeepClone(),
@@ -434,16 +435,136 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     };
 
     /// <summary>
-    /// Story #853 §3.4: o bloco ganha DUAS chaves — <c>exigencias</c> (documentos exigidos
-    /// por fase, #554, ainda stub) e <c>obrigatoriedades</c> (regras legais avaliadas, esta
-    /// story). O bloco deixa de ser <c>nao_construido</c> na raiz: ele já tem conteúdo real
-    /// (as obrigatoriedades), mesmo com uma das duas dimensões ainda pendente — D8 fala do
-    /// bloco INTEIRO nunca fingir conteúdo, não impede que ele nasça parcialmente real.
+    /// Story #554 (PR-e, bump 1.2): <c>exigencias</c> deixa de ser stub — cada
+    /// <see cref="DocumentoExigido"/> viva do processo vira um item rico (CA-09: identidade
+    /// estável por <c>exigenciaId</c>). Duas chaves-irmãs novas (B-03):
+    /// <c>referenciaTemporalFatos</c> — a POLÍTICA crua (<see cref="ValueObjects.ReferenciaTemporalFatos"/>,
+    /// o INSUMO) — e <c>dataReferenciaFatos</c> — a <see cref="DateOnly"/> já resolvida a
+    /// partir dela (o OUTPUT). Mesmo padrão de <c>distribuicao</c>/<c>vagas</c>: congelar o
+    /// insumo ao lado do output derivado é o que torna a prova de reprodutibilidade
+    /// NÃO-tautológica — reidratar recompõe a política, <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/>
+    /// recalcula o output a partir dela, e o round-trip compara os bytes.
     /// </summary>
-    private static JsonObject SerializarDocumentosExigidos(ResultadoConformidade? conformidade) => new()
+    private static JsonObject SerializarDocumentosExigidos(ProcessoSeletivo processo, ResultadoConformidade? conformidade) => new()
     {
-        ["exigencias"] = NaoConstruido.DeepClone(),
+        ["exigencias"] = SerializarExigencias(processo.DocumentosExigidos),
         ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
+        ["referenciaTemporalFatos"] = processo.ReferenciaTemporalFatos is { } referencia ? new JsonObject
+        {
+            ["tipo"] = referencia.Tipo.ToCodigo(),
+            ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["faseId"] = referencia.FaseId,
+        }
+            : null,
+        ["dataReferenciaFatos"] = processo.ResolverDataReferenciaFatos() is { } data
+            ? data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : null,
+    };
+
+    /// <summary>
+    /// D9 — <see cref="DocumentoExigido"/> não tem chave de negócio única (nada impede duas
+    /// exigências para a mesma fase e o mesmo tipo de documento, com gatilhos distintos).
+    /// Ordena pela chave de negócio PARCIAL (fase + tipo de documento — o caso comum, sem
+    /// empate) e, no raro caso de empate, pela chave de conteúdo do restante do item
+    /// (nunca por <c>exigenciaId</c> — um Guid v7 novo a cada <c>DefinirDocumentosExigidos</c>
+    /// tornaria a ordem não-determinística entre configurações equivalentes, o mesmo
+    /// problema que a chave de conteúdo evita em <see cref="OrdenarPorConteudo"/>).
+    /// </summary>
+    private static JsonArray SerializarExigencias(IReadOnlyCollection<DocumentoExigido> exigencias)
+    {
+        IOrderedEnumerable<DocumentoExigido> ordenadas = exigencias
+            .OrderBy(static e => e.ExigidoNaFaseId)
+            .ThenBy(static e => e.TipoDocumentoOrigemId)
+            .ThenBy(static e => System.Text.Encoding.UTF8.GetString(
+                HashCanonicalComputer.ComputeSnapshotBytes(SerializarExigenciaSemIdentidade(e))),
+                StringComparer.Ordinal);
+
+        return new JsonArray([.. ordenadas.Select(static e =>
+        {
+            JsonObject item = SerializarExigenciaSemIdentidade(e);
+            item.Insert(0, "exigenciaId", JsonValue.Create(e.Id));
+            return (JsonNode)item;
+        })]);
+    }
+
+    private static JsonObject SerializarExigenciaSemIdentidade(DocumentoExigido exigencia) => new()
+    {
+        ["tipoDocumentoOrigemId"] = exigencia.TipoDocumentoOrigemId,
+        ["tipoDocumentoCodigo"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoCodigo),
+        ["tipoDocumentoNome"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoNome),
+        ["tipoDocumentoCategoria"] = HashCanonicalComputer.NormalizeNfc(exigencia.TipoDocumentoCategoria),
+        ["exigidoNaFaseId"] = exigencia.ExigidoNaFaseId,
+        ["aplicabilidade"] = exigencia.Aplicabilidade.ToString(),
+        ["obrigatorio"] = exigencia.Obrigatorio,
+        ["consequenciaIndeferimento"] = exigencia.ConsequenciaIndeferimento is { } consequencia
+            ? HashCanonicalComputer.NormalizeNfc(consequencia)
+            : null,
+        ["grupoSatisfacaoId"] = exigencia.GrupoSatisfacaoId,
+        ["condicaoGatilho"] = SerializarCondicaoGatilho(exigencia.Condicoes),
+        ["basesLegais"] = SerializarBasesLegais(exigencia.BasesLegaisResolvidas()),
+        ["idadeMaximaEmissao"] = exigencia.IdadeMaximaEmissao is { } idade ? SerializarIdadeMaximaEmissao(idade) : null,
+        ["formatoPermitido"] = exigencia.FormatoPermitido?.ToCodigo(),
+        ["tamanhoMaximoBytes"] = exigencia.TamanhoMaximoBytes,
+    };
+
+    /// <summary>
+    /// O predicado DNF (PR-b, ADR-0111): OU de cláusulas, E de condições dentro de cada
+    /// uma. Cláusulas ordenadas por <c>Clausula</c> (ordinal semântico — o mesmo que
+    /// <see cref="ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas"/> usa para agrupar);
+    /// condições dentro da MESMA cláusula não têm ordinal próprio, então usam a chave de
+    /// conteúdo (D9), igual às demais coleções sem chave natural.
+    /// </summary>
+    private static JsonArray? SerializarCondicaoGatilho(IReadOnlyCollection<CondicaoGatilho> condicoes)
+    {
+        if (condicoes.Count == 0)
+        {
+            return null;
+        }
+
+        JsonArray clausulas = [];
+        foreach (IGrouping<int, CondicaoGatilho> clausula in condicoes.GroupBy(static c => c.Clausula).OrderBy(static g => g.Key))
+        {
+            clausulas.Add(OrdenarPorConteudo(clausula.Select(static c => new JsonObject
+            {
+                ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
+                ["operador"] = c.Operador.ToCodigo(),
+                ["valor"] = JsonNode.Parse(c.Valor.GetRawText()),
+            })));
+        }
+
+        return clausulas;
+    }
+
+    /// <summary>
+    /// Só bases legais <c>RESOLVIDO</c> (PR-c, issue #549) — uma <c>PENDENTE</c> não é
+    /// evidência jurídica ainda, e o gate de publicação (<c>ValidadorBaseLegalExigencias</c>)
+    /// já provou que existe ao menos uma resolvida por exigência que determina resultado
+    /// antes deste ponto.
+    /// </summary>
+    private static JsonArray SerializarBasesLegais(IEnumerable<DocumentoExigidoBaseLegal> basesLegais) =>
+        OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
+        {
+            ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
+            // Wire format canônico (ToCodigo/FromCodigo, não ToString — convenção do
+            // repo para enums de comando/envelope estabelecida a partir da PR-c/PR-d,
+            // que criaram TipoAbrangenciaCodigo/StatusBaseLegalCodigo/etc. como fonte
+            // única do token; a exigencias[] é a primeira consumidora deles no envelope).
+            ["abrangencia"] = b.Abrangencia.ToCodigo(),
+            // Sempre RESOLVIDO — só bases resolvidas chegam aqui (BasesLegaisResolvidas()
+            // já filtrou). Mantido explícito por paridade estrutural, mesmo raciocínio de
+            // "aprovada" em obrigatoriedades[]: o campo não pode vir diferente num
+            // snapshot real, mas omiti-lo esconderia essa garantia do próprio documento.
+            ["status"] = b.Status.ToCodigo(),
+            ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
+        }));
+
+    private static JsonObject SerializarIdadeMaximaEmissao(IdadeMaximaEmissao idade) => new()
+    {
+        ["valor"] = idade.Valor,
+        ["unidade"] = idade.Unidade.ToCodigo(),
+        ["referenciaTipo"] = idade.ReferenciaTipo.ToCodigo(),
+        ["data"] = idade.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        ["referenciaFaseId"] = idade.ReferenciaFaseId,
     };
 
     /// <summary>
