@@ -105,7 +105,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         return processo;
     }
 
-    private async Task<(Guid ProcessoId, Guid EditalId, Guid SnapshotId)> PublicarAsync(string nome)
+    private async Task<(Guid ProcessoId, Guid EditalId, Guid SnapshotId, ProcessoSeletivo Processo)> PublicarAsync(string nome)
     {
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
 
@@ -139,13 +139,13 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 
-        return (processo.Id, publicarResult.Value!.AtoCriadorId, publicarResult.Value!.Id);
+        return (processo.Id, publicarResult.Value!.AtoCriadorId, publicarResult.Value!.Id, processo);
     }
 
     [Fact(DisplayName = "Snapshot_HashConfereAppEBanco — re-hashear os bytes lidos do banco bate com o hash persistido pela app")]
     public async Task Snapshot_HashConfereAppEBanco()
     {
-        (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_HashConfereAppEBanco));
+        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_HashConfereAppEBanco));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
@@ -161,7 +161,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
     [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (13 reais + 4 stubs na raiz) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
-        (_, _, Guid snapshotId) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
+        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
@@ -227,5 +227,92 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         objeto["etapas"]!.AsArray().Should().NotBeEmpty();
         objeto["bonusRegional"]!["presente"]!.GetValue<bool>().Should().BeFalse();
         objeto["cronogramaFases"]!["fases"]!.AsArray().Should().NotBeEmpty();
+    }
+
+    // ── Story #554 (PR-e, issue #548) — CA-12: imunidade pós-publicação ──
+
+    [Fact(DisplayName = "CA-12: editar a configuração viva numa retificação aberta não altera o hash já persistido da versão anterior")]
+    public async Task Publicar_RetificacaoAbertaEditaConfiguracaoViva_NaoAlteraHashDaVersaoAnterior()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(nameof(Publicar_RetificacaoAbertaEditaConfiguracaoViva_NaoAlteraHashDaVersaoAnterior));
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
+            "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+        DocumentoExigido exigenciaOriginal = DocumentoExigido.Criar(
+            faseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "IDENTIDADE",
+            tipoDocumentoNome: "Documento de identidade",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([exigenciaOriginal], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
+        documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
+        Result<DadosEdital> dadosResult = DadosEdital.Criar(
+            numero: "001/2026",
+            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
+            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            documentoEditalId: documento.Id);
+        dadosResult.IsSuccess.Should().BeTrue();
+
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!));
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
+            dadosResult.Value!,
+            canonico.Bytes,
+            canonico.SchemaVersion,
+            canonico.AlgoritmoHash,
+            documento.HashSha256!,
+            atorUsuarioSub: "integration-test-user",
+            TimeProvider.System);
+        publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
+        VersaoConfiguracao versaoAbertura = publicarResult.Value!;
+        string hashOriginal = versaoAbertura.HashConfiguracao;
+        byte[] bytesOriginais = versaoAbertura.ConfiguracaoCongeladaCanonica;
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+        await repository.AdicionarAsync(processo, CancellationToken.None);
+        await writeContext.DocumentosEdital.AddAsync(documento, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
+        await writeContext.SaveChangesAsync(CancellationToken.None);
+
+        // "Editar o cadastro de TipoDocumento" (CA-12) — simulado como uma sessão de
+        // retificação que redefine a exigência com um TipoDocumento diferente e persiste a
+        // mudança no MESMO DbContext que já gravou a versão anterior.
+        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
+            "Corrigir código do tipo de documento exigido", versaoAbertura, "user-sub-123", TimeProvider.System.GetUtcNow());
+        abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
+
+        DocumentoExigido exigenciaEditada = DocumentoExigido.Criar(
+            faseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "IDENTIDADE_EDITADA",
+            tipoDocumentoNome: "Documento de identidade (cadastro editado)",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([exigenciaEditada], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
+
+        await writeContext.SaveChangesAsync(CancellationToken.None);
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        VersaoConfiguracao versaoRelida = await readContext.VersoesConfiguracao
+            .AsNoTracking()
+            .FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
+
+        versaoRelida.HashConfiguracao.Should().Be(hashOriginal,
+            "CA-12: editar a configuração viva do processo (aqui, o TipoDocumento de uma exigência, dentro de uma " +
+            "sessão de retificação aberta e persistida) não pode alterar o hash de uma versão JÁ persistida");
+        versaoRelida.ConfiguracaoCongeladaCanonica.Should().Equal(bytesOriginais,
+            "os bytes congelados da versão anterior também permanecem imutáveis — não só o hash resumido");
     }
 }
