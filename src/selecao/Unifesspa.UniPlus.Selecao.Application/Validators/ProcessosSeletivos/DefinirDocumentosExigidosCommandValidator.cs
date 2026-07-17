@@ -24,6 +24,10 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
 
     private static readonly string[] OperadoresValidos = ["IGUAL", "EM", "MAIOR_IGUAL", "MENOR_IGUAL"];
 
+    private static readonly string[] AbrangenciasValidas = ["FEDERAL", "ESTADUAL", "MUNICIPAL", "INTERNA_NORMA", "INTERNA_EDITAL"];
+
+    private static readonly string[] StatusBaseLegalValidos = ["PENDENTE", "RESOLVIDO"];
+
     public DefinirDocumentosExigidosCommandValidator()
     {
         RuleFor(x => x.ProcessoSeletivoId)
@@ -78,6 +82,25 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
                 condicao.RuleFor(c => c.Valor)
                     .NotEmpty()
                     .WithMessage("O valor da condição é obrigatório.");
+            });
+
+            item.RuleFor(i => i.BasesLegais)
+                .NotNull()
+                .WithMessage("A lista de bases legais não pode ser nula.");
+
+            item.RuleForEach(i => i.BasesLegais).ChildRules(baseLegal =>
+            {
+                baseLegal.RuleFor(b => b.Referencia)
+                    .NotEmpty()
+                    .WithMessage("A referência da base legal é obrigatória.");
+
+                baseLegal.RuleFor(b => b.Abrangencia)
+                    .Must(valor => AbrangenciasValidas.Contains(valor, StringComparer.Ordinal))
+                    .WithMessage($"Abrangência da base legal deve ser um de: {string.Join(", ", AbrangenciasValidas)}.");
+
+                baseLegal.RuleFor(b => b.Status)
+                    .Must(valor => StatusBaseLegalValidos.Contains(valor, StringComparer.Ordinal))
+                    .WithMessage($"Status da base legal deve ser um de: {string.Join(", ", StatusBaseLegalValidos)}.");
             });
         });
     }

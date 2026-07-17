@@ -248,6 +248,15 @@ public sealed class ProcessoSeletivoPublicarTests
 
     // ── Story #554 (PR-a) — guarda fail-closed (B-01) e CA-01 ──
 
+    /// <summary>
+    /// Base legal RESOLVIDO qualquer (Story #554, PR-c) — as fixtures abaixo testam
+    /// checagens POSTERIORES ao 5º item de <see cref="ProcessoSeletivo.AvaliarConformidade"/>
+    /// (B-01/CA-01), então precisam satisfazer o gate de base legal primeiro, ou nunca o
+    /// alcançariam.
+    /// </summary>
+    private static DocumentoExigidoBaseLegal BaseLegalResolvidaQualquer() => DocumentoExigidoBaseLegal.Criar(
+        "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+
     private static DocumentoExigido ExigenciaCondicionalVaziaObrigatoria(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
         exigidoNaFaseId,
         tipoDocumentoOrigemId: Guid.CreateVersion7(),
@@ -258,7 +267,7 @@ public sealed class ProcessoSeletivoPublicarTests
         obrigatorio: true,
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
-        condicoes: []).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()]).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
         exigidoNaFaseId,
@@ -270,7 +279,7 @@ public sealed class ProcessoSeletivoPublicarTests
         obrigatorio: true,
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
-        condicoes: []).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()]).Value!;
 
     [Fact(DisplayName = "CA-01: publicar com exigência CONDICIONAL vazia obrigatória é bloqueado")]
     public void Publicar_CondicionalVaziaObrigatoria_Bloqueia()
@@ -329,7 +338,7 @@ public sealed class ProcessoSeletivoPublicarTests
             obrigatorio: true,
             consequenciaIndeferimento: null,
             grupoSatisfacaoId: null,
-            condicoes: [condicao]).Value!;
+            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()]).Value!;
     }
 
     [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase de outro processo é recusada")]
@@ -404,6 +413,119 @@ public sealed class ProcessoSeletivoPublicarTests
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    // ── Story #554/issue #549 (PR-c) — base legal 1:N, 5º item de AvaliarConformidade ──
+
+    private static DocumentoExigidoBaseLegal BaseLegalDe(StatusBaseLegal status) => DocumentoExigidoBaseLegal.Criar(
+        "Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
+
+    private static DocumentoExigido ExigenciaObrigatoriaCom(Guid exigidoNaFaseId, params DocumentoExigidoBaseLegal[] basesLegais) => DocumentoExigido.Criar(
+        exigidoNaFaseId: exigidoNaFaseId,
+        tipoDocumentoOrigemId: Guid.CreateVersion7(),
+        tipoDocumentoCodigo: "IDENTIDADE",
+        tipoDocumentoNome: "Documento de identidade",
+        tipoDocumentoCategoria: "PESSOAL",
+        aplicabilidade: Aplicabilidade.Geral,
+        obrigatorio: true,
+        consequenciaIndeferimento: null,
+        grupoSatisfacaoId: null,
+        condicoes: [],
+        basesLegais: basesLegais).Value!;
+
+    [Fact(DisplayName = "CA-02: AvaliarConformidade inclui o item 'Base legal das exigências documentais'")]
+    public void AvaliarConformidade_IncluiItemBaseLegal()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+
+        processo.AvaliarConformidade().Should().ContainSingle(i => i.Item == "Base legal das exigências documentais");
+    }
+
+    [Fact(DisplayName = "CA-03 (semântica vazia): processo sem exigência que determina resultado tem o item satisfeito")]
+    public void AvaliarConformidade_SemExigenciaQueDeterminaResultado_ItemSatisfeito()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Exigência que determina resultado sem base legal reprova o item")]
+    public void AvaliarConformidade_ExigenciaSemBaseLegal_ItemReprova()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "CA-02: exigência com base RESOLVIDO satisfaz o item")]
+    public void AvaliarConformidade_ExigenciaComBaseResolvida_ItemSatisfeito()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido))], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Exigência com base só PENDENTE reprova o item")]
+    public void AvaliarConformidade_ExigenciaComBasePendente_ItemReprova()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente))], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "CA-05: reenviar o PUT rebaixando a única base resolvida para PENDENTE volta a reprovar o item")]
+    public void AvaliarConformidade_ReenviarRebaixandoUnicaBaseResolvida_VoltaAReprovar()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido))], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeTrue();
+
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente))], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "CA-05: reenviar o PUT sem a única base resolvida volta a reprovar o item")]
+    public void AvaliarConformidade_ReenviarSemUnicaBaseResolvida_VoltaAReprovar()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido))], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeTrue();
+
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId)], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Publicar bloqueia com ConformidadeInsuficiente quando exigência determina resultado sem base legal — antes de alcançar B-01")]
+    public void Publicar_ExigenciaSemBaseLegal_BloqueiaComConformidadeInsuficiente()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
+        resultado.Error.Message.Should().Contain("Base legal das exigências documentais");
     }
 
     /// <summary>

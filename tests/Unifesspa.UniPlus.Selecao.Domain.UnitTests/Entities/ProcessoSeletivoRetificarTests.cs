@@ -363,6 +363,11 @@ public sealed class ProcessoSeletivoRetificarTests
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         Guid faseId = processo.CronogramaFases.Single().Id;
+        // Story #554, PR-c: a exigência determina resultado (Obrigatorio=true), então
+        // precisa de base legal RESOLVIDO para satisfazer o 5º item de AvaliarConformidade
+        // antes de alcançar a checagem B-01 sendo testada aqui.
+        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
+            "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             faseId,
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
@@ -373,7 +378,7 @@ public sealed class ProcessoSeletivoRetificarTests
             obrigatorio: true,
             consequenciaIndeferimento: null,
             grupoSatisfacaoId: null,
-            condicoes: []).Value!;
+            condicoes: [], basesLegais: [baseLegal]).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido — só o FECHAMENTO é bloqueado pela B-01");
 

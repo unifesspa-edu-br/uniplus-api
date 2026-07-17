@@ -18,7 +18,8 @@ public sealed class DocumentoExigidoTests
         Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
         bool obrigatorio = false,
         string? consequenciaIndeferimento = null,
-        IReadOnlyList<CondicaoGatilho>? condicoes = null) =>
+        IReadOnlyList<CondicaoGatilho>? condicoes = null,
+        IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null) =>
         DocumentoExigido.Criar(
             exigidoNaFaseId: Guid.CreateVersion7(),
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
@@ -29,7 +30,8 @@ public sealed class DocumentoExigidoTests
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: consequenciaIndeferimento,
             grupoSatisfacaoId: null,
-            condicoes: condicoes ?? []);
+            condicoes: condicoes ?? [],
+            basesLegais: basesLegais ?? []);
 
     private static CondicaoGatilho CondicaoQualquer() => CondicaoGatilho.Criar(
         0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!;
@@ -132,5 +134,29 @@ public sealed class DocumentoExigidoTests
 
         exigencia.ConsequenciaIndeferimento.Should().BeNull();
         exigencia.DeterminaResultado().Should().BeFalse();
+    }
+
+    // ── Story #554/issue #549 (PR-c) — base legal 1:N ──
+
+    [Fact(DisplayName = "CA-06: BasesLegaisResolvidas exclui toda base PENDENTE")]
+    public void BasesLegaisResolvidas_ExcluiPendente()
+    {
+        DocumentoExigidoBaseLegal pendente = DocumentoExigidoBaseLegal.Criar(
+            "Referência pendente", TipoAbrangencia.Federal, StatusBaseLegal.Pendente, null).Value!;
+        DocumentoExigidoBaseLegal resolvida = DocumentoExigidoBaseLegal.Criar(
+            "Referência resolvida", TipoAbrangencia.Estadual, StatusBaseLegal.Resolvido, null).Value!;
+        DocumentoExigido exigencia = Exigencia(basesLegais: [pendente, resolvida]).Value!;
+
+        exigencia.BasesLegaisResolvidas().Should().ContainSingle().Which.Should().Be(resolvida);
+    }
+
+    [Fact(DisplayName = "BasesLegaisResolvidas retorna vazio quando só há PENDENTE (contraprova)")]
+    public void BasesLegaisResolvidas_SoPendente_RetornaVazio()
+    {
+        DocumentoExigidoBaseLegal pendente = DocumentoExigidoBaseLegal.Criar(
+            "Referência pendente", TipoAbrangencia.Federal, StatusBaseLegal.Pendente, null).Value!;
+        DocumentoExigido exigencia = Exigencia(basesLegais: [pendente]).Value!;
+
+        exigencia.BasesLegaisResolvidas().Should().BeEmpty();
     }
 }

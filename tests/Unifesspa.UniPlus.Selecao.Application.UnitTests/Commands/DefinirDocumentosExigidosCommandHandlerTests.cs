@@ -90,7 +90,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns((TipoDocumentoView?)null);
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], []);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -111,7 +111,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], []);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -137,7 +137,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]);
 
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao]);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], []);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -162,7 +162,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[]);
 
         CondicaoGatilhoInput condicao = new(0, "FATO_INEXISTENTE", "IGUAL", "\"X\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao]);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], []);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -187,12 +187,40 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]);
 
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE", "IGUAL", "\"LB_PPI\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao]);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], []);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.ValorForaDoDominio");
+    }
+
+    [Fact(DisplayName = "CA-07 (Story #554, PR-c): mesma referência documental em exigências distintas preserva bases legais distintas, correlacionadas por identidade")]
+    public async Task Handle_MesmaReferenciaDocumental_BasesDistintasPorExigencia()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+
+        BaseLegalInput baseFederal = new("Lei Federal X", "FEDERAL", "RESOLVIDO", null);
+        BaseLegalInput baseEdital = new("Cláusula do edital", "INTERNA_EDITAL", "RESOLVIDO", null);
+        ItemDocumentoExigidoInput primeiraExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseFederal]);
+        ItemDocumentoExigidoInput segundaExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseEdital]);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [primeiraExigencia, segundaExigencia], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().HaveCount(2);
+        processo.DocumentosExigidos.Should().Contain(d => d.BasesLegais.Single().Referencia == "Lei Federal X");
+        processo.DocumentosExigidos.Should().Contain(d => d.BasesLegais.Single().Referencia == "Cláusula do edital");
+        processo.DocumentosExigidos.Select(d => d.Id).Should().OnlyHaveUniqueItems(
+            "a correlação é pela identidade da própria exigência (ADR-0072), não pelo tipo de documento");
     }
 }

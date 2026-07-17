@@ -66,5 +66,15 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
         builder.Navigation(d => d.Condicoes)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // Base legal 1:N (Story #554, PR-c) — substituível por inteiro junto com o próprio
+        // DocumentoExigido, mesmo padrão de Condicoes.
+        builder.HasMany(d => d.BasesLegais)
+            .WithOne()
+            .HasForeignKey(b => b.DocumentoExigidoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(d => d.BasesLegais)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

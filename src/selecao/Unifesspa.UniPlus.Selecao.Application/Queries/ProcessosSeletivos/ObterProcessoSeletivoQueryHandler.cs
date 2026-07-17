@@ -194,7 +194,8 @@ public static class ObterProcessoSeletivoQueryHandler
         documento.Obrigatorio,
         documento.ConsequenciaIndeferimento,
         documento.GrupoSatisfacaoId,
-        [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjectCondicaoGatilho)]);
+        [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjectCondicaoGatilho)],
+        [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjectBaseLegal)]);
 
     // Valor como texto JSON canônico (GetRawText) — o mesmo PUT que aceita este DTO de
     // volta (DefinirDocumentosExigidosCommandHandler.InterpretarValor) reparseia texto
@@ -205,6 +206,13 @@ public static class ObterProcessoSeletivoQueryHandler
         condicao.Fato,
         condicao.Operador.ToCodigo(),
         condicao.Valor.GetRawText());
+
+    private static BaseLegalDto ProjectBaseLegal(DocumentoExigidoBaseLegal baseLegal) => new(
+        baseLegal.Id,
+        baseLegal.Referencia,
+        baseLegal.Abrangencia.ToCodigo(),
+        baseLegal.Status.ToCodigo(),
+        baseLegal.Observacao);
 
     // Emite o mesmo token de wire aceito por DefinirDocumentosExigidosCommandValidator
     // ("GERAL"/"CONDICIONAL") — Aplicabilidade.ToString() produziria "Geral"/"Condicional"

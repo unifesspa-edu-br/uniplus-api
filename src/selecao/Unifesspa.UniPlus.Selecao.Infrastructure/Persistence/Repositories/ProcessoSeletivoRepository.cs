@@ -107,8 +107,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // antigas sobrevivem no banco, PUT acumula) e a guarda B-01/CA-01 sempre
             // veria zero exigências. Gatilho DNF (issue #892, PR-b) — mesmo raciocínio
             // para Condicoes: sem o ThenInclude, PendenciaDasExigenciasDocumentais veria
-            // sempre zero condições, e CA-01 (GERAL x condição) falharia aberta.
+            // sempre zero condições, e CA-01 (GERAL x condição) falharia aberta. Base
+            // legal (issue #549, PR-c) — mesmo raciocínio para BasesLegais: sem o
+            // ThenInclude, ValidadorBaseLegalExigencias veria sempre zero bases e o 5º
+            // item de AvaliarConformidade reprovaria toda exigência que determina
+            // resultado, mesmo com bases RESOLVIDO persistidas.
             .Include(p => p.DocumentosExigidos).ThenInclude(d => d.Condicoes)
+            .Include(p => p.DocumentosExigidos).ThenInclude(d => d.BasesLegais)
             // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
             // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
             // modalidades × desempate × eliminação × fases × bancas) num único JOIN

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Linq;
+
 using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -14,8 +16,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
 /// </summary>
 /// <remarks>
-/// A base legal 1:N (<c>DocumentoExigidoBaseLegal</c>) e a idade máxima de emissão/
-/// formato/tamanho são entregues por tasks-irmãs (PR-c/PR-d) — não modeladas aqui.
+/// A idade máxima de emissão/formato/tamanho é entregue por task-irmã (PR-d) — não
+/// modelada aqui. A base legal 1:N (<see cref="BasesLegais"/>) chegou na PR-c (issue #549).
 /// </remarks>
 public sealed class DocumentoExigido : EntityBase
 {
@@ -63,6 +65,11 @@ public sealed class DocumentoExigido : EntityBase
     /// <summary>Gatilho DNF (Story #554, PR-b) — vazia significa "sem gatilho": GERAL é sempre exigida, CONDICIONAL vazia é exigida de ninguém.</summary>
     public IReadOnlyCollection<CondicaoGatilho> Condicoes => _condicoes.AsReadOnly();
 
+    private readonly List<DocumentoExigidoBaseLegal> _basesLegais = [];
+
+    /// <summary>Base legal 1:N (Story #554, PR-c, ADR-0074) — embasamento rastreável e auditável da exigência; validada no gate de publicação, não na escrita.</summary>
+    public IReadOnlyCollection<DocumentoExigidoBaseLegal> BasesLegais => _basesLegais.AsReadOnly();
+
     private DocumentoExigido() { }
 
     public static Result<DocumentoExigido> Criar(
@@ -75,9 +82,11 @@ public sealed class DocumentoExigido : EntityBase
         bool obrigatorio,
         string? consequenciaIndeferimento,
         Guid? grupoSatisfacaoId,
-        IReadOnlyList<CondicaoGatilho> condicoes)
+        IReadOnlyList<CondicaoGatilho> condicoes,
+        IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
+        ArgumentNullException.ThrowIfNull(basesLegais);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
@@ -141,6 +150,12 @@ public sealed class DocumentoExigido : EntityBase
             documento._condicoes.Add(condicao);
         }
 
+        foreach (DocumentoExigidoBaseLegal baseLegal in basesLegais)
+        {
+            baseLegal.VincularDocumentoExigido(documento.Id);
+            documento._basesLegais.Add(baseLegal);
+        }
+
         return Result<DocumentoExigido>.Success(documento);
     }
 
@@ -154,6 +169,14 @@ public sealed class DocumentoExigido : EntityBase
     /// publicação) e, futuramente, pelo gate de base legal (PR-c/#549).
     /// </summary>
     public bool DeterminaResultado() => Obrigatorio || ConsequenciaIndeferimento is not null;
+
+    /// <summary>
+    /// Projeção "somente <see cref="StatusBaseLegal.Resolvido"/>" (Story #554, PR-c, CA-06)
+    /// — o que a PR-e (#548) materializa no bloco congelado; bases
+    /// <see cref="StatusBaseLegal.Pendente"/> são rascunho e nunca aparecem aqui.
+    /// </summary>
+    public IEnumerable<DocumentoExigidoBaseLegal> BasesLegaisResolvidas() =>
+        _basesLegais.Where(static b => b.Status == StatusBaseLegal.Resolvido);
 
     /// <summary>
     /// Coerência entre <see cref="Aplicabilidade"/> e a existência de condição de gatilho

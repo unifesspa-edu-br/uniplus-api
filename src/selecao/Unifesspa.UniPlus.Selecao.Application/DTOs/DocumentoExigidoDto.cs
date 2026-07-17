@@ -16,7 +16,8 @@ public sealed record DocumentoExigidoDto(
     bool Obrigatorio,
     string? ConsequenciaIndeferimento,
     Guid? GrupoSatisfacaoId,
-    IReadOnlyList<CondicaoGatilhoDto> Condicoes);
+    IReadOnlyList<CondicaoGatilhoDto> Condicoes,
+    IReadOnlyList<BaseLegalDto> BasesLegais);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.CondicaoGatilho"/> (Story #554, PR-b,
@@ -26,3 +27,12 @@ public sealed record DocumentoExigidoDto(
 /// PUT (<c>DefinirDocumentosExigidosCommandHandler.InterpretarValor</c> o reparseia como JSON).
 /// </summary>
 public sealed record CondicaoGatilhoDto(Guid Id, int Clausula, string Fato, string Operador, string Valor);
+
+/// <summary>
+/// DTO de leitura de <see cref="Domain.Entities.DocumentoExigidoBaseLegal"/> (Story #554,
+/// PR-c, issue #549). Mesmo formato flat de <c>BaseLegalInput</c> (comando de escrita) —
+/// round-trip GET→PUT direto, incluindo bases <c>PENDENTE</c> (a projeção "somente
+/// RESOLVIDO" é interna ao domínio — <c>DocumentoExigido.BasesLegaisResolvidas</c> — e da
+/// materialização do envelope na PR-e, não deste DTO de edição).
+/// </summary>
+public sealed record BaseLegalDto(Guid Id, string Referencia, string Abrangencia, string Status, string? Observacao);

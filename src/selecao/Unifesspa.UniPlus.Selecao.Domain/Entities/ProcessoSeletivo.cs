@@ -685,6 +685,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             new ItemConformidade("Distribuição de vagas", _distribuicaoVagas.Count > 0),
             new ItemConformidade("Classificação", Classificacao is not null),
             new ItemConformidade("Cronograma de fases", _cronogramaFases.Count > 0),
+            // Story #554, PR-c (issue #549, ADR-0074): toda exigência que determina
+            // resultado precisa de ≥1 base legal RESOLVIDO — semântica vazia quando não há
+            // exigência que determine resultado (Services.ValidadorBaseLegalExigencias).
+            new ItemConformidade(
+                "Base legal das exigências documentais",
+                Services.ValidadorBaseLegalExigencias.TodasResolvidas(_documentosExigidos)),
         ];
 
         if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })

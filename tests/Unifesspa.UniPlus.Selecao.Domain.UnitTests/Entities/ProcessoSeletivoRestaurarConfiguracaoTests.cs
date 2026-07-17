@@ -244,7 +244,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             obrigatorio: true,
             consequenciaIndeferimento: null,
             grupoSatisfacaoId: null,
-            condicoes: []).Value!;
+            condicoes: [], basesLegais: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Should().ContainSingle();

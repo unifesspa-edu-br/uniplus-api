@@ -41,7 +41,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, tipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL",
             aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: []).Value!;
+            condicoes: [], basesLegais: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -69,7 +69,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [condicaoEscalar, condicaoMultivalorada]).Value!;
+            condicoes: [condicaoEscalar, condicaoMultivalorada], basesLegais: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -124,5 +124,41 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
             new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
 
         dto!.ReferenciaTemporalFatos.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Story #554/issue #549 (PR-c): projeta BasesLegais — round-trip GET→PUT, inclusive PENDENTE (a projeção 'só RESOLVIDO' é da PR-e, não deste DTO de edição)")]
+    public async Task Handle_BasesLegais_EmiteTokenDeWireERoundTrip()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DocumentoExigidoBaseLegal baseResolvida = DocumentoExigidoBaseLegal.Criar(
+            "Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, StatusBaseLegal.Resolvido, "Observação").Value!;
+        DocumentoExigidoBaseLegal basePendente = DocumentoExigidoBaseLegal.Criar(
+            "Cláusula 5.2 do edital", TipoAbrangencia.InternaEdital, StatusBaseLegal.Pendente, null).Value!;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [baseResolvida, basePendente]).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
+            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+
+        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
+        projetado.BasesLegais.Should().HaveCount(2);
+
+        BaseLegalDto resolvidaDto = projetado.BasesLegais.Should().ContainSingle(b => b.Status == "RESOLVIDO").Which;
+        resolvidaDto.Referencia.Should().Be("Lei 12.711/2012, art. 3º");
+        resolvidaDto.Abrangencia.Should().Be("FEDERAL");
+        resolvidaDto.Observacao.Should().Be("Observação");
+
+        BaseLegalDto pendenteDto = projetado.BasesLegais.Should().ContainSingle(b => b.Status == "PENDENTE").Which;
+        pendenteDto.Abrangencia.Should().Be("INTERNA_EDITAL");
+        pendenteDto.Observacao.Should().BeNull();
     }
 }
