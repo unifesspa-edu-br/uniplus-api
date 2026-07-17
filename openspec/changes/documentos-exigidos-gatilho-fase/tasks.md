@@ -56,15 +56,17 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 
 > Achados extras da revisão automatizada (Codex), corrigidos além do escopo original: `AplicarGrafo` não zerava `ReferenciaTemporalFatos` ao descartar sessão editorial (mesmo raciocínio do `_documentosExigidos.Clear()` da PR-a); `DefinirReferenciaTemporalFatosCommandValidator` aceitava `Data`/`FaseId` soltos quando `Tipo` era nulo (remoção); GET agregado não expunha `DocumentoExigido.Condicoes` nem `ProcessoSeletivo.ReferenciaTemporalFatos` (quebrava round-trip GET→PUT); CA-03 só validava na escrita — `DefinirDistribuicaoVagas`/`DefinirOfertaAtendimento` podiam remover um código de MODALIDADE/CONDICAO_ATENDIMENTO referenciado por gatilho vivo sem revalidar (novo guard preciso, por código, não por Guid); os dois novos `DomainError` do guard não estavam registrados em `SelecaoDomainErrorRegistration` (pego pelo ArchTest F1 já existente).
 
-## 4. PR-c — `DocumentoExigidoBaseLegal` 1:N + gate de publicação
+## 4. PR-c — `DocumentoExigidoBaseLegal` 1:N + gate de publicação ✅ MERGEADO
 
-**Issue:** #549 (UNI-REQ-0059) · **Branch:** `feature/549-base-legal-exigencia` · **PR:** `Closes #549` + ref. #554
+**Issue:** #549 (UNI-REQ-0059) · **Branch:** `feature/549-base-legal-exigencia` · **PR:** #898 (`Closes #549`) · **Merge:** 071218bf (2026-07-17)
 
 - [x] 4.1 Modelar `DocumentoExigidoBaseLegal` (EntityBase puro) 1:N, editada pelo PUT integral
 - [x] 4.2 Gate de publicação: ≥1 base RESOLVIDO para quem determina resultado; INTERNA_EDITAL sozinha; só RESOLVIDO congela
 - [x] 4.3 Migration EF Core + Configuration
 - [x] 4.4 Testes: só-PENDENTE bloqueia; rebaixar/remover a única RESOLVIDO é apanhado na publicação
-- [ ] 4.5 Gates locais + revisão Codex; abrir PR `Closes #549`; `/review-pr` até zero pendências; merge sequencial
+- [x] 4.5 Gates locais + revisão Codex (3 rodadas — limite de tamanho de referência/observação alinhado à persistência, recusa de item de base legal nulo na lista); PR #898 aprovado e mergeado (rebase)
+
+> Achados extras da revisão automatizada (Codex), corrigidos além do escopo original: validator sem `MaximumLength` para `Referencia`/`Observacao` (a coluna já tinha `HasMaxLength`, mas um PUT acima do teto só falhava no `SaveChanges`); `RuleForEach(i => i.BasesLegais)` sem `NotNull()` — um item nulo na lista chegava a `ResolverBasesLegais` e quebrava com erro de servidor não tratado.
 
 ## 5. PR-d — Idade de emissão + formato + tamanho + guards de fase
 
