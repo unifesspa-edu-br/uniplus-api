@@ -219,6 +219,43 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
                 "que o etapaRef do desempate e da eliminação referenciam");
     }
 
+    [Fact(DisplayName = "Story #554/issue #547 — restauração limpa DocumentosExigidos configurados durante a sessão")]
+    public void Restauracao_LimpaDocumentosExigidosDaSessao()
+    {
+        // O bloco documentosExigidos.exigencias do envelope ainda é stub (PR-a..PR-d) —
+        // GrafoConfiguracao não tem como reconstruir a coleção a partir de bytes que não
+        // a contêm. A guarda B-01 garante que TODA versão já congelada tem zero
+        // DocumentoExigido; a restauração precisa repor esse mesmo estado vazio, mesmo
+        // que a sessão editorial tenha configurado exigências.
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+
+        processo.AbrirRetificacao("Incluir exigência documental", versao, "testes", DateTimeOffset.UnixEpoch)
+            .IsSuccess.Should().BeTrue();
+
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "IDENTIDADE",
+            tipoDocumentoNome: "Documento de identidade",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DocumentosExigidos.Should().ContainSingle();
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, Grafo());
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().BeEmpty(
+            "a versão congelada nunca poderia ter sido publicada com exigência configurada (B-01) — restaurar " +
+            "precisa repor esse estado vazio, não preservar o que a sessão descartada editou");
+    }
+
     // ── Fábrica de cenários ──
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
