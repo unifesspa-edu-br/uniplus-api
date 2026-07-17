@@ -166,26 +166,105 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 3ª rodada): trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito e reusa a linha rastreada")]
-    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemSemExigenciaViva_AceitaEReusaLinha()
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 4ª rodada): trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito como remoção+inserção — NÃO reusa a linha (o Id muda)")]
+    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemSemExigenciaViva_AceitaComoRemocaoMaisInsercao()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Mesma Ordem (1), FaseCanonicaOrigemId DIFERENTE, e NENHUMA exigência referencia
-        // a fase antiga — o guard já provou que é seguro; a reconciliação deve adotar a
-        // linha TRACKED (retargetando-a) em vez de Add(nova) + deixar a antiga para o
-        // Clear() varrer, o que colidiria com o índice único (ProcessoSeletivoId, Ordem)
-        // no SaveChanges.
+        // a fase antiga — o guard já provou que é seguro remover a antiga. A reconciliação
+        // (Story #554/#893, PR-d, 4ª rodada) casa por FaseCanonicaOrigemId, não por Ordem:
+        // como o Id de origem mudou, é uma fase DIFERENTE ocupando o slot — a linha antiga
+        // é removida e uma nova é inserida (nunca retargeta o FaseCanonicaOrigemId de uma
+        // linha rastreada, o que causaria a dependência circular do achado da 4ª rodada).
         Guid idAntigo = fase.Id;
         Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.CronogramaFases.Should().ContainSingle(
-            f => f.Id == idAntigo,
-            "sem exigência viva referenciando a fase antiga, é seguro reusar a linha rastreada em vez de forçar delete+insert no mesmo slot único");
+        processo.CronogramaFases.Should().ContainSingle(f => f.Id != idAntigo, "é uma fase canônica diferente — remoção+inserção, não reconciliação");
         processo.CronogramaFases.Single().Codigo.Should().Be("ANALISE");
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 4ª rodada): permutação cíclica de Ordem entre 2 fases retidas é recusada — sem ordem de UPDATE que resolva a troca")]
+    public void DefinirCronogramaFases_PermutacaoCiclicaDeOrdemEntreDuasFases_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma faseA = Fase(1, "A");
+        FaseCronograma faseB = Fase(2, "B");
+        processo.DefinirCronogramaFases([faseA, faseB], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // A assume a Ordem de B e B assume a Ordem de A — um ciclo fechado de tamanho 2.
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(2, "A", faseA.FaseCanonicaOrigemId), Fase(1, "B", faseB.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue("um ciclo fechado não tem uma ordem de UPDATE que o resolva num único SaveChanges");
+        resultado.Error!.Code.Should().Be("FaseCronograma.PermutacaoDeOrdemNaoSuportada");
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 4ª rodada): permutação cíclica de Ordem entre 3 fases retidas é recusada")]
+    public void DefinirCronogramaFases_PermutacaoCiclicaDeOrdemEntreTresFases_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma faseA = Fase(1, "A");
+        FaseCronograma faseB = Fase(2, "B");
+        FaseCronograma faseC = Fase(3, "C");
+        processo.DefinirCronogramaFases([faseA, faseB, faseC], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // A -> Ordem de B, B -> Ordem de C, C -> Ordem de A: ciclo de tamanho 3.
+        Result resultado = processo.DefinirCronogramaFases(
+            [
+                Fase(2, "A", faseA.FaseCanonicaOrigemId),
+                Fase(3, "B", faseB.FaseCanonicaOrigemId),
+                Fase(1, "C", faseC.FaseCanonicaOrigemId),
+            ],
+            [],
+            PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FaseCronograma.PermutacaoDeOrdemNaoSuportada");
+    }
+
+    [Fact(DisplayName = "Contraprova: mover uma única fase retida para uma Ordem livre (nunca usada) é aceito — não é um ciclo")]
+    public void DefinirCronogramaFases_MoveUmaFaseParaOrdemLivre_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Guid idAntigo = fase.Id;
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(5, "INSCRICAO", fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CronogramaFases.Should().ContainSingle(f => f.Id == idAntigo, "a Ordem 5 nunca foi usada — não há ciclo, e a reconciliação por identidade preserva o Id");
+        processo.CronogramaFases.Single().Ordem.Should().Be(5);
+    }
+
+    [Fact(DisplayName = "Contraprova: inserir uma fase nova deslocando as demais (cadeia, não ciclo) é aceito")]
+    public void DefinirCronogramaFases_InsereFaseDeslocandoAsDemais_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma faseA = Fase(1, "A");
+        FaseCronograma faseB = Fase(2, "B");
+        processo.DefinirCronogramaFases([faseA, faseB], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // C é nova (Ordem 1); A desloca para 2; B desloca para 3 — uma CADEIA que termina
+        // numa Ordem livre (3), não um ciclo.
+        Result resultado = processo.DefinirCronogramaFases(
+            [
+                Fase(1, "C"),
+                Fase(2, "A", faseA.FaseCanonicaOrigemId),
+                Fase(3, "B", faseB.FaseCanonicaOrigemId),
+            ],
+            [],
+            PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CronogramaFases.Should().Contain(f => f.Id == faseA.Id && f.Ordem == 2);
+        processo.CronogramaFases.Should().Contain(f => f.Id == faseB.Id && f.Ordem == 3);
+        processo.CronogramaFases.Should().ContainSingle(f => f.Codigo == "C" && f.Ordem == 1);
     }
 
     [Fact(DisplayName = "CA-04: redefinir o cronograma removendo (Ordem que desaparece) uma fase referenciada por exigência viva é recusado")]
