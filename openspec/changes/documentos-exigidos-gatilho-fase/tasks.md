@@ -72,11 +72,11 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 
 **Issue:** #893 · **Branch:** `feature/893-idade-formato-tamanho` · **PR:** `Closes #893` + ref. #554
 
-- [ ] 5.1 VO `IdadeMaximaEmissao` (tudo-nulo OU completo; âncoras de fase exigem fase viva com extremo não-nulo; DATA_SUBMISSAO válido aqui)
-- [ ] 5.2 `FormatoPermitido` + `TamanhoMaximoBytes` congelados na exigência (TipoDocumento classificatório)
-- [ ] 5.3 Guards backward de fase (CA-04): recusar remoção de fase referenciada e retirada de PermiteComplementacao
-- [ ] 5.4 `TimeProvider` injetado (convenção de código; ADR-0068 proposed)
-- [ ] 5.5 Testes: idade parcial recusada; imutabilidade de formato/tamanho por chamada; guards de fase
+- [x] 5.1 VO `IdadeMaximaEmissao` (tudo-nulo OU completo; âncoras de fase exigem fase viva com extremo não-nulo; DATA_SUBMISSAO válido aqui)
+- [x] 5.2 `FormatoPermitido` + `TamanhoMaximoBytes` congelados na exigência (TipoDocumento classificatório)
+- [x] 5.3 Guards backward de fase (CA-04): recusar remoção de fase referenciada e retirada de PermiteComplementacao
+- [x] 5.4 `TimeProvider` injetado (convenção de código; ADR-0068 proposed)
+- [x] 5.5 Testes: idade parcial recusada; imutabilidade de formato/tamanho por chamada; guards de fase
 - [ ] 5.6 Gates locais + revisão Codex; abrir PR `Closes #893`; `/review-pr` até zero pendências; merge sequencial
 
 ## 6. PR-e — Bloco rico V12 + resolvedor puro + gate real

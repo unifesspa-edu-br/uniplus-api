@@ -195,7 +195,10 @@ public static class ObterProcessoSeletivoQueryHandler
         documento.ConsequenciaIndeferimento,
         documento.GrupoSatisfacaoId,
         [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjectCondicaoGatilho)],
-        [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjectBaseLegal)]);
+        [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjectBaseLegal)],
+        ProjectIdadeMaximaEmissao(documento.IdadeMaximaEmissao),
+        documento.FormatoPermitido?.ToCodigo(),
+        documento.TamanhoMaximoBytes);
 
     // Valor como texto JSON canônico (GetRawText) — o mesmo PUT que aceita este DTO de
     // volta (DefinirDocumentosExigidosCommandHandler.InterpretarValor) reparseia texto
@@ -206,6 +209,9 @@ public static class ObterProcessoSeletivoQueryHandler
         condicao.Fato,
         condicao.Operador.ToCodigo(),
         condicao.Valor.GetRawText());
+
+    private static IdadeMaximaEmissaoDto? ProjectIdadeMaximaEmissao(IdadeMaximaEmissao? idade) =>
+        idade is null ? null : new IdadeMaximaEmissaoDto(idade.Valor, idade.Unidade.ToCodigo(), idade.ReferenciaTipo.ToCodigo(), idade.Data, idade.ReferenciaFaseId);
 
     private static BaseLegalDto ProjectBaseLegal(DocumentoExigidoBaseLegal baseLegal) => new(
         baseLegal.Id,

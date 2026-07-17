@@ -24,6 +24,17 @@ public sealed record CondicaoGatilhoInput(int Clausula, string Fato, string Oper
 public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Status, string? Observacao);
 
 /// <summary>
+/// Entrada da idade máxima de emissão (Story #554, PR-d, issue #893), usada por
+/// <see cref="ItemDocumentoExigidoInput"/>. Tudo-nulo (os 5 campos) é a variante "regra
+/// ausente" — mesmo padrão do comando de <c>DefinirReferenciaTemporalFatos</c> (PR-b), mas
+/// aninhado por item em vez de flat no comando, porque aqui a regra é 1 por exigência, não
+/// 1 por processo. <see cref="Unidade"/>/<see cref="ReferenciaTipo"/> são tokens canônicos
+/// (<see cref="Domain.Enums.UnidadeIdadeCodigo"/>/<see cref="Domain.Enums.ReferenciaTipoIdadeEmissaoCodigo"/>).
+/// </summary>
+public sealed record IdadeMaximaEmissaoInput(
+    int? Valor, string? Unidade, string? ReferenciaTipo, DateOnly? Data, Guid? ReferenciaFaseId);
+
+/// <summary>
 /// Entrada de uma exigência documental, usada por
 /// <see cref="DefinirDocumentosExigidosCommand"/>. O handler resolve
 /// <see cref="TipoDocumentoId"/> contra o módulo Configuração e congela os
@@ -31,7 +42,9 @@ public sealed record BaseLegalInput(string Referencia, string Abrangencia, strin
 /// declara diretamente. <see cref="Condicoes"/> vazia é coerente com GERAL e com
 /// CONDICIONAL "exigida de ninguém" (CA-01). <see cref="BasesLegais"/> vazia é um estado
 /// válido na escrita — só vira pendência na publicação, quando a exigência determina
-/// resultado (PR-c, CA-02).
+/// resultado (PR-c, CA-02). <see cref="IdadeMaximaEmissao"/>/<see cref="FormatoPermitido"/>/
+/// <see cref="TamanhoMaximoBytes"/> (PR-d, issue #893) são aviso, não bloqueio de
+/// presença — congelados por chamada, sem gate de publicação.
 /// </summary>
 public sealed record ItemDocumentoExigidoInput(
     Guid ExigidoNaFaseId,
@@ -41,14 +54,17 @@ public sealed record ItemDocumentoExigidoInput(
     string? ConsequenciaIndeferimento,
     Guid? GrupoSatisfacaoId,
     IReadOnlyList<CondicaoGatilhoInput> Condicoes,
-    IReadOnlyList<BaseLegalInput> BasesLegais);
+    IReadOnlyList<BaseLegalInput> BasesLegais,
+    IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
+    string? FormatoPermitido,
+    int? TamanhoMaximoBytes);
 
 /// <summary>
 /// Substitui integralmente a coleção de documentos exigidos do processo (Story #554 —
 /// núcleo da PR-a: fase, snapshot-copy do tipo de documento, aplicabilidade GERAL/
 /// CONDICIONAL, obrigatoriedade, consequência de indeferimento e grupo de satisfação;
-/// gatilho DNF dinâmico/multivalorado da PR-b; base legal 1:N da PR-c). A idade/formato/
-/// tamanho (PR-d) chega em task-irmã.
+/// gatilho DNF dinâmico/multivalorado da PR-b; base legal 1:N da PR-c; idade de emissão/
+/// formato/tamanho da PR-d).
 /// </summary>
 public sealed record DefinirDocumentosExigidosCommand(
     Guid ProcessoSeletivoId,

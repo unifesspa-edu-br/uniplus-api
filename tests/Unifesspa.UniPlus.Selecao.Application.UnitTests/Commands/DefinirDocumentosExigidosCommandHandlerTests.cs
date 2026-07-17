@@ -46,6 +46,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             mocks.TipoDocumentoReader,
             mocks.FatoCandidatoReader,
             mocks.UnitOfWork,
+            TimeProvider.System,
             CancellationToken.None);
 
     private static TipoDocumentoView TipoDocumentoResultado(Guid id) =>
@@ -90,7 +91,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns((TipoDocumentoView?)null);
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, null, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -111,7 +112,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, null, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -137,7 +138,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]);
 
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, null, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -162,7 +163,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[]);
 
         CondicaoGatilhoInput condicao = new(0, "FATO_INEXISTENTE", "IGUAL", "\"X\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, null, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -187,7 +188,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]);
 
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE", "IGUAL", "\"LB_PPI\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], []);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, null, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -210,8 +211,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         BaseLegalInput baseFederal = new("Lei Federal X", "FEDERAL", "RESOLVIDO", null);
         BaseLegalInput baseEdital = new("Cláusula do edital", "INTERNA_EDITAL", "RESOLVIDO", null);
-        ItemDocumentoExigidoInput primeiraExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseFederal]);
-        ItemDocumentoExigidoInput segundaExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseEdital]);
+        ItemDocumentoExigidoInput primeiraExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseFederal], null, null, null);
+        ItemDocumentoExigidoInput segundaExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseEdital], null, null, null);
         DefinirDocumentosExigidosCommand command = new(processo.Id, [primeiraExigencia, segundaExigencia], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
@@ -222,5 +223,82 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         processo.DocumentosExigidos.Should().Contain(d => d.BasesLegais.Single().Referencia == "Cláusula do edital");
         processo.DocumentosExigidos.Select(d => d.Id).Should().OnlyHaveUniqueItems(
             "a correlação é pela identidade da própria exigência (ADR-0072), não pelo tipo de documento");
+    }
+
+    [Fact(DisplayName = "Story #554/issue #893 (PR-d): reenviar o PUT com FormatoPermitido/TamanhoMaximoBytes diferentes substitui integralmente (não faz merge)")]
+    public async Task Handle_ReenviarComFormatoETamanhoDiferentes_SubstituiIntegralmente()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+
+        ItemDocumentoExigidoInput primeiro = new(
+            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, "PDF", 5_000_000);
+        (await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [primeiro], PrecondicaoIfMatch.Ausente)))
+            .IsSuccess.Should().BeTrue();
+        processo.DocumentosExigidos.Single().FormatoPermitido.Should().Be(FormatoPermitido.Pdf);
+        processo.DocumentosExigidos.Single().TamanhoMaximoBytes.Should().Be(5_000_000);
+
+        ItemDocumentoExigidoInput segundo = new(
+            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, "JPEG", 2_000_000);
+        Result<MutacaoAceita> resultado = await HandleAsync(
+            mocks, new DefinirDocumentosExigidosCommand(processo.Id, [segundo], PrecondicaoIfMatch.Curinga));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        DocumentoExigido exigencia = processo.DocumentosExigidos.Should().ContainSingle().Which;
+        exigencia.FormatoPermitido.Should().Be(FormatoPermitido.Jpeg, "substituição integral, sem vestígio do valor anterior");
+        exigencia.TamanhoMaximoBytes.Should().Be(2_000_000);
+    }
+
+    [Fact(DisplayName = "CA-08: âncora de fase de IdadeMaximaEmissao que não pertence ao processo é recusada")]
+    public async Task Handle_IdadeMaximaEmissaoComFaseDeOutroProcesso_RetornaErroNomeado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+
+        IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, Guid.CreateVersion7());
+        ItemDocumentoExigidoInput item = new(
+            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], idade, null, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
+    }
+
+    [Fact(DisplayName = "CA-08: âncora de fase de IdadeMaximaEmissao sem o extremo definido é recusada")]
+    public async Task Handle_IdadeMaximaEmissaoComFaseSemExtremo_RetornaErroNomeado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+
+        // FaseQualquer() não tem Inicio/Fim definidos — FIM_FASE não tem extremo a apontar.
+        IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, fase.Id);
+        ItemDocumentoExigidoInput item = new(
+            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], idade, null, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
     }
 }

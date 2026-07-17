@@ -300,7 +300,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoExigido.CondicionalVaziaDeterminaResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.condicional_vazia_determina_resultado", "Exigência CONDICIONAL sem condição viva que determina resultado nunca seria cobrada de ninguém")),
         new("DocumentoExigido.TipoDocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado", "Tipo de documento não encontrado ou não está mais vivo")),
         new("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.exigencias_documentais_nao_materializadas", "Existem documentos exigidos configurados, mas o bloco de exigências do envelope ainda não foi materializado")),
-        new("FaseCronograma.ReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva", "O cronograma não pode ser redefinido enquanto existir documento exigido configurado")),
+        new("FaseCronograma.ReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva", "A fase removida do cronograma é referenciada por um documento exigido configurado")),
+        // Guards backward de fase (Story #554, PR-d, issue #893, CA-04) — complemento ao
+        // guard acima: retirar PermiteComplementacao de uma fase referenciada por
+        // exigência com consequência PENDENCIA_REENVIO.
+        new("FaseCronograma.PendenciaReenvioExigeComplementacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.pendencia_reenvio_exige_complementacao", "A fase não pode perder PermiteComplementacao — é referenciada por documento exigido com consequência PENDENCIA_REENVIO")),
         // Gatilho DNF (Story #554, PR-b, issue #892) — CondicaoGatilho sobre PredicadoDnf,
         // ReferenciaTemporalFatos e a validação de publicação sem fallback silencioso
         // (ADR-0111:235-236, B-03 do plano).
@@ -319,6 +323,18 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoExigidoBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
         new("DocumentoExigidoBaseLegal.AbrangenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido_base_legal.abrangencia_obrigatoria", "A abrangência da base legal é obrigatória")),
         new("DocumentoExigidoBaseLegal.StatusObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido_base_legal.status_obrigatorio", "O status da base legal é obrigatório")),
+        // Idade máxima de emissão + formato + tamanho (Story #554, PR-d, issue #893) —
+        // aviso, não bloqueio de presença (§1); coerência tudo-nulo OU completo do VO
+        // IdadeMaximaEmissao e a checagem eager de fase âncora (mesma família estrutural
+        // de ReferenciaTemporalFatos, PR-b, mas por exigência, não por processo).
+        new("DocumentoExigido.TamanhoMaximoBytesInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tamanho_maximo_bytes_invalido", "O tamanho máximo em bytes, quando presente, deve ser maior que zero")),
+        new("IdadeMaximaEmissao.CamposIncoerentesComAusencia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia", "Data e a fase âncora só são aceitas quando a idade máxima de emissão está definida")),
+        new("IdadeMaximaEmissao.CamposIncompletos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.campos_incompletos", "Valor, Unidade e ReferenciaTipo devem estar todos presentes, ou todos ausentes")),
+        new("IdadeMaximaEmissao.ValorInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.valor_invalido", "O valor da idade máxima de emissão deve ser maior que zero")),
+        new("IdadeMaximaEmissao.DataIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.data_incoerente_com_tipo", "A data só é aceita (e é exigida) quando o tipo é DATA_ESPECIFICA")),
+        new("IdadeMaximaEmissao.FaseIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo", "A fase âncora só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE")),
+        new("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo", "A fase âncora da idade máxima de emissão não pertence ao cronograma deste processo")),
+        new("IdadeMaximaEmissao.FaseExtremoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente", "A fase âncora da idade máxima de emissão não tem o extremo (início/fim) definido")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

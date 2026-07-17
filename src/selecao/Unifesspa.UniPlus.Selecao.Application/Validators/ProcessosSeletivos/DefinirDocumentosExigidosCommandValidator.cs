@@ -34,6 +34,14 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
     private const int ReferenciaBaseLegalMaxLength = 500;
     private const int ObservacaoBaseLegalMaxLength = 1000;
 
+    // Story #554/issue #893 (PR-d) — idade máxima de emissão, formato e tamanho.
+    private static readonly string[] UnidadesIdadeValidas = ["DIAS", "MESES", "ANOS"];
+
+    private static readonly string[] ReferenciaTiposIdadeEmissaoValidos =
+        ["FIM_INSCRICAO", "INICIO_FASE", "FIM_FASE", "DATA_ESPECIFICA", "DATA_SUBMISSAO"];
+
+    private static readonly string[] FormatosPermitidosValidos = ["PDF", "JPEG", "PNG"];
+
     public DefinirDocumentosExigidosCommandValidator()
     {
         RuleFor(x => x.ProcessoSeletivoId)
@@ -119,6 +127,34 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
                     .When(b => b.Observacao is not null)
                     .WithMessage($"A observação da base legal deve ter no máximo {ObservacaoBaseLegalMaxLength} caracteres.");
             });
+
+            // A coerência tudo-nulo OU completo (Valor/Unidade/ReferenciaTipo) é do
+            // domínio (IdadeMaximaEmissao.Criar) — aqui só a forma de cada campo NÃO
+            // NULO, mesmo espírito de DefinirReferenciaTemporalFatosCommandValidator (PR-b).
+            item.RuleFor(i => i.IdadeMaximaEmissao!.Valor)
+                .GreaterThan(0)
+                .When(i => i.IdadeMaximaEmissao?.Valor is not null)
+                .WithMessage("O valor da idade máxima de emissão deve ser maior que zero.");
+
+            item.RuleFor(i => i.IdadeMaximaEmissao!.Unidade)
+                .Must(valor => UnidadesIdadeValidas.Contains(valor, StringComparer.Ordinal))
+                .When(i => i.IdadeMaximaEmissao?.Unidade is not null)
+                .WithMessage($"Unidade da idade máxima de emissão deve ser um de: {string.Join(", ", UnidadesIdadeValidas)}.");
+
+            item.RuleFor(i => i.IdadeMaximaEmissao!.ReferenciaTipo)
+                .Must(valor => ReferenciaTiposIdadeEmissaoValidos.Contains(valor, StringComparer.Ordinal))
+                .When(i => i.IdadeMaximaEmissao?.ReferenciaTipo is not null)
+                .WithMessage($"ReferenciaTipo da idade máxima de emissão deve ser um de: {string.Join(", ", ReferenciaTiposIdadeEmissaoValidos)}.");
+
+            item.RuleFor(i => i.FormatoPermitido)
+                .Must(valor => FormatosPermitidosValidos.Contains(valor, StringComparer.Ordinal))
+                .When(i => i.FormatoPermitido is not null)
+                .WithMessage($"Formato permitido deve ser um de: {string.Join(", ", FormatosPermitidosValidos)}.");
+
+            item.RuleFor(i => i.TamanhoMaximoBytes)
+                .GreaterThan(0)
+                .When(i => i.TamanhoMaximoBytes is not null)
+                .WithMessage("O tamanho máximo em bytes, quando presente, deve ser maior que zero.");
         });
     }
 }

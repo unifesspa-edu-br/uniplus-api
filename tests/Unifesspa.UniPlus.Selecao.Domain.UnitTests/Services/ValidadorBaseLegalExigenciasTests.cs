@@ -28,7 +28,10 @@ public sealed class ValidadorBaseLegalExigenciasTests
             consequenciaIndeferimento: consequenciaIndeferimento,
             grupoSatisfacaoId: null,
             condicoes: [],
-            basesLegais: basesLegais).Value!;
+            basesLegais: basesLegais,
+            idadeMaximaEmissao: null,
+            formatoPermitido: null,
+            tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-03: processo sem exigência que determina resultado é trivialmente satisfeito (semântica vazia)")]
     public void TodasResolvidas_SemExigenciaQueDeterminaResultado_RetornaTrue()

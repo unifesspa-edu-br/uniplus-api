@@ -37,7 +37,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         bancasRequeridas: [],
         regraRecurso: null).Value!;
 
-    private static DocumentoExigido Exigencia(Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral) =>
+    private static DocumentoExigido Exigencia(
+        Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaIndeferimento = null) =>
         DocumentoExigido.Criar(
             exigidoNaFaseId,
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
@@ -45,10 +46,28 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             tipoDocumentoNome: "Documento de identidade",
             tipoDocumentoCategoria: "PESSOAL",
             aplicabilidade,
-            obrigatorio: false,
-            consequenciaIndeferimento: null,
+            obrigatorio: consequenciaIndeferimento is null,
+            consequenciaIndeferimento,
             grupoSatisfacaoId: null,
-            condicoes: [], basesLegais: []).Value!;
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+
+    private static FaseCronograma FaseComComplementacao(int ordem, string codigo, bool permiteComplementacao) => FaseCronograma.Criar(
+        ordem,
+        Guid.CreateVersion7(),
+        codigo,
+        "CEPS",
+        OrigemDataFase.Delegada,
+        agrupaEtapas: false,
+        permiteComplementacao: permiteComplementacao,
+        produzResultado: false,
+        resultadoDefinitivo: false,
+        coletaInscricao: false,
+        inicio: null,
+        fim: null,
+        atoProduzidoCodigo: null,
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
 
     [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
@@ -106,19 +125,38 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Id == segundaChamada.Id);
     }
 
-    [Fact(DisplayName = "CA-04 (guard parcial): redefinir o cronograma com exigência viva configurada é recusado")]
-    public void DefinirCronogramaFases_ComExigenciaViva_Recusa()
+    [Fact(DisplayName = "Story #554/issue #893 (PR-d): redefinir o cronograma preservando a Ordem de uma fase referenciada por exigência viva é aceito — reconciliação, não guard bruto")]
+    public void DefinirCronogramaFases_MesmaOrdemComExigenciaViva_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DocumentoExigido exigencia = Exigencia(fase.Id);
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Mesma Ordem (1), dados diferentes — o caso comum de uma sessão editorial que só
+        // ajusta datas: a reconciliação reusa a instância viva, preserva o Id, e a
+        // exigência continua referenciando uma fase que existe.
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO_REVISADA")], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CronogramaFases.Should().ContainSingle(f => f.Id == fase.Id, "a reconciliação por Ordem reusa a MESMA instância, preservando o Id");
+        processo.CronogramaFases.Single().Codigo.Should().Be("INSCRICAO_REVISADA");
+        exigencia.ExigidoNaFaseId.Should().Be(fase.Id, "a exigência nunca deixou de referenciar uma fase existente");
+    }
+
+    [Fact(DisplayName = "CA-04: redefinir o cronograma removendo (Ordem que desaparece) uma fase referenciada por exigência viva é recusado")]
+    public void DefinirCronogramaFases_RemoveOrdemReferenciadaPorExigenciaViva_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos([Exigencia(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente);
+        // Ordem 2 no lugar de Ordem 1 — a fase de Ordem 1 desaparece de fato.
+        Result resultado = processo.DefinirCronogramaFases([Fase(2, "INSCRICAO")], [], PrecondicaoIfMatch.Curinga);
 
-        resultado.IsFailure.Should().BeTrue(
-            "toda chamada aqui recria as fases com Id novo — sem a guarda, a FK Restrict de " +
-            "documentos_exigidos.exigido_na_fase_id estouraria DbUpdateException não tratada");
+        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
     }
 
@@ -128,7 +166,54 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "CA-04: retirar PermiteComplementacao de fase referenciada por exigência PENDENCIA_REENVIO é recusado")]
+    public void DefinirCronogramaFases_RetiraComplementacaoComPendenciaReenvio_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [Exigencia(fase.Id, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO")], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: false)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
+    }
+
+    [Fact(DisplayName = "Retirar PermiteComplementacao sem exigência PENDENCIA_REENVIO é aceito (contraprova)")]
+    public void DefinirCronogramaFases_RetiraComplementacaoSemPendenciaReenvio_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([Exigencia(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: false)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Manter PermiteComplementacao verdadeiro com exigência PENDENCIA_REENVIO é aceito (contraprova)")]
+    public void DefinirCronogramaFases_MantemComplementacaoComPendenciaReenvio_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [Exigencia(fase.Id, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO")], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true)], [], PrecondicaoIfMatch.Curinga);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -179,7 +264,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: []).Value!;
+            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], PrecondicaoIfMatch.Ausente);
@@ -199,7 +284,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: []).Value!;
+            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC", "LI_PPI")], PrecondicaoIfMatch.Ausente);
@@ -221,7 +306,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: []).Value!;
+            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirOfertaAtendimento(
@@ -245,7 +330,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: []).Value!;
+            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         OfertaCondicao condicaoPcdNova = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");

@@ -267,7 +267,7 @@ public sealed class ProcessoSeletivoPublicarTests
         obrigatorio: true,
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()]).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
         exigidoNaFaseId,
@@ -279,7 +279,7 @@ public sealed class ProcessoSeletivoPublicarTests
         obrigatorio: true,
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()]).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-01: publicar com exigência CONDICIONAL vazia obrigatória é bloqueado")]
     public void Publicar_CondicionalVaziaObrigatoria_Bloqueia()
@@ -338,7 +338,7 @@ public sealed class ProcessoSeletivoPublicarTests
             obrigatorio: true,
             consequenciaIndeferimento: null,
             grupoSatisfacaoId: null,
-            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()]).Value!;
+            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
     }
 
     [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase de outro processo é recusada")]
@@ -431,7 +431,7 @@ public sealed class ProcessoSeletivoPublicarTests
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
         condicoes: [],
-        basesLegais: basesLegais).Value!;
+        basesLegais: basesLegais, idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-02: AvaliarConformidade inclui o item 'Base legal das exigências documentais'")]
     public void AvaliarConformidade_IncluiItemBaseLegal()

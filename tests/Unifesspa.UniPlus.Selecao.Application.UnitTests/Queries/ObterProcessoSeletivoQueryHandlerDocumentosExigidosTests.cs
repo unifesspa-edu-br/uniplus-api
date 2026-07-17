@@ -41,7 +41,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, tipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL",
             aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [], basesLegais: []).Value!;
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -69,7 +69,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [condicaoEscalar, condicaoMultivalorada], basesLegais: []).Value!;
+            condicoes: [condicaoEscalar, condicaoMultivalorada], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -140,7 +140,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [], basesLegais: [baseResolvida, basePendente]).Value!;
+            condicoes: [], basesLegais: [baseResolvida, basePendente], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -160,5 +160,64 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         BaseLegalDto pendenteDto = projetado.BasesLegais.Should().ContainSingle(b => b.Status == "PENDENTE").Which;
         pendenteDto.Abrangencia.Should().Be("INTERNA_EDITAL");
         pendenteDto.Observacao.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Story #554/issue #893 (PR-d): projeta IdadeMaximaEmissao/FormatoPermitido/TamanhoMaximoBytes — round-trip GET→PUT")]
+    public async Task Handle_IdadeFormatoTamanho_EmiteTokensDeWire()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // DATA_SUBMISSAO — não exige fase âncora (nem extremo), diferente de INICIO_FASE/
+        // FIM_FASE; FaseQualquer() não declara Fim, então uma âncora de fase aqui
+        // reprovaria por IdadeMaximaEmissao.FaseExtremoAusente (coberto em teste próprio).
+        IdadeMaximaEmissao idade = IdadeMaximaEmissao.Criar(
+            90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.DataSubmissao, null, null).Value!;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL",
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [],
+            idadeMaximaEmissao: idade, formatoPermitido: FormatoPermitido.Pdf, tamanhoMaximoBytes: 5_000_000).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
+            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+
+        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
+        projetado.FormatoPermitido.Should().Be("PDF");
+        projetado.TamanhoMaximoBytes.Should().Be(5_000_000);
+        projetado.IdadeMaximaEmissao.Should().NotBeNull();
+        projetado.IdadeMaximaEmissao!.Valor.Should().Be(90);
+        projetado.IdadeMaximaEmissao.Unidade.Should().Be("DIAS");
+        projetado.IdadeMaximaEmissao.ReferenciaTipo.Should().Be("DATA_SUBMISSAO");
+        projetado.IdadeMaximaEmissao.ReferenciaFaseId.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Sem idade/formato/tamanho configurados, a projeção emite tudo null (contraprova)")]
+    public async Task Handle_SemIdadeFormatoTamanho_ProjetaNulo()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
+            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+
+        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
+        projetado.FormatoPermitido.Should().BeNull();
+        projetado.TamanhoMaximoBytes.Should().BeNull();
+        projetado.IdadeMaximaEmissao.Should().BeNull();
     }
 }

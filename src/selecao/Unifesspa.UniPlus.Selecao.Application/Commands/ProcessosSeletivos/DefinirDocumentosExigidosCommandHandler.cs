@@ -18,6 +18,12 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// (<c>IFatoCandidatoReader</c>, #846) estendido pelo domínio dinâmico da oferta do
 /// próprio processo (PR-b) — e delega a montagem/validação ao domínio.
 /// </summary>
+/// <remarks>
+/// <paramref name="clock"/> — Story #554, PR-d, issue #893 (ADR-0068 proposed): injetado
+/// por convenção do módulo, mesmo sem uso direto de "agora" nesta task — a avaliação em
+/// runtime da idade máxima de emissão (<c>IdadeMaximaEmissao</c>) é fora de escopo desta
+/// Story; este handler não abre exceção isolada à convenção só por não usá-lo ainda.
+/// </remarks>
 public static class DefinirDocumentosExigidosCommandHandler
 {
     public static async Task<Result<MutacaoAceita>> Handle(
@@ -26,6 +32,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         ITipoDocumentoReader tipoDocumentoReader,
         IFatoCandidatoReader fatoCandidatoReader,
         ISelecaoUnitOfWork unitOfWork,
+        TimeProvider clock,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -33,6 +40,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(clock);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
@@ -94,6 +102,18 @@ public static class DefinirDocumentosExigidosCommandHandler
                 return Result<MutacaoAceita>.Failure(basesLegaisResult.Error!);
             }
 
+            IdadeMaximaEmissaoInput? idade = input.IdadeMaximaEmissao;
+            Result<IdadeMaximaEmissao?> idadeMaximaEmissaoResult = IdadeMaximaEmissao.Criar(
+                idade?.Valor,
+                UnidadeIdadeCodigo.FromCodigo(idade?.Unidade),
+                ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(idade?.ReferenciaTipo),
+                idade?.Data,
+                idade?.ReferenciaFaseId);
+            if (idadeMaximaEmissaoResult.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(idadeMaximaEmissaoResult.Error!);
+            }
+
             Result<DocumentoExigido> itemResult = DocumentoExigido.Criar(
                 input.ExigidoNaFaseId,
                 tipoDocumento.Id,
@@ -105,7 +125,10 @@ public static class DefinirDocumentosExigidosCommandHandler
                 input.ConsequenciaIndeferimento,
                 input.GrupoSatisfacaoId,
                 condicoesResult.Value!,
-                basesLegaisResult.Value!);
+                basesLegaisResult.Value!,
+                idadeMaximaEmissaoResult.Value,
+                FormatoPermitidoCodigo.FromCodigo(input.FormatoPermitido),
+                input.TamanhoMaximoBytes);
             if (itemResult.IsFailure)
             {
                 return Result<MutacaoAceita>.Failure(itemResult.Error!);

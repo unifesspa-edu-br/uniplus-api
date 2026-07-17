@@ -17,7 +17,17 @@ public sealed record DocumentoExigidoDto(
     string? ConsequenciaIndeferimento,
     Guid? GrupoSatisfacaoId,
     IReadOnlyList<CondicaoGatilhoDto> Condicoes,
-    IReadOnlyList<BaseLegalDto> BasesLegais);
+    IReadOnlyList<BaseLegalDto> BasesLegais,
+    IdadeMaximaEmissaoDto? IdadeMaximaEmissao,
+    string? FormatoPermitido,
+    int? TamanhoMaximoBytes);
+
+/// <summary>
+/// DTO de leitura de <see cref="Domain.ValueObjects.IdadeMaximaEmissao"/> (Story #554,
+/// PR-d, issue #893). Mesmo formato flat de <c>IdadeMaximaEmissaoInput</c> (comando de
+/// escrita) — round-trip GET→PUT direto.
+/// </summary>
+public sealed record IdadeMaximaEmissaoDto(int Valor, string Unidade, string ReferenciaTipo, DateOnly? Data, Guid? ReferenciaFaseId);
 
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.CondicaoGatilho"/> (Story #554, PR-b,

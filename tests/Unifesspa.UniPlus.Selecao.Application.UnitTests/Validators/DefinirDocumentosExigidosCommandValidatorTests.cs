@@ -16,7 +16,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class DefinirDocumentosExigidosCommandValidatorTests
 {
     private static ItemDocumentoExigidoInput ItemCom(params BaseLegalInput[] basesLegais) => new(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], basesLegais);
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], basesLegais, null, null, null);
+
+    private static ItemDocumentoExigidoInput ItemComIdade(
+        IdadeMaximaEmissaoInput? idadeMaximaEmissao = null, string? formatoPermitido = null, int? tamanhoMaximoBytes = null) => new(
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [], idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes);
 
     private static ValidationResult Validar(ItemDocumentoExigidoInput item) =>
         new DefinirDocumentosExigidosCommandValidator().Validate(
@@ -104,7 +108,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     public void Rejeita_ItemDeBaseLegalNulo()
     {
         ItemDocumentoExigidoInput item = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [null!]);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [null!], null, null, null);
 
         ValidationResult resultado = Validar(item);
 
@@ -118,4 +122,78 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
             new BaseLegalInput("Lei Federal X", "FEDERAL", "RESOLVIDO", null),
             new BaseLegalInput("Cláusula do edital", "INTERNA_EDITAL", "PENDENTE", null)))
             .IsValid.Should().BeTrue();
+
+    // ── Story #554/issue #893 (PR-d) — idade máxima de emissão, formato e tamanho ──
+
+    [Fact(DisplayName = "Item sem idade/formato/tamanho (tudo nulo) é aceito")]
+    public void Aceita_SemIdadeFormatoTamanho() =>
+        Validar(ItemComIdade()).IsValid.Should().BeTrue();
+
+    [Fact(DisplayName = "IdadeMaximaEmissao com Unidade fora do domínio é rejeitada")]
+    public void Rejeita_UnidadeDesconhecida()
+    {
+        IdadeMaximaEmissaoInput idade = new(90, "SEMANAS", "DATA_SUBMISSAO", null, null);
+
+        ValidationResult resultado = Validar(ItemComIdade(idade));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Unidade", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "IdadeMaximaEmissao com ReferenciaTipo fora do domínio é rejeitada")]
+    public void Rejeita_ReferenciaTipoDesconhecido()
+    {
+        IdadeMaximaEmissaoInput idade = new(90, "DIAS", "DATA_DE_HOJE", null, null);
+
+        ValidationResult resultado = Validar(ItemComIdade(idade));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("ReferenciaTipo", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "IdadeMaximaEmissao com Valor zero ou negativo é rejeitada")]
+    public void Rejeita_ValorNaoPositivo()
+    {
+        IdadeMaximaEmissaoInput idade = new(0, "DIAS", "DATA_SUBMISSAO", null, null);
+
+        Validar(ItemComIdade(idade)).IsValid.Should().BeFalse();
+    }
+
+    [Theory(DisplayName = "Todas as unidades e tipos de referência válidos são aceitos (forma)")]
+    [InlineData("DIAS", "FIM_INSCRICAO")]
+    [InlineData("MESES", "DATA_SUBMISSAO")]
+    [InlineData("ANOS", "DATA_SUBMISSAO")]
+    public void Aceita_TodasCombinacoesValidasDeIdade(string unidade, string referenciaTipo)
+    {
+        IdadeMaximaEmissaoInput idade = new(90, unidade, referenciaTipo, null, null);
+
+        Validar(ItemComIdade(idade)).IsValid.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "FormatoPermitido fora do domínio é rejeitado")]
+    public void Rejeita_FormatoDesconhecido()
+    {
+        ValidationResult resultado = Validar(ItemComIdade(formatoPermitido: "DOCX"));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Formato", StringComparison.Ordinal));
+    }
+
+    [Theory(DisplayName = "Todos os formatos válidos são aceitos")]
+    [InlineData("PDF")]
+    [InlineData("JPEG")]
+    [InlineData("PNG")]
+    public void Aceita_TodosFormatosValidos(string formato) =>
+        Validar(ItemComIdade(formatoPermitido: formato)).IsValid.Should().BeTrue();
+
+    [Fact(DisplayName = "TamanhoMaximoBytes zero ou negativo é rejeitado")]
+    public void Rejeita_TamanhoMaximoBytesNaoPositivo()
+    {
+        Validar(ItemComIdade(tamanhoMaximoBytes: 0)).IsValid.Should().BeFalse();
+        Validar(ItemComIdade(tamanhoMaximoBytes: -1)).IsValid.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "TamanhoMaximoBytes positivo é aceito")]
+    public void Aceita_TamanhoMaximoBytesPositivo() =>
+        Validar(ItemComIdade(tamanhoMaximoBytes: 5_000_000)).IsValid.Should().BeTrue();
 }
