@@ -745,6 +745,28 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    [Fact(DisplayName = "CA-05: RECLASSIFICA_AC (vocabulário de DocumentoExigido) é coerente com RECLASSIFICAR_AC (vocabulário real de ModalidadeSelecionada.AcaoQuandoIndeferido) — achado de revisão da PR #903")]
+    public void Publicar_ReclassificaAcComAcaoRealReclassificarAc_Aceita()
+    {
+        // DocumentoExigido.ConsequenciaIndeferimento aceita "RECLASSIFICA_AC" (rol fechado
+        // desde a PR-a), mas ModalidadeSelecionada.AcaoQuandoIndeferido — snapshot-copy do
+        // cadastro real de Modalidade — só aceita "RECLASSIFICAR_AC"/"RECLASSIFICAR_REGRA_EDITAL"
+        // (ck_modalidade_acao_quando_indeferido, módulo Configuração). Comparar os tokens
+        // crus sempre reprovaria o único caso de reclassificação coerente que existe.
+        ModalidadeSelecionada ppi = NovaModalidadeComAcao(
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICAR_AC");
+        ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RECLASSIFICA_AC")],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
     // ── Story #554/issue #549 (PR-c) — base legal 1:N, 5º item de AvaliarConformidade ──
 
     private static DocumentoExigidoBaseLegal BaseLegalDe(StatusBaseLegal status) => DocumentoExigidoBaseLegal.Criar(

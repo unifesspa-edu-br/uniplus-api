@@ -1080,20 +1080,34 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"A exigência '{exigencia.TipoDocumentoCodigo}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
             }
 
-            foreach (ModalidadeSelecionada modalidade in ModalidadesAlcancadasPor(exigencia))
+            string consequenciaComoAcaoDaVaga = NormalizarConsequenciaParaAcaoDaVaga(consequencia);
+            ModalidadeSelecionada? modalidadeIncoerente = ModalidadesAlcancadasPor(exigencia)
+                .FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
+                    && !string.Equals(acao, consequenciaComoAcaoDaVaga, StringComparison.Ordinal));
+            if (modalidadeIncoerente is not null)
             {
-                if (modalidade.AcaoQuandoIndeferido is { } acao
-                    && !string.Equals(acao, consequencia, StringComparison.Ordinal))
-                {
-                    return new DomainError(
-                        "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
-                        $"A exigência '{exigencia.TipoDocumentoCodigo}' declara consequência '{consequencia}', incoerente com a ação de indeferimento '{acao}' configurada para a modalidade '{modalidade.Codigo}'.");
-                }
+                return new DomainError(
+                    "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
+                    $"A exigência '{exigencia.TipoDocumentoCodigo}' declara consequência '{consequencia}', incoerente com a ação de indeferimento '{modalidadeIncoerente.AcaoQuandoIndeferido}' configurada para a modalidade '{modalidadeIncoerente.Codigo}'.");
             }
         }
 
         return null;
     }
+
+    /// <summary>
+    /// Ponte entre os dois vocabulários fechados de "ação de indeferimento" — Story #554
+    /// (PR-e), achado de revisão: <see cref="DocumentoExigido.ConsequenciaIndeferimento"/>
+    /// usa <c>RECLASSIFICA_AC</c> (rol fechado desde a PR-a, issue #547), mas
+    /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/> — snapshot-copy do cadastro
+    /// de <c>Modalidade</c> no módulo Configuração
+    /// (<c>ck_modalidade_acao_quando_indeferido</c>) — usa <c>RECLASSIFICAR_AC</c>. É o
+    /// MESMO conceito com grafias diferentes, nunca unificadas entre os dois módulos;
+    /// comparar os tokens crus reprovaria sempre o único caso de reclassificação
+    /// realmente coerente que existe.
+    /// </summary>
+    private static string NormalizarConsequenciaParaAcaoDaVaga(string consequencia) =>
+        consequencia == "RECLASSIFICA_AC" ? "RECLASSIFICAR_AC" : consequencia;
 
     /// <summary>
     /// Modalidades ofertadas cuja aplicabilidade da exigência cobre — mesmo fato sintético
