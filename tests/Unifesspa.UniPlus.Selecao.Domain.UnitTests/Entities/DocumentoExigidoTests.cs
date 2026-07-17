@@ -98,4 +98,13 @@ public sealed class DocumentoExigidoTests
     [Fact(DisplayName = "DeterminaResultado: facultativa e sem consequência não determina resultado (contraprova)")]
     public void DeterminaResultado_FacultativaSemConsequencia_RetornaFalse() =>
         Exigencia().Value!.DeterminaResultado().Should().BeFalse();
+
+    [Fact(DisplayName = "Consequência composta só de espaços é normalizada para null (não determina resultado)")]
+    public void Criar_ConsequenciaSoDeEspacos_NormalizaParaNull()
+    {
+        DocumentoExigido exigencia = Exigencia(consequenciaIndeferimento: "   ").Value!;
+
+        exigencia.ConsequenciaIndeferimento.Should().BeNull();
+        exigencia.DeterminaResultado().Should().BeFalse();
+    }
 }

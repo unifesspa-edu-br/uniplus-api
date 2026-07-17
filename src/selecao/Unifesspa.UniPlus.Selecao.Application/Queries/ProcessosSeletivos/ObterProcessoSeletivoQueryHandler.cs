@@ -40,6 +40,7 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.CriteriosDesempate.OrderBy(c => c.Ordem).Select(ProjectCriterioDesempate)],
         ProjectClassificacao(processo),
         [.. processo.CronogramaFases.OrderBy(f => f.Ordem).ThenBy(f => f.Id).Select(ProjectFaseCronograma)],
+        [.. processo.DocumentosExigidos.OrderBy(d => d.Id).Select(ProjectDocumentoExigido)],
         processo.CreatedAt);
 
     private static OfertaAtendimentoEspecializadoDto? ProjectOfertaAtendimento(OfertaAtendimentoEspecializado? oferta)
@@ -174,6 +175,17 @@ public static class ObterProcessoSeletivoQueryHandler
         fase.AtoProduzidoEfeitoIrreversivel,
         [.. fase.BancasRequeridas.Select(static b => new BancaRequeridaDto(b.Id, b.TipoBancaOrigemId, b.Codigo))],
         fase.RegraRecurso is { } regraRecurso ? ProjectRegraRecursoFase(regraRecurso) : null);
+
+    private static DocumentoExigidoDto ProjectDocumentoExigido(DocumentoExigido documento) => new(
+        documento.Id,
+        documento.ExigidoNaFaseId,
+        documento.TipoDocumentoCodigo,
+        documento.TipoDocumentoNome,
+        documento.TipoDocumentoCategoria,
+        documento.Aplicabilidade.ToString(),
+        documento.Obrigatorio,
+        documento.ConsequenciaIndeferimento,
+        documento.GrupoSatisfacaoId);
 
     private static RegraRecursoFaseDto ProjectRegraRecursoFase(RegraRecursoFase regraRecurso) => new(
         regraRecurso.Id,

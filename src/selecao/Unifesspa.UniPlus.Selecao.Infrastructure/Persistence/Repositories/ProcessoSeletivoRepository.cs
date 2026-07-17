@@ -101,6 +101,12 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // regra de recurso 1:1) somadas às já existentes.
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
+            // Documentos exigidos (Story #554, issue #547, PR-a) — sem o Include, a
+            // coleção tracked nasce vazia em todo carregamento novo do agregado:
+            // DefinirDocumentosExigidos faria Clear() num backing list já vazio (linhas
+            // antigas sobrevivem no banco, PUT acumula) e a guarda B-01/CA-01 sempre
+            // veria zero exigências.
+            .Include(p => p.DocumentosExigidos)
             // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
             // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
             // modalidades × desempate × eliminação × fases × bancas) num único JOIN

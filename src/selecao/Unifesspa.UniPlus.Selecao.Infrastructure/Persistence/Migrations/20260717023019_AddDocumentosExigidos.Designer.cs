@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260717020758_AddDocumentosExigidos")]
+    [Migration("20260717023019_AddDocumentosExigidos")]
     partial class AddDocumentosExigidos
     {
         /// <inheritdoc />
@@ -422,8 +422,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("TipoDocumentoNome")
                         .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("tipo_documento_nome");
 
                     b.Property<Guid>("TipoDocumentoOrigemId")
@@ -1959,6 +1959,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>
                 {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.FaseCronograma", null)
+                        .WithMany()
+                        .HasForeignKey("ExigidoNaFaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_documentos_exigidos_fases_cronograma_exigido_na_fase_id");
+
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
                         .WithMany("DocumentosExigidos")
                         .HasForeignKey("ProcessoSeletivoId")
