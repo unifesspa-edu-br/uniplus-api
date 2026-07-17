@@ -1174,8 +1174,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
         else if (referencia.Tipo == ReferenciaTipo.FimInscricao)
         {
-            FaseCronograma? faseInscricao = _cronogramaFases.FirstOrDefault(static f => f.ColetaInscricao);
-            if (faseInscricao?.Fim is null)
+            // Achado de revisão (Story #554, PR #903): nada no domínio impede MAIS de uma
+            // fase com ColetaInscricao (mesma família de guard já corrigida para
+            // IdadeMaximaEmissao, PR #900) — FirstOrDefault pegava a primeira, mesmo que
+            // outra (com Fim definido) resolvesse a referência. A pergunta certa é
+            // existencial (Any), não posicional.
+            if (!_cronogramaFases.Any(static f => f.ColetaInscricao && f.Fim is not null))
             {
                 return new DomainError(
                     "ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel",
@@ -1225,7 +1229,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             ReferenciaTipo.InicioFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Inicio,
             ReferenciaTipo.FimFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Fim,
-            ReferenciaTipo.FimInscricao => _cronogramaFases.FirstOrDefault(static f => f.ColetaInscricao)?.Fim,
+            ReferenciaTipo.FimInscricao => _cronogramaFases.FirstOrDefault(static f => f.ColetaInscricao && f.Fim is not null)?.Fim,
             _ => throw new InvalidOperationException($"Tipo de ReferenciaTemporalFatos não reconhecido: {referencia.Tipo}."),
         };
 
