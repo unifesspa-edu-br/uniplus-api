@@ -745,6 +745,50 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    private static DocumentoExigido ExigenciaCondicionalPorFaixaEtariaComConsequencia(
+        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria,
+        string consequenciaIndeferimento) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: tipoDocumentoCodigo,
+            tipoDocumentoNome: tipoDocumentoNome,
+            tipoDocumentoCategoria: tipoDocumentoCategoria,
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: false,
+            consequenciaIndeferimento: consequenciaIndeferimento,
+            grupoSatisfacaoId: null,
+            condicoes: [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!],
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+
+    [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICAR_AC — achado de revisão da PR #903")]
+    public void Publicar_GatilhoPorFaixaEtariaSemCondicaoDeModalidadeElimina_IncoerenteComAcaoDaModalidade()
+    {
+        // O gatilho desta exigência é inteiramente sobre FAIXA_ETARIA — nenhuma condição
+        // sobre MODALIDADE. Antes da correção, ModalidadesAlcancadasPor avaliava o gatilho
+        // com um dicionário de fatos só com MODALIDADE; a condição de FAIXA_ETARIA (fato
+        // ausente) avaliava como falsa (PredicadoDnf.Avaliar), reprovando a cláusula
+        // inteira e escondendo QUALQUER modalidade do gate CA-05 — publicaria incoerente.
+        ModalidadeSelecionada ppi = NovaModalidadeComAcao(
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICAR_AC");
+        ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorFaixaEtariaComConsequencia(faseId, "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", "ELIMINA")],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue(
+            "um gatilho sem NENHUMA condição de MODALIDADE não isenta a exigência do CA-05 — ela alcança " +
+            "candidatos de qualquer modalidade, inclusive a PPI incoerente");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
+    }
+
     [Fact(DisplayName = "CA-05: RECLASSIFICA_AC (vocabulário de DocumentoExigido) é coerente com RECLASSIFICAR_AC (vocabulário real de ModalidadeSelecionada.AcaoQuandoIndeferido) — achado de revisão da PR #903")]
     public void Publicar_ReclassificaAcComAcaoRealReclassificarAc_Aceita()
     {
