@@ -585,12 +585,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // fase REMOVIDA (que libera a linha via DELETE) não é um ciclo — só o é quando a
         // cadeia volta a uma fase já visitada NA MESMA caminhada.
         Dictionary<int, Guid> origemAntigaPorOrdem = [];
-        foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values)
+        foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values.Where(f => fasesNovasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId)))
         {
-            if (fasesNovasPorOrigem.ContainsKey(antiga.FaseCanonicaOrigemId))
-            {
-                origemAntigaPorOrdem[antiga.Ordem] = antiga.FaseCanonicaOrigemId;
-            }
+            origemAntigaPorOrdem[antiga.Ordem] = antiga.FaseCanonicaOrigemId;
         }
 
         Dictionary<Guid, int> estadoDoNo = []; // 1 = na caminhada atual, 2 = concluído sem ciclo
