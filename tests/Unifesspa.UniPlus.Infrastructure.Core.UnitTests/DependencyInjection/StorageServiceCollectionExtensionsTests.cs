@@ -59,13 +59,13 @@ public sealed class StorageServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddUniPlusStorage_ConfigCompleta_ResolveIMinioClient()
+    public void AddUniPlusStorage_ConfigCompleta_ResolveIMinioClientInterno()
     {
         ServiceCollection services = new();
         services.AddUniPlusStorage(BuildConfig(CompleteConfig()), Env(Environments.Production));
 
         using ServiceProvider sp = services.BuildServiceProvider();
-        IMinioClient client = sp.GetRequiredService<IMinioClient>();
+        IMinioClient client = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
 
         client.Should().NotBeNull();
     }
@@ -84,16 +84,84 @@ public sealed class StorageServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddUniPlusStorage_IMinioClient_DeveSerSingleton()
+    public void AddUniPlusStorage_IMinioClientInterno_DeveSerSingleton()
     {
         ServiceCollection services = new();
         services.AddUniPlusStorage(BuildConfig(CompleteConfig()), Env(Environments.Production));
 
         using ServiceProvider sp = services.BuildServiceProvider();
-        IMinioClient first = sp.GetRequiredService<IMinioClient>();
-        IMinioClient second = sp.GetRequiredService<IMinioClient>();
+        IMinioClient first = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
+        IMinioClient second = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
 
         second.Should().BeSameAs(first);
+    }
+
+    /// <summary>
+    /// Achado de revisão (smoke test manual via Newman, Story #554): quando
+    /// <c>Storage:Endpoint</c> ≠ <c>Storage:PublicEndpoint</c>, <see cref="MinioStorageService"/>
+    /// tinha DOIS parâmetros de construtor do tipo <see cref="IMinioClient"/> — um "ambient"
+    /// (sem chave, resolvido pelo registro <c>AddSingleton</c> não-keyed) e um explicitamente
+    /// keyed via <c>[FromKeyedServices]</c>. O container de DI injetava a instância KEYED nos
+    /// DOIS parâmetros — reproduzido de forma determinística contra o stack real (upload de
+    /// documento do Edital falhava com <c>Connection refused</c> porque o cliente "interno"
+    /// acabava usando o endpoint público). Registrar os dois clientes como keyed (nenhum
+    /// consumidor injeta mais um <see cref="IMinioClient"/> "sem chave") elimina a ambiguidade.
+    /// Este teste prova que os dois clientes resolvidos por chave são instâncias DISTINTAS,
+    /// cada uma com o endpoint correto — a regressão apareceria como as duas instâncias
+    /// colapsando na mesma (<c>BeSameAs</c>) ou com o endpoint interno errado.
+    /// </summary>
+    [Fact]
+    public void AddUniPlusStorage_EndpointDiferenteDePublicEndpoint_ClientesInternoEPublicoSaoDistintosComEndpointCorreto()
+    {
+        Dictionary<string, string?> values = new(CompleteConfig())
+        {
+            ["Storage:PublicEndpoint"] = "localhost:9000",
+        };
+
+        ServiceCollection services = new();
+        services.AddUniPlusStorage(BuildConfig(values), Env(Environments.Production));
+
+        using ServiceProvider sp = services.BuildServiceProvider();
+        IMinioClient interno = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
+        IMinioClient publico = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StoragePublicClientKey);
+
+        publico.Should().NotBeSameAs(interno,
+            "Endpoint (minio:9000) e PublicEndpoint (localhost:9000) divergem — devem ser instâncias " +
+            "de MinioClient distintas, cada uma assinando com o próprio host");
+        interno.Config.BaseUrl.Should().Be("minio:9000",
+            "o cliente interno precisa continuar usando Storage:Endpoint mesmo quando o público existe");
+        publico.Config.BaseUrl.Should().Be("localhost:9000");
+    }
+
+    /// <summary>
+    /// Regressão direta do bug: resolve <see cref="MinioStorageService"/> por inteiro (o
+    /// consumidor real com os dois parâmetros <see cref="IMinioClient"/> no construtor) e prova
+    /// que cada campo interno aponta para o cliente com o endpoint certo — não apenas que os
+    /// dois registros keyed, isolados, estão corretos.
+    /// </summary>
+    [Fact]
+    public void AddUniPlusStorage_MinioStorageService_RecebeClienteInternoEPublicoCorretos()
+    {
+        Dictionary<string, string?> values = new(CompleteConfig())
+        {
+            ["Storage:PublicEndpoint"] = "localhost:9000",
+            ["Storage:BucketName"] = "uniplus-documentos",
+        };
+
+        ServiceCollection services = new();
+        services.AddUniPlusStorage(BuildConfig(values), Env(Environments.Production));
+
+        using ServiceProvider sp = services.BuildServiceProvider();
+        using IServiceScope scope = sp.CreateScope();
+        MinioStorageService storage = (MinioStorageService)scope.ServiceProvider.GetRequiredService<IStorageService>();
+
+        IMinioClient internoEsperado = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
+        IMinioClient publicoEsperado = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StoragePublicClientKey);
+
+        typeof(MinioStorageService).GetField("_minioClient", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(storage).Should().BeSameAs(internoEsperado);
+        typeof(MinioStorageService).GetField("_presignClient", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(storage).Should().BeSameAs(publicoEsperado);
     }
 
     [Fact]

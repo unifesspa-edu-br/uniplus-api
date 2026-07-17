@@ -72,7 +72,18 @@ public static class StorageServiceCollectionExtensions
                 "Storage:PublicEndpoint must be host:port without scheme — control HTTPS via Storage:PublicUseSSL.")
             .ValidateOnStart();
 
-        services.AddSingleton<IMinioClient>(sp =>
+        // Ambos os clientes são registrados KEYED — inclusive o interno, que não tem
+        // motivo funcional para ser keyed sozinho. Achado de revisão (smoke test manual
+        // via Newman, Story #554): um consumidor com DOIS parâmetros de construtor do
+        // MESMO tipo (IMinioClient), um deles keyed via [FromKeyedServices] e o outro
+        // "ambient" (sem atributo, resolvido pelo registro AddSingleton<IMinioClient>
+        // não-keyed), faz o container de DI (Microsoft.Extensions.DependencyInjection)
+        // injetar a instância KEYED nos dois parâmetros — reproduzido de forma
+        // determinística (log de diagnóstico mostrou os dois campos com o mesmo
+        // GetHashCode(), sempre a instância "storage-public"). Nomear os dois registros
+        // evita a ambiguidade na raiz: nenhum consumidor injeta mais um IMinioClient
+        // "sem chave" que possa ser confundido com o keyed.
+        services.AddKeyedSingleton<IMinioClient>(StorageInternalClientKey, (sp, _) =>
         {
             StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
             return BuildClient(opts, opts.Endpoint, opts.UseSSL);
@@ -93,7 +104,7 @@ public static class StorageServiceCollectionExtensions
             bool sslIgual = opts.PublicUseSSL is null || opts.PublicUseSSL == opts.UseSSL;
             if (endpointIgual && sslIgual)
             {
-                return sp.GetRequiredService<IMinioClient>();
+                return sp.GetRequiredKeyedService<IMinioClient>(StorageInternalClientKey);
             }
 
             string endpointResolvido = string.IsNullOrWhiteSpace(opts.PublicEndpoint) ? opts.Endpoint : opts.PublicEndpoint;
@@ -111,6 +122,15 @@ public static class StorageServiceCollectionExtensions
 
     /// <summary>Chave do <see cref="IMinioClient"/> keyed usado para assinar URLs devolvidas a clientes externos.</summary>
     public const string StoragePublicClientKey = "storage-public";
+
+    /// <summary>
+    /// Chave do <see cref="IMinioClient"/> keyed usado para chamadas internas (dentro da rede
+    /// Docker/cluster) — <c>Storage:Endpoint</c>. Keyed mesmo sendo o único consumidor "normal"
+    /// porque um consumidor com este e o <see cref="StoragePublicClientKey"/> como dois
+    /// parâmetros de construtor do mesmo tipo IMinioClient precisa que AMBOS sejam
+    /// inequivocamente identificados — ver a nota em <see cref="AddUniPlusStorage"/>.
+    /// </summary>
+    public const string StorageInternalClientKey = "storage-internal";
 
     [SuppressMessage(
         "Reliability",
