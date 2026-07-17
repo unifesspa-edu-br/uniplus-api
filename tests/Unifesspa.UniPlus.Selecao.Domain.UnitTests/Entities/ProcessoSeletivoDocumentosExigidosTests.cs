@@ -218,6 +218,101 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    // ── Story #554/issue #893 (achado Codex P2, PR #900) — IdadeMaximaEmissao.ReferenciaFaseId ──
+
+    private static FaseCronograma FaseComExtremo(int ordem, string codigo, DateTimeOffset? inicio, DateTimeOffset? fim) => FaseCronograma.Criar(
+        ordem,
+        Guid.CreateVersion7(),
+        codigo,
+        "CEPS",
+        OrigemDataFase.Delegada,
+        agrupaEtapas: false,
+        permiteComplementacao: false,
+        produzResultado: false,
+        resultadoDefinitivo: false,
+        coletaInscricao: false,
+        inicio: inicio,
+        fim: fim,
+        atoProduzidoCodigo: null,
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
+
+    private static DocumentoExigido ExigenciaComIdadeAncoradaEmFase(
+        Guid exigidoNaFaseId, Guid referenciaFaseId, ReferenciaTipoIdadeEmissao referenciaTipo)
+    {
+        IdadeMaximaEmissao idade = IdadeMaximaEmissao.Criar(90, UnidadeIdade.Dias, referenciaTipo, null, referenciaFaseId).Value!;
+        return DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
+            tipoDocumentoNome: "Comprovante de residência",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: idade, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900): remover fase usada só como âncora de IdadeMaximaEmissao (não ExigidoNaFaseId) é recusado")]
+    public void DefinirCronogramaFases_RemoveFaseAncoraDeIdade_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma faseExigencia = Fase(1, "INSCRICAO");
+        FaseCronograma faseAncora = FaseComExtremo(2, "ANALISE", inicio: null, fim: fim);
+        processo.DefinirCronogramaFases([faseExigencia, faseAncora], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaComIdadeAncoradaEmFase(faseExigencia.Id, faseAncora.Id, ReferenciaTipoIdadeEmissao.FimFase)],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Ordem 2 (faseAncora) desaparece — só a Ordem 1 (faseExigencia, referenciada por
+        // ExigidoNaFaseId) é mantida.
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue(
+            "faseAncora não é a fase de ExigidoNaFaseId, mas é a âncora de IdadeMaximaEmissao.ReferenciaFaseId");
+        resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900): fase sobrevivente que perde o extremo usado como âncora de idade é recusado")]
+    public void DefinirCronogramaFases_FaseSobreviventePerdeExtremoAncoraDeIdade_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma fase = FaseComExtremo(1, "ANALISE", inicio: null, fim: fim);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaComIdadeAncoradaEmFase(fase.Id, fase.Id, ReferenciaTipoIdadeEmissao.FimFase)],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Mesma Ordem (1) — a fase sobrevive via reconciliação, mas perde o Fim.
+        Result resultado = processo.DefinirCronogramaFases(
+            [FaseComExtremo(1, "ANALISE", inicio: null, fim: null)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
+    }
+
+    [Fact(DisplayName = "Fase sobrevivente que preserva o extremo usado como âncora de idade é aceito (contraprova)")]
+    public void DefinirCronogramaFases_FaseSobrevivePreservandoExtremoAncoraDeIdade_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma fase = FaseComExtremo(1, "ANALISE", inicio: null, fim: fim);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaComIdadeAncoradaEmFase(fase.Id, fase.Id, ReferenciaTipoIdadeEmissao.FimFase)],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DateTimeOffset novoFim = new(2026, 2, 15, 0, 0, 0, TimeSpan.Zero);
+        Result resultado = processo.DefinirCronogramaFases(
+            [FaseComExtremo(1, "ANALISE", inicio: null, fim: novoFim)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "o Fim continua definido — só o valor mudou, o que é uma edição legítima");
+    }
+
     // ── Story #554/issue #892 (achado Codex P2, PR #896) — CA-03 backward guard ──
 
     private static CondicaoGatilho CondicaoDe(string fato, string valor) => CondicaoGatilho.Criar(

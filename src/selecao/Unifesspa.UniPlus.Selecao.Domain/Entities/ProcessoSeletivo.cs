@@ -503,7 +503,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             if (!fasesNovasPorOrdem.TryGetValue(antiga.Ordem, out FaseCronograma? nova))
             {
-                if (_documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id))
+                // Achado Codex P2 (PR #900): a fase removida pode ser referenciada por
+                // ExigidoNaFaseId OU por IdadeMaximaEmissao.ReferenciaFaseId (PR-d) — os
+                // dois são vínculos independentes, e ambos ficariam órfãos.
+                if (_documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id
+                    || d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id))
                 {
                     return Result.Failure(new DomainError(
                         "FaseCronograma.ReferenciadaPorExigenciaViva",
@@ -520,6 +524,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return Result.Failure(new DomainError(
                     "FaseCronograma.PendenciaReenvioExigeComplementacao",
                     $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por um documento exigido com consequência PENDENCIA_REENVIO."));
+            }
+
+            // Achado Codex P2 (PR #900): fase SOBREVIVENTE (mesma Ordem) cujo extremo
+            // âncora (Início/Fim) deixa de existir — a checagem eager de
+            // DefinirDocumentosExigidos só prova a coerência no INSTANTE da escrita da
+            // exigência; sem este guard, uma redefinição de cronograma POSTERIOR poderia
+            // apagar o extremo e deixar IdadeMaximaEmissao apontando para uma âncora
+            // irresolvível, silenciosamente. Mesma família de guard de
+            // ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente (PR-b), mas aqui é
+            // preventivo (na escrita do cronograma), não descoberto só na publicação.
+            bool perdeuInicio = antiga.Inicio is not null && nova.Inicio is null;
+            bool perdeuFim = antiga.Fim is not null && nova.Fim is null;
+            if ((perdeuInicio || perdeuFim) && _documentosExigidos.Any(d =>
+                d.IdadeMaximaEmissao is { ReferenciaFaseId: { } refFaseId } idade
+                && refFaseId == antiga.Id
+                && ((perdeuInicio && idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase)
+                    || (perdeuFim && idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.FimFase))))
+            {
+                return Result.Failure(new DomainError(
+                    "IdadeMaximaEmissao.FaseExtremoAusente",
+                    $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder o extremo usado como âncora de idade máxima de emissão por um documento exigido configurado."));
             }
         }
 
