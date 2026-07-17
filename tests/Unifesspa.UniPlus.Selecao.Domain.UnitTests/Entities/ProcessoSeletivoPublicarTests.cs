@@ -516,6 +516,64 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel");
     }
 
+    [Fact(DisplayName = "B-03: FIM_INSCRICAO com mais de uma fase de coleta resolve pela menor Ordem, não pela ordem de inserção — achado de revisão da PR #903")]
+    public void ResolverDataReferenciaFatos_FimInscricaoComDuasFasesDeColeta_ResolvePelaMenorOrdem()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+
+        FaseCronograma coletaOrdem1 = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "INSCRICAO_AC",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            produzResultado: false,
+            resultadoDefinitivo: false,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: null,
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        FaseCronograma coletaOrdem2 = FaseCronograma.Criar(
+            ordem: 2,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "INSCRICAO_REMANEJAMENTO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: false,
+            produzResultado: true,
+            resultadoDefinitivo: true,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "RESULTADO_FINAL",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+
+        // Insere a fase de Ordem 2 ANTES da de Ordem 1 — _cronogramaFases preserva a ordem
+        // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
+        // Ordem). Se a resolução dependesse dessa ordem de inserção, pegaria a fase errada.
+        processo.DefinirCronogramaFases([coletaOrdem2, coletaOrdem1], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
+
+        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id)], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        processo.ResolverDataReferenciaFatos().Should().Be(new DateOnly(2026, 1, 15),
+            "a fase de Ordem 1 (Fim 2026-01-15) precisa vencer a de Ordem 2 (Fim 2026-01-25) por Ordem — se a " +
+            "escolha dependesse da ordem de inserção em _cronogramaFases, a reidratação (sempre ordenada por " +
+            "Ordem) poderia resolver outra data e quebrar o round-trip");
+    }
+
     [Fact(DisplayName = "B-03: ResolverDataReferenciaFatos converte para o fuso America/Sao_Paulo — um Fim de madrugada em UTC cai no dia anterior local")]
     public void ResolverDataReferenciaFatos_FimDeMadrugadaEmUtc_ResolveODiaAnteriorEmBrasilia()
     {
