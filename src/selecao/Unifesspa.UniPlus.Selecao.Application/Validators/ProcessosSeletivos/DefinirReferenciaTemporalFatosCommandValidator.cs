@@ -22,5 +22,14 @@ public sealed class DefinirReferenciaTemporalFatosCommandValidator : AbstractVal
             .Must(valor => TiposValidos.Contains(valor, StringComparer.Ordinal))
             .When(x => x.Tipo is not null)
             .WithMessage($"Tipo deve ser um de: {string.Join(", ", TiposValidos)}.");
+
+        // A remoção (Tipo nulo) é o único caso em que Data/FaseId ficam de fora da
+        // coerência tudo-ou-nada acima — mas isso não os torna aceitáveis soltos: dado de
+        // formulário obsoleto (ou um Tipo omitido por engano) que ainda carregue Data ou
+        // FaseId não pode apagar a referência em silêncio confundindo remoção com edição.
+        RuleFor(x => x)
+            .Must(x => x.Data is null && x.FaseId is null)
+            .When(x => x.Tipo is null)
+            .WithMessage("Data e FaseId não são aceitos ao remover a referência (Tipo nulo) — omita-os ou informe um Tipo.");
     }
 }

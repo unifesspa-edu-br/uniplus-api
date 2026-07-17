@@ -186,7 +186,18 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectAplicabilidade(documento.Aplicabilidade),
         documento.Obrigatorio,
         documento.ConsequenciaIndeferimento,
-        documento.GrupoSatisfacaoId);
+        documento.GrupoSatisfacaoId,
+        [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjectCondicaoGatilho)]);
+
+    // Valor como texto JSON canônico (GetRawText) — o mesmo PUT que aceita este DTO de
+    // volta (DefinirDocumentosExigidosCommandHandler.InterpretarValor) reparseia texto
+    // JSON válido como tal, fechando o round-trip GET→PUT sem perda de tipo.
+    private static CondicaoGatilhoDto ProjectCondicaoGatilho(CondicaoGatilho condicao) => new(
+        condicao.Id,
+        condicao.Clausula,
+        condicao.Fato,
+        condicao.Operador.ToCodigo(),
+        condicao.Valor.GetRawText());
 
     // Emite o mesmo token de wire aceito por DefinirDocumentosExigidosCommandValidator
     // ("GERAL"/"CONDICIONAL") — Aplicabilidade.ToString() produziria "Geral"/"Condicional"

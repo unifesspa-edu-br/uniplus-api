@@ -1697,6 +1697,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // bloco, `GrafoConfiguracao` ganha `DocumentosExigidos` e este trecho passa a
         // reconciliar por `exigencia_id`, como as demais coleções acima.
         _documentosExigidos.Clear();
+
+        // Referência temporal de fatos (Story #554, issue #892) — mesmo raciocínio do
+        // Clear() acima: o campo não é materializado no envelope (isso é da PR-e), então
+        // `GrafoConfiguracao` não carrega um valor para restaurar. O invariante que
+        // sustenta zerar em vez de preservar é o mesmo da guarda B-01: como toda versão
+        // já congelada tem zero `DocumentoExigido`, nenhuma tem gatilho por FAIXA_ETARIA,
+        // e por isso nenhuma versão congelada jamais DEPENDEU de uma referência temporal
+        // não nula. Preservar o valor que a sessão descartada editou vazaria a mutação
+        // não publicada para o estado vivo pós-descarte.
+        ReferenciaTemporalFatos = null;
     }
 
     /// <summary>

@@ -257,6 +257,33 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             "precisa repor esse estado vazio, não preservar o que a sessão descartada editou");
     }
 
+    [Fact(DisplayName = "Story #554/issue #892 (achado Codex P1) — restauração limpa ReferenciaTemporalFatos definida durante a sessão")]
+    public void Restauracao_LimpaReferenciaTemporalFatosDaSessao()
+    {
+        // Mesmo raciocínio de Restauracao_LimpaDocumentosExigidosDaSessao: o campo não é
+        // materializado no envelope (isso é da PR-e), então não há valor congelado para
+        // restaurar — e a versão congelada nunca teve gatilho por FAIXA_ETARIA que
+        // dependesse dele (B-01 barra qualquer DocumentoExigido). Preservar o valor
+        // editado pela sessão descartada vazaria a mutação não publicada.
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+
+        processo.AbrirRetificacao("Ajustar referência temporal", versao, "testes", DateTimeOffset.UnixEpoch)
+            .IsSuccess.Should().BeTrue();
+
+        ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!;
+        processo.DefinirReferenciaTemporalFatos(referencia, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.ReferenciaTemporalFatos.Should().NotBeNull();
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, Grafo());
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.ReferenciaTemporalFatos.Should().BeNull(
+            "a versão congelada não materializa este campo (PR-e) e nunca dependeu dele — restaurar precisa " +
+            "repor a ausência, não preservar o que a sessão descartada editou");
+    }
+
     // ── Fábrica de cenários ──
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
