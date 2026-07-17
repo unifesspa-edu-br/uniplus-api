@@ -119,18 +119,11 @@ public static class ResolvedorExigenciasDocumentais
     /// o primeiro grupo que aparece em mais de uma <see cref="DocumentoExigido.ExigidoNaFaseId"/>,
     /// ou <see langword="null"/> se todos os grupos respeitarem o escopo.
     /// </summary>
-    private static Guid? GrupoSatisfacaoForaDeEscopo(IReadOnlyList<DocumentoExigido> exigencias)
-    {
-        foreach (IGrouping<Guid, DocumentoExigido> grupo in exigencias
+    private static Guid? GrupoSatisfacaoForaDeEscopo(IReadOnlyList<DocumentoExigido> exigencias) =>
+        exigencias
             .Where(static e => e.GrupoSatisfacaoId is not null)
-            .GroupBy(static e => e.GrupoSatisfacaoId!.Value))
-        {
-            if (grupo.Select(static e => e.ExigidoNaFaseId).Distinct().Count() > 1)
-            {
-                return grupo.Key;
-            }
-        }
-
-        return null;
-    }
+            .GroupBy(static e => e.GrupoSatisfacaoId!.Value)
+            .Where(static grupo => grupo.Select(static e => e.ExigidoNaFaseId).Distinct().Count() > 1)
+            .FirstOrDefault()
+            ?.Key;
 }
