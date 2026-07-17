@@ -53,6 +53,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<FaseCronograma> _cronogramaFases = [];
     public IReadOnlyCollection<FaseCronograma> CronogramaFases => _cronogramaFases.AsReadOnly();
 
+    /// <summary>Documentos exigidos do certame (0..*, Story #554/PR-a) — por fase e aplicabilidade.</summary>
+    private readonly List<DocumentoExigido> _documentosExigidos = [];
+    public IReadOnlyCollection<DocumentoExigido> DocumentosExigidos => _documentosExigidos.AsReadOnly();
+
     public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
 
     private readonly List<ConfiguracaoDistribuicaoVagas> _distribuicaoVagas = [];
@@ -515,6 +519,49 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Substitui integralmente a coleção de documentos exigidos do processo (Story #554,
+    /// PR-a): mesmo padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/>
+    /// primeiro, <see cref="Result"/> nunca exceção, substituição integral da coleção.
+    /// </summary>
+    /// <remarks>
+    /// Valida aqui o que só a raiz consegue provar: cada <see cref="DocumentoExigido.ExigidoNaFaseId"/>
+    /// referencia uma fase viva do cronograma do MESMO processo (§2 da issue #547). O
+    /// gatilho DNF (<c>CondicaoGatilho</c>, PR-b), a base legal (PR-c) e a idade/formato/
+    /// tamanho (PR-d) não são tocados aqui.
+    /// </remarks>
+    public Result DefinirDocumentosExigidos(
+        IReadOnlyList<DocumentoExigido> itens,
+        PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(itens);
+
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        foreach (DocumentoExigido item in itens)
+        {
+            if (!_cronogramaFases.Any(fase => fase.Id == item.ExigidoNaFaseId))
+            {
+                return Result.Failure(new DomainError(
+                    "DocumentoExigido.FaseNaoPertenceAoProcesso",
+                    $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo."));
+            }
+        }
+
+        _documentosExigidos.Clear();
+        foreach (DocumentoExigido item in itens)
+        {
+            item.VincularProcesso(Id);
+            _documentosExigidos.Add(item);
+        }
+
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
     /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
     /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
@@ -656,6 +703,54 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Pendências dos documentos exigidos (Story #554). Chamado por
+    /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/
+    /// FecharRetificacao), sempre <b>depois</b> de <see cref="PendenciaDoCronograma"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>CA-01</b> — uma exigência <c>CONDICIONAL</c> sem nenhuma condição de gatilho
+    /// viva que <see cref="DocumentoExigido.DeterminaResultado"/> é "exigência morta":
+    /// nunca seria cobrada de ninguém. Nesta PR (a), <c>CondicaoGatilho</c> ainda não
+    /// existe (PR-b) — toda exigência <c>CONDICIONAL</c> está, por definição, sem
+    /// condição viva, então esta trava já é integralmente exercitável.
+    /// </para>
+    /// <para>
+    /// <b>B-01 — guarda fail-closed transitória</b> (PR-a..PR-d): enquanto o bloco
+    /// <c>documentosExigidos.exigencias</c> do envelope continuar stub, publicar/
+    /// retificar/fechar retificação com qualquer <see cref="DocumentoExigido"/>
+    /// configurado congelaria uma versão que finge não ter documentos exigidos.
+    /// Removida na PR-e, quando o bloco rico substitui o stub.
+    /// </para>
+    /// </remarks>
+    private DomainError? PendenciaDasExigenciasDocumentais()
+    {
+        foreach (DocumentoExigido exigencia in _documentosExigidos)
+        {
+            // Parâmetro sintético: CondicaoGatilho (PR-b) ainda não existe, então nenhuma
+            // exigência CONDICIONAL tem condição viva nesta PR.
+            const bool possuiCondicaoViva = false;
+            if (exigencia.Aplicabilidade == Aplicabilidade.Condicional
+                && !possuiCondicaoViva
+                && exigencia.DeterminaResultado())
+            {
+                return new DomainError(
+                    "DocumentoExigido.CondicionalVaziaDeterminaResultado",
+                    $"A exigência '{exigencia.TipoDocumentoCodigo}' é CONDICIONAL, determina resultado, mas não tem nenhuma condição de gatilho viva — nunca seria cobrada de ninguém.");
+            }
+        }
+
+        if (_documentosExigidos.Count > 0)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas",
+                "Existem documentos exigidos configurados, mas o bloco de exigências do envelope canônico ainda não foi materializado (Story #554) — publicação bloqueada até a conclusão da Story.");
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Publica o processo (RN08, Story #759 T4): valida a transição e a
     /// conformidade estrutural, abre a cadeia de <see cref="VersaoConfiguracao"/>
     /// a partir dos bytes canônicos já produzidos pelo
@@ -715,6 +810,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDoCronograma() is { } pendenciaCronograma)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
+        }
+
+        if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
         }
 
         // UMA leitura do relógio para o ato e para a versão que ele cria. O instante
@@ -1030,6 +1130,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDoCronograma() is { } pendenciaCronograma)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
+        }
+
+        if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
         }
 
         // Uma única leitura do relógio para o ato e para a versão que ele cria — ver a nota

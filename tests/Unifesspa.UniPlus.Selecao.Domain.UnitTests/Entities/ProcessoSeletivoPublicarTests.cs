@@ -217,6 +217,7 @@ public sealed class ProcessoSeletivoPublicarTests
     [InlineData("criteriosDesempate")]
     [InlineData("classificacao")]
     [InlineData("cronogramaFases")]
+    [InlineData("documentosExigidos")]
     public void DefinirX_ProcessoPublicado_RecusaMutacao(string dimensao)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -236,11 +237,77 @@ public sealed class ProcessoSeletivoPublicarTests
                 ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
                 1, []).Value!, PrecondicaoIfMatch.Ausente),
             "cronogramaFases" => processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente),
+            "documentosExigidos" => processo.DefinirDocumentosExigidos([], PrecondicaoIfMatch.Ausente),
             _ => throw new InvalidOperationException("Dimensão desconhecida."),
         };
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+    }
+
+    // ── Story #554 (PR-a) — guarda fail-closed (B-01) e CA-01 ──
+
+    private static DocumentoExigido ExigenciaCondicionalVaziaObrigatoria(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
+        exigidoNaFaseId,
+        tipoDocumentoOrigemId: Guid.CreateVersion7(),
+        tipoDocumentoCodigo: "CERTIDAO_RESERVISTA",
+        tipoDocumentoNome: "Certidão de reservista",
+        tipoDocumentoCategoria: "MILITAR",
+        aplicabilidade: Aplicabilidade.Condicional,
+        obrigatorio: true,
+        consequenciaIndeferimento: null,
+        grupoSatisfacaoId: null).Value!;
+
+    private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
+        exigidoNaFaseId,
+        tipoDocumentoOrigemId: Guid.CreateVersion7(),
+        tipoDocumentoCodigo: "IDENTIDADE",
+        tipoDocumentoNome: "Documento de identidade",
+        tipoDocumentoCategoria: "PESSOAL",
+        aplicabilidade: Aplicabilidade.Geral,
+        obrigatorio: true,
+        consequenciaIndeferimento: null,
+        grupoSatisfacaoId: null).Value!;
+
+    [Fact(DisplayName = "CA-01: publicar com exigência CONDICIONAL vazia obrigatória é bloqueado")]
+    public void Publicar_CondicionalVaziaObrigatoria_Bloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaCondicionalVaziaObrigatoria(faseId)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.CondicionalVaziaDeterminaResultado");
+    }
+
+    [Fact(DisplayName = "B-01: publicar com exigência GERAL configurada é bloqueado enquanto o bloco do envelope é stub")]
+    public void Publicar_ExigenciaGeralConfigurada_BloqueiaPorGuardaFailClosed()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaGeral(faseId)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas");
+    }
+
+    [Fact(DisplayName = "Publicar sem nenhum documento exigido configurado não é afetado pela guarda (contraprova)")]
+    public void Publicar_SemDocumentosExigidos_NaoBloqueiaPorExigencias()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     /// <summary>

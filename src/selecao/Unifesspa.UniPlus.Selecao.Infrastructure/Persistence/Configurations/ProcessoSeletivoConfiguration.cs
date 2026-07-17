@@ -64,6 +64,12 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(f => f.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Documentos exigidos (Story #554, PR-a) — 0..*, mesmo padrão de Etapas/CronogramaFases.
+        builder.HasMany(p => p.DocumentosExigidos)
+            .WithOne()
+            .HasForeignKey(d => d.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // A sessão editorial (ADR-0110 D3) — 1:1, como as demais filhas singulares. Ela é
         // efêmera (apagada no fechamento e no descarte) e não é evidência forense: a
         // auditoria com peso jurídico vive na VersaoConfiguracao, que é append-only.
@@ -82,6 +88,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Navigation(p => p.CronogramaFases)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(p => p.DocumentosExigidos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

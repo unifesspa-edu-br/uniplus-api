@@ -92,5 +92,11 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IFaseCanonicaReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
+
+        // Documentos exigidos (Story #554, PR-a): snapshot-copy de TipoDocumento
+        // (Configuração) para cada exigência. Mesmo motivo dos demais readers
+        // cross-módulo acima — o concreto TipoDocumentoReader é internal a
+        // Configuracao.Infrastructure.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDocumentoReader>();
     }
 }
