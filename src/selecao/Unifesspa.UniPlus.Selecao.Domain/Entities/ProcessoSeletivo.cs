@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Text.Json;
+
 using Enums;
 using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -220,6 +222,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
+        // Story #554/issue #892 (achado Codex P2, PR #896, CA-03): um gatilho DNF com fato
+        // CONDICAO_ATENDIMENTO referencia um código de condição por VALOR (não por Guid —
+        // diferente da fase), então a checagem é precisa: só recusa se o novo conjunto de
+        // ofertas realmente deixaria de conter um código hoje referenciado por condição
+        // viva — redefinir preservando (ou ampliando) os códigos ofertados é aceito.
+        HashSet<string> novosCodigos = [.. oferta.Condicoes.Select(c => c.CondicaoCodigo)];
+        if (ReferenciaDinamicaSeriaInvalidada("CONDICAO_ATENDIMENTO", novosCodigos))
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
+                "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento."));
+        }
+
         oferta.VincularProcesso(Id);
         OfertaAtendimento = oferta;
         Rascunho?.IncrementarRevisao();
@@ -270,6 +285,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
                 "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo."));
+        }
+
+        // Story #554/issue #892 (achado Codex P2, PR #896, CA-03): mesmo raciocínio do
+        // guard de CONDICAO_ATENDIMENTO em DefinirOfertaAtendimento — MODALIDADE referencia
+        // por código, então a checagem é precisa (só recusa se um código hoje referenciado
+        // por condição viva deixaria de existir na nova distribuição).
+        HashSet<string> novosCodigos = [.. distribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)];
+        if (ReferenciaDinamicaSeriaInvalidada("MODALIDADE", novosCodigos))
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.ModalidadeReferenciadaPorExigenciaViva",
+                "Existe condição de gatilho documental referenciando um código de modalidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a distribuição de vagas."));
         }
 
         _distribuicaoVagas.Clear();
@@ -854,6 +881,37 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // DATA_ESPECIFICA: ReferenciaTemporalFatos.Criar já garante Data presente — nada a checar aqui.
         return null;
+    }
+
+    /// <summary>
+    /// CA-03 (Story #554, issue #892 — achado Codex P2, PR #896): um gatilho DNF sobre um
+    /// fato categórico dinâmico (<c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>) referencia
+    /// um valor por CÓDIGO — nunca por Guid, diferente de <c>FaseCronograma</c>. Isso
+    /// permite checagem precisa (não o guard coarse de <c>FaseCronograma.ReferenciadaPorExigenciaViva</c>):
+    /// só invalida quando o novo conjunto de códigos ofertados realmente deixaria de conter
+    /// um valor hoje referenciado por uma condição viva — redefinir preservando (ou
+    /// ampliando) a oferta é sempre aceito.
+    /// </summary>
+    private bool ReferenciaDinamicaSeriaInvalidada(string fato, HashSet<string> novosCodigosValidos)
+    {
+        foreach (CondicaoGatilho condicao in _documentosExigidos.SelectMany(static d => d.Condicoes))
+        {
+            if (!string.Equals(condicao.Fato, fato, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            IEnumerable<string?> valoresReferenciados = condicao.Valor.ValueKind == JsonValueKind.Array
+                ? condicao.Valor.EnumerateArray().Select(static v => v.GetString())
+                : [condicao.Valor.GetString()];
+
+            if (valoresReferenciados.Any(valor => valor is not null && !novosCodigosValidos.Contains(valor)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
