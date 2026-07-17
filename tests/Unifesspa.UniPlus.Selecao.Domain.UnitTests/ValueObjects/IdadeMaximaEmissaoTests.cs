@@ -77,6 +77,27 @@ public sealed class IdadeMaximaEmissaoTests
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.ValorInvalido");
     }
 
+    [Theory(DisplayName = "Achado Codex P2 (PR #900, 3ª rodada): sentinel Nenhuma em Unidade ou ReferenciaTipo, com Valor positivo, é recusado")]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void Criar_SentinelNenhuma_Recusa(bool unidadeNenhuma, bool referenciaTipoNenhuma)
+    {
+        // Este factory é a fronteira do domínio (CA1008 obriga UnidadeIdade/
+        // ReferenciaTipoIdadeEmissao a terem um membro zero, mas Nenhuma não é um valor de
+        // negócio válido aqui) — sem esta checagem, o VO ficaria "completo" sem código
+        // canônico e o ToCodigo() da projeção de leitura estouraria depois, longe da causa.
+        Result<IdadeMaximaEmissao?> resultado = IdadeMaximaEmissao.Criar(
+            90,
+            unidadeNenhuma ? UnidadeIdade.Nenhuma : UnidadeIdade.Dias,
+            referenciaTipoNenhuma ? ReferenciaTipoIdadeEmissao.Nenhuma : ReferenciaTipoIdadeEmissao.DataSubmissao,
+            null,
+            null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.CamposIncompletos");
+    }
+
     [Fact(DisplayName = "Data ou fase presentes com os 3 primeiros campos ausentes é recusado")]
     public void Criar_DataOuFaseComTudoAusente_Recusa()
     {

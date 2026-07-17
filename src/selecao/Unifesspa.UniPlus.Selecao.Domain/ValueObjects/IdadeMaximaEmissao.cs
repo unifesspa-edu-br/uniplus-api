@@ -87,6 +87,19 @@ public sealed record IdadeMaximaEmissao
                 "O valor da idade máxima de emissão deve ser maior que zero."));
         }
 
+        // Achado Codex P2 (PR #900, 3ª rodada): este factory é a fronteira do domínio — o
+        // sentinel Nenhuma=0 (CA1008) não é um valor de negócio válido aqui, só existe para
+        // permitir enum não-nulável em outros contextos. Sem esta checagem, um chamador que
+        // passasse Nenhuma junto de um Valor positivo produziria um VO "completo" sem
+        // código canônico, e o ToCodigo() da projeção de leitura estouraria depois, longe
+        // da causa. Não basta confiar na validação de string do command.
+        if (unidade == UnidadeIdade.Nenhuma || referenciaTipo == ReferenciaTipoIdadeEmissao.Nenhuma)
+        {
+            return Result<IdadeMaximaEmissao?>.Failure(new DomainError(
+                "IdadeMaximaEmissao.CamposIncompletos",
+                "Valor, Unidade e ReferenciaTipo devem estar todos presentes, ou todos ausentes."));
+        }
+
         bool exigeData = referenciaTipo == ReferenciaTipoIdadeEmissao.DataEspecifica;
         if (exigeData != data.HasValue)
         {
