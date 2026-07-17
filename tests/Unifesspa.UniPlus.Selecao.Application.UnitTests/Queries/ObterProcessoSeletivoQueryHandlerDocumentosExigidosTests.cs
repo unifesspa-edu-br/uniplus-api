@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -51,5 +53,41 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
         projetado.Aplicabilidade.Should().Be(tokenEsperado);
         projetado.TipoDocumentoOrigemId.Should().Be(tipoDocumentoOrigemId);
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #896, issue #892): projeta Condicoes do gatilho DNF — round-trip GET→PUT sem perda")]
+    public async Task Handle_CondicaoGatilho_EmiteTokenDeWireERoundTripDoValor()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        CondicaoGatilho condicaoEscalar = CondicaoGatilho.Criar(
+            0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!;
+        CondicaoGatilho condicaoMultivalorada = CondicaoGatilho.Criar(
+            1, "MODALIDADE", Operador.Em, JsonSerializer.SerializeToElement(new[] { "LB_PPI", "AC" })).Value!;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [condicaoEscalar, condicaoMultivalorada]).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
+            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+
+        DocumentoExigidoDto projetado = dto!.DocumentosExigidos.Should().ContainSingle().Which;
+        projetado.Condicoes.Should().HaveCount(2);
+
+        CondicaoGatilhoDto escalarDto = projetado.Condicoes.Should().ContainSingle(c => c.Fato == "SEXO").Which;
+        escalarDto.Operador.Should().Be("IGUAL");
+        escalarDto.Valor.Should().Be("\"MASCULINO\"", "GetRawText preserva o JSON canônico — o mesmo PUT reinterpreta como JSON válido");
+
+        CondicaoGatilhoDto emDto = projetado.Condicoes.Should().ContainSingle(c => c.Fato == "MODALIDADE").Which;
+        emDto.Operador.Should().Be("EM");
+        JsonDocument.Parse(emDto.Valor).RootElement.EnumerateArray().Select(e => e.GetString())
+            .Should().BeEquivalentTo(["LB_PPI", "AC"]);
     }
 }

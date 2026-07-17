@@ -3513,6 +3513,39 @@
         ],
         "type": "string"
       },
+      "CondicaoGatilhoDto": {
+        "required": [
+          "id",
+          "clausula",
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clausula": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "type": "string"
+          }
+        }
+      },
       "CondicaoGatilhoInput": {
         "required": [
           "clausula",
@@ -4361,7 +4394,8 @@
           "aplicabilidade",
           "obrigatorio",
           "consequenciaIndeferimento",
-          "grupoSatisfacaoId"
+          "grupoSatisfacaoId",
+          "condicoes"
         ],
         "type": "object",
         "properties": {
@@ -4404,6 +4438,12 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "condicoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CondicaoGatilhoDto"
+            }
           }
         }
       },

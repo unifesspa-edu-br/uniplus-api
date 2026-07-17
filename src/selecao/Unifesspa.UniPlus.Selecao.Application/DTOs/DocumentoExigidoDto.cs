@@ -15,4 +15,14 @@ public sealed record DocumentoExigidoDto(
     string Aplicabilidade,
     bool Obrigatorio,
     string? ConsequenciaIndeferimento,
-    Guid? GrupoSatisfacaoId);
+    Guid? GrupoSatisfacaoId,
+    IReadOnlyList<CondicaoGatilhoDto> Condicoes);
+
+/// <summary>
+/// DTO de leitura de <see cref="Domain.Entities.CondicaoGatilho"/> (Story #554, PR-b,
+/// issue #892). <see cref="Operador"/>/<see cref="Valor"/> seguem o mesmo formato flat de
+/// <c>CondicaoGatilhoInput</c> (comando de escrita) — <see cref="Valor"/> é o texto JSON
+/// canônico (<c>JsonElement.GetRawText()</c>), round-tripável direto de volta pelo mesmo
+/// PUT (<c>DefinirDocumentosExigidosCommandHandler.InterpretarValor</c> o reparseia como JSON).
+/// </summary>
+public sealed record CondicaoGatilhoDto(Guid Id, int Clausula, string Fato, string Operador, string Valor);
