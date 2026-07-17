@@ -42,9 +42,9 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 
 > Achados extras da revisão automatizada (Codex), corrigidos além do escopo original: eager-load de `DocumentosExigidos` no repositório (sem ele, B-01/CA-01 falhavam abertas); FK real `Restrict` para `fases_cronograma` + guarda de domínio `FaseCronograma.ReferenciadaPorExigenciaViva` (a reconciliação completa por chave estável fica para a PR-d); `DocumentosExigidos` exposto no GET agregado (`ProcessoSeletivoDto`); token de wire da aplicabilidade no GET (`GERAL`/`CONDICIONAL`, não `Geral`/`Condicional`); restauração de `DocumentosExigidos` ao descartar retificação; maxlength do snapshot de nome do tipo de documento alinhado à origem (200).
 
-## 3. PR-b — `CondicaoGatilho` DNF + extensão dinâmica/multivalorada + referência temporal
+## 3. PR-b — `CondicaoGatilho` DNF + extensão dinâmica/multivalorada + referência temporal ✅ MERGEADO
 
-**Issue:** #892 · **Branch:** `feature/892-gatilho-dnf-fatos` · **PR:** `Closes #892` + ref. #554 (parte de branch de PR-a mergeada)
+**Issue:** #892 · **Branch:** `feature/892-gatilho-dnf-fatos` · **PR:** #896 (`Closes #892`) · **Merge:** 25664872 (2026-07-17)
 
 - [x] 3.1 Modelar `CondicaoGatilho` sobre `PredicadoDnf` com integridade referencial (CA-03)
 - [x] 3.2 Estender validação para domínio dinâmico (modalidades/condições ofertadas pelo processo)
@@ -52,7 +52,9 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 - [x] 3.4 VO `ReferenciaTemporalFatos` (nível processo) + validação de publicação (sem fallback silencioso)
 - [x] 3.5 Definir e documentar o contrato JSON V12 por variante da referência (campos obrigatórios/proibidos)
 - [x] 3.6 Testes: IGUAL/EM escalar e multivalorado; fato fora do vocabulário recusa; fato ausente → falso
-- [ ] 3.7 Gates locais + revisão Codex; abrir PR `Closes #892`; `/review-pr` até zero pendências; merge sequencial
+- [x] 3.7 Gates locais + revisão Codex (5 rodadas — restauração no descarte, validação de campos soltos na remoção, projeção de Condicoes/ReferenciaTemporalFatos no GET, guard CA-03 de referência dinâmica viva, registro dos novos erros); PR #896 aprovado e mergeado (rebase)
+
+> Achados extras da revisão automatizada (Codex), corrigidos além do escopo original: `AplicarGrafo` não zerava `ReferenciaTemporalFatos` ao descartar sessão editorial (mesmo raciocínio do `_documentosExigidos.Clear()` da PR-a); `DefinirReferenciaTemporalFatosCommandValidator` aceitava `Data`/`FaseId` soltos quando `Tipo` era nulo (remoção); GET agregado não expunha `DocumentoExigido.Condicoes` nem `ProcessoSeletivo.ReferenciaTemporalFatos` (quebrava round-trip GET→PUT); CA-03 só validava na escrita — `DefinirDistribuicaoVagas`/`DefinirOfertaAtendimento` podiam remover um código de MODALIDADE/CONDICAO_ATENDIMENTO referenciado por gatilho vivo sem revalidar (novo guard preciso, por código, não por Guid); os dois novos `DomainError` do guard não estavam registrados em `SelecaoDomainErrorRegistration` (pego pelo ArchTest F1 já existente).
 
 ## 4. PR-c — `DocumentoExigidoBaseLegal` 1:N + gate de publicação
 
