@@ -30,10 +30,17 @@ public static class PredicadoDnfValidador
     /// vocabulário. Quando omitido (<see langword="null"/>), esta checagem
     /// adicional não se aplica.
     /// </param>
+    /// <param name="dominiosDinamicos">
+    /// Domínio dinâmico por fato (Story #554, PR-b) — obrigatório quando o predicado
+    /// cita um fato <see cref="TipoDominioFato.CategoricoDinamico"/> (ex.: <c>MODALIDADE</c>,
+    /// <c>CONDICAO_ATENDIMENTO</c>). O chamador (Application) o deriva da oferta do próprio
+    /// processo — este validador não sabe de onde vem, só que precisa ser fornecido.
+    /// </param>
     public static Result Validar(
         PredicadoDnf predicado,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
-        IReadOnlySet<string>? fatosColetadosPeloProcesso = null)
+        IReadOnlySet<string>? fatosColetadosPeloProcesso = null,
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos = null)
     {
         ArgumentNullException.ThrowIfNull(predicado);
         ArgumentNullException.ThrowIfNull(vocabularioFechado);
@@ -42,7 +49,7 @@ public static class PredicadoDnfValidador
         {
             foreach (CondicaoDnf condicao in clausula.Condicoes)
             {
-                Result condicaoResult = ValidarCondicao(condicao, vocabularioFechado, fatosColetadosPeloProcesso);
+                Result condicaoResult = ValidarCondicao(condicao, vocabularioFechado, fatosColetadosPeloProcesso, dominiosDinamicos);
                 if (condicaoResult.IsFailure)
                 {
                     return condicaoResult;
@@ -56,7 +63,8 @@ public static class PredicadoDnfValidador
     private static Result ValidarCondicao(
         CondicaoDnf condicao,
         IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioFechado,
-        IReadOnlySet<string>? fatosColetadosPeloProcesso)
+        IReadOnlySet<string>? fatosColetadosPeloProcesso,
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos)
     {
         if (!vocabularioFechado.TryGetValue(condicao.Fato, out DescritorFatoCandidato? descritor))
         {
@@ -73,7 +81,7 @@ public static class PredicadoDnfValidador
         }
 
         Result operadorResult = ValidarOperador(condicao, descritor);
-        return operadorResult.IsFailure ? operadorResult : ValidarValor(condicao, descritor);
+        return operadorResult.IsFailure ? operadorResult : ValidarValor(condicao, descritor, dominiosDinamicos);
     }
 
     private static Result ValidarOperador(CondicaoDnf condicao, DescritorFatoCandidato descritor)
@@ -83,6 +91,7 @@ public static class PredicadoDnfValidador
             TipoDominioFato.Booleano => condicao.Operador == Operador.Igual,
             TipoDominioFato.Numerico => condicao.Operador is Operador.Igual or Operador.MaiorIgual or Operador.MenorIgual,
             TipoDominioFato.CategoricoEstatico => condicao.Operador is Operador.Igual or Operador.Em,
+            TipoDominioFato.CategoricoDinamico => condicao.Operador is Operador.Igual or Operador.Em,
             _ => false,
         };
 
@@ -93,13 +102,37 @@ public static class PredicadoDnfValidador
                 $"O operador {condicao.Operador} não é compatível com o domínio {descritor.TipoDominio} do fato '{condicao.Fato}'."));
     }
 
-    private static Result ValidarValor(CondicaoDnf condicao, DescritorFatoCandidato descritor) => descritor.TipoDominio switch
+    private static Result ValidarValor(
+        CondicaoDnf condicao,
+        DescritorFatoCandidato descritor,
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos) => descritor.TipoDominio switch
     {
         TipoDominioFato.Booleano => ValidarValorBooleano(condicao),
         TipoDominioFato.Numerico => ValidarValorNumerico(condicao),
-        TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(condicao, descritor),
+        TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(condicao, descritor.ValoresDominio!),
+        TipoDominioFato.CategoricoDinamico => ValidarValorCategoricoDinamico(condicao, dominiosDinamicos),
         _ => Result.Failure(new DomainError("PredicadoDnf.ValorIncompativelComTipo", "Domínio do fato desconhecido.")),
     };
+
+    /// <summary>
+    /// CA-03 (integridade referencial, Story #554): o domínio válido de um fato
+    /// categórico dinâmico vem do que o PRÓPRIO PROCESSO oferece (modalidades
+    /// selecionadas, condições de atendimento ofertadas) — nunca de um catálogo global.
+    /// Ausência do fato em <paramref name="dominiosDinamicos"/> é erro do CHAMADOR (nunca
+    /// confia silenciosamente), distinto de "valor fora do domínio".
+    /// </summary>
+    private static Result ValidarValorCategoricoDinamico(
+        CondicaoDnf condicao, IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos)
+    {
+        if (dominiosDinamicos is null || !dominiosDinamicos.TryGetValue(condicao.Fato, out IReadOnlySet<string>? dominio))
+        {
+            return Result.Failure(new DomainError(
+                "PredicadoDnf.DominioDinamicoNaoFornecido",
+                $"O domínio dinâmico do fato '{condicao.Fato}' não foi fornecido — o chamador precisa derivá-lo da oferta do processo."));
+        }
+
+        return ValidarValorCategorico(condicao, [.. dominio]);
+    }
 
     private static Result ValidarValorBooleano(CondicaoDnf condicao) =>
         condicao.Valor.ValueKind is JsonValueKind.True or JsonValueKind.False
@@ -124,10 +157,8 @@ public static class PredicadoDnfValidador
                 $"O valor da condição sobre '{condicao.Fato}' deve ser um número inteiro (decimal é rejeitado)."));
     }
 
-    private static Result ValidarValorCategorico(CondicaoDnf condicao, DescritorFatoCandidato descritor)
+    private static Result ValidarValorCategorico(CondicaoDnf condicao, IReadOnlyList<string> dominio)
     {
-        IReadOnlyList<string> dominio = descritor.ValoresDominio!;
-
         if (condicao.Operador == Operador.Em)
         {
             return ValidarValorCategoricoEm(condicao, dominio);

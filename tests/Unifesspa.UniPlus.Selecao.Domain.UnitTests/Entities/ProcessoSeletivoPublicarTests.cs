@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
@@ -256,7 +257,8 @@ public sealed class ProcessoSeletivoPublicarTests
         aplicabilidade: Aplicabilidade.Condicional,
         obrigatorio: true,
         consequenciaIndeferimento: null,
-        grupoSatisfacaoId: null).Value!;
+        grupoSatisfacaoId: null,
+        condicoes: []).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
         exigidoNaFaseId,
@@ -267,7 +269,8 @@ public sealed class ProcessoSeletivoPublicarTests
         aplicabilidade: Aplicabilidade.Geral,
         obrigatorio: true,
         consequenciaIndeferimento: null,
-        grupoSatisfacaoId: null).Value!;
+        grupoSatisfacaoId: null,
+        condicoes: []).Value!;
 
     [Fact(DisplayName = "CA-01: publicar com exigência CONDICIONAL vazia obrigatória é bloqueado")]
     public void Publicar_CondicionalVaziaObrigatoria_Bloqueia()
@@ -303,6 +306,99 @@ public sealed class ProcessoSeletivoPublicarTests
     public void Publicar_SemDocumentosExigidos_NaoBloqueiaPorExigencias()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    // ── Story #554 (PR-b, issue #892) — B-03: referência temporal de fatos ──
+
+    private static DocumentoExigido ExigenciaCondicionalComGatilhoPorFaixaEtaria(Guid exigidoNaFaseId)
+    {
+        CondicaoGatilho condicao = CondicaoGatilho.Criar(
+            0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
+        return DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
+            tipoDocumentoNome: "Declaração de maioridade",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [condicao]).Value!;
+    }
+
+    [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase de outro processo é recusada")]
+    public void DefinirReferenciaTemporalFatos_FaseDeOutroProcesso_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(
+            ReferenciaTipo.FimFase, null, Guid.CreateVersion7()).Value!;
+
+        Result resultado = processo.DefinirReferenciaTemporalFatos(referencia, PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso");
+    }
+
+    [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase do próprio cronograma é aceita (contraprova)")]
+    public void DefinirReferenciaTemporalFatos_FaseDoProprioProcesso_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!;
+
+        Result resultado = processo.DefinirReferenciaTemporalFatos(referencia, PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.ReferenciaTemporalFatos.Should().Be(referencia);
+    }
+
+    [Fact(DisplayName = "DefinirReferenciaTemporalFatos: redefinir para null é aceito — presença é 0..1 (contraprova)")]
+    public void DefinirReferenciaTemporalFatos_Nulo_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirReferenciaTemporalFatos(null, PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.ReferenciaTemporalFatos.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "B-03/B-01: gatilho por FAIXA_ETARIA sem referência configurada é bloqueado pela guarda B-01 antes de alcançar a checagem B-03 (limitação conhecida da PR-b — issue #892, removida na PR-e/issue #548)")]
+    public void Publicar_GatilhoPorFaixaEtariaSemReferencia_BloqueadoPorB01AntesDeB03()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        // Nenhuma ReferenciaTemporalFatos configurada — se B-01 não existisse, isto acionaria
+        // "ProcessoSeletivo.ReferenciaTemporalFatosAusente" (B-03). Enquanto B-01 existe, o
+        // bloco de exigências não materializado bloqueia primeiro, com outro código.
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas");
+    }
+
+    [Fact(DisplayName = "Publicar sem nenhum gatilho por FAIXA_ETARIA não é afetado pela pendência B-03 (contraprova)")]
+    public void Publicar_SemGatilhoPorFaixaEtaria_NaoBloqueiaPorReferenciaTemporalFatos()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);

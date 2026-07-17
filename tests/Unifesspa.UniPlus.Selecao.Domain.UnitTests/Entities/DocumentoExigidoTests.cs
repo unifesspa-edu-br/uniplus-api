@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -15,7 +17,8 @@ public sealed class DocumentoExigidoTests
     private static Result<DocumentoExigido> Exigencia(
         Aplicabilidade aplicabilidade = Aplicabilidade.Geral,
         bool obrigatorio = false,
-        string? consequenciaIndeferimento = null) =>
+        string? consequenciaIndeferimento = null,
+        IReadOnlyList<CondicaoGatilho>? condicoes = null) =>
         DocumentoExigido.Criar(
             exigidoNaFaseId: Guid.CreateVersion7(),
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
@@ -25,7 +28,11 @@ public sealed class DocumentoExigidoTests
             aplicabilidade: aplicabilidade,
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            grupoSatisfacaoId: null);
+            grupoSatisfacaoId: null,
+            condicoes: condicoes ?? []);
+
+    private static CondicaoGatilho CondicaoQualquer() => CondicaoGatilho.Criar(
+        0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!;
 
     [Fact(DisplayName = "CA-01: aplicabilidade Nenhuma é recusada")]
     public void Criar_AplicabilidadeNenhuma_Recusa()
@@ -69,6 +76,25 @@ public sealed class DocumentoExigidoTests
 
         erro.Should().NotBeNull();
         erro!.Code.Should().Be("DocumentoExigido.GeralComCondicao");
+    }
+
+    [Fact(DisplayName = "Story #892 (PR-b): Criar recusa GERAL com condição real (não mais parâmetro sintético)")]
+    public void Criar_GeralComCondicaoReal_Recusa()
+    {
+        Result<DocumentoExigido> resultado = Exigencia(Aplicabilidade.Geral, condicoes: [CondicaoQualquer()]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.GeralComCondicao");
+    }
+
+    [Fact(DisplayName = "Story #892 (PR-b): Criar aceita CONDICIONAL com condição real e a anexa à coleção")]
+    public void Criar_CondicionalComCondicaoReal_Aceita()
+    {
+        CondicaoGatilho condicao = CondicaoQualquer();
+        DocumentoExigido exigencia = Exigencia(Aplicabilidade.Condicional, condicoes: [condicao]).Value!;
+
+        exigencia.Condicoes.Should().ContainSingle(c => c.Id == condicao.Id);
+        condicao.DocumentoExigidoId.Should().Be(exigencia.Id);
     }
 
     [Fact(DisplayName = "CA-01: GERAL sem condição viva é coerente (contraprova)")]

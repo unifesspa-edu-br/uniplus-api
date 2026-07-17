@@ -188,4 +188,62 @@ public sealed class PredicadoDnfValidadorTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
     }
+
+    // ── Story #554 (PR-b, issue #892) — domínio categórico dinâmico ──
+
+    private static readonly Dictionary<string, DescritorFatoCandidato> VocabularioComDinamico = new(Vocabulario)
+    {
+        ["MODALIDADE"] = DescritorFatoCandidato.Criar("MODALIDADE", TipoDominioFato.CategoricoDinamico, null).Value!,
+    };
+
+    private static Result ValidarComDominioDinamico(
+        CondicaoDnf condicao, IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos) =>
+        PredicadoDnfValidador.Validar(PredicadoDe(condicao), VocabularioComDinamico, null, dominiosDinamicos);
+
+    [Fact(DisplayName = "Aceita IGUAL/EM categórico dinâmico com domínio fornecido pelo chamador")]
+    public void Validar_CategoricoDinamico_DominioFornecido_Aceita()
+    {
+        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "LB_PPI", "AC" } };
+
+        CondicaoDnf igual = CondicaoDnf.Criar("MODALIDADE", Operador.Igual, Json("\"LB_PPI\"")).Value!;
+        CondicaoDnf em = CondicaoDnf.Criar("MODALIDADE", Operador.Em, Json("[\"LB_PPI\",\"AC\"]")).Value!;
+
+        ValidarComDominioDinamico(igual, dominios).IsSuccess.Should().BeTrue();
+        ValidarComDominioDinamico(em, dominios).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "CA-03: rejeita valor categórico dinâmico fora do domínio ofertado pelo processo")]
+    public void Validar_CategoricoDinamico_ForaDoDominio_Recusa()
+    {
+        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "AC" } };
+        CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.Igual, Json("\"LB_Q\"")).Value!;
+
+        Result resultado = ValidarComDominioDinamico(condicao, dominios);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("PredicadoDnf.ValorForaDoDominio");
+    }
+
+    [Fact(DisplayName = "Rejeita categórico dinâmico quando o chamador não forneceu o domínio")]
+    public void Validar_CategoricoDinamico_SemDominioFornecido_Recusa()
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.Igual, Json("\"AC\"")).Value!;
+
+        Result resultado = ValidarComDominioDinamico(condicao, dominiosDinamicos: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("PredicadoDnf.DominioDinamicoNaoFornecido");
+    }
+
+    [Fact(DisplayName = "Rejeita MAIOR_IGUAL/MENOR_IGUAL para categórico dinâmico (mesma matriz do estático)")]
+    public void Validar_CategoricoDinamico_OperadorNumerico_Recusa()
+    {
+        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "AC" } };
+        CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.MaiorIgual, Json("\"AC\"")).Value!;
+
+        Result resultado = ValidarComDominioDinamico(condicao, dominios);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
+    }
 }

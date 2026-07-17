@@ -337,12 +337,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Substitui integralmente os documentos exigidos do processo (Story #554, PR-a):
-    /// fase, snapshot-copy do tipo de documento, aplicabilidade GERAL/CONDICIONAL,
-    /// obrigatoriedade, consequência de indeferimento e grupo de satisfação. O gatilho
-    /// DNF, a base legal e a idade/formato/tamanho chegam em tasks-irmãs (PR-b/c/d). O
-    /// <c>GET</c> vem do endpoint agregado (<see cref="ObterPorId"/>) — não há rota
-    /// aninhada própria de leitura.
+    /// Substitui integralmente os documentos exigidos do processo (Story #554): fase,
+    /// snapshot-copy do tipo de documento, aplicabilidade GERAL/CONDICIONAL,
+    /// obrigatoriedade, consequência de indeferimento, grupo de satisfação e o gatilho
+    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO, PR-b). A base
+    /// legal e a idade/formato/tamanho chegam em tasks-irmãs (PR-c/d). O <c>GET</c> vem
+    /// do endpoint agregado (<see cref="ObterPorId"/>) — não há rota aninhada própria de
+    /// leitura.
     /// </summary>
     [HttpPut("{id:guid}/documentos-exigidos")]
     [RequiresIdempotencyKey]
@@ -364,6 +365,36 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirDocumentosExigidosCommand(id, itens, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
+    /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story
+    /// #554, PR-b — B-03 do plano). <c>Tipo</c> nulo remove a referência.
+    /// </summary>
+    [HttpPut("{id:guid}/referencia-temporal-fatos")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirReferenciaTemporalFatos(
+        Guid id,
+        [FromBody] DefinirReferenciaTemporalFatosRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirReferenciaTemporalFatosCommand(id, request.Tipo, request.Data, request.FaseId, precondicao),
+            cancellationToken);
         return ResponderMutacao(resultado);
     }
 
@@ -924,6 +955,30 @@ public sealed record DefinirBonusRegionalRequest(
     decimal? Teto,
     string? MunicipioConvenio,
     string? BaseLegal);
+
+/// <summary>
+/// Corpo de <see cref="ProcessoSeletivoController.DefinirReferenciaTemporalFatos"/> —
+/// omite <c>ProcessoSeletivoId</c> (vem da rota).
+/// </summary>
+/// <remarks>
+/// Contrato por variante de <c>Tipo</c> (Story #554, PR-b — issue #892; tokens em
+/// <see cref="Domain.Enums.ReferenciaTipoCodigo"/>), tudo-ou-nada por linha (N-I01):
+/// <list type="table">
+/// <listheader><term>Tipo</term><description>Data</description><description>FaseId</description></listheader>
+/// <item><term><see langword="null"/> (remove a referência)</term><description>proibido</description><description>proibido</description></item>
+/// <item><term><c>FIM_INSCRICAO</c></term><description>proibido</description><description>proibido</description></item>
+/// <item><term><c>INICIO_FASE</c> / <c>FIM_FASE</c></term><description>proibido</description><description>obrigatório</description></item>
+/// <item><term><c>DATA_ESPECIFICA</c></term><description>obrigatório</description><description>proibido</description></item>
+/// </list>
+/// Violação de qualquer linha recusa com <c>ReferenciaTemporalFatos.DataIncoerenteComTipo</c>
+/// ou <c>ReferenciaTemporalFatos.FaseIncoerenteComTipo</c> (422) — sem fallback silencioso
+/// (ADR-0111:235-236). <c>FaseId</c>, quando presente, precisa pertencer ao cronograma do
+/// MESMO processo (<c>ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso</c>).
+/// </remarks>
+public sealed record DefinirReferenciaTemporalFatosRequest(
+    string? Tipo,
+    DateOnly? Data,
+    Guid? FaseId);
 
 /// <summary>
 /// Corpo de <see cref="ProcessoSeletivoController.DefinirClassificacao"/> —

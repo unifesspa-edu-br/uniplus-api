@@ -81,6 +81,23 @@ public sealed record PredicadoDnf
             return false;
         }
 
+        // Story #554 (PR-b): fato multivalorado — o candidato resolve para um CONJUNTO
+        // (array JSON), não um escalar. A forma do valor resolvido decide a semântica, sem
+        // precisar de metadado extra aqui: IGUAL passa a significar pertinência do valor
+        // configurado no conjunto do candidato; EM passa a significar interseção não vazia
+        // entre o conjunto do candidato e a lista configurada (ADR-0111). Fatos escalares
+        // (a maioria) continuam pelo ramo original, sem NENHUMA mudança de comportamento.
+        if (valorCandidato.ValueKind == JsonValueKind.Array)
+        {
+            return condicao.Operador switch
+            {
+                Operador.Igual => valorCandidato.EnumerateArray().Any(item => ValoresIguais(item, condicao.Valor)),
+                Operador.Em => condicao.Valor.EnumerateArray()
+                    .Any(itemConfigurado => valorCandidato.EnumerateArray().Any(item => ValoresIguais(item, itemConfigurado))),
+                _ => false,
+            };
+        }
+
         return condicao.Operador switch
         {
             Operador.Igual => ValoresIguais(valorCandidato, condicao.Valor),

@@ -38,7 +38,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         Guid tipoDocumentoOrigemId = Guid.CreateVersion7();
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, tipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL",
-            aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null).Value!;
+            aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
