@@ -194,6 +194,37 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(AtendimentoDisponivel)] = (["Necessidades"], []),
         [typeof(ConcorrenciaDuplaObrigatoria)] = ([], []),
         [typeof(Customizado)] = (["Parametros"], []),
+
+        // Documentos exigidos (Story #554, PR-e) — exigencias[] real, CA-09 (exigenciaId
+        // estável). GrupoSatisfacaoId e Aplicabilidade entram porque são o que o resolvedor
+        // (PR-e, fora deste bloco) consome para correlacionar apresentação↔exigência.
+        [typeof(DocumentoExigido)] = (
+            [
+                "ExigidoNaFaseId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
+                "TipoDocumentoCategoria", "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
+                "GrupoSatisfacaoId", "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatoPermitido",
+                "TamanhoMaximoBytes",
+            ],
+            [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
+
+        [typeof(CondicaoGatilho)] = (
+            ["Clausula", "Fato", "Operador", "Valor"],
+            [("DocumentoExigidoId", "FK interna.")]),
+
+        [typeof(DocumentoExigidoBaseLegal)] = (
+            ["Referencia", "Abrangencia", "Status", "Observacao"],
+            [("DocumentoExigidoId", "FK interna.")]),
+
+        [typeof(IdadeMaximaEmissao)] = (
+            ["Valor", "Unidade", "ReferenciaTipo", "Data", "ReferenciaFaseId"],
+            []),
+
+        // A POLÍTICA crua (B-03) — insumo de ProcessoSeletivo.ResolverDataReferenciaFatos.
+        // A DateOnly resolvida (dataReferenciaFatos) é output derivado, não uma propriedade
+        // de entidade — não passa por este manifesto (é lida diretamente do método).
+        [typeof(ReferenciaTemporalFatos)] = (
+            ["Tipo", "Data", "FaseId"],
+            []),
     };
 
     /// <summary>

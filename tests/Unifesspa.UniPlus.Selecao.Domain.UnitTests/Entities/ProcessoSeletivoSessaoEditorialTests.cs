@@ -459,7 +459,9 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         processo.BonusRegional,
         [.. processo.CriteriosDesempate],
         processo.Classificacao!,
-        [.. processo.CronogramaFases]);
+        [.. processo.CronogramaFases],
+        [.. processo.DocumentosExigidos],
+        processo.ReferenciaTemporalFatos);
 
     /// <summary>Uma versão qualquer DESTE processo — o teste que a usa lança antes de tocá-la.</summary>
     private static VersaoConfiguracao VersaoQualquerDoProcesso(ProcessoSeletivo processo) =>

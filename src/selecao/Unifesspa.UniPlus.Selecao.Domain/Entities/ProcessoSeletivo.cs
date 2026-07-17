@@ -5,6 +5,7 @@ using System.Text.Json;
 using Enums;
 using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -1111,6 +1112,57 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Resolve <see cref="ReferenciaTemporalFatos"/> para a <see cref="DateOnly"/> concreta
+    /// que o envelope congela como <c>dataReferenciaFatos</c> (Story #554, PR-e, B-03) — o
+    /// mesmo par (Tipo, âncora) que <see cref="PendenciaDaReferenciaTemporalFatos"/> já
+    /// provou resolvível antes da transição chamar este método; aqui só se resolve, sem
+    /// revalidar. Fuso <c>America/Sao_Paulo</c> — a virada do dia UTC→local é a razão de
+    /// existir deste método em vez de o encoder ler <see cref="DateTimeOffset"/> cru.
+    /// </summary>
+    /// <returns>
+    /// <see langword="null"/> quando não há gatilho por <c>FAIXA_ETARIA</c> — a resolução
+    /// não foi provada nem é necessária, e congelar uma data não pedida por ninguém seria
+    /// dado morto no envelope, não uma garantia a mais.
+    /// </returns>
+    public DateOnly? ResolverDataReferenciaFatos()
+    {
+        bool existeGatilhoPorFaixaEtaria = _documentosExigidos
+            .SelectMany(static d => d.Condicoes)
+            .Any(static c => string.Equals(c.Fato, "FAIXA_ETARIA", StringComparison.Ordinal));
+        if (!existeGatilhoPorFaixaEtaria)
+        {
+            return null;
+        }
+
+        if (ReferenciaTemporalFatos is not { } referencia)
+        {
+            throw new InvalidOperationException(
+                "Resolução de dataReferenciaFatos sem ReferenciaTemporalFatos configurada — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
+        }
+
+        if (referencia.Tipo == ReferenciaTipo.DataEspecifica)
+        {
+            return referencia.Data!.Value;
+        }
+
+        DateTimeOffset? extremo = referencia.Tipo switch
+        {
+            ReferenciaTipo.InicioFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Inicio,
+            ReferenciaTipo.FimFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Fim,
+            ReferenciaTipo.FimInscricao => _cronogramaFases.FirstOrDefault(static f => f.ColetaInscricao)?.Fim,
+            _ => throw new InvalidOperationException($"Tipo de ReferenciaTemporalFatos não reconhecido: {referencia.Tipo}."),
+        };
+
+        if (extremo is not { } instante)
+        {
+            throw new InvalidOperationException(
+                "dataReferenciaFatos não resolvível a partir do cronograma — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
+        }
+
+        return DateOnly.FromDateTime(instante.ParaHorarioBrasilia().DateTime);
+    }
+
+    /// <summary>
     /// CA-03 (Story #554, issue #892 — achado Codex P2, PR #896): um gatilho DNF sobre um
     /// fato categórico dinâmico (<c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>) referencia
     /// um valor por CÓDIGO — nunca por Guid, diferente de <c>FaseCronograma</c>. Isso
@@ -1972,27 +2024,34 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _cronogramaFases.Add(fase);
         }
 
-        // Documentos exigidos (Story #554, issue #547) — o bloco `documentosExigidos.
-        // exigencias` do envelope ainda é stub (PR-a..PR-d): `GrafoConfiguracao` não tem
-        // como reconstruir esta coleção a partir de bytes que não a contêm. A guarda
-        // B-01 garante o invariante que sustenta o Clear() sozinho: TODA versão já
-        // congelada (Publicar/Retificar/FecharRetificacao) tem, necessariamente, zero
-        // `DocumentoExigido` — nenhuma passou pela guarda com exigência configurada.
-        // Descartar uma sessão que editou a coleção precisa repor esse mesmo estado
-        // vazio, não preservar o que a sessão editou. Quando a PR-e materializar o
-        // bloco, `GrafoConfiguracao` ganha `DocumentosExigidos` e este trecho passa a
-        // reconciliar por `exigencia_id`, como as demais coleções acima.
-        _documentosExigidos.Clear();
+        // Documentos exigidos (Story #554, PR-e): o bloco `documentosExigidos.exigencias`
+        // do envelope agora é real (CA-09) — reconciliação por `exigenciaId` (o
+        // DocumentoExigido.Id preservado por Reidratar, o segundo caso de identidade
+        // congelada depois de EtapaProcesso.Id, ADR-0110 D2). Mesmo padrão de reuso da
+        // instância TRACKED das demais coleções acima.
+        Dictionary<Guid, DocumentoExigido> documentosExigidosTracked = _documentosExigidos.ToDictionary(d => d.Id);
+        List<DocumentoExigido> documentosExigidos = [];
+        foreach (DocumentoExigido congelada in grafo.DocumentosExigidos)
+        {
+            documentosExigidos.Add(documentosExigidosTracked.TryGetValue(congelada.Id, out DocumentoExigido? viva) ? viva : congelada);
+        }
 
-        // Referência temporal de fatos (Story #554, issue #892) — mesmo raciocínio do
-        // Clear() acima: o campo não é materializado no envelope (isso é da PR-e), então
-        // `GrafoConfiguracao` não carrega um valor para restaurar. O invariante que
-        // sustenta zerar em vez de preservar é o mesmo da guarda B-01: como toda versão
-        // já congelada tem zero `DocumentoExigido`, nenhuma tem gatilho por FAIXA_ETARIA,
-        // e por isso nenhuma versão congelada jamais DEPENDEU de uma referência temporal
-        // não nula. Preservar o valor que a sessão descartada editou vazaria a mutação
-        // não publicada para o estado vivo pós-descarte.
-        ReferenciaTemporalFatos = null;
+        _documentosExigidos.Clear();
+        foreach (DocumentoExigido documento in documentosExigidos)
+        {
+            documento.VincularProcesso(Id);
+            _documentosExigidos.Add(documento);
+        }
+
+        // Referência temporal de fatos (Story #554, PR-e, B-03): o envelope congela a
+        // POLÍTICA crua (Tipo/Data/FaseId) ao lado da data já resolvida — mesmo padrão de
+        // "insumo + output derivado" de distribuicao/vagas. Repor a política (não só a
+        // data) é o que torna o round-trip reidratar→recanonicalizar não-tautológico:
+        // ResolverDataReferenciaFatos() recalcula o mesmo output a partir do mesmo insumo
+        // restaurado. Cada VersaoConfiguracao congela sua PRÓPRIA política — uma
+        // retificação que muda a política antes de publicar não afeta o que já foi
+        // congelado (B-03).
+        ReferenciaTemporalFatos = grafo.ReferenciaTemporalFatos;
     }
 
     /// <summary>
