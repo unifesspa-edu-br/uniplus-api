@@ -1264,7 +1264,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             ReferenciaTipo.InicioFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Inicio,
             ReferenciaTipo.FimFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Fim,
-            ReferenciaTipo.FimInscricao => _cronogramaFases.FirstOrDefault(static f => f.ColetaInscricao && f.Fim is not null)?.Fim,
+            // Achado de revisão (Story #554, PR #903): _cronogramaFases preserva a ORDEM DE
+            // ENTRADA de DefinirCronogramaFases, mas o envelope escreve as fases ordenadas
+            // por Ordem (canonicalização determinística) — havendo mais de uma fase de
+            // coleta com Fim, a fase publicada dependeria da ordem em que o caller as
+            // passou, e a reidratação (sempre em ordem de Ordem) poderia escolher outra,
+            // quebrando o round-trip (SombraParaVerificacao). OrderBy(Ordem) torna a escolha
+            // determinística e independente de como a coleção foi populada.
+            ReferenciaTipo.FimInscricao => _cronogramaFases
+                .Where(static f => f.ColetaInscricao && f.Fim is not null)
+                .OrderBy(static f => f.Ordem)
+                .FirstOrDefault()?.Fim,
             _ => throw new InvalidOperationException($"Tipo de ReferenciaTemporalFatos não reconhecido: {referencia.Tipo}."),
         };
 
