@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -41,11 +42,16 @@ using Xunit;
 public sealed class EnvelopeCanonicoGoldenTests
 {
     private static readonly SnapshotPublicacaoCanonicalizer Canonicalizer = new();
-    private static readonly string HashFixo = new('a', 64);
+
+    /// <summary>Exposto para <c>EnvelopeCodecRoundTripTests.GoldenRica12_*</c> — mesmo hash fixo, mesma fixture.</summary>
+    internal static readonly string HashFixo = new('a', 64);
 
     private static readonly Guid OfertaCursoFixa = new("11111111-1111-1111-1111-111111111111");
     private static readonly Guid ModalidadeFixa = new("22222222-2222-2222-2222-222222222222");
     private static readonly Guid DocumentoFixo = new("33333333-3333-3333-3333-333333333333");
+
+    /// <summary>Id de origem do <c>TipoDocumento</c> (snapshot-copy cross-módulo, ADR-0061) — Story #554, PR-e.</summary>
+    private static readonly Guid TipoDocumentoFixo = new("44444444-4444-4444-4444-444444444444");
 
     private static readonly Regex GuidPattern = new(
         "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
@@ -58,6 +64,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         OfertaCursoFixa.ToString(),
         ModalidadeFixa.ToString(),
         DocumentoFixo.ToString(),
+        TipoDocumentoFixo.ToString(),
     ];
 
     /// <summary>
@@ -105,8 +112,15 @@ public sealed class EnvelopeCanonicoGoldenTests
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
 
-    /// <summary>Agregado de referência — conforme, com as 10 dimensões reais preenchidas.</summary>
-    private static ProcessoSeletivo ProcessoDeReferencia()
+    /// <summary>Agregado de referência — conforme, com as 13 dimensões reais preenchidas.</summary>
+    /// <remarks>
+    /// Story #554 (PR-e, bump 1.2): o cronograma, a exigência documental rica e a
+    /// referência temporal de fatos foram acrescentados para que a golden fixture
+    /// exercite de fato <c>SerializarExigencias</c>/<c>SerializarCondicaoGatilho</c>/
+    /// <c>SerializarBasesLegais</c>/<c>SerializarIdadeMaximaEmissao</c> — uma
+    /// <c>exigencias[]</c> sempre vazia não provaria nada sobre a forma nova.
+    /// </remarks>
+    internal static ProcessoSeletivo ProcessoDeReferencia()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
 
@@ -127,7 +141,64 @@ public sealed class EnvelopeCanonicoGoldenTests
             nOpcoesAlocacao: 1,
             regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "INSCRICAO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            produzResultado: false,
+            resultadoDefinitivo: false,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: null,
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirDocumentosExigidos([DocumentoExigidoDeReferencia(fase.Id)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!,
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
         return processo;
+    }
+
+    /// <summary>
+    /// Exigência CONDICIONAL rica — todas as 12 dimensões da forma 1.2 preenchidas
+    /// (condição de gatilho, base legal resolvida, idade de emissão, formato e tamanho
+    /// máximo), para que a golden fixture congele a serialização completa do item.
+    /// </summary>
+    private static DocumentoExigido DocumentoExigidoDeReferencia(Guid exigidoNaFaseId)
+    {
+        CondicaoGatilho condicao = CondicaoGatilho.Criar(
+            0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!;
+        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
+            "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna do certame").Value!;
+        IdadeMaximaEmissao idadeMaximaEmissao = IdadeMaximaEmissao.Criar(
+            90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.FimInscricao, null, null).Value!;
+
+        return DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: TipoDocumentoFixo,
+            tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
+            tipoDocumentoNome: "Comprovante de residência",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: true,
+            consequenciaIndeferimento: "ELIMINA",
+            grupoSatisfacaoId: null,
+            condicoes: [condicao],
+            basesLegais: [baseLegal],
+            idadeMaximaEmissao: idadeMaximaEmissao,
+            formatoPermitido: FormatoPermitido.Pdf,
+            tamanhoMaximoBytes: 5_000_000).Value!;
     }
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDeReferencia() =>
@@ -156,13 +227,13 @@ public sealed class EnvelopeCanonicoGoldenTests
                     quantidadeDeclarada: 40).Value!,
             ]).Value!;
 
-    private static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
+    internal static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
         numero: "001/2026",
         periodoInscricaoInicio: new DateOnly(2026, 1, 1),
         periodoInscricaoFim: new DateOnly(2026, 1, 31),
         documentoEditalId: DocumentoFixo).Value!;
 
-    private static SnapshotCanonico CanonicalizarReferencia() =>
+    internal static SnapshotCanonico CanonicalizarReferencia() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             ProcessoDeReferencia(), DadosDeReferencia(), HashFixo));
 
@@ -315,10 +386,12 @@ public sealed class EnvelopeCanonicoGoldenTests
         switch (node)
         {
             case JsonObject obj:
-                if (obj.ContainsKey("codigo") && !obj.ContainsKey("naturezaLegal"))
+                if (obj.ContainsKey("codigo") && !obj.ContainsKey("naturezaLegal") && !obj.ContainsKey("ordem"))
                 {
                     // `naturezaLegal` distingue a MODALIDADE (que também tem `codigo`,
-                    // mas não é referência de regra) de uma referência do rol.
+                    // mas não é referência de regra) de uma referência do rol. `ordem`
+                    // distingue a FASE do cronograma (Story #554, PR-e) pela mesma razão —
+                    // nenhuma referência de regra tem `ordem`.
                     acumulador.Add((caminho, obj));
                 }
 

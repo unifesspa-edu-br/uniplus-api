@@ -59,7 +59,7 @@ public sealed record EntradaCanonicalizacao(
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>17 chaves</b> — hoje <b>12 blocos reais + 5 stubs</b>
+/// <b>17 chaves</b> — hoje <b>13 blocos reais + 4 stubs</b>
 /// <c>{"status":"nao_construido"}</c> para as dimensões que a Feature #40 ainda
 /// não implementou — e devolve os bytes que <c>VersaoConfiguracao.Abrir</c>
 /// persiste como base do hash. Quando a entrada carrega
