@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -127,6 +129,129 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    // ── Story #554/issue #892 (achado Codex P2, PR #896) — CA-03 backward guard ──
+
+    private static CondicaoGatilho CondicaoDe(string fato, string valor) => CondicaoGatilho.Criar(
+        0, fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!;
+
+    private static ModalidadeSelecionada Modalidade(string codigo) => ModalidadeSelecionada.Criar(
+        modalidadeOrigemId: Guid.CreateVersion7(),
+        codigo: codigo,
+        descricao: null,
+        naturezaLegal: NaturezaLegalModalidade.Ampla,
+        composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+        composicaoOrigemCodigo: null,
+        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+        remanejamentoDestino: null,
+        remanejamentoPar: null,
+        remanejamentoFallback: null,
+        criteriosCumulativos: [],
+        acaoQuandoIndeferido: null,
+        baseLegal: "Res. Unifesspa 532/2021",
+        quantidadeDeclarada: 10).Value!;
+
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoCom(params string[] codigosModalidade)
+    {
+        ReferenciaRegra regra = ReferenciaRegra.Criar(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", string.Concat(Enumerable.Repeat("ab01234567", 7))[..64]).Value!;
+        return ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 10,
+            pr: 1m,
+            regraDistribuicao: regra,
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [.. codigosModalidade.Select(Modalidade)]).Value!;
+    }
+
+    [Fact(DisplayName = "Redefinir distribuição de vagas removendo código de modalidade referenciado por gatilho vivo é recusado")]
+    public void DefinirDistribuicaoVagas_RemoveModalidadeReferenciada_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")]).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue("LB_PPI é referenciada por uma condição de gatilho viva e deixaria de ser ofertada");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ModalidadeReferenciadaPorExigenciaViva");
+    }
+
+    [Fact(DisplayName = "Redefinir distribuição de vagas preservando o código de modalidade referenciado é aceito (contraprova)")]
+    public void DefinirDistribuicaoVagas_PreservaModalidadeReferenciada_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")]).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC", "LI_PPI")], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Redefinir oferta de atendimento removendo código de condição referenciado por gatilho vivo é recusado")]
+    public void DefinirOfertaAtendimento_RemoveCondicaoReferenciada_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], []).Value!, PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")]).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue("PCD é referenciada por uma condição de gatilho viva e deixaria de ser ofertada");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva");
+    }
+
+    [Fact(DisplayName = "Redefinir oferta de atendimento preservando o código de condição referenciado é aceito (contraprova)")]
+    public void DefinirOfertaAtendimento_PreservaCondicaoReferenciada_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], []).Value!, PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")]).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        OfertaCondicao condicaoPcdNova = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        OfertaCondicao condicaoLactante = OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante");
+        Result resultado = processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([condicaoPcdNova, condicaoLactante], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
