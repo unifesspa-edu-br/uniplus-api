@@ -517,6 +517,20 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 6ª rodada): com DUAS fases de coleta, a primeira sem Fim e a segunda com Fim, FIM_INSCRICAO é aceito — a pergunta é existencial (Any), não posicional (FirstOrDefault)")]
+    public void DefinirDocumentosExigidos_FimInscricaoComPrimeiraFaseDeColetaSemFimEDemaisComFim_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 2, 28, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma primeiraColeta = FaseColetaInscricao(1, "INSCRICAO_PRIMEIRA_FASE", fim: null);
+        FaseCronograma segundaColeta = FaseColetaInscricao(2, "INSCRICAO_SEGUNDA_FASE", fim);
+        processo.DefinirCronogramaFases([primeiraColeta, segundaColeta], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(primeiraColeta.Id)], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "a segunda fase de coleta resolve FIM_INSCRICAO — escolher a primeira encontrada (sem Fim) seria um 422 falso");
+    }
+
     [Fact(DisplayName = "Achado Codex P2 (PR #900, 5ª rodada): redefinir o cronograma tirando o Fim da fase de coleta com exigência FIM_INSCRICAO viva é recusado")]
     public void DefinirCronogramaFases_FaseDeColetaPerdeFimComExigenciaFimInscricaoViva_Recusa()
     {
