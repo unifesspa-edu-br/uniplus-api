@@ -1041,6 +1041,75 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Coerência entre a consequência de indeferimento declarada em cada
+    /// <see cref="DocumentoExigido"/> e a ação da vaga (Story #554, PR-e, CA-05) — lida
+    /// de <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>, sem campo duplicado em
+    /// <see cref="DocumentoExigido"/>. Chamado por <see cref="Publicar"/> e por
+    /// <see cref="SucederVersao"/> (Retificar/FecharRetificacao), sempre <b>depois</b> de
+    /// <see cref="PendenciaDasExigenciasDocumentais"/>. Sem cache — recomputado a cada
+    /// chamada a partir da coleção real de <see cref="_documentosExigidos"/> e
+    /// <see cref="_distribuicaoVagas"/>, então uma mudança de gatilho ou de distribuição
+    /// de vagas entre versões é sempre reavaliada (contraprova "reavaliação após mudança
+    /// de gatilho").
+    /// </summary>
+    /// <remarks>
+    /// Duas checagens:
+    /// <list type="bullet">
+    /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — hoje a única
+    /// vantagem modelada é <see cref="BonusRegional"/> (RN05, toggle por presença:
+    /// ausência da entidade já significa sem bônus).</item>
+    /// <item>Para cada modalidade que a exigência alcança (mesmo fato sintético
+    /// <c>MODALIDADE</c> usado pelo gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
+    /// quando essa modalidade declara <c>AcaoQuandoIndeferido</c>, a consequência precisa
+    /// ser idêntica — mesmo vocabulário fechado dos dois lados.</item>
+    /// </list>
+    /// </remarks>
+    private DomainError? PendenciaDeCoerenciaDaConsequenciaDeIndeferimento()
+    {
+        foreach (DocumentoExigido exigencia in _documentosExigidos)
+        {
+            if (exigencia.ConsequenciaIndeferimento is not { } consequencia)
+            {
+                continue;
+            }
+
+            if (consequencia == "REMOVE_VANTAGEM" && BonusRegional is null)
+            {
+                return new DomainError(
+                    "DocumentoExigido.RemoveVantagemSemVantagemViva",
+                    $"A exigência '{exigencia.TipoDocumentoCodigo}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
+            }
+
+            foreach (ModalidadeSelecionada modalidade in ModalidadesAlcancadasPor(exigencia))
+            {
+                if (modalidade.AcaoQuandoIndeferido is { } acao
+                    && !string.Equals(acao, consequencia, StringComparison.Ordinal))
+                {
+                    return new DomainError(
+                        "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
+                        $"A exigência '{exigencia.TipoDocumentoCodigo}' declara consequência '{consequencia}', incoerente com a ação de indeferimento '{acao}' configurada para a modalidade '{modalidade.Codigo}'.");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Modalidades ofertadas cuja aplicabilidade da exigência cobre — mesmo fato sintético
+    /// <c>MODALIDADE</c> avaliado por <see cref="DocumentoExigido.AplicavelPara"/> que o
+    /// gate real usa (<see cref="Services.AvaliadorConformidadeLegal"/>): um fato por
+    /// candidato hipotético dessa modalidade, nunca os fatos reais de um candidato.
+    /// </summary>
+    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(DocumentoExigido exigencia) =>
+        _distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .Where(modalidade => exigencia.AplicavelPara(new Dictionary<string, JsonElement>
+            {
+                ["MODALIDADE"] = JsonSerializer.SerializeToElement(modalidade.Codigo),
+            }));
+
+    /// <summary>
     /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR-b — B-03 do
     /// plano). Chamado por <see cref="Publicar"/> e por <see cref="SucederVersao"/>,
     /// sempre <b>depois</b> de <see cref="PendenciaDasExigenciasDocumentais"/>.
@@ -1251,6 +1320,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
+        }
+
+        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento() is { } pendenciaCoerenciaConsequencia)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCoerenciaConsequencia);
         }
 
         if (PendenciaDaReferenciaTemporalFatos() is { } pendenciaReferenciaTemporal)
@@ -1576,6 +1650,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
+        }
+
+        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento() is { } pendenciaCoerenciaConsequencia)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCoerenciaConsequencia);
         }
 
         if (PendenciaDaReferenciaTemporalFatos() is { } pendenciaReferenciaTemporal)
