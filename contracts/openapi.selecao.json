@@ -3491,6 +3491,63 @@
           }
         }
       },
+      "BaseLegalDto": {
+        "required": [
+          "id",
+          "referencia",
+          "abrangencia",
+          "status",
+          "observacao"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referencia": {
+            "type": "string"
+          },
+          "abrangencia": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "observacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "BaseLegalInput": {
+        "required": [
+          "referencia",
+          "abrangencia",
+          "status",
+          "observacao"
+        ],
+        "type": "object",
+        "properties": {
+          "referencia": {
+            "type": "string"
+          },
+          "abrangencia": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "observacao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CaraterEtapa": {
         "enum": [
           "nenhum",
@@ -4395,7 +4452,8 @@
           "obrigatorio",
           "consequenciaIndeferimento",
           "grupoSatisfacaoId",
-          "condicoes"
+          "condicoes",
+          "basesLegais"
         ],
         "type": "object",
         "properties": {
@@ -4443,6 +4501,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CondicaoGatilhoDto"
+            }
+          },
+          "basesLegais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDto"
             }
           }
         }
@@ -4801,7 +4865,8 @@
           "obrigatorio",
           "consequenciaIndeferimento",
           "grupoSatisfacaoId",
-          "condicoes"
+          "condicoes",
+          "basesLegais"
         ],
         "type": "object",
         "properties": {
@@ -4836,6 +4901,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CondicaoGatilhoInput"
+            }
+          },
+          "basesLegais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalInput"
             }
           }
         }

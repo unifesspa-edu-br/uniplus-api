@@ -339,11 +339,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// <summary>
     /// Substitui integralmente os documentos exigidos do processo (Story #554): fase,
     /// snapshot-copy do tipo de documento, aplicabilidade GERAL/CONDICIONAL,
-    /// obrigatoriedade, consequência de indeferimento, grupo de satisfação e o gatilho
-    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO, PR-b). A base
-    /// legal e a idade/formato/tamanho chegam em tasks-irmãs (PR-c/d). O <c>GET</c> vem
-    /// do endpoint agregado (<see cref="ObterPorId"/>) — não há rota aninhada própria de
-    /// leitura.
+    /// obrigatoriedade, consequência de indeferimento, grupo de satisfação, o gatilho
+    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO, PR-b) e a base
+    /// legal 1:N (PR-c) — validada apenas na FORMA aqui; o gate "≥1 RESOLVIDO por
+    /// exigência que determina resultado" é da publicação (ADR-0074). A idade/formato/
+    /// tamanho chega em task-irmã (PR-d). O <c>GET</c> vem do endpoint agregado
+    /// (<see cref="ObterPorId"/>) — não há rota aninhada própria de leitura.
     /// </summary>
     [HttpPut("{id:guid}/documentos-exigidos")]
     [RequiresIdempotencyKey]

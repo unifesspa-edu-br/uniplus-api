@@ -60,10 +60,10 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 
 **Issue:** #549 (UNI-REQ-0059) · **Branch:** `feature/549-base-legal-exigencia` · **PR:** `Closes #549` + ref. #554
 
-- [ ] 4.1 Modelar `DocumentoExigidoBaseLegal` (EntityBase puro) 1:N, editada pelo PUT integral
-- [ ] 4.2 Gate de publicação: ≥1 base RESOLVIDO para quem determina resultado; INTERNA_EDITAL sozinha; só RESOLVIDO congela
-- [ ] 4.3 Migration EF Core + Configuration
-- [ ] 4.4 Testes: só-PENDENTE bloqueia; rebaixar/remover a única RESOLVIDO é apanhado na publicação
+- [x] 4.1 Modelar `DocumentoExigidoBaseLegal` (EntityBase puro) 1:N, editada pelo PUT integral
+- [x] 4.2 Gate de publicação: ≥1 base RESOLVIDO para quem determina resultado; INTERNA_EDITAL sozinha; só RESOLVIDO congela
+- [x] 4.3 Migration EF Core + Configuration
+- [x] 4.4 Testes: só-PENDENTE bloqueia; rebaixar/remover a única RESOLVIDO é apanhado na publicação
 - [ ] 4.5 Gates locais + revisão Codex; abrir PR `Closes #549`; `/review-pr` até zero pendências; merge sequencial
 
 ## 5. PR-d — Idade de emissão + formato + tamanho + guards de fase

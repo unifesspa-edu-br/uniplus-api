@@ -48,7 +48,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             obrigatorio: false,
             consequenciaIndeferimento: null,
             grupoSatisfacaoId: null,
-            condicoes: []).Value!;
+            condicoes: [], basesLegais: []).Value!;
 
     [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()
@@ -179,7 +179,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")]).Value!;
+            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], PrecondicaoIfMatch.Ausente);
@@ -199,7 +199,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")]).Value!;
+            condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC", "LI_PPI")], PrecondicaoIfMatch.Ausente);
@@ -221,7 +221,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")]).Value!;
+            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirOfertaAtendimento(
@@ -245,7 +245,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
-            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")]).Value!;
+            condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         OfertaCondicao condicaoPcdNova = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");

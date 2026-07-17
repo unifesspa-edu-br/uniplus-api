@@ -88,6 +88,12 @@ public static class DefinirDocumentosExigidosCommandHandler
                 return Result<MutacaoAceita>.Failure(condicoesResult.Error!);
             }
 
+            Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegaisResult = ResolverBasesLegais(input.BasesLegais);
+            if (basesLegaisResult.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(basesLegaisResult.Error!);
+            }
+
             Result<DocumentoExigido> itemResult = DocumentoExigido.Criar(
                 input.ExigidoNaFaseId,
                 tipoDocumento.Id,
@@ -98,7 +104,8 @@ public static class DefinirDocumentosExigidosCommandHandler
                 input.Obrigatorio,
                 input.ConsequenciaIndeferimento,
                 input.GrupoSatisfacaoId,
-                condicoesResult.Value!);
+                condicoesResult.Value!,
+                basesLegaisResult.Value!);
             if (itemResult.IsFailure)
             {
                 return Result<MutacaoAceita>.Failure(itemResult.Error!);
@@ -177,6 +184,33 @@ public static class DefinirDocumentosExigidosCommandHandler
         }
 
         return Result<IReadOnlyList<CondicaoGatilho>>.Success(condicoes);
+    }
+
+    /// <summary>
+    /// Resolve as bases legais de um item (Story #554, PR-c, issue #549) — só a forma de
+    /// cada base é validada aqui (referência não vazia, abrangência/status no domínio
+    /// fechado); o gate "≥1 RESOLVIDO por exigência que determina resultado" é da
+    /// publicação (<c>Domain.Services.ValidadorBaseLegalExigencias</c>), nunca da escrita.
+    /// </summary>
+    private static Result<IReadOnlyList<DocumentoExigidoBaseLegal>> ResolverBasesLegais(IReadOnlyList<BaseLegalInput> inputs)
+    {
+        List<DocumentoExigidoBaseLegal> basesLegais = [];
+        foreach (BaseLegalInput input in inputs)
+        {
+            TipoAbrangencia abrangencia = TipoAbrangenciaCodigo.FromCodigo(input.Abrangencia);
+            StatusBaseLegal status = StatusBaseLegalCodigo.FromCodigo(input.Status);
+
+            Result<DocumentoExigidoBaseLegal> baseLegalResult = DocumentoExigidoBaseLegal.Criar(
+                input.Referencia, abrangencia, status, input.Observacao);
+            if (baseLegalResult.IsFailure)
+            {
+                return Result<IReadOnlyList<DocumentoExigidoBaseLegal>>.Failure(baseLegalResult.Error!);
+            }
+
+            basesLegais.Add(baseLegalResult.Value!);
+        }
+
+        return Result<IReadOnlyList<DocumentoExigidoBaseLegal>>.Success(basesLegais);
     }
 
     /// <summary>
