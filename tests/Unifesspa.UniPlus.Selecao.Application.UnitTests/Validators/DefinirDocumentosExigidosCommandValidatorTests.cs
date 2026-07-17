@@ -100,6 +100,18 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("1000 caracteres", StringComparison.Ordinal));
     }
 
+    [Fact(DisplayName = "Achado Codex P2 (PR #898, 2ª rodada): item de base legal nulo na lista é rejeitado")]
+    public void Rejeita_ItemDeBaseLegalNulo()
+    {
+        ItemDocumentoExigidoInput item = new(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [null!]);
+
+        ValidationResult resultado = Validar(item);
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Item de base legal", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "Múltiplas bases legais no mesmo item são aceitas (1:N)")]
     public void Aceita_MultiplasBasesLegais() =>
         Validar(ItemCom(

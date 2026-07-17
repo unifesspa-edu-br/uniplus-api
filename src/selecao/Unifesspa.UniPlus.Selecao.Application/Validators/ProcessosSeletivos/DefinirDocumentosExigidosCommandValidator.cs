@@ -94,6 +94,10 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
                 .NotNull()
                 .WithMessage("A lista de bases legais não pode ser nula.");
 
+            item.RuleForEach(i => i.BasesLegais)
+                .NotNull()
+                .WithMessage("Item de base legal não pode ser nulo.");
+
             item.RuleForEach(i => i.BasesLegais).ChildRules(baseLegal =>
             {
                 baseLegal.RuleFor(b => b.Referencia)
