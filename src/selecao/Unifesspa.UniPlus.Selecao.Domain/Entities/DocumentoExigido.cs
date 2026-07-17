@@ -329,6 +329,60 @@ public sealed class DocumentoExigido : EntityBase
     }
 
     /// <summary>
+    /// A exigência PODE alcançar candidatos desta modalidade — verificação ESTRUTURAL do
+    /// gatilho, não factual (Story #554, PR #903, achado de revisão P2). Usada pelo gate
+    /// CA-05 (<see cref="Entities.ProcessoSeletivo"/>, coerência entre
+    /// <see cref="ConsequenciaIndeferimento"/> e <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>)
+    /// no lugar de <see cref="AplicavelPara"/>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AplicavelPara"/> avalia contra um dicionário de fatos completo — qualquer
+    /// fato ausente vira <see langword="false"/> (<c>PredicadoDnf.Avaliar</c>). No momento da
+    /// publicação, só o fato sintético <c>MODALIDADE</c> é conhecido (não há candidato real
+    /// ainda); um gatilho misto como <c>FAIXA_ETARIA &gt;= 18 E MODALIDADE = PCD</c> teria a
+    /// condição de <c>FAIXA_ETARIA</c> avaliada como falsa por <see cref="AplicavelPara"/>,
+    /// reprovando a cláusula inteira e escondendo a modalidade PCD do gate — e, pior, um
+    /// gatilho <b>só</b> sobre <c>FAIXA_ETARIA</c> (sem nenhuma condição de
+    /// <c>MODALIDADE</c>) nunca alcançaria NENHUMA modalidade, isentando silenciosamente
+    /// todo gatilho não-modal do CA-05. Aqui as condições sobre outros fatos são
+    /// IGNORADAS (não tratadas como falsas) — só as condições sobre <c>MODALIDADE</c>
+    /// decidem, por cláusula; uma cláusula sem nenhuma condição de <c>MODALIDADE</c> é
+    /// modalidade-agnóstica e alcança qualquer uma.
+    /// </remarks>
+    public bool PodeAlcancarModalidade(string modalidadeCodigo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(modalidadeCodigo);
+
+        if (Aplicabilidade == Aplicabilidade.Geral)
+        {
+            return true;
+        }
+
+        if (_condicoes.Count == 0)
+        {
+            return false;
+        }
+
+        return _condicoes
+            .GroupBy(static c => c.Clausula)
+            .Any(clausula => clausula
+                .Where(static c => string.Equals(c.Fato, "MODALIDADE", StringComparison.Ordinal))
+                .All(c => CondicaoDeModalidadeSatisfeitaPor(c.ParaCondicaoDnf(), modalidadeCodigo)));
+    }
+
+    private static bool CondicaoDeModalidadeSatisfeitaPor(CondicaoDnf condicao, string modalidadeCodigo) =>
+        condicao.Operador switch
+        {
+            Operador.Igual => condicao.Valor.ValueKind == JsonValueKind.String
+                && string.Equals(condicao.Valor.GetString(), modalidadeCodigo, StringComparison.Ordinal),
+            Operador.Em => condicao.Valor.ValueKind == JsonValueKind.Array
+                && condicao.Valor.EnumerateArray().Any(item =>
+                    item.ValueKind == JsonValueKind.String
+                    && string.Equals(item.GetString(), modalidadeCodigo, StringComparison.Ordinal)),
+            _ => false,
+        };
+
+    /// <summary>
     /// Coerência entre <see cref="Aplicabilidade"/> e a existência de condição de gatilho
     /// viva (CA-01, Story #554, ADR-0071): <c>GERAL</c> nunca convive com condição viva.
     /// Chamado por <see cref="Criar"/> contra a coleção real de <see cref="Condicoes"/>.

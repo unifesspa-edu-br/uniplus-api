@@ -1144,18 +1144,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         consequencia == "RECLASSIFICA_AC" ? "RECLASSIFICAR_AC" : consequencia;
 
     /// <summary>
-    /// Modalidades ofertadas cuja aplicabilidade da exigência cobre — mesmo fato sintético
-    /// <c>MODALIDADE</c> avaliado por <see cref="DocumentoExigido.AplicavelPara"/> que o
-    /// gate real usa (<see cref="Services.AvaliadorConformidadeLegal"/>): um fato por
-    /// candidato hipotético dessa modalidade, nunca os fatos reais de um candidato.
+    /// Modalidades ofertadas que o gatilho da exigência PODE alcançar — verificação
+    /// estrutural (<see cref="DocumentoExigido.PodeAlcancarModalidade"/>), não a avaliação
+    /// factual de <see cref="DocumentoExigido.AplicavelPara"/> que o gate de conformidade
+    /// legal usa (<see cref="Services.AvaliadorConformidadeLegal"/>) — aqui não há
+    /// candidato real, só a pergunta "existe combinação de fatos em que este documento se
+    /// torna exigido para alguém nesta modalidade?" (Story #554, PR #903, achado de
+    /// revisão P2: <c>AplicavelPara</c> trataria qualquer gatilho não-modal, ex. só
+    /// <c>FAIXA_ETARIA</c>, como nunca alcançando nenhuma modalidade).
     /// </summary>
     private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(DocumentoExigido exigencia) =>
         _distribuicaoVagas
             .SelectMany(static d => d.Modalidades)
-            .Where(modalidade => exigencia.AplicavelPara(new Dictionary<string, JsonElement>
-            {
-                ["MODALIDADE"] = JsonSerializer.SerializeToElement(modalidade.Codigo),
-            }));
+            .Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo));
 
     /// <summary>
     /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR #896 — B-03 do
