@@ -74,6 +74,32 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     public void Aceita_TodasCombinacoesValidas(string abrangencia, string status) =>
         Validar(ItemCom(new BaseLegalInput("Referência", abrangencia, status, "Observação"))).IsValid.Should().BeTrue();
 
+    [Fact(DisplayName = "Achado Codex P2 (PR #898): referência acima de 500 caracteres é rejeitada — o mesmo teto de DocumentoExigidoBaseLegalConfiguration")]
+    public void Rejeita_ReferenciaAcimaDoTetoDePersistencia()
+    {
+        string referenciaLonga = new('a', 501);
+
+        ValidationResult resultado = Validar(ItemCom(new BaseLegalInput(referenciaLonga, "FEDERAL", "RESOLVIDO", null)));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("500 caracteres", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "Referência com exatamente 500 caracteres é aceita (contraprova do limite)")]
+    public void Aceita_ReferenciaNoTetoDePersistencia() =>
+        Validar(ItemCom(new BaseLegalInput(new string('a', 500), "FEDERAL", "RESOLVIDO", null))).IsValid.Should().BeTrue();
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #898): observação acima de 1000 caracteres é rejeitada")]
+    public void Rejeita_ObservacaoAcimaDoTetoDePersistencia()
+    {
+        string observacaoLonga = new('a', 1001);
+
+        ValidationResult resultado = Validar(ItemCom(new BaseLegalInput("Referência", "FEDERAL", "RESOLVIDO", observacaoLonga)));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("1000 caracteres", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "Múltiplas bases legais no mesmo item são aceitas (1:N)")]
     public void Aceita_MultiplasBasesLegais() =>
         Validar(ItemCom(

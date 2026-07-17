@@ -28,6 +28,12 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
 
     private static readonly string[] StatusBaseLegalValidos = ["PENDENTE", "RESOLVIDO"];
 
+    // Espelham DocumentoExigidoBaseLegalConfiguration (HasMaxLength) — sem este teto aqui,
+    // um PUT com referência/observação longa demais passa pela validação de forma e só
+    // falha no SaveChanges (DbUpdateException/500), em vez de 400 acionável.
+    private const int ReferenciaBaseLegalMaxLength = 500;
+    private const int ObservacaoBaseLegalMaxLength = 1000;
+
     public DefinirDocumentosExigidosCommandValidator()
     {
         RuleFor(x => x.ProcessoSeletivoId)
@@ -92,7 +98,9 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
             {
                 baseLegal.RuleFor(b => b.Referencia)
                     .NotEmpty()
-                    .WithMessage("A referência da base legal é obrigatória.");
+                    .WithMessage("A referência da base legal é obrigatória.")
+                    .MaximumLength(ReferenciaBaseLegalMaxLength)
+                    .WithMessage($"A referência da base legal deve ter no máximo {ReferenciaBaseLegalMaxLength} caracteres.");
 
                 baseLegal.RuleFor(b => b.Abrangencia)
                     .Must(valor => AbrangenciasValidas.Contains(valor, StringComparer.Ordinal))
@@ -101,6 +109,11 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
                 baseLegal.RuleFor(b => b.Status)
                     .Must(valor => StatusBaseLegalValidos.Contains(valor, StringComparer.Ordinal))
                     .WithMessage($"Status da base legal deve ser um de: {string.Join(", ", StatusBaseLegalValidos)}.");
+
+                baseLegal.RuleFor(b => b.Observacao)
+                    .MaximumLength(ObservacaoBaseLegalMaxLength)
+                    .When(b => b.Observacao is not null)
+                    .WithMessage($"A observação da base legal deve ter no máximo {ObservacaoBaseLegalMaxLength} caracteres.");
             });
         });
     }
