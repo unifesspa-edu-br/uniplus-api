@@ -68,16 +68,23 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 
 > Achados extras da revisão automatizada (Codex), corrigidos além do escopo original: validator sem `MaximumLength` para `Referencia`/`Observacao` (a coluna já tinha `HasMaxLength`, mas um PUT acima do teto só falhava no `SaveChanges`); `RuleForEach(i => i.BasesLegais)` sem `NotNull()` — um item nulo na lista chegava a `ResolverBasesLegais` e quebrava com erro de servidor não tratado.
 
-## 5. PR-d — Idade de emissão + formato + tamanho + guards de fase
+## 5. PR-d — Idade de emissão + formato + tamanho + guards de fase ✅ MERGEADO
 
-**Issue:** #893 · **Branch:** `feature/893-idade-formato-tamanho` · **PR:** `Closes #893` + ref. #554
+**Issue:** #893 · **Branch:** `feature/893-idade-formato-tamanho` · **PR:** #900 (`Closes #893` + ref. #554)
 
 - [x] 5.1 VO `IdadeMaximaEmissao` (tudo-nulo OU completo; âncoras de fase exigem fase viva com extremo não-nulo; DATA_SUBMISSAO válido aqui)
 - [x] 5.2 `FormatoPermitido` + `TamanhoMaximoBytes` congelados na exigência (TipoDocumento classificatório)
 - [x] 5.3 Guards backward de fase (CA-04): recusar remoção de fase referenciada e retirada de PermiteComplementacao
 - [x] 5.4 `TimeProvider` injetado (convenção de código; ADR-0068 proposed)
 - [x] 5.5 Testes: idade parcial recusada; imutabilidade de formato/tamanho por chamada; guards de fase
-- [ ] 5.6 Gates locais + revisão Codex; abrir PR `Closes #893`; `/review-pr` até zero pendências; merge sequencial
+- [x] 5.6 Gates locais + revisão Codex; abrir PR `Closes #893`; `/review-pr` até zero pendências; merge sequencial
+
+**Achados extras (revisão Codex, 6 rodadas):**
+- Reconciliação do cronograma (`DefinirCronogramaFases`) migrada de match por `Ordem` para match por `FaseCanonicaOrigemId` (a identidade estável, protegida por `ux_fases_cronograma_processo_fase_canonica`) — casar por Ordem fazia uma redefinição que só reordena duas fases já existentes retargetar o `FaseCanonicaOrigemId` de linhas rastreadas, e o EF não conseguia ordenar os UPDATEs resultantes (dependência circular), estourando `InvalidOperationException` fora do Result pattern. Confirmado empiricamente contra Postgres real antes da correção.
+- Guard novo (`FaseCronograma.PermutacaoDeOrdemNaoSuportada`) detecta permutação cíclica de `Ordem` entre fases retidas (o mesmo problema, agora só na Ordem) e recusa em termos de domínio, sem deixar a exceção do EF escapar.
+- `FaseCronograma.AtualizarSnapshot` ganhou o parâmetro `Ordem` (ausente antes — o caminho de restauração congelada nunca precisava mudá-la, mas a redefinição ao vivo precisa).
+- `FIM_INSCRICAO` (âncora implícita — fase com `ColetaInscricao`, sem `ReferenciaFaseId` explícito) ganhou validação eager simétrica à de `INICIO_FASE`/`FIM_FASE`, tanto em `DefinirDocumentosExigidos` quanto no guard backward de `DefinirCronogramaFases`; a resolução da fase de coleta usa `Any` (existencial), não `FirstOrDefault` (posicional) — um processo com múltiplas fases de coleta, a primeira sem `Fim`, não pode dar 422 falso quando outra resolve a regra.
+- Achado colateral (fora do diff desta PR, não corrigido aqui): `ProcessoSeletivo.PendenciaDaReferenciaTemporalFatos` (PR-b, já mergeada) tem o mesmo padrão `FirstOrDefault(f => f.ColetaInscricao)` — candidato a issue de follow-up.
 
 ## 6. PR-e — Bloco rico V12 + resolvedor puro + gate real
 
