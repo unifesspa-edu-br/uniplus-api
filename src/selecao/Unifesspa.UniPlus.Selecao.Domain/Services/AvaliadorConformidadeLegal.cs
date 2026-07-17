@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -93,11 +94,7 @@ public static class AvaliadorConformidadeLegal
         EtapaObrigatoria p => AvaliarEtapaObrigatoria(processo, p),
         ModalidadesMinimas p => AvaliarModalidadesMinimas(processo, p),
         DesempateDeveIncluir p => AvaliarDesempateDeveIncluir(processo, p),
-        DocumentoObrigatorioParaModalidade p => (
-            false,
-            $"exigência documental para a modalidade '{p.Modalidade}' (tipo '{p.TipoDocumento}') "
-                + "ainda não implementada — bloqueado pela #554; reprovado por padrão conservador",
-            null),
+        DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, p),
         AtendimentoDisponivel p => AvaliarAtendimentoDisponivel(processo, p),
         ConcorrenciaDuplaObrigatoria => AvaliarConcorrenciaDuplaObrigatoria(processo),
         Customizado => (true, null, "predicado customizado — aprovado por padrão, sem verificação automática"),
@@ -133,6 +130,56 @@ public static class AvaliadorConformidadeLegal
         }
 
         return (true, null, null);
+    }
+
+    /// <summary>
+    /// Story #554 (PR-e, issue #548): gate real, substitui a reprovação conservadora que
+    /// vigorou enquanto o bloco <c>documentosExigidos.exigencias</c> era stub (guarda
+    /// B-01, removida junto desta task). Aprova sse existir uma <see cref="DocumentoExigido"/>
+    /// do tipo pedido que cubra a modalidade INCONDICIONALMENTE.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// "Incondicionalmente" é a parte que faz este gate diferente do resolvedor de
+    /// exigências documentais (que avalia contra um candidato REAL, com todos os fatos
+    /// dele resolvidos): aqui não há candidato — só a modalidade em si. Uma exigência
+    /// GERAL cobre qualquer modalidade, por definição. Uma CONDICIONAL só cobre a
+    /// modalidade avaliada se o predicado DNF casar usando <b>somente</b> o fato sintético
+    /// <c>MODALIDADE = predicado.Modalidade</c> — se a exigência também depender de outro
+    /// fato (ex.: <c>FAIXA_ETARIA</c>), <see cref="PredicadoDnf.Avaliar"/> trata esse fato
+    /// como ausente e reprova a cláusula (conservador, nunca lança): nem todo candidato da
+    /// modalidade seria coberto, e é exatamente essa parcialidade que a obrigação legal —
+    /// "a modalidade X DEVE exigir o documento Y", sem exceção — não admite.
+    /// </para>
+    /// <para>
+    /// Modalidade não ofertada em nenhuma oferta do processo: nada a exigir, aprova vazio
+    /// (mesmo espírito de <see cref="AvaliarModalidadesMinimas"/> sem nenhuma oferta
+    /// cadastrada).
+    /// </para>
+    /// </remarks>
+    private static (bool, string?, string?) AvaliarDocumentoObrigatorioParaModalidade(
+        ProcessoSeletivo processo, DocumentoObrigatorioParaModalidade predicado)
+    {
+        bool modalidadeOfertada = processo.DistribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .Any(m => string.Equals(m.Codigo, predicado.Modalidade, StringComparison.Ordinal));
+        if (!modalidadeOfertada)
+        {
+            return (true, null, null);
+        }
+
+        Dictionary<string, JsonElement> fatoDaModalidade = new()
+        {
+            ["MODALIDADE"] = JsonSerializer.SerializeToElement(predicado.Modalidade),
+        };
+
+        bool cobertaIncondicionalmente = processo.DocumentosExigidos.Any(e =>
+            string.Equals(e.TipoDocumentoCodigo, predicado.TipoDocumento, StringComparison.Ordinal)
+            && e.AplicavelPara(fatoDaModalidade));
+
+        return cobertaIncondicionalmente
+            ? (true, null, null)
+            : (false, $"nenhuma exigência documental do tipo '{predicado.TipoDocumento}' cobre incondicionalmente a modalidade '{predicado.Modalidade}'", null);
     }
 
     private static (bool, string?, string?) AvaliarDesempateDeveIncluir(ProcessoSeletivo processo, DesempateDeveIncluir predicado)

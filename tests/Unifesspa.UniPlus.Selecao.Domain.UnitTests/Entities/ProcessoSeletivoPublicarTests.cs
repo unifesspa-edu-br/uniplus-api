@@ -296,8 +296,8 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.CondicionalVaziaDeterminaResultado");
     }
 
-    [Fact(DisplayName = "B-01: publicar com exigência GERAL configurada é bloqueado enquanto o bloco do envelope é stub")]
-    public void Publicar_ExigenciaGeralConfigurada_BloqueiaPorGuardaFailClosed()
+    [Fact(DisplayName = "Story #554/PR-e: publicar com exigência GERAL configurada é aceito — a guarda B-01 foi removida (issue #548)")]
+    public void Publicar_ExigenciaGeralConfigurada_Aceita()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
@@ -307,8 +307,8 @@ public sealed class ProcessoSeletivoPublicarTests
         Result<VersaoConfiguracao> resultado = processo.Publicar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas");
+        resultado.IsSuccess.Should().BeTrue(
+            resultado.Error?.Message ?? "o bloco documentosExigidos.exigencias deixou de ser stub — nada mais bloqueia esta publicação");
     }
 
     [Fact(DisplayName = "Publicar sem nenhum documento exigido configurado não é afetado pela guarda (contraprova)")]
@@ -382,22 +382,21 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.ReferenciaTemporalFatos.Should().BeNull();
     }
 
-    [Fact(DisplayName = "B-03/B-01: gatilho por FAIXA_ETARIA sem referência configurada é bloqueado pela guarda B-01 antes de alcançar a checagem B-03 (limitação conhecida da PR-b — issue #892, removida na PR-e/issue #548)")]
-    public void Publicar_GatilhoPorFaixaEtariaSemReferencia_BloqueadoPorB01AntesDeB03()
+    [Fact(DisplayName = "B-03: gatilho por FAIXA_ETARIA sem referência configurada é bloqueado — a guarda B-01 (issue #547) que antes mascarava esta checagem foi removida na PR-e (issue #548)")]
+    public void Publicar_GatilhoPorFaixaEtariaSemReferencia_BloqueadoPorB03()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        // Nenhuma ReferenciaTemporalFatos configurada — se B-01 não existisse, isto acionaria
-        // "ProcessoSeletivo.ReferenciaTemporalFatosAusente" (B-03). Enquanto B-01 existe, o
-        // bloco de exigências não materializado bloqueia primeiro, com outro código.
+        // Nenhuma ReferenciaTemporalFatos configurada — com a guarda B-01 removida, a
+        // checagem B-03 (issue #892) agora é alcançada e recusa nomeadamente.
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
             NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
     }
 
     [Fact(DisplayName = "Publicar sem nenhum gatilho por FAIXA_ETARIA não é afetado pela pendência B-03 (contraprova)")]

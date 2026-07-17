@@ -262,18 +262,140 @@ public sealed class AvaliadorConformidadeLegalTests
         act.Should().NotThrow();
     }
 
-    [Fact(DisplayName = "CA-09 (DocumentoObrigatorioParaModalidade): reprova sempre, nomeando modalidade e tipo — bloqueado pela #554, nunca aprova cegamente")]
-    public void DocumentoObrigatorioParaModalidade_SempreReprova()
+    // ── CA-09 (DocumentoObrigatorioParaModalidade) — Story #554, PR-e, issue #548: gate
+    // real, substitui a reprovação conservadora que vigorava enquanto a guarda B-01
+    // bloqueava qualquer publicação com DocumentoExigido configurado. ──
+
+    private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId, string tipoDocumentoCodigo) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+
+    private static DocumentoExigido ExigenciaCondicionalPorModalidade(
+        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string modalidadeCodigo, string? fatoExtra = null)
     {
+        List<CondicaoGatilho> condicoes =
+        [
+            CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!,
+        ];
+        if (fatoExtra is not null)
+        {
+            condicoes.Add(CondicaoGatilho.Criar(0, fatoExtra, Operador.Igual, JsonSerializer.SerializeToElement("QUALQUER")).Value!);
+        }
+
+        return DocumentoExigido.Criar(
+            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: condicoes, basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+    }
+
+    private static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)
+    {
+        FaseCronograma fase = FaseCronograma.Criar(
+            1, Guid.CreateVersion7(), "ENVIO_DOCUMENTOS", "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: false, permiteComplementacao: false, produzResultado: false, resultadoDefinitivo: false,
+            coletaInscricao: false, inicio: null, fim: null, atoProduzidoCodigo: null,
+            atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirDistribuicaoVagas(
+            [NovaOferta(NovaModalidade(modalidadeCodigo, NaturezaLegalModalidade.CotaReservada))],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        return fase.Id;
+    }
+
+    [Fact(DisplayName = "CA-09: modalidade não ofertada por nenhuma oferta do processo aprova vazio — nada a exigir")]
+    public void DocumentoObrigatorioParaModalidade_ModalidadeNaoOfertada_Aprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(NovoProcesso(), TipoProcessoAvaliado, [regra]);
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "CA-09: modalidade ofertada sem NENHUMA exigência do tipo pedido reprova, nomeando modalidade e tipo")]
+    public void DocumentoObrigatorioParaModalidade_SemExigenciaDoTipo_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        PrepararProcessoComModalidade(processo, "LB_PPI");
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
 
         RegraAvaliada avaliada = resultado.Regras.Single();
-        avaliada.Aprovada.Should().BeFalse(
-            "DocumentoExigido (#554) não existe ainda — o padrão conservador é nunca aprovar cegamente o que não pode ser verificado");
+        avaliada.Aprovada.Should().BeFalse();
         avaliada.Motivo.Should().Contain("LB_PPI").And.Contain("COMPROVANTE_RESIDENCIA",
             "CA-09 exige que a reprovação nomeie a modalidade e o tipo de documento, não só um booleano");
+    }
+
+    [Fact(DisplayName = "CA-09: exigência GERAL do tipo pedido aprova — cobre qualquer modalidade, por definição")]
+    public void DocumentoObrigatorioParaModalidade_ExigenciaGeralDoTipo_Aprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA")], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "CA-09: exigência CONDICIONAL com gatilho MODALIDADE = X (só esse fato) aprova — cobre a modalidade incondicionalmente")]
+    public void DocumentoObrigatorioParaModalidade_ExigenciaCondicionalSoPelaModalidade_Aprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI")], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "CA-09: exigência CONDICIONAL cujo gatilho também depende de outro fato reprova — a cobertura da modalidade não é incondicional")]
+    public void DocumentoObrigatorioParaModalidade_ExigenciaCondicionalComFatoExtra_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI", fatoExtra: "FAIXA_ETARIA")],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeFalse(
+            "a exigência só cobre quem também satisfaz FAIXA_ETARIA — nem todo candidato de LB_PPI seria coberto, " +
+            "e a obrigação legal (\"a modalidade X DEVE exigir o documento Y\") não admite exceção");
+    }
+
+    [Fact(DisplayName = "CA-09: exigência do TIPO ERRADO não conta, mesmo cobrindo a modalidade corretamente")]
+    public void DocumentoObrigatorioParaModalidade_ExigenciaDeOutroTipo_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorModalidade(faseId, "LAUDO_MEDICO", "LB_PPI")], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeFalse();
     }
 }

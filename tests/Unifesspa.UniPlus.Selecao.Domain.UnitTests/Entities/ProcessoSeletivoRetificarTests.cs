@@ -349,10 +349,10 @@ public sealed class ProcessoSeletivoRetificarTests
         segunda.Value!.NumeroVersao.Should().Be(3);
     }
 
-    // ── Story #554 (PR-a) — guarda fail-closed (B-01) via FecharRetificacao ──
+    // ── Story #554/PR-e (issue #548) — guarda B-01 removida: o bloco deixou de ser stub ──
 
-    [Fact(DisplayName = "B-01: fechar retificação com exigência configurada durante a sessão é bloqueado")]
-    public void FecharRetificacao_ExigenciaConfiguradaNaSessao_BloqueiaPorGuardaFailClosed()
+    [Fact(DisplayName = "Story #554/PR-e: fechar retificação com exigência configurada durante a sessão é aceito — a guarda B-01 foi removida")]
+    public void FecharRetificacao_ExigenciaConfiguradaNaSessao_Aceita()
     {
         RelogioManual clock = Relogio();
         ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
@@ -364,8 +364,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         Guid faseId = processo.CronogramaFases.Single().Id;
         // Story #554, PR-c: a exigência determina resultado (Obrigatorio=true), então
-        // precisa de base legal RESOLVIDO para satisfazer o 5º item de AvaliarConformidade
-        // antes de alcançar a checagem B-01 sendo testada aqui.
+        // precisa de base legal RESOLVIDO para satisfazer o 5º item de AvaliarConformidade.
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
             "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
@@ -380,16 +379,16 @@ public sealed class ProcessoSeletivoRetificarTests
             grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido — só o FECHAMENTO é bloqueado pela B-01");
+            .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
 
         clock.Avancar(TimeSpan.FromMinutes(1));
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
             NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
             PrecondicaoIfMatch.Curinga, clock);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas");
-        processo.Rascunho.Should().NotBeNull("o fechamento recusado não encerra a sessão — a configuração continua editável");
+        resultado.IsSuccess.Should().BeTrue(
+            resultado.Error?.Message ?? "o bloco documentosExigidos.exigencias deixou de ser stub — nada mais bloqueia este fechamento");
+        processo.Rascunho.Should().BeNull("o fechamento aceito encerra a sessão editorial");
     }
 
     /// <summary>
