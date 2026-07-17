@@ -443,6 +443,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "O processo deve ter ao menos uma fase no cronograma."));
         }
 
+        // Story #554/issue #547 (CA-04, guard parcial — a reconciliação por chave estável
+        // é da PR-d/#893): cada chamada aqui recria TODAS as fases com Id novo (mesmo
+        // padrão de DefinirDocumentosExigidos/DefinirEtapas — nenhum FaseCronogramaInput
+        // aceita Id, diferente de EtapaProcessoInput.Id opcional). Isso significa que a
+        // FK Restrict de documentos_exigidos.exigido_na_fase_id (DocumentoExigidoConfiguration)
+        // sempre estouraria DbUpdateException não tratada ao reconfigurar o cronograma
+        // enquanto existir exigência viva — a guarda troca o 500 por um 422 acionável. A
+        // PR-d reconcilia fases por chave estável (Ordem/FaseCanonicaOrigemId, mesmo
+        // padrão de AplicarGrafo) para permitir editar o cronograma sem apagar exigências.
+        if (_documentosExigidos.Count > 0)
+        {
+            return Result.Failure(new DomainError(
+                "FaseCronograma.ReferenciadaPorExigenciaViva",
+                "Existem documentos exigidos configurados referenciando o cronograma atual — remova-os antes de redefinir as fases, ou aguarde a reconciliação por chave estável (Story #554, PR-d)."));
+        }
+
         List<int> ordens = [.. fases.Select(f => f.Ordem)];
         if (ordens.Distinct().Count() != ordens.Count)
         {

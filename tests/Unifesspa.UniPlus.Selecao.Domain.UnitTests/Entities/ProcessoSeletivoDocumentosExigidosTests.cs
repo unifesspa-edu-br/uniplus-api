@@ -102,4 +102,31 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DocumentosExigidos.Should().HaveCount(1);
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Id == segundaChamada.Id);
     }
+
+    [Fact(DisplayName = "CA-04 (guard parcial): redefinir o cronograma com exigência viva configurada é recusado")]
+    public void DefinirCronogramaFases_ComExigenciaViva_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([Exigencia(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue(
+            "toda chamada aqui recria as fases com Id novo — sem a guarda, a FK Restrict de " +
+            "documentos_exigidos.exigido_na_fase_id estouraria DbUpdateException não tratada");
+        resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
+    }
+
+    [Fact(DisplayName = "Redefinir o cronograma sem exigência viva é aceito (contraprova)")]
+    public void DefinirCronogramaFases_SemExigenciaViva_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
 }
