@@ -8,6 +8,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 public sealed record DocumentoExigidoDto(
     Guid Id,
     Guid ExigidoNaFaseId,
+    Guid TipoDocumentoOrigemId,
     string TipoDocumentoCodigo,
     string TipoDocumentoNome,
     string TipoDocumentoCategoria,

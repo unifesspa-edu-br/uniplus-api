@@ -179,13 +179,24 @@ public static class ObterProcessoSeletivoQueryHandler
     private static DocumentoExigidoDto ProjectDocumentoExigido(DocumentoExigido documento) => new(
         documento.Id,
         documento.ExigidoNaFaseId,
+        documento.TipoDocumentoOrigemId,
         documento.TipoDocumentoCodigo,
         documento.TipoDocumentoNome,
         documento.TipoDocumentoCategoria,
-        documento.Aplicabilidade.ToString(),
+        ProjectAplicabilidade(documento.Aplicabilidade),
         documento.Obrigatorio,
         documento.ConsequenciaIndeferimento,
         documento.GrupoSatisfacaoId);
+
+    // Emite o mesmo token de wire aceito por DefinirDocumentosExigidosCommandValidator
+    // ("GERAL"/"CONDICIONAL") — Aplicabilidade.ToString() produziria "Geral"/"Condicional"
+    // (PascalCase), que o validator rejeitaria num reenvio direto do GET para o PUT.
+    private static string ProjectAplicabilidade(Aplicabilidade aplicabilidade) => aplicabilidade switch
+    {
+        Aplicabilidade.Geral => "GERAL",
+        Aplicabilidade.Condicional => "CONDICIONAL",
+        _ => throw new InvalidOperationException($"Aplicabilidade '{aplicabilidade}' não deveria estar persistida — DocumentoExigido.Criar recusa Aplicabilidade.Nenhuma."),
+    };
 
     private static RegraRecursoFaseDto ProjectRegraRecursoFase(RegraRecursoFase regraRecurso) => new(
         regraRecurso.Id,

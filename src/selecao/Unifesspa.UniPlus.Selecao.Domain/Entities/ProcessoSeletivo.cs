@@ -1569,6 +1569,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             fase.VincularProcesso(Id);
             _cronogramaFases.Add(fase);
         }
+
+        // Documentos exigidos (Story #554, issue #547) — o bloco `documentosExigidos.
+        // exigencias` do envelope ainda é stub (PR-a..PR-d): `GrafoConfiguracao` não tem
+        // como reconstruir esta coleção a partir de bytes que não a contêm. A guarda
+        // B-01 garante o invariante que sustenta o Clear() sozinho: TODA versão já
+        // congelada (Publicar/Retificar/FecharRetificacao) tem, necessariamente, zero
+        // `DocumentoExigido` — nenhuma passou pela guarda com exigência configurada.
+        // Descartar uma sessão que editou a coleção precisa repor esse mesmo estado
+        // vazio, não preservar o que a sessão editou. Quando a PR-e materializar o
+        // bloco, `GrafoConfiguracao` ganha `DocumentosExigidos` e este trecho passa a
+        // reconciliar por `exigencia_id`, como as demais coleções acima.
+        _documentosExigidos.Clear();
     }
 
     /// <summary>

@@ -4169,6 +4169,7 @@
         "required": [
           "id",
           "exigidoNaFaseId",
+          "tipoDocumentoOrigemId",
           "tipoDocumentoCodigo",
           "tipoDocumentoNome",
           "tipoDocumentoCategoria",
@@ -4184,6 +4185,10 @@
             "format": "uuid"
           },
           "exigidoNaFaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoDocumentoOrigemId": {
             "type": "string",
             "format": "uuid"
           },
