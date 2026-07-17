@@ -5336,6 +5336,7 @@
           "classificacao",
           "cronogramaFases",
           "documentosExigidos",
+          "referenciaTemporalFatos",
           "criadoEm"
         ],
         "type": "object",
@@ -5415,6 +5416,16 @@
             "items": {
               "$ref": "#/components/schemas/DocumentoExigidoDto"
             }
+          },
+          "referenciaTemporalFatos": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaTemporalFatosDto"
+              }
+            ]
           },
           "criadoEm": {
             "type": "string",
@@ -5577,6 +5588,33 @@
           },
           "baseLegal": {
             "type": "string"
+          }
+        }
+      },
+      "ReferenciaTemporalFatosDto": {
+        "required": [
+          "tipo",
+          "data",
+          "faseId"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "faseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },

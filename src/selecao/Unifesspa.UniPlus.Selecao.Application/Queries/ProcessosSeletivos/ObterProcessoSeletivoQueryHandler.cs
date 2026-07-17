@@ -41,7 +41,14 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectClassificacao(processo),
         [.. processo.CronogramaFases.OrderBy(f => f.Ordem).ThenBy(f => f.Id).Select(ProjectFaseCronograma)],
         [.. processo.DocumentosExigidos.OrderBy(d => d.Id).Select(ProjectDocumentoExigido)],
+        ProjectReferenciaTemporalFatos(processo.ReferenciaTemporalFatos),
         processo.CreatedAt);
+
+    // Achado Codex P2 (PR #896, issue #892): sem isto, um FIM_FASE/DATA_ESPECIFICA salvo
+    // desaparecia do agregado GET, e o formulário de edição podia sobrescrevê-lo ou
+    // removê-lo sem querer ao pré-preencher com um estado que não reflete o persistido.
+    private static ReferenciaTemporalFatosDto? ProjectReferenciaTemporalFatos(ReferenciaTemporalFatos? referencia) =>
+        referencia is null ? null : new ReferenciaTemporalFatosDto(referencia.Tipo.ToCodigo(), referencia.Data, referencia.FaseId);
 
     private static OfertaAtendimentoEspecializadoDto? ProjectOfertaAtendimento(OfertaAtendimentoEspecializado? oferta)
     {

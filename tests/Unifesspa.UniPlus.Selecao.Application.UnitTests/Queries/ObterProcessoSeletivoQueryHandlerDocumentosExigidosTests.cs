@@ -90,4 +90,39 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         JsonDocument.Parse(emDto.Valor).RootElement.EnumerateArray().Select(e => e.GetString())
             .Should().BeEquivalentTo(["LB_PPI", "AC"]);
     }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #896, issue #892, 3ª rodada): projeta ReferenciaTemporalFatos no agregado GET — round-trip GET→PUT")]
+    public async Task Handle_ReferenciaTemporalFatos_EmiteTokenDeWire()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!;
+        processo.DefinirReferenciaTemporalFatos(referencia, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
+            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+
+        dto!.ReferenciaTemporalFatos.Should().NotBeNull();
+        dto.ReferenciaTemporalFatos!.Tipo.Should().Be("FIM_FASE");
+        dto.ReferenciaTemporalFatos.FaseId.Should().Be(fase.Id);
+        dto.ReferenciaTemporalFatos.Data.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "ReferenciaTemporalFatos ausente projeta null no agregado GET (contraprova)")]
+    public async Task Handle_SemReferenciaTemporalFatos_ProjetaNulo()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+
+        ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
+            new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
+
+        dto!.ReferenciaTemporalFatos.Should().BeNull();
+    }
 }
