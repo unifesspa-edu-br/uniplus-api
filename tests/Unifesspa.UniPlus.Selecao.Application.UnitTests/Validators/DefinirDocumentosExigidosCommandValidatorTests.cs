@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="DefinirDocumentosExigidosCommandValidator"/> para a base legal
-/// (Story #554, PR-c, issue #549) — valida apenas a FORMA de cada item; o gate "≥1
+/// (Story #554, PR #898, issue #549) — valida apenas a FORMA de cada item; o gate "≥1
 /// RESOLVIDO por exigência que determina resultado" é do domínio, na publicação.
 /// </summary>
 public sealed class DefinirDocumentosExigidosCommandValidatorTests
@@ -123,7 +123,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
             new BaseLegalInput("Cláusula do edital", "INTERNA_EDITAL", "PENDENTE", null)))
             .IsValid.Should().BeTrue();
 
-    // ── Story #554/issue #893 (PR-d) — idade máxima de emissão, formato e tamanho ──
+    // ── Story #554/issue #893 (PR #900) — idade máxima de emissão, formato e tamanho ──
 
     [Fact(DisplayName = "Item sem idade/formato/tamanho (tudo nulo) é aceito")]
     public void Aceita_SemIdadeFormatoTamanho() =>

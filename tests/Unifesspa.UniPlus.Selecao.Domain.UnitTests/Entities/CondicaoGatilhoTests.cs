@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="CondicaoGatilho"/> (Story #554, issue #892, PR-b): fábrica —
+/// Cobertura de <see cref="CondicaoGatilho"/> (Story #554, issue #892, PR #896): fábrica —
 /// validação de forma delegada a <see cref="CondicaoDnf"/> — e vinculação ao
 /// <see cref="DocumentoExigido"/> pai.
 /// </summary>

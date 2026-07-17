@@ -63,7 +63,7 @@ public static class LimitesDoEnvelope
     /// <summary><c>BancaRequerida.Codigo</c> — snapshot-copy do código classificatório de <c>TipoBanca</c>.</summary>
     public const int TipoBancaCodigo = 60;
 
-    // Story #554 (PR-e) — exigencias[] real.
+    // Story #554 (PR #903) — exigencias[] real.
     /// <summary><c>DocumentoExigido.TipoDocumentoCodigo</c> — snapshot-copy do código classificatório de <c>TipoDocumento</c>.</summary>
     public const int TipoDocumentoCodigo = 60;
 
@@ -76,7 +76,7 @@ public static class LimitesDoEnvelope
     /// <summary><c>DocumentoExigidoBaseLegal.Observacao</c>.</summary>
     public const int ObservacaoBaseLegal = 1000;
 
-    /// <summary><c>CondicaoGatilho.Fato</c> — nome do fato do gatilho DNF (PR-b, Story #847/#554).</summary>
+    /// <summary><c>CondicaoGatilho.Fato</c> — nome do fato do gatilho DNF (PR #896, Story #847/#554).</summary>
     public const int Fato = 60;
 
     // Decimais — precisão total (o `p` de numeric(p,s)).

@@ -223,7 +223,7 @@ public sealed class FaseCronograma : EntityBase
 
     /// <summary>
     /// Reidrata uma fase a partir de uma <see cref="VersaoConfiguracao"/> congelada,
-    /// <b>preservando o <see cref="EntityBase.Id"/></b> — Story #554 (PR-e, bump 1.2),
+    /// <b>preservando o <see cref="EntityBase.Id"/></b> — Story #554 (PR #903, bump 1.2),
     /// achado de revisão: duas referências cruzadas do envelope 1.2 apontam para
     /// <c>FaseCronograma.Id</c> (<c>documentosExigidos.exigencias[].exigidoNaFaseId</c> e
     /// <c>documentosExigidos.referenciaTemporalFatos.faseId</c>). A reconciliação por
@@ -307,7 +307,7 @@ public sealed class FaseCronograma : EntityBase
     /// recriá-la — usado tanto pela reposição da configuração congelada
     /// (<see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>, reconciliação por
     /// <see cref="Ordem"/> — a versão 1.1 do envelope nunca congelou o <c>Id</c> (§3.7), e
-    /// mesmo na 1.2, que passou a congelá-lo (<see cref="Reidratar"/>, Story #554, PR-e),
+    /// mesmo na 1.2, que passou a congelá-lo (<see cref="Reidratar"/>, Story #554, PR #903),
     /// a reconciliação aqui continua por Ordem: é a instância VIVA rastreada que precisa
     /// sobreviver — a do EF, não a decodificada) quanto pela redefinição ao vivo do
     /// cronograma (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por

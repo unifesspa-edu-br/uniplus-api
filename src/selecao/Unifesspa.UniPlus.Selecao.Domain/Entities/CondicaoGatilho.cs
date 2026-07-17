@@ -8,14 +8,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Uma condição do gatilho DNF de um <see cref="DocumentoExigido"/> (Story #554, PR-b) —
+/// Uma condição do gatilho DNF de um <see cref="DocumentoExigido"/> (Story #554, PR #896) —
 /// a forma <b>relacional</b> (linha com ordinal de cláusula) da tripla
 /// <c>{ Fato, Operador, Valor }</c> de <see cref="ValueObjects.CondicaoDnf"/>. Agrupadas por
 /// <see cref="Clausula"/> (OU entre cláusulas, E dentro — mesma convenção de
 /// <c>PredicadoDnf.CriarDeCondicoesAgrupadas</c>), formam o predicado que decide se a
 /// exigência se aplica a um candidato. <c>EntityBase</c> puro — filha de
 /// <see cref="DocumentoExigido"/>, substituível por inteiro junto com o mesmo
-/// <c>PUT {id}/documentos-exigidos</c> da PR-a.
+/// <c>PUT {id}/documentos-exigidos</c> da PR #895.
 /// </summary>
 public sealed class CondicaoGatilho : EntityBase
 {

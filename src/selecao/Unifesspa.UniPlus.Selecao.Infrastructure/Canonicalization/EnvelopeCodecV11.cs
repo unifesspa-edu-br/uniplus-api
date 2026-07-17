@@ -124,7 +124,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     public string? MotivoDaRecusa => null;
 
     /// <summary>
-    /// Encoder <b>congelado</b> (Story #554, PR-e, bump para 1.2 — ADR-0109 D1): até aqui,
+    /// Encoder <b>congelado</b> (Story #554, PR #903, bump para 1.2 — ADR-0109 D1): até aqui,
     /// este método delegava a <see cref="SnapshotPublicacaoCanonicalizer"/>, que era "o
     /// canonicalizador de hoje". Com o bump para 1.2 (materialização real de
     /// <c>documentosExigidos.exigencias</c> + <c>dataReferenciaFatos</c>),
@@ -671,7 +671,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         }
 
         // documentosExigidos sempre vazio e referenciaTemporalFatos sempre nula na 1.1: a
-        // guarda B-01 (removida na PR-e, mas em vigor para toda versão publicada sob este
+        // guarda B-01 (removida na PR #903, mas em vigor para toda versão publicada sob este
         // schema) garantia que NENHUMA versão 1.1 chegava a ser congelada com
         // DocumentoExigido configurado — sem gatilho por FAIXA_ETARIA possível, não há
         // política a resolver, e não há bytes de exigência real neste schema para
@@ -1739,7 +1739,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// <c>Definir*</c> o altera), e por isso nada aqui precisa repô-lo.
     /// </summary>
     /// <param name="comId">
-    /// <see langword="true"/> quando o bloco congela <c>id</c> por fase (Story #554, PR-e,
+    /// <see langword="true"/> quando o bloco congela <c>id</c> por fase (Story #554, PR #903,
     /// bump 1.2, achado de revisão) — a 1.1 nunca teve essa chave, e <c>ExigirChaves</c> é
     /// fechado (chave extra reprova tanto quanto chave ausente), então o mesmo leitor não
     /// pode aceitar as duas formas com uma única lista fixa. Com <see langword="true"/>, a

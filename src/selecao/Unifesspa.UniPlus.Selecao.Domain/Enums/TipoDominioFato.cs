@@ -29,7 +29,7 @@ public enum TipoDominioFato
     /// <c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>), multivalorado — aceita
     /// <see cref="Operador.Igual"/> (pertinência) e <see cref="Operador.Em"/> (interseção). O
     /// domínio válido não vem de <c>ValoresDominio</c> (sempre nulo aqui) — vem de um
-    /// domínio dinâmico fornecido pelo chamador (Story #554, PR-b), derivado da oferta do
+    /// domínio dinâmico fornecido pelo chamador (Story #554, PR #896), derivado da oferta do
     /// próprio processo (modalidades selecionadas, condições de atendimento ofertadas).
     /// </summary>
     CategoricoDinamico = 4,

@@ -195,9 +195,9 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(ConcorrenciaDuplaObrigatoria)] = ([], []),
         [typeof(Customizado)] = (["Parametros"], []),
 
-        // Documentos exigidos (Story #554, PR-e) — exigencias[] real, CA-09 (exigenciaId
+        // Documentos exigidos (Story #554, PR #903) — exigencias[] real, CA-09 (exigenciaId
         // estável). GrupoSatisfacaoId e Aplicabilidade entram porque são o que o resolvedor
-        // (PR-e, fora deste bloco) consome para correlacionar apresentação↔exigência.
+        // (PR #903, fora deste bloco) consome para correlacionar apresentação↔exigência.
         [typeof(DocumentoExigido)] = (
             [
                 "ExigidoNaFaseId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",

@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
-/// Cobertura de <see cref="ValidadorBaseLegalExigencias"/> (Story #554, PR-c, issue #549,
+/// Cobertura de <see cref="ValidadorBaseLegalExigencias"/> (Story #554, PR #898, issue #549,
 /// ADR-0074) — 5º item de <c>ProcessoSeletivo.AvaliarConformidade</c>.
 /// </summary>
 public sealed class ValidadorBaseLegalExigenciasTests

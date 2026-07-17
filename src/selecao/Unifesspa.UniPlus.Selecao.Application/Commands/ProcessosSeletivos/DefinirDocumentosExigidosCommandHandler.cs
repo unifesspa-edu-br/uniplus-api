@@ -16,10 +16,10 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// snapshot-copy de <c>TipoDocumento</c> (módulo Configuração, ADR-0056) e, quando algum
 /// item declara gatilho, o vocabulário fechado de fatos do candidato
 /// (<c>IFatoCandidatoReader</c>, #846) estendido pelo domínio dinâmico da oferta do
-/// próprio processo (PR-b) — e delega a montagem/validação ao domínio.
+/// próprio processo (PR #896) — e delega a montagem/validação ao domínio.
 /// </summary>
 /// <remarks>
-/// <paramref name="clock"/> — Story #554, PR-d, issue #893 (ADR-0068 proposed): injetado
+/// <paramref name="clock"/> — Story #554, PR #900, issue #893 (ADR-0068 proposed): injetado
 /// por convenção do módulo, mesmo sem uso direto de "agora" nesta task — a avaliação em
 /// runtime da idade máxima de emissão (<c>IdadeMaximaEmissao</c>) é fora de escopo desta
 /// Story; este handler não abre exceção isolada à convenção só por não usá-lo ainda.
@@ -210,7 +210,7 @@ public static class DefinirDocumentosExigidosCommandHandler
     }
 
     /// <summary>
-    /// Resolve as bases legais de um item (Story #554, PR-c, issue #549) — só a forma de
+    /// Resolve as bases legais de um item (Story #554, PR #898, issue #549) — só a forma de
     /// cada base é validada aqui (referência não vazia, abrangência/status no domínio
     /// fechado); o gate "≥1 RESOLVIDO por exigência que determina resultado" é da
     /// publicação (<c>Domain.Services.ValidadorBaseLegalExigencias</c>), nunca da escrita.
@@ -237,7 +237,7 @@ public static class DefinirDocumentosExigidosCommandHandler
     }
 
     /// <summary>
-    /// Domínio dinâmico (Story #554, PR-b): as modalidades/condições de atendimento
+    /// Domínio dinâmico (Story #554, PR #896): as modalidades/condições de atendimento
     /// válidas para um gatilho são as que o PRÓPRIO PROCESSO oferece — nunca um catálogo
     /// global (CA-03, integridade referencial).
     /// </summary>
@@ -260,7 +260,7 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// <summary>
     /// Mapeia <see cref="FatoCandidatoView"/> para <see cref="DescritorFatoCandidato"/>,
     /// estendendo <c>DefinirCriteriosDesempateCommandHandler.ResolverVocabularioFatosAsync</c>
-    /// (#846/#847) para incluir os fatos categóricos de escopo-processo (Story #554, PR-b) —
+    /// (#846/#847) para incluir os fatos categóricos de escopo-processo (Story #554, PR #896) —
     /// antes deliberadamente fora do vocabulário fechado.
     /// </summary>
     private static async Task<IReadOnlyDictionary<string, DescritorFatoCandidato>> ResolverVocabularioFatosAsync(

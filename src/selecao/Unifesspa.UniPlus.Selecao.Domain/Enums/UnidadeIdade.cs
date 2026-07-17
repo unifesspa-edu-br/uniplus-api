@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Unidade de contagem de <see cref="ValueObjects.IdadeMaximaEmissao.Valor"/> (Story #554,
-/// PR-d, issue #893).
+/// PR #900, issue #893).
 /// </summary>
 public enum UnidadeIdade
 {

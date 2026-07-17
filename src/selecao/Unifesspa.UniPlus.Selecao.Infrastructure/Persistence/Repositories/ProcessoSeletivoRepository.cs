@@ -101,14 +101,14 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // regra de recurso 1:1) somadas às já existentes.
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
-            // Documentos exigidos (Story #554, issue #547, PR-a) — sem o Include, a
+            // Documentos exigidos (Story #554, issue #547, PR #895) — sem o Include, a
             // coleção tracked nasce vazia em todo carregamento novo do agregado:
             // DefinirDocumentosExigidos faria Clear() num backing list já vazio (linhas
             // antigas sobrevivem no banco, PUT acumula) e a guarda B-01/CA-01 sempre
-            // veria zero exigências. Gatilho DNF (issue #892, PR-b) — mesmo raciocínio
+            // veria zero exigências. Gatilho DNF (issue #892, PR #896) — mesmo raciocínio
             // para Condicoes: sem o ThenInclude, PendenciaDasExigenciasDocumentais veria
             // sempre zero condições, e CA-01 (GERAL x condição) falharia aberta. Base
-            // legal (issue #549, PR-c) — mesmo raciocínio para BasesLegais: sem o
+            // legal (issue #549, PR #898) — mesmo raciocínio para BasesLegais: sem o
             // ThenInclude, ValidadorBaseLegalExigencias veria sempre zero bases e o 5º
             // item de AvaliarConformidade reprovaria toda exigência que determina
             // resultado, mesmo com bases RESOLVIDO persistidas.

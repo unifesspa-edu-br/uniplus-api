@@ -4,7 +4,7 @@ using Enums;
 
 /// <summary>
 /// Veredicto de <see cref="Services.ResolvedorExigenciasDocumentais"/> sobre UMA
-/// <see cref="Entities.DocumentoExigido"/> congelada, para um candidato (Story #554, PR-e).
+/// <see cref="Entities.DocumentoExigido"/> congelada, para um candidato (Story #554, PR #903).
 /// </summary>
 /// <param name="ExigenciaId">O <c>exigenciaId</c> congelado (<c>DocumentoExigido.Id</c>, CA-09) — a chave de correlação.</param>
 /// <param name="Status">Satisfeita, Pendente ou NaoAplicavel — nunca o sentinela <see cref="StatusResolucaoExigencia.Nenhuma"/>.</param>

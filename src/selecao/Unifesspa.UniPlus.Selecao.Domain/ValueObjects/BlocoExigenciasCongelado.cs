@@ -4,7 +4,7 @@ using Entities;
 
 /// <summary>
 /// A projeção de <c>documentosExigidos.exigencias[]</c> de UMA <see cref="Entities.VersaoConfiguracao"/>
-/// já reidratada (Story #554, PR-e) — o insumo de <see cref="Services.ResolvedorExigenciasDocumentais"/>.
+/// já reidratada (Story #554, PR #903) — o insumo de <see cref="Services.ResolvedorExigenciasDocumentais"/>.
 /// </summary>
 /// <remarks>
 /// Deliberadamente um tipo <b>próprio</b>, e não <c>IReadOnlyList&lt;DocumentoExigido&gt;</c>

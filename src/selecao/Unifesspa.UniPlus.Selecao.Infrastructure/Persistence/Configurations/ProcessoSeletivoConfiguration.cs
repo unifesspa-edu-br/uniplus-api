@@ -73,7 +73,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(d => d.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ReferenciaTemporalFatos (Story #554, PR-b) — VO 0..1 sem identidade própria,
+        // ReferenciaTemporalFatos (Story #554, PR #896) — VO 0..1 sem identidade própria,
         // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
         // Id nem ciclo de vida próprio, diferente das coleções acima).
         builder.OwnsOne(p => p.ReferenciaTemporalFatos, referencia =>

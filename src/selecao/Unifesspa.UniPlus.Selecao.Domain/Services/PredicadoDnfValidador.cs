@@ -31,7 +31,7 @@ public static class PredicadoDnfValidador
     /// adicional não se aplica.
     /// </param>
     /// <param name="dominiosDinamicos">
-    /// Domínio dinâmico por fato (Story #554, PR-b) — obrigatório quando o predicado
+    /// Domínio dinâmico por fato (Story #554, PR #896) — obrigatório quando o predicado
     /// cita um fato <see cref="TipoDominioFato.CategoricoDinamico"/> (ex.: <c>MODALIDADE</c>,
     /// <c>CONDICAO_ATENDIMENTO</c>). O chamador (Application) o deriva da oferta do próprio
     /// processo — este validador não sabe de onde vem, só que precisa ser fornecido.

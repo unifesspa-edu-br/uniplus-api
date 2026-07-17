@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Âncora de <see cref="ValueObjects.IdadeMaximaEmissao"/> (Story #554, PR-d, issue #893)
+/// Âncora de <see cref="ValueObjects.IdadeMaximaEmissao"/> (Story #554, PR #900, issue #893)
 /// — de onde se conta a idade máxima de emissão do DOCUMENTO. Diferente de
-/// <see cref="ReferenciaTipo"/> (PR-b, PR-c — âncora a idade do CANDIDATO e explicitamente
+/// <see cref="ReferenciaTipo"/> (PR #896, PR #898 — âncora a idade do CANDIDATO e explicitamente
 /// exclui submissão), <see cref="DataSubmissao"/> é válida aqui: o documento pode precisar
 /// ser recente em relação ao ato de enviar, não a uma data fixa do certame.
 /// </summary>

@@ -340,10 +340,10 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Substitui integralmente os documentos exigidos do processo (Story #554): fase,
     /// snapshot-copy do tipo de documento, aplicabilidade GERAL/CONDICIONAL,
     /// obrigatoriedade, consequência de indeferimento, grupo de satisfação, o gatilho
-    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO, PR-b), a base
-    /// legal 1:N (PR-c) — validada apenas na FORMA aqui; o gate "≥1 RESOLVIDO por
+    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO, PR #896), a base
+    /// legal 1:N (PR #898) — validada apenas na FORMA aqui; o gate "≥1 RESOLVIDO por
     /// exigência que determina resultado" é da publicação (ADR-0074) — e a idade máxima
-    /// de emissão/formato/tamanho do arquivo (PR-d, issue #893) — aviso, não bloqueio de
+    /// de emissão/formato/tamanho do arquivo (PR #900, issue #893) — aviso, não bloqueio de
     /// presença; congelados por chamada (substituição integral, não <i>merge</i> parcial).
     /// O <c>GET</c> vem do endpoint agregado (<see cref="ObterPorId"/>) — não há rota
     /// aninhada própria de leitura.
@@ -373,7 +373,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story
-    /// #554, PR-b — B-03 do plano). <c>Tipo</c> nulo remove a referência.
+    /// #554, PR #896 — B-03 do plano). <c>Tipo</c> nulo remove a referência.
     /// </summary>
     [HttpPut("{id:guid}/referencia-temporal-fatos")]
     [RequiresIdempotencyKey]
@@ -964,7 +964,7 @@ public sealed record DefinirBonusRegionalRequest(
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>
-/// Contrato por variante de <c>Tipo</c> (Story #554, PR-b — issue #892; tokens em
+/// Contrato por variante de <c>Tipo</c> (Story #554, PR #896 — issue #892; tokens em
 /// <see cref="Domain.Enums.ReferenciaTipoCodigo"/>), tudo-ou-nada por linha (N-I01):
 /// <list type="table">
 /// <listheader><term>Tipo</term><description>Data</description><description>FaseId</description></listheader>

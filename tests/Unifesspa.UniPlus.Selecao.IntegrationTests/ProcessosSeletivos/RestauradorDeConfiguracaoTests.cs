@@ -152,7 +152,7 @@ public sealed class RestauradorDeConfiguracaoTests
     }
 
     /// <summary>
-    /// Achado de revisão da PR #903 (Story #554, PR-e): a sombra de verificação
+    /// Achado de revisão da PR #903 (Story #554, PR #903): a sombra de verificação
     /// (<see cref="RestauradorDeConfiguracao"/>, "prova primeiro, aplica depois") começa
     /// SEM nenhuma fase viva rastreada — <see cref="ProcessoSeletivo.AplicarGrafo"/>
     /// reconcilia o cronograma por Ordem contra a instância viva, e a sombra não tem
@@ -164,7 +164,7 @@ public sealed class RestauradorDeConfiguracaoTests
     /// completava. A correção (<see cref="FaseCronograma.Reidratar"/>, <c>id</c> congelado
     /// no bloco <c>cronogramaFases</c> da 1.2) resolve.
     /// </summary>
-    [Fact(DisplayName = "Story #554 (PR-e): Restaurar sobre uma sombra vazia resolve dataReferenciaFatos com gatilho FAIXA_ETARIA ancorado em FIM_FASE")]
+    [Fact(DisplayName = "Story #554 (PR #903): Restaurar sobre uma sombra vazia resolve dataReferenciaFatos com gatilho FAIXA_ETARIA ancorado em FIM_FASE")]
     public void Restaurar_ComGatilhoFaixaEtariaAncoradoEmFimFase_ReporEProvar()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restaurador FAIXA_ETARIA", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);

@@ -5,11 +5,11 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Base legal de um <see cref="DocumentoExigido"/> (Story #554, PR-c, issue #549,
+/// Base legal de um <see cref="DocumentoExigido"/> (Story #554, PR #898, issue #549,
 /// ADR-0074) — relação 1:N: uma exigência pode ter mais de uma fonte de embasamento ao
 /// mesmo tempo (ex.: lei federal + cláusula do próprio edital). <c>EntityBase</c> puro
 /// (sem soft-delete) — filha de <see cref="DocumentoExigido"/>, substituível por inteiro
-/// junto com o mesmo <c>PUT {id}/documentos-exigidos</c> da PR-a; não há
+/// junto com o mesmo <c>PUT {id}/documentos-exigidos</c> da PR #895; não há
 /// <c>Resolver()</c>/<c>Rebaixar()</c> próprios — "rebaixar" ou "remover" uma base é
 /// reenviar o payload da exigência sem aquele item, ou com <see cref="Status"/> alterado.
 /// </summary>

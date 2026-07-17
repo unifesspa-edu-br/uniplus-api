@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Codec da versão <c>1.2</c> do envelope (Story #554, PR-e, ADR-0109 D1): a forma nova
+/// Codec da versão <c>1.2</c> do envelope (Story #554, PR #903, ADR-0109 D1): a forma nova
 /// que substitui o stub de <c>documentosExigidos.exigencias</c> por um bloco rico
 /// (CA-09), e acrescenta <c>referenciaTemporalFatos</c>/<c>dataReferenciaFatos</c>
 /// (B-03). <see cref="SnapshotPublicacaoCanonicalizer"/> é o encoder — "o
@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// compartilhado corrige os dois codecs ao mesmo tempo, nunca diverge.
 /// <c>documentosExigidos</c> (o bloco cuja forma muda nesta versão) ganha um leitor
 /// próprio aqui; <c>cronogramaFases</c> também muda de forma (a chave <c>id</c> nova,
-/// achado de revisão — Story #554, PR-e), mas continua reaproveitando
+/// achado de revisão — Story #554, PR #903), mas continua reaproveitando
 /// <see cref="EnvelopeCodecV11.LerCronogramaFases"/> via o parâmetro <c>comId</c>, sem
 /// duplicar o leitor inteiro.
 /// </remarks>
@@ -148,7 +148,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
     }
 
     /// <summary>
-    /// Story #554 (PR-e): a única leitura de bloco que difere de <see cref="EnvelopeCodecV11"/>.
+    /// Story #554 (PR #903): a única leitura de bloco que difere de <see cref="EnvelopeCodecV11"/>.
     /// <c>exigencias[]</c> é real (não mais stub); <c>obrigatoriedades[]</c> mantém a MESMA
     /// forma da 1.1 (reaproveita <see cref="EnvelopeCodecV11.LerPredicadoObrigatoriedade"/>);
     /// <c>referenciaTemporalFatos</c>/<c>dataReferenciaFatos</c> são as duas chaves novas
@@ -301,7 +301,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
     }
 
     /// <summary>
-    /// O predicado DNF (PR-b): <see langword="null"/> na chave é "sem gatilho" (0
+    /// O predicado DNF (PR #896): <see langword="null"/> na chave é "sem gatilho" (0
     /// cláusulas); do contrário, um array de cláusulas (OU), cada uma um array de
     /// condições (E) — a forma espelha exatamente <c>SnapshotPublicacaoCanonicalizer.SerializarCondicaoGatilho</c>.
     /// A validação de forma de cada condição é <see cref="CondicaoGatilho.Criar"/>, a
@@ -361,7 +361,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
         return condicoes;
     }
 
-    /// <summary>Só <c>RESOLVIDO</c> é congelado (PR-c) — todo item lido aqui reidrata como tal.</summary>
+    /// <summary>Só <c>RESOLVIDO</c> é congelado (PR #898) — todo item lido aqui reidrata como tal.</summary>
     private static IReadOnlyList<DocumentoExigidoBaseLegal> LerBasesLegais(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
         JsonArray array = leitor.Array(item, "basesLegais", pathPai);
@@ -389,7 +389,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
             // FromCodigo mapeia um token não reconhecido para o sentinela Nenhuma — e Criar
             // já o rejeita (DocumentoExigidoBaseLegal.AbrangenciaObrigatoria/StatusObrigatorio).
             // Um status congelado diferente de RESOLVIDO é envelope adulterado — só bases
-            // resolvidas são materializadas (PR-c), e Reidratar não teria como saber disso
+            // resolvidas são materializadas (PR #898), e Reidratar não teria como saber disso
             // sozinho; a checagem é aqui, na fronteira de leitura.
             StatusBaseLegal status = StatusBaseLegalCodigo.FromCodigo(statusCodigo);
             if (status != StatusBaseLegal.Resolvido)

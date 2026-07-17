@@ -14,7 +14,7 @@ using Xunit;
 
 /// <summary>
 /// Paridade bidirecional entre <see cref="DocumentoExigido"/> viva e o item congelado no
-/// envelope (Story #554, PR-e, CA-11), e a imunidade do envelope já congelado a mudanças
+/// envelope (Story #554, PR #903, CA-11), e a imunidade do envelope já congelado a mudanças
 /// posteriores na configuração viva (CA-12).
 /// </summary>
 /// <remarks>

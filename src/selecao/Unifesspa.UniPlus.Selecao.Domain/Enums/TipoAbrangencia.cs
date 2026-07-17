@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Abrangência de uma <see cref="Entities.DocumentoExigidoBaseLegal"/> (Story #554, PR-c,
+/// Abrangência de uma <see cref="Entities.DocumentoExigidoBaseLegal"/> (Story #554, PR #898,
 /// issue #549, ADR-0074). <c>InternaEdital</c> conta sozinha como base legal — as demais
 /// referenciam normas externas ao próprio edital.
 /// </summary>

@@ -262,7 +262,7 @@ public sealed class AvaliadorConformidadeLegalTests
         act.Should().NotThrow();
     }
 
-    // ── CA-09 (DocumentoObrigatorioParaModalidade) — Story #554, PR-e, issue #548: gate
+    // ── CA-09 (DocumentoObrigatorioParaModalidade) — Story #554, PR #903, issue #548: gate
     // real, substitui a reprovação conservadora que vigorava enquanto a guarda B-01
     // bloqueava qualquer publicação com DocumentoExigido configurado. ──
 

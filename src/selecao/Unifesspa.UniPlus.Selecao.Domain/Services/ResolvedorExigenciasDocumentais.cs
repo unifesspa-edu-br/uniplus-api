@@ -9,9 +9,9 @@ using ValueObjects;
 
 /// <summary>
 /// Resolve, para um candidato, o veredicto de cada <see cref="DocumentoExigido"/> de um
-/// <see cref="BlocoExigenciasCongelado"/> — aplicável ou não (gatilho DNF, PR-b) e, quando
+/// <see cref="BlocoExigenciasCongelado"/> — aplicável ou não (gatilho DNF, PR #896) e, quando
 /// aplicável, satisfeita ou pendente (apresentação, direta ou via grupo de satisfação)
-/// (Story #554, PR-e, issue #548, ADR-0076).
+/// (Story #554, PR #903, issue #548, ADR-0076).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -72,7 +72,7 @@ public static class ResolvedorExigenciasDocumentais
 
         // O grupo de satisfação propaga a satisfação DIRETA para as demais exigências
         // aplicáveis do mesmo grupo — uma única apresentação, dentro do grupo, satisfaz
-        // as outras (DocumentoExigido.GrupoSatisfacaoId, "semântica plena na PR-e").
+        // as outras (DocumentoExigido.GrupoSatisfacaoId, "semântica plena na PR #903").
         Dictionary<Guid, Guid> apresentacaoQueSatisfazOGrupo = [];
         foreach (IGrouping<Guid, DocumentoExigido> grupo in bloco.Exigencias
             .Where(e => e.GrupoSatisfacaoId is not null && aplicavelPorExigencia[e.Id])

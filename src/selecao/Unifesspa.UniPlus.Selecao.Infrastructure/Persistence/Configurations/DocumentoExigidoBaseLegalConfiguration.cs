@@ -8,7 +8,7 @@ using Domain.Entities;
 using Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="DocumentoExigidoBaseLegal"/> (Story #554, PR-c,
+/// Configuração EF Core de <see cref="DocumentoExigidoBaseLegal"/> (Story #554, PR #898,
 /// issue #549) — entidade filha de <see cref="DocumentoExigido"/>, <c>EntityBase</c> puro
 /// (sem soft-delete), mesmo padrão de <see cref="CondicaoGatilho"/>. Sem CHECK de banco
 /// para <c>tipo_abrangencia</c>/<c>status</c> — integridade em C# (enum tipado +

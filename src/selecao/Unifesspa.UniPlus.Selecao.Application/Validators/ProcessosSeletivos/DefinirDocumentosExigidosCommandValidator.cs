@@ -34,7 +34,7 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
     private const int ReferenciaBaseLegalMaxLength = 500;
     private const int ObservacaoBaseLegalMaxLength = 1000;
 
-    // Story #554/issue #893 (PR-d) — idade máxima de emissão, formato e tamanho.
+    // Story #554/issue #893 (PR #900) — idade máxima de emissão, formato e tamanho.
     private static readonly string[] UnidadesIdadeValidas = ["DIAS", "MESES", "ANOS"];
 
     private static readonly string[] ReferenciaTiposIdadeEmissaoValidos =
@@ -130,7 +130,7 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
 
             // A coerência tudo-nulo OU completo (Valor/Unidade/ReferenciaTipo) é do
             // domínio (IdadeMaximaEmissao.Criar) — aqui só a forma de cada campo NÃO
-            // NULO, mesmo espírito de DefinirReferenciaTemporalFatosCommandValidator (PR-b).
+            // NULO, mesmo espírito de DefinirReferenciaTemporalFatosCommandValidator (PR #896).
             item.RuleFor(i => i.IdadeMaximaEmissao!.Valor)
                 .GreaterThan(0)
                 .When(i => i.IdadeMaximaEmissao?.Valor is not null)

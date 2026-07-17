@@ -350,9 +350,9 @@ public sealed class ProcessoSeletivoRetificarTests
         segunda.Value!.NumeroVersao.Should().Be(3);
     }
 
-    // ── Story #554/PR-e (issue #548) — guarda B-01 removida: o bloco deixou de ser stub ──
+    // ── Story #554/PR #903 (issue #548) — guarda B-01 removida: o bloco deixou de ser stub ──
 
-    [Fact(DisplayName = "Story #554/PR-e: fechar retificação com exigência configurada durante a sessão é aceito — a guarda B-01 foi removida")]
+    [Fact(DisplayName = "Story #554/PR #903: fechar retificação com exigência configurada durante a sessão é aceito — a guarda B-01 foi removida")]
     public void FecharRetificacao_ExigenciaConfiguradaNaSessao_Aceita()
     {
         RelogioManual clock = Relogio();
@@ -364,7 +364,7 @@ public sealed class ProcessoSeletivoRetificarTests
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         Guid faseId = processo.CronogramaFases.Single().Id;
-        // Story #554, PR-c: a exigência determina resultado (Obrigatorio=true), então
+        // Story #554, PR #898: a exigência determina resultado (Obrigatorio=true), então
         // precisa de base legal RESOLVIDO para satisfazer o 5º item de AvaliarConformidade.
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
             "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
@@ -392,7 +392,7 @@ public sealed class ProcessoSeletivoRetificarTests
         processo.Rascunho.Should().BeNull("o fechamento aceito encerra a sessão editorial");
     }
 
-    // ── Story #554 (PR-e, issue #548) — CA-05 (5/5): reavaliação após mudança de gatilho ──
+    // ── Story #554 (PR #903, issue #548) — CA-05 (5/5): reavaliação após mudança de gatilho ──
 
     private static ProcessoSeletivo NovoProcessoComDuasModalidades()
     {

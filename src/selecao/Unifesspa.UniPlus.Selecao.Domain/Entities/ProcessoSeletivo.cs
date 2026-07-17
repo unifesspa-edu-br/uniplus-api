@@ -60,7 +60,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<DocumentoExigido> _documentosExigidos = [];
     public IReadOnlyCollection<DocumentoExigido> DocumentosExigidos => _documentosExigidos.AsReadOnly();
 
-    /// <summary>Âncora que resolve FAIXA_ETARIA na publicação (Story #554, PR-b) — ausência = nenhum gatilho por idade pode existir (bloqueado na publicação, ver <see cref="PendenciaDaReferenciaTemporalFatos"/>).</summary>
+    /// <summary>Âncora que resolve FAIXA_ETARIA na publicação (Story #554, PR #896) — ausência = nenhum gatilho por idade pode existir (bloqueado na publicação, ver <see cref="PendenciaDaReferenciaTemporalFatos"/>).</summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; private set; }
 
     public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
@@ -490,7 +490,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A mesma fase canônica não pode aparecer duas vezes no cronograma."));
         }
 
-        // Story #554/issue #893 (PR-d, CA-04): reconciliação por FaseCanonicaOrigemId —
+        // Story #554/issue #893 (PR #900, CA-04): reconciliação por FaseCanonicaOrigemId —
         // achado Codex P2 (PR #900, 4ª rodada). FaseCanonicaOrigemId é a identidade ESTÁVEL
         // de uma fase no cronograma (índice único ux_fases_cronograma_processo_fase_canonica);
         // Ordem é só um ATRIBUTO mutável dela (uma fase pode ser reordenada sem deixar de
@@ -503,7 +503,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // SaveChanges, fora do Result pattern. Casar por identidade evita esse retargeting
         // desnecessário; o guard de permutação cíclica de Ordem (abaixo) cobre o caso
         // residual em que a PRÓPRIA Ordem trocada forma um ciclo fechado entre fases
-        // retidas. Substitui o guard bruto da PR-a/#547 (que bloqueava QUALQUER redefinição
+        // retidas. Substitui o guard bruto da PR #895/#547 (que bloqueava QUALQUER redefinição
         // enquanto existisse exigência viva) por guards precisos: só recusa quando uma fase
         // REALMENTE removida é referenciada por exigência viva (ExigidoNaFaseId ou
         // IdadeMaximaEmissao.ReferenciaFaseId), ou quando uma fase SOBREVIVENTE perde
@@ -516,7 +516,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             if (!fasesNovasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova))
             {
                 // A fase removida pode ser referenciada por ExigidoNaFaseId OU por
-                // IdadeMaximaEmissao.ReferenciaFaseId (PR-d) — os dois são vínculos
+                // IdadeMaximaEmissao.ReferenciaFaseId (PR #900) — os dois são vínculos
                 // independentes, e ambos ficariam órfãos silenciosamente.
                 if (_documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id
                     || d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id))
@@ -544,7 +544,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // exigência; sem este guard, uma redefinição de cronograma POSTERIOR poderia
             // apagar o extremo e deixar IdadeMaximaEmissao apontando para uma âncora
             // irresolvível, silenciosamente. Mesma família de guard de
-            // ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente (PR-b), mas aqui é
+            // ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente (PR #896), mas aqui é
             // preventivo (na escrita do cronograma), não descoberto só na publicação.
             bool perdeuInicio = antiga.Inicio is not null && nova.Inicio is null;
             bool perdeuFim = antiga.Fim is not null && nova.Fim is null;
@@ -734,14 +734,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Substitui integralmente a coleção de documentos exigidos do processo (Story #554,
-    /// PR-a): mesmo padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/>
+    /// PR #895): mesmo padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/>
     /// primeiro, <see cref="Result"/> nunca exceção, substituição integral da coleção.
     /// </summary>
     /// <remarks>
     /// Valida aqui o que só a raiz consegue provar: cada <see cref="DocumentoExigido.ExigidoNaFaseId"/>
     /// referencia uma fase viva do cronograma do MESMO processo (§2 da issue #547). O
-    /// gatilho DNF (<c>CondicaoGatilho</c>, PR-b), a base legal (PR-c) e a idade/formato/
-    /// tamanho (PR-d) não são tocados aqui.
+    /// gatilho DNF (<c>CondicaoGatilho</c>, PR #896), a base legal (PR #898) e a idade/formato/
+    /// tamanho (PR #900) não são tocados aqui.
     /// </remarks>
     public Result DefinirDocumentosExigidos(
         IReadOnlyList<DocumentoExigido> itens,
@@ -763,8 +763,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo."));
             }
 
-            // Story #554/issue #893 (PR-d): âncora de fase de IdadeMaximaEmissao — mesma
-            // família de checagem estrutural de ReferenciaTemporalFatos (PR-b), mas EAGER
+            // Story #554/issue #893 (PR #900): âncora de fase de IdadeMaximaEmissao — mesma
+            // família de checagem estrutural de ReferenciaTemporalFatos (PR #896), mas EAGER
             // (na escrita, não na publicação): a regra vive na exigência, e a exigência já
             // está sendo escrita agora — não há razão para adiar. Fase viva do MESMO
             // processo com o extremo correspondente não-nulo (sem fallback silencioso).
@@ -830,7 +830,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story #554, PR-b —
+    /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story #554, PR #896 —
     /// B-03 do plano). Presença (0..1) — <see langword="null"/> é estado válido enquanto
     /// nenhuma exigência tem gatilho por idade; a ausência só vira pendência de publicação
     /// quando existir esse gatilho (<see cref="PendenciaDaReferenciaTemporalFatos"/>).
@@ -907,7 +907,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             new ItemConformidade("Distribuição de vagas", _distribuicaoVagas.Count > 0),
             new ItemConformidade("Classificação", Classificacao is not null),
             new ItemConformidade("Cronograma de fases", _cronogramaFases.Count > 0),
-            // Story #554, PR-c (issue #549, ADR-0074): toda exigência que determina
+            // Story #554, PR #898 (issue #549, ADR-0074): toda exigência que determina
             // resultado precisa de ≥1 base legal RESOLVIDO — semântica vazia quando não há
             // exigência que determine resultado (Services.ValidadorBaseLegalExigencias).
             new ItemConformidade(
@@ -1010,13 +1010,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <remarks>
     /// <b>CA-01</b> (Story #554, issue #547) — uma exigência <c>CONDICIONAL</c> sem
     /// nenhuma condição de gatilho viva que <see cref="DocumentoExigido.DeterminaResultado"/>
-    /// é "exigência morta": nunca seria cobrada de ninguém. Desde a PR-b (issue #892),
+    /// é "exigência morta": nunca seria cobrada de ninguém. Desde a PR #896 (issue #892),
     /// avalia a coleção REAL de <see cref="DocumentoExigido.Condicoes"/>.
     /// <para>
     /// A guarda fail-closed <b>B-01</b>, que bloqueava QUALQUER publicação com
     /// <see cref="DocumentoExigido"/> configurado enquanto o bloco
-    /// <c>documentosExigidos.exigencias</c> do envelope era stub (PR-a..PR-d), foi
-    /// <b>removida na PR-e</b> (issue #548): o bloco rico a substitui, e o gate real
+    /// <c>documentosExigidos.exigencias</c> do envelope era stub (PR #895..PR #900), foi
+    /// <b>removida na PR #903</b> (issue #548): o bloco rico a substitui, e o gate real
     /// (<see cref="Services.AvaliadorConformidadeLegal.Avaliar"/>, predicado
     /// <c>DocumentoObrigatorioParaModalidade</c>) passa a decidir com base no que está
     /// realmente configurado, não mais reprovando por padrão conservador.
@@ -1042,7 +1042,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Coerência entre a consequência de indeferimento declarada em cada
-    /// <see cref="DocumentoExigido"/> e a ação da vaga (Story #554, PR-e, CA-05) — lida
+    /// <see cref="DocumentoExigido"/> e a ação da vaga (Story #554, PR #903, CA-05) — lida
     /// de <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>, sem campo duplicado em
     /// <see cref="DocumentoExigido"/>. Chamado por <see cref="Publicar"/> e por
     /// <see cref="SucederVersao"/> (Retificar/FecharRetificacao), sempre <b>depois</b> de
@@ -1097,8 +1097,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Ponte entre os dois vocabulários fechados de "ação de indeferimento" — Story #554
-    /// (PR-e), achado de revisão: <see cref="DocumentoExigido.ConsequenciaIndeferimento"/>
-    /// usa <c>RECLASSIFICA_AC</c> (rol fechado desde a PR-a, issue #547), mas
+    /// (PR #903), achado de revisão: <see cref="DocumentoExigido.ConsequenciaIndeferimento"/>
+    /// usa <c>RECLASSIFICA_AC</c> (rol fechado desde a PR #895, issue #547), mas
     /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/> — snapshot-copy do cadastro
     /// de <c>Modalidade</c> no módulo Configuração
     /// (<c>ck_modalidade_acao_quando_indeferido</c>) — usa <c>RECLASSIFICAR_AC</c>. É o
@@ -1124,7 +1124,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }));
 
     /// <summary>
-    /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR-b — B-03 do
+    /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR #896 — B-03 do
     /// plano). Chamado por <see cref="Publicar"/> e por <see cref="SucederVersao"/>,
     /// sempre <b>depois</b> de <see cref="PendenciaDasExigenciasDocumentais"/>.
     /// </summary>
@@ -1134,7 +1134,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// precisa resolver para uma data concreta — política ausente, âncora de fase sem o
     /// extremo escolhido, ou <c>FIM_INSCRICAO</c> sem fase que colete inscrição com
     /// <c>Fim</c> definido bloqueiam a publicação. O congelamento da <c>DateOnly</c>
-    /// concreta é da PR-e; esta validação só prova que ela É resolvível.
+    /// concreta é da PR #903; esta validação só prova que ela É resolvível.
     /// </remarks>
     private DomainError? PendenciaDaReferenciaTemporalFatos()
     {
@@ -1189,7 +1189,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Resolve <see cref="ReferenciaTemporalFatos"/> para a <see cref="DateOnly"/> concreta
-    /// que o envelope congela como <c>dataReferenciaFatos</c> (Story #554, PR-e, B-03) — o
+    /// que o envelope congela como <c>dataReferenciaFatos</c> (Story #554, PR #903, B-03) — o
     /// mesmo par (Tipo, âncora) que <see cref="PendenciaDaReferenciaTemporalFatos"/> já
     /// provou resolvível antes da transição chamar este método; aqui só se resolve, sem
     /// revalidar. Fuso <c>America/Sao_Paulo</c> — a virada do dia UTC→local é a razão de
@@ -2110,7 +2110,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _cronogramaFases.Add(fase);
         }
 
-        // Documentos exigidos (Story #554, PR-e): o bloco `documentosExigidos.exigencias`
+        // Documentos exigidos (Story #554, PR #903): o bloco `documentosExigidos.exigencias`
         // do envelope agora é real (CA-09) — reconciliação por `exigenciaId` (o
         // DocumentoExigido.Id preservado por Reidratar, o segundo caso de identidade
         // congelada depois de EtapaProcesso.Id, ADR-0110 D2). Mesmo padrão de reuso da
@@ -2129,7 +2129,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _documentosExigidos.Add(documento);
         }
 
-        // Referência temporal de fatos (Story #554, PR-e, B-03): o envelope congela a
+        // Referência temporal de fatos (Story #554, PR #903, B-03): o envelope congela a
         // POLÍTICA crua (Tipo/Data/FaseId) ao lado da data já resolvida — mesmo padrão de
         // "insumo + output derivado" de distribuicao/vagas. Repor a política (não só a
         // data) é o que torna o round-trip reidratar→recanonicalizar não-tautológico:

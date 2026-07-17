@@ -79,7 +79,7 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(new Dictionary<string, JsonElement>()).Should().BeFalse();
     }
 
-    // ── Story #554 (PR-b, issue #892) — extensão dinâmica/multivalorada ──
+    // ── Story #554 (PR #896, issue #892) — extensão dinâmica/multivalorada ──
 
     private static CondicaoDnf Categorica(string fato, Operador operador, JsonElement valor) =>
         CondicaoDnf.Criar(fato, operador, valor).Value!;

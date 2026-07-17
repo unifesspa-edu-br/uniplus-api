@@ -12,7 +12,7 @@ using Domain.Entities;
 using Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="CondicaoGatilho"/> (Story #554, PR-b) — entidade
+/// Configuração EF Core de <see cref="CondicaoGatilho"/> (Story #554, PR #896) — entidade
 /// filha de <see cref="DocumentoExigido"/>, <c>EntityBase</c> puro (sem soft-delete).
 /// </summary>
 public sealed class CondicaoGatilhoConfiguration : IEntityTypeConfiguration<CondicaoGatilho>

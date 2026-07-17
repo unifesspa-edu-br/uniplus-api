@@ -5,9 +5,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Idade máxima de emissão de um <see cref="Entities.DocumentoExigido"/> (Story #554,
-/// PR-d, issue #893) — regra opcional (0..1) sobre o próprio ARQUIVO apresentado (ex.:
+/// PR #900, issue #893) — regra opcional (0..1) sobre o próprio ARQUIVO apresentado (ex.:
 /// "comprovante de residência emitido há no máximo 90 dias"), distinta de
-/// <see cref="ReferenciaTemporalFatos"/> (PR-b), que ancora a idade do CANDIDATO
+/// <see cref="ReferenciaTemporalFatos"/> (PR #896), que ancora a idade do CANDIDATO
 /// (<c>FAIXA_ETARIA</c>) no nível do processo, não da exigência, e explicitamente exclui
 /// submissão como âncora.
 /// </summary>

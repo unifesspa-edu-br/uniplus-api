@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="ObterProcessoSeletivoQueryHandler.Project"/> para
-/// <c>DocumentosExigidos</c> (Story #554, PR-a): a projeção precisa emitir o mesmo
+/// <c>DocumentosExigidos</c> (Story #554, PR #895): a projeção precisa emitir o mesmo
 /// token de wire que <c>DefinirDocumentosExigidosCommandValidator</c> aceita — round-trip
 /// GET→PUT direto, sem transformação do cliente.
 /// </summary>
@@ -126,7 +126,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         dto!.ReferenciaTemporalFatos.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Story #554/issue #549 (PR-c): projeta BasesLegais — round-trip GET→PUT, inclusive PENDENTE (a projeção 'só RESOLVIDO' é da PR-e, não deste DTO de edição)")]
+    [Fact(DisplayName = "Story #554/issue #549 (PR #898): projeta BasesLegais — round-trip GET→PUT, inclusive PENDENTE (a projeção 'só RESOLVIDO' é da PR #903, não deste DTO de edição)")]
     public async Task Handle_BasesLegais_EmiteTokenDeWireERoundTrip()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
@@ -162,7 +162,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         pendenteDto.Observacao.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Story #554/issue #893 (PR-d): projeta IdadeMaximaEmissao/FormatoPermitido/TamanhoMaximoBytes — round-trip GET→PUT")]
+    [Fact(DisplayName = "Story #554/issue #893 (PR #900): projeta IdadeMaximaEmissao/FormatoPermitido/TamanhoMaximoBytes — round-trip GET→PUT")]
     public async Task Handle_IdadeFormatoTamanho_EmiteTokensDeWire()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);

@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/> (Story #554,
-/// PR-a): substituição integral e pertencimento da fase ao cronograma do MESMO
+/// PR #895): substituição integral e pertencimento da fase ao cronograma do MESMO
 /// processo (§2 da issue #547).
 /// </summary>
 public sealed class ProcessoSeletivoDocumentosExigidosTests
@@ -126,7 +126,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Id == segundaChamada.Id);
     }
 
-    [Fact(DisplayName = "Story #554/issue #893 (PR-d): redefinir o cronograma preservando a Ordem de uma fase referenciada por exigência viva é aceito — reconciliação, não guard bruto")]
+    [Fact(DisplayName = "Story #554/issue #893 (PR #900): redefinir o cronograma preservando a Ordem de uma fase referenciada por exigência viva é aceito — reconciliação, não guard bruto")]
     public void DefinirCronogramaFases_MesmaOrdemComExigenciaViva_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -175,7 +175,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         // Mesma Ordem (1), FaseCanonicaOrigemId DIFERENTE, e NENHUMA exigência referencia
         // a fase antiga — o guard já provou que é seguro remover a antiga. A reconciliação
-        // (Story #554/#893, PR-d, 4ª rodada) casa por FaseCanonicaOrigemId, não por Ordem:
+        // (Story #554/#893, PR #900, 4ª rodada) casa por FaseCanonicaOrigemId, não por Ordem:
         // como o Id de origem mudou, é uma fase DIFERENTE ocupando o slot — a linha antiga
         // é removida e uma nova é inserida (nunca retargeta o FaseCanonicaOrigemId de uma
         // linha rastreada, o que causaria a dependência circular do achado da 4ª rodada).

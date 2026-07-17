@@ -6,7 +6,7 @@ using Kernel.Results;
 
 /// <summary>
 /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story
-/// #554, PR-b — B-03 do plano). Passar <see langword="null"/> em <see cref="Tipo"/>
+/// #554, PR #896 — B-03 do plano). Passar <see langword="null"/> em <see cref="Tipo"/>
 /// remove a referência — a ausência é estado válido enquanto nenhuma exigência tem
 /// gatilho por idade (só vira pendência de publicação nesse caso).
 /// </summary>
