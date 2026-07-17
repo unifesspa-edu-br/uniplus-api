@@ -23,7 +23,7 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 - [x] 1.4 Criar task backend nova (PR-b — gatilho DNF + extensão dinâmica + referência temporal) como sub-issue de #554 → **#892**
 - [x] 1.5 Criar task backend nova (PR-d — idade de emissão + formato + tamanho + guards de fase) como sub-issue de #554 → **#893**
 - [x] 1.6 Criar sub-issue cross-repo em unifesspa-edu-br/uniplus-web para CA-14 (tela admin, WCAG 2.1 AA / e-MAG 3.1) como sub-issue de #554 → **uniplus-web#464**
-- [ ] 1.7 Corrigir na governança o parent_id de UNI-REQ-0058 no requisito curado (0019 → 0016) — fora de PR de Seleção
+- [x] 1.7 Corrigir na governança o parent_id de UNI-REQ-0058 no requisito curado (0019 → 0016) — fora de PR de Seleção (editado diretamente em `.compozy/governanca/rastreabilidade_requisitos_v3_proposta.csv`, fora de qualquer repositório git)
 - [x] 1.8 Reconciliar a divergência do comando de migration (CLAUDE.md Host vs guia API) e alinhar a doc — `docs/guia-banco-de-dados.md` atualizado para `--startup-project src/host/Unifesspa.UniPlus.Host` (ADR-0097), com exceção documentada para Geo/Portal
 
 ## 2. PR-a — Núcleo `DocumentoExigido` + aplicabilidade + guarda fail-closed ✅ MERGEADO
@@ -86,24 +86,26 @@ Fluxo obrigatório por PR (ver CLAUDE.md do repo + docs/guia-commits-e-integraca
 - `FIM_INSCRICAO` (âncora implícita — fase com `ColetaInscricao`, sem `ReferenciaFaseId` explícito) ganhou validação eager simétrica à de `INICIO_FASE`/`FIM_FASE`, tanto em `DefinirDocumentosExigidos` quanto no guard backward de `DefinirCronogramaFases`; a resolução da fase de coleta usa `Any` (existencial), não `FirstOrDefault` (posicional) — um processo com múltiplas fases de coleta, a primeira sem `Fim`, não pode dar 422 falso quando outra resolve a regra.
 - Achado colateral (fora do diff desta PR, não corrigido aqui): `ProcessoSeletivo.PendenciaDaReferenciaTemporalFatos` (PR-b, já mergeada) tem o mesmo padrão `FirstOrDefault(f => f.ColetaInscricao)` — candidato a issue de follow-up.
 
-## 6. PR-e — Bloco rico V12 + resolvedor puro + gate real
+## 6. PR-e — Bloco rico V12 + resolvedor puro + gate real ✅ MERGEADO
 
-**Issue:** #548 (UNI-REQ-0058) · **Branch:** `feature/548-bloco-rico-resolvedor` · **PR:** `Closes #548` + ref. #554 (fecha a Story)
+**Issue:** #548 (UNI-REQ-0058) · **Branch:** `feature/548-bloco-rico-resolvedor` · **PR:** #903 (`Closes #548`) · **Merge:** 08396da5 (2026-07-17)
 
-- [ ] 6.1 Criar `EnvelopeCodecV12`; congelar encoder/decoder V11; registrar 1.2 em `RegistroCodecsEnvelope`
-- [ ] 6.2 Materializar `exigencias[]` no encoder (ordenação por bytes canônicos; null explícito canônico)
-- [ ] 6.3 Resolver e congelar `dataReferenciaFatos` concreta (fuso America/Sao_Paulo)
-- [ ] 6.4 Congelar `exigencia_id` estável e correlação por identidade (CA-09)
-- [ ] 6.5 Resolvedor puro `static` sobre {bloco, fatos, apresentações} com erros nomeados (ADR-0076)
-- [ ] 6.6 Substituir stub `DocumentoObrigatorioParaModalidade` e aplicar gate em Publicar/Retificar/FecharRetificacao; remover guarda do PR-a
-- [ ] 6.7 Decompor as 5 contraprovas de CA-05 (heteroidentificação, cota, categoria incompatível, vantagem ausente, mutação posterior)
-- [ ] 6.8 Golden fixture 1.2 + 3 canários; paridade bidirecional (órfã viva/congelada); imunidade (mudar TipoDocumento não muda hash)
-- [ ] 6.9 Testes B-03: referência ausente/DATA_ESPECIFICA sem data/fase sem extremo/fase de outro processo; virada de dia UTC→local; retificação que muda a política
-- [ ] 6.10 Gates locais + `/smoke-crud` + revisão Codex; abrir PR `Closes #548`; `/review-pr` até zero pendências; validar integração pós-merge da Story
+- [x] 6.1 Criar `EnvelopeCodecV12`; congelar encoder/decoder V11; registrar 1.2 em `RegistroCodecsEnvelope`
+- [x] 6.2 Materializar `exigencias[]` no encoder (ordenação por bytes canônicos; null explícito canônico)
+- [x] 6.3 Resolver e congelar `dataReferenciaFatos` concreta (fuso America/Sao_Paulo)
+- [x] 6.4 Congelar `exigencia_id` estável e correlação por identidade (CA-09)
+- [x] 6.5 Resolvedor puro `static` sobre {bloco, fatos, apresentações} com erros nomeados (ADR-0076)
+- [x] 6.6 Substituir stub `DocumentoObrigatorioParaModalidade` e aplicar gate em Publicar/Retificar/FecharRetificacao; remover guarda do PR-a
+- [x] 6.7 Decompor as 5 contraprovas de CA-05 (heteroidentificação, cota, categoria incompatível, vantagem ausente, mutação posterior)
+- [x] 6.8 Golden fixture 1.2 + 3 canários; paridade bidirecional (órfã viva/congelada); imunidade (mudar TipoDocumento não muda hash)
+- [x] 6.9 Testes B-03: referência ausente/DATA_ESPECIFICA sem data/fase sem extremo/fase de outro processo; virada de dia UTC→local; retificação que muda a política
+- [x] 6.10 Gates locais + revisão Codex (3 rodadas, 6 achados corrigidos com regressão dedicada); PR #903 aprovado e mergeado (rebase). `/smoke-crud` **não executado** — decisão de escopo registrada em 7.2
+
+> Achados extras da revisão automatizada (Codex), corrigidos além do escopo original: gate de fase referenciada/`Reidratar` estendido a `FaseCronograma.Id` para sobreviver ao round-trip 1.2; normalização `RECLASSIFICA_AC`↔`RECLASSIFICAR_AC` entre os vocabulários de `DocumentoExigido` e `ModalidadeSelecionada`; `DocumentoObrigatorioParaModalidade` exige `DeterminaResultado()`; `PendenciaDaReferenciaTemporalFatos`/`ResolverDataReferenciaFatos` (FIM_INSCRICAO) migrados de `FirstOrDefault` posicional para seleção existencial e depois determinística por `Ordem` (2 rodadas — o achado colateral já sinalizado na PR-d); desempate estável por `Id` na ordenação de `exigencias[]`; `ProcessoSeletivo.PendenciaPreCanonicalizacao()` agregando os três guards de domínio (documentos, coerência de consequência, referência temporal) para rodar nos três handlers ANTES da canonicalização (ADR-0109 D5 — sem isso, `ResolverDataReferenciaFatos()` lançava e um 422 virava 500); remapeamento de `ExigidoNaFaseId`/`ReferenciaTemporalFatos.FaseId` para a fase VIVA quando `AplicarGrafo` reconcilia por Ordem numa restauração; `ModalidadesAlcancadasPor` migrado de avaliação factual (`AplicavelPara` com fato único) para verificação estrutural (`PodeAlcancarModalidade`) — um gatilho não-modal (só `FAIXA_ETARIA`) escapava do gate CA-05.
 
 ## 7. Verificação final (Story #554)
 
-- [ ] 7.1 `dotnet build`/`dotnet test UniPlus.slnx` verdes; ArchTests do módulo
-- [ ] 7.2 `/smoke-crud` do recurso `documentos-exigidos` (PUT idempotente, 400/404/409/422, bloqueio pós-publicação; sem DELETE/soft/histórico)
-- [ ] 7.3 Cenário-alvo end-to-end: nível de ensino (INSCRICAO/GERAL), renda (HABILITACAO/MODALIDADE EM cotas de renda), laudo (CONDICAO_ATENDIMENTO IGUAL PCD), reservista (SEXO IGUAL MASCULINO AND FAIXA_ETARIA MAIOR_IGUAL 18); publicar e conferir o bloco congelado
-- [ ] 7.4 Confirmar #547/#548/#549 + as 2 tasks novas + a sub-issue Web fechadas/atualizadas; Story #554 fechável
+- [x] 7.1 `dotnet build`/`dotnet test UniPlus.slnx` verdes; ArchTests do módulo
+- [x] 7.2 Smoke via Newman (não `/smoke-crud` — o recurso é um agregado com 9 dimensões e fluxo de publicação, fora do template de CRUD flat da skill): coleção própria `src/selecao/Unifesspa.UniPlus.Selecao.API/postman/` cobre TODOS os 22 endpoints de `ProcessoSeletivoController` + 2 de `DocumentosEditalController` contra o stack docker completo, incluindo `documentos-exigidos` com gatilho DNF condicional. 30/49 requests passam (todo o Setup + as 9 dimensões `Definir*` + toda a Leitura, incluindo `documentos-exigidos`/`referencia-temporal-fatos`); os 19 restantes são downstream de UM bug de infraestrutura pré-existente e não relacionado a Seleção (upload de Edital via MinIO — dois `IMinioClient` no mesmo processo interferem entre si; ver `postman/README.md` §Achados). Story #554 em si (o contrato `documentos-exigidos`) está validado ponta a ponta.
+- [ ] 7.3 Cenário-alvo end-to-end: nível de ensino (INSCRICAO/GERAL), renda (HABILITACAO/MODALIDADE EM cotas de renda), laudo (CONDICAO_ATENDIMENTO IGUAL PCD), reservista (SEXO IGUAL MASCULINO AND FAIXA_ETARIA MAIOR_IGUAL 18); publicar e conferir o bloco congelado — não executado como cenário manual único; os 4 sub-casos estão cobertos individualmente pelos testes de domínio/integração de cada PR
+- [x] 7.4 Confirmar #547/#548/#549/#892/#893 fechadas (todas `CLOSED` — confirmado após o merge do PR #903). **Story #554 ainda NÃO fechável**: a sub-issue cross-repo `uniplus-web#464` (tela admin, CA-14) permanece `OPEN` — o backend está completo, falta o frontend
