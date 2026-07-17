@@ -795,19 +795,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // externa) ou com a fase de coleta sem Fim definido, deixando-a
                 // irresolvível depois — mesmo sem gate de publicação para idade de
                 // emissão (issue #893 §1: é aviso, não bloqueio de presença).
-                FaseCronograma? faseColeta = _cronogramaFases.FirstOrDefault(f => f.ColetaInscricao);
-                if (faseColeta is null)
+                // Achado Codex P2 (PR #900, 6ª rodada): nada no domínio impede MAIS de uma
+                // fase com ColetaInscricao — FirstOrDefault pegava a primeira, mesmo que
+                // outra (com Fim definido) resolvesse a regra; um processo com duas fases
+                // de coleta, a primeira sem Fim e a segunda com Fim, era um 422 falso. A
+                // pergunta certa é existencial (Any), não posicional — a mesma forma já
+                // usada pelo guard backward simétrico em DefinirCronogramaFases.
+                if (!_cronogramaFases.Any(f => f.ColetaInscricao))
                 {
                     return Result.Failure(new DomainError(
                         "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
                         "FIM_INSCRICAO exige uma fase do cronograma com ColetaInscricao, e o processo não tem nenhuma."));
                 }
 
-                if (faseColeta.Fim is null)
+                if (!_cronogramaFases.Any(f => f.ColetaInscricao && f.Fim is not null))
                 {
                     return Result.Failure(new DomainError(
                         "IdadeMaximaEmissao.FaseExtremoAusente",
-                        $"A fase '{faseColeta.Codigo}' que coleta inscrição não tem Fim definido — FIM_INSCRICAO não pode ser resolvido, sem fallback silencioso."));
+                        "Nenhuma fase que coleta inscrição tem Fim definido — FIM_INSCRICAO não pode ser resolvido, sem fallback silencioso."));
                 }
             }
         }
