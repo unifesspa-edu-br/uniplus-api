@@ -414,6 +414,191 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    // ── Story #554 (PR-e, issue #548) — CA-05: coerência consequência↔ação da vaga ──
+
+    private static ModalidadeSelecionada NovaModalidadeComAcao(
+        string codigo, NaturezaLegalModalidade naturezaLegal, ComposicaoVagasModalidade composicaoVagas, string? acaoQuandoIndeferido) =>
+        ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(),
+            codigo: codigo,
+            descricao: null,
+            naturezaLegal: naturezaLegal,
+            composicaoVagas: composicaoVagas,
+            composicaoOrigemCodigo: null,
+            regraRemanejamento: naturezaLegal == NaturezaLegalModalidade.CotaReservada
+                ? RegraRemanejamentoModalidade.SegueCascata
+                : RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null,
+            remanejamentoPar: null,
+            remanejamentoFallback: null,
+            criteriosCumulativos: [],
+            acaoQuandoIndeferido: acaoQuandoIndeferido,
+            baseLegal: "Lei 12.711/2012",
+            quantidadeDeclarada: 10).Value!;
+
+    /// <summary>
+    /// Variante de <see cref="NovoProcessoConforme"/> com UMA modalidade escolhida pelo
+    /// chamador (Story #554, PR-e, CA-05) — para exercitar a coerência consequência↔ação
+    /// da vaga contra uma natureza/ação específica, não a "AC" fixa do helper padrão.
+    /// </summary>
+    private static ProcessoSeletivo NovoProcessoComModalidade(ModalidadeSelecionada modalidade)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [modalidade]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
+            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
+            regraArredondamento: null,
+            casasArredondamento: null,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: []).Value!;
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
+
+    private static DocumentoExigido ExigenciaGeralComConsequencia(
+        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria, string consequenciaIndeferimento) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: tipoDocumentoCodigo,
+            tipoDocumentoNome: tipoDocumentoNome,
+            tipoDocumentoCategoria: tipoDocumentoCategoria,
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: false,
+            consequenciaIndeferimento: consequenciaIndeferimento,
+            grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+
+    private static DocumentoExigido ExigenciaCondicionalPorModalidadeComConsequencia(
+        Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria,
+        string modalidadeCodigo, string consequenciaIndeferimento) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: tipoDocumentoCodigo,
+            tipoDocumentoNome: tipoDocumentoNome,
+            tipoDocumentoCategoria: tipoDocumentoCategoria,
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: false,
+            consequenciaIndeferimento: consequenciaIndeferimento,
+            grupoSatisfacaoId: null,
+            condicoes: [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+
+    [Fact(DisplayName = "CA-05 (1/5 — heteroidentificação/indígena): ELIMINA é incoerente com RECLASSIFICA_AC da modalidade PPI")]
+    public void Publicar_HeteroidentificacaoElimina_IncoerenteComAcaoDaModalidadePpi()
+    {
+        ModalidadeSelecionada ppi = NovaModalidadeComAcao(
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICA_AC");
+        ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA")],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
+    }
+
+    [Fact(DisplayName = "CA-05 (2/5 — modalidade de cota): ELIMINA é incoerente com RECLASSIFICA_AC de uma cota reservada (comprovante de renda)")]
+    public void Publicar_ComprovanteRendaElimina_IncoerenteComAcaoDaModalidadeDeCota()
+    {
+        ModalidadeSelecionada cota = NovaModalidadeComAcao(
+            "LB_Q", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICA_AC");
+        ProcessoSeletivo processo = NovoProcessoComModalidade(cota);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RENDA", "Comprovante de renda familiar", "RENDA", "ELIMINA")],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
+    }
+
+    [Fact(DisplayName = "CA-05 (3/5 — categoria incompatível): exigência CONDICIONAL só alcança a modalidade pelo gatilho, não pela categoria do documento")]
+    public void Publicar_LaudoMedicoElimina_IncoerenteComAcaoDaModalidadeAlcancadaPorGatilho()
+    {
+        ModalidadeSelecionada suplementar = NovaModalidadeComAcao(
+            "PSIQ_INDIGENA", NaturezaLegalModalidade.Suplementar, ComposicaoVagasModalidade.SuplementarAoTotal, "PENDENCIA_REENVIO");
+        ProcessoSeletivo processo = NovoProcessoComModalidade(suplementar);
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", "PSIQ_INDIGENA", "ELIMINA")],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue(
+            "a categoria do documento (SAUDE) não isenta a coerência — o que importa é a modalidade que o gatilho alcança");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
+    }
+
+    [Fact(DisplayName = "CA-05 (4/5 — REMOVE_VANTAGEM sem vantagem viva): recusado quando o processo não tem bônus regional configurado")]
+    public void Publicar_RemoveVantagemSemVantagemViva_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM")],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // Nenhum ConfiguracaoBonusRegional definido — RN05, toggle por presença: a
+        // ausência da entidade já significa "sem vantagem viva" para remover.
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.RemoveVantagemSemVantagemViva");
+    }
+
+    [Fact(DisplayName = "CA-05: REMOVE_VANTAGEM com bônus regional configurado é aceito (contraprova)")]
+    public void Publicar_RemoveVantagemComVantagemViva_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        processo.DefinirBonusRegional(
+            ConfiguracaoBonusRegional.Criar(
+                ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", HashFixo).Value!,
+                fator: 1.2m, teto: null, municipioConvenio: "Marabá", baseLegal: "Res. Unifesspa 532/2021").Value!,
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM")],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
     // ── Story #554/issue #549 (PR-c) — base legal 1:N, 5º item de AvaliarConformidade ──
 
     private static DocumentoExigidoBaseLegal BaseLegalDe(StatusBaseLegal status) => DocumentoExigidoBaseLegal.Criar(

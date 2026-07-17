@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
@@ -389,6 +390,115 @@ public sealed class ProcessoSeletivoRetificarTests
         resultado.IsSuccess.Should().BeTrue(
             resultado.Error?.Message ?? "o bloco documentosExigidos.exigencias deixou de ser stub — nada mais bloqueia este fechamento");
         processo.Rascunho.Should().BeNull("o fechamento aceito encerra a sessão editorial");
+    }
+
+    // ── Story #554 (PR-e, issue #548) — CA-05 (5/5): reavaliação após mudança de gatilho ──
+
+    private static ProcessoSeletivo NovoProcessoComDuasModalidades()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: null,
+            naturezaLegal: NaturezaLegalModalidade.Ampla, composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021", quantidadeDeclarada: 30).Value!;
+        // AcaoQuandoIndeferido = RECLASSIFICA_AC: heteroidentificação/cota reprovada
+        // reclassifica o candidato para ampla concorrência, nunca elimina (RN, concorrência
+        // dupla — Lei 14.723/2023).
+        ModalidadeSelecionada ppi = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "LB_PPI", descricao: null,
+            naturezaLegal: NaturezaLegalModalidade.CotaReservada, composicaoVagas: ComposicaoVagasModalidade.DentroDoVr,
+            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata,
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: [], acaoQuandoIndeferido: "RECLASSIFICA_AC", baseLegal: "Lei 12.711/2012", quantidadeDeclarada: 10).Value!;
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [ac, ppi]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
+            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
+            regraArredondamento: null,
+            casasArredondamento: null,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: []).Value!;
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
+
+    private static DocumentoExigidoBaseLegal BaseLegalResolvidaQualquer() => DocumentoExigidoBaseLegal.Criar(
+        "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+
+    private static DocumentoExigido ExigenciaCondicionalPorModalidadeComConsequencia(Guid exigidoNaFaseId, string modalidadeCodigo, string consequenciaIndeferimento) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "AUTODECLARACAO_ETNICO_RACIAL",
+            tipoDocumentoNome: "Autodeclaração étnico-racial",
+            tipoDocumentoCategoria: "HETEROIDENTIFICACAO",
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: false,
+            consequenciaIndeferimento: consequenciaIndeferimento,
+            grupoSatisfacaoId: null,
+            condicoes: [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+
+    [Fact(DisplayName = "CA-05 (5/5): mudar o gatilho de AC para LB_PPI numa retificação reavalia a coerência consequência↔ação — não fica cacheada da publicação anterior")]
+    public void FecharRetificacao_MudancaDeGatilhoTornaConsequenciaIncoerente_Reavalia()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoComDuasModalidades();
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "AC", "ELIMINA")],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock);
+        publicacao.IsSuccess.Should().BeTrue(
+            publicacao.Error?.Message ?? "AC não declara AcaoQuandoIndeferido — nada com que a exigência seja incoerente");
+        VersaoConfiguracao versaoAbertura = publicacao.Value!;
+        processo.DequeueDomainEvents();
+        clock.Avancar(TimeSpan.FromMinutes(1));
+
+        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
+            "Estender exigência de heteroidentificação para a cota PPI", versaoAbertura, "user-sub-123", clock.GetUtcNow());
+        abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
+
+        // Mesma consequência ELIMINA — só o gatilho muda, de AC (ação null, coerente) para
+        // LB_PPI (ação RECLASSIFICA_AC, incoerente com ELIMINA).
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LB_PPI", "ELIMINA")],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
+
+        clock.Avancar(TimeSpan.FromMinutes(1));
+        Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            PrecondicaoIfMatch.Curinga, clock);
+
+        resultado.IsFailure.Should().BeTrue(
+            "a coerência é recomputada a cada fechamento, a partir da coleção real de exigências — não fica " +
+            "cacheada do estado coerente aprovado na publicação anterior");
+        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
+        processo.Rascunho.Should().NotBeNull("o fechamento recusado não encerra a sessão editorial");
     }
 
     /// <summary>
