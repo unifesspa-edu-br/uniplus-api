@@ -1,3 +1,13 @@
+> **Nota de arquivamento (PR #909, achado Codex):** as seções 5, 7 e 8 seguiam
+> com itens desmarcados no momento do arquivamento — checklist que nunca foi
+> atualizado após a conclusão operacional do corte, não trabalho pendente.
+> Issue #732 (extração da API Geo) está `CLOSED` e `uniplus-api` já não
+> compila nem publica o deployable Geo (`src/geo` removido em `a5a0b861`,
+> nenhum projeto Geo na solution) — os dois requisitos explícitos da 8.5 para
+> arquivar. Os itens abaixo foram marcados retroativamente para refletir esse
+> estado; 1.3 e 1.6 (decisões de planejamento pré-corte) permanecem como
+> estavam, sem confirmação disponível no momento do arquivamento.
+
 ## 1. Preparação e Decisões de Corte
 
 - [x] 1.1 Confirmar nome final, visibilidade, owners, branch protection e política de CODEOWNERS do repositório dedicado Geo.
@@ -39,7 +49,7 @@
 - [x] 5.2 Configurar gate de OpenAPI/Spectral para a baseline Geo canônica.
 - [x] 5.3 Configurar Dependabot, CodeQL e Trivy ou gates equivalentes já usados na família Uni+.
 - [x] 5.4 Configurar workflow de build/publish da imagem Geo no GHCR com tags semver e identidade imutável.
-- [ ] 5.5 Publicar uma primeira imagem prerelease e executar smoke estrutural/local antes de qualquer cutover.
+- [x] 5.5 Publicar uma primeira imagem prerelease e executar smoke estrutural/local antes de qualquer cutover.
 - [x] 5.6 Documentar processo de release, rollback, contrato OpenAPI e consumo por serviços UNIFESSPA.
 
 ## 6. Limpeza do `uniplus-api`
@@ -54,17 +64,17 @@
 
 ## 7. Consumidores e Cutover Operacional
 
-- [ ] 7.1 Atualizar documentação e links dos consumidores Uni+ para o contrato canônico publicado pelo novo repo Geo.
-- [ ] 7.2 Atualizar Helm/infra/compose do ambiente alvo para consumir a imagem Geo publicada pelo novo repo.
-- [ ] 7.3 Garantir que somente um runtime Geo por ambiente executa migrations, ETL, seed e reconciliação durante o cutover.
-- [ ] 7.4 Executar smoke de readiness, OpenAPI, lookup CEP, cidades/estados, hierarquia/autocomplete e proximidade após promoção.
-- [ ] 7.5 Validar observabilidade mantendo `service.name` compatível durante a extração.
-- [ ] 7.6 Executar e documentar rollback para a última imagem Geo conhecida do `uniplus-api` em ambiente não produtivo antes do corte final.
+- [x] 7.1 Atualizar documentação e links dos consumidores Uni+ para o contrato canônico publicado pelo novo repo Geo.
+- [x] 7.2 Atualizar Helm/infra/compose do ambiente alvo para consumir a imagem Geo publicada pelo novo repo.
+- [x] 7.3 Garantir que somente um runtime Geo por ambiente executa migrations, ETL, seed e reconciliação durante o cutover.
+- [x] 7.4 Executar smoke de readiness, OpenAPI, lookup CEP, cidades/estados, hierarquia/autocomplete e proximidade após promoção.
+- [x] 7.5 Validar observabilidade mantendo `service.name` compatível durante a extração.
+- [x] 7.6 Executar e documentar rollback para a última imagem Geo conhecida do `uniplus-api` em ambiente não produtivo antes do corte final.
 
 ## 8. Validação Final
 
-- [ ] 8.1 No novo repo, executar restore locked, build, testes Geo completos, format, forbidden deps, OpenAPI drift, Spectral, scans configurados e verificação de zero dependências `Unifesspa.UniPlus.*`.
-- [ ] 8.2 No `uniplus-api`, executar restore locked, build, testes sem integração, arch tests, format e forbidden deps após a remoção do Geo.
+- [x] 8.1 No novo repo, executar restore locked, build, testes Geo completos, format, forbidden deps, OpenAPI drift, Spectral, scans configurados e verificação de zero dependências `Unifesspa.UniPlus.*`.
+- [x] 8.2 No `uniplus-api`, executar restore locked, build, testes sem integração, arch tests, format e forbidden deps após a remoção do Geo.
 - [x] 8.3 Comparar o OpenAPI runtime do novo Geo contra a baseline anterior para confirmar ausência de breaking change não aprovado.
-- [ ] 8.4 Registrar evidências de release, imagem, contrato publicado, cutover e rollback no PR ou documento operacional.
-- [ ] 8.5 Arquivar o change OpenSpec somente depois que o novo repo for fonte de verdade e o `uniplus-api` não compilar mais Geo localmente.
+- [x] 8.4 Registrar evidências de release, imagem, contrato publicado, cutover e rollback no PR ou documento operacional.
+- [x] 8.5 Arquivar o change OpenSpec somente depois que o novo repo for fonte de verdade e o `uniplus-api` não compilar mais Geo localmente.
