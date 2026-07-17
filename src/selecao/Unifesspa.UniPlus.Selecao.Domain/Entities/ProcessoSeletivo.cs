@@ -2092,6 +2092,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // entidades sem relação de FK.
         Dictionary<int, FaseCronograma> fasesTracked = _cronogramaFases.ToDictionary(f => f.Ordem);
         List<FaseCronograma> fases = [];
+
+        // Achado de revisão (Story #554, PR #903): a reconciliação acima troca o Id
+        // CONGELADO de uma fase pelo Id da instância VIVA sempre que reusa uma fase
+        // tracked na mesma Ordem. `documentosExigidos`/`referenciaTemporalFatos`
+        // referenciam fases pelo Id CONGELADO (o que estava vigente quando o snapshot foi
+        // produzido) — sem este mapa, restaurar um snapshot cuja sessão de rascunho trocou
+        // a fase de uma Ordem deixaria essas referências apontando para um Id ausente de
+        // CronogramaFases após a restauração.
+        Dictionary<Guid, Guid> faseIdCongeladaParaViva = [];
         foreach (FaseCronograma congelada in grafo.CronogramaFases)
         {
             if (fasesTracked.TryGetValue(congelada.Ordem, out FaseCronograma? viva))
@@ -2114,6 +2123,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     [.. congelada.BancasRequeridas],
                     congelada.RegraRecurso);
                 fases.Add(viva);
+                if (viva.Id != congelada.Id)
+                {
+                    faseIdCongeladaParaViva[congelada.Id] = viva.Id;
+                }
             }
             else
             {
@@ -2132,11 +2145,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // do envelope agora é real (CA-09) — reconciliação por `exigenciaId` (o
         // DocumentoExigido.Id preservado por Reidratar, o segundo caso de identidade
         // congelada depois de EtapaProcesso.Id, ADR-0110 D2). Mesmo padrão de reuso da
-        // instância TRACKED das demais coleções acima.
+        // instância TRACKED das demais coleções acima. `RemapearFase` corrige
+        // `ExigidoNaFaseId` para o Id da fase VIVA quando a reconciliação acima trocou de
+        // instância — sem efeito quando a fase reconciliada manteve o mesmo Id.
         Dictionary<Guid, DocumentoExigido> documentosExigidosTracked = _documentosExigidos.ToDictionary(d => d.Id);
         List<DocumentoExigido> documentosExigidos = [];
         foreach (DocumentoExigido congelada in grafo.DocumentosExigidos)
         {
+            if (faseIdCongeladaParaViva.TryGetValue(congelada.ExigidoNaFaseId, out Guid faseVivaId))
+            {
+                congelada.RemapearFase(faseVivaId);
+            }
+
             documentosExigidos.Add(documentosExigidosTracked.TryGetValue(congelada.Id, out DocumentoExigido? viva) ? viva : congelada);
         }
 
@@ -2154,8 +2174,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ResolverDataReferenciaFatos() recalcula o mesmo output a partir do mesmo insumo
         // restaurado. Cada VersaoConfiguracao congela sua PRÓPRIA política — uma
         // retificação que muda a política antes de publicar não afeta o que já foi
-        // congelado (B-03).
-        ReferenciaTemporalFatos = grafo.ReferenciaTemporalFatos;
+        // congelado (B-03). O FaseId também passa pelo mesmo remapeamento de
+        // `documentosExigidos` acima, pelo mesmo motivo (INICIO_FASE/FIM_FASE apontam para
+        // um Id congelado que pode ter sido substituído pela fase viva).
+        ReferenciaTemporalFatos = grafo.ReferenciaTemporalFatos is { FaseId: { } faseIdCongelada }
+            referencia && faseIdCongeladaParaViva.TryGetValue(faseIdCongelada, out Guid faseVivaIdReferencia)
+                ? referencia.ComFaseIdRemapeada(faseVivaIdReferencia)
+                : grafo.ReferenciaTemporalFatos;
     }
 
     /// <summary>
