@@ -21,14 +21,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// O decoder reaproveita os métodos <c>internal</c> de <see cref="EnvelopeCodecV11"/>
-/// para os 12 blocos cuja FORMA não mudou entre 1.1 e 1.2 (etapas, distribuição,
-/// modalidades, atendimento, bônus, desempate, classificação, cronograma de fases,
-/// hashesEdital, período, ofertas, vagas, retificação) — ao contrário do encoder
-/// (ADR-0109 D1, nunca evolui no lugar), decodificar bytes de um bloco cuja forma NÃO
-/// mudou não corre o mesmo risco: é interpretar bytes fixos, não produzir novos, e um
-/// bug corrigido no leitor compartilhado corrige os dois codecs ao mesmo tempo, nunca
-/// diverge. Só <c>documentosExigidos</c> (o único bloco cuja forma muda nesta versão)
-/// ganha um leitor próprio aqui.
+/// para os 11 blocos cuja FORMA não mudou entre 1.1 e 1.2 (etapas, distribuição,
+/// modalidades, atendimento, bônus, desempate, classificação, hashesEdital, período,
+/// ofertas, vagas, retificação) — ao contrário do encoder (ADR-0109 D1, nunca evolui no
+/// lugar), decodificar bytes de um bloco cuja forma NÃO mudou não corre o mesmo risco: é
+/// interpretar bytes fixos, não produzir novos, e um bug corrigido no leitor
+/// compartilhado corrige os dois codecs ao mesmo tempo, nunca diverge.
+/// <c>documentosExigidos</c> (o bloco cuja forma muda nesta versão) ganha um leitor
+/// próprio aqui; <c>cronogramaFases</c> também muda de forma (a chave <c>id</c> nova,
+/// achado de revisão — Story #554, PR-e), mas continua reaproveitando
+/// <see cref="EnvelopeCodecV11.LerCronogramaFases"/> via o parâmetro <c>comId</c>, sem
+/// duplicar o leitor inteiro.
 /// </remarks>
 public sealed class EnvelopeCodecV12 : IEnvelopeCodec
 {
@@ -122,7 +125,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
         ConfiguracaoBonusRegional? bonus = EnvelopeCodecV11.LerBonusRegional(leitor, payload);
         IReadOnlyList<CriterioDesempate> desempate = EnvelopeCodecV11.LerCriteriosDesempate(leitor, payload);
         ConfiguracaoClassificacao? classificacao = EnvelopeCodecV11.LerClassificacao(leitor, payload);
-        IReadOnlyList<FaseCronograma> cronogramaFases = EnvelopeCodecV11.LerCronogramaFases(leitor, payload);
+        IReadOnlyList<FaseCronograma> cronogramaFases = EnvelopeCodecV11.LerCronogramaFases(leitor, payload, comId: true);
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos) =
             LerDocumentosExigidos(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
@@ -194,16 +197,15 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
 
     /// <summary>
     /// Não valida <c>exigidoNaFaseId</c> contra as fases decodificadas nesta mesma
-    /// passagem — <c>FaseCronograma.Id</c> não é congelado no envelope (§3.7, comentário
-    /// de <see cref="Entities.FaseCronograma.AtualizarSnapshot"/>): a cada decodificação,
-    /// <see cref="EnvelopeCodecV11.LerCronogramaFases"/> gera fases com Id NOVO
-    /// (<c>FaseCronograma.Criar</c>), então comparar contra elas aqui reprovaria toda
-    /// exigência com fase, sempre — a mesma razão pela qual <see cref="ReferenciaTemporalFatos.FaseId"/>
-    /// (<see cref="LerReferenciaTemporalFatosPolitica"/>) também não é validado neste
-    /// ponto. A resolução real acontece depois, no domínio
-    /// (<see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>, que
-    /// reconcilia fases por <c>Ordem</c> reusando a instância viva — preservando o Id que
-    /// <c>exigidoNaFaseId</c> referencia quando ela existe).
+    /// passagem. Desde o achado de revisão que acrescentou <c>id</c> ao bloco
+    /// <c>cronogramaFases</c> (<see cref="EnvelopeCodecV11.LerCronogramaFases"/>,
+    /// parâmetro <c>comId</c>), <c>FaseCronograma.Id</c> É congelado no envelope 1.2 e a
+    /// checagem SERIA possível — mas continua redundante: a mesma razão pela qual
+    /// <see cref="ReferenciaTemporalFatos.FaseId"/> (<see cref="LerReferenciaTemporalFatosPolitica"/>)
+    /// também não é validado aqui. A resolução real acontece no domínio
+    /// (<see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>/<c>ResolverDataReferenciaFatos</c>),
+    /// que agora enxerga o MESMO Id que a exigência/política referenciam — não um Id
+    /// regenerado a cada decodificação.
     /// </summary>
     private static IReadOnlyList<DocumentoExigido> LerExigencias(LeitorEnvelope leitor, JsonObject bloco)
     {

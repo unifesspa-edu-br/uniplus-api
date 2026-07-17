@@ -221,6 +221,84 @@ public sealed class FaseCronograma : EntityBase
         return Result<FaseCronograma>.Success(fase);
     }
 
+    /// <summary>
+    /// Reidrata uma fase a partir de uma <see cref="VersaoConfiguracao"/> congelada,
+    /// <b>preservando o <see cref="EntityBase.Id"/></b> — Story #554 (PR-e, bump 1.2),
+    /// achado de revisão: duas referências cruzadas do envelope 1.2 apontam para
+    /// <c>FaseCronograma.Id</c> (<c>documentosExigidos.exigencias[].exigidoNaFaseId</c> e
+    /// <c>documentosExigidos.referenciaTemporalFatos.faseId</c>). A reconciliação por
+    /// <see cref="Ordem"/> em <c>ProcessoSeletivo.AplicarGrafo</c> só preserva o Id quando
+    /// existe uma fase VIVA rastreada com a mesma Ordem — a sombra de verificação
+    /// ("prova primeiro, aplica depois", <c>RestauradorDeConfiguracao</c>) começa vazia,
+    /// então sem preservar o Id aqui a prova de round-trip lançaria (ou reprovaria) para
+    /// qualquer configuração com gatilho <c>FAIXA_ETARIA</c> ancorado em fase, sempre.
+    /// </summary>
+    /// <remarks>
+    /// Reidratar não é criar: as guardas aqui são a última linha contra erro de
+    /// programação, não revalidação de negócio (essa já rodou em <see cref="Criar"/>,
+    /// quando a fase foi escrita pela primeira vez).
+    /// </remarks>
+    public static FaseCronograma Reidratar(
+        Guid id,
+        int ordem,
+        Guid faseCanonicaOrigemId,
+        string codigo,
+        string donoInstitucional,
+        OrigemDataFase origemData,
+        bool agrupaEtapas,
+        bool permiteComplementacao,
+        bool produzResultado,
+        bool resultadoDefinitivo,
+        bool coletaInscricao,
+        DateTimeOffset? inicio,
+        DateTimeOffset? fim,
+        string? atoProduzidoCodigo,
+        bool atoProduzidoEfeitoIrreversivel,
+        IReadOnlyList<BancaRequerida> bancasRequeridas,
+        RegraRecursoFase? regraRecurso)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
+        ArgumentNullException.ThrowIfNull(bancasRequeridas);
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("A fase reidratada deve declarar o Id congelado no envelope.", nameof(id));
+        }
+
+        FaseCronograma fase = new()
+        {
+            Id = id,
+            Ordem = ordem,
+            FaseCanonicaOrigemId = faseCanonicaOrigemId,
+            Codigo = codigo.Trim(),
+            DonoInstitucional = donoInstitucional.Trim(),
+            OrigemData = origemData,
+            AgrupaEtapas = agrupaEtapas,
+            PermiteComplementacao = permiteComplementacao,
+            ProduzResultado = produzResultado,
+            ResultadoDefinitivo = resultadoDefinitivo,
+            ColetaInscricao = coletaInscricao,
+            Inicio = inicio,
+            Fim = fim,
+            AtoProduzidoCodigo = atoProduzidoCodigo,
+            AtoProduzidoEfeitoIrreversivel = atoProduzidoEfeitoIrreversivel,
+        };
+
+        foreach (BancaRequerida banca in bancasRequeridas)
+        {
+            banca.VincularFase(fase.Id);
+            fase._bancasRequeridas.Add(banca);
+        }
+
+        if (regraRecurso is not null)
+        {
+            regraRecurso.VincularFase(fase.Id);
+            fase.RegraRecurso = regraRecurso;
+        }
+
+        return fase;
+    }
+
     internal void VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
@@ -228,9 +306,11 @@ public sealed class FaseCronograma : EntityBase
     /// Atualiza os dados da MESMA fase (mesmo <see cref="EntityBase.Id"/>) em vez de
     /// recriá-la — usado tanto pela reposição da configuração congelada
     /// (<see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>, reconciliação por
-    /// <see cref="Ordem"/> — o <c>Id</c> não é congelado no envelope, §3.7, logo nunca
-    /// sobrevive à reidratação) quanto pela redefinição ao vivo do cronograma
-    /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por
+    /// <see cref="Ordem"/> — a versão 1.1 do envelope nunca congelou o <c>Id</c> (§3.7), e
+    /// mesmo na 1.2, que passou a congelá-lo (<see cref="Reidratar"/>, Story #554, PR-e),
+    /// a reconciliação aqui continua por Ordem: é a instância VIVA rastreada que precisa
+    /// sobreviver — a do EF, não a decodificada) quanto pela redefinição ao vivo do
+    /// cronograma (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por
     /// <see cref="FaseCanonicaOrigemId"/> — a identidade estável de uma fase; aqui
     /// <paramref name="ordem"/> PODE mudar, ao contrário do caminho de restauração).
     /// </summary>
