@@ -4,9 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Domain.Entities;
+using Domain.Enums;
 
 public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<ProcessoSeletivo>
 {
+    private const int ReferenciaTemporalFatosTipoMaxLength = 20;
+
     public void Configure(EntityTypeBuilder<ProcessoSeletivo> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -64,11 +67,24 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(f => f.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Documentos exigidos (Story #554, PR-a) — 0..*, mesmo padrão de Etapas/CronogramaFases.
+        // Documentos exigidos (Story #554) — 0..*, mesmo padrão de Etapas/CronogramaFases.
         builder.HasMany(p => p.DocumentosExigidos)
             .WithOne()
             .HasForeignKey(d => d.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ReferenciaTemporalFatos (Story #554, PR-b) — VO 0..1 sem identidade própria,
+        // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
+        // Id nem ciclo de vida próprio, diferente das coleções acima).
+        builder.OwnsOne(p => p.ReferenciaTemporalFatos, referencia =>
+        {
+            referencia.Property(r => r.Tipo)
+                .HasColumnName("referencia_temporal_fatos_tipo")
+                .HasConversion(ReferenciaTipoConverter)
+                .HasMaxLength(ReferenciaTemporalFatosTipoMaxLength);
+            referencia.Property(r => r.Data).HasColumnName("referencia_temporal_fatos_data");
+            referencia.Property(r => r.FaseId).HasColumnName("referencia_temporal_fatos_fase_id");
+        });
 
         // A sessão editorial (ADR-0110 D3) — 1:1, como as demais filhas singulares. Ela é
         // efêmera (apagada no fechamento e no descarte) e não é evidência forense: a
@@ -93,4 +109,9 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.DocumentosExigidos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
+
+    private static readonly Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<ReferenciaTipo, string?> ReferenciaTipoConverter =
+        new(
+            tipo => tipo == ReferenciaTipo.Nenhuma ? null : tipo.ToCodigo(),
+            codigo => ReferenciaTipoCodigo.FromCodigo(codigo));
 }

@@ -23,4 +23,14 @@ public enum TipoDominioFato
 
     /// <summary>Categórico com domínio estático enumerado (<c>ValoresDominio</c> preenchido) — aceita <see cref="Operador.Igual"/> e <see cref="Operador.Em"/>.</summary>
     CategoricoEstatico = 3,
+
+    /// <summary>
+    /// Categórico de <b>escopo-processo</b> (<c>ValoresDominio</c> nulo — ex.:
+    /// <c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>), multivalorado — aceita
+    /// <see cref="Operador.Igual"/> (pertinência) e <see cref="Operador.Em"/> (interseção). O
+    /// domínio válido não vem de <c>ValoresDominio</c> (sempre nulo aqui) — vem de um
+    /// domínio dinâmico fornecido pelo chamador (Story #554, PR-b), derivado da oferta do
+    /// próprio processo (modalidades selecionadas, condições de atendimento ofertadas).
+    /// </summary>
+    CategoricoDinamico = 4,
 }

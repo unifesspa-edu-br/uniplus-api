@@ -105,8 +105,10 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // coleção tracked nasce vazia em todo carregamento novo do agregado:
             // DefinirDocumentosExigidos faria Clear() num backing list já vazio (linhas
             // antigas sobrevivem no banco, PUT acumula) e a guarda B-01/CA-01 sempre
-            // veria zero exigências.
-            .Include(p => p.DocumentosExigidos)
+            // veria zero exigências. Gatilho DNF (issue #892, PR-b) — mesmo raciocínio
+            // para Condicoes: sem o ThenInclude, PendenciaDasExigenciasDocumentais veria
+            // sempre zero condições, e CA-01 (GERAL x condição) falharia aberta.
+            .Include(p => p.DocumentosExigidos).ThenInclude(d => d.Condicoes)
             // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
             // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
             // modalidades × desempate × eliminação × fases × bancas) num único JOIN

@@ -45,7 +45,8 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             aplicabilidade,
             obrigatorio: false,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null).Value!;
+            grupoSatisfacaoId: null,
+            condicoes: []).Value!;
 
     [Fact(DisplayName = "Fase que não pertence ao cronograma do processo é recusada")]
     public void DefinirDocumentosExigidos_FaseDeOutroProcesso_Recusa()

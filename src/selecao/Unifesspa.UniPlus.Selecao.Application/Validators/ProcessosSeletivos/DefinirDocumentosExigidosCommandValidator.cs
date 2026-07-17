@@ -22,6 +22,8 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
         "PENDENCIA_REENVIO",
     ];
 
+    private static readonly string[] OperadoresValidos = ["IGUAL", "EM", "MAIOR_IGUAL", "MENOR_IGUAL"];
+
     public DefinirDocumentosExigidosCommandValidator()
     {
         RuleFor(x => x.ProcessoSeletivoId)
@@ -54,6 +56,29 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
                 .Must(valor => ConsequenciasValidas.Contains(valor, StringComparer.Ordinal))
                 .When(i => !string.IsNullOrWhiteSpace(i.ConsequenciaIndeferimento))
                 .WithMessage($"Consequência de indeferimento deve ser um de: {string.Join(", ", ConsequenciasValidas)}.");
+
+            item.RuleFor(i => i.Condicoes)
+                .NotNull()
+                .WithMessage("A lista de condições de gatilho não pode ser nula.");
+
+            item.RuleForEach(i => i.Condicoes).ChildRules(condicao =>
+            {
+                condicao.RuleFor(c => c.Clausula)
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("O ordinal da cláusula não pode ser negativo.");
+
+                condicao.RuleFor(c => c.Fato)
+                    .NotEmpty()
+                    .WithMessage("O fato da condição é obrigatório.");
+
+                condicao.RuleFor(c => c.Operador)
+                    .Must(valor => OperadoresValidos.Contains(valor, StringComparer.Ordinal))
+                    .WithMessage($"Operador deve ser um de: {string.Join(", ", OperadoresValidos)}.");
+
+                condicao.RuleFor(c => c.Valor)
+                    .NotEmpty()
+                    .WithMessage("O valor da condição é obrigatório.");
+            });
         });
     }
 }

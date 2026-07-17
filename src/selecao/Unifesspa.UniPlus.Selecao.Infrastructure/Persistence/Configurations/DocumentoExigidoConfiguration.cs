@@ -56,5 +56,15 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
         builder.HasIndex(d => d.ExigidoNaFaseId)
             .HasDatabaseName("ix_documentos_exigidos_exigido_na_fase_id");
+
+        // Gatilho DNF (Story #554, PR-b) — substituível por inteiro junto com o próprio
+        // DocumentoExigido, mesmo padrão de FaseCronograma/BancasRequeridas.
+        builder.HasMany(d => d.Condicoes)
+            .WithOne()
+            .HasForeignKey(c => c.DocumentoExigidoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(d => d.Condicoes)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

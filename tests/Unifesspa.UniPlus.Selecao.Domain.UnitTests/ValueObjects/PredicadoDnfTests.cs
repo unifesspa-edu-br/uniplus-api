@@ -78,4 +78,82 @@ public sealed class PredicadoDnfTests
         avaliar.Should().NotThrow();
         predicado.Avaliar(new Dictionary<string, JsonElement>()).Should().BeFalse();
     }
+
+    // ── Story #554 (PR-b, issue #892) — extensão dinâmica/multivalorada ──
+
+    private static CondicaoDnf Categorica(string fato, Operador operador, JsonElement valor) =>
+        CondicaoDnf.Criar(fato, operador, valor).Value!;
+
+    private static JsonElement ArrayJson(params string[] valores) =>
+        JsonSerializer.SerializeToElement(valores);
+
+    private static JsonElement StringJson(string valor) =>
+        JsonSerializer.SerializeToElement(valor);
+
+    [Fact(DisplayName = "IGUAL em fato multivalorado é pertinência no conjunto do candidato")]
+    public void Avaliar_IgualEmFatoMultivalorado_Pertinencia()
+    {
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, Categorica("MODALIDADE", Operador.Igual, StringJson("LB_PPI")))]).Value!;
+
+        Dictionary<string, JsonElement> fatos = new()
+        {
+            ["MODALIDADE"] = ArrayJson("LB_PPI", "AC"),
+        };
+
+        predicado.Avaliar(fatos).Should().BeTrue("LB_PPI pertence ao conjunto [LB_PPI, AC] do candidato");
+    }
+
+    [Fact(DisplayName = "IGUAL em fato multivalorado sem o valor no conjunto é falso (contraprova)")]
+    public void Avaliar_IgualEmFatoMultivalorado_ForaDoConjunto_Falso()
+    {
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, Categorica("MODALIDADE", Operador.Igual, StringJson("LB_Q")))]).Value!;
+
+        Dictionary<string, JsonElement> fatos = new()
+        {
+            ["MODALIDADE"] = ArrayJson("LB_PPI", "AC"),
+        };
+
+        predicado.Avaliar(fatos).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "EM em fato multivalorado é interseção — vazia resolve falso")]
+    public void Avaliar_EmFatoMultivalorado_IntersecaoVazia_Falso()
+    {
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, Categorica("MODALIDADE", Operador.Em, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
+
+        Dictionary<string, JsonElement> fatos = new()
+        {
+            ["MODALIDADE"] = ArrayJson("AC"),
+        };
+
+        predicado.Avaliar(fatos).Should().BeFalse("[AC] intersecta [LB_PPI, LB_Q] em vazio");
+    }
+
+    [Fact(DisplayName = "EM em fato multivalorado é interseção — não vazia resolve verdadeiro")]
+    public void Avaliar_EmFatoMultivalorado_IntersecaoNaoVazia_Verdadeiro()
+    {
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, Categorica("MODALIDADE", Operador.Em, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
+
+        Dictionary<string, JsonElement> fatos = new()
+        {
+            ["MODALIDADE"] = ArrayJson("AC", "LB_PPI"),
+        };
+
+        predicado.Avaliar(fatos).Should().BeTrue("[AC, LB_PPI] intersecta [LB_PPI, LB_Q] em [LB_PPI], não vazio");
+    }
+
+    [Fact(DisplayName = "Avaliação escalar não regride com a extensão multivalorada")]
+    public void Avaliar_FatoEscalar_ComportamentoPreservado()
+    {
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [(1, Categorica("SEXO", Operador.Igual, StringJson("MASCULINO")))]).Value!;
+
+        Dictionary<string, JsonElement> fatos = new() { ["SEXO"] = StringJson("MASCULINO") };
+
+        predicado.Avaliar(fatos).Should().BeTrue("fato escalar (não-array) segue o ramo original, sem mudança de comportamento");
+    }
 }

@@ -372,7 +372,8 @@ public sealed class ProcessoSeletivoRetificarTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null).Value!;
+            grupoSatisfacaoId: null,
+            condicoes: []).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido — só o FECHAMENTO é bloqueado pela B-01");
 

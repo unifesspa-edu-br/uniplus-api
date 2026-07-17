@@ -53,9 +53,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<FaseCronograma> _cronogramaFases = [];
     public IReadOnlyCollection<FaseCronograma> CronogramaFases => _cronogramaFases.AsReadOnly();
 
-    /// <summary>Documentos exigidos do certame (0..*, Story #554/PR-a) — por fase e aplicabilidade.</summary>
+    /// <summary>Documentos exigidos do certame (0..*, Story #554) — por fase, aplicabilidade e gatilho.</summary>
     private readonly List<DocumentoExigido> _documentosExigidos = [];
     public IReadOnlyCollection<DocumentoExigido> DocumentosExigidos => _documentosExigidos.AsReadOnly();
+
+    /// <summary>Âncora que resolve FAIXA_ETARIA na publicação (Story #554, PR-b) — ausência = nenhum gatilho por idade pode existir (bloqueado na publicação, ver <see cref="PendenciaDaReferenciaTemporalFatos"/>).</summary>
+    public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; private set; }
 
     public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
 
@@ -578,6 +581,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story #554, PR-b —
+    /// B-03 do plano). Presença (0..1) — <see langword="null"/> é estado válido enquanto
+    /// nenhuma exigência tem gatilho por idade; a ausência só vira pendência de publicação
+    /// quando existir esse gatilho (<see cref="PendenciaDaReferenciaTemporalFatos"/>).
+    /// </summary>
+    public Result DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos? referencia, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (referencia is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } and { FaseId: { } faseId }
+            && !_cronogramaFases.Any(f => f.Id == faseId))
+        {
+            return Result.Failure(new DomainError(
+                "ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso",
+                $"A fase {faseId} não pertence ao cronograma deste processo."));
+        }
+
+        ReferenciaTemporalFatos = referencia;
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
     /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
     /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
@@ -727,9 +756,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <para>
     /// <b>CA-01</b> (Story #554, issue #547) — uma exigência <c>CONDICIONAL</c> sem
     /// nenhuma condição de gatilho viva que <see cref="DocumentoExigido.DeterminaResultado"/>
-    /// é "exigência morta": nunca seria cobrada de ninguém. Nesta PR (a), <c>CondicaoGatilho</c>
-    /// ainda não existe (PR-b, issue #892) — toda exigência <c>CONDICIONAL</c> está, por
-    /// definição, sem condição viva, então esta trava já é integralmente exercitável.
+    /// é "exigência morta": nunca seria cobrada de ninguém. Desde a PR-b (issue #892),
+    /// avalia a coleção REAL de <see cref="DocumentoExigido.Condicoes"/>.
     /// </para>
     /// <para>
     /// <b>B-01 — guarda fail-closed transitória</b> (Story #554, issue #547; PR-a..PR-d):
@@ -743,9 +771,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         foreach (DocumentoExigido exigencia in _documentosExigidos)
         {
-            // Parâmetro sintético: CondicaoGatilho (PR-b) ainda não existe, então nenhuma
-            // exigência CONDICIONAL tem condição viva nesta PR.
-            const bool possuiCondicaoViva = false;
+            bool possuiCondicaoViva = exigencia.Condicoes.Count > 0;
             if (exigencia.Aplicabilidade == Aplicabilidade.Condicional
                 && !possuiCondicaoViva
                 && exigencia.DeterminaResultado())
@@ -763,6 +789,70 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Existem documentos exigidos configurados, mas o bloco de exigências do envelope canônico ainda não foi materializado (Story #554) — publicação bloqueada até a conclusão da Story.");
         }
 
+        return null;
+    }
+
+    /// <summary>
+    /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR-b — B-03 do
+    /// plano). Chamado por <see cref="Publicar"/> e por <see cref="SucederVersao"/>,
+    /// sempre <b>depois</b> de <see cref="PendenciaDasExigenciasDocumentais"/>.
+    /// </summary>
+    /// <remarks>
+    /// Sem fallback silencioso (ADR-0111:235-236): se existir gatilho por
+    /// <c>FAIXA_ETARIA</c> em qualquer <see cref="DocumentoExigido"/>, a referência
+    /// precisa resolver para uma data concreta — política ausente, âncora de fase sem o
+    /// extremo escolhido, ou <c>FIM_INSCRICAO</c> sem fase que colete inscrição com
+    /// <c>Fim</c> definido bloqueiam a publicação. O congelamento da <c>DateOnly</c>
+    /// concreta é da PR-e; esta validação só prova que ela É resolvível.
+    /// </remarks>
+    private DomainError? PendenciaDaReferenciaTemporalFatos()
+    {
+        bool existeGatilhoPorFaixaEtaria = _documentosExigidos
+            .SelectMany(static d => d.Condicoes)
+            .Any(static c => string.Equals(c.Fato, "FAIXA_ETARIA", StringComparison.Ordinal));
+
+        if (!existeGatilhoPorFaixaEtaria)
+        {
+            return null;
+        }
+
+        if (ReferenciaTemporalFatos is not { } referencia)
+        {
+            return new DomainError(
+                "ProcessoSeletivo.ReferenciaTemporalFatosAusente",
+                "Existe gatilho por FAIXA_ETARIA, mas nenhuma referência temporal de fatos foi configurada — a publicação não pode resolver a idade do candidato sem fallback silencioso (ADR-0111).");
+        }
+
+        if (referencia.Tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase)
+        {
+            FaseCronograma? fase = _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId);
+            if (fase is null)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente",
+                    "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma deste processo.");
+            }
+
+            DateTimeOffset? extremo = referencia.Tipo == ReferenciaTipo.InicioFase ? fase.Inicio : fase.Fim;
+            if (extremo is null)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente",
+                    $"A fase âncora da referência temporal de fatos não tem {(referencia.Tipo == ReferenciaTipo.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso.");
+            }
+        }
+        else if (referencia.Tipo == ReferenciaTipo.FimInscricao)
+        {
+            FaseCronograma? faseInscricao = _cronogramaFases.FirstOrDefault(static f => f.ColetaInscricao);
+            if (faseInscricao?.Fim is null)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel",
+                    "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido — sem fallback silencioso.");
+            }
+        }
+
+        // DATA_ESPECIFICA: ReferenciaTemporalFatos.Criar já garante Data presente — nada a checar aqui.
         return null;
     }
 
@@ -831,6 +921,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
+        }
+
+        if (PendenciaDaReferenciaTemporalFatos() is { } pendenciaReferenciaTemporal)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaReferenciaTemporal);
         }
 
         // UMA leitura do relógio para o ato e para a versão que ele cria. O instante
@@ -1151,6 +1246,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
+        }
+
+        if (PendenciaDaReferenciaTemporalFatos() is { } pendenciaReferenciaTemporal)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaReferenciaTemporal);
         }
 
         // Uma única leitura do relógio para o ato e para a versão que ele cria — ver a nota

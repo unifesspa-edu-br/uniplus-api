@@ -5,17 +5,17 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Exigência documental de um <see cref="ProcessoSeletivo"/> (Story #554, PR-a): declara
-/// qual documento é exigido, em que fase e com que aplicabilidade. <c>EntityBase</c>
-/// puro (sem soft-delete) — o regime append-only/forense pertence a
-/// <see cref="VersaoConfiguracao"/>, não à configuração viva; a coleção do agregado é
-/// substituível por inteiro (<see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>),
-/// mesmo padrão de <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
+/// Exigência documental de um <see cref="ProcessoSeletivo"/> (Story #554): declara qual
+/// documento é exigido, em que fase, com que aplicabilidade e sob qual gatilho DNF
+/// (<see cref="Condicoes"/>, PR-b). <c>EntityBase</c> puro (sem soft-delete) — o regime
+/// append-only/forense pertence a <see cref="VersaoConfiguracao"/>, não à configuração
+/// viva; a coleção do agregado é substituível por inteiro
+/// (<see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>), mesmo padrão de
+/// <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
 /// </summary>
 /// <remarks>
-/// O gatilho DNF (<c>CondicaoGatilho</c>), a base legal 1:N
-/// (<c>DocumentoExigidoBaseLegal</c>) e a idade máxima de emissão/formato/tamanho são
-/// entregues por tasks-irmãs (PR-b/PR-c/PR-d) — não modelados aqui.
+/// A base legal 1:N (<c>DocumentoExigidoBaseLegal</c>) e a idade máxima de emissão/
+/// formato/tamanho são entregues por tasks-irmãs (PR-c/PR-d) — não modeladas aqui.
 /// </remarks>
 public sealed class DocumentoExigido : EntityBase
 {
@@ -58,6 +58,11 @@ public sealed class DocumentoExigido : EntityBase
     /// <summary>Escopo processo+fase — documentos do mesmo grupo são satisfeitos por uma única apresentação (semântica plena na PR-e).</summary>
     public Guid? GrupoSatisfacaoId { get; private set; }
 
+    private readonly List<CondicaoGatilho> _condicoes = [];
+
+    /// <summary>Gatilho DNF (Story #554, PR-b) — vazia significa "sem gatilho": GERAL é sempre exigida, CONDICIONAL vazia é exigida de ninguém.</summary>
+    public IReadOnlyCollection<CondicaoGatilho> Condicoes => _condicoes.AsReadOnly();
+
     private DocumentoExigido() { }
 
     public static Result<DocumentoExigido> Criar(
@@ -69,8 +74,10 @@ public sealed class DocumentoExigido : EntityBase
         Aplicabilidade aplicabilidade,
         bool obrigatorio,
         string? consequenciaIndeferimento,
-        Guid? grupoSatisfacaoId)
+        Guid? grupoSatisfacaoId,
+        IReadOnlyList<CondicaoGatilho> condicoes)
     {
+        ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
@@ -107,7 +114,7 @@ public sealed class DocumentoExigido : EntityBase
                 $"Consequência de indeferimento '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}."));
         }
 
-        return Result<DocumentoExigido>.Success(new DocumentoExigido
+        DocumentoExigido documento = new()
         {
             ExigidoNaFaseId = exigidoNaFaseId,
             TipoDocumentoOrigemId = tipoDocumentoOrigemId,
@@ -118,7 +125,23 @@ public sealed class DocumentoExigido : EntityBase
             Obrigatorio = obrigatorio,
             ConsequenciaIndeferimento = consequenciaNormalizada,
             GrupoSatisfacaoId = grupoSatisfacaoId,
-        });
+        };
+
+        // CA-01 (Story #554, issue #547/#892): GERAL nunca convive com condição viva —
+        // agora conectado à coleção REAL (PR-b), não mais ao parâmetro sintético da PR-a.
+        DomainError? coerencia = documento.GarantirCoerenciaAplicabilidade(condicoes.Count > 0);
+        if (coerencia is not null)
+        {
+            return Result<DocumentoExigido>.Failure(coerencia);
+        }
+
+        foreach (CondicaoGatilho condicao in condicoes)
+        {
+            condicao.VincularDocumentoExigido(documento.Id);
+            documento._condicoes.Add(condicao);
+        }
+
+        return Result<DocumentoExigido>.Success(documento);
     }
 
     internal void VincularProcesso(Guid processoSeletivoId) =>
@@ -134,10 +157,8 @@ public sealed class DocumentoExigido : EntityBase
 
     /// <summary>
     /// Coerência entre <see cref="Aplicabilidade"/> e a existência de condição de gatilho
-    /// viva (CA-01, Story #554/issue #547, ADR-0071): <c>GERAL</c> nunca convive com
-    /// condição viva. O parâmetro é sintético nesta task — <c>CondicaoGatilho</c> (PR-b)
-    /// ainda não existe; a PR-b conecta este guard à coleção real ao permitir cadastrar
-    /// condições.
+    /// viva (CA-01, Story #554, ADR-0071): <c>GERAL</c> nunca convive com condição viva.
+    /// Chamado por <see cref="Criar"/> contra a coleção real de <see cref="Condicoes"/>.
     /// </summary>
     public DomainError? GarantirCoerenciaAplicabilidade(bool possuiCondicaoViva)
     {
