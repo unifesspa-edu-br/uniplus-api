@@ -6,7 +6,9 @@ versionado junto da própria API (convenção: uma coleção por API, não compa
 endpoints** de `ProcessoSeletivoController` + os 2 de `DocumentosEditalController`,
 incluindo a configuração de catálogo pré-requisito (Publicações/Organização/
 Configuração) e o fluxo de documentos exigidos por gatilho e fase (Story #554,
-PR #903).
+PR #903), com o cenário-alvo end-to-end da task 7.3 — os 4 sub-casos de gatilho
+DNF (GERAL, `MODALIDADE EM`, `CONDICAO_ATENDIMENTO IGUAL`, conjunção AND) mais 4
+testes de borda de validação.
 
 ## Arquivos
 
@@ -67,7 +69,7 @@ Ou importe ambos os arquivos no Postman e selecione o ambiente — a coleção r
 | **Setup — Publicações** | `POST admin/tipos-ato` (EDITAL_ABERTURA, EDITAL_RETIFICACAO) — tolera 409 em reexecuções |
 | **Setup — Organização** | `POST admin/instituicao` (singleton, tolera 409) + `GET instituicao` + `POST admin/unidades` |
 | **Setup — Configuração** | Árvore Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica (nenhum pré-seedado) |
-| **ProcessoSeletivo — Configuração** | `Criar` + as 9 dimensões `Definir*` (etapas, oferta-atendimento, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, **documentos-exigidos** com gatilho DNF condicional, referência-temporal-fatos) |
+| **ProcessoSeletivo — Configuração** | `Criar` + as 9 dimensões `Definir*` (etapas, oferta-atendimento, distribuição-vagas, classificação, cronograma-fases, bônus-regional, critérios-desempate, **documentos-exigidos** com os 4 sub-casos de gatilho DNF da 7.3 (GERAL/nível de ensino, `MODALIDADE EM`/renda, `CONDICAO_ATENDIMENTO IGUAL`/laudo, conjunção AND/reservista) + 4 testes de borda (`[Borda]`, 422 com asserção no `code` do `ProblemDetails`), referência-temporal-fatos) |
 | **ProcessoSeletivo — Leitura** | `Listar`, `ObterPorId`, `ObterConformidade`, `ObterConformidadeLegal` |
 | **ProcessoSeletivo — Publicação** | Upload de Edital em 3 passos (URL pré-assinada MinIO, PUT direto, confirmação) → `Publicar` → `ObterSnapshotVigente` |
 | **ProcessoSeletivo — Retificação (atalho)** | Novo Edital confirmado → `Retificar` (atalho atômico, sem sessão) |
@@ -80,9 +82,43 @@ aceitável para smoke, não para ambiente compartilhado sem rotina de limpeza.
 
 ## Achados de execução
 
-Executada de ponta a ponta contra o stack local (2026-07-17). **49/49 requests
-passam, 50/50 assertions** — todo o Setup, as 9 dimensões de `Definir*`, toda a
-Leitura e o ciclo completo de Publicação/Retificação/Sessão editorial.
+Executada de ponta a ponta contra o stack local (2026-07-17). **56/56 requests
+passam, 58/58 assertions** — todo o Setup, as 9 dimensões de `Definir*`
+(incluindo o cenário-alvo e2e da task 7.3), toda a Leitura e o ciclo completo de
+Publicação/Retificação/Sessão editorial. Reprodutível: rodada duas vezes
+seguidas contra o mesmo banco compartilhado, sem falhas em nenhuma.
+
+### Cenário-alvo e2e da task 7.3 — 4 sub-casos de gatilho DNF + bordas
+
+A mesma configuração de `ProcessoSeletivo` desta coleção define, num único PUT
+`documentos-exigidos`, os 4 sub-casos exigidos pela 7.3 (Story #554):
+
+| Sub-caso | Fato/operador | O que prova |
+|---|---|---|
+| Nível de ensino | `aplicabilidade: GERAL`, `condicoes: []` | GERAL nunca avalia gatilho — exigida de todo candidato |
+| Renda | `MODALIDADE EM ["LB_PPI_...", "LB_Q_..."]` | Cardinalidade multivalorada (ADR-0111); domínio dinâmico resolvido contra `DistribuicaoVagas` do próprio processo |
+| Laudo | `CONDICAO_ATENDIMENTO IGUAL "PCD_..."` | Fato dinâmico resolvido contra `OfertaAtendimento` do próprio processo (não um catálogo fixo) |
+| Reservista | `SEXO IGUAL MASCULINO` **E** `FAIXA_ETARIA MAIOR_IGUAL 18`, mesma `clausula` | Conjunção AND dentro de uma cláusula DNF (`CondicaoGatilho`: OU entre cláusulas, E dentro) |
+
+Depois de `Publicar`, `ObterSnapshotVigente` confere que o bloco V1.2 congelado
+(`configuracao.documentosExigidos.exigencias[]`) tem as 5 exigências (GERAL + 4
+CONDICIONAL) com o `condicaoGatilho` exato de cada uma — inclusive o par
+`SEXO`/`FAIXA_ETARIA` na mesma cláusula do cenário reservista.
+
+**4 testes de borda** (`[Borda] ...`, cada um um PUT isolado que deve ser
+recusado com 422 antes do PUT válido final) cobrem os limites do validador do
+gatilho DNF, com asserção no `code` do `ProblemDetails` — não só no status:
+
+- `MODALIDADE EM` com um código que não está na `DistribuicaoVagas` do processo → `uniplus.selecao.predicado_dnf.valor_fora_do_dominio`.
+- `FAIXA_ETARIA MAIOR_IGUAL "18.5"` (decimal onde o domínio exige inteiro) → `uniplus.selecao.predicado_dnf.valor_incompativel_com_tipo`.
+- `FAIXA_ETARIA EM [...]` (operador `EM` não é válido para domínio numérico) → `uniplus.selecao.predicado_dnf.operador_incompativel_com_dominio`.
+- `GERAL` com uma condição viva não-vazia (CA-01: GERAL nunca convive com gatilho) → `uniplus.selecao.documento_exigido.geral_com_condicao`.
+
+Simplificação assumida: os 5 itens de `documentos-exigidos` usam a mesma fase
+de cronograma (a única fase `AVALIACAO` que o smoke provisiona), não fases
+distintas por sub-caso — o objetivo da 7.3 é provar a resolução correta do
+gatilho DNF e o congelamento do bloco, não a segregação por fase (já coberta
+pelos guards de fase da PR-d).
 
 ### Bug real corrigido — DI keyed/não-keyed do mesmo tipo (issue #904)
 

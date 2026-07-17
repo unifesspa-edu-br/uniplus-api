@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "587c79e4-bd14-4c8d-b5cc-15d9e622cdd1",
+    "_postman_id": "c15f3dfd-6301-4c33-9b90-7e25097fb103",
     "name": "Uni+ Seleção — ProcessoSeletivo (smoke completo, Story #554/PR #903)",
     "description": "Exercita TODOS os 22 endpoints de ProcessoSeletivoController + DocumentosEditalController contra o stack local (docker compose + Newman), incluindo a configuração de catálogo necessária (Publicações/Organização/Configuração) e o fluxo completo de documentos exigidos por gatilho e fase (Story #554). Auto-contido: cada execução cria um ProcessoSeletivo novo (nome com timestamp seria ideal, mas os endpoints de setup toleram 409 em catálogos já existentes).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -788,6 +788,201 @@
           ]
         },
         {
+          "name": "Criar Modalidade (LB_PPI, cota de renda)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/modalidades",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "modalidades"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"LB_PPI_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda PPI (smoke)\",\n  \"naturezaLegal\": \"COTA_RESERVADA\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"SEGUE_CASCATA\",\n  \"remanejamentoDestino\": null,\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('modalidade_lb_ppi_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Modalidade (LB_Q, cota de renda)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/modalidades",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "modalidades"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"LB_Q_SMK_{{run_suffix}}\",\n  \"descricao\": \"Baixa renda quilombola (smoke)\",\n  \"naturezaLegal\": \"COTA_RESERVADA\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": \"SEGUE_CASCATA\",\n  \"remanejamentoDestino\": null,\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012, art. 3º\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('modalidade_lb_q_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Condição de Atendimento (PCD)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/condicoes-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "condicoes-atendimento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"PCD_SMK_{{run_suffix}}\",\n  \"nome\": \"Pessoa com deficiência (smoke)\",\n  \"descricao\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('condicao_atendimento_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Criar Tipo de Documento",
           "request": {
             "method": "POST",
@@ -1103,7 +1298,7 @@
           ]
         },
         {
-          "name": "Definir Oferta de Atendimento (vazia)",
+          "name": "Definir Oferta de Atendimento (condição PCD)",
           "request": {
             "method": "PUT",
             "header": [
@@ -1143,7 +1338,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"condicaoIds\": [],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
+              "raw": "{\n  \"condicaoIds\": [\n    \"{{condicao_atendimento_id}}\"\n  ],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1205,7 +1400,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\",\n      \"{{modalidade_lb_ppi_id}}\",\n      \"{{modalidade_lb_q_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 30\n      },\n      {\n        \"modalidadeId\": \"{{modalidade_lb_ppi_id}}\",\n        \"quantidade\": 5\n      },\n      {\n        \"modalidadeId\": \"{{modalidade_lb_q_id}}\",\n        \"quantidade\": 5\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1527,6 +1722,266 @@
           ]
         },
         {
+          "name": "[Borda] MODALIDADE EM valor fora do domínio do processo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"EM\",\n        \"valor\": \"[\\\"CODIGO_INEXISTENTE_{{run_suffix}}\\\"]\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": null,\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 PredicadoDnf.ValorForaDoDominio', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.predicado_dnf.valor_fora_do_dominio');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Borda] FAIXA_ETARIA com valor decimal (deve ser inteiro)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"FAIXA_ETARIA\",\n        \"operador\": \"MAIOR_IGUAL\",\n        \"valor\": \"18.5\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": null,\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 PredicadoDnf.ValorIncompativelComTipo', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.predicado_dnf.valor_incompativel_com_tipo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Borda] EM incompatível com domínio numérico (FAIXA_ETARIA)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"FAIXA_ETARIA\",\n        \"operador\": \"EM\",\n        \"valor\": \"[18,19]\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": null,\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 PredicadoDnf.OperadorIncompativelComDominio', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.predicado_dnf.operador_incompativel_com_dominio');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Borda] GERAL não convive com condição viva (CA-01)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"GERAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": null,\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"SEXO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"MASCULINO\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": null,\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 DocumentoExigido.GeralComCondicao', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().code).to.eql('uniplus.selecao.documento_exigido.geral_com_condicao');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Definir Documentos Exigidos",
           "request": {
             "method": "PUT",
@@ -1567,7 +2022,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"GERAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": null,\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Norma interna do certame\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": \"PDF\",\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"AC_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": null\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": null,\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"GERAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": null,\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Norma interna do certame\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": \"PDF\",\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"AC_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": null\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": null,\n    \"tamanhoMaximoBytes\": null\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"EM\",\n        \"valor\": \"[\\\"LB_PPI_SMK_{{run_suffix}}\\\",\\\"LB_Q_SMK_{{run_suffix}}\\\"]\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei 12.711/2012, art. 3º\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Comprovante de renda per capita\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": \"PDF\",\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"CONDICAO_ATENDIMENTO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"PCD_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei 13.146/2015, art. 30\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Laudo médico com CID\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": \"PDF\",\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"SEXO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"MASCULINO\"\n      },\n      {\n        \"clausula\": 0,\n        \"fato\": \"FAIXA_ETARIA\",\n        \"operador\": \"MAIOR_IGUAL\",\n        \"valor\": \"18\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Certificado de alistamento/quitação militar\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": \"PDF\",\n    \"tamanhoMaximoBytes\": 5000000\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1582,7 +2037,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                  "pm.test('204 No Content — 5 exigências (GERAL + 4 CONDICIONAL) aceitas', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
                 ]
               }
             }
@@ -2120,6 +2577,40 @@
                   "  const j = pm.response.json();",
                   "  pm.expect(j.hashConfiguracao).to.be.a('string');",
                   "  pm.expect(j.configuracao).to.be.an('object');",
+                  "});",
+                  "pm.test('bloco congelado tem as 5 exigências da 7.3 com os gatilhos corretos', () => {",
+                  "  const j = pm.response.json();",
+                  "  const exigencias = j.configuracao.documentosExigidos.exigencias;",
+                  "  pm.expect(exigencias, 'GERAL + 4 CONDICIONAL').to.have.lengthOf(5);",
+                  "",
+                  "  const geral = exigencias.find(e => e.aplicabilidade === 'Geral');",
+                  "  pm.expect(geral, 'nível de ensino (GERAL, sem gatilho)').to.not.be.undefined;",
+                  "  pm.expect(geral.condicaoGatilho).to.be.null;",
+                  "",
+                  "  const condicionais = exigencias.filter(e => e.aplicabilidade === 'Condicional');",
+                  "  pm.expect(condicionais, '4 CONDICIONAL (AC-IGUAL + renda-EM + laudo + reservista)').to.have.lengthOf(4);",
+                  "",
+                  "  const suf = pm.environment.get('run_suffix');",
+                  "  const renda = condicionais.find(e => e.condicaoGatilho?.[0]?.[0]?.fato === 'MODALIDADE'",
+                  "    && e.condicaoGatilho[0][0].operador === 'EM');",
+                  "  pm.expect(renda, 'renda (MODALIDADE EM cotas)').to.not.be.undefined;",
+                  "  pm.expect(renda.condicaoGatilho[0][0].valor).to.have.members([`LB_PPI_SMK_${suf}`, `LB_Q_SMK_${suf}`]);",
+                  "",
+                  "  const laudo = condicionais.find(e => e.condicaoGatilho?.[0]?.[0]?.fato === 'CONDICAO_ATENDIMENTO');",
+                  "  pm.expect(laudo, 'laudo (CONDICAO_ATENDIMENTO IGUAL PCD)').to.not.be.undefined;",
+                  "  pm.expect(laudo.condicaoGatilho[0][0].operador).to.eql('IGUAL');",
+                  "  pm.expect(laudo.condicaoGatilho[0][0].valor).to.eql(`PCD_SMK_${suf}`);",
+                  "",
+                  "  const reservista = condicionais.find(e => e.condicaoGatilho?.[0]?.length === 2);",
+                  "  pm.expect(reservista, 'reservista (SEXO E FAIXA_ETARIA, mesma cláusula = AND)').to.not.be.undefined;",
+                  "  const fatos = reservista.condicaoGatilho[0].map(c => c.fato).sort();",
+                  "  pm.expect(fatos).to.eql(['FAIXA_ETARIA', 'SEXO']);",
+                  "  const sexo = reservista.condicaoGatilho[0].find(c => c.fato === 'SEXO');",
+                  "  const idade = reservista.condicaoGatilho[0].find(c => c.fato === 'FAIXA_ETARIA');",
+                  "  pm.expect(sexo.operador).to.eql('IGUAL');",
+                  "  pm.expect(sexo.valor).to.eql('MASCULINO');",
+                  "  pm.expect(idade.operador).to.eql('MAIOR_IGUAL');",
+                  "  pm.expect(idade.valor).to.eql(18);",
                   "});"
                 ]
               }
