@@ -440,6 +440,117 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "o Fim continua definido — só o valor mudou, o que é uma edição legítima");
     }
 
+    // ── Story #554/issue #893 (achado Codex P2, PR #900, 5ª rodada) — FIM_INSCRICAO não
+    // usa ReferenciaFaseId (a âncora é implícita: a fase com ColetaInscricao) ──
+
+    private static FaseCronograma FaseColetaInscricao(
+        int ordem, string codigo, DateTimeOffset? fim, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
+        ordem,
+        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
+        codigo,
+        "CEPS",
+        OrigemDataFase.Delegada,
+        agrupaEtapas: false,
+        permiteComplementacao: false,
+        produzResultado: false,
+        resultadoDefinitivo: false,
+        coletaInscricao: true,
+        inicio: null,
+        fim: fim,
+        atoProduzidoCodigo: null,
+        atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [],
+        regraRecurso: null).Value!;
+
+    private static DocumentoExigido ExigenciaComIdadeFimInscricao(Guid exigidoNaFaseId)
+    {
+        IdadeMaximaEmissao idade = IdadeMaximaEmissao.Criar(90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.FimInscricao, null, null).Value!;
+        return DocumentoExigido.Criar(
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "COMPROVANTE_RESIDENCIA",
+            tipoDocumentoNome: "Comprovante de residência",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: idade, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 5ª rodada): FIM_INSCRICAO sem NENHUMA fase que coleta inscrição no processo é recusado")]
+    public void DefinirDocumentosExigidos_FimInscricaoSemFaseDeColeta_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "ANALISE"); // ColetaInscricao = false
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue("FIM_INSCRICAO não pode ser resolvido sem uma fase de coleta — não há fallback silencioso");
+        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 5ª rodada): FIM_INSCRICAO com fase de coleta SEM Fim definido é recusado")]
+    public void DefinirDocumentosExigidos_FimInscricaoComFaseDeColetaSemFim_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim: null);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
+    }
+
+    [Fact(DisplayName = "Contraprova: FIM_INSCRICAO com fase de coleta com Fim definido é aceito")]
+    public void DefinirDocumentosExigidos_FimInscricaoComFaseDeColetaComFim_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 5ª rodada): redefinir o cronograma tirando o Fim da fase de coleta com exigência FIM_INSCRICAO viva é recusado")]
+    public void DefinirCronogramaFases_FaseDeColetaPerdeFimComExigenciaFimInscricaoViva_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Mesma Ordem e mesma FaseCanonicaOrigemId — a fase sobrevive via reconciliação,
+        // mas perde o Fim.
+        Result resultado = processo.DefinirCronogramaFases(
+            [FaseColetaInscricao(1, "INSCRICAO", fim: null, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
+    }
+
+    [Fact(DisplayName = "Contraprova: redefinir o cronograma preservando o Fim da fase de coleta com exigência FIM_INSCRICAO viva é aceito")]
+    public void DefinirCronogramaFases_FaseDeColetaPreservaFimComExigenciaFimInscricaoViva_Aceita()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
+        FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DateTimeOffset novoFim = new(2026, 2, 15, 0, 0, 0, TimeSpan.Zero);
+        Result resultado = processo.DefinirCronogramaFases(
+            [FaseColetaInscricao(1, "INSCRICAO", novoFim, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
     // ── Story #554/issue #892 (achado Codex P2, PR #896) — CA-03 backward guard ──
 
     private static CondicaoGatilho CondicaoDe(string fato, string valor) => CondicaoGatilho.Criar(

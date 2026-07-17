@@ -559,6 +559,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // Achado Codex P2 (PR #900, 5ª rodada): mesma lacuna do guard eager de
+        // DefinirDocumentosExigidos — FIM_INSCRICAO não usa ReferenciaFaseId (a âncora é
+        // implícita: a fase com ColetaInscricao), então os guards por fase acima (que só
+        // olham ReferenciaFaseId) nunca pegam uma redefinição que deixa de ter QUALQUER
+        // fase de coleta com Fim definido, mesmo com exigência viva ancorada em
+        // FIM_INSCRICAO. É uma checagem GLOBAL, não por fase — não importa QUAL fase
+        // perdeu o papel, o que importa é se ainda sobra alguma no cronograma NOVO.
+        if (_documentosExigidos.Any(d => d.IdadeMaximaEmissao?.ReferenciaTipo == ReferenciaTipoIdadeEmissao.FimInscricao)
+            && !fases.Any(f => f.ColetaInscricao && f.Fim is not null))
+        {
+            return Result.Failure(new DomainError(
+                "IdadeMaximaEmissao.FaseExtremoAusente",
+                "A redefinição do cronograma deixaria de ter uma fase que coleta inscrição com Fim definido, mas há documento exigido configurado com idade máxima de emissão ancorada em FIM_INSCRICAO."));
+        }
+
         // Achado Codex P2 (PR #900, 4ª rodada): mesmo casando por identidade estável, uma
         // PERMUTAÇÃO CÍCLICA de Ordem entre fases retidas (ex.: A@1,B@2 -> A@2,B@1, ou um
         // ciclo de 3+) ainda pede que linhas TROQUEM valores cobertos pelo índice único
@@ -755,7 +770,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // (na escrita, não na publicação): a regra vive na exigência, e a exigência já
             // está sendo escrita agora — não há razão para adiar. Fase viva do MESMO
             // processo com o extremo correspondente não-nulo (sem fallback silencioso).
-            if (item.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idade)
+            if (item.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idadeComFase)
             {
                 FaseCronograma? faseAncora = _cronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
                 if (faseAncora is null)
@@ -765,12 +780,37 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                         $"A fase âncora {referenciaFaseId} da idade máxima de emissão não pertence ao cronograma deste processo."));
                 }
 
-                DateTimeOffset? extremo = idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? faseAncora.Inicio : faseAncora.Fim;
+                DateTimeOffset? extremo = idadeComFase.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? faseAncora.Inicio : faseAncora.Fim;
                 if (extremo is null)
                 {
                     return Result.Failure(new DomainError(
                         "IdadeMaximaEmissao.FaseExtremoAusente",
-                        $"A fase âncora da idade máxima de emissão não tem {(idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso."));
+                        $"A fase âncora da idade máxima de emissão não tem {(idadeComFase.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso."));
+                }
+            }
+            else if (item.IdadeMaximaEmissao is { ReferenciaTipo: ReferenciaTipoIdadeEmissao.FimInscricao })
+            {
+                // Achado Codex P2 (PR #900, 5ª rodada): FIM_INSCRICAO não usa
+                // ReferenciaFaseId (a âncora é implícita — a fase com ColetaInscricao do
+                // PRÓPRIO cronograma, não uma fase escolhida pelo chamador), então o
+                // branch acima nunca a valida. Sem esta checagem, um PUT aceitava a regra
+                // num processo sem NENHUMA fase que coleta inscrição (ex.: importação
+                // externa) ou com a fase de coleta sem Fim definido, deixando-a
+                // irresolvível depois — mesmo sem gate de publicação para idade de
+                // emissão (issue #893 §1: é aviso, não bloqueio de presença).
+                FaseCronograma? faseColeta = _cronogramaFases.FirstOrDefault(f => f.ColetaInscricao);
+                if (faseColeta is null)
+                {
+                    return Result.Failure(new DomainError(
+                        "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
+                        "FIM_INSCRICAO exige uma fase do cronograma com ColetaInscricao, e o processo não tem nenhuma."));
+                }
+
+                if (faseColeta.Fim is null)
+                {
+                    return Result.Failure(new DomainError(
+                        "IdadeMaximaEmissao.FaseExtremoAusente",
+                        $"A fase '{faseColeta.Codigo}' que coleta inscrição não tem Fim definido — FIM_INSCRICAO não pode ser resolvido, sem fallback silencioso."));
                 }
             }
         }
