@@ -20,6 +20,7 @@ public sealed record ProcessoSeletivoDto(
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
     ConfiguracaoClassificacaoDto? Classificacao,
     IReadOnlyList<FaseCronogramaDto> CronogramaFases,
+    IReadOnlyList<DocumentoExigidoDto> DocumentosExigidos,
     DateTimeOffset CriadoEm)
 {
     /// <summary>

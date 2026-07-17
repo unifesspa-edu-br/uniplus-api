@@ -285,10 +285,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // aceitava mutação da configuração em silêncio — a trava era uma denylist de um
         // elemento só, e todo estado novo nascia mutável por omissão.
         new("ProcessoSeletivo.MutacaoForaDeEstadoEditavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_fora_de_estado_editavel", "O processo não está em um estado que aceite mutação da configuração")),
-        // Documentos exigidos (Story #554, PR-a) — núcleo: aplicabilidade GERAL/CONDICIONAL,
-        // fase, snapshot-copy do tipo de documento e a guarda fail-closed transitória (B-01)
-        // enquanto o bloco `documentosExigidos.exigencias` do envelope segue stub (removida
-        // na PR-e).
+        // Documentos exigidos (Story #554, issue #547, PR-a) — núcleo: aplicabilidade
+        // GERAL/CONDICIONAL, fase, snapshot-copy do tipo de documento e a guarda
+        // fail-closed transitória (B-01) enquanto o bloco `documentosExigidos.exigencias`
+        // do envelope segue stub (removida na PR-e, issue #548).
         new("DocumentoExigido.AplicabilidadeObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.aplicabilidade_obrigatoria", "A aplicabilidade da exigência documental é obrigatória")),
         new("DocumentoExigido.ConsequenciaIndeferimentoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_indeferimento_invalida", "Consequência de indeferimento fora do domínio conhecido")),
         new("DocumentoExigido.GeralComCondicao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.geral_com_condicao", "Exigência GERAL não pode conviver com condição de gatilho viva")),

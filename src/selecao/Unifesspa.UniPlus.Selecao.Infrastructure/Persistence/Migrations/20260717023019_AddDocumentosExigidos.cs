@@ -21,7 +21,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     exigido_na_fase_id = table.Column<Guid>(type: "uuid", nullable: false),
                     tipo_documento_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     tipo_documento_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    tipo_documento_nome = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
+                    tipo_documento_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     tipo_documento_categoria = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     aplicabilidade = table.Column<int>(type: "integer", nullable: false),
                     obrigatorio = table.Column<bool>(type: "boolean", nullable: false),
@@ -33,6 +33,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_documentos_exigidos", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_documentos_exigidos_fases_cronograma_exigido_na_fase_id",
+                        column: x => x.exigido_na_fase_id,
+                        principalSchema: "selecao",
+                        principalTable: "fases_cronograma",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "fk_documentos_exigidos_processos_seletivos_processo_seletivo_id",
                         column: x => x.processo_seletivo_id,

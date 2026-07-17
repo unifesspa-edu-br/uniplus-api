@@ -92,12 +92,19 @@ public sealed class DocumentoExigido : EntityBase
                 "A aplicabilidade da exigência documental é obrigatória e deve ser GERAL ou CONDICIONAL."));
         }
 
-        if (!string.IsNullOrWhiteSpace(consequenciaIndeferimento)
-            && !ConsequenciasValidas.Contains(consequenciaIndeferimento, StringComparer.Ordinal))
+        // Normaliza espaços-em-branco para null ANTES de validar — sem isso, " " escapa
+        // da checagem de domínio (não é "presente" o bastante para reprovar, nem null o
+        // bastante para DeterminaResultado() ignorar) e é persistido cru.
+        string? consequenciaNormalizada = string.IsNullOrWhiteSpace(consequenciaIndeferimento)
+            ? null
+            : consequenciaIndeferimento.Trim();
+
+        if (consequenciaNormalizada is not null
+            && !ConsequenciasValidas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
         {
             return Result<DocumentoExigido>.Failure(new DomainError(
                 "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento '{consequenciaIndeferimento}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}."));
+                $"Consequência de indeferimento '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}."));
         }
 
         return Result<DocumentoExigido>.Success(new DocumentoExigido
@@ -109,7 +116,7 @@ public sealed class DocumentoExigido : EntityBase
             TipoDocumentoCategoria = tipoDocumentoCategoria.Trim(),
             Aplicabilidade = aplicabilidade,
             Obrigatorio = obrigatorio,
-            ConsequenciaIndeferimento = consequenciaIndeferimento,
+            ConsequenciaIndeferimento = consequenciaNormalizada,
             GrupoSatisfacaoId = grupoSatisfacaoId,
         });
     }
@@ -119,17 +126,18 @@ public sealed class DocumentoExigido : EntityBase
 
     /// <summary>
     /// Determina se a exigência "conta" para efeito de resultado — obrigatória ou com
-    /// qualquer consequência de indeferimento declarada. Usado pela trava CA-01
-    /// (<c>CONDICIONAL</c> vazia que determina resultado bloqueia publicação) e,
-    /// futuramente, pelo gate de base legal (PR-c/#549).
+    /// qualquer consequência de indeferimento declarada. Usado pela trava CA-01 (Story
+    /// #554, issue #547: <c>CONDICIONAL</c> vazia que determina resultado bloqueia
+    /// publicação) e, futuramente, pelo gate de base legal (PR-c/#549).
     /// </summary>
     public bool DeterminaResultado() => Obrigatorio || ConsequenciaIndeferimento is not null;
 
     /// <summary>
     /// Coerência entre <see cref="Aplicabilidade"/> e a existência de condição de gatilho
-    /// viva (CA-01, ADR-0071): <c>GERAL</c> nunca convive com condição viva. O parâmetro é
-    /// sintético nesta task — <c>CondicaoGatilho</c> (PR-b) ainda não existe; a PR-b conecta
-    /// este guard à coleção real ao permitir cadastrar condições.
+    /// viva (CA-01, Story #554/issue #547, ADR-0071): <c>GERAL</c> nunca convive com
+    /// condição viva. O parâmetro é sintético nesta task — <c>CondicaoGatilho</c> (PR-b)
+    /// ainda não existe; a PR-b conecta este guard à coleção real ao permitir cadastrar
+    /// condições.
     /// </summary>
     public DomainError? GarantirCoerenciaAplicabilidade(bool possuiCondicaoViva)
     {

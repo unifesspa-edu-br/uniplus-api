@@ -709,18 +709,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>CA-01</b> — uma exigência <c>CONDICIONAL</c> sem nenhuma condição de gatilho
-    /// viva que <see cref="DocumentoExigido.DeterminaResultado"/> é "exigência morta":
-    /// nunca seria cobrada de ninguém. Nesta PR (a), <c>CondicaoGatilho</c> ainda não
-    /// existe (PR-b) — toda exigência <c>CONDICIONAL</c> está, por definição, sem
-    /// condição viva, então esta trava já é integralmente exercitável.
+    /// <b>CA-01</b> (Story #554, issue #547) — uma exigência <c>CONDICIONAL</c> sem
+    /// nenhuma condição de gatilho viva que <see cref="DocumentoExigido.DeterminaResultado"/>
+    /// é "exigência morta": nunca seria cobrada de ninguém. Nesta PR (a), <c>CondicaoGatilho</c>
+    /// ainda não existe (PR-b, issue #892) — toda exigência <c>CONDICIONAL</c> está, por
+    /// definição, sem condição viva, então esta trava já é integralmente exercitável.
     /// </para>
     /// <para>
-    /// <b>B-01 — guarda fail-closed transitória</b> (PR-a..PR-d): enquanto o bloco
-    /// <c>documentosExigidos.exigencias</c> do envelope continuar stub, publicar/
-    /// retificar/fechar retificação com qualquer <see cref="DocumentoExigido"/>
+    /// <b>B-01 — guarda fail-closed transitória</b> (Story #554, issue #547; PR-a..PR-d):
+    /// enquanto o bloco <c>documentosExigidos.exigencias</c> do envelope continuar stub,
+    /// publicar/retificar/fechar retificação com qualquer <see cref="DocumentoExigido"/>
     /// configurado congelaria uma versão que finge não ter documentos exigidos.
-    /// Removida na PR-e, quando o bloco rico substitui o stub.
+    /// Removida na PR-e (issue #548), quando o bloco rico substitui o stub.
     /// </para>
     /// </remarks>
     private DomainError? PendenciaDasExigenciasDocumentais()

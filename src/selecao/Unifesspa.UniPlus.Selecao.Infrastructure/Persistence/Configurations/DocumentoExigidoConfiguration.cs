@@ -16,7 +16,10 @@ using Domain.Entities;
 public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<DocumentoExigido>
 {
     private const int TipoDocumentoCodigoMaxLength = 60;
-    private const int TipoDocumentoNomeMaxLength = 160;
+    // Espelha TipoDocumentoConfiguration.NomeMaxLength (Configuracao.Infrastructure) — um
+    // snapshot-copy mais curto que a origem trunca silenciosamente (ou falha no Postgres)
+    // um cadastro legítimo de até 200 caracteres.
+    private const int TipoDocumentoNomeMaxLength = 200;
     private const int TipoDocumentoCategoriaMaxLength = 60;
     private const int ConsequenciaIndeferimentoMaxLength = 30;
 
@@ -38,6 +41,18 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Property(d => d.Aplicabilidade).HasConversion<int>().IsRequired();
         builder.Property(d => d.Obrigatorio).IsRequired();
         builder.Property(d => d.ConsequenciaIndeferimento).HasMaxLength(ConsequenciaIndeferimentoMaxLength);
+
+        // FK real para fases_cronograma — a checagem "fase viva do mesmo processo"
+        // (ProcessoSeletivo.DefinirDocumentosExigidos) é check-then-act não-atômico; a
+        // constraint do banco é a defesa realmente atômica (mesmo padrão de
+        // FaseCronogramaConfiguration). Restrict, não Cascade: reconfigurar o cronograma
+        // (DefinirCronogramaFases) não pode apagar silenciosamente uma fase ainda
+        // referenciada por uma exigência viva — falha explícita até a PR-d formalizar o
+        // guard de domínio equivalente (CA-04).
+        builder.HasOne<FaseCronograma>()
+            .WithMany()
+            .HasForeignKey(d => d.ExigidoNaFaseId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(d => d.ExigidoNaFaseId)
             .HasDatabaseName("ix_documentos_exigidos_exigido_na_fase_id");
