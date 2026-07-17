@@ -226,11 +226,13 @@ public sealed class FaseCronograma : EntityBase
 
     /// <summary>
     /// Atualiza os dados da MESMA fase (mesmo <see cref="EntityBase.Id"/>) em vez de
-    /// recriá-la — usado pela reposição da configuração congelada
-    /// (<see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>) para reconciliar
-    /// por <see cref="Ordem"/> (a chave estável de uma fase dentro do cronograma; o
-    /// <c>Id</c> não é congelado no envelope — §3.7 — logo nunca sobrevive à
-    /// reidratação).
+    /// recriá-la — usado tanto pela reposição da configuração congelada
+    /// (<see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>, reconciliação por
+    /// <see cref="Ordem"/> — o <c>Id</c> não é congelado no envelope, §3.7, logo nunca
+    /// sobrevive à reidratação) quanto pela redefinição ao vivo do cronograma
+    /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por
+    /// <see cref="FaseCanonicaOrigemId"/> — a identidade estável de uma fase; aqui
+    /// <paramref name="ordem"/> PODE mudar, ao contrário do caminho de restauração).
     /// </summary>
     /// <remarks>
     /// Sem esta reconciliação, repor o cronograma faria <c>Clear()</c> + <c>Add</c> de
@@ -244,6 +246,7 @@ public sealed class FaseCronograma : EntityBase
     /// </remarks>
     internal void AtualizarSnapshot(
         Guid faseCanonicaOrigemId,
+        int ordem,
         string codigo,
         string donoInstitucional,
         OrigemDataFase origemData,
@@ -264,6 +267,7 @@ public sealed class FaseCronograma : EntityBase
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
         FaseCanonicaOrigemId = faseCanonicaOrigemId;
+        Ordem = ordem;
         Codigo = codigo.Trim();
         DonoInstitucional = donoInstitucional.Trim();
         OrigemData = origemData;

@@ -489,38 +489,40 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A mesma fase canônica não pode aparecer duas vezes no cronograma."));
         }
 
-        // Story #554/issue #893 (PR-d, CA-04): reconciliação por (Ordem, FaseCanonicaOrigemId)
-        // — Ordem sozinha (mesma chave usada por AplicarGrafo/FaseCronograma.AtualizarSnapshot)
-        // não basta: achado Codex P2 (PR #900) — sem exigir também o mesmo
-        // FaseCanonicaOrigemId, uma redefinição que TROCA qual fase ocupa uma Ordem (ex.:
-        // "INSCRICAO" vira "ANALISE" na Ordem 1) seria tratada como "a mesma fase, só
-        // atualizada": o Id seria reusado e retargetado silenciosamente, sem passar pelo
-        // guard "fase removida". Exigir as DUAS chaves distingue "editar a mesma fase" de
-        // "trocar qual fase ocupa o slot" — e é a mesma checagem, em ambos os sentidos, que
-        // decide se uma fase é tratada como removida (guard) ou reconciliada (Id
-        // preservado, abaixo). Substitui o guard bruto da PR-a/#547 (que bloqueava QUALQUER
-        // redefinição enquanto existisse exigência viva) por guards precisos: só recusa
-        // quando uma fase REALMENTE removida/trocada é referenciada por exigência viva
-        // (ExigidoNaFaseId ou IdadeMaximaEmissao.ReferenciaFaseId), ou quando uma fase
-        // SOBREVIVENTE perde PermiteComplementacao/o extremo âncora sendo referenciada.
-        Dictionary<int, FaseCronograma> fasesAntigasPorOrdem = _cronogramaFases.ToDictionary(f => f.Ordem);
-        Dictionary<int, FaseCronograma> fasesNovasPorOrdem = fases.ToDictionary(f => f.Ordem);
+        // Story #554/issue #893 (PR-d, CA-04): reconciliação por FaseCanonicaOrigemId —
+        // achado Codex P2 (PR #900, 4ª rodada). FaseCanonicaOrigemId é a identidade ESTÁVEL
+        // de uma fase no cronograma (índice único ux_fases_cronograma_processo_fase_canonica);
+        // Ordem é só um ATRIBUTO mutável dela (uma fase pode ser reordenada sem deixar de
+        // ser "a mesma fase"). Casar por Ordem (como as rodadas anteriores fizeram) confundia
+        // "reordenar" com "trocar de fase": uma redefinição que só troca a POSIÇÃO de duas
+        // fases já existentes (A@1,B@2 -> B@1,A@2) fazia a reconciliação RETARGETAR o
+        // FaseCanonicaOrigemId das linhas rastreadas, e o EF não consegue ordenar as duas
+        // instruções UPDATE resultantes (dependência circular: cada uma precisa que a outra
+        // rode primeiro para liberar o valor único) — estourava InvalidOperationException no
+        // SaveChanges, fora do Result pattern. Casar por identidade evita esse retargeting
+        // desnecessário; o guard de permutação cíclica de Ordem (abaixo) cobre o caso
+        // residual em que a PRÓPRIA Ordem trocada forma um ciclo fechado entre fases
+        // retidas. Substitui o guard bruto da PR-a/#547 (que bloqueava QUALQUER redefinição
+        // enquanto existisse exigência viva) por guards precisos: só recusa quando uma fase
+        // REALMENTE removida é referenciada por exigência viva (ExigidoNaFaseId ou
+        // IdadeMaximaEmissao.ReferenciaFaseId), ou quando uma fase SOBREVIVENTE perde
+        // PermiteComplementacao/o extremo âncora sendo referenciada.
+        Dictionary<Guid, FaseCronograma> fasesAntigasPorOrigem = _cronogramaFases.ToDictionary(f => f.FaseCanonicaOrigemId);
+        Dictionary<Guid, FaseCronograma> fasesNovasPorOrigem = fases.ToDictionary(f => f.FaseCanonicaOrigemId);
 
-        foreach (FaseCronograma antiga in fasesAntigasPorOrdem.Values)
+        foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values)
         {
-            if (!fasesNovasPorOrdem.TryGetValue(antiga.Ordem, out FaseCronograma? nova)
-                || nova.FaseCanonicaOrigemId != antiga.FaseCanonicaOrigemId)
+            if (!fasesNovasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova))
             {
-                // Achado Codex P2 (PR #900): a fase removida (ou trocada na mesma Ordem)
-                // pode ser referenciada por ExigidoNaFaseId OU por
+                // A fase removida pode ser referenciada por ExigidoNaFaseId OU por
                 // IdadeMaximaEmissao.ReferenciaFaseId (PR-d) — os dois são vínculos
-                // independentes, e ambos ficariam órfãos/retargetados silenciosamente.
+                // independentes, e ambos ficariam órfãos silenciosamente.
                 if (_documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id
                     || d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id))
                 {
                     return Result.Failure(new DomainError(
                         "FaseCronograma.ReferenciadaPorExigenciaViva",
-                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida (ou substituída por outra fase canônica) do cronograma, mas é referenciada por um documento exigido configurado."));
+                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas é referenciada por um documento exigido configurado."));
                 }
 
                 continue;
@@ -554,6 +556,69 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return Result.Failure(new DomainError(
                     "IdadeMaximaEmissao.FaseExtremoAusente",
                     $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder o extremo usado como âncora de idade máxima de emissão por um documento exigido configurado."));
+            }
+        }
+
+        // Achado Codex P2 (PR #900, 4ª rodada): mesmo casando por identidade estável, uma
+        // PERMUTAÇÃO CÍCLICA de Ordem entre fases retidas (ex.: A@1,B@2 -> A@2,B@1, ou um
+        // ciclo de 3+) ainda pede que linhas TROQUEM valores cobertos pelo índice único
+        // ux_fases_cronograma_processo_ordem entre si — nenhuma ordem de UPDATE resolve um
+        // ciclo fechado num único SaveChanges (cada linha depende da outra liberar o valor
+        // primeiro). Detecta o ciclo em termos puramente de domínio (sem conhecer EF/SQL) e
+        // recusa com um erro nomeado, em vez de deixar a exceção do EF escapar do Result
+        // pattern. Uma cadeia que termina numa Ordem livre (nunca usada) ou na Ordem de uma
+        // fase REMOVIDA (que libera a linha via DELETE) não é um ciclo — só o é quando a
+        // cadeia volta a uma fase já visitada NA MESMA caminhada.
+        Dictionary<int, Guid> origemAntigaPorOrdem = [];
+        foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values)
+        {
+            if (fasesNovasPorOrigem.ContainsKey(antiga.FaseCanonicaOrigemId))
+            {
+                origemAntigaPorOrdem[antiga.Ordem] = antiga.FaseCanonicaOrigemId;
+            }
+        }
+
+        Dictionary<Guid, int> estadoDoNo = []; // 1 = na caminhada atual, 2 = concluído sem ciclo
+        foreach (Guid origemInicial in fasesAntigasPorOrigem.Keys)
+        {
+            if (estadoDoNo.ContainsKey(origemInicial))
+            {
+                continue;
+            }
+
+            List<Guid> caminho = [];
+            Guid? noAtual = origemInicial;
+            bool cicloFechado = false;
+
+            while (noAtual is { } no)
+            {
+                if (estadoDoNo.TryGetValue(no, out int estado))
+                {
+                    cicloFechado = estado == 1;
+                    break;
+                }
+
+                if (!fasesNovasPorOrigem.TryGetValue(no, out FaseCronograma? nova)
+                    || nova.Ordem == fasesAntigasPorOrigem[no].Ordem)
+                {
+                    break;
+                }
+
+                estadoDoNo[no] = 1;
+                caminho.Add(no);
+                noAtual = origemAntigaPorOrdem.TryGetValue(nova.Ordem, out Guid proximo) ? proximo : null;
+            }
+
+            foreach (Guid visitado in caminho)
+            {
+                estadoDoNo[visitado] = 2;
+            }
+
+            if (cicloFechado)
+            {
+                return Result.Failure(new DomainError(
+                    "FaseCronograma.PermutacaoDeOrdemNaoSuportada",
+                    "A redefinição do cronograma troca a Ordem entre fases já existentes formando um ciclo fechado (ex.: uma fase assume a Ordem de outra, que assume a Ordem da primeira) — isso não pode ser persistido em uma única chamada. Mova uma das fases para uma Ordem livre numa chamada separada antes de fechar o ciclo."));
             }
         }
 
@@ -605,26 +670,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // Reconciliação por Ordem (achado Codex P2, PR #900, 3ª rodada): a chave de MATCH
-        // FÍSICO da linha é só Ordem — mais larga que o par (Ordem, FaseCanonicaOrigemId)
-        // do guard acima, DE PROPÓSITO. O guard já provou, para todo slot que chega aqui,
-        // que ou (a) é genuinamente a mesma fase (mesmo FaseCanonicaOrigemId), ou (b) é uma
-        // troca de fase na mesma Ordem SEM nenhuma exigência viva referenciando a fase
-        // antiga (senão o guard já teria recusado, acima). Nos dois casos é seguro adotar a
-        // instância TRACKED existente (retargetando-a via AtualizarSnapshot) em vez de
-        // Add(nova) + deixar a antiga para o Clear() varrer: sem isso, um Clear()+Add() com
-        // Id novo na mesma Ordem pode colidir com o índice único
-        // (ProcessoSeletivoId, Ordem) por causa da ordem DELETE/INSERT que o EF decide no
-        // SaveChanges — o mesmo problema que a reconciliação evita no caso normal (mesma
-        // fase). Retargetar aqui é seguro justamente porque nada vivo apontava para o Id
-        // reciclado.
+        // Reconciliação por FaseCanonicaOrigemId (achado Codex P2, PR #900, 4ª rodada) — a
+        // mesma chave de identidade do guard acima. Reusa a instância TRACKED existente
+        // (retargetando-a via AtualizarSnapshot, preservando o Id) sempre que a fase
+        // canônica persiste no cronograma, independente de Ordem: evita tanto FK Restrict
+        // de documentos_exigidos.exigido_na_fase_id quanto o retargeting desnecessário do
+        // FaseCanonicaOrigemId que causava a colisão descrita acima — a essa altura, o
+        // guard de permutação cíclica já garantiu que a Ordem final de cada linha retida
+        // não fecha um ciclo com outra linha retida.
         List<FaseCronograma> resultantes = [];
         foreach (FaseCronograma nova in fases)
         {
-            if (fasesAntigasPorOrdem.TryGetValue(nova.Ordem, out FaseCronograma? existente))
+            if (fasesAntigasPorOrigem.TryGetValue(nova.FaseCanonicaOrigemId, out FaseCronograma? existente))
             {
                 existente.AtualizarSnapshot(
                     nova.FaseCanonicaOrigemId,
+                    nova.Ordem,
                     nova.Codigo,
                     nova.DonoInstitucional,
                     nova.OrigemData,
@@ -1839,6 +1900,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             {
                 viva.AtualizarSnapshot(
                     congelada.FaseCanonicaOrigemId,
+                    congelada.Ordem,
                     congelada.Codigo,
                     congelada.DonoInstitucional,
                     congelada.OrigemData,

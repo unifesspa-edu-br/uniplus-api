@@ -305,6 +305,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // guard acima: retirar PermiteComplementacao de uma fase referenciada por
         // exigência com consequência PENDENCIA_REENVIO.
         new("FaseCronograma.PendenciaReenvioExigeComplementacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.pendencia_reenvio_exige_complementacao", "A fase não pode perder PermiteComplementacao — é referenciada por documento exigido com consequência PENDENCIA_REENVIO")),
+        // Achado Codex P2 (PR #900, 4ª rodada) — uma permutação cíclica de Ordem entre
+        // fases retidas não tem ordem de UPDATE que a resolva num único SaveChanges.
+        new("FaseCronograma.PermutacaoDeOrdemNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.permutacao_de_ordem_nao_suportada", "A redefinição do cronograma troca a Ordem entre fases já existentes formando um ciclo fechado, que não pode ser persistido em uma única chamada")),
         // Gatilho DNF (Story #554, PR-b, issue #892) — CondicaoGatilho sobre PredicadoDnf,
         // ReferenciaTemporalFatos e a validação de publicação sem fallback silencioso
         // (ADR-0111:235-236, B-03 do plano).
