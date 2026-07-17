@@ -414,6 +414,152 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    /// <summary>Acrescenta ao cronograma conforme uma segunda fase DELEGADA (sem janela) — a única forma de ter uma fase sem Fim, já que PROPRIA exige janela (CA-07).</summary>
+    private static Guid AcrescentarFaseSemExtremo(ProcessoSeletivo processo)
+    {
+        FaseCronograma semExtremo = FaseCronograma.Criar(
+            ordem: 2,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "HOMOLOGACAO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Delegada,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            produzResultado: false,
+            resultadoDefinitivo: false,
+            coletaInscricao: false,
+            inicio: null,
+            fim: null,
+            atoProduzidoCodigo: null,
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([FaseConforme(), semExtremo], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        return semExtremo.Id;
+    }
+
+    [Fact(DisplayName = "B-03: FIM_FASE apontando para fase sem Fim definido bloqueia publicação")]
+    public void Publicar_FimFaseSemExtremoDefinido_BloqueadoPorB03()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseSemExtremoId = AcrescentarFaseSemExtremo(processo);
+        Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
+        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId)], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremoId).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente");
+    }
+
+    /// <summary>Cronograma com a coleta de inscrição numa fase DELEGADA (sem janela) e o resultado numa fase PROPRIA separada — a única forma de ter uma fase ColetaInscricao=true sem Fim.</summary>
+    private static Guid DefinirCronogramaComColetaSemFim(ProcessoSeletivo processo)
+    {
+        FaseCronograma coleta = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "INSCRICAO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Delegada,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            produzResultado: false,
+            resultadoDefinitivo: false,
+            coletaInscricao: true,
+            inicio: null,
+            fim: null,
+            atoProduzidoCodigo: null,
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        FaseCronograma resultado = FaseCronograma.Criar(
+            ordem: 2,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_FINAL",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: false,
+            produzResultado: true,
+            resultadoDefinitivo: true,
+            coletaInscricao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "RESULTADO_FINAL",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([coleta, resultado], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        return coleta.Id;
+    }
+
+    [Fact(DisplayName = "B-03: FIM_INSCRICAO sem nenhuma fase de coleta com Fim definido bloqueia publicação")]
+    public void Publicar_FimInscricaoSemFaseComFimDefinido_BloqueadoPorB03()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        Guid faseColetaId = DefinirCronogramaComColetaSemFim(processo);
+        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId)], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        Result<VersaoConfiguracao> resultado = processo.Publicar(
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", TimeProvider.System);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel");
+    }
+
+    [Fact(DisplayName = "B-03: ResolverDataReferenciaFatos converte para o fuso America/Sao_Paulo — um Fim de madrugada em UTC cai no dia anterior local")]
+    public void ResolverDataReferenciaFatos_FimDeMadrugadaEmUtc_ResolveODiaAnteriorEmBrasilia()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+
+        // 2026-03-02T01:30:00Z, subtraídas 3h de fuso (America/Sao_Paulo, sem horário de
+        // verão), cai em 2026-03-01T22:30 local — dia DIFERENTE do dia UTC. Uma resolução
+        // que apenas truncasse a data (sem converter o fuso) devolveria 02/03, um dia
+        // inteiro adiantado em relação ao que o administrador viu na tela.
+        FaseCronograma faseComVirada = FaseCronograma.Criar(
+            ordem: 2,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_PRELIMINAR",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            produzResultado: false,
+            resultadoDefinitivo: false,
+            coletaInscricao: false,
+            inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: null,
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        // A segunda fase precisa entrar ANTES de configurar a exigência: uma vez que a
+        // exigência referencia a fase 1 (ExigidoNaFaseId), redefinir o cronograma depois
+        // recriaria a fase 1 com outra FaseCanonicaOrigemId e o guard
+        // FaseCronograma.ReferenciadaPorExigenciaViva recusaria a redefinição.
+        processo.DefinirCronogramaFases([FaseConforme(), faseComVirada], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
+        Guid faseComViradaId = processo.CronogramaFases.Single(f => f.Ordem == 2).Id;
+
+        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId)], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        processo.ResolverDataReferenciaFatos().Should().Be(new DateOnly(2026, 3, 1),
+            "o Fim (2026-03-02T01:30:00Z) convertido para America/Sao_Paulo (UTC-3, sem DST) é 2026-03-01T22:30 — o dia LOCAL, não o dia UTC");
+    }
+
     // ── Story #554 (PR-e, issue #548) — CA-05: coerência consequência↔ação da vaga ──
 
     private static ModalidadeSelecionada NovaModalidadeComAcao(
