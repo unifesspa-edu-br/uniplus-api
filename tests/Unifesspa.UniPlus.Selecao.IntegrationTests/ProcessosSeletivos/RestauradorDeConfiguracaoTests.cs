@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -10,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Xunit;
 
@@ -146,6 +149,127 @@ public sealed class RestauradorDeConfiguracaoTests
             .Should().Equal(antesDaTentativa,
                 "uma prova que falha não pode deixar resíduo no agregado — se ela repusesse primeiro e provasse " +
                 "depois, este assert falharia, e o campo perdido estaria a um SaveChanges de ser persistido");
+    }
+
+    /// <summary>
+    /// Achado de revisão da PR #903 (Story #554, PR-e): a sombra de verificação
+    /// (<see cref="RestauradorDeConfiguracao"/>, "prova primeiro, aplica depois") começa
+    /// SEM nenhuma fase viva rastreada — <see cref="ProcessoSeletivo.AplicarGrafo"/>
+    /// reconcilia o cronograma por Ordem contra a instância viva, e a sombra não tem
+    /// nenhuma. Antes da correção, <c>FaseCronograma.Id</c> nunca sobrevivia à
+    /// reidratação (só <c>Ordem</c>/<c>FaseCanonicaOrigemId</c> eram congelados), e
+    /// qualquer configuração com gatilho <c>FAIXA_ETARIA</c> ancorado a uma fase
+    /// (<c>INICIO_FASE</c>/<c>FIM_FASE</c>) fazia <c>ResolverDataReferenciaFatos</c> não
+    /// encontrar a fase que a política referencia — a prova de round-trip nunca
+    /// completava. A correção (<see cref="FaseCronograma.Reidratar"/>, <c>id</c> congelado
+    /// no bloco <c>cronogramaFases</c> da 1.2) resolve.
+    /// </summary>
+    [Fact(DisplayName = "Story #554 (PR-e): Restaurar sobre uma sombra vazia resolve dataReferenciaFatos com gatilho FAIXA_ETARIA ancorado em FIM_FASE")]
+    public void Restaurar_ComGatilhoFaixaEtariaAncoradoEmFimFase_ReporEProvar()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restaurador FAIXA_ETARIA", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(),
+            codigo: "AC",
+            descricao: null,
+            naturezaLegal: NaturezaLegalModalidade.Ampla,
+            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoOrigemCodigo: null,
+            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null,
+            remanejamentoPar: null,
+            remanejamentoFallback: null,
+            criteriosCumulativos: [],
+            acaoQuandoIndeferido: null,
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [modalidade]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
+            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
+            regraArredondamento: null,
+            casasArredondamento: null,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_FINAL",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: false,
+            produzResultado: true,
+            resultadoDefinitivo: true,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "RESULTADO_FINAL",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        CondicaoGatilho condicao = CondicaoGatilho.Criar(
+            0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
+        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
+            "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            fase.Id,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
+            tipoDocumentoNome: "Declaração de maioridade",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        SnapshotPublicacaoCanonicalizer canonicalizer = new();
+        DadosEdital dados = DadosEdital.Criar(
+            numero: "001/2026",
+            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
+            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            documentoEditalId: Guid.CreateVersion7()).Value!;
+        string hashFixo = new('a', 64);
+        SnapshotCanonico congelado = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashFixo));
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashFixo, "user-sub-123", TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        VersaoConfiguracao versao = publicacao.Value!;
+
+        RestauradorDeConfiguracao restaurador = new(new RegistroCodecsEnvelope());
+
+        Result resultado = restaurador.Restaurar(processo, versao);
+
+        resultado.IsSuccess.Should().BeTrue(
+            resultado.Error?.Message ?? "sem o Id da fase congelado no envelope 1.2, ResolverDataReferenciaFatos " +
+            "não encontraria a fase que FIM_FASE referencia na sombra vazia, e a prova de round-trip nunca completaria");
     }
 
     [Fact(DisplayName = "Uma versão que não reidrata (1.0) faz a restauração falhar sem tocar no agregado")]

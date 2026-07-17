@@ -674,6 +674,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         {
             array.Add(new JsonObject
             {
+                // Story #554 (PR-e, bump 1.2), achado de revisão: id congelado para que
+                // exigidoNaFaseId/referenciaTemporalFatos.faseId resolvam mesmo quando a
+                // sombra de verificação (RestauradorDeConfiguracao) reidrata sem nenhuma
+                // fase viva rastreada para reconciliar por Ordem. Só a 1.2 escreve esta
+                // chave — o encoder 1.1 congelado (EnvelopeCodecV11) não a tinha.
+                ["id"] = fase.Id,
                 ["ordem"] = fase.Ordem,
                 ["faseCanonicaOrigemId"] = fase.FaseCanonicaOrigemId,
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo),

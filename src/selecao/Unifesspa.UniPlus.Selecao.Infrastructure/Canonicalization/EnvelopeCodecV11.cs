@@ -1738,7 +1738,16 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// (<c>ProcessoSeletivo.OrigemCandidatos</c>), imutável após a criação (nenhum
     /// <c>Definir*</c> o altera), e por isso nada aqui precisa repô-lo.
     /// </summary>
-    internal static IReadOnlyList<FaseCronograma> LerCronogramaFases(LeitorEnvelope leitor, JsonObject payload)
+    /// <param name="comId">
+    /// <see langword="true"/> quando o bloco congela <c>id</c> por fase (Story #554, PR-e,
+    /// bump 1.2, achado de revisão) — a 1.1 nunca teve essa chave, e <c>ExigirChaves</c> é
+    /// fechado (chave extra reprova tanto quanto chave ausente), então o mesmo leitor não
+    /// pode aceitar as duas formas com uma única lista fixa. Com <see langword="true"/>, a
+    /// fase reidrata preservando o Id congelado (<see cref="FaseCronograma.Reidratar"/>);
+    /// com <see langword="false"/> (1.1, comportamento inalterado), <see cref="FaseCronograma.Criar"/>
+    /// gera um Id novo, exatamente como sempre gerou.
+    /// </param>
+    internal static IReadOnlyList<FaseCronograma> LerCronogramaFases(LeitorEnvelope leitor, JsonObject payload, bool comId = false)
     {
         JsonObject bloco = leitor.Objeto(payload, "cronogramaFases", "$");
         leitor.ExigirChaves(bloco, "cronogramaFases", "origemCandidatos", "fases");
@@ -1756,13 +1765,16 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         {
             string path = $"cronogramaFases.fases[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "cronogramaFases.fases");
-            leitor.ExigirChaves(
-                item, path,
+            string[] chavesBase =
+            [
                 "ordem", "faseCanonicaOrigemId", "codigo", "donoInstitucional", "origemData",
                 "agrupaEtapas", "permiteComplementacao", "produzResultado", "resultadoDefinitivo",
                 "coletaInscricao", "inicio", "fim", "atoProduzidoCodigo", "atoProduzidoEfeitoIrreversivel",
-                "bancasRequeridas", "regraRecurso");
+                "bancasRequeridas", "regraRecurso",
+            ];
+            leitor.ExigirChaves(item, path, comId ? [.. chavesBase, "id"] : chavesBase);
 
+            Guid? id = comId ? leitor.Identificador(item, "id", path) : null;
             int ordem = leitor.Inteiro(item, "ordem", path);
             Guid faseCanonicaOrigemId = leitor.Identificador(item, "faseCanonicaOrigemId", path);
             string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.FaseCodigo);
@@ -1795,10 +1807,15 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
                 return [];
             }
 
-            Result<FaseCronograma> fase = FaseCronograma.Criar(
-                ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
-                agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
-                inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso);
+            Result<FaseCronograma> fase = comId
+                ? Result<FaseCronograma>.Success(FaseCronograma.Reidratar(
+                    id!.Value, ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
+                    agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
+                    inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso))
+                : FaseCronograma.Criar(
+                    ordem, faseCanonicaOrigemId, codigo, donoInstitucional, origemData,
+                    agrupaEtapas, permiteComplementacao, produzResultado, resultadoDefinitivo, coletaInscricao,
+                    inicio, fim, atoProduzidoCodigo, atoProduzidoEfeitoIrreversivel, bancas, regraRecurso);
             if (fase.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FaseCronograma>>(fase.Error!) ?? [];
