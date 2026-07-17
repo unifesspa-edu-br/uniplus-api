@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "21446427-9758-45a1-b80d-4e86750df7d0",
+    "_postman_id": "587c79e4-bd14-4c8d-b5cc-15d9e622cdd1",
     "name": "Uni+ Seleção — ProcessoSeletivo (smoke completo, Story #554/PR #903)",
     "description": "Exercita TODOS os 22 endpoints de ProcessoSeletivoController + DocumentosEditalController contra o stack local (docker compose + Newman), incluindo a configuração de catálogo necessária (Publicações/Organização/Configuração) e o fluxo completo de documentos exigidos por gatilho e fase (Story #554). Auto-contido: cada execução cria um ProcessoSeletivo novo (nome com timestamp seria ideal, mas os endpoints de setup toleram 409 em catálogos já existentes).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -67,9 +67,10 @@
                   "// Sufixo único por execução — evita colisão de código/slug/sigla em",
                   "// reexecuções contra o mesmo banco (Campus/Curso/Modalidade/TipoDocumento/",
                   "// Unidade não toleram 409 como Instituição/FaseCanonica/TipoAto toleram).",
-                  "// 6 dígitos (não os 13 de Date.now()) — Campus.Sigla tem maxLength 20 e o",
-                  "// prefixo já consome boa parte do orçamento de caracteres.",
-                  "pm.environment.set('run_suffix', Date.now() % 1000000);"
+                  "// 6 dígitos aleatórios (Math.random, não Date.now() % 1e6): um módulo de",
+                  "// timestamp repete a cada ~16m40s (achado de revisão, PR #907) — duas",
+                  "// execuções nesse intervalo colidiam nos códigos gerados.",
+                  "pm.environment.set('run_suffix', Math.floor(100000 + Math.random() * 900000));"
                 ]
               }
             }
