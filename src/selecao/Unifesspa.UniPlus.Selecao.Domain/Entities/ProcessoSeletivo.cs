@@ -489,29 +489,38 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A mesma fase canônica não pode aparecer duas vezes no cronograma."));
         }
 
-        // Story #554/issue #893 (PR-d, CA-04): reconciliação por Ordem — a chave estável
-        // de uma fase dentro do cronograma (mesmo padrão de AplicarGrafo/
-        // FaseCronograma.AtualizarSnapshot). Substitui o guard bruto da PR-a/#547 (que
-        // bloqueava QUALQUER redefinição enquanto existisse exigência viva) por dois
-        // guards precisos: só recusa quando uma fase REALMENTE removida (Ordem que
-        // desaparece) é referenciada por exigência viva, ou quando uma fase SOBREVIVENTE
-        // perde PermiteComplementacao mas é referenciada por exigência PENDENCIA_REENVIO.
+        // Story #554/issue #893 (PR-d, CA-04): reconciliação por (Ordem, FaseCanonicaOrigemId)
+        // — Ordem sozinha (mesma chave usada por AplicarGrafo/FaseCronograma.AtualizarSnapshot)
+        // não basta: achado Codex P2 (PR #900) — sem exigir também o mesmo
+        // FaseCanonicaOrigemId, uma redefinição que TROCA qual fase ocupa uma Ordem (ex.:
+        // "INSCRICAO" vira "ANALISE" na Ordem 1) seria tratada como "a mesma fase, só
+        // atualizada": o Id seria reusado e retargetado silenciosamente, sem passar pelo
+        // guard "fase removida". Exigir as DUAS chaves distingue "editar a mesma fase" de
+        // "trocar qual fase ocupa o slot" — e é a mesma checagem, em ambos os sentidos, que
+        // decide se uma fase é tratada como removida (guard) ou reconciliada (Id
+        // preservado, abaixo). Substitui o guard bruto da PR-a/#547 (que bloqueava QUALQUER
+        // redefinição enquanto existisse exigência viva) por guards precisos: só recusa
+        // quando uma fase REALMENTE removida/trocada é referenciada por exigência viva
+        // (ExigidoNaFaseId ou IdadeMaximaEmissao.ReferenciaFaseId), ou quando uma fase
+        // SOBREVIVENTE perde PermiteComplementacao/o extremo âncora sendo referenciada.
         Dictionary<int, FaseCronograma> fasesAntigasPorOrdem = _cronogramaFases.ToDictionary(f => f.Ordem);
         Dictionary<int, FaseCronograma> fasesNovasPorOrdem = fases.ToDictionary(f => f.Ordem);
 
         foreach (FaseCronograma antiga in fasesAntigasPorOrdem.Values)
         {
-            if (!fasesNovasPorOrdem.TryGetValue(antiga.Ordem, out FaseCronograma? nova))
+            if (!fasesNovasPorOrdem.TryGetValue(antiga.Ordem, out FaseCronograma? nova)
+                || nova.FaseCanonicaOrigemId != antiga.FaseCanonicaOrigemId)
             {
-                // Achado Codex P2 (PR #900): a fase removida pode ser referenciada por
-                // ExigidoNaFaseId OU por IdadeMaximaEmissao.ReferenciaFaseId (PR-d) — os
-                // dois são vínculos independentes, e ambos ficariam órfãos.
+                // Achado Codex P2 (PR #900): a fase removida (ou trocada na mesma Ordem)
+                // pode ser referenciada por ExigidoNaFaseId OU por
+                // IdadeMaximaEmissao.ReferenciaFaseId (PR-d) — os dois são vínculos
+                // independentes, e ambos ficariam órfãos/retargetados silenciosamente.
                 if (_documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id
                     || d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id))
                 {
                     return Result.Failure(new DomainError(
                         "FaseCronograma.ReferenciadaPorExigenciaViva",
-                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas é referenciada por um documento exigido configurado."));
+                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida (ou substituída por outra fase canônica) do cronograma, mas é referenciada por um documento exigido configurado."));
                 }
 
                 continue;
@@ -596,17 +605,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // Reconciliação por Ordem (mesmo padrão de AplicarGrafo): quando a nova fase
-        // reocupa a Ordem de uma fase viva, reusa a instância TRACKED (atualizando-a no
-        // lugar via AtualizarSnapshot) em vez de substituí-la por uma instância nova —
-        // preserva o Id, o que é o que faz o guard acima ("fase removida") ser preciso
-        // (só remove de fato quando a Ordem desaparece) e evita, por consequência, que a
-        // FK Restrict de documentos_exigidos.exigido_na_fase_id estoure em toda
-        // redefinição, mesmo sem exigência alguma referenciando a fase alterada.
+        // Reconciliação por (Ordem, FaseCanonicaOrigemId) — mesmo par de chaves do guard
+        // acima (achado Codex P2, PR #900): só reusa a instância TRACKED (atualizando-a no
+        // lugar via AtualizarSnapshot) quando as DUAS chaves batem — preserva o Id apenas
+        // quando é genuinamente "a mesma fase, dados atualizados", nunca quando é "outra
+        // fase ocupando o mesmo slot". Evita, no caso normal (mesma fase), que a FK
+        // Restrict de documentos_exigidos.exigido_na_fase_id estoure em toda redefinição.
         List<FaseCronograma> resultantes = [];
         foreach (FaseCronograma nova in fases)
         {
-            if (fasesAntigasPorOrdem.TryGetValue(nova.Ordem, out FaseCronograma? existente))
+            if (fasesAntigasPorOrdem.TryGetValue(nova.Ordem, out FaseCronograma? existente)
+                && existente.FaseCanonicaOrigemId == nova.FaseCanonicaOrigemId)
             {
                 existente.AtualizarSnapshot(
                     nova.FaseCanonicaOrigemId,
