@@ -166,6 +166,28 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
     }
 
+    [Fact(DisplayName = "Achado Codex P2 (PR #900, 3ª rodada): trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito e reusa a linha rastreada")]
+    public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemSemExigenciaViva_AceitaEReusaLinha()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = Fase(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Mesma Ordem (1), FaseCanonicaOrigemId DIFERENTE, e NENHUMA exigência referencia
+        // a fase antiga — o guard já provou que é seguro; a reconciliação deve adotar a
+        // linha TRACKED (retargetando-a) em vez de Add(nova) + deixar a antiga para o
+        // Clear() varrer, o que colidiria com o índice único (ProcessoSeletivoId, Ordem)
+        // no SaveChanges.
+        Guid idAntigo = fase.Id;
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CronogramaFases.Should().ContainSingle(
+            f => f.Id == idAntigo,
+            "sem exigência viva referenciando a fase antiga, é seguro reusar a linha rastreada em vez de forçar delete+insert no mesmo slot único");
+        processo.CronogramaFases.Single().Codigo.Should().Be("ANALISE");
+    }
+
     [Fact(DisplayName = "CA-04: redefinir o cronograma removendo (Ordem que desaparece) uma fase referenciada por exigência viva é recusado")]
     public void DefinirCronogramaFases_RemoveOrdemReferenciadaPorExigenciaViva_Recusa()
     {

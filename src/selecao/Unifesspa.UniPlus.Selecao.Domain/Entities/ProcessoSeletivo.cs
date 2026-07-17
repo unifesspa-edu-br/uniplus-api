@@ -605,17 +605,23 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // Reconciliação por (Ordem, FaseCanonicaOrigemId) — mesmo par de chaves do guard
-        // acima (achado Codex P2, PR #900): só reusa a instância TRACKED (atualizando-a no
-        // lugar via AtualizarSnapshot) quando as DUAS chaves batem — preserva o Id apenas
-        // quando é genuinamente "a mesma fase, dados atualizados", nunca quando é "outra
-        // fase ocupando o mesmo slot". Evita, no caso normal (mesma fase), que a FK
-        // Restrict de documentos_exigidos.exigido_na_fase_id estoure em toda redefinição.
+        // Reconciliação por Ordem (achado Codex P2, PR #900, 3ª rodada): a chave de MATCH
+        // FÍSICO da linha é só Ordem — mais larga que o par (Ordem, FaseCanonicaOrigemId)
+        // do guard acima, DE PROPÓSITO. O guard já provou, para todo slot que chega aqui,
+        // que ou (a) é genuinamente a mesma fase (mesmo FaseCanonicaOrigemId), ou (b) é uma
+        // troca de fase na mesma Ordem SEM nenhuma exigência viva referenciando a fase
+        // antiga (senão o guard já teria recusado, acima). Nos dois casos é seguro adotar a
+        // instância TRACKED existente (retargetando-a via AtualizarSnapshot) em vez de
+        // Add(nova) + deixar a antiga para o Clear() varrer: sem isso, um Clear()+Add() com
+        // Id novo na mesma Ordem pode colidir com o índice único
+        // (ProcessoSeletivoId, Ordem) por causa da ordem DELETE/INSERT que o EF decide no
+        // SaveChanges — o mesmo problema que a reconciliação evita no caso normal (mesma
+        // fase). Retargetar aqui é seguro justamente porque nada vivo apontava para o Id
+        // reciclado.
         List<FaseCronograma> resultantes = [];
         foreach (FaseCronograma nova in fases)
         {
-            if (fasesAntigasPorOrdem.TryGetValue(nova.Ordem, out FaseCronograma? existente)
-                && existente.FaseCanonicaOrigemId == nova.FaseCanonicaOrigemId)
+            if (fasesAntigasPorOrdem.TryGetValue(nova.Ordem, out FaseCronograma? existente))
             {
                 existente.AtualizarSnapshot(
                     nova.FaseCanonicaOrigemId,
