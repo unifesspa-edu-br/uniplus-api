@@ -183,6 +183,16 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(conformidadeLegal.Error!), []);
         }
 
+        // Terceira dimensão de conformidade (Story #554, PR #903, ADR-0109 D5): documentos
+        // exigidos, coerência da consequência de indeferimento e referência temporal de
+        // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
+        // quando a política não resolve — sem este guard antes dela, um processo inválido
+        // vira exceção não tratada em vez do DomainError que o contrato HTTP promete.
+        if (processo.PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
+        {
+            return (Result.Failure(pendenciaPreCanonicalizacao), []);
+        }
+
         // A configuração canonicalizada é a VIVA — que é, agora, a EDITADA pela sessão. É a
         // diferença inteira em relação ao que a retificação fazia antes desta Feature: ela
         // recanonicalizava a mesma configuração de sempre, e a versão N+1 saía idêntica à N.
