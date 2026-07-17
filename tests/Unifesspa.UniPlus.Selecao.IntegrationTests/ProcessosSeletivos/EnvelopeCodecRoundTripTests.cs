@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Xunit;
 
@@ -461,6 +462,57 @@ public sealed class EnvelopeCodecRoundTripTests
         Path.GetDirectoryName(origem)!,
         "Fixtures",
         "envelope-1.1-rico.json");
+
+    // ── Round-trip 1.2 com exigência documental rica (Story #554, PR-e, CA-13) ──
+
+    /// <summary>
+    /// Prova de fidelidade do <c>EnvelopeCodecV12</c> sobre a MESMA exigência
+    /// documental rica que a golden fixture do canonicalizador congela
+    /// (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>).
+    /// </summary>
+    /// <remarks>
+    /// Sem arquivo congelado — diferente da golden 1.1 acima, que compara contra bytes
+    /// FIXOS gravados no repositório: <see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>
+    /// usa <c>Guid.CreateVersion7()</c> para a etapa, a fase e a exigência (a suíte de
+    /// origem normaliza esses ids antes de comparar — ver <c>NormalizarIds</c>), então um
+    /// arquivo com bytes crus nunca seria estável entre regenerações. A prova aqui é de
+    /// AUTOCONSISTÊNCIA (mesmo padrão de <see cref="RoundTrip_VersaoDeAbertura"/>): o
+    /// primeiro <c>Codificar</c> É o oráculo — decodificar e recodificar tem de reproduzir
+    /// EXATAMENTE os mesmos bytes, quaisquer que sejam os Guids sorteados nesta execução.
+    /// </remarks>
+    [Fact(DisplayName = "Round-trip 1.2 — reidratar e recanonicalizar o processo de referência (exigência documental rica) reproduz os bytes")]
+    public void RoundTrip12_ProcessoDeReferenciaComExigenciaDocumentalRica()
+    {
+        ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
+        EntradaCanonicalizacao entrada = new(processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo);
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
+        congelado.SchemaVersion.Should().Be("1.2", "pré-condição: esta suíte prova o EnvelopeCodecV12, não uma versão congelada anterior");
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            entrada.HashDocumento, "user-sub-123", TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        VersaoConfiguracao v1 = publicacao.Value!;
+
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        processo.RestaurarConfiguracaoCongelada(v1, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
+
+        byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
+            v1.SchemaVersion,
+            new EntradaCanonicalizacao(
+                processo,
+                reidratado.Value.Dados,
+                reidratado.Value.HashDocumento,
+                reidratado.Value.Retificacao,
+                reidratado.Value.Conformidade)).Value!.Bytes;
+
+        recodificado.Should().Equal(congelado.Bytes,
+            "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
+            "idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes) tem de reproduzir os bytes congelados " +
+            "inteiros — qualquer campo perdido pelo decoder do bloco documentosExigidos sai daqui como divergência");
+    }
 
     internal static JsonObject Envelope(SnapshotCanonico snapshot) =>
         JsonNode.Parse(Encoding.UTF8.GetString(snapshot.Bytes))!.AsObject();

@@ -124,7 +124,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
         ConfiguracaoClassificacao? classificacao = EnvelopeCodecV11.LerClassificacao(leitor, payload);
         IReadOnlyList<FaseCronograma> cronogramaFases = EnvelopeCodecV11.LerCronogramaFases(leitor, payload);
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos) =
-            LerDocumentosExigidos(leitor, payload, cronogramaFases);
+            LerDocumentosExigidos(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -155,7 +155,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
     /// partir da política restaurada).
     /// </summary>
     private static (ResultadoConformidade? Conformidade, IReadOnlyList<DocumentoExigido> DocumentosExigidos, ReferenciaTemporalFatos? ReferenciaTemporalFatos)
-        LerDocumentosExigidos(LeitorEnvelope leitor, JsonObject payload, IReadOnlyList<FaseCronograma> cronogramaFases)
+        LerDocumentosExigidos(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "documentosExigidos", "$");
         if (leitor.Falhou)
@@ -166,7 +166,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
         leitor.ExigirChaves(
             bloco, "documentosExigidos", "exigencias", "obrigatoriedades", "referenciaTemporalFatos", "dataReferenciaFatos");
 
-        IReadOnlyList<DocumentoExigido> exigencias = LerExigencias(leitor, bloco, cronogramaFases);
+        IReadOnlyList<DocumentoExigido> exigencias = LerExigencias(leitor, bloco);
         if (leitor.Falhou)
         {
             return (null, [], null);
@@ -192,8 +192,20 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
         return leitor.Falhou ? (null, [], null) : (conformidade, exigencias, referenciaTemporalFatos);
     }
 
-    private static IReadOnlyList<DocumentoExigido> LerExigencias(
-        LeitorEnvelope leitor, JsonObject bloco, IReadOnlyList<FaseCronograma> cronogramaFases)
+    /// <summary>
+    /// Não valida <c>exigidoNaFaseId</c> contra as fases decodificadas nesta mesma
+    /// passagem — <c>FaseCronograma.Id</c> não é congelado no envelope (§3.7, comentário
+    /// de <see cref="Entities.FaseCronograma.AtualizarSnapshot"/>): a cada decodificação,
+    /// <see cref="EnvelopeCodecV11.LerCronogramaFases"/> gera fases com Id NOVO
+    /// (<c>FaseCronograma.Criar</c>), então comparar contra elas aqui reprovaria toda
+    /// exigência com fase, sempre — a mesma razão pela qual <see cref="ReferenciaTemporalFatos.FaseId"/>
+    /// (<see cref="LerReferenciaTemporalFatosPolitica"/>) também não é validado neste
+    /// ponto. A resolução real acontece depois, no domínio
+    /// (<see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>, que
+    /// reconcilia fases por <c>Ordem</c> reusando a instância viva — preservando o Id que
+    /// <c>exigidoNaFaseId</c> referencia quando ela existe).
+    /// </summary>
+    private static IReadOnlyList<DocumentoExigido> LerExigencias(LeitorEnvelope leitor, JsonObject bloco)
     {
         JsonArray array = leitor.Array(bloco, "exigencias", "documentosExigidos");
         if (leitor.Falhou)
@@ -263,13 +275,6 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
                 return leitor.Propagar<IReadOnlyList<DocumentoExigido>>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado,
                     $"'{path}.tamanhoMaximoBytes' deve ser maior que zero quando presente.")) ?? [];
-            }
-
-            if (!cronogramaFases.Any(f => f.Id == exigidoNaFaseId))
-            {
-                return leitor.Propagar<IReadOnlyList<DocumentoExigido>>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"'{path}.exigidoNaFaseId' não corresponde a nenhuma fase do cronograma no mesmo envelope.")) ?? [];
             }
 
             exigencias.Add(DocumentoExigido.Reidratar(
