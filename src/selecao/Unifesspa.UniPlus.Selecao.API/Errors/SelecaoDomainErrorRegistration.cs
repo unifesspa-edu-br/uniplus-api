@@ -299,7 +299,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoExigido.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fase_nao_pertence_ao_processo", "A fase informada não pertence ao cronograma deste processo")),
         new("DocumentoExigido.CondicionalVaziaDeterminaResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.condicional_vazia_determina_resultado", "Exigência CONDICIONAL sem condição viva que determina resultado nunca seria cobrada de ninguém")),
         new("DocumentoExigido.TipoDocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado", "Tipo de documento não encontrado ou não está mais vivo")),
-        new("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.exigencias_documentais_nao_materializadas", "Existem documentos exigidos configurados, mas o bloco de exigências do envelope ainda não foi materializado")),
+        // ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas (guarda B-01) removido —
+        // Story #554, PR-e, issue #548: o bloco deixou de ser stub, o gate real decide.
         new("FaseCronograma.ReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva", "A fase removida do cronograma é referenciada por um documento exigido configurado")),
         // Guards backward de fase (Story #554, PR-d, issue #893, CA-04) — complemento ao
         // guard acima: retirar PermiteComplementacao de uma fase referenciada por

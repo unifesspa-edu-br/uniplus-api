@@ -65,7 +65,7 @@ public static class ResolvedorExigenciasDocumentais
         }
 
         Dictionary<Guid, bool> aplicavelPorExigencia = bloco.Exigencias.ToDictionary(
-            static e => e.Id, e => AvaliarAplicabilidade(e, fatosResolvidos));
+            static e => e.Id, e => e.AplicavelPara(fatosResolvidos));
 
         Dictionary<Guid, bool> satisfeitaDiretamentePorExigencia = bloco.Exigencias.ToDictionary(
             e => e.Id, e => apresentacoesPorExigenciaId.ContainsKey(e.Id));
@@ -112,32 +112,6 @@ public static class ResolvedorExigenciasDocumentais
         }
 
         return Result<ResultadoResolucaoExigencias>.Success(new ResultadoResolucaoExigencias(resolucoes));
-    }
-
-    /// <summary>
-    /// GERAL é sempre aplicável — o gatilho nunca é avaliado. CONDICIONAL depende do
-    /// predicado DNF (PR-b): zero cláusulas vivas nunca casa com ninguém, mesma semântica
-    /// de <see cref="PredicadoDnf.Avaliar"/> e de CA-01 ("exigida de ninguém").
-    /// </summary>
-    private static bool AvaliarAplicabilidade(DocumentoExigido exigencia, IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
-    {
-        if (exigencia.Aplicabilidade == Aplicabilidade.Geral)
-        {
-            return true;
-        }
-
-        if (exigencia.Condicoes.Count == 0)
-        {
-            return false;
-        }
-
-        // O dado já foi validado quando a exigência foi escrita (CondicaoGatilho.Criar) —
-        // mesmo raciocínio de CondicaoGatilho.ParaCondicaoDnf(), que esta chamada usa por
-        // baixo: reidratar não revalida.
-        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
-            [.. exigencia.Condicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
-
-        return predicado.Avaliar(fatosResolvidos);
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using System.Linq;
+using System.Text.Json;
 
 using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -280,6 +281,39 @@ public sealed class DocumentoExigido : EntityBase
     /// </summary>
     public IEnumerable<DocumentoExigidoBaseLegal> BasesLegaisResolvidas() =>
         _basesLegais.Where(static b => b.Status == StatusBaseLegal.Resolvido);
+
+    /// <summary>
+    /// A exigência se aplica a um candidato com estes fatos? GERAL sempre se aplica — o
+    /// gatilho nunca é avaliado. CONDICIONAL depende do predicado DNF (PR-b): zero
+    /// cláusulas vivas nunca casa com ninguém, mesma semântica de
+    /// <see cref="PredicadoDnf.Avaliar"/> e de CA-01 ("exigida de ninguém"). Usado tanto
+    /// pelo resolvedor de exigências documentais (PR-e, por candidato real) quanto pelo
+    /// gate de conformidade legal (PR-e, <see cref="Services.AvaliadorConformidadeLegal"/>
+    /// — por um fato sintético fixo, ex. só <c>MODALIDADE</c>, para provar cobertura
+    /// incondicional de uma modalidade inteira).
+    /// </summary>
+    public bool AplicavelPara(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
+    {
+        ArgumentNullException.ThrowIfNull(fatosResolvidos);
+
+        if (Aplicabilidade == Aplicabilidade.Geral)
+        {
+            return true;
+        }
+
+        if (_condicoes.Count == 0)
+        {
+            return false;
+        }
+
+        // O dado já foi validado quando a exigência foi escrita (CondicaoGatilho.Criar) —
+        // mesmo raciocínio de CondicaoGatilho.ParaCondicaoDnf(), que esta chamada usa por
+        // baixo: reidratar/reavaliar não revalida.
+        PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
+            [.. _condicoes.Select(static c => (c.Clausula, c.ParaCondicaoDnf()))]).Value!;
+
+        return predicado.Avaliar(fatosResolvidos);
+    }
 
     /// <summary>
     /// Coerência entre <see cref="Aplicabilidade"/> e a existência de condição de gatilho

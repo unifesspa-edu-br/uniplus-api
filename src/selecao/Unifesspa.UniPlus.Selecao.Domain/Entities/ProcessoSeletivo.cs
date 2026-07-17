@@ -1008,18 +1008,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// FecharRetificacao), sempre <b>depois</b> de <see cref="PendenciaDoCronograma"/>.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// <b>CA-01</b> (Story #554, issue #547) — uma exigência <c>CONDICIONAL</c> sem
     /// nenhuma condição de gatilho viva que <see cref="DocumentoExigido.DeterminaResultado"/>
     /// é "exigência morta": nunca seria cobrada de ninguém. Desde a PR-b (issue #892),
     /// avalia a coleção REAL de <see cref="DocumentoExigido.Condicoes"/>.
-    /// </para>
     /// <para>
-    /// <b>B-01 — guarda fail-closed transitória</b> (Story #554, issue #547; PR-a..PR-d):
-    /// enquanto o bloco <c>documentosExigidos.exigencias</c> do envelope continuar stub,
-    /// publicar/retificar/fechar retificação com qualquer <see cref="DocumentoExigido"/>
-    /// configurado congelaria uma versão que finge não ter documentos exigidos.
-    /// Removida na PR-e (issue #548), quando o bloco rico substitui o stub.
+    /// A guarda fail-closed <b>B-01</b>, que bloqueava QUALQUER publicação com
+    /// <see cref="DocumentoExigido"/> configurado enquanto o bloco
+    /// <c>documentosExigidos.exigencias</c> do envelope era stub (PR-a..PR-d), foi
+    /// <b>removida na PR-e</b> (issue #548): o bloco rico a substitui, e o gate real
+    /// (<see cref="Services.AvaliadorConformidadeLegal.Avaliar"/>, predicado
+    /// <c>DocumentoObrigatorioParaModalidade</c>) passa a decidir com base no que está
+    /// realmente configurado, não mais reprovando por padrão conservador.
     /// </para>
     /// </remarks>
     private DomainError? PendenciaDasExigenciasDocumentais()
@@ -1035,13 +1035,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     "DocumentoExigido.CondicionalVaziaDeterminaResultado",
                     $"A exigência '{exigencia.TipoDocumentoCodigo}' é CONDICIONAL, determina resultado, mas não tem nenhuma condição de gatilho viva — nunca seria cobrada de ninguém.");
             }
-        }
-
-        if (_documentosExigidos.Count > 0)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas",
-                "Existem documentos exigidos configurados, mas o bloco de exigências do envelope canônico ainda não foi materializado (Story #554) — publicação bloqueada até a conclusão da Story.");
         }
 
         return null;

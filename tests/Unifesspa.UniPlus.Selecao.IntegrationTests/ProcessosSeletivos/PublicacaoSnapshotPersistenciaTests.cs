@@ -20,8 +20,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 17 blocos — 12
-/// reais + 5 stubs <c>nao_construido</c> na raiz — estão presentes).
+/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 17 blocos — 13
+/// reais + 4 stubs <c>nao_construido</c> na raiz — estão presentes).
 /// </summary>
 public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
@@ -210,14 +210,16 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         // D8 — nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
         // pendência de conformidade, não stub silencioso; a segunda nunca foi stub.
-        // documentosExigidos é o único bloco PARCIALMENTE real (Story #853): sua raiz não é mais
-        // `nao_construido`, mas a sub-chave `exigencias` (#554) ainda é.
+        // documentosExigidos é totalmente real desde a Story #554 (PR-e, bump 1.2): a sub-chave
+        // `exigencias` deixou de ser stub e materializa o item rico de cada DocumentoExigido vivo
+        // do processo — vazia aqui porque este fixture não configura nenhuma exigência documental.
         objeto["atendimento"]!.AsObject().Should().NotContainKey("status");
         objeto["classificacao"]!.AsObject().Should().NotContainKey("status");
         objeto["cronogramaFases"]!.AsObject().Should().NotContainKey("status");
         objeto["vagas"]!.AsArray().Should().NotBeEmpty("issue #848: o quadro de vagas é sempre materializado junto da configuração");
         objeto["documentosExigidos"]!.AsObject().Should().NotContainKey("status");
-        objeto["documentosExigidos"]!["exigencias"]!["status"]!.GetValue<string>().Should().Be("nao_construido");
+        objeto["documentosExigidos"]!["exigencias"]!.AsArray().Should().BeEmpty(
+            "nenhum DocumentoExigido foi configurado para este processo neste teste");
         objeto["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Should().BeEmpty(
             "nenhuma ObrigatoriedadeLegal vigente foi cadastrada para este processo neste teste");
 
