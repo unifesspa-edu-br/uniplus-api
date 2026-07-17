@@ -337,6 +337,37 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Substitui integralmente os documentos exigidos do processo (Story #554, PR-a):
+    /// fase, snapshot-copy do tipo de documento, aplicabilidade GERAL/CONDICIONAL,
+    /// obrigatoriedade, consequência de indeferimento e grupo de satisfação. O gatilho
+    /// DNF, a base legal e a idade/formato/tamanho chegam em tasks-irmãs (PR-b/c/d). O
+    /// <c>GET</c> vem do endpoint agregado (<see cref="ObterPorId"/>) — não há rota
+    /// aninhada própria de leitura.
+    /// </summary>
+    [HttpPut("{id:guid}/documentos-exigidos")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirDocumentosExigidos(
+        Guid id,
+        [FromBody] IReadOnlyList<ItemDocumentoExigidoInput> itens,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirDocumentosExigidosCommand(id, itens, precondicao), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Publica o processo (RN08): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
     /// transação — junto da requisição durável que registra o ato em Publicações

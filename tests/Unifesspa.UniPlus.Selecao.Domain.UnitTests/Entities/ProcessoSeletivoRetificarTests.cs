@@ -349,6 +349,43 @@ public sealed class ProcessoSeletivoRetificarTests
         segunda.Value!.NumeroVersao.Should().Be(3);
     }
 
+    // ── Story #554 (PR-a) — guarda fail-closed (B-01) via FecharRetificacao ──
+
+    [Fact(DisplayName = "B-01: fechar retificação com exigência configurada durante a sessão é bloqueado")]
+    public void FecharRetificacao_ExigenciaConfiguradaNaSessao_BloqueiaPorGuardaFailClosed()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
+        clock.Avancar(TimeSpan.FromMinutes(1));
+
+        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
+            "Incluir exigência documental", versaoAbertura, "user-sub-123", clock.GetUtcNow());
+        abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
+
+        Guid faseId = processo.CronogramaFases.Single().Id;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "IDENTIDADE",
+            tipoDocumentoNome: "Documento de identidade",
+            tipoDocumentoCategoria: "PESSOAL",
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido — só o FECHAMENTO é bloqueado pela B-01");
+
+        clock.Avancar(TimeSpan.FromMinutes(1));
+        Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            PrecondicaoIfMatch.Curinga, clock);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas");
+        processo.Rascunho.Should().NotBeNull("o fechamento recusado não encerra a sessão — a configuração continua editável");
+    }
+
     /// <summary>
     /// Relógio manual determinístico — evita depender de
     /// <c>Microsoft.Extensions.TimeProvider.Testing</c> na camada de teste do
