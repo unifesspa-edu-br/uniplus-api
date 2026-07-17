@@ -349,6 +349,29 @@ public sealed class AvaliadorConformidadeLegalTests
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
 
+    private static DocumentoExigido ExigenciaGeralOpcional(Guid exigidoNaFaseId, string tipoDocumentoCodigo) =>
+        DocumentoExigido.Criar(
+            exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+
+    [Fact(DisplayName = "CA-09: exigência do tipo pedido que NÃO determina resultado (opcional, sem consequência) reprova — achado de revisão da PR #903")]
+    public void DocumentoObrigatorioParaModalidade_ExigenciaOpcionalDoTipo_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaGeralOpcional(faseId, "COMPROVANTE_RESIDENCIA")], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeFalse(
+            "uma exigência que não determina resultado (Obrigatorio=false, sem ConsequenciaIndeferimento) é " +
+            "meramente opcional — não satisfaz a obrigação legal \"a modalidade X DEVE exigir o documento Y\"");
+    }
+
     [Fact(DisplayName = "CA-09: exigência CONDICIONAL com gatilho MODALIDADE = X (só esse fato) aprova — cobre a modalidade incondicionalmente")]
     public void DocumentoObrigatorioParaModalidade_ExigenciaCondicionalSoPelaModalidade_Aprova()
     {

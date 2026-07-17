@@ -173,8 +173,13 @@ public static class AvaliadorConformidadeLegal
             ["MODALIDADE"] = JsonSerializer.SerializeToElement(predicado.Modalidade),
         };
 
+        // Achado de revisão (Story #554, PR-e): uma exigência que casa por tipo e cobre a
+        // modalidade incondicionalmente, mas não DeterminaResultado() (não é obrigatória
+        // nem tem consequência de indeferimento), é meramente opcional — não satisfaz a
+        // obrigação legal "a modalidade X DEVE exigir o documento Y".
         bool cobertaIncondicionalmente = processo.DocumentosExigidos.Any(e =>
             string.Equals(e.TipoDocumentoCodigo, predicado.TipoDocumento, StringComparison.Ordinal)
+            && e.DeterminaResultado()
             && e.AplicavelPara(fatoDaModalidade));
 
         return cobertaIncondicionalmente
