@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="ResolvedorExigenciasDocumentais"/> (Story #554, PR-e, issue
+/// Cobertura de <see cref="ResolvedorExigenciasDocumentais"/> (Story #554, PR #903, issue
 /// #548, ADR-0076) — resolvedor puro que classifica cada exigência congelada como
 /// Satisfeita/Pendente/NaoAplicavel para um candidato.
 /// </summary>

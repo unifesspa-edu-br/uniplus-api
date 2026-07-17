@@ -139,7 +139,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("PredicadoDnf.ValorIncompativelComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.valor_incompativel_com_tipo", "O valor da condição não é compatível com o tipo do fato")),
         new("PredicadoDnf.ValorForaDoDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.valor_fora_do_dominio", "O valor da condição não pertence ao domínio declarado do fato")),
         new("PredicadoDnf.FatoNaoColetadoPeloProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.fato_nao_coletado_pelo_processo", "O fato da condição não é coletado por este processo")),
-        // Story #554, PR-b: extensão do PredicadoDnf para domínio dinâmico/multivalorado.
+        // Story #554, PR #896: extensão do PredicadoDnf para domínio dinâmico/multivalorado.
         new("PredicadoDnf.DominioDinamicoNaoFornecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.predicado_dnf.dominio_dinamico_nao_fornecido", "O domínio dinâmico do fato não foi fornecido pelo chamador")),
         new("DescritorFatoCandidato.DominioIncoerente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.descritor_fato_candidato.dominio_incoerente", "A combinação de domínio e valores declarados do fato é incoerente")),
         new("ConfiguracaoBonusRegional.RegraInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.regra_invalida", "A regra referenciada não é do código BONUS-MULTIPLICATIVO")),
@@ -289,10 +289,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // aceitava mutação da configuração em silêncio — a trava era uma denylist de um
         // elemento só, e todo estado novo nascia mutável por omissão.
         new("ProcessoSeletivo.MutacaoForaDeEstadoEditavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_fora_de_estado_editavel", "O processo não está em um estado que aceite mutação da configuração")),
-        // Documentos exigidos (Story #554, issue #547, PR-a) — núcleo: aplicabilidade
+        // Documentos exigidos (Story #554, issue #547, PR #895) — núcleo: aplicabilidade
         // GERAL/CONDICIONAL, fase, snapshot-copy do tipo de documento e a guarda
         // fail-closed transitória (B-01) enquanto o bloco `documentosExigidos.exigencias`
-        // do envelope segue stub (removida na PR-e, issue #548).
+        // do envelope segue stub (removida na PR #903, issue #548).
         new("DocumentoExigido.AplicabilidadeObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.aplicabilidade_obrigatoria", "A aplicabilidade da exigência documental é obrigatória")),
         new("DocumentoExigido.ConsequenciaIndeferimentoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_indeferimento_invalida", "Consequência de indeferimento fora do domínio conhecido")),
         new("DocumentoExigido.GeralComCondicao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.geral_com_condicao", "Exigência GERAL não pode conviver com condição de gatilho viva")),
@@ -300,16 +300,16 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("DocumentoExigido.CondicionalVaziaDeterminaResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.condicional_vazia_determina_resultado", "Exigência CONDICIONAL sem condição viva que determina resultado nunca seria cobrada de ninguém")),
         new("DocumentoExigido.TipoDocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tipo_documento_nao_encontrado", "Tipo de documento não encontrado ou não está mais vivo")),
         // ProcessoSeletivo.ExigenciasDocumentaisNaoMaterializadas (guarda B-01) removido —
-        // Story #554, PR-e, issue #548: o bloco deixou de ser stub, o gate real decide.
+        // Story #554, PR #903, issue #548: o bloco deixou de ser stub, o gate real decide.
         new("FaseCronograma.ReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.referenciada_por_exigencia_viva", "A fase removida do cronograma é referenciada por um documento exigido configurado")),
-        // Guards backward de fase (Story #554, PR-d, issue #893, CA-04) — complemento ao
+        // Guards backward de fase (Story #554, PR #900, issue #893, CA-04) — complemento ao
         // guard acima: retirar PermiteComplementacao de uma fase referenciada por
         // exigência com consequência PENDENCIA_REENVIO.
         new("FaseCronograma.PendenciaReenvioExigeComplementacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.pendencia_reenvio_exige_complementacao", "A fase não pode perder PermiteComplementacao — é referenciada por documento exigido com consequência PENDENCIA_REENVIO")),
         // Achado Codex P2 (PR #900, 4ª rodada) — uma permutação cíclica de Ordem entre
         // fases retidas não tem ordem de UPDATE que a resolva num único SaveChanges.
         new("FaseCronograma.PermutacaoDeOrdemNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.permutacao_de_ordem_nao_suportada", "A redefinição do cronograma troca a Ordem entre fases já existentes formando um ciclo fechado, que não pode ser persistido em uma única chamada")),
-        // Gatilho DNF (Story #554, PR-b, issue #892) — CondicaoGatilho sobre PredicadoDnf,
+        // Gatilho DNF (Story #554, PR #896, issue #892) — CondicaoGatilho sobre PredicadoDnf,
         // ReferenciaTemporalFatos e a validação de publicação sem fallback silencioso
         // (ADR-0111:235-236, B-03 do plano).
         new("CondicaoGatilho.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_gatilho.clausula_invalida", "O ordinal da cláusula não pode ser negativo")),
@@ -321,16 +321,16 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fase_inexistente", "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma")),
         new("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_extremo_ausente", "A fase âncora da referência temporal de fatos não tem o extremo (início/fim) definido")),
         new("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fim_inscricao_indisponivel", "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido")),
-        // Base legal 1:N (Story #554, PR-c, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
+        // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.
         new("DocumentoExigidoBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
         new("DocumentoExigidoBaseLegal.AbrangenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido_base_legal.abrangencia_obrigatoria", "A abrangência da base legal é obrigatória")),
         new("DocumentoExigidoBaseLegal.StatusObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido_base_legal.status_obrigatorio", "O status da base legal é obrigatório")),
-        // Idade máxima de emissão + formato + tamanho (Story #554, PR-d, issue #893) —
+        // Idade máxima de emissão + formato + tamanho (Story #554, PR #900, issue #893) —
         // aviso, não bloqueio de presença (§1); coerência tudo-nulo OU completo do VO
         // IdadeMaximaEmissao e a checagem eager de fase âncora (mesma família estrutural
-        // de ReferenciaTemporalFatos, PR-b, mas por exigência, não por processo).
+        // de ReferenciaTemporalFatos, PR #896, mas por exigência, não por processo).
         new("DocumentoExigido.TamanhoMaximoBytesInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.tamanho_maximo_bytes_invalido", "O tamanho máximo em bytes, quando presente, deve ser maior que zero")),
         new("IdadeMaximaEmissao.CamposIncoerentesComAusencia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.campos_incoerentes_com_ausencia", "Data e a fase âncora só são aceitas quando a idade máxima de emissão está definida")),
         new("IdadeMaximaEmissao.CamposIncompletos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.campos_incompletos", "Valor, Unidade e ReferenciaTipo devem estar todos presentes, ou todos ausentes")),
@@ -339,12 +339,12 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("IdadeMaximaEmissao.FaseIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo", "A fase âncora só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE")),
         new("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo", "A fase âncora da idade máxima de emissão não pertence ao cronograma deste processo")),
         new("IdadeMaximaEmissao.FaseExtremoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente", "A fase âncora da idade máxima de emissão não tem o extremo (início/fim) definido")),
-        // Coerência consequência↔ação da vaga (Story #554, PR-e, issue #548, CA-05) —
+        // Coerência consequência↔ação da vaga (Story #554, PR #903, issue #548, CA-05) —
         // ProcessoSeletivo.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento, chamado em
         // Publicar/Retificar/FecharRetificacao logo após a guarda B-01 removida.
         new("DocumentoExigido.RemoveVantagemSemVantagemViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva", "A exigência declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover")),
         new("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga", "A consequência de indeferimento da exigência é incoerente com a ação de indeferimento da modalidade que ela alcança")),
-        // Resolvedor de exigências documentais (Story #554, PR-e, issue #548, ADR-0076) —
+        // Resolvedor de exigências documentais (Story #554, PR #903, issue #548, ADR-0076) —
         // domain service puro, sem caller HTTP nesta Story (o runtime de coleta é fora de
         // escopo); registrado por disciplina uniforme com o restante do módulo.
         new("ResolvedorExigencias.SnapshotAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_exigencias.snapshot_ausente", "Não há versão vigente congelada para resolver as exigências documentais")),

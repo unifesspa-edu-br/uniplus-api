@@ -4,7 +4,7 @@ using Entities;
 using Enums;
 
 /// <summary>
-/// Domain service estático (Story #554, PR-c, issue #549, ADR-0074) — 5º item de
+/// Domain service estático (Story #554, PR #898, issue #549, ADR-0074) — 5º item de
 /// <see cref="ProcessoSeletivo.AvaliarConformidade"/>: para toda exigência que
 /// <see cref="DocumentoExigido.DeterminaResultado"/>, exige ao menos uma
 /// <see cref="DocumentoExigidoBaseLegal"/> com <see cref="StatusBaseLegal.Resolvido"/>, de

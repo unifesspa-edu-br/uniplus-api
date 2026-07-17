@@ -75,11 +75,11 @@ public sealed class GrafoConfiguracao
     /// <summary>O cronograma de fases (Story #851) — 7ª dimensão do grafo, 1..*.</summary>
     public IReadOnlyList<FaseCronograma> CronogramaFases { get; }
 
-    /// <summary>Documentos exigidos (Story #554, PR-e) — 8ª dimensão do grafo, 0..*.</summary>
+    /// <summary>Documentos exigidos (Story #554, PR #903) — 8ª dimensão do grafo, 0..*.</summary>
     public IReadOnlyList<DocumentoExigido> DocumentosExigidos { get; }
 
     /// <summary>
-    /// Política de <see cref="ValueObjects.ReferenciaTemporalFatos"/> (Story #554, PR-e,
+    /// Política de <see cref="ValueObjects.ReferenciaTemporalFatos"/> (Story #554, PR #903,
     /// B-03) — o INSUMO que <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/>
     /// resolve para a <c>dataReferenciaFatos</c> congelada. Ausência = nenhuma política
     /// configurada (estado válido enquanto não existir gatilho por <c>FAIXA_ETARIA</c>).

@@ -435,7 +435,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     };
 
     /// <summary>
-    /// Story #554 (PR-e, bump 1.2): <c>exigencias</c> deixa de ser stub — cada
+    /// Story #554 (PR #903, bump 1.2): <c>exigencias</c> deixa de ser stub — cada
     /// <see cref="DocumentoExigido"/> viva do processo vira um item rico (CA-09: identidade
     /// estável por <c>exigenciaId</c>). Duas chaves-irmãs novas (B-03):
     /// <c>referenciaTemporalFatos</c> — a POLÍTICA crua (<see cref="ValueObjects.ReferenciaTemporalFatos"/>,
@@ -508,7 +508,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     };
 
     /// <summary>
-    /// O predicado DNF (PR-b, ADR-0111): OU de cláusulas, E de condições dentro de cada
+    /// O predicado DNF (PR #896, ADR-0111): OU de cláusulas, E de condições dentro de cada
     /// uma. Cláusulas ordenadas por <c>Clausula</c> (ordinal semântico — o mesmo que
     /// <see cref="ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas"/> usa para agrupar);
     /// condições dentro da MESMA cláusula não têm ordinal próprio, então usam a chave de
@@ -536,7 +536,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// Só bases legais <c>RESOLVIDO</c> (PR-c, issue #549) — uma <c>PENDENTE</c> não é
+    /// Só bases legais <c>RESOLVIDO</c> (PR #898, issue #549) — uma <c>PENDENTE</c> não é
     /// evidência jurídica ainda, e o gate de publicação (<c>ValidadorBaseLegalExigencias</c>)
     /// já provou que existe ao menos uma resolvida por exigência que determina resultado
     /// antes deste ponto.
@@ -546,7 +546,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         {
             ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
             // Wire format canônico (ToCodigo/FromCodigo, não ToString — convenção do
-            // repo para enums de comando/envelope estabelecida a partir da PR-c/PR-d,
+            // repo para enums de comando/envelope estabelecida a partir da PR #898/PR #900,
             // que criaram TipoAbrangenciaCodigo/StatusBaseLegalCodigo/etc. como fonte
             // única do token; a exigencias[] é a primeira consumidora deles no envelope).
             ["abrangencia"] = b.Abrangencia.ToCodigo(),
@@ -674,7 +674,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         {
             array.Add(new JsonObject
             {
-                // Story #554 (PR-e, bump 1.2), achado de revisão: id congelado para que
+                // Story #554 (PR #903, bump 1.2), achado de revisão: id congelado para que
                 // exigidoNaFaseId/referenciaTemporalFatos.faseId resolvam mesmo quando a
                 // sombra de verificação (RestauradorDeConfiguracao) reidrata sem nenhuma
                 // fase viva rastreada para reconciliar por Ordem. Só a 1.2 escreve esta

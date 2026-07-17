@@ -11,15 +11,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Exigência documental de um <see cref="ProcessoSeletivo"/> (Story #554): declara qual
 /// documento é exigido, em que fase, com que aplicabilidade e sob qual gatilho DNF
-/// (<see cref="Condicoes"/>, PR-b). <c>EntityBase</c> puro (sem soft-delete) — o regime
+/// (<see cref="Condicoes"/>, PR #896). <c>EntityBase</c> puro (sem soft-delete) — o regime
 /// append-only/forense pertence a <see cref="VersaoConfiguracao"/>, não à configuração
 /// viva; a coleção do agregado é substituível por inteiro
 /// (<see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>), mesmo padrão de
 /// <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
 /// </summary>
 /// <remarks>
-/// A idade máxima de emissão/formato/tamanho é entregue por task-irmã (PR-d) — não
-/// modelada aqui. A base legal 1:N (<see cref="BasesLegais"/>) chegou na PR-c (issue #549).
+/// A idade máxima de emissão/formato/tamanho é entregue por task-irmã (PR #900) — não
+/// modelada aqui. A base legal 1:N (<see cref="BasesLegais"/>) chegou na PR #898 (issue #549).
 /// </remarks>
 public sealed class DocumentoExigido : EntityBase
 {
@@ -55,33 +55,33 @@ public sealed class DocumentoExigido : EntityBase
     /// <summary>
     /// ∈ {ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, PENDENCIA_REENVIO} quando presente
     /// (ADR-0074). Campo de transporte — a coerência com <c>ModalidadeSelecionada.AcaoQuandoIndeferido</c>
-    /// é validada na PR-e (CA-05), sem duplicar campo.
+    /// é validada na PR #903 (CA-05), sem duplicar campo.
     /// </summary>
     public string? ConsequenciaIndeferimento { get; private set; }
 
-    /// <summary>Escopo processo+fase — documentos do mesmo grupo são satisfeitos por uma única apresentação (semântica plena na PR-e).</summary>
+    /// <summary>Escopo processo+fase — documentos do mesmo grupo são satisfeitos por uma única apresentação (semântica plena na PR #903).</summary>
     public Guid? GrupoSatisfacaoId { get; private set; }
 
     /// <summary>
-    /// Idade máxima de emissão do ARQUIVO apresentado (Story #554, PR-d) — aviso, não
+    /// Idade máxima de emissão do ARQUIVO apresentado (Story #554, PR #900) — aviso, não
     /// bloqueio de presença; a avaliação em runtime é fora de escopo desta Story.
     /// </summary>
     public IdadeMaximaEmissao? IdadeMaximaEmissao { get; private set; }
 
-    /// <summary>Formato aceito para a apresentação (Story #554, PR-d) — congelado na exigência, não no <c>TipoDocumento</c>.</summary>
+    /// <summary>Formato aceito para a apresentação (Story #554, PR #900) — congelado na exigência, não no <c>TipoDocumento</c>.</summary>
     public FormatoPermitido? FormatoPermitido { get; private set; }
 
-    /// <summary>Tamanho máximo em bytes do arquivo apresentado (Story #554, PR-d) — congelado na exigência.</summary>
+    /// <summary>Tamanho máximo em bytes do arquivo apresentado (Story #554, PR #900) — congelado na exigência.</summary>
     public int? TamanhoMaximoBytes { get; private set; }
 
     private readonly List<CondicaoGatilho> _condicoes = [];
 
-    /// <summary>Gatilho DNF (Story #554, PR-b) — vazia significa "sem gatilho": GERAL é sempre exigida, CONDICIONAL vazia é exigida de ninguém.</summary>
+    /// <summary>Gatilho DNF (Story #554, PR #896) — vazia significa "sem gatilho": GERAL é sempre exigida, CONDICIONAL vazia é exigida de ninguém.</summary>
     public IReadOnlyCollection<CondicaoGatilho> Condicoes => _condicoes.AsReadOnly();
 
     private readonly List<DocumentoExigidoBaseLegal> _basesLegais = [];
 
-    /// <summary>Base legal 1:N (Story #554, PR-c, ADR-0074) — embasamento rastreável e auditável da exigência; validada no gate de publicação, não na escrita.</summary>
+    /// <summary>Base legal 1:N (Story #554, PR #898, ADR-0074) — embasamento rastreável e auditável da exigência; validada no gate de publicação, não na escrita.</summary>
     public IReadOnlyCollection<DocumentoExigidoBaseLegal> BasesLegais => _basesLegais.AsReadOnly();
 
     private DocumentoExigido() { }
@@ -164,7 +164,7 @@ public sealed class DocumentoExigido : EntityBase
         };
 
         // CA-01 (Story #554, issue #547/#892): GERAL nunca convive com condição viva —
-        // agora conectado à coleção REAL (PR-b), não mais ao parâmetro sintético da PR-a.
+        // agora conectado à coleção REAL (PR #896), não mais ao parâmetro sintético da PR #895.
         DomainError? coerencia = documento.GarantirCoerenciaAplicabilidade(condicoes.Count > 0);
         if (coerencia is not null)
         {
@@ -189,7 +189,7 @@ public sealed class DocumentoExigido : EntityBase
     /// <summary>
     /// Reidrata uma exigência a partir de uma <see cref="VersaoConfiguracao"/> congelada,
     /// <b>preservando o <see cref="EntityBase.Id"/></b> — que <see cref="Criar"/> não
-    /// aceita, por decisão (Story #554, PR-e, CA-09). Diferente das demais entidades-filhas
+    /// aceita, por decisão (Story #554, PR #903, CA-09). Diferente das demais entidades-filhas
     /// do agregado (ADR-0110 D2 — só <see cref="EtapaProcesso.Id"/> era preservado, porque
     /// só ele era referenciado por outro bloco do envelope), <c>DocumentoExigido.Id</c>
     /// passa a ser o segundo: é o <c>exigenciaId</c> que o resolvedor de exigências
@@ -270,13 +270,13 @@ public sealed class DocumentoExigido : EntityBase
     /// Determina se a exigência "conta" para efeito de resultado — obrigatória ou com
     /// qualquer consequência de indeferimento declarada. Usado pela trava CA-01 (Story
     /// #554, issue #547: <c>CONDICIONAL</c> vazia que determina resultado bloqueia
-    /// publicação) e, futuramente, pelo gate de base legal (PR-c/#549).
+    /// publicação) e, futuramente, pelo gate de base legal (PR #898/#549).
     /// </summary>
     public bool DeterminaResultado() => Obrigatorio || ConsequenciaIndeferimento is not null;
 
     /// <summary>
-    /// Projeção "somente <see cref="StatusBaseLegal.Resolvido"/>" (Story #554, PR-c, CA-06)
-    /// — o que a PR-e (#548) materializa no bloco congelado; bases
+    /// Projeção "somente <see cref="StatusBaseLegal.Resolvido"/>" (Story #554, PR #898, CA-06)
+    /// — o que a PR #903 (#548) materializa no bloco congelado; bases
     /// <see cref="StatusBaseLegal.Pendente"/> são rascunho e nunca aparecem aqui.
     /// </summary>
     public IEnumerable<DocumentoExigidoBaseLegal> BasesLegaisResolvidas() =>
@@ -284,11 +284,11 @@ public sealed class DocumentoExigido : EntityBase
 
     /// <summary>
     /// A exigência se aplica a um candidato com estes fatos? GERAL sempre se aplica — o
-    /// gatilho nunca é avaliado. CONDICIONAL depende do predicado DNF (PR-b): zero
+    /// gatilho nunca é avaliado. CONDICIONAL depende do predicado DNF (PR #896): zero
     /// cláusulas vivas nunca casa com ninguém, mesma semântica de
     /// <see cref="PredicadoDnf.Avaliar"/> e de CA-01 ("exigida de ninguém"). Usado tanto
-    /// pelo resolvedor de exigências documentais (PR-e, por candidato real) quanto pelo
-    /// gate de conformidade legal (PR-e, <see cref="Services.AvaliadorConformidadeLegal"/>
+    /// pelo resolvedor de exigências documentais (PR #903, por candidato real) quanto pelo
+    /// gate de conformidade legal (PR #903, <see cref="Services.AvaliadorConformidadeLegal"/>
     /// — por um fato sintético fixo, ex. só <c>MODALIDADE</c>, para provar cobertura
     /// incondicional de uma modalidade inteira).
     /// </summary>

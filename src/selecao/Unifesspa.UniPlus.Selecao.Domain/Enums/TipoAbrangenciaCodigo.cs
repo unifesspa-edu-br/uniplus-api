@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Mapeamento único entre <see cref="TipoAbrangencia"/> e o código textual canônico
 /// UPPER_SNAKE do wire de comando (mesma convenção de <see cref="OperadorCodigo"/>) —
 /// fonte de verdade única do wire format. Também usado por <c>.HasConversion&lt;string&gt;()</c>
-/// na persistência (Story #554, PR-c).
+/// na persistência (Story #554, PR #898).
 /// </summary>
 public static class TipoAbrangenciaCodigo
 {

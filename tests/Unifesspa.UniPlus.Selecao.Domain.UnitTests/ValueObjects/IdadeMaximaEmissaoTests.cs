@@ -7,9 +7,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="IdadeMaximaEmissao"/> (Story #554, PR-d, issue #893) — CA-08:
+/// Cobertura de <see cref="IdadeMaximaEmissao"/> (Story #554, PR #900, issue #893) — CA-08:
 /// coerência tudo-nulo OU completo, <c>DATA_SUBMISSAO</c> aceita (diferente de
-/// <see cref="ReferenciaTemporalFatos"/>, PR-b), âncoras de fase/data.
+/// <see cref="ReferenciaTemporalFatos"/>, PR #896), âncoras de fase/data.
 /// </summary>
 public sealed class IdadeMaximaEmissaoTests
 {
@@ -26,7 +26,7 @@ public sealed class IdadeMaximaEmissaoTests
         resultado.Value.Should().BeNull();
     }
 
-    [Fact(DisplayName = "CA-08: completo com DATA_SUBMISSAO é aceito (contraprova da exclusão da PR-b)")]
+    [Fact(DisplayName = "CA-08: completo com DATA_SUBMISSAO é aceito (contraprova da exclusão da PR #896)")]
     public void Criar_CompletoComDataSubmissao_Aceita()
     {
         Result<IdadeMaximaEmissao?> resultado = IdadeMaximaEmissao.Criar(

@@ -189,7 +189,7 @@ public sealed class PredicadoDnfValidadorTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
     }
 
-    // ── Story #554 (PR-b, issue #892) — domínio categórico dinâmico ──
+    // ── Story #554 (PR #896, issue #892) — domínio categórico dinâmico ──
 
     private static readonly Dictionary<string, DescritorFatoCandidato> VocabularioComDinamico = new(Vocabulario)
     {

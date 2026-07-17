@@ -224,7 +224,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Story #554/issue #547 — restauração limpa DocumentosExigidos configurados durante a sessão")]
     public void Restauracao_LimpaDocumentosExigidosDaSessao()
     {
-        // O bloco documentosExigidos.exigencias do envelope ainda é stub (PR-a..PR-d) —
+        // O bloco documentosExigidos.exigencias do envelope ainda é stub (PR #895..PR #900) —
         // GrafoConfiguracao não tem como reconstruir a coleção a partir de bytes que não
         // a contêm. A guarda B-01 garante que TODA versão já congelada tem zero
         // DocumentoExigido; a restauração precisa repor esse mesmo estado vazio, mesmo
@@ -263,7 +263,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     public void Restauracao_LimpaReferenciaTemporalFatosDaSessao()
     {
         // Mesmo raciocínio de Restauracao_LimpaDocumentosExigidosDaSessao: o campo não é
-        // materializado no envelope (isso é da PR-e), então não há valor congelado para
+        // materializado no envelope (isso é da PR #903), então não há valor congelado para
         // restaurar — e a versão congelada nunca teve gatilho por FAIXA_ETARIA que
         // dependesse dele (B-01 barra qualquer DocumentoExigido). Preservar o valor
         // editado pela sessão descartada vazaria a mutação não publicada.
@@ -282,7 +282,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.ReferenciaTemporalFatos.Should().BeNull(
-            "a versão congelada não materializa este campo (PR-e) e nunca dependeu dele — restaurar precisa " +
+            "a versão congelada não materializa este campo (PR #903) e nunca dependeu dele — restaurar precisa " +
             "repor a ausência, não preservar o que a sessão descartada editou");
     }
 

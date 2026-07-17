@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Veredicto de <see cref="Services.ResolvedorExigenciasDocumentais"/> sobre uma
-/// <see cref="Entities.DocumentoExigido"/> congelada, para um candidato (Story #554, PR-e,
+/// <see cref="Entities.DocumentoExigido"/> congelada, para um candidato (Story #554, PR #903,
 /// ADR-0076).
 /// </summary>
 public enum StatusResolucaoExigencia

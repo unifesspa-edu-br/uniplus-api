@@ -133,7 +133,7 @@ public static class AvaliadorConformidadeLegal
     }
 
     /// <summary>
-    /// Story #554 (PR-e, issue #548): gate real, substitui a reprovação conservadora que
+    /// Story #554 (PR #903, issue #548): gate real, substitui a reprovação conservadora que
     /// vigorou enquanto o bloco <c>documentosExigidos.exigencias</c> era stub (guarda
     /// B-01, removida junto desta task). Aprova sse existir uma <see cref="DocumentoExigido"/>
     /// do tipo pedido que cubra a modalidade INCONDICIONALMENTE.
@@ -173,7 +173,7 @@ public static class AvaliadorConformidadeLegal
             ["MODALIDADE"] = JsonSerializer.SerializeToElement(predicado.Modalidade),
         };
 
-        // Achado de revisão (Story #554, PR-e): uma exigência que casa por tipo e cobre a
+        // Achado de revisão (Story #554, PR #903): uma exigência que casa por tipo e cobre a
         // modalidade incondicionalmente, mas não DeterminaResultado() (não é obrigatória
         // nem tem consequência de indeferimento), é meramente opcional — não satisfaz a
         // obrigação legal "a modalidade X DEVE exigir o documento Y".

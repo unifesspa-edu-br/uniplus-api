@@ -16,7 +16,7 @@ using Xunit;
 /// <summary>
 /// <c>dataReferenciaFatos</c> — a <see cref="DateOnly"/> resolvida e congelada no
 /// envelope 1.2 a partir da política <see cref="ReferenciaTemporalFatos"/> (Story #554,
-/// PR-e, B-03). Complementa <c>ProcessoSeletivoPublicarTests</c> (que prova os bloqueios
+/// PR #903, B-03). Complementa <c>ProcessoSeletivoPublicarTests</c> (que prova os bloqueios
 /// de publicação quando a resolução falha) com o caso em que ela FUNCIONA: cada
 /// congelamento resolve a política vigente NO MOMENTO em que congela, e uma retificação
 /// que muda a política depois não reabre nem altera o que já foi congelado.

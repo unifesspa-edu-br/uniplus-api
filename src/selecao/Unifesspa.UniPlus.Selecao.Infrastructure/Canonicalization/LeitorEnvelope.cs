@@ -277,7 +277,7 @@ internal sealed class LeitorEnvelope
     }
 
     /// <summary>
-    /// Identificador opcional (Story #554, PR-e — <c>DocumentoExigido.GrupoSatisfacaoId</c>/
+    /// Identificador opcional (Story #554, PR #903 — <c>DocumentoExigido.GrupoSatisfacaoId</c>/
     /// <c>IdadeMaximaEmissao.ReferenciaFaseId</c>, ambos <c>Guid?</c> por natureza).
     /// <see langword="null"/> quando a chave é <c>null</c>; do contrário, mesma validação
     /// estrita de <see cref="Identificador"/> (formato canônico, nunca o Guid vazio).

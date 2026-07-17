@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>
 /// Mapeamento único entre <see cref="ReferenciaTipoIdadeEmissao"/> e o código textual
 /// canônico UPPER_SNAKE do wire de comando — mesma convenção de
-/// <see cref="ReferenciaTipoCodigo"/> (PR-b).
+/// <see cref="ReferenciaTipoCodigo"/> (PR #896).
 /// </summary>
 public static class ReferenciaTipoIdadeEmissaoCodigo
 {

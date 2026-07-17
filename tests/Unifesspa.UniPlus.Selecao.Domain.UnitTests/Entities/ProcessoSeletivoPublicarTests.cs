@@ -246,10 +246,10 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
-    // ── Story #554 (PR-a) — guarda fail-closed (B-01) e CA-01 ──
+    // ── Story #554 (PR #895) — guarda fail-closed (B-01) e CA-01 ──
 
     /// <summary>
-    /// Base legal RESOLVIDO qualquer (Story #554, PR-c) — as fixtures abaixo testam
+    /// Base legal RESOLVIDO qualquer (Story #554, PR #898) — as fixtures abaixo testam
     /// checagens POSTERIORES ao 5º item de <see cref="ProcessoSeletivo.AvaliarConformidade"/>
     /// (B-01/CA-01), então precisam satisfazer o gate de base legal primeiro, ou nunca o
     /// alcançariam.
@@ -296,7 +296,7 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.CondicionalVaziaDeterminaResultado");
     }
 
-    [Fact(DisplayName = "Story #554/PR-e: publicar com exigência GERAL configurada é aceito — a guarda B-01 foi removida (issue #548)")]
+    [Fact(DisplayName = "Story #554/PR #903: publicar com exigência GERAL configurada é aceito — a guarda B-01 foi removida (issue #548)")]
     public void Publicar_ExigenciaGeralConfigurada_Aceita()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -322,7 +322,7 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    // ── Story #554 (PR-b, issue #892) — B-03: referência temporal de fatos ──
+    // ── Story #554 (PR #896, issue #892) — B-03: referência temporal de fatos ──
 
     private static DocumentoExigido ExigenciaCondicionalComGatilhoPorFaixaEtaria(Guid exigidoNaFaseId)
     {
@@ -382,7 +382,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.ReferenciaTemporalFatos.Should().BeNull();
     }
 
-    [Fact(DisplayName = "B-03: gatilho por FAIXA_ETARIA sem referência configurada é bloqueado — a guarda B-01 (issue #547) que antes mascarava esta checagem foi removida na PR-e (issue #548)")]
+    [Fact(DisplayName = "B-03: gatilho por FAIXA_ETARIA sem referência configurada é bloqueado — a guarda B-01 (issue #547) que antes mascarava esta checagem foi removida na PR #903 (issue #548)")]
     public void Publicar_GatilhoPorFaixaEtariaSemReferencia_BloqueadoPorB03()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -560,7 +560,7 @@ public sealed class ProcessoSeletivoPublicarTests
             "o Fim (2026-03-02T01:30:00Z) convertido para America/Sao_Paulo (UTC-3, sem DST) é 2026-03-01T22:30 — o dia LOCAL, não o dia UTC");
     }
 
-    // ── Story #554 (PR-e, issue #548) — CA-05: coerência consequência↔ação da vaga ──
+    // ── Story #554 (PR #903, issue #548) — CA-05: coerência consequência↔ação da vaga ──
 
     private static ModalidadeSelecionada NovaModalidadeComAcao(
         string codigo, NaturezaLegalModalidade naturezaLegal, ComposicaoVagasModalidade composicaoVagas, string? acaoQuandoIndeferido) =>
@@ -584,7 +584,7 @@ public sealed class ProcessoSeletivoPublicarTests
 
     /// <summary>
     /// Variante de <see cref="NovoProcessoConforme"/> com UMA modalidade escolhida pelo
-    /// chamador (Story #554, PR-e, CA-05) — para exercitar a coerência consequência↔ação
+    /// chamador (Story #554, PR #903, CA-05) — para exercitar a coerência consequência↔ação
     /// da vaga contra uma natureza/ação específica, não a "AC" fixa do helper padrão.
     /// </summary>
     private static ProcessoSeletivo NovoProcessoComModalidade(ModalidadeSelecionada modalidade)
@@ -749,7 +749,7 @@ public sealed class ProcessoSeletivoPublicarTests
     public void Publicar_ReclassificaAcComAcaoRealReclassificarAc_Aceita()
     {
         // DocumentoExigido.ConsequenciaIndeferimento aceita "RECLASSIFICA_AC" (rol fechado
-        // desde a PR-a), mas ModalidadeSelecionada.AcaoQuandoIndeferido — snapshot-copy do
+        // desde a PR #895), mas ModalidadeSelecionada.AcaoQuandoIndeferido — snapshot-copy do
         // cadastro real de Modalidade — só aceita "RECLASSIFICAR_AC"/"RECLASSIFICAR_REGRA_EDITAL"
         // (ck_modalidade_acao_quando_indeferido, módulo Configuração). Comparar os tokens
         // crus sempre reprovaria o único caso de reclassificação coerente que existe.
@@ -767,7 +767,7 @@ public sealed class ProcessoSeletivoPublicarTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    // ── Story #554/issue #549 (PR-c) — base legal 1:N, 5º item de AvaliarConformidade ──
+    // ── Story #554/issue #549 (PR #898) — base legal 1:N, 5º item de AvaliarConformidade ──
 
     private static DocumentoExigidoBaseLegal BaseLegalDe(StatusBaseLegal status) => DocumentoExigidoBaseLegal.Criar(
         "Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;

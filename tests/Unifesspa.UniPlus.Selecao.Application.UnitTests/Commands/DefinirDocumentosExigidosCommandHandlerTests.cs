@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Cobertura do <see cref="DefinirDocumentosExigidosCommandHandler"/> (Story #554): a
 /// resolução do snapshot-copy de <c>TipoDocumento</c> (Configuração, ADR-0056), do
-/// vocabulário de fatos estendido pelo domínio dinâmico da oferta do processo (PR-b), e
+/// vocabulário de fatos estendido pelo domínio dinâmico da oferta do processo (PR #896), e
 /// os erros nomeados que uma resolução malsucedida produz.
 /// </summary>
 public sealed class DefinirDocumentosExigidosCommandHandlerTests
@@ -197,7 +197,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.ValorForaDoDominio");
     }
 
-    [Fact(DisplayName = "CA-07 (Story #554, PR-c): mesma referência documental em exigências distintas preserva bases legais distintas, correlacionadas por identidade")]
+    [Fact(DisplayName = "CA-07 (Story #554, PR #898): mesma referência documental em exigências distintas preserva bases legais distintas, correlacionadas por identidade")]
     public async Task Handle_MesmaReferenciaDocumental_BasesDistintasPorExigencia()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
@@ -225,7 +225,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             "a correlação é pela identidade da própria exigência (ADR-0072), não pelo tipo de documento");
     }
 
-    [Fact(DisplayName = "Story #554/issue #893 (PR-d): reenviar o PUT com FormatoPermitido/TamanhoMaximoBytes diferentes substitui integralmente (não faz merge)")]
+    [Fact(DisplayName = "Story #554/issue #893 (PR #900): reenviar o PUT com FormatoPermitido/TamanhoMaximoBytes diferentes substitui integralmente (não faz merge)")]
     public async Task Handle_ReenviarComFormatoETamanhoDiferentes_SubstituiIntegralmente()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);

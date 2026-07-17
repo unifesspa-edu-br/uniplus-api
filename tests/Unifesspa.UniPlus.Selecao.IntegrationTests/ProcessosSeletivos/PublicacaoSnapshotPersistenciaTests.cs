@@ -210,7 +210,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         // D8 — nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
         // pendência de conformidade, não stub silencioso; a segunda nunca foi stub.
-        // documentosExigidos é totalmente real desde a Story #554 (PR-e, bump 1.2): a sub-chave
+        // documentosExigidos é totalmente real desde a Story #554 (PR #903, bump 1.2): a sub-chave
         // `exigencias` deixou de ser stub e materializa o item rico de cada DocumentoExigido vivo
         // do processo — vazia aqui porque este fixture não configura nenhuma exigência documental.
         objeto["atendimento"]!.AsObject().Should().NotContainKey("status");
@@ -229,7 +229,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         objeto["cronogramaFases"]!["fases"]!.AsArray().Should().NotBeEmpty();
     }
 
-    // ── Story #554 (PR-e, issue #548) — CA-12: imunidade pós-publicação ──
+    // ── Story #554 (PR #903, issue #548) — CA-12: imunidade pós-publicação ──
 
     [Fact(DisplayName = "CA-12: editar a configuração viva numa retificação aberta não altera o hash já persistido da versão anterior")]
     public async Task Publicar_RetificacaoAbertaEditaConfiguracaoViva_NaoAlteraHashDaVersaoAnterior()

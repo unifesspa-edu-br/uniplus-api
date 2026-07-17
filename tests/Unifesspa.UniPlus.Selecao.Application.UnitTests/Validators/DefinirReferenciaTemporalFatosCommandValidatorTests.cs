@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="DefinirReferenciaTemporalFatosCommandValidator"/> (Story #554,
-/// issue #892, PR-b) — inclui a regressão do achado Codex P2 (PR #896): <c>Tipo</c> nulo
+/// issue #892, PR #896) — inclui a regressão do achado Codex P2 (PR #896): <c>Tipo</c> nulo
 /// (remoção) não pode carregar <c>Data</c>/<c>FaseId</c> soltos.
 /// </summary>
 public sealed class DefinirReferenciaTemporalFatosCommandValidatorTests

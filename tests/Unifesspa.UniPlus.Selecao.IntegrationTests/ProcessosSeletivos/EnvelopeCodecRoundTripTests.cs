@@ -463,7 +463,7 @@ public sealed class EnvelopeCodecRoundTripTests
         "Fixtures",
         "envelope-1.1-rico.json");
 
-    // ── Round-trip 1.2 com exigência documental rica (Story #554, PR-e, CA-13) ──
+    // ── Round-trip 1.2 com exigência documental rica (Story #554, PR #903, CA-13) ──
 
     /// <summary>
     /// Prova de fidelidade do <c>EnvelopeCodecV12</c> sobre a MESMA exigência

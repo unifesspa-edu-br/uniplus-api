@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Formato de arquivo aceito para a apresentação de um <see cref="Entities.DocumentoExigido"/>
-/// (Story #554, PR-d, issue #893) — congelado na própria exigência, opcional
+/// (Story #554, PR #900, issue #893) — congelado na própria exigência, opcional
 /// (<see langword="null"/> = sem restrição de formato). O módulo Configuração não mantém
 /// catálogo de formatos de arquivo (só classifica o <c>TipoDocumento</c>); por isso a
 /// lista é fechada em código, não resolvida por leitura externa.

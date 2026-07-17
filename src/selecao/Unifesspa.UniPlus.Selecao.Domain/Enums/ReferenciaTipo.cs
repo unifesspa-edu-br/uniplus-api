@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Âncora de <see cref="ValueObjects.ReferenciaTemporalFatos"/> (Story #554, PR-b) — de onde
+/// Âncora de <see cref="ValueObjects.ReferenciaTemporalFatos"/> (Story #554, PR #896) — de onde
 /// vem a <c>DateOnly</c> que apura <c>FAIXA_ETARIA</c> na publicação. <c>DATA_SUBMISSAO</c>
 /// deliberadamente NÃO é uma variante aqui: ela só entra na idade de emissão do
-/// <b>documento</b> (PR-d), nunca na idade do <b>candidato</b> (ADR-0111:235-236).
+/// <b>documento</b> (PR #900), nunca na idade do <b>candidato</b> (ADR-0111:235-236).
 /// </summary>
 public enum ReferenciaTipo
 {

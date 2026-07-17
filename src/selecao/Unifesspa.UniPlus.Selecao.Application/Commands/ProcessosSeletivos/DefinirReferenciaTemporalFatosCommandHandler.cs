@@ -8,7 +8,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="DefinirReferenciaTemporalFatosCommand"/> (Story #554, PR-b):
+/// Handler do <see cref="DefinirReferenciaTemporalFatosCommand"/> (Story #554, PR #896):
 /// <c>Tipo</c> nulo remove a referência (toggle por ausência); caso contrário monta o VO
 /// e delega a validação estrutural (coerência por variante, fase do próprio processo)
 /// ao domínio.

@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="ReferenciaTemporalFatos"/> (Story #554, issue #892, PR-b) —
+/// Cobertura de <see cref="ReferenciaTemporalFatos"/> (Story #554, issue #892, PR #896) —
 /// coerência tudo-ou-nada por variante (N-I01) entre <see cref="ReferenciaTipo"/>,
 /// <see cref="ReferenciaTemporalFatos.Data"/> e <see cref="ReferenciaTemporalFatos.FaseId"/>.
 /// </summary>

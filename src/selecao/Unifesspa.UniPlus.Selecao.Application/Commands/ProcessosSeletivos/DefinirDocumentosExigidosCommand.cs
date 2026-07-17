@@ -5,7 +5,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>
-/// Entrada de uma condição do gatilho DNF (Story #554, PR-b), usada por
+/// Entrada de uma condição do gatilho DNF (Story #554, PR #896), usada por
 /// <see cref="ItemDocumentoExigidoInput"/>. <see cref="Operador"/>/<see cref="Valor"/>
 /// seguem o mesmo formato flat de wire de <c>CriterioDesempateInput</c> (tokens
 /// canônicos <see cref="Domain.Enums.OperadorCodigo"/>; <see cref="Valor"/> é texto,
@@ -14,7 +14,7 @@ using Kernel.Results;
 public sealed record CondicaoGatilhoInput(int Clausula, string Fato, string Operador, string Valor);
 
 /// <summary>
-/// Entrada de uma base legal (Story #554, PR-c, issue #549, ADR-0074), usada por
+/// Entrada de uma base legal (Story #554, PR #898, issue #549, ADR-0074), usada por
 /// <see cref="ItemDocumentoExigidoInput"/>. <see cref="Abrangencia"/>/<see cref="Status"/>
 /// são tokens canônicos (<see cref="Domain.Enums.TipoAbrangenciaCodigo"/>/
 /// <see cref="Domain.Enums.StatusBaseLegalCodigo"/>). A validação de <b>gate</b> (≥1
@@ -24,9 +24,9 @@ public sealed record CondicaoGatilhoInput(int Clausula, string Fato, string Oper
 public sealed record BaseLegalInput(string Referencia, string Abrangencia, string Status, string? Observacao);
 
 /// <summary>
-/// Entrada da idade máxima de emissão (Story #554, PR-d, issue #893), usada por
+/// Entrada da idade máxima de emissão (Story #554, PR #900, issue #893), usada por
 /// <see cref="ItemDocumentoExigidoInput"/>. Tudo-nulo (os 5 campos) é a variante "regra
-/// ausente" — mesmo padrão do comando de <c>DefinirReferenciaTemporalFatos</c> (PR-b), mas
+/// ausente" — mesmo padrão do comando de <c>DefinirReferenciaTemporalFatos</c> (PR #896), mas
 /// aninhado por item em vez de flat no comando, porque aqui a regra é 1 por exigência, não
 /// 1 por processo. <see cref="Unidade"/>/<see cref="ReferenciaTipo"/> são tokens canônicos
 /// (<see cref="Domain.Enums.UnidadeIdadeCodigo"/>/<see cref="Domain.Enums.ReferenciaTipoIdadeEmissaoCodigo"/>).
@@ -42,8 +42,8 @@ public sealed record IdadeMaximaEmissaoInput(
 /// declara diretamente. <see cref="Condicoes"/> vazia é coerente com GERAL e com
 /// CONDICIONAL "exigida de ninguém" (CA-01). <see cref="BasesLegais"/> vazia é um estado
 /// válido na escrita — só vira pendência na publicação, quando a exigência determina
-/// resultado (PR-c, CA-02). <see cref="IdadeMaximaEmissao"/>/<see cref="FormatoPermitido"/>/
-/// <see cref="TamanhoMaximoBytes"/> (PR-d, issue #893) são aviso, não bloqueio de
+/// resultado (PR #898, CA-02). <see cref="IdadeMaximaEmissao"/>/<see cref="FormatoPermitido"/>/
+/// <see cref="TamanhoMaximoBytes"/> (PR #900, issue #893) são aviso, não bloqueio de
 /// presença — congelados por chamada, sem gate de publicação.
 /// </summary>
 public sealed record ItemDocumentoExigidoInput(
@@ -61,10 +61,10 @@ public sealed record ItemDocumentoExigidoInput(
 
 /// <summary>
 /// Substitui integralmente a coleção de documentos exigidos do processo (Story #554 —
-/// núcleo da PR-a: fase, snapshot-copy do tipo de documento, aplicabilidade GERAL/
+/// núcleo da PR #895: fase, snapshot-copy do tipo de documento, aplicabilidade GERAL/
 /// CONDICIONAL, obrigatoriedade, consequência de indeferimento e grupo de satisfação;
-/// gatilho DNF dinâmico/multivalorado da PR-b; base legal 1:N da PR-c; idade de emissão/
-/// formato/tamanho da PR-d).
+/// gatilho DNF dinâmico/multivalorado da PR #896; base legal 1:N da PR #898; idade de emissão/
+/// formato/tamanho da PR #900).
 /// </summary>
 public sealed record DefinirDocumentosExigidosCommand(
     Guid ProcessoSeletivoId,

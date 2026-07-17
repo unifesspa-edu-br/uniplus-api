@@ -50,7 +50,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     private static readonly Guid ModalidadeFixa = new("22222222-2222-2222-2222-222222222222");
     private static readonly Guid DocumentoFixo = new("33333333-3333-3333-3333-333333333333");
 
-    /// <summary>Id de origem do <c>TipoDocumento</c> (snapshot-copy cross-módulo, ADR-0061) — Story #554, PR-e.</summary>
+    /// <summary>Id de origem do <c>TipoDocumento</c> (snapshot-copy cross-módulo, ADR-0061) — Story #554, PR #903.</summary>
     private static readonly Guid TipoDocumentoFixo = new("44444444-4444-4444-4444-444444444444");
 
     private static readonly Regex GuidPattern = new(
@@ -114,7 +114,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     /// <summary>Agregado de referência — conforme, com as 13 dimensões reais preenchidas.</summary>
     /// <remarks>
-    /// Story #554 (PR-e, bump 1.2): o cronograma, a exigência documental rica e a
+    /// Story #554 (PR #903, bump 1.2): o cronograma, a exigência documental rica e a
     /// referência temporal de fatos foram acrescentados para que a golden fixture
     /// exercite de fato <c>SerializarExigencias</c>/<c>SerializarCondicaoGatilho</c>/
     /// <c>SerializarBasesLegais</c>/<c>SerializarIdadeMaximaEmissao</c> — uma
@@ -390,7 +390,7 @@ public sealed class EnvelopeCanonicoGoldenTests
                 {
                     // `naturezaLegal` distingue a MODALIDADE (que também tem `codigo`,
                     // mas não é referência de regra) de uma referência do rol. `ordem`
-                    // distingue a FASE do cronograma (Story #554, PR-e) pela mesma razão —
+                    // distingue a FASE do cronograma (Story #554, PR #903) pela mesma razão —
                     // nenhuma referência de regra tem `ordem`.
                     acumulador.Add((caminho, obj));
                 }

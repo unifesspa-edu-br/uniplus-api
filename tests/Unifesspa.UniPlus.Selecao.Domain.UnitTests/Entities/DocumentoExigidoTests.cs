@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="DocumentoExigido"/> (Story #554, PR-a): fábrica, guard de
+/// Cobertura de <see cref="DocumentoExigido"/> (Story #554, PR #895): fábrica, guard de
 /// coerência de aplicabilidade (CA-01) e <see cref="DocumentoExigido.DeterminaResultado"/>.
 /// </summary>
 public sealed class DocumentoExigidoTests
@@ -87,7 +87,7 @@ public sealed class DocumentoExigidoTests
         erro!.Code.Should().Be("DocumentoExigido.GeralComCondicao");
     }
 
-    [Fact(DisplayName = "Story #892 (PR-b): Criar recusa GERAL com condição real (não mais parâmetro sintético)")]
+    [Fact(DisplayName = "Story #892 (PR #896): Criar recusa GERAL com condição real (não mais parâmetro sintético)")]
     public void Criar_GeralComCondicaoReal_Recusa()
     {
         Result<DocumentoExigido> resultado = Exigencia(Aplicabilidade.Geral, condicoes: [CondicaoQualquer()]);
@@ -96,7 +96,7 @@ public sealed class DocumentoExigidoTests
         resultado.Error!.Code.Should().Be("DocumentoExigido.GeralComCondicao");
     }
 
-    [Fact(DisplayName = "Story #892 (PR-b): Criar aceita CONDICIONAL com condição real e a anexa à coleção")]
+    [Fact(DisplayName = "Story #892 (PR #896): Criar aceita CONDICIONAL com condição real e a anexa à coleção")]
     public void Criar_CondicionalComCondicaoReal_Aceita()
     {
         CondicaoGatilho condicao = CondicaoQualquer();
@@ -143,7 +143,7 @@ public sealed class DocumentoExigidoTests
         exigencia.DeterminaResultado().Should().BeFalse();
     }
 
-    // ── Story #554/issue #549 (PR-c) — base legal 1:N ──
+    // ── Story #554/issue #549 (PR #898) — base legal 1:N ──
 
     [Fact(DisplayName = "CA-06: BasesLegaisResolvidas exclui toda base PENDENTE")]
     public void BasesLegaisResolvidas_ExcluiPendente()

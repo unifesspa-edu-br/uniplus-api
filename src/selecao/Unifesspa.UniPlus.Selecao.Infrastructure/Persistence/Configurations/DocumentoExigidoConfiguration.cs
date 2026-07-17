@@ -8,7 +8,7 @@ using Domain.Entities;
 using Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core de <see cref="DocumentoExigido"/> (Story #554, PR-a) — entidade
+/// Configuração EF Core de <see cref="DocumentoExigido"/> (Story #554, PR #895) — entidade
 /// filha do agregado <see cref="ProcessoSeletivo"/>, <c>EntityBase</c> puro (sem
 /// soft-delete). Sem CHECK de banco para <c>aplicabilidade</c>/<c>consequencia_indeferimento</c>
 /// — o módulo Seleção só usa esse mecanismo em <c>versoes_configuracao</c> (guard rails
@@ -52,7 +52,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         // constraint do banco é a defesa realmente atômica (mesmo padrão de
         // FaseCronogramaConfiguration). Restrict, não Cascade: reconfigurar o cronograma
         // (DefinirCronogramaFases) não pode apagar silenciosamente uma fase ainda
-        // referenciada por uma exigência viva — falha explícita até a PR-d formalizar o
+        // referenciada por uma exigência viva — falha explícita até a PR #900 formalizar o
         // guard de domínio equivalente (CA-04).
         builder.HasOne<FaseCronograma>()
             .WithMany()
@@ -62,7 +62,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.HasIndex(d => d.ExigidoNaFaseId)
             .HasDatabaseName("ix_documentos_exigidos_exigido_na_fase_id");
 
-        // Gatilho DNF (Story #554, PR-b) — substituível por inteiro junto com o próprio
+        // Gatilho DNF (Story #554, PR #896) — substituível por inteiro junto com o próprio
         // DocumentoExigido, mesmo padrão de FaseCronograma/BancasRequeridas.
         builder.HasMany(d => d.Condicoes)
             .WithOne()
@@ -72,7 +72,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Navigation(d => d.Condicoes)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Base legal 1:N (Story #554, PR-c) — substituível por inteiro junto com o próprio
+        // Base legal 1:N (Story #554, PR #898) — substituível por inteiro junto com o próprio
         // DocumentoExigido, mesmo padrão de Condicoes.
         builder.HasMany(d => d.BasesLegais)
             .WithOne()
@@ -82,8 +82,8 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.Navigation(d => d.BasesLegais)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Idade máxima de emissão (Story #554, PR-d, issue #893) — VO sem identidade
-        // própria, mesmo padrão de ProcessoSeletivo.ReferenciaTemporalFatos (PR-b):
+        // Idade máxima de emissão (Story #554, PR #900, issue #893) — VO sem identidade
+        // própria, mesmo padrão de ProcessoSeletivo.ReferenciaTemporalFatos (PR #896):
         // OwnsOne, colunas nullable, 0..1 por exigência.
         builder.OwnsOne(d => d.IdadeMaximaEmissao, idade =>
         {
