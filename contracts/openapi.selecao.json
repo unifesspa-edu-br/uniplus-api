@@ -4453,7 +4453,10 @@
           "consequenciaIndeferimento",
           "grupoSatisfacaoId",
           "condicoes",
-          "basesLegais"
+          "basesLegais",
+          "idadeMaximaEmissao",
+          "formatoPermitido",
+          "tamanhoMaximoBytes"
         ],
         "type": "object",
         "properties": {
@@ -4508,6 +4511,31 @@
             "items": {
               "$ref": "#/components/schemas/BaseLegalDto"
             }
+          },
+          "idadeMaximaEmissao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IdadeMaximaEmissaoDto"
+              }
+            ]
+          },
+          "formatoPermitido": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tamanhoMaximoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -4812,6 +4840,93 @@
           }
         }
       },
+      "IdadeMaximaEmissaoDto": {
+        "required": [
+          "valor",
+          "unidade",
+          "referenciaTipo",
+          "data",
+          "referenciaFaseId"
+        ],
+        "type": "object",
+        "properties": {
+          "valor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unidade": {
+            "type": "string"
+          },
+          "referenciaTipo": {
+            "type": "string"
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "referenciaFaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "IdadeMaximaEmissaoInput": {
+        "required": [
+          "valor",
+          "unidade",
+          "referenciaTipo",
+          "data",
+          "referenciaFaseId"
+        ],
+        "type": "object",
+        "properties": {
+          "valor": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unidade": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "referenciaTipo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "data": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "referenciaFaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "IFormFile": {
         "type": "string",
         "format": "binary"
@@ -4866,7 +4981,10 @@
           "consequenciaIndeferimento",
           "grupoSatisfacaoId",
           "condicoes",
-          "basesLegais"
+          "basesLegais",
+          "idadeMaximaEmissao",
+          "formatoPermitido",
+          "tamanhoMaximoBytes"
         ],
         "type": "object",
         "properties": {
@@ -4908,6 +5026,31 @@
             "items": {
               "$ref": "#/components/schemas/BaseLegalInput"
             }
+          },
+          "idadeMaximaEmissao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IdadeMaximaEmissaoInput"
+              }
+            ]
+          },
+          "formatoPermitido": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tamanhoMaximoBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

@@ -2,8 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Domain.Entities;
+using Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="DocumentoExigido"/> (Story #554, PR-a) — entidade
@@ -22,6 +24,9 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     private const int TipoDocumentoNomeMaxLength = 200;
     private const int TipoDocumentoCategoriaMaxLength = 60;
     private const int ConsequenciaIndeferimentoMaxLength = 30;
+    private const int IdadeMaximaUnidadeMaxLength = 10;
+    private const int IdadeMaximaReferenciaTipoMaxLength = 20;
+    private const int FormatoPermitidoMaxLength = 10;
 
     public void Configure(EntityTypeBuilder<DocumentoExigido> builder)
     {
@@ -76,5 +81,44 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
 
         builder.Navigation(d => d.BasesLegais)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // Idade máxima de emissão (Story #554, PR-d, issue #893) — VO sem identidade
+        // própria, mesmo padrão de ProcessoSeletivo.ReferenciaTemporalFatos (PR-b):
+        // OwnsOne, colunas nullable, 0..1 por exigência.
+        builder.OwnsOne(d => d.IdadeMaximaEmissao, idade =>
+        {
+            idade.Property(i => i.Valor).HasColumnName("idade_maxima_valor");
+            idade.Property(i => i.Unidade)
+                .HasColumnName("idade_maxima_unidade")
+                .HasConversion(UnidadeConverter)
+                .HasMaxLength(IdadeMaximaUnidadeMaxLength);
+            idade.Property(i => i.ReferenciaTipo)
+                .HasColumnName("idade_maxima_referencia_tipo")
+                .HasConversion(ReferenciaTipoIdadeEmissaoConverter)
+                .HasMaxLength(IdadeMaximaReferenciaTipoMaxLength);
+            idade.Property(i => i.Data).HasColumnName("idade_maxima_referencia_data");
+            idade.Property(i => i.ReferenciaFaseId).HasColumnName("idade_maxima_referencia_fase_id");
+        });
+
+        builder.Property(d => d.FormatoPermitido)
+            .HasConversion(FormatoPermitidoConverter)
+            .HasMaxLength(FormatoPermitidoMaxLength);
+
+        builder.Property(d => d.TamanhoMaximoBytes);
     }
+
+    private static readonly ValueConverter<UnidadeIdade, string?> UnidadeConverter =
+        new(
+            unidade => unidade == UnidadeIdade.Nenhuma ? null : unidade.ToCodigo(),
+            codigo => UnidadeIdadeCodigo.FromCodigo(codigo) ?? UnidadeIdade.Nenhuma);
+
+    private static readonly ValueConverter<ReferenciaTipoIdadeEmissao, string?> ReferenciaTipoIdadeEmissaoConverter =
+        new(
+            tipo => tipo == ReferenciaTipoIdadeEmissao.Nenhuma ? null : tipo.ToCodigo(),
+            codigo => ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(codigo) ?? ReferenciaTipoIdadeEmissao.Nenhuma);
+
+    private static readonly ValueConverter<FormatoPermitido?, string?> FormatoPermitidoConverter =
+        new(
+            formato => formato == null || formato.Value == FormatoPermitido.Nenhum ? null : formato.Value.ToCodigo(),
+            codigo => FormatoPermitidoCodigo.FromCodigo(codigo));
 }

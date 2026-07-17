@@ -5,6 +5,7 @@ using System.Linq;
 using Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Exigência documental de um <see cref="ProcessoSeletivo"/> (Story #554): declara qual
@@ -60,6 +61,18 @@ public sealed class DocumentoExigido : EntityBase
     /// <summary>Escopo processo+fase — documentos do mesmo grupo são satisfeitos por uma única apresentação (semântica plena na PR-e).</summary>
     public Guid? GrupoSatisfacaoId { get; private set; }
 
+    /// <summary>
+    /// Idade máxima de emissão do ARQUIVO apresentado (Story #554, PR-d) — aviso, não
+    /// bloqueio de presença; a avaliação em runtime é fora de escopo desta Story.
+    /// </summary>
+    public IdadeMaximaEmissao? IdadeMaximaEmissao { get; private set; }
+
+    /// <summary>Formato aceito para a apresentação (Story #554, PR-d) — congelado na exigência, não no <c>TipoDocumento</c>.</summary>
+    public FormatoPermitido? FormatoPermitido { get; private set; }
+
+    /// <summary>Tamanho máximo em bytes do arquivo apresentado (Story #554, PR-d) — congelado na exigência.</summary>
+    public int? TamanhoMaximoBytes { get; private set; }
+
     private readonly List<CondicaoGatilho> _condicoes = [];
 
     /// <summary>Gatilho DNF (Story #554, PR-b) — vazia significa "sem gatilho": GERAL é sempre exigida, CONDICIONAL vazia é exigida de ninguém.</summary>
@@ -83,7 +96,10 @@ public sealed class DocumentoExigido : EntityBase
         string? consequenciaIndeferimento,
         Guid? grupoSatisfacaoId,
         IReadOnlyList<CondicaoGatilho> condicoes,
-        IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
+        IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
+        IdadeMaximaEmissao? idadeMaximaEmissao,
+        FormatoPermitido? formatoPermitido,
+        int? tamanhoMaximoBytes)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
@@ -123,6 +139,13 @@ public sealed class DocumentoExigido : EntityBase
                 $"Consequência de indeferimento '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}."));
         }
 
+        if (tamanhoMaximoBytes is <= 0)
+        {
+            return Result<DocumentoExigido>.Failure(new DomainError(
+                "DocumentoExigido.TamanhoMaximoBytesInvalido",
+                "O tamanho máximo em bytes, quando presente, deve ser maior que zero."));
+        }
+
         DocumentoExigido documento = new()
         {
             ExigidoNaFaseId = exigidoNaFaseId,
@@ -134,6 +157,9 @@ public sealed class DocumentoExigido : EntityBase
             Obrigatorio = obrigatorio,
             ConsequenciaIndeferimento = consequenciaNormalizada,
             GrupoSatisfacaoId = grupoSatisfacaoId,
+            IdadeMaximaEmissao = idadeMaximaEmissao,
+            FormatoPermitido = formatoPermitido,
+            TamanhoMaximoBytes = tamanhoMaximoBytes,
         };
 
         // CA-01 (Story #554, issue #547/#892): GERAL nunca convive com condição viva —

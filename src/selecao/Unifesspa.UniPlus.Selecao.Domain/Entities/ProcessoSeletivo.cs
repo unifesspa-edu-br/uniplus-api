@@ -473,22 +473,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "O processo deve ter ao menos uma fase no cronograma."));
         }
 
-        // Story #554/issue #547 (CA-04, guard parcial — a reconciliação por chave estável
-        // é da PR-d/#893): cada chamada aqui recria TODAS as fases com Id novo (mesmo
-        // padrão de DefinirDocumentosExigidos/DefinirEtapas — nenhum FaseCronogramaInput
-        // aceita Id, diferente de EtapaProcessoInput.Id opcional). Isso significa que a
-        // FK Restrict de documentos_exigidos.exigido_na_fase_id (DocumentoExigidoConfiguration)
-        // sempre estouraria DbUpdateException não tratada ao reconfigurar o cronograma
-        // enquanto existir exigência viva — a guarda troca o 500 por um 422 acionável. A
-        // PR-d reconcilia fases por chave estável (Ordem/FaseCanonicaOrigemId, mesmo
-        // padrão de AplicarGrafo) para permitir editar o cronograma sem apagar exigências.
-        if (_documentosExigidos.Count > 0)
-        {
-            return Result.Failure(new DomainError(
-                "FaseCronograma.ReferenciadaPorExigenciaViva",
-                "Existem documentos exigidos configurados referenciando o cronograma atual — remova-os antes de redefinir as fases, ou aguarde a reconciliação por chave estável (Story #554, PR-d)."));
-        }
-
         List<int> ordens = [.. fases.Select(f => f.Ordem)];
         if (ordens.Distinct().Count() != ordens.Count)
         {
@@ -503,6 +487,40 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(new DomainError(
                 "ProcessoSeletivo.FaseCanonicaDuplicada",
                 "A mesma fase canônica não pode aparecer duas vezes no cronograma."));
+        }
+
+        // Story #554/issue #893 (PR-d, CA-04): reconciliação por Ordem — a chave estável
+        // de uma fase dentro do cronograma (mesmo padrão de AplicarGrafo/
+        // FaseCronograma.AtualizarSnapshot). Substitui o guard bruto da PR-a/#547 (que
+        // bloqueava QUALQUER redefinição enquanto existisse exigência viva) por dois
+        // guards precisos: só recusa quando uma fase REALMENTE removida (Ordem que
+        // desaparece) é referenciada por exigência viva, ou quando uma fase SOBREVIVENTE
+        // perde PermiteComplementacao mas é referenciada por exigência PENDENCIA_REENVIO.
+        Dictionary<int, FaseCronograma> fasesAntigasPorOrdem = _cronogramaFases.ToDictionary(f => f.Ordem);
+        Dictionary<int, FaseCronograma> fasesNovasPorOrdem = fases.ToDictionary(f => f.Ordem);
+
+        foreach (FaseCronograma antiga in fasesAntigasPorOrdem.Values)
+        {
+            if (!fasesNovasPorOrdem.TryGetValue(antiga.Ordem, out FaseCronograma? nova))
+            {
+                if (_documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id))
+                {
+                    return Result.Failure(new DomainError(
+                        "FaseCronograma.ReferenciadaPorExigenciaViva",
+                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas é referenciada por um documento exigido configurado."));
+                }
+
+                continue;
+            }
+
+            bool perdeuPermiteComplementacao = antiga.PermiteComplementacao && !nova.PermiteComplementacao;
+            if (perdeuPermiteComplementacao
+                && _documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id && d.ConsequenciaIndeferimento == "PENDENCIA_REENVIO"))
+            {
+                return Result.Failure(new DomainError(
+                    "FaseCronograma.PendenciaReenvioExigeComplementacao",
+                    $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por um documento exigido com consequência PENDENCIA_REENVIO."));
+            }
         }
 
         // §3.5 — direção "fase de avaliação sem etapa": bloqueante e IMEDIATA (a fase que
@@ -553,8 +571,44 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // Reconciliação por Ordem (mesmo padrão de AplicarGrafo): quando a nova fase
+        // reocupa a Ordem de uma fase viva, reusa a instância TRACKED (atualizando-a no
+        // lugar via AtualizarSnapshot) em vez de substituí-la por uma instância nova —
+        // preserva o Id, o que é o que faz o guard acima ("fase removida") ser preciso
+        // (só remove de fato quando a Ordem desaparece) e evita, por consequência, que a
+        // FK Restrict de documentos_exigidos.exigido_na_fase_id estoure em toda
+        // redefinição, mesmo sem exigência alguma referenciando a fase alterada.
+        List<FaseCronograma> resultantes = [];
+        foreach (FaseCronograma nova in fases)
+        {
+            if (fasesAntigasPorOrdem.TryGetValue(nova.Ordem, out FaseCronograma? existente))
+            {
+                existente.AtualizarSnapshot(
+                    nova.FaseCanonicaOrigemId,
+                    nova.Codigo,
+                    nova.DonoInstitucional,
+                    nova.OrigemData,
+                    nova.AgrupaEtapas,
+                    nova.PermiteComplementacao,
+                    nova.ProduzResultado,
+                    nova.ResultadoDefinitivo,
+                    nova.ColetaInscricao,
+                    nova.Inicio,
+                    nova.Fim,
+                    nova.AtoProduzidoCodigo,
+                    nova.AtoProduzidoEfeitoIrreversivel,
+                    [.. nova.BancasRequeridas],
+                    nova.RegraRecurso);
+                resultantes.Add(existente);
+            }
+            else
+            {
+                resultantes.Add(nova);
+            }
+        }
+
         _cronogramaFases.Clear();
-        foreach (FaseCronograma fase in fases)
+        foreach (FaseCronograma fase in resultantes)
         {
             fase.VincularProcesso(Id);
             _cronogramaFases.Add(fase);
@@ -593,6 +647,30 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return Result.Failure(new DomainError(
                     "DocumentoExigido.FaseNaoPertenceAoProcesso",
                     $"A fase {item.ExigidoNaFaseId} não pertence ao cronograma deste processo."));
+            }
+
+            // Story #554/issue #893 (PR-d): âncora de fase de IdadeMaximaEmissao — mesma
+            // família de checagem estrutural de ReferenciaTemporalFatos (PR-b), mas EAGER
+            // (na escrita, não na publicação): a regra vive na exigência, e a exigência já
+            // está sendo escrita agora — não há razão para adiar. Fase viva do MESMO
+            // processo com o extremo correspondente não-nulo (sem fallback silencioso).
+            if (item.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idade)
+            {
+                FaseCronograma? faseAncora = _cronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
+                if (faseAncora is null)
+                {
+                    return Result.Failure(new DomainError(
+                        "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
+                        $"A fase âncora {referenciaFaseId} da idade máxima de emissão não pertence ao cronograma deste processo."));
+                }
+
+                DateTimeOffset? extremo = idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? faseAncora.Inicio : faseAncora.Fim;
+                if (extremo is null)
+                {
+                    return Result.Failure(new DomainError(
+                        "IdadeMaximaEmissao.FaseExtremoAusente",
+                        $"A fase âncora da idade máxima de emissão não tem {(idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso."));
+                }
             }
         }
 

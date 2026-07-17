@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="DocumentoExigido"/> (Story #554, PR-a): fábrica, guard de
@@ -19,7 +20,10 @@ public sealed class DocumentoExigidoTests
         bool obrigatorio = false,
         string? consequenciaIndeferimento = null,
         IReadOnlyList<CondicaoGatilho>? condicoes = null,
-        IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null) =>
+        IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null,
+        IdadeMaximaEmissao? idadeMaximaEmissao = null,
+        FormatoPermitido? formatoPermitido = null,
+        int? tamanhoMaximoBytes = null) =>
         DocumentoExigido.Criar(
             exigidoNaFaseId: Guid.CreateVersion7(),
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
@@ -31,7 +35,10 @@ public sealed class DocumentoExigidoTests
             consequenciaIndeferimento: consequenciaIndeferimento,
             grupoSatisfacaoId: null,
             condicoes: condicoes ?? [],
-            basesLegais: basesLegais ?? []);
+            basesLegais: basesLegais ?? [],
+            idadeMaximaEmissao: idadeMaximaEmissao,
+            formatoPermitido: formatoPermitido,
+            tamanhoMaximoBytes: tamanhoMaximoBytes);
 
     private static CondicaoGatilho CondicaoQualquer() => CondicaoGatilho.Criar(
         0, "SEXO", Operador.Igual, JsonSerializer.SerializeToElement("MASCULINO")).Value!;
