@@ -1,0 +1,2940 @@
+{
+  "info": {
+    "_postman_id": "21446427-9758-45a1-b80d-4e86750df7d0",
+    "name": "Uni+ Seleção — ProcessoSeletivo (smoke completo, Story #554/PR #903)",
+    "description": "Exercita TODOS os 22 endpoints de ProcessoSeletivoController + DocumentosEditalController contra o stack local (docker compose + Newman), incluindo a configuração de catálogo necessária (Publicações/Organização/Configuração) e o fluxo completo de documentos exigidos por gatilho e fase (Story #554). Auto-contido: cada execução cria um ProcessoSeletivo novo (nome com timestamp seria ideal, mas os endpoints de setup toleram 409 em catálogos já existentes).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Obter token (password grant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{keycloak_token_url}}",
+              "host": [
+                "{{keycloak_token_url}}"
+              ]
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com access_token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.access_token).to.be.a('string');",
+                  "  pm.environment.set('token', j.access_token);",
+                  "});",
+                  "// Sufixo único por execução — evita colisão de código/slug/sigla em",
+                  "// reexecuções contra o mesmo banco (Campus/Curso/Modalidade/TipoDocumento/",
+                  "// Unidade não toleram 409 como Instituição/FaseCanonica/TipoAto toleram).",
+                  "// 6 dígitos (não os 13 de Date.now()) — Campus.Sigla tem maxLength 20 e o",
+                  "// prefixo já consome boa parte do orçamento de caracteres.",
+                  "pm.environment.set('run_suffix', Date.now() % 1000000);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Setup — Publicações (tipos de ato)",
+      "item": [
+        {
+          "name": "Criar tipo de ato EDITAL_ABERTURA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/publicacoes/admin/tipos-ato",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "publicacoes",
+                "admin",
+                "tipos-ato"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"EDITAL_ABERTURA\",\n  \"nome\": \"Edital de abertura (smoke)\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": true,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 ou 409 (idempotente entre execuções)', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar tipo de ato EDITAL_RETIFICACAO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/publicacoes/admin/tipos-ato",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "publicacoes",
+                "admin",
+                "tipos-ato"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"EDITAL_RETIFICACAO\",\n  \"nome\": \"Edital de retificação (smoke)\",\n  \"congelaConfiguracao\": true,\n  \"unicoPorObjeto\": false,\n  \"efeitoIrreversivel\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 ou 409 (idempotente entre execuções)', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar tipo de ato RESULTADO_FINAL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/publicacoes/admin/tipos-ato",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "publicacoes",
+                "admin",
+                "tipos-ato"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"RESULTADO_FINAL\",\n  \"nome\": \"Resultado final (smoke)\",\n  \"congelaConfiguracao\": false,\n  \"unicoPorObjeto\": true,\n  \"efeitoIrreversivel\": true,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"baseLegal\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 ou 409 (idempotente entre execuções)', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Cadastra os tipos de ato exigidos pela publicação/retificação de ProcessoSeletivo. 409 é aceitável em reexecuções (já existe pelo código único)."
+    },
+    {
+      "name": "Setup — Organização",
+      "item": [
+        {
+          "name": "Criar Instituição (singleton)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/organizacao/admin/instituicao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "organizacao",
+                "admin",
+                "instituicao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoEmec\": \"3990\",\n  \"nome\": \"Universidade Federal do Sul e Sudeste do Pará\",\n  \"sigla\": \"Unifesspa\",\n  \"organizacaoAcademica\": \"Universidade\",\n  \"categoriaAdministrativa\": \"Pública Federal\",\n  \"cidadeCodigoIbge\": \"1504208\",\n  \"cidadeNome\": \"Marabá\",\n  \"cidadeUf\": \"PA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 ou 409 (singleton já existente)', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Instituição",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.instituicao.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/organizacao/instituicao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "organizacao",
+                "instituicao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com id', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('instituicao_id', j.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Unidade (CEPS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/organizacao/admin/unidades",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "organizacao",
+                "admin",
+                "unidades"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Comissão Especial de Processos Seletivos\",\n  \"alias\": \"CEPS\",\n  \"slug\": \"ceps-smoke-{{run_suffix}}\",\n  \"sigla\": \"CEPS-{{run_suffix}}\",\n  \"codigo\": \"CEPS-SMK-{{run_suffix}}\",\n  \"unidadeSuperiorId\": null,\n  \"tipo\": \"coordenacao\",\n  \"unidadeAcademica\": false,\n  \"vigenciaInicio\": \"2020-01-01\",\n  \"vigenciaFim\": null,\n  \"origem\": \"criadoNoUniPlus\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.expect(id).to.be.a('string');",
+                  "  pm.environment.set('unidade_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Cria a Instituição singleton (ou reaproveita a existente) e uma Unidade — pré-requisito de OfertaCurso.unidadeOfertanteOrigemId."
+    },
+    {
+      "name": "Setup — Configuração",
+      "item": [
+        {
+          "name": "Criar Campus",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/campi",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "campi"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sigla\": \"SEDE-SMK-{{run_suffix}}\",\n  \"nome\": \"Campus Sede (smoke)\",\n  \"cidadeCodigoIbge\": \"1504208\",\n  \"cidadeNome\": \"Marabá\",\n  \"cidadeUf\": \"PA\",\n  \"endereco\": null,\n  \"codigoEmec\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('campus_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Local de Oferta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/locais-oferta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "locais-oferta"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"campusSede\",\n  \"campusResponsavelId\": \"{{campus_id}}\",\n  \"cidadeCodigoIbge\": \"1504208\",\n  \"cidadeNome\": \"Marabá\",\n  \"cidadeUf\": \"PA\",\n  \"endereco\": null,\n  \"codigoEmec\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('local_oferta_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/cursos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "cursos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"SMK-{{run_suffix}}\",\n  \"nome\": \"Curso de Smoke Test\",\n  \"grau\": \"Bacharelado\",\n  \"nivelEnsino\": \"Graduação\",\n  \"grupoAreaEnem\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('curso_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Oferta de Curso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/ofertas-curso",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "ofertas-curso"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cursoId\": \"{{curso_id}}\",\n  \"localOfertaId\": \"{{local_oferta_id}}\",\n  \"unidadeOfertanteOrigemId\": \"{{unidade_id}}\",\n  \"programaDeOferta\": \"REGULAR\",\n  \"formatoPedagogico\": \"PRESENCIAL\",\n  \"turno\": null,\n  \"eMecCodigo\": null,\n  \"codigoSga\": null,\n  \"vagasAnuaisAutorizadas\": null,\n  \"baseLegal\": null,\n  \"atoAutorizacaoMec\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('oferta_curso_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Modalidade (AC)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/modalidades",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "modalidades"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"AC_SMK_{{run_suffix}}\",\n  \"descricao\": \"Ampla concorrência (smoke)\",\n  \"naturezaLegal\": \"AMPLA\",\n  \"composicaoVagas\": \"RESIDUAL_DO_VO\",\n  \"composicaoOrigem\": null,\n  \"regraRemanejamento\": null,\n  \"remanejamentoDestino\": null,\n  \"remanejamentoPar\": null,\n  \"remanejamentoFallback\": null,\n  \"criteriosCumulativos\": [],\n  \"acaoQuandoIndeferido\": null,\n  \"baseLegal\": \"Lei 12.711/2012\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('modalidade_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Tipo de Documento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/tipos-documento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "tipos-documento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"IDENTIDADE-SMK-{{run_suffix}}\",\n  \"nome\": \"Documento de identidade (smoke)\",\n  \"categoria\": \"IDENTIFICACAO\",\n  \"descricao\": null,\n  \"formatosAceitos\": \"PDF,JPEG,PNG\",\n  \"tamanhoMaximoMb\": 5,\n  \"tipoEquivalente\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.environment.set('tipo_documento_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar Fase Canônica (AVALIACAO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/fases-canonicas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "fases-canonicas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"AVALIACAO\",\n  \"nome\": \"Avaliação (smoke)\",\n  \"descricao\": null,\n  \"donoTipico\": \"CEPS\",\n  \"agrupaEtapas\": true,\n  \"permiteComplementacao\": false,\n  \"baseLegal\": null,\n  \"produzResultado\": true,\n  \"resultadoDefinitivo\": true,\n  \"coletaInscricao\": true,\n  \"origemData\": \"PROPRIA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created ou 409 (código canônico único)', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "  if (pm.response.code === 201) {",
+                  "    pm.environment.set('fase_canonica_id', pm.response.json());",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Fase Canônica por código (fallback se já existia)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/fases-canonicas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "fases-canonicas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 e resolve fase_canonica_id se ainda vazio', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  if (!pm.environment.get('fase_canonica_id')) {",
+                  "    const arr = pm.response.json();",
+                  "    const achada = (arr.items || arr).find(f => f.codigo === 'AVALIACAO');",
+                  "    pm.expect(achada, 'AVALIACAO deve existir').to.not.be.undefined;",
+                  "    pm.environment.set('fase_canonica_id', achada.id);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Árvore mínima Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica exigida pelas dimensões de ProcessoSeletivo. Nenhum destes recursos é pré-seedado (exceto o catálogo interno rol_de_regras, referenciado só por código)."
+    },
+    {
+      "name": "ProcessoSeletivo — Configuração",
+      "item": [
+        {
+          "name": "Criar ProcessoSeletivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"SiSU 2026.1 (smoke)\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com Guid', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const id = pm.response.json();",
+                  "  pm.expect(id).to.be.a('string');",
+                  "  pm.environment.set('processo_id', id);",
+                  "});",
+                  "pm.test('Location aponta para o recurso criado', () => {",
+                  "  pm.expect(pm.response.headers.get('Location')).to.include(pm.environment.get('processo_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Etapas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/etapas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "etapas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Oferta de Atendimento (vazia)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/oferta-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "oferta-atendimento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condicaoIds\": [],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Distribuição de Vagas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/distribuicao-vagas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "distribuicao-vagas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Classificação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "classificacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Cronograma de Fases",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/cronograma-fases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "cronograma-fases"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter ProcessoSeletivo (capturar fase_cronograma_id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com cronogramaFases[0].id', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.cronogramaFases).to.have.lengthOf(1);",
+                  "  pm.environment.set('fase_cronograma_id', j.cronogramaFases[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Bônus Regional",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/bonus-regional",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "bonus-regional"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regraCodigo\": \"BONUS-MULTIPLICATIVO\",\n  \"regraVersao\": \"v1\",\n  \"fator\": 1.2,\n  \"teto\": null,\n  \"municipioConvenio\": \"Marabá\",\n  \"baseLegal\": \"RN05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Critérios de Desempate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/criterios-desempate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "criterios-desempate"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"regraCodigo\": \"DESEMPATE-IDOSO\",\n    \"regraVersao\": \"v1\",\n    \"etapaRef\": null,\n    \"idadeMinima\": 60,\n    \"fato\": null,\n    \"operador\": null,\n    \"valor\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Documentos Exigidos",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"GERAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": null,\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Norma interna do certame\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": \"PDF\",\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"AC_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": null\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatoPermitido\": null,\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Referência Temporal de Fatos",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/referencia-temporal-fatos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "referencia-temporal-fatos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"DATA_ESPECIFICA\",\n  \"data\": \"2026-01-31\",\n  \"faseId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Exercita as 9 dimensões de configuração (PUT idempotentes/substituição integral) na ordem exigida pelas dependências. Nenhuma requer If-Match nesta fase — a precondição só é obrigatória durante uma sessão editorial (ver folder de Sessão editorial)."
+    },
+    {
+      "name": "ProcessoSeletivo — Leitura",
+      "item": [
+        {
+          "name": "Listar ProcessosSeletivos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com array', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter ProcessoSeletivo por Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com _links.self', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()._links).to.have.property('self');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Conformidade (checklist estrutural)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.conformidade-processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/conformidade",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "conformidade"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com todos os itens ok', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.itens.every(i => i.ok)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Conformidade Legal",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.conformidade-legal-processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/conformidade-legal?dataReferencia=2026-01-01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "conformidade-legal"
+              ],
+              "query": [
+                {
+                  "key": "dataReferencia",
+                  "value": "2026-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "GETs de leitura — não alteram estado."
+    },
+    {
+      "name": "ProcessoSeletivo — Publicação",
+      "item": [
+        {
+          "name": "Publicação: Iniciar upload do Edital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-edital"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com URL pre-assinada', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('documento_edital_id', j.documentoEditalId);",
+                  "  pm.environment.set('url_upload', j.urlUpload);",
+                  "  pm.environment.set('content_type_exigido', j.contentTypeExigido);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicação: PUT do PDF direto no MinIO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "{{content_type_exigido}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url_upload}}",
+              "host": [
+                "{{url_upload}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "%PDF-1.4 smoke test do PR #903 (documentos exigidos)."
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK (PUT direto ao storage, fora da API)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Publicação: Confirmar upload do Edital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital/{{documento_edital_id}}/confirmacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-edital",
+                "{{documento_edital_id}}",
+                "confirmacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK, status Confirmado\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('Confirmado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar ProcessoSeletivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/publicacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "publicacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": \"001/2026\",\n  \"periodoInscricaoInicio\": \"2026-01-01\",\n  \"periodoInscricaoFim\": \"2026-01-31\",\n  \"documentoEditalId\": \"{{documento_edital_id}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content — processo publicado', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Snapshot Vigente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.snapshot-vigente-processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/snapshot-vigente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "snapshot-vigente"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com configuração congelada', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.hashConfiguracao).to.be.a('string');",
+                  "  pm.expect(j.configuracao).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Fluxo de 3 passos de upload do Edital (URL pré-assinada MinIO) seguido da publicação de fato — exercita PendenciaPreCanonicalizacao/gate de documentos exigidos (PR #903)."
+    },
+    {
+      "name": "ProcessoSeletivo — Retificação (atalho)",
+      "item": [
+        {
+          "name": "Retificação: Iniciar upload do Edital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-edital"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com URL pre-assinada', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('documento_edital_id_ret', j.documentoEditalId);",
+                  "  pm.environment.set('url_upload_ret', j.urlUpload);",
+                  "  pm.environment.set('content_type_exigido_ret', j.contentTypeExigido);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retificação: PUT do PDF direto no MinIO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "{{content_type_exigido_ret}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url_upload_ret}}",
+              "host": [
+                "{{url_upload_ret}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "%PDF-1.4 smoke test do PR #903 (documentos exigidos)."
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK (PUT direto ao storage, fora da API)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Retificação: Confirmar upload do Edital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital/{{documento_edital_id_ret}}/confirmacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-edital",
+                "{{documento_edital_id_ret}}",
+                "confirmacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK, status Confirmado\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('Confirmado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retificar ProcessoSeletivo (atalho atômico)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/retificacoes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "retificacoes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Correção do prazo de inscrição (smoke)\",\n  \"numero\": \"001/2026-R1\",\n  \"periodoInscricaoInicio\": \"2026-01-02\",\n  \"periodoInscricaoFim\": \"2026-02-09\",\n  \"documentoEditalId\": \"{{documento_edital_id_ret}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content — nova versão congelada', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Retificação em um único ato (sem sessão editorial) — o servidor infere o Edital vigente automaticamente."
+    },
+    {
+      "name": "ProcessoSeletivo — Sessão editorial",
+      "item": [
+        {
+          "name": "Abrir Retificação (sessão editorial)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/retificacao-em-curso",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "retificacao-em-curso"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Ajuste do peso da prova (smoke)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com ETag', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const etag = pm.response.headers.get('ETag');",
+                  "  pm.expect(etag).to.be.a('string');",
+                  "  pm.environment.set('etag', etag);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Retificação em Curso",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.retificacao-em-curso.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/retificacao-em-curso",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "retificacao-em-curso"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar Etapas dentro da sessão (com If-Match)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{etag}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/etapas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "etapas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"nome\": \"Prova Objetiva (revisada)\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 2.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content com ETag novo', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  const etag = pm.response.headers.get('ETag');",
+                  "  pm.expect(etag).to.be.a('string');",
+                  "  pm.environment.set('etag', etag);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alterar Motivo da Retificação (com If-Match)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{etag}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/retificacao-em-curso",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "retificacao-em-curso"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Ajuste do peso da prova — motivo revisado (smoke)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content com ETag novo', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  const etag = pm.response.headers.get('ETag');",
+                  "  pm.expect(etag).to.be.a('string');",
+                  "  pm.environment.set('etag', etag);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fechamento: Iniciar upload do Edital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-edital"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com URL pre-assinada', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('documento_edital_id_fecha', j.documentoEditalId);",
+                  "  pm.environment.set('url_upload_fecha', j.urlUpload);",
+                  "  pm.environment.set('content_type_exigido_fecha', j.contentTypeExigido);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fechamento: PUT do PDF direto no MinIO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "{{content_type_exigido_fecha}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url_upload_fecha}}",
+              "host": [
+                "{{url_upload_fecha}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "%PDF-1.4 smoke test do PR #903 (documentos exigidos)."
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK (PUT direto ao storage, fora da API)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Fechamento: Confirmar upload do Edital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/documentos-edital/{{documento_edital_id_fecha}}/confirmacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "documentos-edital",
+                "{{documento_edital_id_fecha}}",
+                "confirmacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK, status Confirmado\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('Confirmado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fechar Retificação (congela N+1 com a edição, com If-Match)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{etag}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/retificacao-em-curso/fechamento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "retificacao-em-curso",
+                "fechamento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": \"001/2026-R2\",\n  \"periodoInscricaoInicio\": \"2026-01-02\",\n  \"periodoInscricaoFim\": \"2026-02-10\",\n  \"documentoEditalId\": \"{{documento_edital_id_fecha}}\",\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content — sessão fechada', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir 2ª sessão (só para exercitar o descarte)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/retificacao-em-curso",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "retificacao-em-curso"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Sessão de teste para descarte (smoke)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com ETag', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const etag = pm.response.headers.get('ETag');",
+                  "  pm.environment.set('etag', etag);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descartar Retificação (reidrata a versão congelada, com If-Match)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{etag}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/retificacao-em-curso",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "retificacao-em-curso"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content — sessão descartada', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Abre → edita (If-Match) → altera motivo (If-Match) → fecha (congela N+1). Depois abre uma 2ª sessão só para provar o descarte (DELETE reidrata byte-a-byte a versão congelada)."
+    }
+  ]
+}
