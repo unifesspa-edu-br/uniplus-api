@@ -183,10 +183,10 @@ Existe `ValueObjectConventions.ConfigureValueObjectConverters()` (`Infrastructur
 ```bash
 # 1. Editar a entity em src/<modulo>/Unifesspa.UniPlus.<Modulo>.Domain/Entities/
 # 2. Editar a Configuration em src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure/Persistence/Configurations/
-# 3. Gerar migration:
+# 3. Gerar migration (--startup-project aponta para o Host — ver nota abaixo):
 dotnet ef migrations add Adiciona<Coisa> \
   --project src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure \
-  --startup-project src/<modulo>/Unifesspa.UniPlus.<Modulo>.API \
+  --startup-project src/host/Unifesspa.UniPlus.Host \
   --output-dir Persistence/Migrations \
   --context <Modulo>DbContext
 
@@ -205,16 +205,18 @@ git commit -m "feat(<modulo>): adiciona <coisa>"
 
 `MigrationHostedService<TContext>` aplica a migration no `StartAsync` do host, antes do `WolverineRuntime` iniciar (ordem garantida por fitness test — ver [ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md) e [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)). Pod restart → migration aplicada → app pronto.
 
-### `dotnet ef` exige `--startup-project` apontando para a API
+### `dotnet ef` exige `--startup-project` apontando para o Host
 
-Sem `--startup-project`, o `dotnet ef` falha com `FileNotFoundException` em assemblies de runtime versão `10.0.0.0` (`System.Runtime`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.AspNetCore.Http.Abstractions`, conforme o comando). **Não é bug do EF tool nem do .NET 10** — o design-time factory do DbContext (`<Modulo>DbContextDesignTimeFactory`) resolve dependências que vivem no projeto da API (`FrameworkReference Microsoft.AspNetCore.App`). Rodar só com `--project ...Infrastructure` executa o tool num contexto sem esse framework, e as assemblies não resolvem.
+Sem `--startup-project`, o `dotnet ef` falha com `FileNotFoundException` em assemblies de runtime versão `10.0.0.0` (`System.Runtime`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.AspNetCore.Http.Abstractions`, conforme o comando). **Não é bug do EF tool nem do .NET 10** — o design-time factory do DbContext (`<Modulo>DbContextDesignTimeFactory`) resolve dependências que só existem num projeto executável com `FrameworkReference Microsoft.AspNetCore.App` e `runtimeconfig.json`. Rodar só com `--project ...Infrastructure` executa o tool num contexto sem esse framework, e as assemblies não resolvem.
 
-**Sempre passar `--startup-project src/<modulo>/Unifesspa.UniPlus.<Modulo>.API`** em qualquer comando `dotnet ef` (`migrations add`, `migrations list`, `migrations has-pending-model-changes`, `dbcontext info`, etc.). Com isso roda no host, sem container e sem workaround. Verificação útil de que o snapshot está consistente com o modelo:
+**Desde o [ADR-0097](adrs/0097-topologia-de-deploy-em-tres-apis-monolito-modular.md), os `.Infrastructure`/`.API` dos módulos internos (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) são class libraries puras — sem `Program.cs` nem `runtimeconfig.json`.** `src/host/Unifesspa.UniPlus.Host` é o único executável com o setup design-time do EF para esses módulos; **sempre passar `--startup-project src/host/Unifesspa.UniPlus.Host`** em qualquer comando `dotnet ef` (`migrations add`, `migrations list`, `migrations has-pending-model-changes`, `dbcontext info`, etc.) para essa família de módulos. **Geo (repositório dedicado) e Portal são exceção**: são *deployables* autônomos com `Program.cs` próprio — para eles, `--startup-project` aponta para o próprio projeto (`src/portal/Unifesspa.UniPlus.Portal.API`, por exemplo), não para o Host.
+
+Com isso roda no host, sem container e sem workaround. Verificação útil de que o snapshot está consistente com o modelo:
 
 ```bash
 dotnet ef migrations has-pending-model-changes \
   --project src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure \
-  --startup-project src/<modulo>/Unifesspa.UniPlus.<Modulo>.API \
+  --startup-project src/host/Unifesspa.UniPlus.Host \
   --context <Modulo>DbContext
 # Esperado: "No changes have been made to the model since the last migration."
 ```
