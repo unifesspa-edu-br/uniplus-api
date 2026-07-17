@@ -1003,6 +1003,40 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Documentos exigidos, coerência de consequência e referência temporal de fatos —
+    /// os três checáveis que <see cref="Publicar"/>/<see cref="SucederVersao"/> avaliam
+    /// depois de <see cref="PendenciaDoCronograma"/>, agregados aqui para que o
+    /// <b>handler</b> (Application) também os alcance <b>antes</b> de canonicalizar.
+    /// </summary>
+    /// <remarks>
+    /// Achado de revisão (Story #554, PR #903, ADR-0109 D5): o gate de conformidade
+    /// PRECEDE a canonicalização por design — <see cref="PendenciaDeConformidade"/> já é
+    /// <see langword="public"/> e os handlers o chamam antes de
+    /// <c>ISnapshotPublicacaoCanonicalizer.Canonicalizar</c> exatamente por isso. Mas
+    /// <c>Canonicalizar</c> agora invoca <see cref="ResolverDataReferenciaFatos"/>
+    /// internamente (serialização de <c>documentosExigidos</c>), e esse método
+    /// <b>lança</b> quando a referência não resolve — sem este guard também rodando
+    /// ANTES de canonicalizar, uma publicação/retificação inválida vira exceção não
+    /// tratada (500) em vez do <see cref="DomainError"/> nomeado que
+    /// <see cref="Publicar"/>/<see cref="SucederVersao"/> devolveriam depois, se a
+    /// exceção não tivesse interrompido o fluxo antes.
+    /// </remarks>
+    public DomainError? PendenciaPreCanonicalizacao()
+    {
+        if (PendenciaDasExigenciasDocumentais() is { } exigencias)
+        {
+            return exigencias;
+        }
+
+        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento() is { } coerencia)
+        {
+            return coerencia;
+        }
+
+        return PendenciaDaReferenciaTemporalFatos();
+    }
+
+    /// <summary>
     /// Pendências dos documentos exigidos (Story #554). Chamado por
     /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/
     /// FecharRetificacao), sempre <b>depois</b> de <see cref="PendenciaDoCronograma"/>.
@@ -1335,19 +1369,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
 
-        if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
+        if (PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
         {
-            return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
-        }
-
-        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento() is { } pendenciaCoerenciaConsequencia)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCoerenciaConsequencia);
-        }
-
-        if (PendenciaDaReferenciaTemporalFatos() is { } pendenciaReferenciaTemporal)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaReferenciaTemporal);
+            return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
         }
 
         // UMA leitura do relógio para o ato e para a versão que ele cria. O instante
@@ -1665,19 +1689,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
 
-        if (PendenciaDasExigenciasDocumentais() is { } pendenciaExigencias)
+        if (PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
         {
-            return Result<VersaoConfiguracao>.Failure(pendenciaExigencias);
-        }
-
-        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento() is { } pendenciaCoerenciaConsequencia)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCoerenciaConsequencia);
-        }
-
-        if (PendenciaDaReferenciaTemporalFatos() is { } pendenciaReferenciaTemporal)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaReferenciaTemporal);
+            return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
         }
 
         // Uma única leitura do relógio para o ato e para a versão que ele cria — ver a nota

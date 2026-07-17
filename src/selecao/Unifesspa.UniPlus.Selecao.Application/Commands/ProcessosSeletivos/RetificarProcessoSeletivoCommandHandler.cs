@@ -169,6 +169,16 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(conformidadeLegal.Error!), []);
         }
 
+        // Terceira dimensão de conformidade (Story #554, PR #903, ADR-0109 D5): documentos
+        // exigidos, coerência da consequência de indeferimento e referência temporal de
+        // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
+        // quando a política não resolve — sem este guard antes dela, um processo inválido
+        // vira exceção não tratada em vez do DomainError que o contrato HTTP promete.
+        if (processo.PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
+        {
+            return (Result.Failure(pendenciaPreCanonicalizacao), []);
+        }
+
         // O ato retificado é o que criou a versão corrente — o topo da cadeia de
         // CONFIGURAÇÃO (ADR-0104), não o ato de maior data documental. É o mesmo
         // alvo que ProcessoSeletivo.Retificar elege; congelar aqui um id diferente
