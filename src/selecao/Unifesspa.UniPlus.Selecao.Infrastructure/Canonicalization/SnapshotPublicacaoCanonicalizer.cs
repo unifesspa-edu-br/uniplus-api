@@ -477,7 +477,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             .ThenBy(static e => e.TipoDocumentoOrigemId)
             .ThenBy(static e => System.Text.Encoding.UTF8.GetString(
                 HashCanonicalComputer.ComputeSnapshotBytes(SerializarExigenciaSemIdentidade(e))),
-                StringComparer.Ordinal);
+                StringComparer.Ordinal)
+            // Achado de revisão (Story #554, PR #903): duas exigências byte-idênticas em
+            // todo o resto (mesma fase, mesmo tipo, mesmo conteúdo) empatam na chave de
+            // conteúdo acima — e, ao contrário de regrasEliminacao (sem identidade), o Id
+            // aqui É congelado no envelope (exigenciaId, CA-09), então usá-lo como
+            // desempate FINAL não fere D9: não afeta a ordem de exigências
+            // GENUINAMENTE distintas (a chave de conteúdo já as discrimina), só torna
+            // determinística a ordem do caso raro de duplicata verdadeira — sem isso, a
+            // ordem de materialização do EF (sem ORDER BY no Include) poderia produzir
+            // bytes diferentes para a MESMA configuração persistida entre leituras.
+            .ThenBy(static e => e.Id);
 
         return new JsonArray([.. ordenadas.Select(static e =>
         {
