@@ -33,6 +33,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
     {
         List<FatoCandidato> fatos = await _dbContext.FatosCandidato
             .AsNoTracking()
+            .Include(f => f.ValoresDominioDeclarados)
             .OrderBy(f => f.Codigo)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -46,6 +47,7 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
     {
         FatoCandidato? fato = await _dbContext.FatosCandidato
             .AsNoTracking()
+            .Include(f => f.ValoresDominioDeclarados)
             .FirstOrDefaultAsync(f => f.Codigo == codigo, cancellationToken)
             .ConfigureAwait(false);
 
@@ -59,7 +61,19 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             f.Nome,
             f.Descricao,
             DominiosFato.ParaTokenCanonico(f.Dominio),
-            NaturezasFato.ParaTokenCanonico(f.Natureza),
+            OrigensFato.ParaTokenCanonico(f.Origem),
             CardinalidadesFato.ParaTokenCanonico(f.Cardinalidade),
-            f.ValoresDominio);
+            f.ValoresDominio,
+            f.PontoResolucao,
+            f.Binding,
+            ParaValoresDominioDeclarados(f.ValoresDominioDeclarados));
+
+    private static IReadOnlyList<FatoValorDominioViewItem>? ParaValoresDominioDeclarados(
+        IReadOnlyCollection<FatoValorDominio> valores) =>
+        valores.Count == 0
+            ? null
+            : [.. valores
+                .OrderBy(v => v.Ordem)
+                .ThenBy(v => v.Codigo, StringComparer.Ordinal)
+                .Select(v => new FatoValorDominioViewItem(v.Codigo, v.Descricao, v.Ordem, v.Ativo))];
 }

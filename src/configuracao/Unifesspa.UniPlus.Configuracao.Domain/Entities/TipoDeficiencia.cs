@@ -19,6 +19,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (a violação 23505 é traduzida em <c>NomeJaExiste</c>).</para>
 /// <para>Dado institucional sem PII (LGPD inaplicável). A remoção é sempre
 /// soft-delete e nunca bloqueada por referência.</para>
+/// <para>
+/// <c>Descricao</c> é <b>obrigatória</b> (ADR-0116): serve também como a
+/// descrição por valor exigida pela spec para o fato <c>TIPO_DEFICIENCIA</c>
+/// (<c>DECLARADO</c>), exposta via <c>ITipoDeficienciaReader</c>. <c>Permanente</c>
+/// é anulável — <see langword="null"/> significa "ainda não classificado pelo
+/// CEPS", distinto de <see langword="false"/> ("classificado como
+/// não-permanente"); a taxonomia concreta é refinamento residual que não bloqueia
+/// este modelo.
+/// </para>
 /// </remarks>
 public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
 {
@@ -27,7 +36,8 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
     private const int DescricaoMaxLength = 1000;
 
     public string Nome { get; private set; } = string.Empty;
-    public string? Descricao { get; private set; }
+    public string Descricao { get; private set; } = string.Empty;
+    public bool? Permanente { get; private set; }
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -38,13 +48,14 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria um novo TipoDeficiencia. Valida obrigatoriedade/tamanho do nome e o
-    /// tamanho da descrição. A unicidade de <paramref name="nome"/> entre tipos
-    /// vivos é responsabilidade do handler.
+    /// Cria um novo TipoDeficiencia. Valida obrigatoriedade/tamanho do nome, a
+    /// obrigatoriedade/tamanho da descrição. A unicidade de <paramref name="nome"/>
+    /// entre tipos vivos é responsabilidade do handler.
     /// </summary>
-    public static Result<TipoDeficiencia> Criar(string nome, string? descricao)
+    public static Result<TipoDeficiencia> Criar(string nome, string descricao, bool? permanente = null)
     {
         ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(descricao);
 
         Result validacao = ValidarCampos(nome, descricao);
         if (validacao.IsFailure)
@@ -53,7 +64,7 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
         }
 
         var tipo = new TipoDeficiencia();
-        tipo.AplicarCampos(nome, descricao);
+        tipo.AplicarCampos(nome, descricao, permanente);
 
         return Result<TipoDeficiencia>.Success(tipo);
     }
@@ -61,11 +72,12 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Atualiza os atributos do TipoDeficiencia. O <c>Nome</c> é editável; sua
     /// unicidade (quando alterado) é responsabilidade do handler. Revalida
-    /// obrigatoriedade/tamanho do nome e o tamanho da descrição.
+    /// obrigatoriedade/tamanho do nome e a obrigatoriedade/tamanho da descrição.
     /// </summary>
-    public Result Atualizar(string nome, string? descricao)
+    public Result Atualizar(string nome, string descricao, bool? permanente = null)
     {
         ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(descricao);
 
         Result validacao = ValidarCampos(nome, descricao);
         if (validacao.IsFailure)
@@ -73,19 +85,17 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
             return validacao;
         }
 
-        AplicarCampos(nome, descricao);
+        AplicarCampos(nome, descricao, permanente);
 
         return Result.Success();
     }
 
-    private void AplicarCampos(string nome, string? descricao)
+    private void AplicarCampos(string nome, string descricao, bool? permanente)
     {
         Nome = nome.Trim();
-        Descricao = NormalizarOpcional(descricao);
+        Descricao = descricao.Trim();
+        Permanente = permanente;
     }
-
-    private static string? NormalizarOpcional(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
     private static Result ValidarCampos(string nome, string? descricao)
     {
@@ -103,7 +113,14 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
                 $"Nome do tipo de deficiência deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
         }
 
-        if (descricao is not null && descricao.Trim().Length > DescricaoMaxLength)
+        if (string.IsNullOrWhiteSpace(descricao))
+        {
+            return Result.Failure(new DomainError(
+                TipoDeficienciaErrorCodes.DescricaoObrigatoria,
+                "Descrição do tipo de deficiência é obrigatória."));
+        }
+
+        if (descricao.Trim().Length > DescricaoMaxLength)
         {
             return Result.Failure(new DomainError(
                 TipoDeficienciaErrorCodes.DescricaoTamanho,

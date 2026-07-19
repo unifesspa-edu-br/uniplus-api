@@ -506,6 +506,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.tipo_deficiencia.nome_ja_existe",
                 "Já existe um tipo de deficiência ativo com este nome")),
 
+        new(TipoDeficienciaErrorCodes.DescricaoObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.tipo_deficiencia.descricao_obrigatoria",
+                "Descrição do tipo de deficiência é obrigatória")),
+
         new(TipoDeficienciaErrorCodes.DescricaoTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -517,6 +523,170 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.tipo_deficiencia.nao_encontrado",
                 "Tipo de deficiência não encontrado")),
+
+        // ── Fato do candidato (UNI-REQ-0077, ADR-0111, ADR-0116) ──────────
+        new(FatoCandidatoErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.codigo_obrigatorio",
+                "Código do fato é obrigatório")),
+
+        new(FatoCandidatoErrorCodes.CodigoFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.codigo_formato_invalido",
+                "Código do fato em formato inválido")),
+
+        new(FatoCandidatoErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.nome_obrigatorio",
+                "Nome do fato é obrigatório")),
+
+        new(FatoCandidatoErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.nome_tamanho",
+                "Tamanho do nome do fato inválido")),
+
+        new(FatoCandidatoErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.descricao_tamanho",
+                "Tamanho da descrição do fato inválido")),
+
+        new(FatoCandidatoErrorCodes.DominioObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.dominio_obrigatorio",
+                "Domínio do fato é obrigatório")),
+
+        new(FatoCandidatoErrorCodes.DominioInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.dominio_invalido",
+                "Domínio do fato fora do vocabulário fechado")),
+
+        new(FatoCandidatoErrorCodes.OrigemObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.origem_obrigatoria",
+                "Origem do fato é obrigatória")),
+
+        new(FatoCandidatoErrorCodes.OrigemInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.origem_invalida",
+                "Origem do fato fora do vocabulário fechado")),
+
+        new(FatoCandidatoErrorCodes.CardinalidadeObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.cardinalidade_obrigatoria",
+                "Cardinalidade do fato é obrigatória")),
+
+        new(FatoCandidatoErrorCodes.CardinalidadeInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.cardinalidade_invalida",
+                "Cardinalidade do fato fora do vocabulário fechado")),
+
+        new(FatoCandidatoErrorCodes.ValoresDominioNaoPermitidosForaDeCategorico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.valores_dominio_nao_permitidos_fora_de_categorico",
+                "Valores de domínio só são permitidos para fatos categóricos")),
+
+        new(FatoCandidatoErrorCodes.ValoresDominioComItemEmBranco,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.valores_dominio_com_item_em_branco",
+                "Lista de valores de domínio com item em branco")),
+
+        new(FatoCandidatoErrorCodes.ValoresDominioComDuplicata,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.valores_dominio_com_duplicata",
+                "Lista de valores de domínio com item duplicado")),
+
+        new(FatoCandidatoErrorCodes.PontoResolucaoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.ponto_resolucao_obrigatorio",
+                "Ponto de resolução do fato é obrigatório")),
+
+        new(FatoCandidatoErrorCodes.PontoResolucaoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.ponto_resolucao_invalido",
+                "Ponto de resolução do fato fora do conjunto canônico das quatorze fases")),
+
+        new(FatoCandidatoErrorCodes.BindingObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.binding_obrigatorio",
+                "Binding do fato é obrigatório")),
+
+        new(FatoCandidatoErrorCodes.BindingFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.binding_formato_invalido",
+                "Binding do fato em formato inválido")),
+
+        new(FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.binding_prefixo_incoerente_com_origem",
+                "Prefixo do binding incoerente com a origem do fato")),
+
+        new(FatoCandidatoErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.fato_candidato.nao_encontrado",
+                "Fato do candidato não encontrado")),
+
+        // ── Valor de domínio de fato do candidato (ADR-0116) ──────────────
+        new(FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.nao_permitido_fora_de_categorico",
+                "Valores de domínio só podem ser adicionados a um fato categórico")),
+
+        new(FatoValorDominioErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.codigo_obrigatorio",
+                "Código do valor de domínio é obrigatório")),
+
+        new(FatoValorDominioErrorCodes.CodigoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.codigo_tamanho",
+                "Tamanho do código do valor de domínio inválido")),
+
+        new(FatoValorDominioErrorCodes.CodigoDuplicado,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.codigo_duplicado",
+                "Já existe um valor de domínio com este código neste fato")),
+
+        new(FatoValorDominioErrorCodes.DescricaoObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.descricao_obrigatoria",
+                "Descrição do valor de domínio é obrigatória quando a origem do fato é DECLARADO")),
+
+        new(FatoValorDominioErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.descricao_tamanho",
+                "Tamanho da descrição do valor de domínio inválido")),
+
+        new(FatoValorDominioErrorCodes.OrdemInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_valor_dominio.ordem_invalida",
+                "Ordem do valor de domínio não pode ser negativa")),
 
         // ── Modalidade de concorrência (UNI-REQ-0011) ─────────────────────
         new(ModalidadeErrorCodes.CodigoObrigatorio,

@@ -23,10 +23,13 @@ public sealed class TipoDeficienciaValidatorTests
         _validator.Validate(Base()).IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Comando sem descrição passa no validator")]
-    public void SemDescricao_Passa()
+    [Fact(DisplayName = "Comando sem descrição é rejeitado (ADR-0116: descrição obrigatória)")]
+    public void SemDescricao_Rejeita()
     {
-        _validator.Validate(Base() with { Descricao = null }).IsValid.Should().BeTrue();
+        ValidationResult resultado = _validator.Validate(Base() with { Descricao = "" });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarTipoDeficienciaCommand.Descricao));
     }
 
     [Theory(DisplayName = "Nome ausente ou em branco é rejeitado")]

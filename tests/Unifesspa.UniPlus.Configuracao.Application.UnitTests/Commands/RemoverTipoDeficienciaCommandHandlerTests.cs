@@ -17,7 +17,7 @@ public sealed class RemoverTipoDeficienciaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static TipoDeficiencia Tipo() =>
-        TipoDeficiencia.Criar("Física", null).Value!;
+        TipoDeficiencia.Criar("Física", "Deficiência física").Value!;
 
     [Fact(DisplayName = "Remover um tipo existente faz soft-delete (Remover + Salvar) sem bloqueio")]
     public async Task Handle_TipoExistente_FazSoftDelete()

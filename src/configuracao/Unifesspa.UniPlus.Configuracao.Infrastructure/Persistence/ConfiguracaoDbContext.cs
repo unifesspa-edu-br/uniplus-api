@@ -62,6 +62,12 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<FatoCandidato> FatosCandidato => Set<FatoCandidato>();
 
     /// <summary>
+    /// Descrição por valor de um categórico estático de <see cref="FatoCandidato"/>
+    /// (ADR-0116) — filha seed-governada, sem CRUD próprio.
+    /// </summary>
+    public DbSet<FatoValorDominio> FatosValorDominio => Set<FatoValorDominio>();
+
+    /// <summary>
     /// Grafo de precedências entre fases canônicas (UNI-REQ-0064, story #851):
     /// CRUD-administrado e seed-governado com as seis arestas estruturais de §3.3.
     /// </summary>

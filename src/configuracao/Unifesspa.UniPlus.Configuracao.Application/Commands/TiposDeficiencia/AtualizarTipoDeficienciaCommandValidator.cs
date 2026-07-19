@@ -15,7 +15,7 @@ public sealed class AtualizarTipoDeficienciaCommandValidator
             .MaximumLength(200).WithMessage("Nome do tipo de deficiência deve ter no máximo 200 caracteres.");
 
         RuleFor(x => x.Descricao)
-            .MaximumLength(1000).WithMessage("Descrição do tipo de deficiência deve ter no máximo 1000 caracteres.")
-            .When(x => x.Descricao is not null);
+            .NotEmpty().WithMessage("Descrição do tipo de deficiência é obrigatória.")
+            .MaximumLength(1000).WithMessage("Descrição do tipo de deficiência deve ter no máximo 1000 caracteres.");
     }
 }

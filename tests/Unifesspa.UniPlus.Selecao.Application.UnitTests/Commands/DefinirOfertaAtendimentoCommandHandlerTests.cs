@@ -43,7 +43,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns(new CondicaoAtendimentoView(condicaoId, "PCD", "Pessoa com deficiência"));
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoDeficienciaView(tipoDeficienciaId, "Deficiência visual"));
+            .Returns(new TipoDeficienciaView(tipoDeficienciaId, "Deficiência visual", "Deficiência relacionada à visão", null));
 
         DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
 
@@ -67,7 +67,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns(new CondicaoAtendimentoView(condicaoId, "LACTANTE", "Lactante"));
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
-            .Returns(new TipoDeficienciaView(tipoDeficienciaId, "Deficiência visual"));
+            .Returns(new TipoDeficienciaView(tipoDeficienciaId, "Deficiência visual", "Deficiência relacionada à visão", null));
 
         DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
 

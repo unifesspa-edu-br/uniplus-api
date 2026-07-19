@@ -27,13 +27,14 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 /// de API de mutação; leitura via <c>IFatoCandidatoReader</c>), não por gatilho.
 /// </para>
 /// <para>
-/// <c>dominio</c>, <c>natureza</c> e <c>cardinalidade</c> são enums persistidos
+/// <c>dominio</c>, <c>origem</c> e <c>cardinalidade</c> são enums persistidos
 /// como token canônico UPPER_SNAKE por value converter (reidratação fail-fast); um
 /// CHECK por coluna restringe o texto ao domínio fechado. <c>valores_dominio</c> é
 /// <c>jsonb</c> <strong>anulável</strong>: o nulo é significante (categórico de
 /// escopo-processo, ou booleano/numérico) e é preservado no round-trip — não há
 /// default <c>'[]'</c> que o mascare. Um CHECK garante a coerência do preenchimento
-/// com o domínio.
+/// com o domínio. <c>ponto_resolucao</c>/<c>binding</c> (ADR-0116) são referência
+/// por valor, sem FK.
 /// </para>
 /// </remarks>
 [SuppressMessage(
@@ -46,6 +47,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const int EnumTokenMaxLength = 20;
+    private const int PontoResolucaoMaxLength = 50;
+    private const int BindingMaxLength = 200;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -73,8 +76,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
 
-        builder.Property(f => f.Natureza)
-            .HasConversion(NaturezaConverter)
+        builder.Property(f => f.Origem)
+            .HasConversion(OrigemConverter)
             .HasMaxLength(EnumTokenMaxLength)
             .IsRequired();
 
@@ -91,6 +94,22 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         builder.Property(f => f.ValoresDominio)
             .HasConversion((ValueConverter)ValoresDominioConverter, ValoresDominioComparer)
             .HasColumnType("jsonb");
+
+        // ponto_resolucao/binding (ADR-0116): referência por valor, sem FK — mesmo
+        // padrão de dominio/origem/cardinalidade (código como valor, não linha viva).
+        builder.Property(f => f.PontoResolucao).HasMaxLength(PontoResolucaoMaxLength).IsRequired();
+        builder.Property(f => f.Binding).HasMaxLength(BindingMaxLength).IsRequired();
+
+        // Coleção filha (ADR-0116): descrição por valor de um categórico estático.
+        // Cascade porque o filho não tem sentido sem o pai (mesmo padrão de
+        // OfertaAtendimentoEspecializado.Condicoes).
+        builder.HasMany(f => f.ValoresDominioDeclarados)
+            .WithOne()
+            .HasForeignKey(v => v.FatoCandidatoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(f => f.ValoresDominioDeclarados)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // UNIQUE total do código (chave natural imutável): o catálogo é append-only
         // e sem soft-delete, então não há slot a liberar — a unicidade é absoluta.
@@ -109,8 +128,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             $"dominio IN ({TokensSql(DominiosFato.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_natureza",
-            $"natureza IN ({TokensSql(NaturezasFato.TokensCanonicos)})");
+            "ck_rol_de_fatos_candidato_origem",
+            $"origem IN ({TokensSql(OrigensFato.TokensCanonicos)})");
 
         table.HasCheckConstraint(
             "ck_rol_de_fatos_candidato_cardinalidade",
@@ -162,9 +181,11 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
             item.Nome,
             item.Descricao,
             item.Dominio,
-            item.Natureza,
+            item.Origem,
             item.Cardinalidade,
             item.ValoresDominio,
+            item.PontoResolucao,
+            item.Binding,
             CreatedAt = seedCriadoEm,
         });
     }
@@ -174,8 +195,8 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
     private static readonly ValueConverter<DominioFato, string> DominioConverter =
         new(dominio => DominiosFato.ParaTokenCanonico(dominio), token => DominiosFato.Analisar(token));
 
-    private static readonly ValueConverter<NaturezaFato, string> NaturezaConverter =
-        new(natureza => NaturezasFato.ParaTokenCanonico(natureza), token => NaturezasFato.Analisar(token));
+    private static readonly ValueConverter<OrigemFato, string> OrigemConverter =
+        new(origem => OrigensFato.ParaTokenCanonico(origem), token => OrigensFato.Analisar(token));
 
     private static readonly ValueConverter<CardinalidadeFato, string> CardinalidadeConverter =
         new(cardinalidade => CardinalidadesFato.ParaTokenCanonico(cardinalidade), token => CardinalidadesFato.Analisar(token));

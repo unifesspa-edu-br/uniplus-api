@@ -29,7 +29,7 @@ public static class CriarTipoDeficienciaCommandHandler
             return Result<Guid>.Failure(NomeJaExisteErro(command.Nome));
         }
 
-        Result<TipoDeficiencia> tipoResult = TipoDeficiencia.Criar(command.Nome, command.Descricao);
+        Result<TipoDeficiencia> tipoResult = TipoDeficiencia.Criar(command.Nome, command.Descricao, command.Permanente);
 
         if (tipoResult.IsFailure)
         {

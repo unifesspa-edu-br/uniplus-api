@@ -40,7 +40,7 @@ public static class AtualizarTipoDeficienciaCommandHandler
             return Result.Failure(NomeJaExisteErro(command.Nome));
         }
 
-        Result atualizarResult = tipo.Atualizar(command.Nome, command.Descricao);
+        Result atualizarResult = tipo.Atualizar(command.Nome, command.Descricao, command.Permanente);
 
         if (atualizarResult.IsFailure)
         {
