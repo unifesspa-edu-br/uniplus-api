@@ -2,11 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using System.Text.Json;
 
-using DTOs;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
+
+using DTOs;
 
 public static class ObterProcessoSeletivoQueryHandler
 {
@@ -197,8 +198,23 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. documento.Condicoes.OrderBy(c => c.Clausula).ThenBy(c => c.Id).Select(ProjectCondicaoGatilho)],
         [.. documento.BasesLegais.OrderBy(b => b.Id).Select(ProjectBaseLegal)],
         ProjectIdadeMaximaEmissao(documento.IdadeMaximaEmissao),
-        documento.FormatoPermitido?.ToCodigo(),
+        ProjectFormatosPermitidos(documento.FormatosPermitidos),
         documento.TamanhoMaximoBytes);
+
+    /// <summary>
+    /// Projeta <see cref="FormatosPermitidos"/> (Story #918) no MESMO valor JSON polimórfico
+    /// que <c>DefinirDocumentosExigidosCommandHandler.ResolverFormatosPermitidos</c> aceita
+    /// de volta — <c>"QUALQUER"</c> ou um array de <c>{formato, tamanhoMaximoBytesMax}</c> —
+    /// fechando o round-trip GET→PUT sem transformação do cliente.
+    /// </summary>
+    private static JsonElement ProjectFormatosPermitidos(FormatosPermitidos formatosPermitidos) =>
+        formatosPermitidos.Qualquer
+            ? JsonSerializer.SerializeToElement("QUALQUER")
+            : JsonSerializer.SerializeToElement(formatosPermitidos.Lista!.Select(static e => new
+            {
+                formato = e.Formato.ToCodigo(),
+                tamanhoMaximoBytesMax = e.TamanhoMaximoBytesMax,
+            }));
 
     // Valor como texto JSON canônico (GetRawText) — o mesmo PUT que aceita este DTO de
     // volta (DefinirDocumentosExigidosCommandHandler.InterpretarValor) reparseia texto

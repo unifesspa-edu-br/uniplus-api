@@ -172,8 +172,10 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     /// <summary>
     /// Exigência CONDICIONAL rica — todas as 12 dimensões da forma 1.2 preenchidas
-    /// (condição de gatilho, base legal resolvida, idade de emissão, formato e tamanho
-    /// máximo), para que a golden fixture congele a serialização completa do item.
+    /// (condição de gatilho, base legal resolvida, idade de emissão, formatos permitidos e
+    /// tamanho máximo global), para que a golden fixture congele a serialização completa do
+    /// item. <c>FormatosPermitidos</c> (Story #918) traz DOIS itens — um com teto por
+    /// formato, outro sem — para exercitar as duas variantes da lista na mesma fixture.
     /// </summary>
     private static DocumentoExigido DocumentoExigidoDeReferencia(Guid exigidoNaFaseId)
     {
@@ -183,6 +185,9 @@ public sealed class EnvelopeCanonicoGoldenTests
             "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna do certame").Value!;
         IdadeMaximaEmissao idadeMaximaEmissao = IdadeMaximaEmissao.Criar(
             90, UnidadeIdade.Dias, ReferenciaTipoIdadeEmissao.FimInscricao, null, null).Value!;
+        FormatosPermitidos formatosPermitidos = FormatosPermitidos.Criar(
+            qualquer: false,
+            entradas: [("PDF", 5_000_000), ("JPEG", null)]).Value!;
 
         return DocumentoExigido.Criar(
             exigidoNaFaseId,
@@ -197,7 +202,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             condicoes: [condicao],
             basesLegais: [baseLegal],
             idadeMaximaEmissao: idadeMaximaEmissao,
-            formatoPermitido: FormatoPermitido.Pdf,
+            formatosPermitidos: formatosPermitidos,
             tamanhoMaximoBytes: 5_000_000).Value!;
     }
 

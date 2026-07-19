@@ -38,7 +38,7 @@ public sealed class ResolvedorExigenciasDocumentaisTests
             condicoes: [],
             basesLegais: [],
             idadeMaximaEmissao: null,
-            formatoPermitido: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
             tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido Condicional(string fato, string valor, Guid? exigidoNaFaseId = null)
@@ -58,7 +58,7 @@ public sealed class ResolvedorExigenciasDocumentaisTests
             condicoes: [condicao],
             basesLegais: [],
             idadeMaximaEmissao: null,
-            formatoPermitido: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
             tamanhoMaximoBytes: null).Value!;
     }
 
@@ -246,7 +246,7 @@ public sealed class ResolvedorExigenciasDocumentaisTests
             FaseA, Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Condicional,
             obrigatorio: true, consequenciaIndeferimento: null, grupo,
             condicoes: [condicaoDeFatoNaoResolvido], basesLegais: [], idadeMaximaEmissao: null,
-            formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         BlocoExigenciasCongelado bloco = BlocoExigenciasCongelado.DeGrafoReidratado([geral, condicionalIndeterminada]);
         Dictionary<Guid, ApresentacaoDocumento> apresentacoes = ApresentacaoPara(geral.Id);
 

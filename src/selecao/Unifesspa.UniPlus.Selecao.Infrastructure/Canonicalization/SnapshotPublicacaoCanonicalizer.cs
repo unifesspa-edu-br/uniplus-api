@@ -513,8 +513,25 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["condicaoGatilho"] = SerializarCondicaoGatilho(exigencia.Condicoes),
         ["basesLegais"] = SerializarBasesLegais(exigencia.BasesLegaisResolvidas()),
         ["idadeMaximaEmissao"] = exigencia.IdadeMaximaEmissao is { } idade ? SerializarIdadeMaximaEmissao(idade) : null,
-        ["formatoPermitido"] = exigencia.FormatoPermitido?.ToCodigo(),
+        ["formatosPermitidos"] = SerializarFormatosPermitidos(exigencia.FormatosPermitidos),
         ["tamanhoMaximoBytes"] = exigencia.TamanhoMaximoBytes,
+    };
+
+    /// <summary>
+    /// <see cref="FormatosPermitidos"/> (Story #918) substitui o campo singular
+    /// <c>formatoPermitido</c> — objeto sempre presente (o VO é obrigatório), com
+    /// <c>lista</c> nula ⟺ <c>qualquer</c> verdadeiro.
+    /// </summary>
+    private static JsonObject SerializarFormatosPermitidos(FormatosPermitidos formatosPermitidos) => new()
+    {
+        ["qualquer"] = formatosPermitidos.Qualquer,
+        ["lista"] = formatosPermitidos.Lista is { } lista
+            ? new JsonArray([.. lista.Select(static e => new JsonObject
+            {
+                ["formato"] = e.Formato.ToCodigo(),
+                ["tamanhoMaximoBytesMax"] = e.TamanhoMaximoBytesMax,
+            })])
+            : null,
     };
 
     /// <summary>

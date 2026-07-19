@@ -246,7 +246,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             obrigatorio: true,
             consequenciaIndeferimento: null,
             grupoSatisfacaoId: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Should().ContainSingle();
@@ -338,7 +338,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             tipoDocumentoCodigo: "IDENTIDADE", tipoDocumentoNome: "Documento de identidade",
             tipoDocumentoCategoria: "PESSOAL", aplicabilidade: Aplicabilidade.Geral, obrigatorio: true,
             consequenciaIndeferimento: null, grupoSatisfacaoId: null, condicoes: [], basesLegais: [],
-            idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null);
+            idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null);
 
         ReferenciaTemporalFatos referenciaCongelada = ReferenciaTemporalFatos.Criar(
             ReferenciaTipo.FimFase, null, faseCongeladaId).Value!;

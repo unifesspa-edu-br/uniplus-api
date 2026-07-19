@@ -1,11 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System.Text.Json;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ValueObjects;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 /// <summary>
 /// Configuração EF Core de <see cref="DocumentoExigido"/> (Story #554, PR #895) — entidade
@@ -14,6 +18,10 @@ using Domain.Enums;
 /// — o módulo Seleção só usa esse mecanismo em <c>versoes_configuracao</c> (guard rails
 /// forenses da ADR-0102); a integridade é C# (enum tipado + guard de domínio +
 /// FluentValidation), mesmo padrão de <see cref="FaseCronograma"/>/<see cref="ModalidadeSelecionada"/>.
+/// <see cref="FormatosPermitidos"/> (Story #918) é a exceção: o CHECK
+/// <c>ck_documentos_exigidos_formatos_permitidos_coerente</c> é defesa em profundidade contra a
+/// corrida check-then-act do domínio, mesmo padrão de <c>FatoCandidatoConfiguration</c> (módulo
+/// Configuração, PR #914 irmã).
 /// </summary>
 public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<DocumentoExigido>
 {
@@ -26,13 +34,18 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
     private const int ConsequenciaIndeferimentoMaxLength = 30;
     private const int IdadeMaximaUnidadeMaxLength = 10;
     private const int IdadeMaximaReferenciaTipoMaxLength = 20;
-    private const int FormatoPermitidoMaxLength = 10;
+
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     public void Configure(EntityTypeBuilder<DocumentoExigido> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("documentos_exigidos");
+        builder.ToTable("documentos_exigidos", t => t.HasCheckConstraint(
+            "ck_documentos_exigidos_formatos_permitidos_coerente",
+            "(formatos_permitidos_qualquer = true AND formatos_permitidos_lista IS NULL) OR " +
+            "(formatos_permitidos_qualquer = false AND formatos_permitidos_lista IS NOT NULL " +
+            "AND jsonb_array_length(formatos_permitidos_lista) > 0)"));
         builder.HasKey(d => d.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever, mesmo padrão de
         // FaseCronograma/ModalidadeSelecionada.
@@ -100,9 +113,19 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             idade.Property(i => i.ReferenciaFaseId).HasColumnName("idade_maxima_referencia_fase_id");
         });
 
-        builder.Property(d => d.FormatoPermitido)
-            .HasConversion(FormatoPermitidoConverter)
-            .HasMaxLength(FormatoPermitidoMaxLength);
+        // Formatos permitidos (Story #918) — VO sem identidade própria, OBRIGATÓRIO (ao
+        // contrário de IdadeMaximaEmissao): duas colunas, `qualquer` (bool NOT NULL) e
+        // `lista` (jsonb, não-nula ⟺ !qualquer) — CHECK de coerência acima
+        // (ck_documentos_exigidos_formatos_permitidos_coerente).
+        builder.OwnsOne(d => d.FormatosPermitidos, formatos =>
+        {
+            formatos.Property(f => f.Qualquer).HasColumnName("formatos_permitidos_qualquer").IsRequired();
+            formatos.Property(f => f.Lista)
+                .HasColumnName("formatos_permitidos_lista")
+                .HasConversion(FormatosPermitidosListaConverter, FormatosPermitidosListaComparer)
+                .HasColumnType("jsonb");
+        });
+        builder.Navigation(d => d.FormatosPermitidos).IsRequired();
 
         builder.Property(d => d.TamanhoMaximoBytes);
     }
@@ -117,8 +140,52 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
             tipo => tipo == ReferenciaTipoIdadeEmissao.Nenhuma ? null : tipo.ToCodigo(),
             codigo => ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(codigo) ?? ReferenciaTipoIdadeEmissao.Nenhuma);
 
-    private static readonly ValueConverter<FormatoPermitido?, string?> FormatoPermitidoConverter =
+    private static readonly ValueConverter<IReadOnlyList<FormatoPermitidoEntry>?, string?> FormatosPermitidosListaConverter =
         new(
-            formato => formato == null || formato.Value == FormatoPermitido.Nenhum ? null : formato.Value.ToCodigo(),
-            codigo => FormatoPermitidoCodigo.FromCodigo(codigo));
+            lista => SerializeFormatosPermitidosLista(lista),
+            json => DeserializeFormatosPermitidosLista(json));
+
+    private static readonly ValueComparer<IReadOnlyList<FormatoPermitidoEntry>?> FormatosPermitidosListaComparer =
+        new(
+            (a, b) => SerializeFormatosPermitidosLista(a) == SerializeFormatosPermitidosLista(b),
+            v => v == null ? 0 : SerializeFormatosPermitidosLista(v)!.GetHashCode(StringComparison.Ordinal),
+            v => DeserializeFormatosPermitidosLista(SerializeFormatosPermitidosLista(v)));
+
+    private static string? SerializeFormatosPermitidosLista(IReadOnlyList<FormatoPermitidoEntry>? lista) =>
+        lista is null
+            ? null
+            : JsonSerializer.Serialize(
+                lista.Select(static e => new FormatoPermitidoEntryJson(e.Formato.ToCodigo(), e.TamanhoMaximoBytesMax)),
+                JsonOptions);
+
+    /// <summary>
+    /// Reidrata direto do jsonb já validado na escrita (<see cref="FormatosPermitidos.Criar"/>) —
+    /// mesmo raciocínio de <c>DocumentoExigido.Reidratar</c>: revalidar aqui é defesa em
+    /// profundidade contra dado corrompido, não uma segunda fonte de verdade.
+    /// </summary>
+    private static List<FormatoPermitidoEntry>? DeserializeFormatosPermitidosLista(string? json)
+    {
+        if (string.IsNullOrEmpty(json))
+        {
+            return null;
+        }
+
+        List<FormatoPermitidoEntryJson>? itens = JsonSerializer.Deserialize<List<FormatoPermitidoEntryJson>>(json, JsonOptions);
+        if (itens is null)
+        {
+            return null;
+        }
+
+        List<FormatoPermitidoEntry> lista = [];
+        foreach (FormatoPermitidoEntryJson item in itens)
+        {
+            FormatoPermitido formato = FormatoPermitidoCodigo.FromCodigo(item.Formato)
+                ?? throw new InvalidOperationException($"Formato '{item.Formato}' persistido em formatos_permitidos_lista é desconhecido.");
+            lista.Add(FormatoPermitidoEntry.Criar(formato, item.TamanhoMaximoBytesMax).Value!);
+        }
+
+        return lista;
+    }
+
+    private sealed record FormatoPermitidoEntryJson(string Formato, int? TamanhoMaximoBytesMax);
 }

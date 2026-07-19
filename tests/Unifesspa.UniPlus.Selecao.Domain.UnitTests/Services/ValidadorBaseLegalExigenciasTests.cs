@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="ValidadorBaseLegalExigencias"/> (Story #554, PR #898, issue #549,
@@ -30,7 +31,7 @@ public sealed class ValidadorBaseLegalExigenciasTests
             condicoes: [],
             basesLegais: basesLegais,
             idadeMaximaEmissao: null,
-            formatoPermitido: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
             tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-03: processo sem exigência que determina resultado é trivialmente satisfeito (semântica vazia)")]

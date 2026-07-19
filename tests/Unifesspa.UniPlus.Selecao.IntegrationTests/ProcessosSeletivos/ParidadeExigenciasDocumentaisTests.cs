@@ -115,7 +115,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         obrigatorio: false,
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
-        condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo));

@@ -345,6 +345,17 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("IdadeMaximaEmissao.FaseIncoerenteComTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_incoerente_com_tipo", "A fase âncora só é aceita (e é exigida) quando o tipo é INICIO_FASE ou FIM_FASE")),
         new("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_nao_pertence_ao_processo", "A fase âncora da idade máxima de emissão não pertence ao cronograma deste processo")),
         new("IdadeMaximaEmissao.FaseExtremoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.idade_maxima_emissao.fase_extremo_ausente", "A fase âncora da idade máxima de emissão não tem o extremo (início/fim) definido")),
+        // Formatos permitidos (Story #918): substitui o campo singular FormatoPermitido? —
+        // lista de {formato, tamanhoMaximoBytesMax} OU o token QUALQUER, mutuamente
+        // exclusivos, campo agora obrigatório. Obrigatorio/FormaInvalida são produzidos pelo
+        // handler ao interpretar o valor polimórfico do wire (JsonElement); os demais são do
+        // próprio VO (FormatosPermitidos.Criar).
+        new("FormatosPermitidos.Obrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formatos_permitidos.obrigatorio", "FormatosPermitidos é obrigatório: declare QUALQUER ou uma lista com ao menos um formato")),
+        new("FormatosPermitidos.FormaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formatos_permitidos.forma_invalida", "FormatosPermitidos deve ser o token QUALQUER ou um array de formatos")),
+        new("FormatosPermitidos.QualquerComFormatosEspecificos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formatos_permitidos.qualquer_com_formatos_especificos", "QUALQUER não pode conviver com uma lista de formatos específicos")),
+        new("FormatosPermitidos.FormatoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formatos_permitidos.formato_invalido", "Formato não reconhecido")),
+        new("FormatosPermitidos.FormatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formatos_permitidos.formato_duplicado", "O mesmo formato aparece mais de uma vez na lista")),
+        new("FormatosPermitidos.TamanhoMaximoBytesMaxInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formatos_permitidos.tamanho_maximo_bytes_max_invalido", "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero")),
         // Coerência consequência↔ação da vaga (Story #554, PR #903, issue #548, CA-05) —
         // ProcessoSeletivo.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento, chamado em
         // Publicar/Retificar/FecharRetificacao logo após a guarda B-01 removida.

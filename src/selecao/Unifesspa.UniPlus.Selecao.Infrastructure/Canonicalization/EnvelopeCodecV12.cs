@@ -225,7 +225,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
                 "exigenciaId", "tipoDocumentoOrigemId", "tipoDocumentoCodigo", "tipoDocumentoNome",
                 "tipoDocumentoCategoria", "exigidoNaFaseId", "aplicabilidade", "obrigatorio",
                 "consequenciaIndeferimento", "grupoSatisfacaoId", "condicaoGatilho", "basesLegais",
-                "idadeMaximaEmissao", "formatoPermitido", "tamanhoMaximoBytes");
+                "idadeMaximaEmissao", "formatosPermitidos", "tamanhoMaximoBytes");
 
             Guid exigenciaId = leitor.Identificador(item, "exigenciaId", path);
             Guid tipoDocumentoOrigemId = leitor.Identificador(item, "tipoDocumentoOrigemId", path);
@@ -237,7 +237,6 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
             string? consequenciaIndeferimento = leitor.TextoOpcional(item, "consequenciaIndeferimento", path, LimitesDoEnvelope.Token);
             Guid? grupoSatisfacaoId = leitor.IdentificadorOpcional(item, "grupoSatisfacaoId", path);
-            string? formatoPermitidoCodigo = leitor.TextoOpcional(item, "formatoPermitido", path);
             int? tamanhoMaximoBytes = leitor.InteiroOpcional(item, "tamanhoMaximoBytes", path);
 
             if (leitor.Falhou)
@@ -263,14 +262,11 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
                 return [];
             }
 
-            if (formatoPermitidoCodigo is not null && FormatoPermitidoCodigo.FromCodigo(formatoPermitidoCodigo) is not { } formatoValido)
+            FormatosPermitidos? formatosPermitidos = LerFormatosPermitidos(leitor, item, path);
+            if (leitor.Falhou)
             {
-                return leitor.Propagar<IReadOnlyList<DocumentoExigido>>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"'{path}.formatoPermitido' não reconhecido: '{formatoPermitidoCodigo}'.")) ?? [];
+                return [];
             }
-
-            FormatoPermitido? formatoPermitido = formatoPermitidoCodigo is null ? null : FormatoPermitidoCodigo.FromCodigo(formatoPermitidoCodigo);
 
             if (tamanhoMaximoBytes is <= 0)
             {
@@ -293,11 +289,73 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
                 condicoes,
                 basesLegais,
                 idadeMaximaEmissao,
-                formatoPermitido,
+                formatosPermitidos!,
                 tamanhoMaximoBytes));
         }
 
         return exigencias;
+    }
+
+    /// <summary>
+    /// <see cref="FormatosPermitidos"/> (Story #918) substitui o campo singular
+    /// <c>formatoPermitido</c> — objeto SEMPRE presente (o VO é obrigatório em
+    /// <see cref="DocumentoExigido"/>), com <c>lista</c> nula ⟺ <c>qualquer</c> verdadeiro.
+    /// A validação de forma/coerência (formato reconhecido, sem duplicata, teto por formato
+    /// positivo, QUALQUER exclusivo) é <see cref="Domain.ValueObjects.FormatosPermitidos.Criar"/> —
+    /// mesma fronteira de responsabilidade que o restante deste decoder (RN08: o congelado
+    /// não revalida semântica, só forma).
+    /// </summary>
+    private static FormatosPermitidos? LerFormatosPermitidos(LeitorEnvelope leitor, JsonObject item, string pathPai)
+    {
+        JsonObject formatosJson = leitor.Objeto(item, "formatosPermitidos", pathPai);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        string path = $"{pathPai}.formatosPermitidos";
+        leitor.ExigirChaves(formatosJson, path, "qualquer", "lista");
+
+        bool qualquer = leitor.Booleano(formatosJson, "qualquer", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        JsonNode? listaNode = formatosJson["lista"];
+        if (listaNode is null)
+        {
+            Result<FormatosPermitidos> resultadoSemLista = FormatosPermitidos.Criar(qualquer, entradas: null);
+            return resultadoSemLista.IsFailure
+                ? leitor.Propagar<FormatosPermitidos>(resultadoSemLista.Error!)
+                : resultadoSemLista.Value;
+        }
+
+        if (listaNode is not JsonArray listaArray)
+        {
+            return leitor.Propagar<FormatosPermitidos>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.lista' deveria ser um array ou null."));
+        }
+
+        List<(string Formato, int? TamanhoMaximoBytesMax)> entradas = [];
+        for (int i = 0; i < listaArray.Count; i++)
+        {
+            string itemPath = $"{path}.lista[{i}]";
+            JsonObject entradaJson = leitor.ItemObjeto(listaArray, i, $"{path}.lista");
+            leitor.ExigirChaves(entradaJson, itemPath, "formato", "tamanhoMaximoBytesMax");
+
+            string formatoCodigo = leitor.TextoNaoVazio(entradaJson, "formato", itemPath);
+            int? tamanhoMaximoBytesMax = leitor.InteiroOpcional(entradaJson, "tamanhoMaximoBytesMax", itemPath);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            entradas.Add((formatoCodigo, tamanhoMaximoBytesMax));
+        }
+
+        Result<FormatosPermitidos> resultado = FormatosPermitidos.Criar(qualquer, entradas);
+        return resultado.IsFailure ? leitor.Propagar<FormatosPermitidos>(resultado.Error!) : resultado.Value;
     }
 
     /// <summary>
