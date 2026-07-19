@@ -3,12 +3,15 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using System.Text.Json;
 
 using Abstractions;
+
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
@@ -250,10 +253,14 @@ public static class DefinirDocumentosExigidosCommandHandler
         HashSet<string> condicoesAtendimento = [.. (processo.OfertaAtendimento?.Condicoes ?? [])
             .Select(static c => c.CondicaoCodigo)];
 
+        HashSet<string> tiposDeficiencia = [.. (processo.OfertaAtendimento?.TiposDeficiencia ?? [])
+            .Select(static t => t.TipoDeficienciaNome)];
+
         return new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {
             ["MODALIDADE"] = modalidades,
             ["CONDICAO_ATENDIMENTO"] = condicoesAtendimento,
+            ["TIPO_DEFICIENCIA"] = tiposDeficiencia,
         };
     }
 
