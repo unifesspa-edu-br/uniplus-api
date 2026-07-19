@@ -436,10 +436,6 @@ public static class DefinirDocumentosExigidosCommandHandler
                         && formatoElemento.ValueKind == JsonValueKind.String
                             ? formatoElemento.GetString()
                             : null;
-                    int? tamanhoMaximoBytesMax = item.TryGetProperty("tamanhoMaximoBytesMax", out JsonElement tamanhoElemento)
-                        && tamanhoElemento.ValueKind == JsonValueKind.Number
-                            ? tamanhoElemento.GetInt32()
-                            : null;
 
                     if (formato is null)
                     {
@@ -448,7 +444,13 @@ public static class DefinirDocumentosExigidosCommandHandler
                             "Cada item da lista de formatos permitidos deve declarar 'formato'."));
                     }
 
-                    entradas.Add((formato, tamanhoMaximoBytesMax));
+                    Result<int?> tamanhoResult = ResolverTamanhoMaximoBytesMax(item);
+                    if (tamanhoResult.IsFailure)
+                    {
+                        return Result<FormatosPermitidos>.Failure(tamanhoResult.Error!);
+                    }
+
+                    entradas.Add((formato, tamanhoResult.Value));
                     break;
 
                 default:
@@ -459,6 +461,32 @@ public static class DefinirDocumentosExigidosCommandHandler
         }
 
         return FormatosPermitidos.Criar(qualquer: false, entradas);
+    }
+
+    /// <summary>
+    /// <c>tamanhoMaximoBytesMax</c> ausente do objeto, ou presente como JSON <c>null</c>, é
+    /// "sem teto por formato" — <see langword="null"/>, sucesso. Presente com qualquer outra
+    /// forma (string, booleano, número fora do alcance de <see cref="int"/>) é malformado —
+    /// falha nomeada, nunca convertido silenciosamente para <see langword="null"/> nem deixado
+    /// estourar em <c>GetInt32()</c> (que lançaria antes de qualquer <see cref="Result"/> ser
+    /// retornado, virando 500 em vez de 422).
+    /// </summary>
+    private static Result<int?> ResolverTamanhoMaximoBytesMax(JsonElement item)
+    {
+        if (!item.TryGetProperty("tamanhoMaximoBytesMax", out JsonElement tamanhoElemento)
+            || tamanhoElemento.ValueKind == JsonValueKind.Null)
+        {
+            return Result<int?>.Success(null);
+        }
+
+        if (tamanhoElemento.ValueKind != JsonValueKind.Number || !tamanhoElemento.TryGetInt32(out int tamanho))
+        {
+            return Result<int?>.Failure(new DomainError(
+                "FormatosPermitidos.FormaInvalida",
+                "'tamanhoMaximoBytesMax', quando presente, deve ser um número inteiro."));
+        }
+
+        return Result<int?>.Success(tamanho);
     }
 
     /// <summary>
