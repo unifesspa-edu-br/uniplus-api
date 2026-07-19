@@ -202,7 +202,7 @@ public sealed class ManifestoDoEnvelopeTests
             [
                 "ExigidoNaFaseId", "TipoDocumentoOrigemId", "TipoDocumentoCodigo", "TipoDocumentoNome",
                 "TipoDocumentoCategoria", "Aplicabilidade", "Obrigatorio", "ConsequenciaIndeferimento",
-                "GrupoSatisfacaoId", "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatoPermitido",
+                "GrupoSatisfacaoId", "Condicoes", "BasesLegais", "IdadeMaximaEmissao", "FormatosPermitidos",
                 "TamanhoMaximoBytes",
             ],
             [("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2).")]),
@@ -218,6 +218,11 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(IdadeMaximaEmissao)] = (
             ["Valor", "Unidade", "ReferenciaTipo", "Data", "ReferenciaFaseId"],
             []),
+
+        // Formatos permitidos (Story #918) — substitui o campo singular FormatoPermitido?
+        // (enum, fora do alcance deste manifesto — EDoDominio exclui enums).
+        [typeof(FormatosPermitidos)] = (["Qualquer", "Lista"], []),
+        [typeof(FormatoPermitidoEntry)] = (["Formato", "TamanhoMaximoBytesMax"], []),
 
         // A POLÍTICA crua (B-03) — insumo de ProcessoSeletivo.ResolverDataReferenciaFatos.
         // A DateOnly resolvida (dataReferenciaFatos) é output derivado, não uma propriedade

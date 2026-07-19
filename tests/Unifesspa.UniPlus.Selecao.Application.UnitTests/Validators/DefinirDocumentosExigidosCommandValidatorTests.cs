@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Validators;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using FluentValidation.Results;
@@ -13,14 +15,22 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// (Story #554, PR #898, issue #549) — valida apenas a FORMA de cada item; o gate "≥1
 /// RESOLVIDO por exigência que determina resultado" é do domínio, na publicação.
 /// </summary>
+/// <remarks>
+/// FormatosPermitidos (Story #918) não tem cobertura aqui — a interpretação do valor JSON
+/// polimórfico é do HANDLER (<c>DefinirDocumentosExigidosCommandHandlerTests</c>), e a
+/// coerência de negócio é do domínio (<c>FormatosPermitidosTests</c>); esta suíte só cobre a
+/// FORMA validada por FluentValidation, que não inclui mais este campo.
+/// </remarks>
 public sealed class DefinirDocumentosExigidosCommandValidatorTests
 {
+    private static readonly JsonElement Qualquer = JsonSerializer.SerializeToElement("QUALQUER");
+
     private static ItemDocumentoExigidoInput ItemCom(params BaseLegalInput[] basesLegais) => new(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], basesLegais, null, null, null);
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], basesLegais, null, Qualquer, null);
 
     private static ItemDocumentoExigidoInput ItemComIdade(
-        IdadeMaximaEmissaoInput? idadeMaximaEmissao = null, string? formatoPermitido = null, int? tamanhoMaximoBytes = null) => new(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [], idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes);
+        IdadeMaximaEmissaoInput? idadeMaximaEmissao = null, int? tamanhoMaximoBytes = null) => new(
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [], idadeMaximaEmissao, Qualquer, tamanhoMaximoBytes);
 
     private static ValidationResult Validar(ItemDocumentoExigidoInput item) =>
         new DefinirDocumentosExigidosCommandValidator().Validate(
@@ -123,10 +133,10 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
             new BaseLegalInput("Cláusula do edital", "INTERNA_EDITAL", "PENDENTE", null)))
             .IsValid.Should().BeTrue();
 
-    // ── Story #554/issue #893 (PR #900) — idade máxima de emissão, formato e tamanho ──
+    // ── Story #554/issue #893 (PR #900) — idade máxima de emissão e tamanho ──
 
-    [Fact(DisplayName = "Item sem idade/formato/tamanho (tudo nulo) é aceito")]
-    public void Aceita_SemIdadeFormatoTamanho() =>
+    [Fact(DisplayName = "Item sem idade/tamanho (tudo nulo, exceto FormatosPermitidos=QUALQUER) é aceito")]
+    public void Aceita_SemIdadeTamanho() =>
         Validar(ItemComIdade()).IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "IdadeMaximaEmissao com Unidade fora do domínio é rejeitada")]
@@ -169,22 +179,6 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
 
         Validar(ItemComIdade(idade)).IsValid.Should().BeTrue();
     }
-
-    [Fact(DisplayName = "FormatoPermitido fora do domínio é rejeitado")]
-    public void Rejeita_FormatoDesconhecido()
-    {
-        ValidationResult resultado = Validar(ItemComIdade(formatoPermitido: "DOCX"));
-
-        resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Formato", StringComparison.Ordinal));
-    }
-
-    [Theory(DisplayName = "Todos os formatos válidos são aceitos")]
-    [InlineData("PDF")]
-    [InlineData("JPEG")]
-    [InlineData("PNG")]
-    public void Aceita_TodosFormatosValidos(string formato) =>
-        Validar(ItemComIdade(formatoPermitido: formato)).IsValid.Should().BeTrue();
 
     [Fact(DisplayName = "TamanhoMaximoBytes zero ou negativo é rejeitado")]
     public void Rejeita_TamanhoMaximoBytesNaoPositivo()

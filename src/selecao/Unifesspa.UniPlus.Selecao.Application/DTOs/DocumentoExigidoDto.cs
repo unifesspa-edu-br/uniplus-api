@@ -1,10 +1,18 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using System.Text.Json;
+
 /// <summary>
 /// DTO de leitura de <see cref="Domain.Entities.DocumentoExigido"/> (Story #554, PR #895).
 /// Compõe <c>ProcessoSeletivoDto</c> — não há rota aninhada própria de leitura, mesmo
 /// padrão de <c>FaseCronogramaDto</c>.
 /// </summary>
+/// <remarks>
+/// <see cref="FormatosPermitidos"/> (Story #918) é o mesmo valor JSON polimórfico do
+/// comando (<c>ItemDocumentoExigidoInput.FormatosPermitidos</c>) — a string <c>"QUALQUER"</c>
+/// ou o array de <c>{formato, tamanhoMaximoBytesMax}</c> — round-tripável direto de volta
+/// pelo mesmo PUT, sem transformação do cliente.
+/// </remarks>
 public sealed record DocumentoExigidoDto(
     Guid Id,
     Guid ExigidoNaFaseId,
@@ -19,7 +27,7 @@ public sealed record DocumentoExigidoDto(
     IReadOnlyList<CondicaoGatilhoDto> Condicoes,
     IReadOnlyList<BaseLegalDto> BasesLegais,
     IdadeMaximaEmissaoDto? IdadeMaximaEmissao,
-    string? FormatoPermitido,
+    JsonElement FormatosPermitidos,
     int? TamanhoMaximoBytes);
 
 /// <summary>

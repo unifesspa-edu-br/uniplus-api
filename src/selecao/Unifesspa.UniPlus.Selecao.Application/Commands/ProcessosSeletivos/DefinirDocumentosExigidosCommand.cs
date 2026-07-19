@@ -1,8 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using System.Text.Json;
+
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Entrada de uma condição do gatilho DNF (Story #554, PR #896), usada por
@@ -42,10 +46,19 @@ public sealed record IdadeMaximaEmissaoInput(
 /// declara diretamente. <see cref="Condicoes"/> vazia é coerente com GERAL e com
 /// CONDICIONAL "exigida de ninguém" (CA-01). <see cref="BasesLegais"/> vazia é um estado
 /// válido na escrita — só vira pendência na publicação, quando a exigência determina
-/// resultado (PR #898, CA-02). <see cref="IdadeMaximaEmissao"/>/<see cref="FormatoPermitido"/>/
-/// <see cref="TamanhoMaximoBytes"/> (PR #900, issue #893) são aviso, não bloqueio de
-/// presença — congelados por chamada, sem gate de publicação.
+/// resultado (PR #898, CA-02). <see cref="IdadeMaximaEmissao"/>/<see cref="TamanhoMaximoBytes"/>
+/// (PR #900, issue #893) são aviso, não bloqueio de presença — congelados por chamada,
+/// sem gate de publicação.
 /// </summary>
+/// <remarks>
+/// <see cref="FormatosPermitidos"/> (Story #918) é um valor JSON polimórfico — o mesmo
+/// tratamento já usado por <see cref="CondicaoGatilhoInput.Valor"/>/<c>CondicaoDnf.Valor</c>
+/// (ADR-0111): a string <c>"QUALQUER"</c> OU um array de <c>{formato, tamanhoMaximoBytesMax}</c>,
+/// nunca um DTO discriminado próprio. Campo agora OBRIGATÓRIO — <see langword="null"/>
+/// estrutural (propriedade ausente do JSON, ou <c>null</c> explícito) é distinto de "veio,
+/// mas em forma inválida": o handler produz <c>FormatosPermitidos.Obrigatorio</c> no
+/// primeiro caso, <c>FormatosPermitidos.FormaInvalida</c> no segundo.
+/// </remarks>
 public sealed record ItemDocumentoExigidoInput(
     Guid ExigidoNaFaseId,
     Guid TipoDocumentoId,
@@ -56,7 +69,7 @@ public sealed record ItemDocumentoExigidoInput(
     IReadOnlyList<CondicaoGatilhoInput> Condicoes,
     IReadOnlyList<BaseLegalInput> BasesLegais,
     IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
-    string? FormatoPermitido,
+    JsonElement? FormatosPermitidos,
     int? TamanhoMaximoBytes);
 
 /// <summary>

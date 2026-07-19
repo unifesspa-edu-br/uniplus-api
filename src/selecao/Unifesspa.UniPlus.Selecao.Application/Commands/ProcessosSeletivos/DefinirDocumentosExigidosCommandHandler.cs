@@ -136,6 +136,12 @@ public static class DefinirDocumentosExigidosCommandHandler
                 return Result<MutacaoAceita>.Failure(idadeMaximaEmissaoResult.Error!);
             }
 
+            Result<FormatosPermitidos> formatosPermitidosResult = ResolverFormatosPermitidos(input.FormatosPermitidos);
+            if (formatosPermitidosResult.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(formatosPermitidosResult.Error!);
+            }
+
             Result<DocumentoExigido> itemResult = DocumentoExigido.Criar(
                 input.ExigidoNaFaseId,
                 tipoDocumento.Id,
@@ -149,7 +155,7 @@ public static class DefinirDocumentosExigidosCommandHandler
                 condicoesResult.Value!,
                 basesLegaisResult.Value!,
                 idadeMaximaEmissaoResult.Value,
-                FormatoPermitidoCodigo.FromCodigo(input.FormatoPermitido),
+                formatosPermitidosResult.Value!,
                 input.TamanhoMaximoBytes);
             if (itemResult.IsFailure)
             {
@@ -375,6 +381,84 @@ public static class DefinirDocumentosExigidosCommandHandler
         }
 
         return (vocabulario, pontoResolucaoPorFato);
+    }
+
+    /// <summary>
+    /// Interpreta o valor JSON polimórfico de <c>FormatosPermitidos</c> (Story #918): o
+    /// mesmo tratamento de <see cref="CondicaoDnf.Valor"/> (resolvido por
+    /// <see cref="JsonElement.ValueKind"/>, não um DTO discriminado). <see langword="null"/>
+    /// estrutural (propriedade ausente do JSON, ou <c>null</c> explícito) é distinto de
+    /// "veio, mas em forma inválida" — o primeiro produz <c>FormatosPermitidos.Obrigatorio</c>
+    /// aqui mesmo, sem chegar a <see cref="Domain.ValueObjects.FormatosPermitidos.Criar"/>
+    /// (que não tem como diferenciar "ausente" de "false" ao receber só um bool); o
+    /// segundo produz <c>FormatosPermitidos.FormaInvalida</c>. Cada item do array aceita
+    /// tanto um escalar de texto (<c>"PDF"</c>, sem teto por formato — cobre o cenário BDD
+    /// da lista simples) quanto um objeto <c>{formato, tamanhoMaximoBytesMax}</c> (cobre o
+    /// cenário BDD do teto por formato) — a forma mais direta que ainda cobre os dois
+    /// cenários da issue, sem introduzir um terceiro shape de wire.
+    /// </summary>
+    private static Result<FormatosPermitidos> ResolverFormatosPermitidos(JsonElement? valor)
+    {
+        if (valor is not { } elemento)
+        {
+            return Result<FormatosPermitidos>.Failure(new DomainError(
+                "FormatosPermitidos.Obrigatorio",
+                "FormatosPermitidos é obrigatório: declare QUALQUER ou uma lista com ao menos um formato."));
+        }
+
+        if (elemento.ValueKind == JsonValueKind.String)
+        {
+            return string.Equals(elemento.GetString(), "QUALQUER", StringComparison.Ordinal)
+                ? FormatosPermitidos.Criar(qualquer: true, entradas: null)
+                : Result<FormatosPermitidos>.Failure(new DomainError(
+                    "FormatosPermitidos.FormaInvalida",
+                    "FormatosPermitidos deve ser o token QUALQUER ou um array de formatos."));
+        }
+
+        if (elemento.ValueKind != JsonValueKind.Array)
+        {
+            return Result<FormatosPermitidos>.Failure(new DomainError(
+                "FormatosPermitidos.FormaInvalida",
+                "FormatosPermitidos deve ser o token QUALQUER ou um array de formatos."));
+        }
+
+        List<(string Formato, int? TamanhoMaximoBytesMax)> entradas = [];
+        foreach (JsonElement item in elemento.EnumerateArray())
+        {
+            switch (item.ValueKind)
+            {
+                case JsonValueKind.String:
+                    entradas.Add((item.GetString() ?? string.Empty, null));
+                    break;
+
+                case JsonValueKind.Object:
+                    string? formato = item.TryGetProperty("formato", out JsonElement formatoElemento)
+                        && formatoElemento.ValueKind == JsonValueKind.String
+                            ? formatoElemento.GetString()
+                            : null;
+                    int? tamanhoMaximoBytesMax = item.TryGetProperty("tamanhoMaximoBytesMax", out JsonElement tamanhoElemento)
+                        && tamanhoElemento.ValueKind == JsonValueKind.Number
+                            ? tamanhoElemento.GetInt32()
+                            : null;
+
+                    if (formato is null)
+                    {
+                        return Result<FormatosPermitidos>.Failure(new DomainError(
+                            "FormatosPermitidos.FormaInvalida",
+                            "Cada item da lista de formatos permitidos deve declarar 'formato'."));
+                    }
+
+                    entradas.Add((formato, tamanhoMaximoBytesMax));
+                    break;
+
+                default:
+                    return Result<FormatosPermitidos>.Failure(new DomainError(
+                        "FormatosPermitidos.FormaInvalida",
+                        "Cada item da lista de formatos permitidos deve ser um texto ou um objeto {formato, tamanhoMaximoBytesMax}."));
+            }
+        }
+
+        return FormatosPermitidos.Criar(qualquer: false, entradas);
     }
 
     /// <summary>

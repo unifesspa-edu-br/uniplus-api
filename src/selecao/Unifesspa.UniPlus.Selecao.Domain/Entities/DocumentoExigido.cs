@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 
 using Enums;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -68,8 +69,13 @@ public sealed class DocumentoExigido : EntityBase
     /// </summary>
     public IdadeMaximaEmissao? IdadeMaximaEmissao { get; private set; }
 
-    /// <summary>Formato aceito para a apresentação (Story #554, PR #900) — congelado na exigência, não no <c>TipoDocumento</c>.</summary>
-    public FormatoPermitido? FormatoPermitido { get; private set; }
+    /// <summary>
+    /// Formatos aceitos para a apresentação (Story #918) — congelado na exigência, não no
+    /// <c>TipoDocumento</c>. Substitui o campo singular <c>FormatoPermitido?</c> (PR #900):
+    /// agora OBRIGATÓRIO — o token <c>QUALQUER</c> substitui o antigo <see langword="null"/>
+    /// "sem restrição".
+    /// </summary>
+    public FormatosPermitidos FormatosPermitidos { get; private set; } = null!;
 
     /// <summary>Tamanho máximo em bytes do arquivo apresentado (Story #554, PR #900) — congelado na exigência.</summary>
     public int? TamanhoMaximoBytes { get; private set; }
@@ -99,11 +105,12 @@ public sealed class DocumentoExigido : EntityBase
         IReadOnlyList<CondicaoGatilho> condicoes,
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
         IdadeMaximaEmissao? idadeMaximaEmissao,
-        FormatoPermitido? formatoPermitido,
+        FormatosPermitidos formatosPermitidos,
         int? tamanhoMaximoBytes)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
+        ArgumentNullException.ThrowIfNull(formatosPermitidos);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
@@ -159,7 +166,7 @@ public sealed class DocumentoExigido : EntityBase
             ConsequenciaIndeferimento = consequenciaNormalizada,
             GrupoSatisfacaoId = grupoSatisfacaoId,
             IdadeMaximaEmissao = idadeMaximaEmissao,
-            FormatoPermitido = formatoPermitido,
+            FormatosPermitidos = formatosPermitidos,
             TamanhoMaximoBytes = tamanhoMaximoBytes,
         };
 
@@ -218,11 +225,12 @@ public sealed class DocumentoExigido : EntityBase
         IReadOnlyList<CondicaoGatilho> condicoes,
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
         IdadeMaximaEmissao? idadeMaximaEmissao,
-        FormatoPermitido? formatoPermitido,
+        FormatosPermitidos formatosPermitidos,
         int? tamanhoMaximoBytes)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(basesLegais);
+        ArgumentNullException.ThrowIfNull(formatosPermitidos);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoNome);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDocumentoCategoria);
@@ -244,7 +252,7 @@ public sealed class DocumentoExigido : EntityBase
             ConsequenciaIndeferimento = consequenciaIndeferimento,
             GrupoSatisfacaoId = grupoSatisfacaoId,
             IdadeMaximaEmissao = idadeMaximaEmissao,
-            FormatoPermitido = formatoPermitido,
+            FormatosPermitidos = formatosPermitidos,
             TamanhoMaximoBytes = tamanhoMaximoBytes,
         };
 

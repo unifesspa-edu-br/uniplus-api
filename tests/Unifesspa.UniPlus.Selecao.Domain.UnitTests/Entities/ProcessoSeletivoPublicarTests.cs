@@ -267,7 +267,7 @@ public sealed class ProcessoSeletivoPublicarTests
         obrigatorio: true,
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
         exigidoNaFaseId,
@@ -279,7 +279,7 @@ public sealed class ProcessoSeletivoPublicarTests
         obrigatorio: true,
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
-        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-01: publicar com exigência CONDICIONAL vazia obrigatória é bloqueado")]
     public void Publicar_CondicionalVaziaObrigatoria_Bloqueia()
@@ -338,7 +338,7 @@ public sealed class ProcessoSeletivoPublicarTests
             obrigatorio: true,
             consequenciaIndeferimento: null,
             grupoSatisfacaoId: null,
-            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+            condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
 
     [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase de outro processo é recusada")]
@@ -692,7 +692,7 @@ public sealed class ProcessoSeletivoPublicarTests
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
             grupoSatisfacaoId: null,
-            condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+            condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido ExigenciaCondicionalPorModalidadeComConsequencia(
         Guid exigidoNaFaseId, string tipoDocumentoCodigo, string tipoDocumentoNome, string tipoDocumentoCategoria,
@@ -708,7 +708,7 @@ public sealed class ProcessoSeletivoPublicarTests
             consequenciaIndeferimento: consequenciaIndeferimento,
             grupoSatisfacaoId: null,
             condicoes: [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-05 (1/5 — heteroidentificação/indígena): ELIMINA é incoerente com RECLASSIFICA_AC da modalidade PPI")]
     public void Publicar_HeteroidentificacaoElimina_IncoerenteComAcaoDaModalidadePpi()
@@ -817,7 +817,7 @@ public sealed class ProcessoSeletivoPublicarTests
             consequenciaIndeferimento: consequenciaIndeferimento,
             grupoSatisfacaoId: null,
             condicoes: [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-05 (5/5 — gatilho não-modal): ELIMINA condicionado só a FAIXA_ETARIA (nenhuma condição de MODALIDADE) ainda é incoerente com RECLASSIFICAR_AC — achado de revisão da PR #903")]
     public void Publicar_GatilhoPorFaixaEtariaSemCondicaoDeModalidadeElimina_IncoerenteComAcaoDaModalidade()
@@ -885,7 +885,7 @@ public sealed class ProcessoSeletivoPublicarTests
         consequenciaIndeferimento: null,
         grupoSatisfacaoId: null,
         condicoes: [],
-        basesLegais: basesLegais, idadeMaximaEmissao: null, formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
+        basesLegais: basesLegais, idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-02: AvaliarConformidade inclui o item 'Base legal das exigências documentais'")]
     public void AvaliarConformidade_IncluiItemBaseLegal()

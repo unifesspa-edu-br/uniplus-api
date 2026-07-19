@@ -4455,7 +4455,7 @@
           "condicoes",
           "basesLegais",
           "idadeMaximaEmissao",
-          "formatoPermitido",
+          "formatosPermitidos",
           "tamanhoMaximoBytes"
         ],
         "type": "object",
@@ -4522,11 +4522,8 @@
               }
             ]
           },
-          "formatoPermitido": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "formatosPermitidos": {
+            "$ref": "#/components/schemas/JsonElement"
           },
           "tamanhoMaximoBytes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -4983,7 +4980,7 @@
           "condicoes",
           "basesLegais",
           "idadeMaximaEmissao",
-          "formatoPermitido",
+          "formatosPermitidos",
           "tamanhoMaximoBytes"
         ],
         "type": "object",
@@ -5037,10 +5034,14 @@
               }
             ]
           },
-          "formatoPermitido": {
-            "type": [
-              "null",
-              "string"
+          "formatosPermitidos": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
             ]
           },
           "tamanhoMaximoBytes": {

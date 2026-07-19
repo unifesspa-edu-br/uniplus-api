@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
-using FluentValidation;
-
 using Commands.ProcessosSeletivos;
+
+using FluentValidation;
 
 /// <summary>
 /// Validação de <b>forma</b> do <see cref="DefinirDocumentosExigidosCommand"/> — o que
@@ -40,8 +40,6 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
 
     private static readonly string[] ReferenciaTiposIdadeEmissaoValidos =
         ["FIM_INSCRICAO", "INICIO_FASE", "FIM_FASE", "DATA_ESPECIFICA", "DATA_SUBMISSAO"];
-
-    private static readonly string[] FormatosPermitidosValidos = ["PDF", "JPEG", "PNG"];
 
     public DefinirDocumentosExigidosCommandValidator()
     {
@@ -147,10 +145,13 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
                 .When(i => i.IdadeMaximaEmissao?.ReferenciaTipo is not null)
                 .WithMessage($"ReferenciaTipo da idade máxima de emissão deve ser um de: {string.Join(", ", ReferenciaTiposIdadeEmissaoValidos)}.");
 
-            item.RuleFor(i => i.FormatoPermitido)
-                .Must(valor => FormatosPermitidosValidos.Contains(valor, StringComparer.Ordinal))
-                .When(i => i.FormatoPermitido is not null)
-                .WithMessage($"Formato permitido deve ser um de: {string.Join(", ", FormatosPermitidosValidos)}.");
+            // FormatosPermitidos (Story #918) não tem regra aqui: é um valor JSON
+            // polimórfico (JsonElement?, mesmo tratamento de CondicaoGatilhoInput.Valor) que
+            // o HANDLER interpreta por ValueKind e o DOMÍNIO (FormatosPermitidos.Criar)
+            // valida — os erros nomeados (Obrigatorio/FormaInvalida/FormatoInvalido/
+            // FormatoDuplicado/QualquerComFormatosEspecificos/TamanhoMaximoBytesMaxInvalido)
+            // são DomainError (422), não FluentValidation (400): a interpretação do
+            // ValueKind já é, em si, uma leitura semântica do dado, não só forma.
 
             item.RuleFor(i => i.TamanhoMaximoBytes)
                 .GreaterThan(0)

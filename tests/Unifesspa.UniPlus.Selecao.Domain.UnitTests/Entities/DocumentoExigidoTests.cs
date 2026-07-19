@@ -22,7 +22,7 @@ public sealed class DocumentoExigidoTests
         IReadOnlyList<CondicaoGatilho>? condicoes = null,
         IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null,
         IdadeMaximaEmissao? idadeMaximaEmissao = null,
-        FormatoPermitido? formatoPermitido = null,
+        FormatosPermitidos? formatosPermitidos = null,
         int? tamanhoMaximoBytes = null) =>
         DocumentoExigido.Criar(
             exigidoNaFaseId: Guid.CreateVersion7(),
@@ -37,7 +37,7 @@ public sealed class DocumentoExigidoTests
             condicoes: condicoes ?? [],
             basesLegais: basesLegais ?? [],
             idadeMaximaEmissao: idadeMaximaEmissao,
-            formatoPermitido: formatoPermitido,
+            formatosPermitidos: formatosPermitidos ?? FormatosPermitidos.Criar(true, null).Value!,
             tamanhoMaximoBytes: tamanhoMaximoBytes);
 
     private static CondicaoGatilho CondicaoQualquer() => CondicaoGatilho.Criar(
@@ -235,5 +235,65 @@ public sealed class DocumentoExigidoTests
         exigencia.PodeAlcancarModalidade("AC").Should().BeTrue();
         exigencia.PodeAlcancarModalidade("LB_PPI").Should().BeFalse();
         exigencia.PodeAlcancarModalidade("LB_Q").Should().BeFalse();
+    }
+
+    // ── Story #918 §4 — não-expiração do laudo de deficiência permanente sai de GATILHO,
+    // sem campo especial: TIPO_DEFICIENCIA EM/NAO_EM {valores permanentes} já é inteiramente
+    // coberto pelos operadores/avaliação ternária da PR2 (Story #916) + o vocabulário da PR1
+    // (Story #917) — os 3 cenários abaixo usam SÓ código pré-existente dessas duas PRs,
+    // provando que nenhuma produção nova é necessária para a exceção de idade.
+
+    private static readonly string[] ValoresPermanentes = ["TEA", "AMPUTACAO"];
+
+    private static DocumentoExigido ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador operador, string valorJson) =>
+        Exigencia(Aplicabilidade.Condicional, condicoes: [CondicaoDe("TIPO_DEFICIENCIA", operador, valorJson)]).Value!;
+
+    [Fact(DisplayName = "Story #918 §4: laudo PERMANENTE — exigência SEM idade (EM permanentes) é Verdadeiro, exigência COM idade (NAO_EM permanentes) é Falso")]
+    public void AplicavelPara_TipoDeficienciaPermanente_ExcecaoDeIdadeResolveCorretamente()
+    {
+        string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
+        DocumentoExigido semIdadeExigidaEmPermanentes =
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.Em, listaPermanentes);
+        DocumentoExigido comIdadeExigidaNaoEmPermanentes =
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
+
+        Dictionary<string, JsonElement> fatos = new() { ["TIPO_DEFICIENCIA"] = JsonSerializer.SerializeToElement("TEA") };
+
+        semIdadeExigidaEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Verdadeiro,
+            "TEA é permanente — a exigência SEM idade máxima (gatilhada por EM permanentes) se aplica");
+        comIdadeExigidaNaoEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Falso,
+            "TEA é permanente — a exigência COM idade máxima (gatilhada por NAO_EM permanentes) NÃO se aplica");
+    }
+
+    [Fact(DisplayName = "Story #918 §4: laudo NÃO-PERMANENTE — o oposto: exigência SEM idade é Falso, exigência COM idade é Verdadeiro")]
+    public void AplicavelPara_TipoDeficienciaNaoPermanente_ExcecaoDeIdadeResolveCorretamente()
+    {
+        string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
+        DocumentoExigido semIdadeExigidaEmPermanentes =
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.Em, listaPermanentes);
+        DocumentoExigido comIdadeExigidaNaoEmPermanentes =
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
+
+        Dictionary<string, JsonElement> fatos = new() { ["TIPO_DEFICIENCIA"] = JsonSerializer.SerializeToElement("DEPRESSAO") };
+
+        semIdadeExigidaEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Falso,
+            "DEPRESSAO não é permanente — a exigência SEM idade máxima (gatilhada por EM permanentes) NÃO se aplica");
+        comIdadeExigidaNaoEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Verdadeiro,
+            "DEPRESSAO não é permanente — a exigência COM idade máxima (gatilhada por NAO_EM permanentes) se aplica");
+    }
+
+    [Fact(DisplayName = "Story #918 §4: TIPO_DEFICIENCIA ausente — AMBAS as exigências ficam Indeterminado (fail-closed, nunca 'nenhuma se aplica')")]
+    public void AplicavelPara_TipoDeficienciaAusente_AmbasIndeterminado()
+    {
+        string listaPermanentes = JsonSerializer.Serialize(ValoresPermanentes);
+        DocumentoExigido semIdadeExigidaEmPermanentes =
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.Em, listaPermanentes);
+        DocumentoExigido comIdadeExigidaNaoEmPermanentes =
+            ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
+
+        Dictionary<string, JsonElement> semFatos = [];
+
+        semIdadeExigidaEmPermanentes.AplicavelPara(semFatos).Should().Be(Ternario.Indeterminado);
+        comIdadeExigidaNaoEmPermanentes.AplicavelPara(semFatos).Should().Be(Ternario.Indeterminado);
     }
 }
