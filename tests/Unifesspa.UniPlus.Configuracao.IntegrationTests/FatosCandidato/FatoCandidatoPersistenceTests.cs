@@ -203,7 +203,11 @@ public sealed class FatoCandidatoPersistenceTests
         corRaca.Cardinalidade.Should().Be("ESCALAR");
         corRaca.PontoResolucao.Should().Be("INSCRICAO");
         corRaca.Binding.Should().Be("CAMPO_INSCRICAO:COR_RACA");
-        corRaca.ValoresDominio.Should().BeNull();
+        // O jsonb legado é nulo na entidade (ADR-0116), mas a view projeta os códigos
+        // declarados de volta para ValoresDominio — do contrário o consumidor
+        // cross-módulo (PredicadoDnfValidador) classificaria COR_RACA como categórico
+        // de escopo-processo/dinâmico em vez de estático, rejeitando um gatilho válido.
+        corRaca.ValoresDominio.Should().Equal("BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO");
         corRaca.ValoresDominioDeclarados.Should().NotBeNull().And.HaveCount(6);
         corRaca.ValoresDominioDeclarados!.Select(v => v.Codigo).Should().Contain("PRETA");
 
