@@ -177,10 +177,13 @@ public static class AvaliadorConformidadeLegal
         // modalidade incondicionalmente, mas não DeterminaResultado() (não é obrigatória
         // nem tem consequência de indeferimento), é meramente opcional — não satisfaz a
         // obrigação legal "a modalidade X DEVE exigir o documento Y".
+        // Story #916: AplicavelPara agora é ternário — só Verdadeiro (certamente aplicável)
+        // prova cobertura incondicional; Indeterminado conta como "não provado", mesma
+        // conclusão que Falso já dava, sem mudança de comportamento observável aqui.
         bool cobertaIncondicionalmente = processo.DocumentosExigidos.Any(e =>
             string.Equals(e.TipoDocumentoCodigo, predicado.TipoDocumento, StringComparison.Ordinal)
             && e.DeterminaResultado()
-            && e.AplicavelPara(fatoDaModalidade));
+            && e.AplicavelPara(fatoDaModalidade) == Ternario.Verdadeiro);
 
         return cobertaIncondicionalmente
             ? (true, null, null)

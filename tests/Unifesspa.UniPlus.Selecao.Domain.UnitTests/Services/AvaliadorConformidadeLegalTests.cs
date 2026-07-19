@@ -406,6 +406,27 @@ public sealed class AvaliadorConformidadeLegalTests
             "e a obrigação legal (\"a modalidade X DEVE exigir o documento Y\") não admite exceção");
     }
 
+    [Fact(DisplayName = "Story #916: exigência CONDICIONAL cujo gatilho é Indeterminado (fato extra não resolvido pelo fato sintético) não conta como cobertura incondicional — Indeterminado reprova, igual a Falso")]
+    public void DocumentoObrigatorioParaModalidade_ExigenciaComGatilhoIndeterminado_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
+        // AvaliadorConformidadeLegal avalia contra um fato sintético só com MODALIDADE — o
+        // fato FAIXA_ETARIA (fatoExtra) nunca está presente, e por isso o gatilho avalia
+        // Ternario.Indeterminado (Story #916, fail-closed), não mais Ternario.Falso — a
+        // conclusão de cobertura, porém, é a mesma: não prova incondicionalidade.
+        processo.DefinirDocumentosExigidos(
+            [ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI", fatoExtra: "FAIXA_ETARIA")],
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        ObrigatoriedadeLegal regra = NovaRegra(
+            "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        resultado.Regras.Single().Aprovada.Should().BeFalse(
+            "Indeterminado conta como \"não provado\", mesma conclusão que Falso já dava — nenhuma mudança de comportamento observável");
+    }
+
     [Fact(DisplayName = "CA-09: exigência do TIPO ERRADO não conta, mesmo cobrindo a modalidade corretamente")]
     public void DocumentoObrigatorioParaModalidade_ExigenciaDeOutroTipo_Reprova()
     {

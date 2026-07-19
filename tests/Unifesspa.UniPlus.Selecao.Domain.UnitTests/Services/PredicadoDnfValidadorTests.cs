@@ -246,4 +246,47 @@ public sealed class PredicadoDnfValidadorTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
     }
+
+    // ── Story #916 — operadores de exclusão (DIFERENTE/NAO_EM) ──
+
+    [Theory(DisplayName = "DIFERENTE é aceito em todo domínio onde IGUAL já vale (booleano, numérico, categórico)")]
+    [InlineData("PCD", "false")]
+    [InlineData("FAIXA_ETARIA", "18")]
+    [InlineData("COR_RACA", "\"PARDA\"")]
+    public void PredicadoDnfValidador_Aceita_Diferente_EmTodoDominioDeIgual(string fato, string valorJson)
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar(fato, Operador.Diferente, Json(valorJson)).Value!;
+
+        Validar(condicao).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "NAO_EM é aceito em categórico (onde EM já vale)")]
+    public void PredicadoDnfValidador_Aceita_NaoEm_Categorico()
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar("COR_RACA", Operador.NaoEm, Json("[\"PRETA\",\"PARDA\"]")).Value!;
+
+        Validar(condicao).IsSuccess.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "NAO_EM é recusado em booleano/numérico — a matriz só admite NAO_EM onde EM vale")]
+    [InlineData("PCD", "[true]")]
+    [InlineData("FAIXA_ETARIA", "[18,19]")]
+    public void PredicadoDnfValidador_Rejeita_NaoEm_BooleanoOuNumerico(string fato, string valorJson)
+    {
+        CondicaoDnf condicao = CondicaoDnf.Criar(fato, Operador.NaoEm, Json(valorJson)).Value!;
+
+        Result resultado = Validar(condicao);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
+    }
+
+    [Fact(DisplayName = "NAO_EM categórico dinâmico é aceito (mesma matriz do estático)")]
+    public void Validar_CategoricoDinamico_NaoEm_Aceita()
+    {
+        Dictionary<string, IReadOnlySet<string>> dominios = new() { ["MODALIDADE"] = new HashSet<string> { "LB_PPI", "AC" } };
+        CondicaoDnf condicao = CondicaoDnf.Criar("MODALIDADE", Operador.NaoEm, Json("[\"LB_PPI\"]")).Value!;
+
+        ValidarComDominioDinamico(condicao, dominios).IsSuccess.Should().BeTrue();
+    }
 }

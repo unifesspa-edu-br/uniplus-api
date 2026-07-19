@@ -35,11 +35,13 @@ public sealed class CondicaoDnfTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.OperadorInvalido");
     }
 
-    [Theory(DisplayName = "CondicaoDnf aceita as quatro variantes válidas de operador com valor coerente")]
+    [Theory(DisplayName = "CondicaoDnf aceita as seis variantes válidas de operador com valor coerente")]
     [InlineData(Operador.Igual, "true")]
     [InlineData(Operador.Em, "[\"BRANCA\"]")]
     [InlineData(Operador.MaiorIgual, "18")]
     [InlineData(Operador.MenorIgual, "60")]
+    [InlineData(Operador.Diferente, "true")]
+    [InlineData(Operador.NaoEm, "[\"BRANCA\"]")]
     public void CondicaoDnf_Aceita_Operadores_Validos(Operador operador, string valorJson)
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.Criar("FATO", operador, Json(valorJson));
@@ -56,10 +58,37 @@ public sealed class CondicaoDnfTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
     }
 
-    [Fact(DisplayName = "CondicaoDnf_Em_Rejeita_Lista_Vazia")]
-    public void CondicaoDnf_Em_Rejeita_Lista_Vazia()
+    [Theory(DisplayName = "Story #916: EM/NAO_EM aceitam array vazio na FORMA — a semântica de avaliação é de PredicadoDnf, não desta factory")]
+    [InlineData(Operador.Em)]
+    [InlineData(Operador.NaoEm)]
+    public void CondicaoDnf_EmOuNaoEm_Aceita_Lista_Vazia(Operador operador)
     {
-        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", Operador.Em, Json("[]"));
+        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", operador, Json("[]"));
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Story #916: DIFERENTE aceita a mesma forma escalar de IGUAL")]
+    public void CondicaoDnf_Diferente_AceitaEscalar()
+    {
+        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("SEXO", Operador.Diferente, Json("\"FEMININO\""));
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Story #916: DIFERENTE rejeita array, mesma checagem de forma escalar")]
+    public void CondicaoDnf_Diferente_RejeitaArray()
+    {
+        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("SEXO", Operador.Diferente, Json("[\"FEMININO\"]"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
+    }
+
+    [Fact(DisplayName = "Story #916: NAO_EM rejeita valor não lista, mesma checagem de EM")]
+    public void CondicaoDnf_NaoEm_RejeitaValorNaoLista()
+    {
+        Result<CondicaoDnf> resultado = CondicaoDnf.Criar("COR_RACA", Operador.NaoEm, Json("\"BRANCA\""));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
@@ -69,6 +98,7 @@ public sealed class CondicaoDnfTests
     [InlineData(Operador.Igual)]
     [InlineData(Operador.MaiorIgual)]
     [InlineData(Operador.MenorIgual)]
+    [InlineData(Operador.Diferente)]
     public void CondicaoDnf_Escalar_Rejeita_Lista(Operador operador)
     {
         Result<CondicaoDnf> resultado = CondicaoDnf.Criar("FATO", operador, Json("[1,2]"));

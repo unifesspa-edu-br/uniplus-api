@@ -14,9 +14,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// Zero cláusulas é um estado <b>estruturalmente válido</b> de construção —
-/// não é erro — mas <see cref="Avaliar"/> retorna <see langword="false"/>
+/// não é erro — mas <see cref="Avaliar"/> retorna <see cref="Ternario.Falso"/>
 /// para qualquer candidato nesse caso: um predicado sem cláusula nunca casa
-/// com ninguém.
+/// com ninguém (estado estrutural, não ausência de dado — não se confunde com
+/// <see cref="Ternario.Indeterminado"/>).
 /// </remarks>
 public sealed record PredicadoDnf
 {
@@ -59,71 +60,36 @@ public sealed record PredicadoDnf
     }
 
     /// <summary>
-    /// Avalia o predicado contra os fatos já resolvidos de um candidato:
-    /// OU sobre as cláusulas, E sobre as condições de cada cláusula. Um fato
-    /// citado numa condição que não está presente em
-    /// <paramref name="fatosResolvidos"/> (o processo não o coletou, ou o
-    /// motor ainda não o derivou) faz a condição avaliar como
-    /// <see langword="false"/> — conservador, nunca lança e nunca trata como
-    /// satisfeita. O restante do predicado continua avaliável normalmente.
+    /// Avalia o predicado contra os fatos já resolvidos de um candidato: OU ternário
+    /// (Story #916) sobre as cláusulas, cada uma um E ternário sobre as suas condições
+    /// (<see cref="ClausulaDnf.Avaliar"/>). <see cref="Ternario.Verdadeiro"/> se qualquer
+    /// cláusula for verdadeira; senão <see cref="Ternario.Indeterminado"/> se qualquer uma
+    /// for indeterminada; senão <see cref="Ternario.Falso"/>. Um fato citado numa condição
+    /// que não está presente em <paramref name="fatosResolvidos"/> (o processo não o
+    /// coletou, ou o motor ainda não o derivou) — ou está presente com valor nulo/de tipo
+    /// incoerente — nunca faz a condição avaliar como <see cref="Ternario.Falso"/>: é
+    /// <see cref="Ternario.Indeterminado"/>, fail-closed — nunca lança, e o restante do
+    /// predicado continua avaliável normalmente.
     /// </summary>
-    public bool Avaliar(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
+    public Ternario Avaliar(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 
-        return Clausulas.Any(clausula => clausula.Condicoes.All(condicao => AvaliarCondicao(condicao, fatosResolvidos)));
-    }
-
-    private static bool AvaliarCondicao(CondicaoDnf condicao, IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
-    {
-        if (!fatosResolvidos.TryGetValue(condicao.Fato, out JsonElement valorCandidato))
+        bool algumaIndeterminada = false;
+        foreach (ClausulaDnf clausula in Clausulas)
         {
-            return false;
-        }
-
-        // Story #554 (PR #896): fato multivalorado — o candidato resolve para um CONJUNTO
-        // (array JSON), não um escalar. A forma do valor resolvido decide a semântica, sem
-        // precisar de metadado extra aqui: IGUAL passa a significar pertinência do valor
-        // configurado no conjunto do candidato; EM passa a significar interseção não vazia
-        // entre o conjunto do candidato e a lista configurada (ADR-0111). Fatos escalares
-        // (a maioria) continuam pelo ramo original, sem NENHUMA mudança de comportamento.
-        if (valorCandidato.ValueKind == JsonValueKind.Array)
-        {
-            return condicao.Operador switch
+            Ternario resultado = clausula.Avaliar(fatosResolvidos);
+            if (resultado == Ternario.Verdadeiro)
             {
-                Operador.Igual => valorCandidato.EnumerateArray().Any(item => ValoresIguais(item, condicao.Valor)),
-                Operador.Em => condicao.Valor.EnumerateArray()
-                    .Any(itemConfigurado => valorCandidato.EnumerateArray().Any(item => ValoresIguais(item, itemConfigurado))),
-                _ => false,
-            };
+                return Ternario.Verdadeiro;
+            }
+
+            if (resultado == Ternario.Indeterminado)
+            {
+                algumaIndeterminada = true;
+            }
         }
 
-        return condicao.Operador switch
-        {
-            Operador.Igual => ValoresIguais(valorCandidato, condicao.Valor),
-            Operador.Em => condicao.Valor.EnumerateArray().Any(item => ValoresIguais(valorCandidato, item)),
-            Operador.MaiorIgual => CompararNumerico(valorCandidato, condicao.Valor) >= 0,
-            Operador.MenorIgual => CompararNumerico(valorCandidato, condicao.Valor) <= 0,
-            _ => false,
-        };
+        return algumaIndeterminada ? Ternario.Indeterminado : Ternario.Falso;
     }
-
-    private static bool ValoresIguais(JsonElement candidato, JsonElement configurado)
-    {
-        if (candidato.ValueKind != configurado.ValueKind)
-        {
-            return false;
-        }
-
-        return candidato.ValueKind switch
-        {
-            JsonValueKind.String => string.Equals(candidato.GetString(), configurado.GetString(), StringComparison.Ordinal),
-            JsonValueKind.Number => candidato.GetDecimal() == configurado.GetDecimal(),
-            JsonValueKind.True or JsonValueKind.False => candidato.GetBoolean() == configurado.GetBoolean(),
-            _ => false,
-        };
-    }
-
-    private static int CompararNumerico(JsonElement candidato, JsonElement configurado) =>
-        candidato.GetDecimal().CompareTo(configurado.GetDecimal());
 }

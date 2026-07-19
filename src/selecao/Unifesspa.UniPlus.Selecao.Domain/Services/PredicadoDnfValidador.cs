@@ -86,12 +86,16 @@ public static class PredicadoDnfValidador
 
     private static Result ValidarOperador(CondicaoDnf condicao, DescritorFatoCandidato descritor)
     {
+        // Story #916: DIFERENTE acompanha IGUAL em todo domínio onde IGUAL já vale — inclusive
+        // booleano/numérico (a letra da spec: "DIFERENTE só onde IGUAL vale", sem exceção de
+        // domínio). NAO_EM acompanha EM, que só vale nos dois ramos categóricos — booleano e
+        // numérico nunca tiveram EM.
         bool operadorCompativel = descritor.TipoDominio switch
         {
-            TipoDominioFato.Booleano => condicao.Operador == Operador.Igual,
-            TipoDominioFato.Numerico => condicao.Operador is Operador.Igual or Operador.MaiorIgual or Operador.MenorIgual,
-            TipoDominioFato.CategoricoEstatico => condicao.Operador is Operador.Igual or Operador.Em,
-            TipoDominioFato.CategoricoDinamico => condicao.Operador is Operador.Igual or Operador.Em,
+            TipoDominioFato.Booleano => condicao.Operador is Operador.Igual or Operador.Diferente,
+            TipoDominioFato.Numerico => condicao.Operador is Operador.Igual or Operador.MaiorIgual or Operador.MenorIgual or Operador.Diferente,
+            TipoDominioFato.CategoricoEstatico => condicao.Operador is Operador.Igual or Operador.Em or Operador.Diferente or Operador.NaoEm,
+            TipoDominioFato.CategoricoDinamico => condicao.Operador is Operador.Igual or Operador.Em or Operador.Diferente or Operador.NaoEm,
             _ => false,
         };
 
@@ -159,7 +163,9 @@ public static class PredicadoDnfValidador
 
     private static Result ValidarValorCategorico(CondicaoDnf condicao, IReadOnlyList<string> dominio)
     {
-        if (condicao.Operador == Operador.Em)
+        // NAO_EM (Story #916) segue a mesma forma de lista de EM — negação, não muda a
+        // validação de valor × domínio.
+        if (condicao.Operador is Operador.Em or Operador.NaoEm)
         {
             return ValidarValorCategoricoEm(condicao, dominio);
         }

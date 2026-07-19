@@ -7,7 +7,10 @@ using Enums;
 /// <see cref="Entities.DocumentoExigido"/> congelada, para um candidato (Story #554, PR #903).
 /// </summary>
 /// <param name="ExigenciaId">O <c>exigenciaId</c> congelado (<c>DocumentoExigido.Id</c>, CA-09) — a chave de correlação.</param>
-/// <param name="Status">Satisfeita, Pendente ou NaoAplicavel — nunca o sentinela <see cref="StatusResolucaoExigencia.Nenhuma"/>.</param>
+/// <param name="Status">
+/// Satisfeita, Pendente, NaoAplicavel ou AplicabilidadeIndeterminada (Story #916) — nunca o
+/// sentinela <see cref="StatusResolucaoExigencia.Nenhuma"/>.
+/// </param>
 /// <param name="ApresentacaoId">
 /// A apresentação que satisfaz a exigência, quando <see cref="Status"/> é
 /// <see cref="StatusResolucaoExigencia.Satisfeita"/> — a PRÓPRIA apresentação da exigência,
