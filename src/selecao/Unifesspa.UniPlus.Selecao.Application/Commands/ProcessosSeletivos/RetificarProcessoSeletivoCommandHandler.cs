@@ -6,6 +6,7 @@ using Domain.Interfaces;
 using Domain.ValueObjects;
 using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
@@ -29,6 +30,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+        IFatoCandidatoReader fatoCandidatoReader,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -41,6 +43,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -179,6 +182,17 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // Story #919 (RN08): mesmo congelamento de metadado de fato que a publicação de
+        // abertura já faz — uma retificação também pode conter gatilho de documento vivo, e
+        // congelar sem este bloco deixaria o metadado incompleto (vazio) para esta versão.
+        Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
+            await ResolvedorMetadadosFatosCongelados.ResolverAsync(processo, fatoCandidatoReader, cancellationToken)
+                .ConfigureAwait(false);
+        if (metadadosFatosResult.IsFailure)
+        {
+            return (Result.Failure(metadadosFatosResult.Error!), []);
+        }
+
         // O ato retificado é o que criou a versão corrente — o topo da cadeia de
         // CONFIGURAÇÃO (ADR-0104), não o ato de maior data documental. É o mesmo
         // alvo que ProcessoSeletivo.Retificar elege; congelar aqui um id diferente
@@ -189,7 +203,8 @@ public static class RetificarProcessoSeletivoCommandHandler
                 dados,
                 documento.HashSha256!,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
-                conformidadeLegal.Value));
+                conformidadeLegal.Value,
+                metadadosFatosResult.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
