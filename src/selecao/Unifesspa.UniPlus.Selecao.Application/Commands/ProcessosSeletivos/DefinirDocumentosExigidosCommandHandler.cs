@@ -65,9 +65,14 @@ public static class DefinirDocumentosExigidosCommandHandler
         // O vocabulário só é resolvido (I/O cross-módulo) quando algum item declara
         // gatilho — mesmo princípio de DefinirCriteriosDesempateCommandHandler.
         bool existeGatilho = command.Itens.Any(static i => i.Condicoes.Count > 0);
-        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = existeGatilho
-            ? await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false)
-            : null;
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
+        IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
+        if (existeGatilho)
+        {
+            (vocabularioFatos, pontoResolucaoPorFato) = await ResolverVocabularioFatosAsync(fatoCandidatoReader, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos = existeGatilho
             ? ResolverDominiosDinamicos(processo)
             : null;
@@ -97,6 +102,20 @@ public static class DefinirDocumentosExigidosCommandHandler
             if (condicoesResult.IsFailure)
             {
                 return Result<MutacaoAceita>.Failure(condicoesResult.Error!);
+            }
+
+            // Gate de fase (Story #916): uma condição de gatilho não pode citar um fato cujo
+            // PontoResolucao é uma fase posterior à fase em que o documento é exigido — não há
+            // como o gatilho já ter sido resolvido para o candidato quando a exigência entra
+            // em jogo.
+            if (condicoesResult.Value!.Count > 0)
+            {
+                Result gateDeFaseResult = ValidarGateDeFase(
+                    condicoesResult.Value!, input.ExigidoNaFaseId, processo, pontoResolucaoPorFato!);
+                if (gateDeFaseResult.IsFailure)
+                {
+                    return Result<MutacaoAceita>.Failure(gateDeFaseResult.Error!);
+                }
             }
 
             Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegaisResult = ResolverBasesLegais(input.BasesLegais);
@@ -213,6 +232,55 @@ public static class DefinirDocumentosExigidosCommandHandler
     }
 
     /// <summary>
+    /// Gate de fase (Story #916): recusa uma condição de gatilho cujo fato só é conhecido
+    /// (<c>PontoResolucao</c>) numa fase posterior à fase em que o documento é exigido — o
+    /// gatilho nunca teria como ter sido resolvido para o candidato a essa altura do
+    /// certame. A fase da PRÓPRIA exigência é localizada com <c>SingleOrDefault</c> (nunca
+    /// <c>Single</c>, para não estourar exceção em vez de 500): quando não encontrada, este
+    /// método não recusa de novo — <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>
+    /// já garante, eagerly, que toda fase referenciada pertence ao cronograma
+    /// (<c>DocumentoExigido.FaseNaoPertenceAoProcesso</c>), e é essa checagem que decide o caso.
+    /// </summary>
+    private static Result ValidarGateDeFase(
+        IReadOnlyList<CondicaoGatilho> condicoes,
+        Guid exigidoNaFaseId,
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, string> pontoResolucaoPorFato)
+    {
+        FaseCronograma? faseDaExigencia = processo.CronogramaFases.SingleOrDefault(f => f.Id == exigidoNaFaseId);
+
+        foreach (CondicaoGatilho condicao in condicoes)
+        {
+            if (!pontoResolucaoPorFato.TryGetValue(condicao.Fato, out string? pontoResolucao))
+            {
+                // O fato já passou por PredicadoDnfValidador (vocabulário fechado) antes de
+                // chegar aqui — não deveria faltar no mapa construído junto do mesmo
+                // vocabulário. Defensivo: nada a comparar, não bloqueia.
+                continue;
+            }
+
+            FaseCronograma? faseDoPontoResolucao = processo.CronogramaFases
+                .SingleOrDefault(f => string.Equals(f.Codigo, pontoResolucao, StringComparison.Ordinal));
+
+            if (faseDoPontoResolucao is null)
+            {
+                return Result.Failure(new DomainError(
+                    "DocumentoExigido.PontoResolucaoForaDoCronograma",
+                    $"O fato '{condicao.Fato}' resolve na fase '{pontoResolucao}', que não pertence ao cronograma deste processo."));
+            }
+
+            if (faseDaExigencia is not null && faseDoPontoResolucao.Ordem > faseDaExigencia.Ordem)
+            {
+                return Result.Failure(new DomainError(
+                    "DocumentoExigido.FatoResolvidoEmFasePosterior",
+                    $"O fato '{condicao.Fato}' só é conhecido na fase '{pontoResolucao}' (ordem {faseDoPontoResolucao.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem})."));
+            }
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Resolve as bases legais de um item (Story #554, PR #898, issue #549) — só a forma de
     /// cada base é validada aqui (referência não vazia, abrangência/status no domínio
     /// fechado); o gate "≥1 RESOLVIDO por exigência que determina resultado" é da
@@ -268,9 +336,12 @@ public static class DefinirDocumentosExigidosCommandHandler
     /// Mapeia <see cref="FatoCandidatoView"/> para <see cref="DescritorFatoCandidato"/>,
     /// estendendo <c>DefinirCriteriosDesempateCommandHandler.ResolverVocabularioFatosAsync</c>
     /// (#846/#847) para incluir os fatos categóricos de escopo-processo (Story #554, PR #896) —
-    /// antes deliberadamente fora do vocabulário fechado.
+    /// antes deliberadamente fora do vocabulário fechado. Devolve, na mesma passada, a projeção
+    /// <c>PontoResolucao</c> por fato (Story #916) que o gate de fase usa — vive como projeção
+    /// própria deste handler, e não em <see cref="DescritorFatoCandidato"/> (VO mínimo
+    /// compartilhado com <c>DefinirCriteriosDesempateCommandHandler</c>, que não precisa dela).
     /// </summary>
-    private static async Task<IReadOnlyDictionary<string, DescritorFatoCandidato>> ResolverVocabularioFatosAsync(
+    private static async Task<(IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario, IReadOnlyDictionary<string, string> PontoResolucaoPorFato)> ResolverVocabularioFatosAsync(
         IFatoCandidatoReader fatoCandidatoReader, CancellationToken cancellationToken)
     {
         IReadOnlyList<FatoCandidatoView> fatos = await fatoCandidatoReader
@@ -278,6 +349,7 @@ public static class DefinirDocumentosExigidosCommandHandler
             .ConfigureAwait(false);
 
         Dictionary<string, DescritorFatoCandidato> vocabulario = [];
+        Dictionary<string, string> pontoResolucaoPorFato = new(StringComparer.Ordinal);
         foreach (FatoCandidatoView fato in fatos)
         {
             TipoDominioFato? tipoDominio = fato switch
@@ -298,10 +370,11 @@ public static class DefinirDocumentosExigidosCommandHandler
             if (descritorResult.IsSuccess)
             {
                 vocabulario[fato.Codigo] = descritorResult.Value!;
+                pontoResolucaoPorFato[fato.Codigo] = fato.PontoResolucao;
             }
         }
 
-        return vocabulario;
+        return (vocabulario, pontoResolucaoPorFato);
     }
 
     /// <summary>

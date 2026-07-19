@@ -63,6 +63,17 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
         ["MASCULINO", "FEMININO", "INTERSEXO"], "INSCRICAO", "CAMPO_INSCRICAO:SEXO", null);
 
+    private static FatoCandidatoView FatoSexoComPontoResolucao(string pontoResolucao) => new(
+        Guid.CreateVersion7(), "SEXO", "Sexo", null, "CATEGORICO", "DECLARADO", "ESCALAR",
+        ["MASCULINO", "FEMININO", "INTERSEXO"], pontoResolucao, "CAMPO_INSCRICAO:SEXO", null);
+
+    private static FaseCronograma FaseComOrdemECodigo(int ordem, string codigo) => FaseCronograma.Criar(
+        ordem, Guid.CreateVersion7(), codigo, "CEPS", OrigemDataFase.Delegada,
+        agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
+        resultadoDefinitivo: false, coletaInscricao: false, inicio: null, fim: null,
+        atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+        bancasRequeridas: [], regraRecurso: null).Value!;
+
     private static FatoCandidatoView FatoModalidade() => new(
         Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DECLARADO", "MULTIVALORADO", null,
         "INSCRICAO", "CAMPO_INSCRICAO:MODALIDADE", null);
@@ -360,5 +371,88 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
+    }
+
+    // ── Story #916 — gate de fase ──
+
+    [Fact(DisplayName = "Gate de fase: condição sobre fato cujo PontoResolucao é uma fase POSTERIOR à da exigência é recusada")]
+    public async Task Handle_GatilhoFatoDeFasePosterior_RetornaErroNomeado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma inscricao = FaseComOrdemECodigo(1, "INSCRICAO");
+        FaseCronograma homologacao = FaseComOrdemECodigo(2, "HOMOLOGACAO");
+        processo.DefinirCronogramaFases([inscricao, homologacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        // SEXO só é conhecido na fase HOMOLOGACAO (ordem 2), mas o documento é exigido na
+        // fase INSCRICAO (ordem 1) — anterior. O gatilho nunca teria como já ter sido
+        // resolvido para o candidato.
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
+
+        CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
+        ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, null, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.FatoResolvidoEmFasePosterior");
+    }
+
+    [Theory(DisplayName = "Gate de fase: condição sobre fato cujo PontoResolucao é a mesma fase ou uma fase ANTERIOR à da exigência é aceita")]
+    [InlineData("INSCRICAO")]
+    [InlineData("HOMOLOGACAO")]
+    public async Task Handle_GatilhoFatoDeFaseIgualOuAnterior_Aceita(string pontoResolucao)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma inscricao = FaseComOrdemECodigo(1, "INSCRICAO");
+        FaseCronograma homologacao = FaseComOrdemECodigo(2, "HOMOLOGACAO");
+        processo.DefinirCronogramaFases([inscricao, homologacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao(pontoResolucao)]);
+
+        // O documento é exigido na fase HOMOLOGACAO (ordem 2) — SEXO conhecido na própria
+        // fase ou numa fase anterior (INSCRICAO, ordem 1) satisfaz o gate.
+        CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
+        ItemDocumentoExigidoInput item = new(homologacao.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, null, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Gate de fase: PontoResolucao do fato citado não pertence ao cronograma deste processo é recusado")]
+    public async Task Handle_GatilhoComPontoResolucaoForaDoCronograma_RetornaErroNomeado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma inscricao = FaseComOrdemECodigo(1, "INSCRICAO");
+        processo.DefinirCronogramaFases([inscricao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        // SEXO resolve numa fase ("HOMOLOGACAO") que não existe no cronograma deste processo.
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
+
+        CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
+        ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, null, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.PontoResolucaoForaDoCronograma");
     }
 }
