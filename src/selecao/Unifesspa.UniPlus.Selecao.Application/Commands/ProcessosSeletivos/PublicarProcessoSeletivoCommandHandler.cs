@@ -1,11 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Abstractions;
+
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
@@ -29,6 +33,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+        IFatoCandidatoReader fatoCandidatoReader,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -41,6 +46,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -143,8 +149,23 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // Story #919 (RN08): congela o metadado de cada fato citado em alguma condição de
+        // gatilho, ao lado da condição bruta {fato, operador, valor} já congelada desde a
+        // 1.2 — I/O resolvido só quando existe ao menos uma condição (mesmo princípio de
+        // "resolve I/O só quando precisa" de DefinirDocumentosExigidosCommandHandler).
+        Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
+            await ResolvedorMetadadosFatosCongelados.ResolverAsync(processo, fatoCandidatoReader, cancellationToken)
+                .ConfigureAwait(false);
+        if (metadadosFatosResult.IsFailure)
+        {
+            return (Result.Failure(metadadosFatosResult.Error!), []);
+        }
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, Conformidade: conformidadeLegal.Value));
+            new EntradaCanonicalizacao(
+                processo, dados, documento.HashSha256!,
+                Conformidade: conformidadeLegal.Value,
+                MetadadosFatosCongelados: metadadosFatosResult.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

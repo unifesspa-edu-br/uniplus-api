@@ -66,7 +66,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// versão aqui declarada tem de ter a sua golden fixture correspondente —
     /// um teste de política falha o build se não tiver.
     /// </summary>
-    internal const string SchemaVersionAtual = "1.2";
+    /// <remarks>
+    /// Story #919 (RN08): <c>documentosExigidos</c> ganha a sub-chave
+    /// <c>metadadosFatos</c> (<see cref="SerializarMetadadosFatos"/>). O bump para
+    /// <c>1.3</c> também é o primeiro <c>schema_version</c> a refletir corretamente
+    /// <c>formatosPermitidos</c> (Story #918, PR anterior) — que ficou sem bump próprio;
+    /// não se retrabalha aquela PR, só se reconhece que "1.3" é a forma real de hoje.
+    /// </remarks>
+    internal const string SchemaVersionAtual = "1.3";
 
     private const string AlgoritmoHashAtual = "canonical-json/sha256@v1";
     private const int EscalaPadrao = 4;
@@ -109,7 +116,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["criteriosDesempate"] = SerializarCriteriosDesempate(processo),
             ["classificacao"] = SerializarClassificacao(processo),
             ["hashesEdital"] = SerializarHashesEdital(dados, entrada.HashDocumento),
-            ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade),
+            ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.MetadadosFatosCongelados),
             ["formulario"] = NaoConstruido.DeepClone(),
             ["cascataRemanejamento"] = NaoConstruido.DeepClone(),
             ["divulgacao"] = NaoConstruido.DeepClone(),
@@ -445,21 +452,85 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// NÃO-tautológica — reidratar recompõe a política, <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/>
     /// recalcula o output a partir dela, e o round-trip compara os bytes.
     /// </summary>
-    private static JsonObject SerializarDocumentosExigidos(ProcessoSeletivo processo, ResultadoConformidade? conformidade) => new()
-    {
-        ["exigencias"] = SerializarExigencias(processo.DocumentosExigidos),
-        ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
-        ["referenciaTemporalFatos"] = processo.ReferenciaTemporalFatos is { } referencia ? new JsonObject
+    private static JsonObject SerializarDocumentosExigidos(
+        ProcessoSeletivo processo,
+        ResultadoConformidade? conformidade,
+        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) => new()
         {
-            ["tipo"] = referencia.Tipo.ToCodigo(),
-            ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            ["faseId"] = referencia.FaseId,
-        }
+            ["exigencias"] = SerializarExigencias(processo.DocumentosExigidos),
+            ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
+            ["referenciaTemporalFatos"] = processo.ReferenciaTemporalFatos is { } referencia ? new JsonObject
+            {
+                ["tipo"] = referencia.Tipo.ToCodigo(),
+                ["data"] = referencia.Data?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                ["faseId"] = referencia.FaseId,
+            }
             : null,
-        ["dataReferenciaFatos"] = processo.ResolverDataReferenciaFatos() is { } data
+            ["dataReferenciaFatos"] = processo.ResolverDataReferenciaFatos() is { } data
             ? data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null,
-    };
+            ["metadadosFatos"] = SerializarMetadadosFatos(metadadosFatosCongelados),
+        };
+
+    /// <summary>
+    /// Story #919 (RN08): congela o metadado — domínio, origem, cardinalidade, ponto de
+    /// resolução, binding e o(s) conjunto(s) de valores — de cada fato do candidato citado
+    /// em alguma <see cref="CondicaoGatilho"/> de alguma <see cref="DocumentoExigido"/> do
+    /// processo. Bloco IRMÃO de <c>exigencias</c>/<c>obrigatoriedades</c>/
+    /// <c>referenciaTemporalFatos</c> dentro de <c>documentosExigidos</c> — array SEMPRE
+    /// presente (nunca <c>nao_construido</c>, D9), vazio quando nenhuma condição existe.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// O canonicalizador não deriva este dicionário de <c>processo.DocumentosExigidos</c> —
+    /// ele apenas SERIALIZA o que o handler já resolveu via <c>IFatoCandidatoReader</c>
+    /// (ADR-0042, mesmo tratamento que <see cref="SerializarObrigatoriedades"/> recebe para
+    /// <c>Conformidade</c>). A garantia de que todo fato referenciado tem metadado
+    /// resolvido — "sem faltante" — é do HANDLER, antes de canonicalizar: a projeção pura
+    /// não tem I/O para revalidar isso contra o catálogo vivo.
+    /// </para>
+    /// <para>
+    /// A chave do fato é <c>fatoCodigo</c> — não <c>codigo</c> — e a do valor declarado é
+    /// <c>valorCodigo</c>: <c>EnvelopeCanonicoGoldenTests.Envelope_ReferenciasDeRegraSaoTripla</c>
+    /// trata qualquer objeto com a chave BARE <c>codigo</c> (sem <c>naturezaLegal</c>/<c>ordem</c>)
+    /// como candidato a referência de regra, exigindo a tripla <c>{codigo, versao, hash}</c> —
+    /// um metadado de fato não é uma referência de regra, e usar a chave qualificada evita a
+    /// falsa colisão (mesma convenção de <c>tipoDocumentoCodigo</c>/<c>modalidadeCodigo</c>).
+    /// </para>
+    /// </remarks>
+    private static JsonArray SerializarMetadadosFatos(IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados)
+    {
+        if (metadadosFatosCongelados is null || metadadosFatosCongelados.Count == 0)
+        {
+            return [];
+        }
+
+        JsonArray array = [];
+        foreach (MetadadoFatoCongelado metadado in metadadosFatosCongelados.Values.OrderBy(static m => m.Codigo, StringComparer.Ordinal))
+        {
+            array.Add(new JsonObject
+            {
+                ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(metadado.Codigo),
+                ["dominio"] = HashCanonicalComputer.NormalizeNfc(metadado.Dominio),
+                ["origem"] = HashCanonicalComputer.NormalizeNfc(metadado.Origem),
+                ["cardinalidade"] = HashCanonicalComputer.NormalizeNfc(metadado.Cardinalidade),
+                ["pontoResolucao"] = HashCanonicalComputer.NormalizeNfc(metadado.PontoResolucao),
+                ["binding"] = HashCanonicalComputer.NormalizeNfc(metadado.Binding),
+                ["valoresDominio"] = metadado.ValoresDominio is { } valores
+                    ? new JsonArray([.. valores.Select(static v => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(v)))])
+                    : null,
+                ["valoresDominioDeclarados"] = metadado.ValoresDominioDeclarados is { } declarados
+                    ? new JsonArray([.. declarados.Select(static d => (JsonNode)new JsonObject
+                    {
+                        ["valorCodigo"] = HashCanonicalComputer.NormalizeNfc(d.Codigo),
+                        ["descricao"] = d.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
+                    })])
+                    : null,
+            });
+        }
+
+        return array;
+    }
 
     /// <summary>
     /// D9 — <see cref="DocumentoExigido"/> não tem chave de negócio única (nada impede duas

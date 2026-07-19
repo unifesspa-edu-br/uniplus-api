@@ -37,9 +37,9 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
 
     public RegistroCodecsEnvelope()
     {
-        IEnvelopeCodec[] codecs = [new EnvelopeCodecV10(), new EnvelopeCodecV11(), new EnvelopeCodecV12()];
+        IEnvelopeCodec[] codecs = [new EnvelopeCodecV10(), new EnvelopeCodecV11(), new EnvelopeCodecV12(), new EnvelopeCodecV13()];
         _codecs = codecs.ToDictionary(static c => c.SchemaVersion, StringComparer.Ordinal);
-        SchemaVersionDeEmissaoCorrente = new EnvelopeCodecV12().SchemaVersion;
+        SchemaVersionDeEmissaoCorrente = new EnvelopeCodecV13().SchemaVersion;
     }
 
     public string SchemaVersionDeEmissaoCorrente { get; }

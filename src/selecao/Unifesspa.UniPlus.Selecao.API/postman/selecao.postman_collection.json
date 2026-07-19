@@ -2022,7 +2022,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"GERAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": null,\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Norma interna do certame\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\"PDF\"],\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"AC_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": null\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": \"QUALQUER\",\n    \"tamanhoMaximoBytes\": null\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"EM\",\n        \"valor\": \"[\\\"LB_PPI_SMK_{{run_suffix}}\\\",\\\"LB_Q_SMK_{{run_suffix}}\\\"]\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei 12.711/2012, art. 3º\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Comprovante de renda per capita\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\"PDF\"],\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"CONDICAO_ATENDIMENTO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"PCD_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei 13.146/2015, art. 30\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Laudo médico com CID\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\"PDF\"],\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"SEXO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"MASCULINO\"\n      },\n      {\n        \"clausula\": 0,\n        \"fato\": \"FAIXA_ETARIA\",\n        \"operador\": \"MAIOR_IGUAL\",\n        \"valor\": \"18\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Certificado de alistamento/quitação militar\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\"PDF\"],\n    \"tamanhoMaximoBytes\": 5000000\n  }\n]",
+              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"GERAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": null,\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Norma interna do certame\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\n      \"PDF\"\n    ],\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"AC_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": null\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": \"QUALQUER\",\n    \"tamanhoMaximoBytes\": null\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"EM\",\n        \"valor\": \"[\\\"LB_PPI_SMK_{{run_suffix}}\\\",\\\"LB_Q_SMK_{{run_suffix}}\\\"]\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei 12.711/2012, art. 3º\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Comprovante de renda per capita\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\n      \"PDF\"\n    ],\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"CONDICAO_ATENDIMENTO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"PCD_SMK_{{run_suffix}}\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei 13.146/2015, art. 30\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Laudo médico com CID\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\n      \"PDF\"\n    ],\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"SEXO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"MASCULINO\"\n      },\n      {\n        \"clausula\": 0,\n        \"fato\": \"FAIXA_ETARIA\",\n        \"operador\": \"MAIOR_IGUAL\",\n        \"valor\": \"18\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Certificado de alistamento/quitação militar\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\n      \"PDF\"\n    ],\n    \"tamanhoMaximoBytes\": 5000000\n  },\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"NACIONALIDADE\",\n        \"operador\": \"DIFERENTE\",\n        \"valor\": \"ESTRANGEIRO\"\n      }\n    ],\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Quitação com o serviço militar — exigida de candidatos não estrangeiros (PS Principal 2027, PSIQ 2027)\"\n      }\n    ],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": [\n      {\n        \"formato\": \"PDF\",\n        \"tamanhoMaximoBytesMax\": 3000000\n      },\n      {\n        \"formato\": \"JPEG\",\n        \"tamanhoMaximoBytesMax\": null\n      }\n    ],\n    \"tamanhoMaximoBytes\": 5000000\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2577,18 +2577,22 @@
                   "  const j = pm.response.json();",
                   "  pm.expect(j.hashConfiguracao).to.be.a('string');",
                   "  pm.expect(j.configuracao).to.be.an('object');",
+                  "  // RN08 (Story #919): captura o hash desta 1ª leitura para a prova de",
+                  "  // estabilidade na 2ª leitura (request seguinte) — o mesmo snapshot vigente",
+                  "  // tem de devolver, sempre, o mesmo hash.",
+                  "  pm.environment.set('hash_configuracao_v1', j.hashConfiguracao);",
                   "});",
-                  "pm.test('bloco congelado tem as 5 exigências da 7.3 com os gatilhos corretos', () => {",
+                  "pm.test('bloco congelado tem as 6 exigências (7.3 + RN08) com os gatilhos corretos', () => {",
                   "  const j = pm.response.json();",
                   "  const exigencias = j.configuracao.documentosExigidos.exigencias;",
-                  "  pm.expect(exigencias, 'GERAL + 4 CONDICIONAL').to.have.lengthOf(5);",
+                  "  pm.expect(exigencias, 'GERAL + 5 CONDICIONAL').to.have.lengthOf(6);",
                   "",
                   "  const geral = exigencias.find(e => e.aplicabilidade === 'Geral');",
                   "  pm.expect(geral, 'nível de ensino (GERAL, sem gatilho)').to.not.be.undefined;",
                   "  pm.expect(geral.condicaoGatilho).to.be.null;",
                   "",
                   "  const condicionais = exigencias.filter(e => e.aplicabilidade === 'Condicional');",
-                  "  pm.expect(condicionais, '4 CONDICIONAL (AC-IGUAL + renda-EM + laudo + reservista)').to.have.lengthOf(4);",
+                  "  pm.expect(condicionais, '5 CONDICIONAL (AC-IGUAL + renda-EM + laudo + reservista + nacionalidade)').to.have.lengthOf(5);",
                   "",
                   "  const suf = pm.environment.get('run_suffix');",
                   "  const renda = condicionais.find(e => e.condicaoGatilho?.[0]?.[0]?.fato === 'MODALIDADE'",
@@ -2611,6 +2615,76 @@
                   "  pm.expect(sexo.valor).to.eql('MASCULINO');",
                   "  pm.expect(idade.operador).to.eql('MAIOR_IGUAL');",
                   "  pm.expect(idade.valor).to.eql(18);",
+                  "",
+                  "  const nacionalidade = condicionais.find(e => e.condicaoGatilho?.[0]?.[0]?.fato === 'NACIONALIDADE');",
+                  "  pm.expect(nacionalidade, 'quitação militar (NACIONALIDADE DIFERENTE ESTRANGEIRO)').to.not.be.undefined;",
+                  "  pm.expect(nacionalidade.condicaoGatilho[0][0].operador).to.eql('DIFERENTE');",
+                  "  pm.expect(nacionalidade.condicaoGatilho[0][0].valor).to.eql('ESTRANGEIRO');",
+                  "  pm.expect(nacionalidade.formatosPermitidos.qualquer).to.eql(false);",
+                  "  const pdfComTeto = nacionalidade.formatosPermitidos.lista.find(f => f.formato === 'PDF');",
+                  "  pm.expect(pdfComTeto, 'formatosPermitidos com teto por formato (Story #918)').to.not.be.undefined;",
+                  "  pm.expect(pdfComTeto.tamanhoMaximoBytesMax).to.eql(3000000);",
+                  "",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Snapshot Vigente (2ª leitura — hash estável, RN08)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.snapshot-vigente-processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/snapshot-vigente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "snapshot-vigente"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// RN08 (Story #919): o snapshot vigente é o MESMO envelope já congelado — uma",
+                  "// segunda leitura, sem nenhuma mutação entre elas, tem de devolver o hash",
+                  "// IDÊNTICO ao da 1ª leitura. Isso prova estabilidade end-to-end sem depender",
+                  "// de mutar o catálogo vivo (FatoCandidato é seed-governado, append-only — não",
+                  "// há endpoint para simular isso; ver RestauradorDeConfiguracaoTests para a",
+                  "// prova estrutural equivalente no nível de integração).",
+                  "pm.test('200 — hash idêntico ao da 1ª leitura', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  const hashAnterior = pm.environment.get('hash_configuracao_v1');",
+                  "  pm.expect(hashAnterior, 'pré-condição: a 1ª leitura precisa ter rodado antes e capturado o hash').to.be.a('string');",
+                  "  pm.expect(j.hashConfiguracao).to.eql(hashAnterior);",
                   "});"
                 ]
               }

@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -105,6 +106,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             tipoDeAtoReader,
             vagaDeLinhagemReader,
             Substitute.For<IObrigatoriedadeLegalRepository>(),
+            Substitute.For<IFatoCandidatoReader>(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -289,6 +291,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             tipoDeAtoReader,
             vagaDeLinhagemReader,
             obrigatoriedadeLegalRepository,
+            Substitute.For<IFatoCandidatoReader>(),
             TimeProvider.System,
             CancellationToken.None);
 
