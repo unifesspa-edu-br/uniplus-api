@@ -458,6 +458,32 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         entrada.TamanhoMaximoBytesMax.Should().Be(5_000_000);
     }
 
+    [Theory(DisplayName = "tamanhoMaximoBytesMax presente e malformado é recusado com erro nomeado, nunca 500")]
+    [InlineData("\"5MB\"")]
+    [InlineData("true")]
+    [InlineData("5000000.5")]
+    [InlineData("99999999999999999999")]
+    public async Task Handle_FormatosPermitidosTamanhoMaximoBytesMaxMalformado_RetornaErroNomeado(string tamanhoJson)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+
+        JsonElement lista = JsonDocument.Parse($$"""[{"formato": "PDF", "tamanhoMaximoBytesMax": {{tamanhoJson}}}]""").RootElement;
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, lista, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FormatosPermitidos.FormaInvalida");
+    }
+
     [Fact(DisplayName = "Um array contendo a string \"QUALQUER\" NÃO é o token especial — é lista com um formato desconhecido")]
     public async Task Handle_FormatosPermitidosQualquerComLista_RetornaErroNomeado()
     {
