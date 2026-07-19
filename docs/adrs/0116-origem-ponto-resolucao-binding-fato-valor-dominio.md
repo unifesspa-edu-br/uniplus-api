@@ -76,10 +76,10 @@ Reclassificação real dos nove fatos (não uma renomeação mecânica):
 | `COR_RACA`, `QUILOMBOLA`, `PCD`, `EGRESSO_ESCOLA_PUBLICA`, `SEXO`, `MODALIDADE`, `CONDICAO_ATENDIMENTO` | `Declarado` | Resposta/seleção direta do candidato no cadastro de inscrição |
 | `NACIONALIDADE`, `TIPO_DEFICIENCIA` (novos) | `Declarado` | Seleção direta do candidato sobre o domínio do fato |
 
-`Integracao` fica reservada, sem fato semeado (fonte externa futura, ex.: SIGAA
-#874). Esta reclassificação **não** afeta o resolvedor — a origem nunca
-alimenta a avaliação do predicado (invariante que a ADR-0111 já estabelecia
-para o eixo `Natureza`); o efeito é só descritivo/de binding.
+`Integracao` fica reservada, sem fato semeado (fonte externa futura, ex.:
+SIGAA, issue #874). Esta reclassificação **não** afeta o resolvedor — a
+origem nunca alimenta a avaliação do predicado (invariante que a ADR-0111 já
+estabelecia para o eixo `Natureza`); o efeito é só descritivo/de binding.
 
 **Ponto de resolução:** `FatoCandidato.PontoResolucao: string`, validado
 contra `FaseCanonicaCatalogo.EhCanonico(...)` (o conjunto fechado de catorze
@@ -116,6 +116,7 @@ cadastro `TipoDeficiencia` já existente, projetado por `tipoDeficienciaIds`,
 mesmo mecanismo de `OfertaAtendimentoEspecializado`/`OfertaTipoDeficiencia`).
 
 **`TipoDeficiencia` (cadastro CRUD existente em Configuração) ganha:**
+
 - `Permanente: bool?` (nullable — `null` = ainda não classificado pelo CEPS,
   distinto de `false` = classificado como não-permanente; a taxonomia
   concreta é refinamento residual, task 0.1 da change, e não bloqueia este
