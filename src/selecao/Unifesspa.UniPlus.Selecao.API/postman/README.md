@@ -82,11 +82,27 @@ aceitável para smoke, não para ambiente compartilhado sem rotina de limpeza.
 
 ## Achados de execução
 
-Executada de ponta a ponta contra o stack local (2026-07-17). **56/56 requests
-passam, 58/58 assertions** — todo o Setup, as 9 dimensões de `Definir*`
-(incluindo o cenário-alvo e2e da task 7.3), toda a Leitura e o ciclo completo de
-Publicação/Retificação/Sessão editorial. Reprodutível: rodada duas vezes
-seguidas contra o mesmo banco compartilhado, sem falhas em nenhuma.
+Executada de ponta a ponta contra o stack local (2026-07-19, pós-merge da
+change `documentos-exigidos-cobertura-editais`, Feature #914). **59/59
+requests passam, 61/61 assertions** — todo o Setup, as 9 dimensões de
+`Definir*` (incluindo o cenário-alvo e2e da task 7.3, os operadores de
+exclusão, `formatosPermitidos[]` e o congelamento RN08 de metadado de fato),
+toda a Leitura e o ciclo completo de Publicação/Retificação/Sessão editorial.
+Reprodutível: rodada duas vezes seguidas contra o mesmo banco compartilhado,
+sem falhas em nenhuma.
+
+### Achado real corrigido — gate de fase exige a fase INSCRICAO no cronograma (issue #934)
+
+O gate de fase introduzido na Story #916 (PR #931) recusava **todas** as
+condições de gatilho existentes com `DocumentoExigido.PontoResolucaoForaDoCronograma`.
+Causa: o cronograma de fases da coleção sempre teve só a fase `AVALIACAO`, mas
+todo fato do vocabulário (Story #917) tem `PontoResolucao = "INSCRICAO"` — sem
+uma fase `INSCRICAO` no cronograma, o gate (corretamente) recusa qualquer
+condição que os referencie. **Não é bug de produção** — o gate está
+funcionando como projetado (RN08/fail-closed); nenhum edital real teria
+cronograma sem fase de inscrição. Corrigido acrescentando uma `FaseCanonica`/
+`FaseCronograma` de código `INSCRICAO` (ordem 1, anterior à `AVALIACAO`) ao
+Setup e ao cronograma da coleção.
 
 ### Cenário-alvo e2e da task 7.3 — 4 sub-casos de gatilho DNF + bordas
 
