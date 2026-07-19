@@ -22,7 +22,8 @@ public sealed class DefinirDocumentosExigidosCommandValidator : AbstractValidato
         "PENDENCIA_REENVIO",
     ];
 
-    private static readonly string[] OperadoresValidos = ["IGUAL", "EM", "MAIOR_IGUAL", "MENOR_IGUAL"];
+    // Story #916: DIFERENTE/NAO_EM (operadores de exclusão) somam-se aos 4 originais.
+    private static readonly string[] OperadoresValidos = ["IGUAL", "EM", "MAIOR_IGUAL", "MENOR_IGUAL", "DIFERENTE", "NAO_EM"];
 
     private static readonly string[] AbrangenciasValidas = ["FEDERAL", "ESTADUAL", "MUNICIPAL", "INTERNA_NORMA", "INTERNA_EDITAL"];
 
