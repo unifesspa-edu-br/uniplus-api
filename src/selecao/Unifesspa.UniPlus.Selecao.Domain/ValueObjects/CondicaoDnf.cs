@@ -15,12 +15,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <remarks>
 /// <para>
 /// Validação de <b>forma</b>, sem I/O: <see cref="Fato"/> não vazio,
-/// <see cref="Operador"/> um dos quatro valores do domínio fechado (nunca o
+/// <see cref="Operador"/> um dos valores do domínio fechado (nunca o
 /// sentinela <see cref="Enums.Operador.Nenhuma"/>), e a forma de
-/// <see cref="Valor"/> coerente com o operador — <see cref="Enums.Operador.Em"/>
-/// exige array JSON não vazio; os demais exigem escalar (rejeitam array e
-/// objeto). A validação <b>semântica</b> (fato existe no vocabulário, operador
-/// compatível com o domínio do fato, valor pertence ao domínio) é
+/// <see cref="Valor"/> coerente com o operador — <see cref="Enums.Operador.Em"/> e
+/// <see cref="Enums.Operador.NaoEm"/> (Story #916) exigem array JSON, sem itens de
+/// texto em branco; array <b>vazio</b> é aceito na forma (a semântica de avaliar
+/// <c>EM []</c>/<c>NAO_EM []</c> é de <see cref="PredicadoDnf"/>, não desta factory). Os
+/// demais operadores (<see cref="Enums.Operador.Igual"/>, <see cref="Enums.Operador.Diferente"/>,
+/// <see cref="Enums.Operador.MaiorIgual"/>, <see cref="Enums.Operador.MenorIgual"/>) exigem
+/// escalar (rejeitam array e objeto). A validação <b>semântica</b> (fato existe no
+/// vocabulário, operador compatível com o domínio do fato, valor pertence ao domínio) é
 /// responsabilidade de <see cref="Services.PredicadoDnfValidador"/>, que
 /// recebe o vocabulário como dado — por isso vive separada desta factory.
 /// </para>
@@ -69,17 +73,18 @@ public sealed record CondicaoDnf
                 "CondicaoDnf.OperadorInvalido", "O operador da condição não é reconhecido."));
         }
 
-        bool formaCoerente = operador == Operador.Em
-            ? valor.ValueKind == JsonValueKind.Array && valor.GetArrayLength() > 0 && NenhumItemEmBranco(valor)
+        bool ehOperadorDeLista = operador is Operador.Em or Operador.NaoEm;
+        bool formaCoerente = ehOperadorDeLista
+            ? valor.ValueKind == JsonValueKind.Array && NenhumItemEmBranco(valor)
             : valor.ValueKind is not (JsonValueKind.Array or JsonValueKind.Object) && !EscalarEmBranco(valor);
 
         if (!formaCoerente)
         {
             return Result<CondicaoDnf>.Failure(new DomainError(
                 "CondicaoDnf.FormaIncoerenteComOperador",
-                operador == Operador.Em
-                    ? "O operador EM exige um array JSON não vazio, sem itens de texto em branco."
-                    : "Os operadores IGUAL, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco."));
+                ehOperadorDeLista
+                    ? "Os operadores EM e NAO_EM exigem um array JSON, sem itens de texto em branco (array vazio é aceito)."
+                    : "Os operadores IGUAL, DIFERENTE, MAIOR_IGUAL e MENOR_IGUAL exigem um valor JSON escalar não branco."));
         }
 
         return Result<CondicaoDnf>.Success(new CondicaoDnf(fato.Trim(), operador, valor.Clone()));

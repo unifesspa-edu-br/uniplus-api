@@ -232,26 +232,47 @@ public sealed class ResolvedorExigenciasDocumentaisTests
         resultado.Exigencias.Should().AllSatisfy(e => e.Status.Should().Be(StatusResolucaoExigencia.Pendente));
     }
 
-    [Fact(DisplayName = "Grupo de satisfação: membro NÃO aplicável (CONDICIONAL sem casar) não é satisfeito pelo grupo, e não contamina os demais")]
-    public void Resolver_GrupoSatisfacaoComMembroNaoAplicavel_NaoInterfereNosDemais()
+    [Fact(DisplayName = "Story #916: grupo de satisfação com membro cujo fato não está resolvido fica AplicabilidadeIndeterminada (não mais NaoAplicavel) e não é satisfeito pelo grupo, nem contamina os demais")]
+    public void Resolver_GrupoSatisfacaoComMembroDeFatoNaoResolvido_AplicabilidadeIndeterminada()
     {
         Guid grupo = Guid.CreateVersion7();
         DocumentoExigido geral = Geral(FaseA, grupo);
-        CondicaoGatilho condicaoQueNaoCasa = CondicaoGatilho.Criar(
+        // Antes da Story #916, um fato ausente (SemFatos, abaixo) avaliava falso — o gatilho
+        // "não casava" e a exigência resolvia NaoAplicavel. Fail-closed: fato ausente agora é
+        // Indeterminado, nunca Falso — a exigência fica AplicabilidadeIndeterminada.
+        CondicaoGatilho condicaoDeFatoNaoResolvido = CondicaoGatilho.Criar(
             0, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement("PCD")).Value!;
-        DocumentoExigido condicionalSemCasar = DocumentoExigido.Criar(
+        DocumentoExigido condicionalIndeterminada = DocumentoExigido.Criar(
             FaseA, Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", Aplicabilidade.Condicional,
             obrigatorio: true, consequenciaIndeferimento: null, grupo,
-            condicoes: [condicaoQueNaoCasa], basesLegais: [], idadeMaximaEmissao: null,
+            condicoes: [condicaoDeFatoNaoResolvido], basesLegais: [], idadeMaximaEmissao: null,
             formatoPermitido: null, tamanhoMaximoBytes: null).Value!;
-        BlocoExigenciasCongelado bloco = BlocoExigenciasCongelado.DeGrafoReidratado([geral, condicionalSemCasar]);
+        BlocoExigenciasCongelado bloco = BlocoExigenciasCongelado.DeGrafoReidratado([geral, condicionalIndeterminada]);
         Dictionary<Guid, ApresentacaoDocumento> apresentacoes = ApresentacaoPara(geral.Id);
 
         ResultadoResolucaoExigencias resultado = ResolvedorExigenciasDocumentais.Resolver(
             bloco, SemFatos, apresentacoes).Value!;
 
         resultado.Exigencias.Should().ContainSingle(e => e.ExigenciaId == geral.Id && e.Status == StatusResolucaoExigencia.Satisfeita);
-        resultado.Exigencias.Should().ContainSingle(e => e.ExigenciaId == condicionalSemCasar.Id && e.Status == StatusResolucaoExigencia.NaoAplicavel);
+        resultado.Exigencias.Should().ContainSingle(e => e.ExigenciaId == condicionalIndeterminada.Id && e.Status == StatusResolucaoExigencia.AplicabilidadeIndeterminada);
+    }
+
+    // ── Story #916 — AplicabilidadeIndeterminada ──
+
+    [Fact(DisplayName = "CONDICIONAL cujo fato não está resolvido resolve AplicabilidadeIndeterminada, mesmo com apresentação")]
+    public void Resolver_CondicionalComFatoNaoResolvido_AplicabilidadeIndeterminada()
+    {
+        DocumentoExigido exigencia = Condicional("CONDICAO_ATENDIMENTO", "PCD");
+        BlocoExigenciasCongelado bloco = BlocoExigenciasCongelado.DeGrafoReidratado([exigencia]);
+        Dictionary<Guid, ApresentacaoDocumento> apresentacoes = ApresentacaoPara(exigencia.Id);
+
+        ResultadoResolucaoExigencias resultado = ResolvedorExigenciasDocumentais.Resolver(
+            bloco, SemFatos, apresentacoes).Value!;
+
+        ExigenciaResolvida veredicto = resultado.Exigencias.Single();
+        veredicto.Status.Should().Be(StatusResolucaoExigencia.AplicabilidadeIndeterminada);
+        veredicto.ApresentacaoId.Should().BeNull(
+            "uma exigência de aplicabilidade desconhecida nunca vira Satisfeita só porque o candidato enviou algo");
     }
 
     // ── Contraprova geral ──

@@ -296,27 +296,29 @@ public sealed class DocumentoExigido : EntityBase
         _basesLegais.Where(static b => b.Status == StatusBaseLegal.Resolvido);
 
     /// <summary>
-    /// A exigência se aplica a um candidato com estes fatos? GERAL sempre se aplica — o
-    /// gatilho nunca é avaliado. CONDICIONAL depende do predicado DNF (PR #896): zero
-    /// cláusulas vivas nunca casa com ninguém, mesma semântica de
-    /// <see cref="PredicadoDnf.Avaliar"/> e de CA-01 ("exigida de ninguém"). Usado tanto
-    /// pelo resolvedor de exigências documentais (PR #903, por candidato real) quanto pelo
-    /// gate de conformidade legal (PR #903, <see cref="Services.AvaliadorConformidadeLegal"/>
+    /// A exigência se aplica a um candidato com estes fatos? GERAL sempre é
+    /// <see cref="Ternario.Verdadeiro"/> — o gatilho nunca é avaliado. CONDICIONAL depende
+    /// do predicado DNF ternário (PR #896, Story #916): zero cláusulas vivas nunca casa com
+    /// ninguém (<see cref="Ternario.Falso"/>, estado estrutural — CA-01 "exigida de
+    /// ninguém"), e um fato citado que não está resolvido para este candidato produz
+    /// <see cref="Ternario.Indeterminado"/>, nunca <see cref="Ternario.Falso"/> (fail-closed).
+    /// Usado tanto pelo resolvedor de exigências documentais (PR #903, por candidato real)
+    /// quanto pelo gate de conformidade legal (PR #903, <see cref="Services.AvaliadorConformidadeLegal"/>
     /// — por um fato sintético fixo, ex. só <c>MODALIDADE</c>, para provar cobertura
     /// incondicional de uma modalidade inteira).
     /// </summary>
-    public bool AplicavelPara(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
+    public Ternario AplicavelPara(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 
         if (Aplicabilidade == Aplicabilidade.Geral)
         {
-            return true;
+            return Ternario.Verdadeiro;
         }
 
         if (_condicoes.Count == 0)
         {
-            return false;
+            return Ternario.Falso;
         }
 
         // O dado já foi validado quando a exigência foi escrita (CondicaoGatilho.Criar) —
@@ -370,6 +372,14 @@ public sealed class DocumentoExigido : EntityBase
                 .All(c => CondicaoDeModalidadeSatisfeitaPor(c.ParaCondicaoDnf(), modalidadeCodigo)));
     }
 
+    /// <summary>
+    /// Story #916: <see cref="Operador.Diferente"/>/<see cref="Operador.NaoEm"/> espelham a
+    /// negação de <see cref="Operador.Igual"/>/<see cref="Operador.Em"/> — sem os dois braços
+    /// novos, um gatilho <c>MODALIDADE DIFERENTE X</c>/<c>NAO_EM [...]</c> seria aceito pelo
+    /// validador (matriz operador × domínio) mas escaparia silenciosamente do gate estrutural
+    /// CA-05 (esta checagem tem switch PRÓPRIO, à parte de <see cref="PredicadoDnf.Avaliar"/> —
+    /// não migra sozinho quando um operador novo é adicionado).
+    /// </summary>
     private static bool CondicaoDeModalidadeSatisfeitaPor(CondicaoDnf condicao, string modalidadeCodigo) =>
         condicao.Operador switch
         {
@@ -377,6 +387,12 @@ public sealed class DocumentoExigido : EntityBase
                 && string.Equals(condicao.Valor.GetString(), modalidadeCodigo, StringComparison.Ordinal),
             Operador.Em => condicao.Valor.ValueKind == JsonValueKind.Array
                 && condicao.Valor.EnumerateArray().Any(item =>
+                    item.ValueKind == JsonValueKind.String
+                    && string.Equals(item.GetString(), modalidadeCodigo, StringComparison.Ordinal)),
+            Operador.Diferente => condicao.Valor.ValueKind == JsonValueKind.String
+                && !string.Equals(condicao.Valor.GetString(), modalidadeCodigo, StringComparison.Ordinal),
+            Operador.NaoEm => condicao.Valor.ValueKind == JsonValueKind.Array
+                && !condicao.Valor.EnumerateArray().Any(item =>
                     item.ValueKind == JsonValueKind.String
                     && string.Equals(item.GetString(), modalidadeCodigo, StringComparison.Ordinal)),
             _ => false,

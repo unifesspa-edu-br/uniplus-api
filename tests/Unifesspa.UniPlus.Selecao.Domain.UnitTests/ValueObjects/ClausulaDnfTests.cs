@@ -40,4 +40,37 @@ public sealed class ClausulaDnfTests
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Condicoes.Should().HaveCount(2);
     }
+
+    // ── Story #916 — avaliação ternária (E lógico) ──
+
+    [Fact(DisplayName = "Avaliar: todas verdadeiras resolve Verdadeiro")]
+    public void Avaliar_TodasVerdadeiras_Verdadeiro()
+    {
+        ClausulaDnf clausula = ClausulaDnf.Criar([Condicao("PCD"), Condicao("QUILOMBOLA")]).Value!;
+        Dictionary<string, JsonElement> fatos = new()
+        {
+            ["PCD"] = JsonSerializer.SerializeToElement(true),
+            ["QUILOMBOLA"] = JsonSerializer.SerializeToElement(true),
+        };
+
+        clausula.Avaliar(fatos).Should().Be(Ternario.Verdadeiro);
+    }
+
+    [Fact(DisplayName = "Avaliar: uma condição Falso faz a cláusula inteira ser Falso, mesmo com outra Indeterminada")]
+    public void Avaliar_UmaFalsoVenceSobreIndeterminado()
+    {
+        ClausulaDnf clausula = ClausulaDnf.Criar([Condicao("PCD"), Condicao("FATO_AUSENTE")]).Value!;
+        Dictionary<string, JsonElement> fatos = new() { ["PCD"] = JsonSerializer.SerializeToElement(false) };
+
+        clausula.Avaliar(fatos).Should().Be(Ternario.Falso);
+    }
+
+    [Fact(DisplayName = "Avaliar: sem nenhuma Falso, uma Indeterminada faz a cláusula ser Indeterminada")]
+    public void Avaliar_SemFalso_IndeterminadoVence()
+    {
+        ClausulaDnf clausula = ClausulaDnf.Criar([Condicao("PCD"), Condicao("FATO_AUSENTE")]).Value!;
+        Dictionary<string, JsonElement> fatos = new() { ["PCD"] = JsonSerializer.SerializeToElement(true) };
+
+        clausula.Avaliar(fatos).Should().Be(Ternario.Indeterminado);
+    }
 }

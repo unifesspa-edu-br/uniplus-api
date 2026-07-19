@@ -13,10 +13,12 @@ public static class OperadorCodigo
     public const string Em = "EM";
     public const string MaiorIgual = "MAIOR_IGUAL";
     public const string MenorIgual = "MENOR_IGUAL";
+    public const string Diferente = "DIFERENTE";
+    public const string NaoEm = "NAO_EM";
 
     /// <summary>
     /// Converte o operador para o código canônico. O <c>switch</c> é
-    /// exaustivo: um 5º operador quebra a build (CS8509 promovido a erro por
+    /// exaustivo: um 7º operador quebra a build (CS8509 promovido a erro por
     /// <c>TreatWarningsAsErrors</c>) até este mapeamento absorvê-lo.
     /// </summary>
     public static string ToCodigo(this Operador operador) => operador switch
@@ -25,6 +27,8 @@ public static class OperadorCodigo
         Operador.Em => Em,
         Operador.MaiorIgual => MaiorIgual,
         Operador.MenorIgual => MenorIgual,
+        Operador.Diferente => Diferente,
+        Operador.NaoEm => NaoEm,
         Operador.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(operador), operador, "Operador.Nenhuma é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(operador), operador, "Operador desconhecido."),
@@ -42,6 +46,8 @@ public static class OperadorCodigo
         Em => Operador.Em,
         MaiorIgual => Operador.MaiorIgual,
         MenorIgual => Operador.MenorIgual,
+        Diferente => Operador.Diferente,
+        NaoEm => Operador.NaoEm,
         _ => Operador.Nenhuma,
     };
 }

@@ -47,13 +47,12 @@ public sealed class CondicaoGatilhoTests
         resultado.Error!.Code.Should().Be("CondicaoDnf.FatoObrigatorio");
     }
 
-    [Fact(DisplayName = "Criar propaga a falha de forma de CondicaoDnf (EM com array vazio)")]
-    public void Criar_OperadorEmComArrayVazio_PropagaErroDeCondicaoDnf()
+    [Fact(DisplayName = "Story #916: Criar aceita EM com array vazio — a forma passou a admitir lista vazia (semântica de avaliação é de PredicadoDnf, não desta factory)")]
+    public void Criar_OperadorEmComArrayVazio_Aceita()
     {
         Result<CondicaoGatilho> resultado = CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Em, Json("[]"));
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("CondicaoDnf.FormaIncoerenteComOperador");
+        resultado.IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "DocumentoExigidoId nasce vazio antes da vinculação ao pai")]

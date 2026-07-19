@@ -64,7 +64,7 @@ public static class ResolvedorExigenciasDocumentais
                 $"O grupo de satisfação '{grupoInvalido}' agrupa exigências de fases diferentes — o escopo do grupo é processo+fase."));
         }
 
-        Dictionary<Guid, bool> aplicavelPorExigencia = bloco.Exigencias.ToDictionary(
+        Dictionary<Guid, Ternario> aplicavelPorExigencia = bloco.Exigencias.ToDictionary(
             static e => e.Id, e => e.AplicavelPara(fatosResolvidos));
 
         Dictionary<Guid, bool> satisfeitaDiretamentePorExigencia = bloco.Exigencias.ToDictionary(
@@ -72,10 +72,13 @@ public static class ResolvedorExigenciasDocumentais
 
         // O grupo de satisfação propaga a satisfação DIRETA para as demais exigências
         // aplicáveis do mesmo grupo — uma única apresentação, dentro do grupo, satisfaz
-        // as outras (DocumentoExigido.GrupoSatisfacaoId, "semântica plena na PR #903").
+        // as outras (DocumentoExigido.GrupoSatisfacaoId, "semântica plena na PR #903"). Só
+        // exigência CERTAMENTE aplicável (Ternario.Verdadeiro) participa/propaga satisfação de
+        // grupo (Story #916) — uma indeterminada não deveria contaminar irmãs de grupo ainda
+        // por resolver.
         Dictionary<Guid, Guid> apresentacaoQueSatisfazOGrupo = [];
         foreach (IGrouping<Guid, DocumentoExigido> grupo in bloco.Exigencias
-            .Where(e => e.GrupoSatisfacaoId is not null && aplicavelPorExigencia[e.Id])
+            .Where(e => e.GrupoSatisfacaoId is not null && aplicavelPorExigencia[e.Id] == Ternario.Verdadeiro)
             .GroupBy(static e => e.GrupoSatisfacaoId!.Value))
         {
             DocumentoExigido? satisfator = grupo.FirstOrDefault(e => satisfeitaDiretamentePorExigencia[e.Id]);
@@ -88,7 +91,16 @@ public static class ResolvedorExigenciasDocumentais
         List<ExigenciaResolvida> resolucoes = [];
         foreach (DocumentoExigido exigencia in bloco.Exigencias)
         {
-            if (!aplicavelPorExigencia[exigencia.Id])
+            // Story #916: Indeterminado é resolvido fato-a-fato, SEMPRE — independentemente de
+            // já existir apresentação para esta exigência (nunca vira Satisfeita só porque o
+            // candidato enviou algo) e sem participar do grupo de satisfação.
+            if (aplicavelPorExigencia[exigencia.Id] == Ternario.Indeterminado)
+            {
+                resolucoes.Add(new ExigenciaResolvida(exigencia.Id, StatusResolucaoExigencia.AplicabilidadeIndeterminada, null));
+                continue;
+            }
+
+            if (aplicavelPorExigencia[exigencia.Id] == Ternario.Falso)
             {
                 resolucoes.Add(new ExigenciaResolvida(exigencia.Id, StatusResolucaoExigencia.NaoAplicavel, null));
                 continue;

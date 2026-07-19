@@ -166,4 +166,74 @@ public sealed class DocumentoExigidoTests
 
         exigencia.BasesLegaisResolvidas().Should().BeEmpty();
     }
+
+    // ── Story #916 — AplicavelPara ternário ──
+
+    private static CondicaoGatilho CondicaoDe(string fato, Operador operador, string valorJson)
+    {
+        using JsonDocument documento = JsonDocument.Parse(valorJson);
+        return CondicaoGatilho.Criar(0, fato, operador, documento.RootElement.Clone()).Value!;
+    }
+
+    [Fact(DisplayName = "AplicavelPara: GERAL é sempre Verdadeiro, gatilho nunca avaliado")]
+    public void AplicavelPara_Geral_SempreVerdadeiro()
+    {
+        DocumentoExigido exigencia = Exigencia(Aplicabilidade.Geral).Value!;
+
+        exigencia.AplicavelPara(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Verdadeiro);
+    }
+
+    [Fact(DisplayName = "AplicavelPara: CONDICIONAL sem condição viva (zero cláusulas) é Falso — estrutural, não ausência de dado")]
+    public void AplicavelPara_CondicionalSemCondicoes_Falso()
+    {
+        DocumentoExigido exigencia = Exigencia(Aplicabilidade.Condicional).Value!;
+
+        exigencia.AplicavelPara(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Falso);
+    }
+
+    [Fact(DisplayName = "AplicavelPara: CONDICIONAL cujo fato não está resolvido é Indeterminado, nunca Falso")]
+    public void AplicavelPara_CondicionalComFatoAusente_Indeterminado()
+    {
+        DocumentoExigido exigencia = Exigencia(
+            Aplicabilidade.Condicional, condicoes: [CondicaoDe("SEXO", Operador.Igual, "\"MASCULINO\"")]).Value!;
+
+        exigencia.AplicavelPara(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Indeterminado);
+    }
+
+    [Fact(DisplayName = "AplicavelPara: CONDICIONAL com fato resolvido avalia normalmente (Verdadeiro/Falso)")]
+    public void AplicavelPara_CondicionalComFatoResolvido_AvaliaNormalmente()
+    {
+        DocumentoExigido exigencia = Exigencia(
+            Aplicabilidade.Condicional, condicoes: [CondicaoDe("SEXO", Operador.Igual, "\"MASCULINO\"")]).Value!;
+
+        Dictionary<string, JsonElement> fatos = new() { ["SEXO"] = JsonSerializer.SerializeToElement("MASCULINO") };
+        exigencia.AplicavelPara(fatos).Should().Be(Ternario.Verdadeiro);
+
+        Dictionary<string, JsonElement> fatosDivergentes = new() { ["SEXO"] = JsonSerializer.SerializeToElement("FEMININO") };
+        exigencia.AplicavelPara(fatosDivergentes).Should().Be(Ternario.Falso);
+    }
+
+    // ── Story #916 — PodeAlcancarModalidade com DIFERENTE/NAO_EM ──
+
+    [Fact(DisplayName = "PodeAlcancarModalidade: MODALIDADE DIFERENTE X alcança qualquer modalidade que não seja X")]
+    public void PodeAlcancarModalidade_Diferente_AlcancaModalidadeDivergente()
+    {
+        DocumentoExigido exigencia = Exigencia(
+            Aplicabilidade.Condicional, condicoes: [CondicaoDe("MODALIDADE", Operador.Diferente, "\"LB_PPI\"")]).Value!;
+
+        exigencia.PodeAlcancarModalidade("AC").Should().BeTrue();
+        exigencia.PodeAlcancarModalidade("LB_PPI").Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "PodeAlcancarModalidade: MODALIDADE NAO_EM [...] alcança qualquer modalidade fora da lista")]
+    public void PodeAlcancarModalidade_NaoEm_AlcancaModalidadeForaDaLista()
+    {
+        DocumentoExigido exigencia = Exigencia(
+            Aplicabilidade.Condicional,
+            condicoes: [CondicaoDe("MODALIDADE", Operador.NaoEm, "[\"LB_PPI\",\"LB_Q\"]")]).Value!;
+
+        exigencia.PodeAlcancarModalidade("AC").Should().BeTrue();
+        exigencia.PodeAlcancarModalidade("LB_PPI").Should().BeFalse();
+        exigencia.PodeAlcancarModalidade("LB_Q").Should().BeFalse();
+    }
 }
