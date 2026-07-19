@@ -41,7 +41,9 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         fatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(
             (IReadOnlyList<FatoCandidatoView>)
             [
-                new FatoCandidatoView(Guid.CreateVersion7(), "PROFESSOR_RURAL", "Professor da rede pública rural", null, "BOOLEANO", "BRUTO_INFORMADO", "ESCALAR", null),
+                new FatoCandidatoView(
+                    Guid.CreateVersion7(), "PROFESSOR_RURAL", "Professor da rede pública rural", null,
+                    "BOOLEANO", "DECLARADO", "ESCALAR", null, "INSCRICAO", "CAMPO_INSCRICAO:PROFESSOR_RURAL", null),
             ]);
 
         return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), fatoCandidatoReader, Substitute.For<ISelecaoUnitOfWork>());

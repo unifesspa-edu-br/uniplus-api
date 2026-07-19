@@ -24,7 +24,15 @@ internal sealed class TipoDeficienciaConfiguration
         builder.HasKey(t => t.Id);
 
         builder.Property(t => t.Nome).HasMaxLength(NomeMaxLength).IsRequired();
-        builder.Property(t => t.Descricao).HasMaxLength(DescricaoMaxLength);
+
+        // Descrição obrigatória (ADR-0116): serve também como a descrição por
+        // valor do fato TIPO_DEFICIENCIA (DECLARADO).
+        builder.Property(t => t.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();
+
+        // Permanente (ADR-0116): nullable — null = ainda não classificado pelo
+        // CEPS (task 0.1, taxonomia residual), distinto de false = classificado
+        // como não-permanente.
+        builder.Property(t => t.Permanente);
 
         // Auditoria (IAuditableEntity)
         builder.Property(t => t.CreatedBy).HasMaxLength(255);

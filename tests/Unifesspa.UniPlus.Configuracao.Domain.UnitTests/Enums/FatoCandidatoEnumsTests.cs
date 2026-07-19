@@ -5,10 +5,10 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Parsing por allowlist textual dos três eixos do catálogo de fatos (ADR-0111):
-/// domínio, natureza (origem) e cardinalidade. Só os tokens canônicos UPPER_SNAKE
-/// são aceitos; tokens PascalCase e fora do domínio (ex.: <c>TEXTO</c>) são
-/// rejeitados — o que <c>Enum.TryParse</c> aceitaria por engano.
+/// Parsing por allowlist textual dos três eixos do catálogo de fatos (ADR-0111,
+/// refinada pela ADR-0116): domínio, origem e cardinalidade. Só os tokens
+/// canônicos UPPER_SNAKE são aceitos; tokens PascalCase e fora do domínio (ex.:
+/// <c>TEXTO</c>) são rejeitados — o que <c>Enum.TryParse</c> aceitaria por engano.
 /// </summary>
 public sealed class FatoCandidatoEnumsTests
 {
@@ -40,26 +40,30 @@ public sealed class FatoCandidatoEnumsTests
     public void DominiosFato_TokensCanonicos() =>
         DominiosFato.TokensCanonicos.Should().BeEquivalentTo(["CATEGORICO", "BOOLEANO", "NUMERICO"]);
 
-    [Theory(DisplayName = "NaturezasFato resolve os três tokens de origem-do-dado")]
-    [InlineData("BRUTO_INFORMADO", NaturezaFato.BrutoInformado)]
-    [InlineData("DE_VONTADE", NaturezaFato.DeVontade)]
-    [InlineData("DERIVADO", NaturezaFato.Derivado)]
-    public void NaturezasFato_TokenCanonico_Resolve(string token, NaturezaFato esperada)
+    [Theory(DisplayName = "OrigensFato resolve os três tokens de origem-do-dado (ADR-0116)")]
+    [InlineData("DERIVADO", OrigemFato.Derivado)]
+    [InlineData("DECLARADO", OrigemFato.Declarado)]
+    [InlineData("INTEGRACAO", OrigemFato.Integracao)]
+    public void OrigensFato_TokenCanonico_Resolve(string token, OrigemFato esperada)
     {
-        NaturezasFato.TryAnalisar(token, out NaturezaFato natureza).Should().BeTrue();
-        natureza.Should().Be(esperada);
-        NaturezasFato.ParaTokenCanonico(natureza).Should().Be(token);
+        OrigensFato.TryAnalisar(token, out OrigemFato origem).Should().BeTrue();
+        origem.Should().Be(esperada);
+        OrigensFato.ParaTokenCanonico(origem).Should().Be(token);
     }
 
-    [Theory(DisplayName = "NaturezasFato rejeita token fora do domínio e nulo")]
-    [InlineData("ESTATICO")]
-    [InlineData("DINAMICO")]
+    [Theory(DisplayName = "OrigensFato rejeita token fora do domínio e nulo")]
+    [InlineData("BRUTO_INFORMADO")]
+    [InlineData("DE_VONTADE")]
     [InlineData(null)]
-    public void NaturezasFato_ForaDoDominio_Rejeita(string? token)
+    public void OrigensFato_ForaDoDominio_Rejeita(string? token)
     {
-        NaturezasFato.TryAnalisar(token, out NaturezaFato natureza).Should().BeFalse();
-        natureza.Should().Be(NaturezaFato.Nenhuma);
+        OrigensFato.TryAnalisar(token, out OrigemFato origem).Should().BeFalse();
+        origem.Should().Be(OrigemFato.Nenhuma);
     }
+
+    [Fact(DisplayName = "OrigensFato expõe exatamente os três tokens canônicos")]
+    public void OrigensFato_TokensCanonicos() =>
+        OrigensFato.TokensCanonicos.Should().BeEquivalentTo(["DERIVADO", "DECLARADO", "INTEGRACAO"]);
 
     [Theory(DisplayName = "CardinalidadesFato resolve os dois tokens canônicos")]
     [InlineData("ESCALAR", CardinalidadeFato.Escalar)]

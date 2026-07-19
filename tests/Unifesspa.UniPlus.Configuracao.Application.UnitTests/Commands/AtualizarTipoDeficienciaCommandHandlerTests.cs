@@ -17,7 +17,7 @@ public sealed class AtualizarTipoDeficienciaCommandHandlerTests
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     private static TipoDeficiencia TipoExistente(string nome = "Visual") =>
-        TipoDeficiencia.Criar(nome, null).Value!;
+        TipoDeficiencia.Criar(nome, "Deficiência relacionada à visão").Value!;
 
     private static AtualizarTipoDeficienciaCommand Comando(Guid id, string nome = "Visual") =>
         new(id, nome, "Deficiência relacionada à visão");

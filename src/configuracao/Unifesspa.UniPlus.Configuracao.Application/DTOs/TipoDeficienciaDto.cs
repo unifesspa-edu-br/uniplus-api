@@ -9,7 +9,8 @@ using System.Text.Json.Serialization;
 public sealed record TipoDeficienciaDto(
     Guid Id,
     string Nome,
-    string? Descricao,
+    string Descricao,
+    bool? Permanente,
     DateTimeOffset CriadoEm)
 {
     [JsonPropertyName("_links")]

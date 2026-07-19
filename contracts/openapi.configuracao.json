@@ -7480,7 +7480,8 @@
       "AtualizarTipoDeficienciaCommand": {
         "required": [
           "id",
-          "nome"
+          "nome",
+          "descricao"
         ],
         "type": "object",
         "properties": {
@@ -7492,9 +7493,12 @@
             "type": "string"
           },
           "descricao": {
+            "type": "string"
+          },
+          "permanente": {
             "type": [
               "null",
-              "string"
+              "boolean"
             ]
           }
         }
@@ -8285,7 +8289,8 @@
       },
       "CriarTipoDeficienciaCommand": {
         "required": [
-          "nome"
+          "nome",
+          "descricao"
         ],
         "type": "object",
         "properties": {
@@ -8293,9 +8298,12 @@
             "type": "string"
           },
           "descricao": {
+            "type": "string"
+          },
+          "permanente": {
             "type": [
               "null",
-              "string"
+              "boolean"
             ]
           }
         }
@@ -8658,9 +8666,12 @@
           "nome",
           "descricao",
           "dominio",
-          "natureza",
+          "origem",
           "cardinalidade",
-          "valoresDominio"
+          "valoresDominio",
+          "pontoResolucao",
+          "binding",
+          "valoresDominioDeclarados"
         ],
         "type": "object",
         "properties": {
@@ -8683,7 +8694,7 @@
           "dominio": {
             "type": "string"
           },
-          "natureza": {
+          "origem": {
             "type": "string"
           },
           "cardinalidade": {
@@ -8697,6 +8708,52 @@
             "items": {
               "type": "string"
             }
+          },
+          "pontoResolucao": {
+            "type": "string"
+          },
+          "binding": {
+            "type": "string"
+          },
+          "valoresDominioDeclarados": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/FatoValorDominioViewItem"
+            }
+          }
+        }
+      },
+      "FatoValorDominioViewItem": {
+        "required": [
+          "codigo",
+          "descricao",
+          "ordem",
+          "ativo"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ativo": {
+            "type": "boolean"
           }
         }
       },
@@ -9277,6 +9334,7 @@
           "id",
           "nome",
           "descricao",
+          "permanente",
           "criadoEm"
         ],
         "type": "object",
@@ -9289,9 +9347,12 @@
             "type": "string"
           },
           "descricao": {
+            "type": "string"
+          },
+          "permanente": {
             "type": [
               "null",
-              "string"
+              "boolean"
             ]
           },
           "criadoEm": {

@@ -49,21 +49,28 @@ public sealed class FatoCandidatoCatalogoTests
             "o catálogo rol_de_fatos_candidato é seed-governado — nenhum POST/PUT/PATCH/DELETE o edita por HTTP");
     }
 
-    [Fact(DisplayName = "Nenhuma migration cria FK cross-schema apontando para rol_de_fatos_candidato")]
-    public void Migrations_SemFkParaFatoCandidato()
+    [Fact(DisplayName = "Nenhuma migration de outro módulo cria FK cross-schema apontando para rol_de_fatos_candidato")]
+    public void Migrations_SemFkCrossSchemaParaFatoCandidato()
     {
         string src = RaizSrc();
         Directory.Exists(src).Should().BeTrue($"a árvore de código vive em {src}");
 
+        // A FK de fato_valor_dominio → rol_de_fatos_candidato (ADR-0116) é
+        // intra-schema — filho e pai vivem no mesmo módulo/DbContext Configuracao.
+        // A regra proíbe é OUTRO módulo (Selecao, Ingresso) referenciar o catálogo
+        // por FK cross-schema; a referência cross-módulo é sempre por valor
+        // (snapshot-copy, ADR-0061).
         List<string> infratoras = Directory
             .EnumerateFiles(src, "*.cs", SearchOption.AllDirectories)
             .Where(arquivo => arquivo.Contains("Migrations", StringComparison.Ordinal))
+            .Where(arquivo => !arquivo.Contains(
+                Path.Join("configuracao", "Unifesspa.UniPlus.Configuracao.Infrastructure"), StringComparison.Ordinal))
             .Where(arquivo => FkParaFatoCandidato.IsMatch(SemComentarios(arquivo)))
             .Select(arquivo => Path.GetFileName(arquivo)!)
             .ToList();
 
         infratoras.Should().BeEmpty(
-            "a referência ao catálogo é por valor (ADR-0061), nunca por FK cross-schema. "
+            "a referência cross-módulo ao catálogo é por valor (ADR-0061), nunca por FK cross-schema. "
             + $"Migrations com FK para rol_de_fatos_candidato: {string.Join(", ", infratoras)}");
     }
 

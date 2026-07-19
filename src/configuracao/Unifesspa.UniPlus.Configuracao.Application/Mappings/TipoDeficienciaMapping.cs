@@ -12,6 +12,7 @@ public static class TipoDeficienciaMapping
             tipo.Id,
             tipo.Nome,
             tipo.Descricao,
+            tipo.Permanente,
             tipo.CreatedAt);
     }
 }

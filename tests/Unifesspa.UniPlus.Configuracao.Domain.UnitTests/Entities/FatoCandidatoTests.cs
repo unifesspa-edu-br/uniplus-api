@@ -12,39 +12,42 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Invariantes de domínio do catálogo <c>FatoCandidato</c> (ADR-0111): a factory
-/// valida código, domínio, natureza, cardinalidade e a coerência de
-/// <c>ValoresDominio</c> com o domínio; a entidade é imutável (seed-governada,
-/// sem soft-delete, sem mutação em runtime).
+/// Invariantes de domínio do catálogo <c>FatoCandidato</c> (ADR-0111, refinada pela
+/// ADR-0116): a factory valida código, domínio, origem, cardinalidade, ponto de
+/// resolução, binding e a coerência de <c>ValoresDominio</c> com o domínio; a
+/// entidade não expõe mutação além de <c>AdicionarValorDominio</c>.
 /// </summary>
 public sealed class FatoCandidatoTests
 {
-    private static readonly IReadOnlyList<string> ValoresCorRaca =
-        ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA", "NAO_INFORMADO"];
+    private const string BindingCorRaca = "CAMPO_INSCRICAO:COR_RACA";
+    private const string PontoResolucaoInscricao = "INSCRICAO";
 
     private static Result<FatoCandidato> Criar(
         string codigo = "COR_RACA",
         string nome = "Cor ou raça",
         string? descricao = null,
         DominioFato dominio = DominioFato.Categorico,
-        NaturezaFato natureza = NaturezaFato.BrutoInformado,
+        OrigemFato origem = OrigemFato.Declarado,
         CardinalidadeFato cardinalidade = CardinalidadeFato.Escalar,
-        IReadOnlyList<string>? valoresDominio = null) =>
-        FatoCandidato.Criar(codigo, nome, descricao, dominio, natureza, cardinalidade, valoresDominio);
+        IReadOnlyList<string>? valoresDominio = null,
+        string pontoResolucao = PontoResolucaoInscricao,
+        string binding = BindingCorRaca) =>
+        FatoCandidato.Criar(codigo, nome, descricao, dominio, origem, cardinalidade, valoresDominio, pontoResolucao, binding);
 
-    [Fact(DisplayName = "Criar categórico estático válido preenche os campos com Guid v7")]
+    [Fact(DisplayName = "Criar categórico válido preenche os campos com Guid v7")]
     public void Criar_CategoricoValido_Preenche()
     {
-        FatoCandidato fato = Criar(descricao: "Cor ou raça autodeclarada", valoresDominio: ValoresCorRaca).Value!;
+        FatoCandidato fato = Criar(descricao: "Cor ou raça autodeclarada").Value!;
 
         fato.Id.Should().NotBe(Guid.Empty);
         fato.Codigo.Should().Be("COR_RACA");
         fato.Nome.Should().Be("Cor ou raça");
         fato.Descricao.Should().Be("Cor ou raça autodeclarada");
         fato.Dominio.Should().Be(DominioFato.Categorico);
-        fato.Natureza.Should().Be(NaturezaFato.BrutoInformado);
+        fato.Origem.Should().Be(OrigemFato.Declarado);
         fato.Cardinalidade.Should().Be(CardinalidadeFato.Escalar);
-        fato.ValoresDominio.Should().Equal(ValoresCorRaca);
+        fato.PontoResolucao.Should().Be("INSCRICAO");
+        fato.Binding.Should().Be(BindingCorRaca);
     }
 
     [Theory(DisplayName = "Código ausente, em branco ou fora do formato é rejeitado")]
@@ -89,13 +92,13 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.DominioInvalido);
     }
 
-    [Fact(DisplayName = "Natureza fora do roster (cast inválido) é rejeitada como inválida")]
-    public void Criar_NaturezaForaDoRoster_Falha()
+    [Fact(DisplayName = "Origem fora do roster (cast inválido) é rejeitada como inválida")]
+    public void Criar_OrigemForaDoRoster_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(natureza: (NaturezaFato)999, valoresDominio: null);
+        Result<FatoCandidato> resultado = Criar(origem: (OrigemFato)999, valoresDominio: null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaturezaInvalida);
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.OrigemInvalida);
     }
 
     [Fact(DisplayName = "Cardinalidade fora do roster (cast inválido) é rejeitada como inválida")]
@@ -107,13 +110,13 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.CardinalidadeInvalida);
     }
 
-    [Fact(DisplayName = "Natureza Nenhuma é rejeitada")]
-    public void Criar_NaturezaNenhuma_Falha()
+    [Fact(DisplayName = "Origem Nenhuma é rejeitada")]
+    public void Criar_OrigemNenhuma_Falha()
     {
-        Result<FatoCandidato> resultado = Criar(natureza: NaturezaFato.Nenhuma);
+        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Nenhuma);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.NaturezaObrigatoria);
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.OrigemObrigatoria);
     }
 
     [Fact(DisplayName = "Cardinalidade Nenhuma é rejeitada")]
@@ -141,7 +144,9 @@ public sealed class FatoCandidatoTests
     [InlineData(DominioFato.Numerico)]
     public void Criar_NaoCategoricoSemValores_Aceita(DominioFato dominio)
     {
-        FatoCandidato fato = Criar(codigo: "PCD", nome: "PcD", dominio: dominio, valoresDominio: null).Value!;
+        FatoCandidato fato = Criar(
+            codigo: "PCD", nome: "PcD", dominio: dominio, valoresDominio: null,
+            binding: "CAMPO_INSCRICAO:PCD").Value!;
 
         fato.ValoresDominio.Should().BeNull();
     }
@@ -154,7 +159,8 @@ public sealed class FatoCandidatoTests
             nome: "Modalidade",
             dominio: DominioFato.Categorico,
             cardinalidade: CardinalidadeFato.Multivalorado,
-            valoresDominio: null).Value!;
+            valoresDominio: null,
+            binding: "CAMPO_INSCRICAO:MODALIDADE").Value!;
 
         fato.ValoresDominio.Should().BeNull("categórico sem valores é de escopo-processo, não lista vazia");
     }
@@ -188,7 +194,164 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.ValoresDominioComDuplicata);
     }
 
-    // ─── Imutabilidade (seed-governado, EntityBase puro, sem mutação) ──────────
+    // ─── PontoResolucao (ADR-0116) ──────────────────────────────────────────
+
+    [Theory(DisplayName = "Ponto de resolução ausente ou em branco é rejeitado")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_PontoResolucaoAusente_Falha(string ponto)
+    {
+        Result<FatoCandidato> resultado = Criar(pontoResolucao: ponto);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Ponto de resolução fora do conjunto canônico das quatorze fases é rejeitado")]
+    public void Criar_PontoResolucaoForaDoCanonico_Falha()
+    {
+        Result<FatoCandidato> resultado = Criar(pontoResolucao: "FASE_INEXISTENTE");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoInvalido);
+    }
+
+    // ─── Binding (ADR-0116) ─────────────────────────────────────────────────
+
+    [Theory(DisplayName = "Binding ausente ou em branco é rejeitado")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_BindingAusente_Falha(string binding)
+    {
+        Result<FatoCandidato> resultado = Criar(binding: binding);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingObrigatorio);
+    }
+
+    [Theory(DisplayName = "Binding sem separador, ou com prefixo/referência vazios, é rejeitado como formato inválido")]
+    [InlineData("CAMPO_INSCRICAO_COR_RACA")]
+    [InlineData(":COR_RACA")]
+    [InlineData("CAMPO_INSCRICAO:")]
+    public void Criar_BindingFormatoInvalido_Falha(string binding)
+    {
+        Result<FatoCandidato> resultado = Criar(binding: binding);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingFormatoInvalido);
+    }
+
+    [Theory(DisplayName = "Binding com prefixo incoerente com a origem é rejeitado")]
+    [InlineData(OrigemFato.Declarado, "ATRIBUTO_CANDIDATO:COR_RACA")]
+    [InlineData(OrigemFato.Derivado, "CAMPO_INSCRICAO:FAIXA_ETARIA")]
+    [InlineData(OrigemFato.Integracao, "CAMPO_INSCRICAO:ANO_ENEM")]
+    public void Criar_BindingPrefixoIncoerenteComOrigem_Falha(OrigemFato origem, string binding)
+    {
+        Result<FatoCandidato> resultado = Criar(origem: origem, binding: binding);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem);
+    }
+
+    [Theory(DisplayName = "Binding com prefixo coerente com a origem é aceito")]
+    [InlineData(OrigemFato.Declarado, "CAMPO_INSCRICAO:COR_RACA")]
+    [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
+    [InlineData(OrigemFato.Integracao, "INTEGRACAO:ANO_ENEM")]
+    public void Criar_BindingPrefixoCoerenteComOrigem_Aceita(OrigemFato origem, string binding)
+    {
+        Result<FatoCandidato> resultado = Criar(
+            codigo: "FATO_QUALQUER", dominio: DominioFato.Numerico, valoresDominio: null,
+            origem: origem, binding: binding);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Binding.Should().Be(binding);
+    }
+
+    // ─── AdicionarValorDominio (ADR-0116) ───────────────────────────────────
+
+    [Fact(DisplayName = "AdicionarValorDominio em categórico Declarado exige e aceita descrição")]
+    public void AdicionarValorDominio_CategoricoDeclarado_Aceita()
+    {
+        FatoCandidato fato = Criar(valoresDominio: null).Value!;
+
+        Result resultado = fato.AdicionarValorDominio("PRETA", "Autodeclaração de cor/raça preta.", 0, ativo: true);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        fato.ValoresDominioDeclarados.Should().ContainSingle(v =>
+            v.Codigo == "PRETA" && v.Descricao == "Autodeclaração de cor/raça preta." && v.Ordem == 0 && v.Ativo);
+    }
+
+    [Fact(DisplayName = "AdicionarValorDominio fora de categórico é rejeitado")]
+    public void AdicionarValorDominio_ForaDeCategorico_Falha()
+    {
+        FatoCandidato fato = Criar(
+            codigo: "PCD", dominio: DominioFato.Booleano, valoresDominio: null,
+            binding: "CAMPO_INSCRICAO:PCD").Value!;
+
+        Result resultado = fato.AdicionarValorDominio("SIM", "Descrição", 0, ativo: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico);
+    }
+
+    [Fact(DisplayName = "AdicionarValorDominio com código duplicado (normalizado, ordinal) é rejeitado")]
+    public void AdicionarValorDominio_CodigoDuplicado_Falha()
+    {
+        FatoCandidato fato = Criar(valoresDominio: null).Value!;
+        fato.AdicionarValorDominio("PRETA", "Descrição", 0, ativo: true).IsSuccess.Should().BeTrue();
+
+        Result resultado = fato.AdicionarValorDominio("  PRETA  ", "Outra descrição", 1, ativo: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.CodigoDuplicado);
+    }
+
+    [Fact(DisplayName = "AdicionarValorDominio sem descrição quando a origem é Declarado é rejeitado")]
+    public void AdicionarValorDominio_SemDescricaoDeclarado_Falha()
+    {
+        FatoCandidato fato = Criar(valoresDominio: null).Value!;
+
+        Result resultado = fato.AdicionarValorDominio("PRETA", null, 0, ativo: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.DescricaoObrigatoria);
+    }
+
+    [Fact(DisplayName = "AdicionarValorDominio sem descrição quando a origem é Derivado é aceito")]
+    public void AdicionarValorDominio_SemDescricaoDerivado_Aceita()
+    {
+        FatoCandidato fato = Criar(
+            codigo: "FATO_DERIVADO", dominio: DominioFato.Categorico, valoresDominio: null,
+            origem: OrigemFato.Derivado, binding: "ATRIBUTO_CANDIDATO:FATO_DERIVADO").Value!;
+
+        Result resultado = fato.AdicionarValorDominio("X", null, 0, ativo: true);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "AdicionarValorDominio com código em branco é rejeitado")]
+    public void AdicionarValorDominio_CodigoEmBranco_Falha()
+    {
+        FatoCandidato fato = Criar(valoresDominio: null).Value!;
+
+        Result resultado = fato.AdicionarValorDominio("   ", "Descrição", 0, ativo: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.CodigoObrigatorio);
+    }
+
+    [Fact(DisplayName = "AdicionarValorDominio com ordem negativa é rejeitado")]
+    public void AdicionarValorDominio_OrdemNegativa_Falha()
+    {
+        FatoCandidato fato = Criar(valoresDominio: null).Value!;
+
+        Result resultado = fato.AdicionarValorDominio("PRETA", "Descrição", -1, ativo: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.OrdemInvalida);
+    }
+
+    // ─── Imutabilidade (seed-governado, EntityBase puro, sem mutação além de AdicionarValorDominio) ──
 
     [Fact(DisplayName = "FatoCandidato deriva de EntityBase puro — não é soft-deletable")]
     public void FatoCandidato_EhEntityBasePuro()
@@ -211,15 +374,17 @@ public sealed class FatoCandidatoTests
         }
     }
 
-    [Fact(DisplayName = "FatoCandidato não declara método de instância de mutação em runtime")]
-    public void FatoCandidato_SemMetodoDeMutacao()
+    [Fact(DisplayName = "A única mutação de instância do FatoCandidato é AdicionarValorDominio (ADR-0116)")]
+    public void FatoCandidato_UnicaMutacaoEhAdicionarValorDominio()
     {
         MethodInfo[] metodos = typeof(FatoCandidato)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .Where(m => !m.IsSpecialName) // exclui getters/setters de propriedade
             .ToArray();
 
-        metodos.Should().BeEmpty(
-            "a única forma de nascer é a factory estática Criar; não há mutação de estado após a criação");
+        metodos.Select(m => m.Name).Should().BeEquivalentTo(
+            [nameof(FatoCandidato.AdicionarValorDominio)],
+            "a factory estática Criar constrói o agregado, e a única mutação em runtime "
+            + "é montar o conjunto de valores de domínio (ex.: pelo seed) — nunca em runtime de requisição");
     }
 }

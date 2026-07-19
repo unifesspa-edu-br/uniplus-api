@@ -131,7 +131,7 @@ public sealed class TipoDeficienciaEndpointTests
     [Fact(DisplayName = "POST com nome abaixo do tamanho mínimo retorna 422")]
     public async Task Criar_NomeCurto_Retorna422()
     {
-        var body = new { nome = "A" };
+        var body = new { nome = "A", descricao = "Descrição válida" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);

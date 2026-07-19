@@ -44,7 +44,7 @@ public sealed class FatoCandidatoEndpointTests
 
         List<FatoCandidatoView>? fatos = await response.Content.ReadFromJsonAsync<List<FatoCandidatoView>>();
         fatos.Should().NotBeNull();
-        fatos!.Should().HaveCount(9);
+        fatos!.Should().HaveCount(11);
         fatos.Select(f => f.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
         fatos.Should().Contain(f => f.Codigo == "MODALIDADE" && f.Cardinalidade == "MULTIVALORADO" && f.ValoresDominio == null);
     }
@@ -63,7 +63,8 @@ public sealed class FatoCandidatoEndpointTests
         fato.Should().NotBeNull();
         fato!.Codigo.Should().Be("COR_RACA");
         fato.Dominio.Should().Be("CATEGORICO");
-        fato.ValoresDominio.Should().Contain("PRETA");
+        fato.ValoresDominio.Should().BeNull("COR_RACA migrou o conjunto fechado para ValoresDominioDeclarados (ADR-0116)");
+        fato.ValoresDominioDeclarados.Should().NotBeNull().And.Contain(v => v.Codigo == "PRETA");
     }
 
     [Fact(DisplayName = "GET /api/configuracao/fatos-candidato/{codigo} retorna 404 para código inexistente")]

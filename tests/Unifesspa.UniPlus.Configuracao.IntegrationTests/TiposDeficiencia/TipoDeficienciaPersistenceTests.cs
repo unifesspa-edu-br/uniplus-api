@@ -162,7 +162,7 @@ public sealed class TipoDeficienciaPersistenceTests
     }
 
     private static TipoDeficiencia Novo(string nome) =>
-        TipoDeficiencia.Criar(nome, null).Value!;
+        TipoDeficiencia.Criar(nome, "Descrição de teste").Value!;
 
     private static string NomeUnico() => $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

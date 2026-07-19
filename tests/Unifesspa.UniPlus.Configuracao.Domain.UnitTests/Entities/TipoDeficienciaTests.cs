@@ -9,11 +9,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class TipoDeficienciaTests
 {
     private const string Nome = "Visual";
+    private const string Descricao = "Deficiência relacionada à visão";
 
     private static Result<TipoDeficiencia> Criar(
         string nome = Nome,
-        string? descricao = null) =>
-        TipoDeficiencia.Criar(nome, descricao);
+        string descricao = Descricao,
+        bool? permanente = null) =>
+        TipoDeficiencia.Criar(nome, descricao, permanente);
 
     [Fact(DisplayName = "Criar com dados válidos preenche os campos e fica ativo com Guid v7")]
     public void Criar_DadosValidos_Preenche()
@@ -23,15 +25,19 @@ public sealed class TipoDeficienciaTests
         tipo.Id.Should().NotBe(Guid.Empty);
         tipo.Nome.Should().Be(Nome);
         tipo.Descricao.Should().Be("Deficiência relacionada à visão");
+        tipo.Permanente.Should().BeNull("sem classificação explícita, o padrão é 'ainda não classificado'");
         tipo.IsDeleted.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Criar sem descrição (opcional) é aceito")]
-    public void Criar_SemDescricao_Aceita()
+    [Theory(DisplayName = "Descrição ausente ou em branco é rejeitada (ADR-0116)")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_SemDescricao_Falha(string descricao)
     {
-        TipoDeficiencia tipo = Criar(descricao: null).Value!;
+        Result<TipoDeficiencia> resultado = Criar(descricao: descricao);
 
-        tipo.Descricao.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.DescricaoObrigatoria);
     }
 
     [Theory(DisplayName = "Nome ausente ou em branco é rejeitado")]
@@ -72,17 +78,29 @@ public sealed class TipoDeficienciaTests
         resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.DescricaoTamanho);
     }
 
+    [Theory(DisplayName = "Permanente aceita null, true e false (ADR-0116: null = ainda não classificado)")]
+    [InlineData(null)]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Criar_Permanente_Aceita(bool? permanente)
+    {
+        TipoDeficiencia tipo = Criar(permanente: permanente).Value!;
+
+        tipo.Permanente.Should().Be(permanente);
+    }
+
     [Fact(DisplayName = "Atualizar troca os atributos editáveis e preserva o Id imutável")]
     public void Atualizar_AlteraAtributos_PreservaId()
     {
         TipoDeficiencia tipo = Criar(nome: "Visual").Value!;
         Guid idOriginal = tipo.Id;
 
-        Result resultado = tipo.Atualizar("Auditiva", "Deficiência relacionada à audição");
+        Result resultado = tipo.Atualizar("Auditiva", "Deficiência relacionada à audição", permanente: true);
 
         resultado.IsSuccess.Should().BeTrue();
         tipo.Nome.Should().Be("Auditiva");
         tipo.Descricao.Should().Be("Deficiência relacionada à audição");
+        tipo.Permanente.Should().BeTrue();
         tipo.Id.Should().Be(idOriginal, "o Id é imutável mesmo com o nome editável");
     }
 
@@ -91,10 +109,22 @@ public sealed class TipoDeficienciaTests
     {
         TipoDeficiencia tipo = Criar(nome: "Visual").Value!;
 
-        Result resultado = tipo.Atualizar("A", null);
+        Result resultado = tipo.Atualizar("A", Descricao);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.NomeTamanho);
         tipo.Nome.Should().Be("Visual");
+    }
+
+    [Fact(DisplayName = "Atualizar sem descrição falha e não altera o estado")]
+    public void Atualizar_SemDescricao_Falha()
+    {
+        TipoDeficiencia tipo = Criar(nome: "Visual").Value!;
+
+        Result resultado = tipo.Atualizar("Visual", "   ");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.DescricaoObrigatoria);
+        tipo.Descricao.Should().Be(Descricao);
     }
 }

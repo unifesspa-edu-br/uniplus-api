@@ -52,5 +52,5 @@ internal sealed class TipoDeficienciaReader : ITipoDeficienciaReader
     }
 
     private static TipoDeficienciaView ParaView(TipoDeficiencia t) =>
-        new(t.Id, t.Nome);
+        new(t.Id, t.Nome, t.Descricao, t.Permanente);
 }
