@@ -144,8 +144,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro | accepted | 2026-07-15 |
 | [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
 | [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
+| [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111 | accepted | 2026-07-19 |
 
-> **Nota de numeração:** a sequência de `0001` a `0115` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0116+`.
+> **Nota de numeração:** a sequência de `0001` a `0116` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0117+`.
 
 ## Como adicionar um novo ADR
 
