@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -64,6 +65,7 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            Substitute.For<IFatoCandidatoReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -96,6 +98,7 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            Substitute.For<IFatoCandidatoReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -132,6 +135,7 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            Substitute.For<IFatoCandidatoReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -169,6 +173,7 @@ public sealed class ConformidadeLegalGateTests
             TipoDeAtoReader(),
             Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
+            Substitute.For<IFatoCandidatoReader>(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

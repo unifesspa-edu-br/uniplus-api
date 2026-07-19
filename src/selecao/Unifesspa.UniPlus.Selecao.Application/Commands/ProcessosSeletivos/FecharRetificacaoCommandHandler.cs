@@ -6,6 +6,7 @@ using Domain.Interfaces;
 using Domain.ValueObjects;
 using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
@@ -43,6 +44,7 @@ public static class FecharRetificacaoCommandHandler
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+        IFatoCandidatoReader fatoCandidatoReader,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -55,6 +57,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
+        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
@@ -193,6 +196,18 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // Story #919 (RN08): mesmo congelamento de metadado de fato que a publicação de
+        // abertura já faz — a configuração EDITADA pela sessão pode conter gatilho de
+        // documento vivo (novo ou alterado), e congelar sem este bloco deixaria o metadado
+        // incompleto (vazio) para esta versão.
+        Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
+            await ResolvedorMetadadosFatosCongelados.ResolverAsync(processo, fatoCandidatoReader, cancellationToken)
+                .ConfigureAwait(false);
+        if (metadadosFatosResult.IsFailure)
+        {
+            return (Result.Failure(metadadosFatosResult.Error!), []);
+        }
+
         // A configuração canonicalizada é a VIVA — que é, agora, a EDITADA pela sessão. É a
         // diferença inteira em relação ao que a retificação fazia antes desta Feature: ela
         // recanonicalizava a mesma configuração de sempre, e a versão N+1 saía idêntica à N.
@@ -202,7 +217,8 @@ public static class FecharRetificacaoCommandHandler
                 dados,
                 documento.HashSha256!,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
-                conformidadeLegal.Value));
+                conformidadeLegal.Value,
+                metadadosFatosResult.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 
