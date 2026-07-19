@@ -272,6 +272,98 @@ public sealed class RestauradorDeConfiguracaoTests
             "não encontraria a fase que FIM_FASE referencia na sombra vazia, e a prova de round-trip nunca completaria");
     }
 
+    /// <summary>
+    /// A prova estrutural do RN08 (Story #919): <see cref="FatoCandidato"/> não tem
+    /// NENHUMA mutação em runtime (seed-governado, append-only, ADR-0111) — não é possível
+    /// simular "o catálogo mudou" via um comando real. A prova correta é estrutural: publica
+    /// com um metadado de fato conhecido (um <c>Binding</c> X, resolvido por um
+    /// <c>IFatoCandidatoReader</c> hipotético no instante da publicação — aqui montado
+    /// diretamente, já que o canonicalizador é puro e não injeta o reader), e confirma que
+    /// <see cref="RestauradorDeConfiguracao.Restaurar"/> reproduz os MESMOS bytes/hash SEM que
+    /// o serviço precise (ou possa) reconsultar o catálogo vivo — o próprio construtor de
+    /// <see cref="RestauradorDeConfiguracao"/> só aceita <see cref="IRegistroCodecsEnvelope"/>,
+    /// nunca um <c>IFatoCandidatoReader</c> (ver a asserção por reflexão abaixo). Isso prova,
+    /// estruturalmente, que a restauração usa o metadado CONGELADO, nunca o catálogo vivo.
+    /// </summary>
+    [Fact(DisplayName = "Story #919 (RN08): Restaurar reproduz o metadado de fato congelado sem reconsultar o catálogo vivo")]
+    public void Restaurar_ComMetadadoDeFatoCongelado_ReporEProvarSemReconsultarCatalogoVivo()
+    {
+        // Prova estrutural, em vez de comportamental: RestauradorDeConfiguracao não tem
+        // como chamar um IFatoCandidatoReader porque ele nunca é injetado — o construtor
+        // só conhece IRegistroCodecsEnvelope.
+        System.Reflection.ConstructorInfo construtor = typeof(RestauradorDeConfiguracao).GetConstructors().Single();
+        construtor.GetParameters().Select(static p => p.ParameterType.Name).Should().NotContain(
+            "IFatoCandidatoReader",
+            "a restauração prova o round-trip com o metadado JÁ CONGELADO no envelope — reconsultar o catálogo vivo " +
+            "aqui reintroduziria exatamente o acoplamento que RN08 existe para impedir");
+
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        Guid faseId = processo.CronogramaFases.First().Id;
+
+        CondicaoGatilho condicao = CondicaoGatilho.Criar(
+            0, "TIPO_DEFICIENCIA", Operador.Igual, JsonSerializer.SerializeToElement("TEA")).Value!;
+        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
+            "Lei 13.146/2015", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId,
+            tipoDocumentoOrigemId: Guid.CreateVersion7(),
+            tipoDocumentoCodigo: "LAUDO_MEDICO",
+            tipoDocumentoNome: "Laudo médico",
+            tipoDocumentoCategoria: "SAUDE",
+            aplicabilidade: Aplicabilidade.Condicional,
+            obrigatorio: true,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [condicao],
+            basesLegais: [baseLegal],
+            idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
+            tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        // O Binding "X" — resolvido do catálogo NO INSTANTE da publicação, congelado por
+        // valor. Se a restauração reconsultasse o catálogo vivo, o teste não teria como
+        // provar isso; congelando aqui, a única fonte possível para o round-trip é o
+        // envelope decodificado.
+        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadadosFatos = new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal)
+        {
+            ["TIPO_DEFICIENCIA"] = new MetadadoFatoCongelado(
+                Codigo: "TIPO_DEFICIENCIA",
+                Dominio: "CATEGORICO",
+                Origem: "DECLARADO",
+                Cardinalidade: "ESCALAR",
+                PontoResolucao: "INSCRICAO",
+                Binding: "CAMPO_INSCRICAO:TIPO_DEFICIENCIA",
+                ValoresDominio: null,
+                ValoresDominioDeclarados: null),
+        };
+
+        SnapshotPublicacaoCanonicalizer canonicalizer = new();
+        DadosEdital dados = CorpusEnvelope.DadosRicos();
+        EntradaCanonicalizacao entrada = new(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos);
+        SnapshotCanonico congelado = canonicalizer.Canonicalizar(entrada);
+        congelado.SchemaVersion.Should().Be("1.3", "pré-condição: metadadosFatos só existe a partir da 1.3");
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        VersaoConfiguracao versao = publicacao.Value!;
+
+        RestauradorDeConfiguracao restaurador = new(new RegistroCodecsEnvelope());
+
+        Result resultado = restaurador.Restaurar(processo, versao);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+
+        // A prova final: recanonicalizar o agregado reposto reproduz os MESMOS bytes —
+        // incluindo o bloco metadadosFatos, que só sobreviveu porque veio inteiro dentro do
+        // envelope decodificado (EnvelopeReidratado.MetadadosFatosCongelados), nunca porque
+        // foi reconsultado.
+        canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos)).Bytes
+            .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
+    }
+
     [Fact(DisplayName = "Uma versão que não reidrata (1.0) faz a restauração falhar sem tocar no agregado")]
     public void VersaoNaoReidratavel_Falha()
     {

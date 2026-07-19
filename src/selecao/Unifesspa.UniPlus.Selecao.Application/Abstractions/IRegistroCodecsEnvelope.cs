@@ -24,7 +24,8 @@ public sealed class EnvelopeReidratado
         DadosEdital dados,
         string hashDocumento,
         RetificacaoInfo? retificacao,
-        ResultadoConformidade? conformidade)
+        ResultadoConformidade? conformidade,
+        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -35,6 +36,7 @@ public sealed class EnvelopeReidratado
         HashDocumento = hashDocumento;
         Retificacao = retificacao;
         Conformidade = conformidade;
+        MetadadosFatosCongelados = metadadosFatosCongelados;
     }
 
     public GrafoConfiguracao Grafo { get; }
@@ -54,6 +56,16 @@ public sealed class EnvelopeReidratado
     /// <see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>.
     /// </summary>
     public ResultadoConformidade? Conformidade { get; }
+
+    /// <summary>
+    /// Metadado de fato do candidato congelado (Story #919, RN08), por <c>Codigo</c> —
+    /// fora de <see cref="GrafoConfiguracao"/> pela MESMA razão que <see cref="Conformidade"/>:
+    /// não é reposto no agregado vivo (<see cref="Domain.Entities.CondicaoGatilho"/>
+    /// continua só com o trio bruto <c>{fato, operador, valor}</c>), sobrevive só para
+    /// alimentar a recanonicalização em <see cref="Application.Services.RestauradorDeConfiguracao"/> —
+    /// a prova estrutural de que a restauração nunca reconsulta o catálogo vivo.
+    /// </summary>
+    public IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados { get; }
 }
 
 /// <summary>

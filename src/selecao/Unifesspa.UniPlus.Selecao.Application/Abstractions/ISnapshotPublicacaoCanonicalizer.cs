@@ -22,6 +22,41 @@ public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string
 public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 
 /// <summary>
+/// Um valor do conjunto fechado de um fato categórico estático, congelado junto do
+/// metadado do fato (ADR-0116) — a descrição que orienta a escolha do candidato para
+/// aquele código. <c>Ordem</c>/<c>Ativo</c> são metadado de apresentação de formulário,
+/// fora do que RN08 exige congelar para o gatilho: deliberadamente ausentes aqui.
+/// </summary>
+/// <param name="Codigo">Código do valor (ex.: "PRETA").</param>
+/// <param name="Descricao">Descrição do valor — obrigatória quando o fato pai é DECLARADO.</param>
+public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descricao);
+
+/// <summary>
+/// Metadado de um fato do candidato (ADR-0111) congelado no envelope de publicação
+/// (Story #919, RN08) — domínio, origem, cardinalidade, ponto de resolução, binding e
+/// o(s) conjunto(s) de valores, no instante em que o fato foi citado numa condição de
+/// gatilho de <see cref="Domain.Entities.DocumentoExigido"/>. Mapeado pelo HANDLER a
+/// partir de <c>Unifesspa.UniPlus.Configuracao.Contracts.FatoCandidatoView</c> —
+/// nunca reaproveita <see cref="Domain.ValueObjects.DescritorFatoCandidato"/> (VO mínimo
+/// do validador de predicado, propósito distinto: validação de forma, não congelamento
+/// de evidência).
+/// </summary>
+/// <remarks>
+/// Sem <c>Nome</c> deliberadamente: é rótulo de apresentação, não dado que RN08 exige
+/// congelar para o gatilho — o mesmo raciocínio que exclui <c>Ordem</c>/<c>Ativo</c> de
+/// <see cref="ValorDominioDeclaradoCongelado"/>.
+/// </remarks>
+public sealed record MetadadoFatoCongelado(
+    string Codigo,
+    string Dominio,
+    string Origem,
+    string Cardinalidade,
+    string PontoResolucao,
+    string Binding,
+    IReadOnlyList<string>? ValoresDominio,
+    IReadOnlyList<ValorDominioDeclaradoCongelado>? ValoresDominioDeclarados);
+
+/// <summary>
 /// Entrada <b>única e explícita</b> da canonicalização (ADR-0109 D6).
 /// </summary>
 /// <remarks>
@@ -49,12 +84,24 @@ public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 /// (ADR-0042). Só regras aprovadas chegam aqui: se qualquer uma reprovasse, o handler já
 /// teria recusado a transição antes de canonicalizar.
 /// </param>
+/// <param name="MetadadosFatosCongelados">
+/// Metadado congelado (Story #919, RN08) de cada fato do candidato citado em alguma
+/// <see cref="Domain.Entities.CondicaoGatilho"/> de algum <see cref="Domain.Entities.DocumentoExigido"/>
+/// vivo do processo, por <c>Codigo</c> — montado pelo handler via
+/// <c>IFatoCandidatoReader</c> (o canonicalizador não injeta reader cross-módulo,
+/// ADR-0042). <see langword="null"/> quando nenhuma condição existe no processo (nada a
+/// congelar); o handler garante, ANTES de canonicalizar, que todo fato referenciado
+/// resolve — o canonicalizador confia no dicionário recebido e não o revalida contra
+/// <see cref="Domain.Entities.ProcessoSeletivo.DocumentosExigidos"/> (mesmo tratamento
+/// que <paramref name="Conformidade"/> já recebe).
+/// </param>
 public sealed record EntradaCanonicalizacao(
     ProcessoSeletivo Processo,
     DadosEdital Dados,
     string HashDocumento,
     RetificacaoInfo? Retificacao = null,
-    ResultadoConformidade? Conformidade = null);
+    ResultadoConformidade? Conformidade = null,
+    IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).

@@ -238,9 +238,29 @@ public sealed class EnvelopeCanonicoGoldenTests
         periodoInscricaoFim: new DateOnly(2026, 1, 31),
         documentoEditalId: DocumentoFixo).Value!;
 
+    /// <summary>
+    /// Metadado do fato "MODALIDADE" (Story #919, RN08) citado na condição de gatilho de
+    /// <see cref="DocumentoExigidoDeReferencia"/> — exercita <c>metadadosFatos</c> com um
+    /// item real na golden fixture, com <c>valoresDominioDeclarados</c> populado (categórico
+    /// estático) para cobrir as duas variantes nulas/preenchidas do bloco.
+    /// </summary>
+    private static Dictionary<string, MetadadoFatoCongelado> MetadadosFatosDeReferencia() =>
+        new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal)
+        {
+            ["MODALIDADE"] = new MetadadoFatoCongelado(
+                Codigo: "MODALIDADE",
+                Dominio: "CATEGORICO",
+                Origem: "DERIVADO",
+                Cardinalidade: "ESCALAR",
+                PontoResolucao: "INSCRICAO",
+                Binding: "OFERTA:MODALIDADE_CODIGO",
+                ValoresDominio: ["AC"],
+                ValoresDominioDeclarados: [new ValorDominioDeclaradoCongelado("AC", "Ampla concorrência")]),
+        };
+
     internal static SnapshotCanonico CanonicalizarReferencia() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            ProcessoDeReferencia(), DadosDeReferencia(), HashFixo));
+            ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
 
     // ── CA-03 — política: toda schema_version declarada tem a sua fixture ──
 

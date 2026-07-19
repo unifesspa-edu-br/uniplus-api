@@ -463,12 +463,13 @@ public sealed class EnvelopeCodecRoundTripTests
         "Fixtures",
         "envelope-1.1-rico.json");
 
-    // ── Round-trip 1.2 com exigência documental rica (Story #554, PR #903, CA-13) ──
+    // ── Round-trip 1.3 com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
 
     /// <summary>
-    /// Prova de fidelidade do <c>EnvelopeCodecV12</c> sobre a MESMA exigência
-    /// documental rica que a golden fixture do canonicalizador congela
-    /// (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>).
+    /// Prova de fidelidade do <c>EnvelopeCodecV13</c> (codec corrente) sobre a MESMA
+    /// exigência documental rica que a golden fixture do canonicalizador congela
+    /// (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>), incluindo o bloco
+    /// <c>metadadosFatos</c> (Story #919).
     /// </summary>
     /// <remarks>
     /// Sem arquivo congelado — diferente da golden 1.1 acima, que compara contra bytes
@@ -480,13 +481,27 @@ public sealed class EnvelopeCodecRoundTripTests
     /// primeiro <c>Codificar</c> É o oráculo — decodificar e recodificar tem de reproduzir
     /// EXATAMENTE os mesmos bytes, quaisquer que sejam os Guids sorteados nesta execução.
     /// </remarks>
-    [Fact(DisplayName = "Round-trip 1.2 — reidratar e recanonicalizar o processo de referência (exigência documental rica) reproduz os bytes")]
-    public void RoundTrip12_ProcessoDeReferenciaComExigenciaDocumentalRica()
+    [Fact(DisplayName = "Round-trip 1.3 — reidratar e recanonicalizar o processo de referência (exigência documental rica + metadadosFatos) reproduz os bytes")]
+    public void RoundTrip13_ProcessoDeReferenciaComExigenciaDocumentalRica()
     {
         ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
-        EntradaCanonicalizacao entrada = new(processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo);
+        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadadosFatos = new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal)
+        {
+            ["MODALIDADE"] = new MetadadoFatoCongelado(
+                Codigo: "MODALIDADE",
+                Dominio: "CATEGORICO",
+                Origem: "DERIVADO",
+                Cardinalidade: "ESCALAR",
+                PontoResolucao: "INSCRICAO",
+                Binding: "OFERTA:MODALIDADE_CODIGO",
+                ValoresDominio: ["AC"],
+                ValoresDominioDeclarados: [new ValorDominioDeclaradoCongelado("AC", "Ampla concorrência")]),
+        };
+        EntradaCanonicalizacao entrada = new(
+            processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo,
+            MetadadosFatosCongelados: metadadosFatos);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("1.2", "pré-condição: esta suíte prova o EnvelopeCodecV12, não uma versão congelada anterior");
+        congelado.SchemaVersion.Should().Be("1.3", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -506,12 +521,13 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Dados,
                 reidratado.Value.HashDocumento,
                 reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade)).Value!.Bytes;
+                reidratado.Value.Conformidade,
+                reidratado.Value.MetadadosFatosCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
-            "idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes) tem de reproduzir os bytes congelados " +
-            "inteiros — qualquer campo perdido pelo decoder do bloco documentosExigidos sai daqui como divergência");
+            "idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes, metadadosFatos) tem de reproduzir os bytes " +
+            "congelados inteiros — qualquer campo perdido pelo decoder do bloco documentosExigidos sai daqui como divergência");
     }
 
     internal static JsonObject Envelope(SnapshotCanonico snapshot) =>

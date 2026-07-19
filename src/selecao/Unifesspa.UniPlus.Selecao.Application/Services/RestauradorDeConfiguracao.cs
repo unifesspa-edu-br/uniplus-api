@@ -57,7 +57,8 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         Result<SnapshotCanonico> recodificado = registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
-                sombra, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade));
+                sombra, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade,
+                envelope.MetadadosFatosCongelados));
 
         if (recodificado.IsFailure)
         {
