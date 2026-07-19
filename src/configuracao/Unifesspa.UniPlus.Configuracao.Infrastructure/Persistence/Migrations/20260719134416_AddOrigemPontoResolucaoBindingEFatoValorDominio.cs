@@ -25,6 +25,17 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 table: "rol_de_fatos_candidato",
                 newName: "origem");
 
+            // Backfill explícito antes do NOT NULL: uma descrição em branco seria
+            // exibida ao candidato como orientação de escolha do TIPO_DEFICIENCIA
+            // (ADR-0116) — um placeholder detectável é preferível a um valor vazio
+            // silenciosamente inválido em qualquer linha semeada antes desta migration.
+            migrationBuilder.Sql(
+                """
+                UPDATE configuracao.tipo_deficiencia
+                SET descricao = '(descrição pendente de revisão)'
+                WHERE descricao IS NULL;
+                """);
+
             migrationBuilder.AlterColumn<string>(
                 name: "descricao",
                 schema: "configuracao",
@@ -32,7 +43,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 type: "character varying(1000)",
                 maxLength: 1000,
                 nullable: false,
-                defaultValue: "",
+                defaultValue: "(descrição pendente de revisão)",
                 oldClrType: typeof(string),
                 oldType: "character varying(1000)",
                 oldMaxLength: 1000,
