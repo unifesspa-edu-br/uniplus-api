@@ -54,8 +54,12 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
         return fato is null ? null : ParaView(fato);
     }
 
-    private static FatoCandidatoView ParaView(FatoCandidato f) =>
-        new(
+    private static FatoCandidatoView ParaView(FatoCandidato f)
+    {
+        IReadOnlyList<FatoValorDominioViewItem>? valoresDominioDeclarados =
+            ParaValoresDominioDeclarados(f.ValoresDominioDeclarados);
+
+        return new(
             f.Id,
             f.Codigo,
             f.Nome,
@@ -63,10 +67,11 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             DominiosFato.ParaTokenCanonico(f.Dominio),
             OrigensFato.ParaTokenCanonico(f.Origem),
             CardinalidadesFato.ParaTokenCanonico(f.Cardinalidade),
-            f.ValoresDominio,
+            ParaValoresDominio(f.ValoresDominio, valoresDominioDeclarados),
             f.PontoResolucao,
             f.Binding,
-            ParaValoresDominioDeclarados(f.ValoresDominioDeclarados));
+            valoresDominioDeclarados);
+    }
 
     private static IReadOnlyList<FatoValorDominioViewItem>? ParaValoresDominioDeclarados(
         IReadOnlyCollection<FatoValorDominio> valores) =>
@@ -76,4 +81,15 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
                 .OrderBy(v => v.Ordem)
                 .ThenBy(v => v.Codigo, StringComparer.Ordinal)
                 .Select(v => new FatoValorDominioViewItem(v.Codigo, v.Descricao, v.Ordem, v.Ativo))];
+
+    /// <summary>
+    /// Um categórico estático migrado para <c>FatoValorDominio</c> (ex.: <c>COR_RACA</c>,
+    /// <c>SEXO</c>, <c>NACIONALIDADE</c>) tem o <c>jsonb</c> legado nulo — projeta os
+    /// códigos declarados de volta para <see cref="FatoCandidatoView.ValoresDominio"/>
+    /// para que o consumidor cross-módulo continue classificando o fato como categórico
+    /// <b>estático</b> (não escopo-processo/dinâmico), preservando o contrato de leitura.
+    /// </summary>
+    private static IReadOnlyList<string>? ParaValoresDominio(
+        IReadOnlyList<string>? valoresDominio, IReadOnlyList<FatoValorDominioViewItem>? valoresDominioDeclarados) =>
+        valoresDominio ?? valoresDominioDeclarados?.Select(static v => v.Codigo).ToList();
 }
