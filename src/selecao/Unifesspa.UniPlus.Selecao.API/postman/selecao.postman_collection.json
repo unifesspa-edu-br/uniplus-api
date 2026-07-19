@@ -1160,6 +1160,120 @@
               }
             }
           ]
+        },
+        {
+          "name": "Criar Fase Canônica (INSCRICAO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/admin/fases-canonicas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "admin",
+                "fases-canonicas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"INSCRICAO\",\n  \"nome\": \"Inscrição (smoke)\",\n  \"descricao\": null,\n  \"donoTipico\": \"CEPS\",\n  \"agrupaEtapas\": false,\n  \"permiteComplementacao\": false,\n  \"baseLegal\": null,\n  \"produzResultado\": false,\n  \"resultadoDefinitivo\": false,\n  \"coletaInscricao\": false,\n  \"origemData\": \"PROPRIA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created ou 409 (código canônico único)', () => {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "  if (pm.response.code === 201) {",
+                  "    pm.environment.set('fase_canonica_inscricao_id', pm.response.json());",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obter Fase Canônica por código (INSCRICAO, fallback se já existia)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/configuracao/fases-canonicas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "configuracao",
+                "fases-canonicas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 e resolve fase_canonica_inscricao_id se ainda vazio', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  if (!pm.environment.get('fase_canonica_inscricao_id')) {",
+                  "    const arr = pm.response.json();",
+                  "    const achada = (arr.items || arr).find(f => f.codigo === 'INSCRICAO');",
+                  "    pm.expect(achada, 'INSCRICAO deve existir').to.not.be.undefined;",
+                  "    pm.environment.set('fase_canonica_inscricao_id', achada.id);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ],
       "description": "Árvore mínima Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica exigida pelas dimensões de ProcessoSeletivo. Nenhum destes recursos é pré-seedado (exceto o catálogo interno rol_de_regras, referenciado só por código)."
@@ -1524,7 +1638,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_inscricao_id}}\",\n    \"inicio\": \"2025-12-01T00:00:00Z\",\n    \"fim\": \"2025-12-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": null,\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  },\n  {\n    \"ordem\": 2,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1586,11 +1700,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('200 com cronogramaFases[0].id', () => {",
+                  "pm.test('200 com cronogramaFases (INSCRICAO + AVALIACAO), captura a de AVALIACAO', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.expect(j.cronogramaFases).to.have.lengthOf(1);",
-                  "  pm.environment.set('fase_cronograma_id', j.cronogramaFases[0].id);",
+                  "  pm.expect(j.cronogramaFases).to.have.lengthOf(2);",
+                  "  const avaliacao = j.cronogramaFases.find(f => f.codigo === 'AVALIACAO');",
+                  "  pm.expect(avaliacao, 'fase AVALIACAO deve estar no cronograma').to.not.be.undefined;",
+                  "  pm.environment.set('fase_cronograma_id', avaliacao.id);",
                   "});"
                 ]
               }
