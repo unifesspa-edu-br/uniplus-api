@@ -193,4 +193,32 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     [Fact(DisplayName = "TamanhoMaximoBytes positivo é aceito")]
     public void Aceita_TamanhoMaximoBytesPositivo() =>
         Validar(ItemComIdade(tamanhoMaximoBytes: 5_000_000)).IsValid.Should().BeTrue();
+
+    // ── Cardinalidade qualificada (Story #921) — NoExigenciaInputValidator.ChaveDistincao ──
+
+    private static ValidationResult ValidarRaiz(NoExigenciaInput raiz) =>
+        new DefinirDocumentosExigidosCommandValidator().Validate(
+            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [raiz], PrecondicaoIfMatch.Ausente));
+
+    [Theory(DisplayName = "chaveDistincao vazia ou em branco é rejeitada — nunca coagida silenciosamente pelo handler")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Rejeita_ChaveDistincaoVaziaOuEmBranco(string chaveInvalida)
+    {
+        NoExigenciaInput raiz = new("FOLHA", ItemCom(), null, null, null, null, chaveInvalida);
+
+        ValidationResult resultado = ValidarRaiz(raiz);
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("chaveDistincao", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact(DisplayName = "chaveDistincao do catálogo fechado é aceita")]
+    public void Aceita_ChaveDistincaoValida()
+    {
+        NoExigenciaInput raiz = new(
+            "FOLHA", ItemCom(), 1, null, null, null, "COMPETENCIA_MENSAL", new DateOnly(2026, 1, 1));
+
+        ValidarRaiz(raiz).IsValid.Should().BeTrue();
+    }
 }

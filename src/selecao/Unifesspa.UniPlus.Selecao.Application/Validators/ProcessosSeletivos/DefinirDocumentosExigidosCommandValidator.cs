@@ -116,9 +116,13 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
             .When(static x => x.Tipo is "E" or "OU")
             .WithMessage("chaveDistincao só é permitida em nó FOLHA.");
 
+        // `x.ChaveDistincao is not null` (não `!string.IsNullOrWhiteSpace`) — string vazia/em
+        // branco também precisa passar por este Must e ser recusada: senão o handler a repassa
+        // ao domínio, que a mapeia silenciosamente para "sem qualificação" (Nenhuma) via
+        // ChaveDistincaoCodigo.FromCodigo, mascarando um payload malformado como 204 aceito.
         RuleFor(x => x.ChaveDistincao)
             .Must(static valor => ChavesDistincaoValidas.Contains(valor, StringComparer.Ordinal))
-            .When(static x => x.Tipo == "FOLHA" && !string.IsNullOrWhiteSpace(x.ChaveDistincao))
+            .When(static x => x.Tipo == "FOLHA" && x.ChaveDistincao is not null)
             .WithMessage($"chaveDistincao deve ser um de: {string.Join(", ", ChavesDistincaoValidas)}.");
 
         RuleFor(x => x.DataReferencia)
