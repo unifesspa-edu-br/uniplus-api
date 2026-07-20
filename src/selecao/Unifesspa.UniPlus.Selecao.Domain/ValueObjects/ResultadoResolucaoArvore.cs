@@ -33,6 +33,20 @@ public sealed record ConsequenciaEmitida(Guid NoExigenciaId, TipoNo TipoOrigem, 
 public sealed record PendenciaDeOrientacao(Guid NoExigenciaId, string? EntidadeId = null);
 
 /// <summary>
+/// Story #922 — o <see cref="StatusResolucaoExigencia"/> de UMA folha PARA UMA instância
+/// específica, dentro de uma subárvore <c>repetePorEntidade</c>. Complementa
+/// <see cref="ResultadoResolucaoArvore.StatusPorExigencia"/> (que só cobre folhas fora de
+/// repetição): sem isto, uma folha <c>Obrigatorio</c> sem <c>ConsequenciaIndeferimento</c>
+/// configurada (não emite <see cref="ConsequenciaEmitida"/>) ficaria com pendência visível
+/// só no AGREGADO da raiz repetida — nenhum sinal de QUAL <c>entidade_id</c> ainda deve o
+/// documento.
+/// </summary>
+/// <param name="DocumentoExigidoId">A exigência — mesma chave de <see cref="ResultadoResolucaoArvore.StatusPorExigencia"/>.</param>
+/// <param name="EntidadeId">A instância a que este status se refere.</param>
+/// <param name="Status">O status desta folha PARA esta instância.</param>
+public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeId, StatusResolucaoExigencia Status);
+
+/// <summary>
 /// O resultado agregado de <see cref="Services.ResolvedorArvoreSatisfacao.Resolver"/> (Story #920)
 /// — substitui <c>ResultadoResolucaoExigencias</c> (grupo plano).
 /// </summary>
@@ -54,8 +68,14 @@ public sealed record PendenciaDeOrientacao(Guid NoExigenciaId, string? EntidadeI
 /// </param>
 /// <param name="ConsequenciasVigentes">As consequências emitidas pela fronteira ativa — as que REALMENTE vigoram (sem dupla emissão, sem ramo já satisfeito). Dentro de uma subárvore repetida, uma por INSTÂNCIA pendente (Story #922).</param>
 /// <param name="PendenciasDeOrientacao">Os filhos diretos de grupos <c>OU</c>/<c>N-de</c> opacos pendentes/indeterminados/impossíveis — ver <see cref="PendenciaDeOrientacao"/>.</param>
+/// <param name="StatusPorEntidade">
+/// Story #922 — o status de TODA folha dentro de QUALQUER subárvore <c>repetePorEntidade</c>,
+/// uma entrada por (folha, instância) — o complemento de <see cref="StatusPorExigencia"/> que
+/// este NÃO cobre. Vazio quando a árvore não usa repetição.
+/// </param>
 public sealed record ResultadoResolucaoArvore(
     IReadOnlyDictionary<Guid, EstadoSatisfacao> EstadosPorNo,
     IReadOnlyDictionary<Guid, StatusResolucaoExigencia> StatusPorExigencia,
     IReadOnlyList<ConsequenciaEmitida> ConsequenciasVigentes,
-    IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao);
+    IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao,
+    IReadOnlyList<StatusPorEntidade> StatusPorEntidade);

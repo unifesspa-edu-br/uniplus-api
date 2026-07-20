@@ -528,6 +528,34 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.EntidadeId == "membro_1" && c.Consequencia == "ELIMINA");
         resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.EntidadeId == "membro_3" && c.Consequencia == "ELIMINA");
         resultado.Value!.ConsequenciasVigentes.Should().NotContain(c => c.EntidadeId == "membro_2");
+        resultado.Value!.StatusPorEntidade.Should().HaveCount(3);
+        resultado.Value!.StatusPorEntidade.Should().Contain(
+            s => s.DocumentoExigidoId == rg.Id && s.EntidadeId == "membro_1" && s.Status == StatusResolucaoExigencia.Pendente);
+        resultado.Value!.StatusPorEntidade.Should().Contain(
+            s => s.DocumentoExigidoId == rg.Id && s.EntidadeId == "membro_2" && s.Status == StatusResolucaoExigencia.Satisfeita);
+        resultado.Value!.StatusPorEntidade.Should().Contain(
+            s => s.DocumentoExigidoId == rg.Id && s.EntidadeId == "membro_3" && s.Status == StatusResolucaoExigencia.Pendente);
+    }
+
+    [Fact(DisplayName = "Repetição por entidade: folha sem ConsequenciaIndeferimento continua visível por instância via StatusPorEntidade")]
+    public void RepeticaoPorEntidade_SemConsequencia_StatusPorEntidadeSinalizaInstanciaPendente()
+    {
+        DocumentoExigido comprovante = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(comprovante, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.MembroNucleoFamiliar, Instancia("membro_1"), Instancia("membro_2"));
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaDeEntidade(comprovante, "membro_1"), instancias: instancias);
+
+        // Sem consequência configurada, nada é emitido em ConsequenciasVigentes — o único
+        // sinal de QUAL instância está pendente é StatusPorEntidade.
+        resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
+        resultado.Value!.StatusPorEntidade.Should().Contain(
+            s => s.DocumentoExigidoId == comprovante.Id && s.EntidadeId == "membro_1" && s.Status == StatusResolucaoExigencia.Satisfeita);
+        resultado.Value!.StatusPorEntidade.Should().Contain(
+            s => s.DocumentoExigidoId == comprovante.Id && s.EntidadeId == "membro_2" && s.Status == StatusResolucaoExigencia.Pendente);
     }
 
     [Fact(DisplayName = "Gatilho por atributo da entidade: declaração de isento só é exigida do membro adulto e sem renda")]

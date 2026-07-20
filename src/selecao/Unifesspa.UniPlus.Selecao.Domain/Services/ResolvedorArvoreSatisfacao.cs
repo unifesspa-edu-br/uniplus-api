@@ -142,8 +142,17 @@ public static class ResolvedorArvoreSatisfacao
             EmitirFronteira(raiz, estadoRaiz, estados, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
         }
 
+        // Story #922 — achata o status por (folha, instância) de TODAS as subárvores
+        // repetidas: sem isto, uma folha Obrigatorio sem ConsequenciaIndeferimento configurada
+        // (nunca emite ConsequenciaEmitida) só apareceria pendente no AGREGADO da raiz
+        // repetida, sem sinalizar QUAL entidade_id ainda deve o documento.
+        List<StatusPorEntidade> statusPorEntidade = [.. instanciasResolvidasPorNo.Values
+            .SelectMany(static resolvidas => resolvidas)
+            .SelectMany(static instancia => instancia.StatusDescendentes.Select(
+                par => new StatusPorEntidade(par.Key, instancia.EntidadeId, par.Value)))];
+
         return Result<ResultadoResolucaoArvore>.Success(new ResultadoResolucaoArvore(
-            estados, statusPorExigencia, consequenciasVigentes, pendenciasDeOrientacao));
+            estados, statusPorExigencia, consequenciasVigentes, pendenciasDeOrientacao, statusPorEntidade));
     }
 
     private static EstadoSatisfacao ResolverNo(
@@ -206,7 +215,7 @@ public static class ResolvedorArvoreSatisfacao
                     no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorTipoEntidade,
                     estadosDaInstancia, statusDaInstancia, semRepeticaoAninhada);
 
-            resolvidas.Add(new InstanciaResolvida(instancia.EntidadeId, estadoInstancia, estadosDaInstancia));
+            resolvidas.Add(new InstanciaResolvida(instancia.EntidadeId, estadoInstancia, estadosDaInstancia, statusDaInstancia));
         }
 
         instanciasResolvidasPorNo[no.Id] = resolvidas;
@@ -492,6 +501,16 @@ public static class ResolvedorArvoreSatisfacao
     private static bool ContemRepeticaoOuDescendente(NoExigencia no) =>
         no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoOuDescendente);
 
-    /// <summary>O estado resolvido de UMA instância de entidade (Story #922), com seus próprios estados descendentes — nunca compartilhado com outra instância nem com o dicionário global.</summary>
-    private sealed record InstanciaResolvida(string EntidadeId, EstadoSatisfacao Estado, Dictionary<Guid, EstadoSatisfacao> EstadosDescendentes);
+    /// <summary>
+    /// O estado resolvido de UMA instância de entidade (Story #922), com seus próprios estados
+    /// e status descendentes — nunca compartilhados com outra instância nem com os dicionários
+    /// globais. <see cref="StatusDescendentes"/> alimenta <see cref="ValueObjects.StatusPorEntidade"/>
+    /// no resultado final — sem ele, uma folha sem consequência configurada fica invisível
+    /// por-instância (só o agregado da raiz é visto).
+    /// </summary>
+    private sealed record InstanciaResolvida(
+        string EntidadeId,
+        EstadoSatisfacao Estado,
+        Dictionary<Guid, EstadoSatisfacao> EstadosDescendentes,
+        Dictionary<Guid, StatusResolucaoExigencia> StatusDescendentes);
 }
