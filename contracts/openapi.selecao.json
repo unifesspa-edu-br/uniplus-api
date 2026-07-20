@@ -5156,7 +5156,8 @@
           "filhos",
           "chaveDistincao",
           "dataReferencia",
-          "ocorrenciasEsperadas"
+          "ocorrenciasEsperadas",
+          "repetePorEntidade"
         ],
         "type": "object",
         "properties": {
@@ -5225,6 +5226,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "repetePorEntidade": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -5306,6 +5313,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "repetePorEntidade": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

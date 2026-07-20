@@ -1152,6 +1152,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// silenciosamente. Uma folha com cardinalidade padrão (1 apresentação, sem chave) é
     /// idêntica ao modelo anterior e continua publicável.
     /// </remarks>
+    /// <remarks>
+    /// Story #922 (PR 3/4): pelo MESMO motivo, qualquer nó <see cref="NoExigencia.RepetePorEntidade"/>
+    /// também bloqueia — o snapshot canônico ainda não congela o token de repetição nem o
+    /// schema de instâncias/atributos; publicar perderia a multiplicação por entidade
+    /// silenciosamente.
+    /// </remarks>
     private DomainError? PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel()
     {
         bool possuiGrupo = _nosExigencia.Any(static no => no.Tipo is TipoNo.GrupoE or TipoNo.GrupoOu);
@@ -1177,6 +1183,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "cardinalidade silenciosamente. Chega junto com o wrapper de árvore no envelope " +
                 "(PR 4/4 da change documentos-exigidos-composicao). Uma folha com cardinalidade " +
                 "padrão (1 apresentação, sem chaveDistincao) continua publicável normalmente.");
+        }
+
+        bool possuiRepeticaoPorEntidade = _nosExigencia.Any(static no => no.RepetePorEntidade is not null);
+        if (possuiRepeticaoPorEntidade)
+        {
+            return new DomainError(
+                "NoExigencia.RepeticaoPorEntidadeAindaNaoSuportada",
+                "Uma subárvore repetePorEntidade ainda não é publicável — o snapshot canônico hoje " +
+                "não congela o token de repetição nem o schema de instâncias/atributos; publicar " +
+                "perderia a multiplicação por entidade silenciosamente. Chega junto com o wrapper " +
+                "de árvore no envelope (PR 4/4 da change documentos-exigidos-composicao).");
         }
 
         return null;

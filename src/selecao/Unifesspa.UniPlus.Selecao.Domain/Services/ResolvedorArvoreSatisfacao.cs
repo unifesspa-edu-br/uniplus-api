@@ -30,6 +30,14 @@ using ValueObjects;
 /// pendente/indeterminada/impossível emite a própria consequência; OU/N-de opaco pendente emite a
 /// SUA própria (filhos viram só pendência de orientação, não vigente); E transparente não emite e
 /// desce para os filhos não satisfeitos e não-não-aplicáveis (nunca pai e filho juntos).</item>
+/// <item><b>Repetição por entidade</b> (Story #922): uma subárvore <c>repetePorEntidade</c> é
+/// avaliada UMA VEZ POR INSTÂNCIA que o candidato declarar desse tipo — fatos do candidato
+/// mesclados com os atributos da instância (sujeito trocado, mesmo motor de gatilho), apresentações
+/// filtradas por <c>entidade_id</c>. O agregado sobe como um <c>E</c> entre instâncias (todas
+/// precisam satisfazer); sem instância declarada, a subárvore é não-aplicável. A fronteira emite
+/// UMA consequência por instância pendente, tagueada com <c>entidade_id</c> — nunca um valor
+/// global único (perderia QUAL instância está pendente). Repetição não aninha (validado no
+/// cadastro, <see cref="NoExigencia.CriarGrupo"/>).</item>
 /// </list>
 /// </remarks>
 public static class ResolvedorArvoreSatisfacao
@@ -37,7 +45,8 @@ public static class ResolvedorArvoreSatisfacao
     public static Result<ResultadoResolucaoArvore> Resolver(
         ArvoreExigenciasCongelada? arvore,
         IReadOnlyDictionary<string, JsonElement> fatosResolvidos,
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId)
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
+        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>? instanciasPorTipoEntidade = null)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
@@ -71,15 +80,60 @@ public static class ResolvedorArvoreSatisfacao
                 "A árvore congelada tem exigenciaId repetido entre folhas — cada exigência precisa de identidade única (CA-09)."));
         }
 
+        // Story #922 — defesa em profundidade (mesmo raciocínio das duas checagens acima):
+        // NoExigencia.CriarGrupo recusa catálogo forjado e aninhamento na ESCRITA, mas
+        // Reidratar confia no dado congelado sem revalidar — um envelope corrompido não pode
+        // silenciosamente suprimir consequências de uma repetição aninhada não detectada.
+        if (todosOsNos.Any(static no => no.RepetePorEntidade is { } tipo && !Enum.IsDefined(tipo)))
+        {
+            return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
+                "ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida",
+                "A árvore congelada tem repetePorEntidade fora do catálogo fechado — cada nó marcado precisa de um TipoEntidade válido."));
+        }
+
+        if (arvore.Raizes.Any(ContemRepeticaoAninhada))
+        {
+            return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
+                "ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida",
+                "A árvore congelada tem repetição por entidade aninhada — uma subárvore repetePorEntidade não pode conter outra."));
+        }
+
+        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias =
+            instanciasPorTipoEntidade ?? new Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>();
+
+        // Story #922 — defesa em profundidade sobre o insumo do CHAMADOR (não da árvore
+        // congelada): duas instâncias do mesmo tipo com o mesmo entidade_id (ou um
+        // entidade_id vazio/em branco) tornariam a correlação (exigencia_id, tipoEntidade,
+        // entidade_id) ambígua — apresentações e estados de uma instância vazariam para outra.
+        foreach ((TipoEntidade tipoEntidade, IReadOnlyList<InstanciaEntidade> instanciasDoTipo) in instancias)
+        {
+            List<string> ids = [.. instanciasDoTipo.Select(static i => i.EntidadeId)];
+            if (ids.Any(static id => string.IsNullOrWhiteSpace(id)))
+            {
+                return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
+                    "ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida",
+                    $"Uma instância de {tipoEntidade} tem EntidadeId vazio ou em branco."));
+            }
+
+            if (ids.Distinct(StringComparer.Ordinal).Count() != ids.Count)
+            {
+                return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
+                    "ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida",
+                    $"Duas ou mais instâncias de {tipoEntidade} declaram o mesmo EntidadeId — cada instância precisa de identidade única."));
+            }
+        }
+
         Dictionary<Guid, EstadoSatisfacao> estados = [];
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia = [];
         List<ConsequenciaEmitida> consequenciasVigentes = [];
-        List<Guid> pendenciasDeOrientacao = [];
+        List<PendenciaDeOrientacao> pendenciasDeOrientacao = [];
+        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo = [];
 
         foreach (NoExigencia raiz in arvore.Raizes)
         {
-            EstadoSatisfacao estadoRaiz = ResolverNo(raiz, fatosResolvidos, apresentacoesPorExigenciaId, estados, statusPorExigencia);
-            EmitirFronteira(raiz, estadoRaiz, estados, consequenciasVigentes, pendenciasDeOrientacao);
+            EstadoSatisfacao estadoRaiz = ResolverNo(
+                raiz, fatosResolvidos, apresentacoesPorExigenciaId, instancias, estados, statusPorExigencia, instanciasResolvidasPorNo);
+            EmitirFronteira(raiz, estadoRaiz, estados, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
         }
 
         return Result<ResultadoResolucaoArvore>.Success(new ResultadoResolucaoArvore(
@@ -90,15 +144,100 @@ public static class ResolvedorArvoreSatisfacao
         NoExigencia no,
         IReadOnlyDictionary<string, JsonElement> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
+        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
         Dictionary<Guid, EstadoSatisfacao> estados,
-        Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia)
+        Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
+        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
-        EstadoSatisfacao estado = no.Tipo == TipoNo.Folha
-            ? ResolverFolha(no, fatos, apresentacoes, statusPorExigencia)
-            : ResolverGrupo(no, fatos, apresentacoes, estados, statusPorExigencia);
+        EstadoSatisfacao estado = no.RepetePorEntidade is { } tipoEntidade
+            ? ResolverNoRepetido(no, tipoEntidade, fatos, apresentacoes, instanciasPorTipoEntidade, instanciasResolvidasPorNo)
+            : no.Tipo == TipoNo.Folha
+                ? ResolverFolha(no, fatos, apresentacoes, statusPorExigencia)
+                : ResolverGrupo(no, fatos, apresentacoes, instanciasPorTipoEntidade, estados, statusPorExigencia, instanciasResolvidasPorNo);
 
         estados[no.Id] = estado;
         return estado;
+    }
+
+    /// <summary>
+    /// Story #922 — resolve uma subárvore <c>repetePorEntidade</c> UMA VEZ POR INSTÂNCIA
+    /// declarada, com dicionários LOCAIS por instância (nunca os globais — o estado de um
+    /// descendente dentro da repetição é inerentemente por-instância, não um valor único).
+    /// </summary>
+    private static EstadoSatisfacao ResolverNoRepetido(
+        NoExigencia no,
+        TipoEntidade tipoEntidade,
+        IReadOnlyDictionary<string, JsonElement> fatosCandidato,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
+        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
+        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
+    {
+        IReadOnlyList<InstanciaEntidade> instancias = instanciasPorTipoEntidade.GetValueOrDefault(tipoEntidade, []);
+        if (instancias.Count == 0)
+        {
+            // Nenhuma instância declarada: nada a multiplicar — mesmo raciocínio de um grupo
+            // cujos filhos são todos não-aplicáveis.
+            instanciasResolvidasPorNo[no.Id] = [];
+            return EstadoSatisfacao.NaoAplicavel;
+        }
+
+        List<InstanciaResolvida> resolvidas = [];
+        foreach (InstanciaEntidade instancia in instancias)
+        {
+            Dictionary<string, JsonElement> fatosDaInstancia = MesclarFatosDeEntidade(fatosCandidato, instancia.Atributos);
+            IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesDaInstancia =
+                FiltrarApresentacoesPorEntidade(apresentacoes, instancia.EntidadeId);
+
+            Dictionary<Guid, EstadoSatisfacao> estadosDaInstancia = [];
+            Dictionary<Guid, StatusResolucaoExigencia> statusDaInstancia = [];
+            // Aninhamento já é recusado no cadastro (NoExigencia.CriarGrupo) — nenhum
+            // descendente aqui dentro pode ser, ele mesmo, repetePorEntidade; um dicionário
+            // vazio é seguro (nunca populado nesta subárvore).
+            Dictionary<Guid, List<InstanciaResolvida>> semRepeticaoAninhada = [];
+            EstadoSatisfacao estadoInstancia = no.Tipo == TipoNo.Folha
+                ? ResolverFolha(no, fatosDaInstancia, apresentacoesDaInstancia, statusDaInstancia)
+                : ResolverGrupo(
+                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorTipoEntidade,
+                    estadosDaInstancia, statusDaInstancia, semRepeticaoAninhada);
+
+            resolvidas.Add(new InstanciaResolvida(instancia.EntidadeId, estadoInstancia, estadosDaInstancia));
+        }
+
+        instanciasResolvidasPorNo[no.Id] = resolvidas;
+
+        // Agregação entre instâncias: a subárvore só está satisfeita quando TODAS as instâncias
+        // declaradas satisfazem — mesma álgebra do E (o ramo "todas não-aplicáveis" não ocorre
+        // aqui na prática, já tratado como caso "zero instâncias" acima; ResolverE cobre por
+        // defesa em profundidade mesmo assim).
+        return ResolverE([.. resolvidas.Select(static r => r.Estado)]);
+    }
+
+    private static Dictionary<string, JsonElement> MesclarFatosDeEntidade(
+        IReadOnlyDictionary<string, JsonElement> fatosCandidato, IReadOnlyDictionary<string, JsonElement> atributosDaInstancia)
+    {
+        Dictionary<string, JsonElement> mesclado = new(fatosCandidato, StringComparer.Ordinal);
+        foreach (KeyValuePair<string, JsonElement> atributo in atributosDaInstancia)
+        {
+            mesclado[atributo.Key] = atributo.Value;
+        }
+
+        return mesclado;
+    }
+
+    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> FiltrarApresentacoesPorEntidade(
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes, string entidadeId)
+    {
+        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> filtradas = [];
+        foreach (KeyValuePair<Guid, IReadOnlyList<ApresentacaoDocumento>> par in apresentacoes)
+        {
+            List<ApresentacaoDocumento> daEntidade = [.. par.Value.Where(a => a.EntidadeId == entidadeId)];
+            if (daEntidade.Count > 0)
+            {
+                filtradas[par.Key] = daEntidade;
+            }
+        }
+
+        return filtradas;
     }
 
     private static EstadoSatisfacao ResolverFolha(
@@ -163,11 +302,13 @@ public static class ResolvedorArvoreSatisfacao
         NoExigencia no,
         IReadOnlyDictionary<string, JsonElement> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
+        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
         Dictionary<Guid, EstadoSatisfacao> estados,
-        Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia)
+        Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
+        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
         List<EstadoSatisfacao> estadosFilhos = [.. no.Filhos.Select(filho =>
-            ResolverNo(filho, fatos, apresentacoes, estados, statusPorExigencia))];
+            ResolverNo(filho, fatos, apresentacoes, instanciasPorTipoEntidade, estados, statusPorExigencia, instanciasResolvidasPorNo))];
 
         return no.Tipo == TipoNo.GrupoE
             ? ResolverE(estadosFilhos)
@@ -228,13 +369,17 @@ public static class ResolvedorArvoreSatisfacao
     /// <summary>
     /// Emissão de consequência por fronteira ativa, raiz→baixo — nunca pai e filho emitindo ao
     /// mesmo tempo. Chamada uma vez por raiz de <see cref="ArvoreExigenciasCongelada.Raizes"/>.
+    /// Dispatcher: se <paramref name="no"/> é a raiz de uma subárvore repetida (Story #922),
+    /// desdobra por instância (cada uma com seu próprio dicionário de estados descendentes,
+    /// nunca o global) antes de aplicar a regra normal de fronteira.
     /// </summary>
     private static void EmitirFronteira(
         NoExigencia no,
         EstadoSatisfacao estado,
         IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
         List<ConsequenciaEmitida> consequenciasVigentes,
-        List<Guid> pendenciasDeOrientacao)
+        List<PendenciaDeOrientacao> pendenciasDeOrientacao,
+        IReadOnlyDictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
         if (estado is EstadoSatisfacao.Satisfeito or EstadoSatisfacao.NaoAplicavel)
         {
@@ -242,6 +387,47 @@ public static class ResolvedorArvoreSatisfacao
             return;
         }
 
+        if (no.RepetePorEntidade is not null)
+        {
+            // Cada instância pendente/indeterminada/impossível é uma obrigação DISTINTA do
+            // candidato (ex.: "PJ 2 ainda deve os extratos") — emite por instância, tagueada com
+            // entidade_id (consequências E orientações, senão duas instâncias com filhos
+            // pendentes diferentes de um MESMO grupo OU repetido ficariam indistinguíveis numa
+            // lista só), usando os estados DESCENDENTES resolvidos para aquela instância (nunca
+            // o dicionário global, que não os contém).
+            foreach (InstanciaResolvida instancia in instanciasResolvidasPorNo.GetValueOrDefault(no.Id, []))
+            {
+                if (!EhPendenteOuPior(instancia.Estado))
+                {
+                    continue;
+                }
+
+                List<ConsequenciaEmitida> consequenciasDaInstancia = [];
+                List<PendenciaDeOrientacao> pendenciasDaInstancia = [];
+                EmitirFronteiraNormal(
+                    no, instancia.Estado, instancia.EstadosDescendentes,
+                    consequenciasDaInstancia, pendenciasDaInstancia, instanciasResolvidasPorNo);
+
+                consequenciasVigentes.AddRange(
+                    consequenciasDaInstancia.Select(c => c with { EntidadeId = instancia.EntidadeId }));
+                pendenciasDeOrientacao.AddRange(
+                    pendenciasDaInstancia.Select(p => p with { EntidadeId = instancia.EntidadeId }));
+            }
+
+            return;
+        }
+
+        EmitirFronteiraNormal(no, estado, estados, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
+    }
+
+    private static void EmitirFronteiraNormal(
+        NoExigencia no,
+        EstadoSatisfacao estado,
+        IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        List<ConsequenciaEmitida> consequenciasVigentes,
+        List<PendenciaDeOrientacao> pendenciasDeOrientacao,
+        IReadOnlyDictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
+    {
         switch (no.Tipo)
         {
             case TipoNo.Folha:
@@ -261,20 +447,22 @@ public static class ResolvedorArvoreSatisfacao
                 // Opaco: os filhos NÃO emitem consequência individual — só orientação.
                 foreach (NoExigencia filho in no.Filhos.Where(filho => EhPendenteOuPior(estados[filho.Id])))
                 {
-                    pendenciasDeOrientacao.Add(filho.Id);
+                    pendenciasDeOrientacao.Add(new PendenciaDeOrientacao(filho.Id));
                 }
 
                 break;
 
             case TipoNo.GrupoE:
                 // Transparente: não emite consequência própria — desce para os filhos não
-                // satisfeitos e não-não-aplicáveis, cada um emitindo pela sua regra.
+                // satisfeitos e não-não-aplicáveis, cada um emitindo pela sua regra (via
+                // EmitirFronteira, não EmitirFronteiraNormal — um filho pode, ele mesmo, ser a
+                // raiz de uma subárvore repetida).
                 foreach (NoExigencia filho in no.Filhos)
                 {
                     EstadoSatisfacao estadoFilho = estados[filho.Id];
                     if (EhPendenteOuPior(estadoFilho))
                     {
-                        EmitirFronteira(filho, estadoFilho, estados, consequenciasVigentes, pendenciasDeOrientacao);
+                        EmitirFronteira(filho, estadoFilho, estados, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
                     }
                 }
 
@@ -284,4 +472,20 @@ public static class ResolvedorArvoreSatisfacao
 
     private static bool EhPendenteOuPior(EstadoSatisfacao estado) =>
         estado is EstadoSatisfacao.Pendente or EstadoSatisfacao.Indeterminado or EstadoSatisfacao.Impossivel;
+
+    /// <summary>
+    /// Story #922 — defesa em profundidade: este nó é <c>repetePorEntidade</c> E algum
+    /// descendente (a qualquer profundidade) TAMBÉM é — o mesmo invariante que
+    /// <c>NoExigencia.CriarGrupo</c> já recusa na ESCRITA, revalidado aqui porque
+    /// <c>NoExigencia.Reidratar</c> confia no dado congelado sem revalidar.
+    /// </summary>
+    private static bool ContemRepeticaoAninhada(NoExigencia no) =>
+        (no.RepetePorEntidade is not null && no.Filhos.Any(ContemRepeticaoOuDescendente))
+        || no.Filhos.Any(ContemRepeticaoAninhada);
+
+    private static bool ContemRepeticaoOuDescendente(NoExigencia no) =>
+        no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoOuDescendente);
+
+    /// <summary>O estado resolvido de UMA instância de entidade (Story #922), com seus próprios estados descendentes — nunca compartilhado com outra instância nem com o dicionário global.</summary>
+    private sealed record InstanciaResolvida(string EntidadeId, EstadoSatisfacao Estado, Dictionary<Guid, EstadoSatisfacao> EstadosDescendentes);
 }

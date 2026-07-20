@@ -112,6 +112,16 @@ public sealed class NoExigencia : EntityBase
     /// </summary>
     public IReadOnlyList<string>? OcorrenciasEsperadas { get; private set; }
 
+    /// <summary>
+    /// Story #922 — marca esta subárvore (este nó + todos os descendentes) como repetível por
+    /// instância de <see cref="Enums.TipoEntidade"/>: em runtime, avaliada UMA VEZ POR INSTÂNCIA
+    /// que o candidato declarar desse tipo, com gatilhos internos resolvidos contra os ATRIBUTOS
+    /// da instância (sujeito trocado — mesmo motor de gatilho da folha). Repetição NÃO aninha —
+    /// nenhum descendente pode também ser <see cref="RepetePorEntidade"/> (validado em
+    /// <see cref="CriarGrupo"/>, único ponto onde um nó marcado pode ter descendentes).
+    /// </summary>
+    public TipoEntidade? RepetePorEntidade { get; private set; }
+
     private readonly List<NoExigencia> _filhos = [];
 
     /// <summary>Filhos ordenados por <see cref="Ordem"/> — vazio em folha, não-vazio em grupo (invariante SHALL: grupo não vazio).</summary>
@@ -137,7 +147,8 @@ public sealed class NoExigencia : EntityBase
         int? quantidadeMinima = null,
         ChaveDistincao? chaveDistincao = null,
         DateOnly? dataReferencia = null,
-        IReadOnlyList<string>? ocorrenciasEsperadas = null)
+        IReadOnlyList<string>? ocorrenciasEsperadas = null,
+        TipoEntidade? repetePorEntidade = null)
     {
         ArgumentNullException.ThrowIfNull(documentoExigido);
 
@@ -176,6 +187,12 @@ public sealed class NoExigencia : EntityBase
             return Result<NoExigencia>.Failure(erroDeChave);
         }
 
+        TipoEntidade tipoEntidadeNormalizado = repetePorEntidade ?? TipoEntidade.Nenhuma;
+        if (ValidarCatalogoTipoEntidade(tipoEntidadeNormalizado) is { } erroTipoEntidade)
+        {
+            return Result<NoExigencia>.Failure(erroTipoEntidade);
+        }
+
         return Result<NoExigencia>.Success(new NoExigencia
         {
             Tipo = TipoNo.Folha,
@@ -186,8 +203,17 @@ public sealed class NoExigencia : EntityBase
             ChaveDistincao = chaveNormalizada == Enums.ChaveDistincao.Nenhuma ? null : chaveNormalizada,
             DataReferencia = dataReferencia,
             OcorrenciasEsperadas = ocorrenciasEsperadas is null ? null : [.. ocorrenciasEsperadas],
+            RepetePorEntidade = tipoEntidadeNormalizado == TipoEntidade.Nenhuma ? null : tipoEntidadeNormalizado,
         });
     }
+
+    /// <summary>Story #922 — catálogo fechado de <see cref="TipoEntidade"/> (defesa em profundidade: o wire já valida via <c>TipoEntidadeCodigo</c>, mas um <c>Reidratar</c> com dado corrompido não passa pelo validator).</summary>
+    private static DomainError? ValidarCatalogoTipoEntidade(TipoEntidade tipo) =>
+        Enum.IsDefined(tipo)
+            ? null
+            : new DomainError(
+                "NoExigencia.TipoEntidadeInvalido",
+                "repetePorEntidade fora do catálogo fechado (MEMBRO_NUCLEO_FAMILIAR, PESSOA_JURIDICA_VINCULADA).");
 
     private static DomainError? ValidarSemChave(DateOnly? dataReferencia, IReadOnlyList<string>? ocorrenciasEsperadas)
     {
@@ -352,7 +378,8 @@ public sealed class NoExigencia : EntityBase
         int? quantidadeMinima,
         string? consequencia,
         IReadOnlyList<NoExigenciaBaseLegal> basesLegais,
-        IReadOnlyList<NoExigencia> filhos)
+        IReadOnlyList<NoExigencia> filhos,
+        TipoEntidade? repetePorEntidade = null)
     {
         ArgumentNullException.ThrowIfNull(basesLegais);
         ArgumentNullException.ThrowIfNull(filhos);
@@ -385,6 +412,23 @@ public sealed class NoExigencia : EntityBase
         {
             return Result<NoExigencia>.Failure(new DomainError(
                 "NoExigencia.GrupoComFasesDiferentes", "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma."));
+        }
+
+        TipoEntidade tipoEntidadeNormalizado = repetePorEntidade ?? TipoEntidade.Nenhuma;
+        if (ValidarCatalogoTipoEntidade(tipoEntidadeNormalizado) is { } erroTipoEntidade)
+        {
+            return Result<NoExigencia>.Failure(erroTipoEntidade);
+        }
+
+        // Story #922: repetição não aninha — construção é bottom-up (folhas/grupos filhos já
+        // existem prontos aqui), então checar os descendentes JÁ CONSTRUÍDOS de `filhos` é
+        // suficiente para pegar qualquer combinação de profundidade (o nó marcado mais próximo
+        // da raiz é sempre construído por último).
+        if (tipoEntidadeNormalizado != TipoEntidade.Nenhuma && filhos.Any(ContemRepeticaoDeEntidade))
+        {
+            return Result<NoExigencia>.Failure(new DomainError(
+                "NoExigencia.RepeticaoDeEntidadeAninhada",
+                "Uma subárvore repetePorEntidade não pode conter outra — repetição não aninha."));
         }
 
         int? quantidadeMinimaFinal = null;
@@ -445,6 +489,7 @@ public sealed class NoExigencia : EntityBase
             Ordem = ordem,
             QuantidadeMinima = quantidadeMinimaFinal,
             Consequencia = consequenciaFinal,
+            RepetePorEntidade = tipoEntidadeNormalizado == TipoEntidade.Nenhuma ? null : tipoEntidadeNormalizado,
         };
 
         foreach (NoExigencia filho in filhos)
@@ -462,6 +507,10 @@ public sealed class NoExigencia : EntityBase
         return Result<NoExigencia>.Success(no);
     }
 
+    /// <summary>Este nó, ou algum descendente (a qualquer profundidade), é <see cref="RepetePorEntidade"/> — usado para recusar aninhamento em <see cref="CriarGrupo"/>.</summary>
+    private static bool ContemRepeticaoDeEntidade(NoExigencia no) =>
+        no.RepetePorEntidade is not null || no._filhos.Any(ContemRepeticaoDeEntidade);
+
     /// <summary>Reidrata um nó a partir de uma <see cref="VersaoConfiguracao"/> congelada, preservando o Id (mesma razão de <see cref="DocumentoExigido.Reidratar"/>).</summary>
     public static NoExigencia Reidratar(
         Guid id,
@@ -474,6 +523,7 @@ public sealed class NoExigencia : EntityBase
         ChaveDistincao? chaveDistincao,
         DateOnly? dataReferencia,
         IReadOnlyList<string>? ocorrenciasEsperadas,
+        TipoEntidade? repetePorEntidade,
         IReadOnlyList<NoExigenciaBaseLegal> basesLegais,
         IReadOnlyList<NoExigencia> filhos)
     {
@@ -496,6 +546,7 @@ public sealed class NoExigencia : EntityBase
             ChaveDistincao = chaveDistincao,
             DataReferencia = dataReferencia,
             OcorrenciasEsperadas = ocorrenciasEsperadas,
+            RepetePorEntidade = repetePorEntidade,
         };
 
         foreach (NoExigencia filho in filhos)

@@ -177,4 +177,26 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         pendencia.Should().BeNull();
     }
+
+    // ── Fail-closed de repetição por entidade (Story #922): o snapshot canônico ainda não
+    // congela repetePorEntidade nem o schema de instâncias/atributos — publicar perderia a
+    // multiplicação por entidade silenciosamente, mesmo raciocínio dos dois fail-closed
+    // acima. ──
+
+    [Fact(DisplayName = "Folha solteira repetePorEntidade bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_RepetePorEntidade_Bloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(
+            DocumentoQualquer(fase.Id), 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Code.Should().Be("NoExigencia.RepeticaoPorEntidadeAindaNaoSuportada");
+    }
 }

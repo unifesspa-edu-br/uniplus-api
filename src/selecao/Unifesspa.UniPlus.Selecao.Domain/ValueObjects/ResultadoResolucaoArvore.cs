@@ -11,25 +11,51 @@ using Enums;
 /// <param name="NoExigenciaId">O Id do nó que emitiu — folha ou grupo <c>OU</c>/<c>N-de</c>.</param>
 /// <param name="TipoOrigem"><see cref="TipoNo.Folha"/> ou <see cref="TipoNo.GrupoOu"/> — nunca <see cref="TipoNo.GrupoE"/> (transparente, nunca emite consequência própria).</param>
 /// <param name="Consequencia">∈ {ELIMINA, RECLASSIFICA_AC, REMOVE_VANTAGEM, PENDENCIA_REENVIO}.</param>
-public sealed record ConsequenciaEmitida(Guid NoExigenciaId, TipoNo TipoOrigem, string Consequencia);
+/// <param name="EntidadeId">
+/// Story #922 — quando <see cref="NoExigenciaId"/> está dentro de (ou é) uma subárvore
+/// <c>repetePorEntidade</c>, o <c>entidade_id</c> da instância cuja pendência esta consequência
+/// descreve (ex.: "PJ 2 ainda deve os extratos"). <see langword="null"/> fora de subárvore
+/// repetida.
+/// </param>
+public sealed record ConsequenciaEmitida(Guid NoExigenciaId, TipoNo TipoOrigem, string Consequencia, string? EntidadeId = null);
+
+/// <summary>
+/// Um filho DIRETO de um grupo <c>OU</c>/<c>N-de</c> opaco pendente/indeterminado/impossível —
+/// listado apenas como orientação (não vigente, o grupo pai é quem emite a consequência).
+/// </summary>
+/// <param name="NoExigenciaId">O Id do nó filho.</param>
+/// <param name="EntidadeId">
+/// Story #922 — quando o grupo opaco está dentro de (ou é) uma subárvore
+/// <c>repetePorEntidade</c>, o <c>entidade_id</c> da instância a que esta orientação se refere
+/// (sem isto, orientações de instâncias diferentes de um mesmo nó ficariam indistinguíveis
+/// numa lista só). <see langword="null"/> fora de subárvore repetida.
+/// </param>
+public sealed record PendenciaDeOrientacao(Guid NoExigenciaId, string? EntidadeId = null);
 
 /// <summary>
 /// O resultado agregado de <see cref="Services.ResolvedorArvoreSatisfacao.Resolver"/> (Story #920)
 /// — substitui <c>ResultadoResolucaoExigencias</c> (grupo plano).
 /// </summary>
-/// <param name="EstadosPorNo">O <see cref="EstadoSatisfacao"/> de TODO nó da árvore (folha e grupo), chave = <c>NoExigencia.Id</c>.</param>
+/// <param name="EstadosPorNo">
+/// O <see cref="EstadoSatisfacao"/> de todo nó FORA de uma subárvore <c>repetePorEntidade</c>
+/// (Story #922), chave = <c>NoExigencia.Id</c> — inclui o AGREGADO da própria raiz de uma
+/// subárvore repetida (satisfeita só quando TODAS as instâncias declaradas satisfazem, mesma
+/// álgebra do <c>E</c>), mas não os descendentes dela: o estado é inerentemente por-instância
+/// dentro de uma repetição, então não há um único valor global útil para eles — o detalhe
+/// por-instância vigora em <see cref="ConsequenciasVigentes"/>, cada uma tagueada com
+/// <see cref="ConsequenciaEmitida.EntidadeId"/>.
+/// </param>
 /// <param name="StatusPorExigencia">
 /// Projeção por FOLHA (chave = <c>DocumentoExigido.Id</c>) — paridade com o formato anterior;
 /// folha nunca resolve <see cref="EstadoSatisfacao.Impossivel"/> (só emerge em nó de grupo pela
-/// cardinalidade), então o mapeamento é total.
+/// cardinalidade). MESMA ressalva de <see cref="EstadosPorNo"/>: folhas dentro de uma subárvore
+/// <c>repetePorEntidade</c> não entram aqui (múltiplas instâncias, uma chave só) — o mapeamento é
+/// total apenas para folhas fora de repetição.
 /// </param>
-/// <param name="ConsequenciasVigentes">As consequências emitidas pela fronteira ativa — as que REALMENTE vigoram (sem dupla emissão, sem ramo já satisfeito).</param>
-/// <param name="PendenciasDeOrientacao">
-/// Ids de nó dos filhos DIRETOS de um grupo <c>OU</c>/<c>N-de</c> opaco pendente/indeterminado/impossível
-/// — listados apenas como orientação (não vigentes, o grupo pai é quem emite).
-/// </param>
+/// <param name="ConsequenciasVigentes">As consequências emitidas pela fronteira ativa — as que REALMENTE vigoram (sem dupla emissão, sem ramo já satisfeito). Dentro de uma subárvore repetida, uma por INSTÂNCIA pendente (Story #922).</param>
+/// <param name="PendenciasDeOrientacao">Os filhos diretos de grupos <c>OU</c>/<c>N-de</c> opacos pendentes/indeterminados/impossíveis — ver <see cref="PendenciaDeOrientacao"/>.</param>
 public sealed record ResultadoResolucaoArvore(
     IReadOnlyDictionary<Guid, EstadoSatisfacao> EstadosPorNo,
     IReadOnlyDictionary<Guid, StatusResolucaoExigencia> StatusPorExigencia,
     IReadOnlyList<ConsequenciaEmitida> ConsequenciasVigentes,
-    IReadOnlyList<Guid> PendenciasDeOrientacao);
+    IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao);

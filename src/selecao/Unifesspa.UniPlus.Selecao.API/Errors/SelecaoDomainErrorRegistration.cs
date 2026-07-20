@@ -409,6 +409,13 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // quantidadeMinima/chaveDistincao de NoExigencia — publicar perderia a exigência
         // silenciosamente.
         new("NoExigencia.CardinalidadeQualificadaAindaNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.cardinalidade_qualificada_ainda_nao_suportada", "Uma folha com cardinalidade qualificada ainda não é publicável — chega na Story seguinte da change")),
+        // Repetição por entidade (Story #922) — NoExigencia.CriarFolha/CriarGrupo.
+        new("NoExigencia.TipoEntidadeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.tipo_entidade_invalido", "repetePorEntidade fora do catálogo fechado")),
+        new("NoExigencia.RepeticaoDeEntidadeAninhada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada", "Uma subárvore repetePorEntidade não pode conter outra — repetição não aninha")),
+        // Mesmo fail-closed, estendido à repetição por entidade (Story #922): o snapshot
+        // canônico ainda não congela repetePorEntidade nem o schema de instâncias/atributos —
+        // publicar perderia a multiplicação por entidade silenciosamente.
+        new("NoExigencia.RepeticaoPorEntidadeAindaNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.repeticao_por_entidade_ainda_nao_suportada", "Uma subárvore repetePorEntidade ainda não é publicável — chega na Story seguinte da change")),
         // Base legal 1:N PRÓPRIA de grupo OU/N-de (Story #920) — mesmo shape/mensagens de
         // DocumentoExigidoBaseLegal acima.
         new("NoExigenciaBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
@@ -419,6 +426,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // coleta é fora de escopo); registrado por disciplina uniforme com o resto do módulo.
         new("ResolvedorArvoreSatisfacao.ArvoreAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_ausente", "Não há versão vigente congelada para resolver a árvore de exigências documentais")),
         new("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida", "A árvore de exigências congelada tem identidade repetida entre folhas")),
+        // Story #922 — insumo de instâncias de entidade repetível (chamador, não a árvore congelada).
+        new("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.instancia_entidade_invalida", "Uma instância de entidade declarada tem EntidadeId vazio ou duplicado")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];
