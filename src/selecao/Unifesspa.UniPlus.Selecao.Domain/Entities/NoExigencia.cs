@@ -340,9 +340,8 @@ public sealed class NoExigencia : EntityBase
     private static Guid? FaseComumDosFilhos(IReadOnlyList<NoExigencia> filhos)
     {
         HashSet<Guid> fases = [];
-        foreach (NoExigencia filho in filhos)
+        foreach (Guid? fase in filhos.Select(static filho => filho.FaseComum()))
         {
-            Guid? fase = filho.FaseComum();
             if (fase is null)
             {
                 return null;
@@ -357,32 +356,9 @@ public sealed class NoExigencia : EntityBase
     private static bool ContemCiclo(IReadOnlyList<NoExigencia> raizes)
     {
         HashSet<NoExigencia> visitados = new(ReferenceEqualityComparer.Instance);
-        foreach (NoExigencia raiz in raizes)
-        {
-            if (!Visitar(raiz, visitados))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return raizes.Any(raiz => !Visitar(raiz, visitados));
     }
 
-    private static bool Visitar(NoExigencia no, HashSet<NoExigencia> visitados)
-    {
-        if (!visitados.Add(no))
-        {
-            return false;
-        }
-
-        foreach (NoExigencia filho in no._filhos)
-        {
-            if (!Visitar(filho, visitados))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    private static bool Visitar(NoExigencia no, HashSet<NoExigencia> visitados) =>
+        visitados.Add(no) && no._filhos.All(filho => Visitar(filho, visitados));
 }
