@@ -210,7 +210,10 @@ public static class ObterProcessoSeletivoQueryHandler
         no.QuantidadeMinima,
         no.Consequencia,
         [.. no.BasesLegais.OrderBy(static b => b.Id).Select(ProjectBaseLegalDeNo)],
-        [.. no.Filhos.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjectNoExigencia)]);
+        [.. no.Filhos.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjectNoExigencia)],
+        no.ChaveDistincao?.ToCodigo(),
+        no.DataReferencia,
+        no.OcorrenciasEsperadas);
 
     private static string ProjectTipoNo(TipoNo tipo) => tipo switch
     {

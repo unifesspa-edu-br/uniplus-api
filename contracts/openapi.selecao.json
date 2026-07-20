@@ -5153,7 +5153,10 @@
           "quantidadeMinima",
           "consequencia",
           "basesLegais",
-          "filhos"
+          "filhos",
+          "chaveDistincao",
+          "dataReferencia",
+          "ocorrenciasEsperadas"
         ],
         "type": "object",
         "properties": {
@@ -5199,6 +5202,28 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NoExigenciaDto"
+            }
+          },
+          "chaveDistincao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataReferencia": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "ocorrenciasEsperadas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
             }
           }
         }
@@ -5258,6 +5283,28 @@
             ],
             "items": {
               "$ref": "#/components/schemas/NoExigenciaInput"
+            }
+          },
+          "chaveDistincao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataReferencia": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "ocorrenciasEsperadas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
             }
           }
         }

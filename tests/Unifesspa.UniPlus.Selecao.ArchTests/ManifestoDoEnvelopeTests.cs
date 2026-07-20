@@ -235,6 +235,9 @@ public sealed class ManifestoDoEnvelopeTests
                 ("Consequencia", "Ainda não serializado no envelope (chega na PR 4/4)."),
                 ("Filhos", "Ainda não serializado no envelope (chega na PR 4/4)."),
                 ("BasesLegais", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("ChaveDistincao", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
+                ("DataReferencia", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
+                ("OcorrenciasEsperadas", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
             ]),
 
         [typeof(NoExigenciaBaseLegal)] = (

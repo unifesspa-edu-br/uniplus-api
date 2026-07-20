@@ -10,4 +10,12 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// apontar, no resultado, QUAL apresentação satisfez uma exigência.
 /// </summary>
 /// <param name="Id">Identidade da apresentação — não confundir com <c>DocumentoExigido.Id</c> (a exigência que ela satisfaz é a chave do dicionário que o resolvedor recebe, não um campo deste VO).</param>
-public sealed record ApresentacaoDocumento(Guid Id);
+/// <param name="ChaveDistincao">
+/// Story #921 — o SLOT desta apresentação específica quando a folha qualifica cardinalidade
+/// (ex.: <c>"2026-03"</c> para <see cref="Enums.ChaveDistincao.CompetenciaMensal"/>, <c>"2026"</c>
+/// para <see cref="Enums.ChaveDistincao.ExercicioAnual"/>, o id da ocorrência para
+/// <see cref="Enums.ChaveDistincao.Ocorrencia"/>). <see langword="null"/> quando a folha não
+/// qualifica cardinalidade (contagem bruta) — quem produz a tag é o runtime de coleta, fora de
+/// escopo; este VO só carrega o valor já resolvido.
+/// </param>
+public sealed record ApresentacaoDocumento(Guid Id, string? ChaveDistincao = null);

@@ -67,4 +67,7 @@ public sealed record NoExigenciaDto(
     int? QuantidadeMinima,
     string? Consequencia,
     IReadOnlyList<BaseLegalDto> BasesLegais,
-    IReadOnlyList<NoExigenciaDto> Filhos);
+    IReadOnlyList<NoExigenciaDto> Filhos,
+    string? ChaveDistincao,
+    DateOnly? DataReferencia,
+    IReadOnlyList<string>? OcorrenciasEsperadas);

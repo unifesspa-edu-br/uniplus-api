@@ -37,7 +37,7 @@ public static class ResolvedorArvoreSatisfacao
     public static Result<ResultadoResolucaoArvore> Resolver(
         ArvoreExigenciasCongelada? arvore,
         IReadOnlyDictionary<string, JsonElement> fatosResolvidos,
-        IReadOnlyDictionary<Guid, ApresentacaoDocumento> apresentacoesPorExigenciaId)
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
@@ -89,7 +89,7 @@ public static class ResolvedorArvoreSatisfacao
     private static EstadoSatisfacao ResolverNo(
         NoExigencia no,
         IReadOnlyDictionary<string, JsonElement> fatos,
-        IReadOnlyDictionary<Guid, ApresentacaoDocumento> apresentacoes,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         Dictionary<Guid, EstadoSatisfacao> estados,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia)
     {
@@ -104,7 +104,7 @@ public static class ResolvedorArvoreSatisfacao
     private static EstadoSatisfacao ResolverFolha(
         NoExigencia no,
         IReadOnlyDictionary<string, JsonElement> fatos,
-        IReadOnlyDictionary<Guid, ApresentacaoDocumento> apresentacoes,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia)
     {
         DocumentoExigido folha = no.DocumentoExigido!;
@@ -124,7 +124,30 @@ public static class ResolvedorArvoreSatisfacao
             return EstadoSatisfacao.NaoAplicavel;
         }
 
-        if (apresentacoes.ContainsKey(folha.Id))
+        // Story #921 — cardinalidade qualificada: quantidadeMinima conta apresentações (não
+        // arquivos), qualificadas por chaveDistincao quando a folha declara slots (calendário
+        // derivável ou ocorrências concretas) ou só distinção pura (Ocorrencia sem lista).
+        int quantidadeMinima = no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao;
+        IReadOnlyList<ApresentacaoDocumento> apresentacoesDaFolha =
+            apresentacoes.GetValueOrDefault(folha.Id, []);
+        bool satisfeita = no.ChaveDistincao switch
+        {
+            // Sem qualificação: conta IDENTIDADES distintas — a mesma apresentação relatada
+            // duas vezes (mesmo Id) não pode contar como duas.
+            null => apresentacoesDaFolha.Select(static a => a.Id).Distinct().Count() >= quantidadeMinima,
+            // Distinção pura: tags nulas/em branco não distinguem nada — ignoradas antes do
+            // Distinct, senão [null, "x"] contaria como 2 tags diferentes.
+            ChaveDistincao.Ocorrencia when no.OcorrenciasEsperadas is null =>
+                apresentacoesDaFolha
+                    .Select(static a => a.ChaveDistincao)
+                    .Where(static chave => !string.IsNullOrWhiteSpace(chave))
+                    .Distinct(StringComparer.Ordinal)
+                    .Count() >= quantidadeMinima,
+            _ => no.SlotsEsperados()!.All(slot =>
+                apresentacoesDaFolha.Any(a => a.ChaveDistincao == slot)),
+        };
+
+        if (satisfeita)
         {
             statusPorExigencia[folha.Id] = StatusResolucaoExigencia.Satisfeita;
             return EstadoSatisfacao.Satisfeito;
@@ -137,7 +160,7 @@ public static class ResolvedorArvoreSatisfacao
     private static EstadoSatisfacao ResolverGrupo(
         NoExigencia no,
         IReadOnlyDictionary<string, JsonElement> fatos,
-        IReadOnlyDictionary<Guid, ApresentacaoDocumento> apresentacoes,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         Dictionary<Guid, EstadoSatisfacao> estados,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia)
     {

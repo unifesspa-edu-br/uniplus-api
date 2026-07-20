@@ -83,13 +83,24 @@ public sealed record ItemDocumentoExigidoInput(
 /// presente). O wire é uma árvore <b>por valor</b> — não expressa ciclo por construção (ver
 /// <see cref="Domain.Entities.NoExigencia.CriarGrupo"/>).
 /// </summary>
+/// <remarks>
+/// Story #921 — cardinalidade qualificada, exclusiva de <c>FOLHA</c>: <see cref="QuantidadeMinima"/>
+/// conta APRESENTAÇÕES (não arquivos); <see cref="ChaveDistincao"/> (token canônico
+/// <see cref="Domain.Enums.ChaveDistincaoCodigo"/>) qualifica como elas se distinguem —
+/// <c>COMPETENCIA_MENSAL</c>/<c>EXERCICIO_ANUAL</c> (calendário derivável, exige
+/// <see cref="DataReferencia"/>) ou <c>OCORRENCIA</c> (<see cref="OcorrenciasEsperadas"/>
+/// opcional). Ausente ⇒ contagem bruta, sem qualificação.
+/// </remarks>
 public sealed record NoExigenciaInput(
     string Tipo,
     ItemDocumentoExigidoInput? Documento,
     int? QuantidadeMinima,
     string? Consequencia,
     IReadOnlyList<BaseLegalInput>? BasesLegais,
-    IReadOnlyList<NoExigenciaInput>? Filhos);
+    IReadOnlyList<NoExigenciaInput>? Filhos,
+    string? ChaveDistincao = null,
+    DateOnly? DataReferencia = null,
+    IReadOnlyList<string>? OcorrenciasEsperadas = null);
 
 /// <summary>
 /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
