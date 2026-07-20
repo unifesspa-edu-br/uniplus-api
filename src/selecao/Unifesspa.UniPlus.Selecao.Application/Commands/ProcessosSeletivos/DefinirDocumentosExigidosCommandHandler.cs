@@ -79,9 +79,15 @@ public static class DefinirDocumentosExigidosCommandHandler
             ? ResolverDominiosDinamicos(processo)
             : null;
 
-        // Folha primeiro, bottom-up: NoExigencia.CriarGrupo recebe os filhos já prontos.
-        async Task<Result<NoExigencia>> ConstruirNoAsync(NoExigenciaInput input, int ordem)
+        // Folha primeiro, bottom-up: NoExigencia.CriarGrupo recebe os filhos já prontos. A
+        // recursão em si é top-down (visita o nó antes dos filhos) — por isso dá para
+        // propagar `tipoEntidadeAncestral` descendo, mesmo com a CONSTRUÇÃO do NoExigencia
+        // sendo bottom-up.
+        async Task<Result<NoExigencia>> ConstruirNoAsync(NoExigenciaInput input, int ordem, TipoEntidade? tipoEntidadeAncestral)
         {
+            TipoEntidade? tipoEntidadeEfetivo = tipoEntidadeAncestral
+                ?? (input.RepetePorEntidade is null ? null : TipoEntidadeCodigo.FromCodigo(input.RepetePorEntidade));
+
             if (string.Equals(input.Tipo, "FOLHA", StringComparison.Ordinal))
             {
                 if (input.Documento is not { } documentoInput)
@@ -92,7 +98,8 @@ public static class DefinirDocumentosExigidosCommandHandler
                 }
 
                 Result<DocumentoExigido> documentoResult = await ConstruirDocumentoExigidoAsync(
-                        documentoInput, processo, tipoDocumentoReader, vocabularioFatos, pontoResolucaoPorFato, dominiosDinamicos, cancellationToken)
+                        documentoInput, processo, tipoDocumentoReader, vocabularioFatos, pontoResolucaoPorFato,
+                        dominiosDinamicos, tipoEntidadeEfetivo, cancellationToken)
                     .ConfigureAwait(false);
                 if (documentoResult.IsFailure)
                 {
@@ -102,9 +109,6 @@ public static class DefinirDocumentosExigidosCommandHandler
                 ChaveDistincao? chaveDistincao = input.ChaveDistincao is null
                     ? null
                     : ChaveDistincaoCodigo.FromCodigo(input.ChaveDistincao);
-                TipoEntidade? repetePorEntidadeFolha = input.RepetePorEntidade is null
-                    ? null
-                    : TipoEntidadeCodigo.FromCodigo(input.RepetePorEntidade);
 
                 return NoExigencia.CriarFolha(
                     documentoResult.Value!,
@@ -113,7 +117,7 @@ public static class DefinirDocumentosExigidosCommandHandler
                     chaveDistincao,
                     input.DataReferencia,
                     input.OcorrenciasEsperadas,
-                    repetePorEntidadeFolha);
+                    tipoEntidadeEfetivo is null ? null : TipoEntidadeCodigo.FromCodigo(input.RepetePorEntidade));
             }
 
             TipoNo tipo = input.Tipo switch
@@ -134,7 +138,7 @@ public static class DefinirDocumentosExigidosCommandHandler
             int ordemFilho = 0;
             foreach (NoExigenciaInput filhoInput in input.Filhos ?? [])
             {
-                Result<NoExigencia> filhoResult = await ConstruirNoAsync(filhoInput, ordemFilho).ConfigureAwait(false);
+                Result<NoExigencia> filhoResult = await ConstruirNoAsync(filhoInput, ordemFilho, tipoEntidadeEfetivo).ConfigureAwait(false);
                 if (filhoResult.IsFailure)
                 {
                     return Result<NoExigencia>.Failure(filhoResult.Error!);
@@ -163,7 +167,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         int ordemRaiz = 0;
         foreach (NoExigenciaInput raizInput in command.Raizes)
         {
-            Result<NoExigencia> raizResult = await ConstruirNoAsync(raizInput, ordemRaiz).ConfigureAwait(false);
+            Result<NoExigencia> raizResult = await ConstruirNoAsync(raizInput, ordemRaiz, tipoEntidadeAncestral: null).ConfigureAwait(false);
             if (raizResult.IsFailure)
             {
                 return Result<MutacaoAceita>.Failure(raizResult.Error!);
@@ -201,6 +205,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato,
         IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos,
+        TipoEntidade? tipoEntidadeRepeticao,
         CancellationToken cancellationToken)
     {
         TipoDocumentoView? tipoDocumento = await tipoDocumentoReader
@@ -220,8 +225,17 @@ public static class DefinirDocumentosExigidosCommandHandler
             _ => Aplicabilidade.Nenhuma,
         };
 
+        // Story #922 — gatilho por atributo da entidade: uma folha DENTRO de (ou que É) uma
+        // subárvore repetePorEntidade pode citar os fatos de escopo-entidade do tipo (ex.:
+        // MAIOR_IDADE/SEM_RENDA para MEMBRO_NUCLEO_FAMILIAR) como se fossem fatos do
+        // candidato — mesmo motor de PredicadoDnfValidador, vocabulário estendido. Sem isto,
+        // esses gatilhos seriam recusados como PredicadoDnf.FatoDesconhecido: o vocabulário
+        // global (IFatoCandidatoReader) não conhece atributos de entidade repetível.
+        IReadOnlyDictionary<string, DescritorFatoCandidato> vocabularioEfetivo =
+            MesclarVocabularioDeEntidade(vocabularioFatos, tipoEntidadeRepeticao);
+
         Result<IReadOnlyList<CondicaoGatilho>> condicoesResult = ResolverCondicoes(
-            input.Condicoes, vocabularioFatos, dominiosDinamicos);
+            input.Condicoes, vocabularioEfetivo, dominiosDinamicos);
         if (condicoesResult.IsFailure)
         {
             return Result<DocumentoExigido>.Failure(condicoesResult.Error!);
@@ -463,6 +477,43 @@ public static class DefinirDocumentosExigidosCommandHandler
             ["CONDICAO_ATENDIMENTO"] = condicoesAtendimento,
             ["TIPO_DEFICIENCIA"] = tiposDeficiencia,
         };
+    }
+
+    // Story #922 — schema fechado de atributos por TipoEntidade (mesmo catálogo fechado do
+    // domínio, Enums.TipoEntidade) — os NOMES dos fatos de escopo-entidade que uma folha
+    // dentro de uma subárvore repetePorEntidade pode citar no gatilho. Ampliar exige nova
+    // change, igual ao catálogo de TipoEntidade em si.
+    private static readonly IReadOnlyDictionary<string, DescritorFatoCandidato> AtributosMembroNucleoFamiliar =
+        new Dictionary<string, DescritorFatoCandidato>(StringComparer.Ordinal)
+        {
+            ["MAIOR_IDADE"] = DescritorFatoCandidato.Criar("MAIOR_IDADE", TipoDominioFato.Booleano, null).Value!,
+            ["SEM_RENDA"] = DescritorFatoCandidato.Criar("SEM_RENDA", TipoDominioFato.Booleano, null).Value!,
+            ["SOB_GUARDA"] = DescritorFatoCandidato.Criar("SOB_GUARDA", TipoDominioFato.Booleano, null).Value!,
+        };
+
+    /// <summary>
+    /// Story #922 — estende o vocabulário fechado de fatos do candidato com os atributos de
+    /// escopo-entidade do <paramref name="tipoEntidadeRepeticao"/>, quando a folha está dentro
+    /// de (ou é) uma subárvore <c>repetePorEntidade</c>. <see cref="Enums.TipoEntidade.PessoaJuridicaVinculada"/>
+    /// não tem atributos (repetição pura) — o vocabulário não muda nesse caso.
+    /// </summary>
+    private static IReadOnlyDictionary<string, DescritorFatoCandidato> MesclarVocabularioDeEntidade(
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos, TipoEntidade? tipoEntidadeRepeticao)
+    {
+        if (tipoEntidadeRepeticao != TipoEntidade.MembroNucleoFamiliar)
+        {
+            return vocabularioFatos ?? new Dictionary<string, DescritorFatoCandidato>();
+        }
+
+        Dictionary<string, DescritorFatoCandidato> mesclado = vocabularioFatos is null
+            ? new Dictionary<string, DescritorFatoCandidato>(StringComparer.Ordinal)
+            : new Dictionary<string, DescritorFatoCandidato>(vocabularioFatos, StringComparer.Ordinal);
+        foreach (KeyValuePair<string, DescritorFatoCandidato> atributo in AtributosMembroNucleoFamiliar)
+        {
+            mesclado[atributo.Key] = atributo.Value;
+        }
+
+        return mesclado;
     }
 
     /// <summary>

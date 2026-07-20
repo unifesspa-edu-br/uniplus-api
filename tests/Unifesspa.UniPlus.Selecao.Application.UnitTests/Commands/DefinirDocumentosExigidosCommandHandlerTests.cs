@@ -218,6 +218,92 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         resultado.Error!.Code.Should().Be("PredicadoDnf.ValorForaDoDominio");
     }
 
+    // ── Repetição por entidade (Story #922) — gatilho por atributo de escopo-entidade ──────
+
+    [Fact(DisplayName = "Story #922: gatilho por atributo da entidade (MAIOR_IDADE) numa folha repetePorEntidade resolve sem o fato estar no vocabulário global do candidato")]
+    public async Task Handle_GatilhoPorAtributoDeEntidade_ResolveComVocabularioEstendido()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        // Vocabulário GLOBAL do candidato não conhece MAIOR_IDADE — só o escopo-entidade conhece.
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[]);
+
+        CondicaoGatilhoInput condicao = new(0, "MAIOR_IDADE", "IGUAL", "true");
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [condicao], [], null, Qualquer, null);
+        NoExigenciaInput folha = new(
+            "FOLHA", item, null, null, null, null,
+            RepetePorEntidade: "MEMBRO_NUCLEO_FAMILIAR");
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [folha], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        DocumentoExigido exigencia = processo.DocumentosExigidos.Should().ContainSingle().Which;
+        exigencia.Condicoes.Should().ContainSingle(c => c.Fato == "MAIOR_IDADE");
+    }
+
+    [Fact(DisplayName = "Story #922: repetePorEntidade herdado do grupo ancestral também estende o vocabulário da folha filha")]
+    public async Task Handle_GatilhoPorAtributoDeEntidade_HerdaDoGrupoAncestral()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[]);
+
+        CondicaoGatilhoInput condicao = new(0, "SEM_RENDA", "IGUAL", "true");
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [condicao], [], null, Qualquer, null);
+        NoExigenciaInput folha = new("FOLHA", item, null, null, null, null);
+        NoExigenciaInput grupo = new(
+            "E", null, null, null, null, [folha],
+            RepetePorEntidade: "MEMBRO_NUCLEO_FAMILIAR");
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().ContainSingle(d => d.Condicoes.Any(c => c.Fato == "SEM_RENDA"));
+    }
+
+    [Fact(DisplayName = "Story #922: PESSOA_JURIDICA_VINCULADA não estende o vocabulário — gatilho por atributo de MEMBRO continua desconhecido")]
+    public async Task Handle_PessoaJuridicaVinculada_NaoEstendeVocabulario()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+        mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
+            .Returns(TipoDocumentoResultado(tipoDocumentoId));
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[]);
+
+        CondicaoGatilhoInput condicao = new(0, "MAIOR_IDADE", "IGUAL", "true");
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [condicao], [], null, Qualquer, null);
+        NoExigenciaInput folha = new(
+            "FOLHA", item, null, null, null, null,
+            RepetePorEntidade: "PESSOA_JURIDICA_VINCULADA");
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [folha], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
+    }
+
     [Fact(DisplayName = "Story #917: TIPO_DEFICIENCIA participa do domínio dinâmico igual a MODALIDADE/CONDICAO_ATENDIMENTO")]
     public async Task Handle_GatilhoTipoDeficienciaOfertado_PersisteCondicao()
     {

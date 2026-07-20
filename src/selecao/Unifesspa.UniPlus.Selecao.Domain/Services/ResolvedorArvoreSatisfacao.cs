@@ -84,7 +84,13 @@ public static class ResolvedorArvoreSatisfacao
         // NoExigencia.CriarGrupo recusa catálogo forjado e aninhamento na ESCRITA, mas
         // Reidratar confia no dado congelado sem revalidar — um envelope corrompido não pode
         // silenciosamente suprimir consequências de uma repetição aninhada não detectada.
-        if (todosOsNos.Any(static no => no.RepetePorEntidade is { } tipo && !Enum.IsDefined(tipo)))
+        // `tipo == TipoEntidade.Nenhuma` também é inválido aqui: CriarFolha/CriarGrupo NUNCA
+        // gravam a sentinela — sempre normalizam Nenhuma para null antes de persistir — então
+        // um RepetePorEntidade não-nulo == Nenhuma só existe via Reidratar mal-formado; sem
+        // esta checagem, ResolverNo trataria como "repetido pelo tipo Nenhuma", que nunca tem
+        // instância declarada, e a folha viraria NaoAplicavel silenciosamente em vez de
+        // recusada.
+        if (todosOsNos.Any(static no => no.RepetePorEntidade is { } tipo && (tipo == TipoEntidade.Nenhuma || !Enum.IsDefined(tipo))))
         {
             return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
                 "ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida",
