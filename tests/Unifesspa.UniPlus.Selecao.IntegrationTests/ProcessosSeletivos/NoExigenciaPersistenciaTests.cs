@@ -16,10 +16,13 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// produção (<see cref="ProcessoSeletivoRepository.ObterParaMutacaoAsync"/>) — não uma query
 /// de teste hand-rolled. Achado de revisão (Codex, rodada de review desta PR): sem o
 /// <c>Include(p =&gt; p.NosExigencia)</c> no repositório, a coleção tracked nascia vazia em
-/// todo carregamento novo do agregado, e o gate fail-closed de publicação
-/// (<c>PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel</c>) nunca disparava fora da MESMA
-/// instância em memória que acabou de definir a árvore — furo real de "perda silenciosa" já
-/// no caminho ordinário (toda requisição recarrega o agregado do zero).
+/// todo carregamento novo do agregado — furo real de "perda silenciosa" já no caminho
+/// ordinário (toda requisição recarrega o agregado do zero). Story #923: o antigo gate
+/// fail-closed de publicação (<c>PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel</c>, que
+/// este teste originalmente usava como prova indireta de que a árvore recarregada era a
+/// mesma) foi removido — o envelope canônico agora congela a topologia inteira
+/// (<c>arvoreSatisfacao</c>) — e a prova passa a ser direta: os nós/filhos/consequência/base
+/// legal recarregados batem byte a byte com o que foi definido.
 /// </summary>
 public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
@@ -89,12 +92,10 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         grupoERecarregado.Filhos.Should().OnlyContain(f => f.Tipo == TipoNo.Folha && f.DocumentoExigido != null,
             "NoExigencia.DocumentoExigido é fixed-up automaticamente a partir da MESMA instância trazida por DocumentosExigidos");
 
-        // A prova real do achado: o gate fail-closed PRECISA disparar nesta instância
-        // RECARREGADA (não na `processo` original, ainda tracked em memória) — sem o
-        // Include, _nosExigencia nasceria vazio aqui e a publicação de uma árvore com
-        // grupo E/OU passaria despercebida.
+        // Story #923: a árvore com grupos E/OU já é publicável — sem pendência estrutural
+        // remanescente para esta configuração mínima (sem REMOVE_VANTAGEM/modalidade
+        // incoerente, sem exigência CONDICIONAL vazia, sem gatilho por FAIXA_ETARIA).
         DomainError? pendencia = recarregado.PendenciaPreCanonicalizacao();
-        pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("NoExigencia.SnapshotConjuntoAindaNaoSuportado");
+        pendencia.Should().BeNull(pendencia?.Message);
     }
 }

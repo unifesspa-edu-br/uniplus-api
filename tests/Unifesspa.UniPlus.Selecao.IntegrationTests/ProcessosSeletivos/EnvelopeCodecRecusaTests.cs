@@ -8,13 +8,18 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Xunit;
 
 /// <summary>
-/// <b>O que a reidratação recusa</b> — e por quê (Story #859: CA-04, CA-05, CA-06;
-/// ADR-0110 D1/D8).
+/// <b>O que a reidratação recusa</b> — e por quê: versão desconhecida do envelope, versão
+/// conhecida mas não reidratável (ex.: a 1.0, que podia congelar classificação como stub),
+/// e blocos derivados que não fecham entre si (Story #859, critérios de aceite sobre versão
+/// e integridade dos blocos derivados; ADR-0110 sobre codec nunca aposentado e sobre o
+/// bloco 'nao_construido' banido).
 /// </summary>
 /// <remarks>
 /// Cada teste aqui é uma contraprova: sem a guarda que ele exercita, o envelope
@@ -25,9 +30,9 @@ using Xunit;
 /// </remarks>
 public sealed class EnvelopeCodecRecusaTests
 {
-    // ── CA-05 / CA-04 — versão desconhecida e versão conhecida-não-reidratável ──
+    // ── Versão desconhecida e versão conhecida-não-reidratável ──
 
-    [Fact(DisplayName = "CA-05 — versão fora do registro: recusa nomeada, não tentativa de leitura")]
+    [Fact(DisplayName = "Versão fora do registro: recusa nomeada, não tentativa de leitura")]
     public void VersaoDesconhecida_Recusa()
     {
         VersaoConfiguracao versao = VersaoComSchema("9.9");
@@ -38,7 +43,7 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoDesconhecida);
     }
 
-    [Fact(DisplayName = "CA-04 — a versão 1.0 é conhecida e RECUSADA: ela podia congelar classificação como stub")]
+    [Fact(DisplayName = "A versão 1.0 é conhecida e RECUSADA: ela podia congelar classificação como stub")]
     public void Versao10_RecusaComMotivo()
     {
         VersaoConfiguracao versao = VersaoComSchema("1.0");
@@ -49,15 +54,15 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoNaoReidratavel);
         resultado.Error.Message.Should().Contain("nao_construido",
             "a recusa da 1.0 é NOMEADA — ela podia trazer 'atendimento'/'classificacao' como stub (o fallback que a " +
-            "D8 da ADR-0109 matou), e reidratar parcialmente reconstruiria um certame sem a dimensão que determina " +
-            "o resultado dele");
+            "decisão de banir o bloco 'nao_construido' matou, ADR-0109), e reidratar parcialmente reconstruiria um " +
+            "certame sem a dimensão que determina o resultado dele");
     }
 
     /// <summary>
     /// A <c>1.0</c> e a <c>9.9</c> são ambas recusadas — mas por motivos <b>diferentes</b>,
     /// e o operador diante de um descarte que falhou precisa saber qual dos dois é.
     /// </summary>
-    [Fact(DisplayName = "CA-04/CA-05 — 'conhecida e recusada' e 'desconhecida' são erros DISTINTOS")]
+    [Fact(DisplayName = "'Conhecida e recusada' e 'desconhecida' são erros DISTINTOS")]
     public void RecusasSaoDistinguiveis()
     {
         CorpusEnvelope.Registro.Reidratar(VersaoComSchema("1.0")).Error!.Code
@@ -515,9 +520,9 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    // ── CA-06 / D8 — os três blocos derivados têm de fechar ──
+    // ── Os três blocos derivados ('distribuicao', 'modalidades', 'ofertas') têm de fechar ──
 
-    [Fact(DisplayName = "CA-06 — modalidade cuja oferta não existe em 'distribuicao' é recusada")]
+    [Fact(DisplayName = "Modalidade cuja oferta não existe em 'distribuicao' é recusada")]
     public void ModalidadeSemDistribuicao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -526,7 +531,7 @@ public sealed class EnvelopeCodecRecusaTests
         AssertIncoerencia(resultado);
     }
 
-    [Fact(DisplayName = "CA-06 — distribuição sem nenhuma modalidade é recusada")]
+    [Fact(DisplayName = "Distribuição sem nenhuma modalidade é recusada")]
     public void DistribuicaoSemModalidade_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -547,7 +552,7 @@ public sealed class EnvelopeCodecRecusaTests
         AssertIncoerencia(resultado);
     }
 
-    [Fact(DisplayName = "CA-06 — oferta ausente do bloco 'ofertas' é recusada")]
+    [Fact(DisplayName = "Oferta ausente do bloco 'ofertas' é recusada")]
     public void OfertaAusenteDoBloco_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -559,7 +564,7 @@ public sealed class EnvelopeCodecRecusaTests
         AssertIncoerencia(resultado);
     }
 
-    [Fact(DisplayName = "CA-06 — oferta EXTRA no bloco 'ofertas' é recusada (a igualdade é de conjuntos, não inclusão)")]
+    [Fact(DisplayName = "Oferta EXTRA no bloco 'ofertas' é recusada (a igualdade é de conjuntos, não inclusão)")]
     public void OfertaExtraNoBloco_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -568,7 +573,7 @@ public sealed class EnvelopeCodecRecusaTests
         AssertIncoerencia(resultado);
     }
 
-    [Fact(DisplayName = "CA-06 — oferta DUPLICADA em 'ofertas' é recusada")]
+    [Fact(DisplayName = "Oferta DUPLICADA em 'ofertas' é recusada")]
     public void OfertaDuplicadaNoBloco_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -580,7 +585,7 @@ public sealed class EnvelopeCodecRecusaTests
         AssertIncoerencia(resultado);
     }
 
-    [Fact(DisplayName = "CA-06 — oferta DUPLICADA em 'distribuicao' é recusada")]
+    [Fact(DisplayName = "Oferta DUPLICADA em 'distribuicao' é recusada")]
     public void OfertaDuplicadaEmDistribuicao_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -598,6 +603,87 @@ public sealed class EnvelopeCodecRecusaTests
             "'distribuicao', 'modalidades' e 'ofertas' derivam da MESMA coleção (ADR-0110 D8). Recombiná-los em " +
             "silêncio quando não fecham reconstruiria um agregado que nunca existiu.");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.BlocosDerivadosIncoerentes);
+    }
+
+    // ── Story #923 — exigenciaId duplicado em documentosExigidos ──
+
+    /// <summary>
+    /// Um encoder real nunca produz <c>exigenciaId</c> duplicado — mas um envelope
+    /// adulterado poderia. Sem <c>EnvelopeCodecV14.IndexarExigenciasPorId</c>, o
+    /// <c>ToDictionary</c> ingênuo lançaria <see cref="ArgumentException"/> (500 não tratado
+    /// no meio de uma restauração) em vez de recusar com um <see cref="DomainError"/> nomeado.
+    /// </summary>
+    [Fact(DisplayName = "Story #923: exigenciaId duplicado em documentosExigidos.exigencias é recusado, não lança")]
+    public void ExigenciaIdDuplicado_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Exigência Duplicada", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(), voBase: 40, pr: 1m,
+            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            regraAjuste: null, referenciaDemografica: null,
+            modalidades: [
+                ModalidadeSelecionada.Criar(
+                    Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "Res. Unifesspa 532/2021",
+                    quantidadeDeclarada: 40).Value!,
+            ]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
+            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
+            regraArredondamento: null, casasArredondamento: null,
+            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
+            nOpcoesAlocacao: 1, regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Propria,
+            agrupaEtapas: true, permiteComplementacao: true, produzResultado: true, resultadoDefinitivo: true,
+            coletaInscricao: true, inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), atoProduzidoCodigo: "INSCRICAO",
+            atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
+        DocumentoExigido rg = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+        DocumentoExigido cpf = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "CPF", "CPF", "PESSOAL",
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        DadosEdital dados = DadosEdital.Criar(
+            "088/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
+        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
+            new EntradaCanonicalizacao(processo, dados, hashDocumento));
+
+        JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
+        JsonArray exigencias = envelope["documentosExigidos"]!["exigencias"]!.AsArray();
+        exigencias.Should().HaveCount(2, "pré-condição: duas exigências para duplicar o id de uma na outra");
+        exigencias[1]!["exigenciaId"] = exigencias[0]!["exigenciaId"]!.DeepClone();
+
+        byte[] adulterados = HashCanonicalComputer.ComputeSnapshotBytes(envelope);
+        adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a adulteração tem de mudar os bytes");
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento, "testes", TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+
+        Result<EnvelopeReidratado> resultado = new RegistroCodecsEnvelope().Reidratar(publicacao.Value!);
+
+        resultado.IsFailure.Should().BeTrue(
+            "exigenciaId duplicado só é alcançável por adulteração — um encoder real nunca o produz — e a " +
+            "restauração precisa recusar nomeadamente, não lançar ArgumentException do ToDictionary ingênuo");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
     // ── Infraestrutura dos testes ──

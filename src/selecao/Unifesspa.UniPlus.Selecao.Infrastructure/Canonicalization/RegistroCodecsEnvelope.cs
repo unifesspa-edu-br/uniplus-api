@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -37,9 +38,10 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
 
     public RegistroCodecsEnvelope()
     {
-        IEnvelopeCodec[] codecs = [new EnvelopeCodecV10(), new EnvelopeCodecV11(), new EnvelopeCodecV12(), new EnvelopeCodecV13()];
+        IEnvelopeCodec[] codecs =
+            [new EnvelopeCodecV10(), new EnvelopeCodecV11(), new EnvelopeCodecV12(), new EnvelopeCodecV13(), new EnvelopeCodecV14()];
         _codecs = codecs.ToDictionary(static c => c.SchemaVersion, StringComparer.Ordinal);
-        SchemaVersionDeEmissaoCorrente = new EnvelopeCodecV13().SchemaVersion;
+        SchemaVersionDeEmissaoCorrente = new EnvelopeCodecV14().SchemaVersion;
     }
 
     public string SchemaVersionDeEmissaoCorrente { get; }
@@ -95,7 +97,63 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
             return Result<EnvelopeReidratado>.Failure(malformado);
         }
 
-        return codec.Decodificar(versao);
+        Result<EnvelopeReidratado> decodificado = codec.Decodificar(versao);
+        return decodificado.IsFailure ? decodificado : SincronizarArvoreComDocumentosExigidos(decodificado.Value!);
+    }
+
+    /// <summary>
+    /// O terceiro gate, específico da árvore de satisfação (Story #923). Toda versão
+    /// anterior à <c>1.4</c> nunca serializou <c>arvoreSatisfacao</c>:
+    /// o decoder dela devolve <see cref="GrafoConfiguracao.NosExigencia"/> sempre vazio, mesmo
+    /// quando <c>documentosExigidos.exigencias</c> tem itens reais. Sem este passo, restaurar
+    /// uma versão legada e republicá-la sob o encoder corrente emitiria
+    /// <c>arvoreSatisfacao: []</c> enquanto <c>documentosExigidos.exigencias</c> continua
+    /// populado — o resolvedor de satisfação (que opera sobre a árvore, não sobre a lista
+    /// plana) veria zero obrigações documentais para um processo que na verdade tem
+    /// exigências vivas.
+    /// </summary>
+    /// <remarks>
+    /// Duas formas de árvore ausente/incompleta, dois tratamentos. Árvore TOTALMENTE vazia —
+    /// o único caso que um decoder real produz, sempre que a versão é anterior à 1.4 —
+    /// sintetiza o modelo achatado pré-Story #920 (uma raiz-folha por exigência, sem grupo:
+    /// o degenerado que já era publicável desde sempre, <see cref="NoExigencia.SintetizarRaizesLegadas"/>).
+    /// Árvore PARCIALMENTE incompleta (alguma exigência sem folha correspondente) nunca sai de
+    /// um encoder real — só é alcançável por adulteração dos bytes — e é recusada como envelope
+    /// malformado, nunca preenchida por adivinhação.
+    /// </remarks>
+    private static Result<EnvelopeReidratado> SincronizarArvoreComDocumentosExigidos(EnvelopeReidratado envelope)
+    {
+        GrafoConfiguracao grafo = envelope.Grafo;
+        if (grafo.DocumentosExigidos.Count == 0)
+        {
+            return Result<EnvelopeReidratado>.Success(envelope);
+        }
+
+        if (grafo.NosExigencia.Count == 0)
+        {
+            GrafoConfiguracao grafoComRaizesLegadas = new(
+                grafo.Etapas, grafo.OfertaAtendimento, grafo.DistribuicaoVagas, grafo.BonusRegional,
+                grafo.CriteriosDesempate, grafo.Classificacao, grafo.CronogramaFases, grafo.DocumentosExigidos,
+                NoExigencia.SintetizarRaizesLegadas(grafo.DocumentosExigidos), grafo.ReferenciaTemporalFatos);
+
+            return Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
+                grafoComRaizesLegadas, envelope.Dados, envelope.HashDocumento, envelope.Retificacao,
+                envelope.Conformidade, envelope.MetadadosFatosCongelados));
+        }
+
+        HashSet<Guid> cobertas = [.. grafo.NosExigencia
+            .Where(static n => n.Tipo == TipoNo.Folha)
+            .Select(static n => n.DocumentoExigidoId!.Value)];
+        DocumentoExigido? orfa = grafo.DocumentosExigidos.FirstOrDefault(d => !cobertas.Contains(d.Id));
+        if (orfa is not null)
+        {
+            return Result<EnvelopeReidratado>.Failure(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"A exigência '{orfa.TipoDocumentoCodigo}' ({orfa.Id}) não é folha de nenhuma raiz em " +
+                "'arvoreSatisfacao' — toda exigência tem de ser folha de exatamente uma árvore."));
+        }
+
+        return Result<EnvelopeReidratado>.Success(envelope);
     }
 
     /// <summary>

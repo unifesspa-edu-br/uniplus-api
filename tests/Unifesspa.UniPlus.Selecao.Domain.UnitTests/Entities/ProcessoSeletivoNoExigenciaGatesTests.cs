@@ -124,13 +124,14 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
     }
 
-    // ── Fail-closed de cardinalidade qualificada (Story #921, achado de revisão do PR #937):
-    // o snapshot canônico ainda não congela quantidadeMinima/chaveDistincao de NoExigencia —
-    // publicar uma folha solteira com cardinalidade não-padrão perderia a exigência
-    // silenciosamente, mesmo raciocínio do fail-closed de grupo E/OU (Story #920, PR 1/4). ──
+    // ── Story #923: o snapshot conjunto final congela a topologia inteira da árvore
+    // (bloco `arvoreSatisfacao`, bump 1.4) — os três fail-closed que bloqueavam grupo E/OU
+    // (Story #920), cardinalidade qualificada (Story #921) e repetição por entidade (Story
+    // #922) por falta de onde congelar foram REMOVIDOS. Os três casos abaixo, que antes
+    // bloqueavam `PendenciaPreCanonicalizacao`, agora publicam normalmente. ──
 
-    [Fact(DisplayName = "Folha solteira com quantidadeMinima > 1 bloqueia PendenciaPreCanonicalizacao")]
-    public void FolhaSolteira_QuantidadeMinimaMaiorQueUm_Bloqueia()
+    [Fact(DisplayName = "Folha solteira com quantidadeMinima > 1 não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_QuantidadeMinimaMaiorQueUm_NaoBloqueia()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
@@ -141,12 +142,11 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
 
-        pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("NoExigencia.CardinalidadeQualificadaAindaNaoSuportada");
+        pendencia.Should().BeNull(pendencia?.Message);
     }
 
-    [Fact(DisplayName = "Folha solteira com chaveDistincao bloqueia PendenciaPreCanonicalizacao mesmo com quantidadeMinima padrão")]
-    public void FolhaSolteira_ComChaveDistincao_Bloqueia()
+    [Fact(DisplayName = "Folha solteira com chaveDistincao não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_ComChaveDistincao_NaoBloqueia()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
@@ -159,8 +159,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
 
-        pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("NoExigencia.CardinalidadeQualificadaAindaNaoSuportada");
+        pendencia.Should().BeNull(pendencia?.Message);
     }
 
     [Fact(DisplayName = "Folha solteira com cardinalidade padrão (1, sem chave) continua publicável")]
@@ -178,13 +177,8 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         pendencia.Should().BeNull();
     }
 
-    // ── Fail-closed de repetição por entidade (Story #922): o snapshot canônico ainda não
-    // congela repetePorEntidade nem o schema de instâncias/atributos — publicar perderia a
-    // multiplicação por entidade silenciosamente, mesmo raciocínio dos dois fail-closed
-    // acima. ──
-
-    [Fact(DisplayName = "Folha solteira repetePorEntidade bloqueia PendenciaPreCanonicalizacao")]
-    public void FolhaSolteira_RepetePorEntidade_Bloqueia()
+    [Fact(DisplayName = "Folha solteira repetePorEntidade não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_RepetePorEntidade_NaoBloqueia()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
@@ -196,7 +190,23 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
 
-        pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("NoExigencia.RepeticaoPorEntidadeAindaNaoSuportada");
+        pendencia.Should().BeNull(pendencia?.Message);
+    }
+
+    [Fact(DisplayName = "Grupo E/OU com filhos aplicáveis não bloqueia PendenciaPreCanonicalizacao")]
+    public void Grupo_ComFilhos_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
+        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+
+        pendencia.Should().BeNull(pendencia?.Message);
     }
 }

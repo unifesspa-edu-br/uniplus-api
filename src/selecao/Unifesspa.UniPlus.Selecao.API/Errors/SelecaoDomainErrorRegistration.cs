@@ -220,6 +220,21 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // foi recusado — reidratar mal é pior do que não reidratar.
         new("ProcessoSeletivo.RestauracaoForaDePublicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.restauracao_fora_de_publicado", "Só um processo publicado tem configuração congelada a restaurar")),
         new("ProcessoSeletivo.IdEtapaAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_ausente", "Toda etapa restaurada declara o Id congelado no envelope")),
+        // Árvore de satisfação restaurada (Story #923, ADR-0110 D2) — checagens
+        // estruturais equivalentes ao que o banco garante na escrita normal
+        // (ux_nos_exigencia_raiz_ordem/ux_nos_exigencia_irmaos_ordem) mais o que só a raiz
+        // consegue provar (folha referencia um DocumentoExigido que existe no grafo).
+        new("ProcessoSeletivo.IdNoExigenciaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_no_exigencia_duplicado", "O mesmo Id de nó da árvore de satisfação não pode aparecer mais de uma vez na configuração restaurada")),
+        new("ProcessoSeletivo.OrdemRaizNoExigenciaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_raiz_no_exigencia_duplicada", "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo")),
+        new("ProcessoSeletivo.OrdemIrmaoNoExigenciaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_irmao_no_exigencia_duplicada", "Cada filho de um mesmo nó pai deve ter uma ordem única entre os irmãos")),
+        new("ProcessoSeletivo.NoExigenciaFolhaSemDocumentoExigido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_folha_sem_documento_exigido", "Uma folha da árvore de satisfação restaurada referencia um DocumentoExigido que não existe na configuração restaurada")),
+        new("ProcessoSeletivo.NoExigenciaDocumentoExigidoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_documento_exigido_duplicado", "Duas folhas da árvore de satisfação restaurada não podem referenciar o mesmo DocumentoExigido")),
+        new("ProcessoSeletivo.NoExigenciaFolhaComFilhos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_folha_com_filhos", "Uma folha da árvore de satisfação restaurada não pode ter filhos")),
+        new("ProcessoSeletivo.NoExigenciaTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_tipo_invalido", "Um nó da árvore de satisfação restaurada tem um tipo desconhecido")),
+        new("ProcessoSeletivo.NoExigenciaQuantidadeMinimaAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_quantidade_minima_ausente", "Uma folha ou grupo OU/N-de da árvore de satisfação restaurada não declara quantidadeMinima")),
+        new("ProcessoSeletivo.NoExigenciaConsequenciaNaoCanonica", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_consequencia_nao_canonica", "Um nó da árvore de satisfação restaurada declara uma consequência que não está na forma canônica")),
+        new("ProcessoSeletivo.NoExigenciaGrupoComCampoDeFolha", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_grupo_com_campo_de_folha", "Um grupo da árvore de satisfação restaurada carrega chaveDistincao, dataReferencia ou ocorrenciasEsperadas — campos exclusivos de folha")),
+        new("ProcessoSeletivo.NoExigenciaFolhaComBaseLegal", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_folha_com_base_legal", "Uma folha da árvore de satisfação restaurada carrega base legal — campo exclusivo de grupo OU/N-de")),
         new("VersaoConfiguracao.VersaoDeOutroProcesso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.versao_de_outro_processo", "A configuração congelada de um certame não se repõe em outro")),
         // Cronograma de fases (Story #851, §3.6/§3.7): estrutura, janelas, precedência,
         // piso mínimo derivado da origem dos candidatos/vagas ofertadas e o gate de
@@ -400,22 +415,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // mesmos dois gates de DocumentoExigido acima, mesmo ponto de chamada.
         new("NoExigencia.RemoveVantagemSemVantagemViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.remove_vantagem_sem_vantagem_viva", "O grupo declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover")),
         new("NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.consequencia_incoerente_com_acao_da_vaga", "A consequência do grupo é incoerente com a ação de indeferimento da modalidade que ele alcança")),
-        // Fail-closed explícito e temporário (Story #920, PR 1/4): o wrapper de árvore no
-        // envelope chega na PR 4/4 (snapshot conjunto final) — publicar árvore com grupo
-        // E/OU hoje é recusado, não perde dado silenciosamente.
-        new("NoExigencia.SnapshotConjuntoAindaNaoSuportado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.snapshot_conjunto_ainda_nao_suportado", "A árvore de satisfação com grupos E/OU ainda não é publicável — chega na Story seguinte da change")),
-        // Mesmo fail-closed, estendido à cardinalidade qualificada de folha solteira (Story
-        // #921, achado de revisão do PR #937): o snapshot canônico ainda não congela
-        // quantidadeMinima/chaveDistincao de NoExigencia — publicar perderia a exigência
-        // silenciosamente.
-        new("NoExigencia.CardinalidadeQualificadaAindaNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.cardinalidade_qualificada_ainda_nao_suportada", "Uma folha com cardinalidade qualificada ainda não é publicável — chega na Story seguinte da change")),
         // Repetição por entidade (Story #922) — NoExigencia.CriarFolha/CriarGrupo.
         new("NoExigencia.TipoEntidadeInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.tipo_entidade_invalido", "repetePorEntidade fora do catálogo fechado")),
         new("NoExigencia.RepeticaoDeEntidadeAninhada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.repeticao_de_entidade_aninhada", "Uma subárvore repetePorEntidade não pode conter outra — repetição não aninha")),
-        // Mesmo fail-closed, estendido à repetição por entidade (Story #922): o snapshot
-        // canônico ainda não congela repetePorEntidade nem o schema de instâncias/atributos —
-        // publicar perderia a multiplicação por entidade silenciosamente.
-        new("NoExigencia.RepeticaoPorEntidadeAindaNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.repeticao_por_entidade_ainda_nao_suportada", "Uma subárvore repetePorEntidade ainda não é publicável — chega na Story seguinte da change")),
         // Base legal 1:N PRÓPRIA de grupo OU/N-de (Story #920) — mesmo shape/mensagens de
         // DocumentoExigidoBaseLegal acima.
         new("NoExigenciaBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),

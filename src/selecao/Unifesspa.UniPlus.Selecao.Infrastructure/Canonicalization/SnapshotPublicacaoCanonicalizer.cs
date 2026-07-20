@@ -11,15 +11,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de 17 chaves
-/// — <b>13 blocos reais + 4 stubs</b> <c>{"status":"nao_construido"}</c> para as
+/// ADR-0109). Projeta a configuração viva do agregado num payload de 18 chaves
+/// — <b>14 blocos reais + 4 stubs</b> <c>{"status":"nao_construido"}</c> para as
 /// dimensões que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
 /// devolve os bytes via <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/>.
-/// <c>documentosExigidos</c> (Story #853) é um dos 13: já carrega
+/// <c>documentosExigidos</c> (Story #853) é um dos 14: já carrega
 /// <c>obrigatoriedades[]</c> real, com <c>exigencias[]</c> (#554) ainda
 /// aninhada como stub — o bloco nasce parcialmente real. <c>vagas</c> (issue
 /// #848/ADR-0115) é outro: o quadro por oferta, calculado no ramo federal ou
 /// fixado no institucional, sempre materializado junto da configuração.
+/// <c>arvoreSatisfacao</c> (Story #923) é o mais novo: a topologia da árvore de
+/// satisfação de <c>documentosExigidos</c>, sempre materializada (0..* raízes).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -72,8 +74,18 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>1.3</c> também é o primeiro <c>schema_version</c> a refletir corretamente
     /// <c>formatosPermitidos</c> (Story #918, PR anterior) — que ficou sem bump próprio;
     /// não se retrabalha aquela PR, só se reconhece que "1.3" é a forma real de hoje.
+    /// Story #923 (snapshot conjunto final, PR 4/4 da change
+    /// <c>documentos-exigidos-composicao</c>): o bump para <c>1.4</c> acrescenta o 14º
+    /// bloco de topo, <c>arvoreSatisfacao</c> — a TOPOLOGIA da árvore de satisfação
+    /// (<see cref="Domain.Entities.NoExigencia"/>, Stories #920/#921/#922), até aqui
+    /// fail-closed na publicação (<see cref="Domain.Entities.ProcessoSeletivo.PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel"/>,
+    /// removido nesta Story) por não ter onde congelar. <c>documentosExigidos.exigencias</c>
+    /// continua sendo a config POR-exigência (folha); <c>arvoreSatisfacao</c> é a
+    /// TOPOLOGIA (grupos E/OU, cardinalidade de grupo, repetição por entidade) — cada
+    /// folha da árvore referencia sua exigência pelo mesmo <c>exigenciaId</c> já congelado
+    /// em <c>documentosExigidos.exigencias[].exigenciaId</c>, sem duplicar conteúdo.
     /// </remarks>
-    internal const string SchemaVersionAtual = "1.3";
+    internal const string SchemaVersionAtual = "1.4";
 
     private const string AlgoritmoHashAtual = "canonical-json/sha256@v1";
     private const int EscalaPadrao = 4;
@@ -117,6 +129,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["classificacao"] = SerializarClassificacao(processo),
             ["hashesEdital"] = SerializarHashesEdital(dados, entrada.HashDocumento),
             ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.MetadadosFatosCongelados),
+            ["arvoreSatisfacao"] = SerializarArvoreSatisfacao(processo),
             ["formulario"] = NaoConstruido.DeepClone(),
             ["cascataRemanejamento"] = NaoConstruido.DeepClone(),
             ["divulgacao"] = NaoConstruido.DeepClone(),
@@ -297,10 +310,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     private static JsonObject SerializarAtendimento(ProcessoSeletivo processo)
     {
-        // D8 — um bloco REAL nunca emite `nao_construido`. O atendimento é
-        // dimensão obrigatória: a sua ausência é pendência de conformidade, e
-        // o gate (ProcessoSeletivo.PendenciaDeConformidade) recusa a transição
-        // antes de a canonicalização acontecer. Chegar aqui sem oferta é
+        // Um bloco REAL nunca emite `nao_construido` (ADR-0100 item 10, decisão D8).
+        // O atendimento é dimensão obrigatória: a sua ausência é pendência de
+        // conformidade, e o gate (ProcessoSeletivo.PendenciaDeConformidade) recusa a
+        // transição antes de a canonicalização acontecer. Chegar aqui sem oferta é
         // invariante quebrada — falha alto, não congela um stub em silêncio.
         if (processo.OfertaAtendimento is not { } oferta)
         {
@@ -385,9 +398,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     private static JsonObject SerializarClassificacao(ProcessoSeletivo processo)
     {
-        // D8 — ver a nota em SerializarAtendimento. A classificação é o bloco que
-        // determina o resultado do certame; congelá-la como `nao_construido` num
-        // documento juridicamente vinculante é o pior modo de falha do envelope.
+        // Mesma regra de SerializarAtendimento acima (nenhum bloco real vira stub). A
+        // classificação é o bloco que determina o resultado do certame; congelá-la como
+        // `nao_construido` num documento juridicamente vinculante é o pior modo de falha
+        // do envelope.
         if (processo.Classificacao is not { } classificacao)
         {
             throw new InvalidOperationException(
@@ -403,7 +417,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["casasArredondamento"] = classificacao.CasasArredondamento,
             ["regraOrdemAlocacao"] = SerializarReferenciaRegra(classificacao.RegraOrdemAlocacao),
             ["nOpcoesAlocacao"] = classificacao.NOpcoesAlocacao,
-            // D9 — RegrasEliminacao não tem chave de negócio única (cardinalidade
+            // RegrasEliminacao não tem chave de negócio única (cardinalidade
             // múltipla: duas ELIM-NOTA-MINIMA-ETAPA distintas são válidas, ex. PS
             // Convênios). Ordenar por `Id` era determinístico entre leituras da
             // mesma linha, mas NÃO entre configurações equivalentes — dois processos
@@ -533,11 +547,66 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// D9 — <see cref="DocumentoExigido"/> não tem chave de negócio única (nada impede duas
+    /// Story #923 — a TOPOLOGIA da árvore de satisfação (<see cref="NoExigencia"/>, Stories
+    /// #920/#921/#922): raízes ordenadas por <see cref="NoExigencia.Ordem"/> — determinístico
+    /// sem chave de conteúdo (D9 não se aplica aqui, ao contrário de <c>exigencias</c>/
+    /// <c>regrasEliminacao</c>): <c>ux_nos_exigencia_raiz_ordem</c>/<c>ux_nos_exigencia_irmaos_ordem</c>
+    /// (unique index, <c>NoExigenciaConfiguration</c>) já garantem <c>Ordem</c> única entre
+    /// raízes e entre irmãos, então não há empate possível a resolver por conteúdo.
+    /// </summary>
+    private static JsonArray SerializarArvoreSatisfacao(ProcessoSeletivo processo) =>
+        new([.. processo.RaizesDeExigencia.OrderBy(static r => r.Ordem).Select(static r => (JsonNode)SerializarNo(r))]);
+
+    /// <summary>
+    /// Um nó, recursivamente — mesmo formato (campos e nomes) de <c>NoExigenciaDto</c>
+    /// (<c>ObterProcessoSeletivoQueryHandler.ProjectNoExigencia</c>), inclusive o token de
+    /// <see cref="TipoNo"/> ("FOLHA"/"E"/"OU"). <see cref="NoExigencia.DocumentoExigidoId"/>
+    /// (só em folha) referencia o MESMO <c>exigenciaId</c> já congelado em
+    /// <c>documentosExigidos.exigencias[]</c> — não duplica o conteúdo da exigência aqui.
+    /// Todo campo é emitido sempre, com <see langword="null"/> explícito onde não se aplica
+    /// ao tipo do nó — nunca omitido (o envelope preserva a diferença entre "null" e "chave
+    /// ausente", ADR-0109 D4).
+    /// </summary>
+    private static JsonObject SerializarNo(NoExigencia no) => new()
+    {
+        ["id"] = no.Id,
+        ["ordem"] = no.Ordem,
+        ["tipo"] = no.Tipo.ToCodigo(),
+        ["exigenciaId"] = no.Tipo == TipoNo.Folha ? no.DocumentoExigidoId : null,
+        ["quantidadeMinima"] = no.QuantidadeMinima,
+        ["consequencia"] = no.Consequencia is { } consequencia ? HashCanonicalComputer.NormalizeNfc(consequencia) : null,
+        ["basesLegais"] = SerializarBasesLegaisDeNo(no.BasesLegaisResolvidas()),
+        ["chaveDistincao"] = no.ChaveDistincao?.ToCodigo(),
+        ["dataReferencia"] = no.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        ["ocorrenciasEsperadas"] = no.OcorrenciasEsperadas is { } ocorrencias
+            ? new JsonArray([.. ocorrencias.Select(static o => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(o)))])
+            : null,
+        ["repetePorEntidade"] = no.RepetePorEntidade?.ToCodigo(),
+        ["filhos"] = new JsonArray([.. no.Filhos.OrderBy(static f => f.Ordem).Select(static f => (JsonNode)SerializarNo(f))]),
+    };
+
+    /// <summary>
+    /// Base legal PRÓPRIA de um grupo <see cref="TipoNo.GrupoOu"/> — mesmo shape de
+    /// <see cref="SerializarBasesLegais"/> (a de <see cref="DocumentoExigido"/>), tipo
+    /// diferente (<see cref="NoExigenciaBaseLegal"/>): mesma razão de duas classes
+    /// concretas separadas em vez de herança (ver <see cref="NoExigencia"/>).
+    /// </summary>
+    private static JsonArray SerializarBasesLegaisDeNo(IEnumerable<NoExigenciaBaseLegal> basesLegais) =>
+        OrdenarPorConteudo(basesLegais.Select(static b => new JsonObject
+        {
+            ["referencia"] = HashCanonicalComputer.NormalizeNfc(b.Referencia),
+            ["abrangencia"] = b.Abrangencia.ToCodigo(),
+            ["status"] = b.Status.ToCodigo(),
+            ["observacao"] = b.Observacao is { } observacao ? HashCanonicalComputer.NormalizeNfc(observacao) : null,
+        }));
+
+    /// <summary>
+    /// <see cref="DocumentoExigido"/> não tem chave de negócio única (nada impede duas
     /// exigências para a mesma fase e o mesmo tipo de documento, com gatilhos distintos).
     /// Ordena pela chave de negócio PARCIAL (fase + tipo de documento — o caso comum, sem
-    /// empate) e, no raro caso de empate, pela chave de conteúdo do restante do item
-    /// (nunca por <c>exigenciaId</c> — um Guid v7 novo a cada <c>DefinirDocumentosExigidos</c>
+    /// empate) e, no raro caso de empate, pela chave de conteúdo do restante do item —
+    /// mesma regra de desempate por conteúdo (ADR-0109 D9) — (nunca por
+    /// <c>exigenciaId</c> — um Guid v7 novo a cada <c>DefinirDocumentosExigidos</c>
     /// tornaria a ordem não-determinística entre configurações equivalentes, o mesmo
     /// problema que a chave de conteúdo evita em <see cref="OrdenarPorConteudo"/>).
     /// </summary>
