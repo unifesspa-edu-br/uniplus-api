@@ -435,6 +435,27 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
     }
 
+    [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: a mesma apresentação relatada duas vezes com tags diferentes não conta como duas")]
+    public void Cardinalidade_OcorrenciaSemLista_MesmaIdentidadeComTagsDiferentesNaoConta()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
+        Guid idApresentacao = Guid.CreateVersion7();
+        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = new()
+        {
+            [documento.Id] =
+            [
+                new ApresentacaoDocumento(idApresentacao, "eleicao_x"),
+                new ApresentacaoDocumento(idApresentacao, "eleicao_y"),
+            ],
+        };
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
     [Fact(DisplayName = "Sem chaveDistincao: a mesma apresentação relatada duas vezes (mesmo Id) não conta como duas")]
     public void Cardinalidade_SemChave_MesmaIdentidadeRepetidaNaoConta()
     {

@@ -135,10 +135,13 @@ public static class ResolvedorArvoreSatisfacao
             // Sem qualificação: conta IDENTIDADES distintas — a mesma apresentação relatada
             // duas vezes (mesmo Id) não pode contar como duas.
             null => apresentacoesDaFolha.Select(static a => a.Id).Distinct().Count() >= quantidadeMinima,
-            // Distinção pura: tags nulas/em branco não distinguem nada — ignoradas antes do
-            // Distinct, senão [null, "x"] contaria como 2 tags diferentes.
+            // Distinção pura: dedup por identidade PRIMEIRO — a mesma apresentação relatada
+            // duas vezes (mesmo Id, ex.: join/merge upstream duplicado) não pode contribuir
+            // duas tags diferentes; tags nulas/em branco não distinguem nada — ignoradas antes
+            // do Distinct, senão [null, "x"] contaria como 2 tags diferentes.
             ChaveDistincao.Ocorrencia when no.OcorrenciasEsperadas is null =>
                 apresentacoesDaFolha
+                    .DistinctBy(static a => a.Id)
                     .Select(static a => a.ChaveDistincao)
                     .Where(static chave => !string.IsNullOrWhiteSpace(chave))
                     .Distinct(StringComparer.Ordinal)
