@@ -396,6 +396,28 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
     }
 
+    [Fact(DisplayName = "Ocorrencia com ocorrenciasEsperadas: a mesma apresentação (mesmo Id) não cobre dois slots ao mesmo tempo")]
+    public void Cardinalidade_OcorrenciaComLista_MesmaIdentidadeNaoCobreDoisSlots()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
+            ocorrenciasEsperadas: ["eleicao_2026_1", "eleicao_2026_2"]).Value!;
+        Guid idApresentacao = Guid.CreateVersion7();
+        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = new()
+        {
+            [documento.Id] =
+            [
+                new ApresentacaoDocumento(idApresentacao, "eleicao_2026_1"),
+                new ApresentacaoDocumento(idApresentacao, "eleicao_2026_2"),
+            ],
+        };
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
     [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: distinção pura por N tags diferentes satisfaz")]
     public void Cardinalidade_OcorrenciaSemLista_DistincaoPuraSatisfaz()
     {

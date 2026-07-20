@@ -128,20 +128,19 @@ public static class ResolvedorArvoreSatisfacao
         // arquivos), qualificadas por chaveDistincao quando a folha declara slots (calendário
         // derivável ou ocorrências concretas) ou só distinção pura (Ocorrencia sem lista).
         int quantidadeMinima = no.QuantidadeMinima ?? NoExigencia.QuantidadeMinimaPadrao;
-        IReadOnlyList<ApresentacaoDocumento> apresentacoesDaFolha =
-            apresentacoes.GetValueOrDefault(folha.Id, []);
+        // Dedup por IDENTIDADE uma vez, para os três modos — a mesma apresentação relatada
+        // duas vezes (mesmo Id, ex.: join/merge duplicado a montante) nunca pode contribuir
+        // duas vezes: nem para a contagem bruta, nem para duas tags de distinção pura, nem
+        // para cobrir dois slots concretos diferentes (uma apresentação = um slot).
+        List<ApresentacaoDocumento> apresentacoesDaFolha =
+            [.. apresentacoes.GetValueOrDefault(folha.Id, []).DistinctBy(static a => a.Id)];
         bool satisfeita = no.ChaveDistincao switch
         {
-            // Sem qualificação: conta IDENTIDADES distintas — a mesma apresentação relatada
-            // duas vezes (mesmo Id) não pode contar como duas.
-            null => apresentacoesDaFolha.Select(static a => a.Id).Distinct().Count() >= quantidadeMinima,
-            // Distinção pura: dedup por identidade PRIMEIRO — a mesma apresentação relatada
-            // duas vezes (mesmo Id, ex.: join/merge upstream duplicado) não pode contribuir
-            // duas tags diferentes; tags nulas/em branco não distinguem nada — ignoradas antes
-            // do Distinct, senão [null, "x"] contaria como 2 tags diferentes.
+            null => apresentacoesDaFolha.Count >= quantidadeMinima,
+            // Distinção pura: tags nulas/em branco não distinguem nada — ignoradas antes do
+            // Distinct, senão [null, "x"] contaria como 2 tags diferentes.
             ChaveDistincao.Ocorrencia when no.OcorrenciasEsperadas is null =>
                 apresentacoesDaFolha
-                    .DistinctBy(static a => a.Id)
                     .Select(static a => a.ChaveDistincao)
                     .Where(static chave => !string.IsNullOrWhiteSpace(chave))
                     .Distinct(StringComparer.Ordinal)
