@@ -26,15 +26,18 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     private static readonly JsonElement Qualquer = JsonSerializer.SerializeToElement("QUALQUER");
 
     private static ItemDocumentoExigidoInput ItemCom(params BaseLegalInput[] basesLegais) => new(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], basesLegais, null, Qualquer, null);
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, [], basesLegais, null, Qualquer, null);
 
     private static ItemDocumentoExigidoInput ItemComIdade(
         IdadeMaximaEmissaoInput? idadeMaximaEmissao = null, int? tamanhoMaximoBytes = null) => new(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [], idadeMaximaEmissao, Qualquer, tamanhoMaximoBytes);
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, [], [], idadeMaximaEmissao, Qualquer, tamanhoMaximoBytes);
 
-    private static ValidationResult Validar(ItemDocumentoExigidoInput item) =>
-        new DefinirDocumentosExigidosCommandValidator().Validate(
-            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente));
+    private static ValidationResult Validar(ItemDocumentoExigidoInput item)
+    {
+        NoExigenciaInput no = new("FOLHA", item, null, null, null, null);
+        return new DefinirDocumentosExigidosCommandValidator().Validate(
+            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [no], PrecondicaoIfMatch.Ausente));
+    }
 
     [Fact(DisplayName = "Item sem base legal (lista vazia) é aceito — a coerência com o gate é da publicação")]
     public void Aceita_SemBaseLegal() =>
@@ -118,7 +121,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     public void Rejeita_ItemDeBaseLegalNulo()
     {
         ItemDocumentoExigidoInput item = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, null, [], [null!], null, null, null);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "GERAL", true, null, [], [null!], null, null, null);
 
         ValidationResult resultado = Validar(item);
 

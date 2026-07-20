@@ -402,6 +402,7 @@ internal static class CorpusEnvelope
                 regrasEliminacao: []).Value!,
             cronogramaFases: [FaseCronogramaConforme(variante)],
             documentosExigidos: [],
+            nosExigencia: [],
             referenciaTemporalFatos: null);
     }
 
@@ -421,6 +422,7 @@ internal static class CorpusEnvelope
             regrasEliminacao: []).Value!,
         cronogramaFases: [FaseCronogramaConforme(variante)],
         documentosExigidos: [],
+        nosExigencia: [],
         referenciaTemporalFatos: null);
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>

@@ -106,7 +106,6 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!],
             basesLegais: [DocumentoExigidoBaseLegal.Criar(
                 "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
@@ -219,7 +218,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_ComCondicaoDeGatilhoResolvida_ResolveMetadadoDoFato()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirDocumentosExigidos([ExigenciaComGatilhoPorFato(faseId, "MODALIDADE")], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         EntradaCanonicalizacao? entradaCapturada = null;
@@ -246,7 +245,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_CodigoDeFatoNaoResolve_AbortaAntesDeCanonicalizar()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirDocumentosExigidos([ExigenciaComGatilhoPorFato(faseId, "FATO_INEXISTENTE")], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "FATO_INEXISTENTE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);

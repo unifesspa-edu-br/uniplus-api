@@ -215,6 +215,38 @@ public sealed class ManifestoDoEnvelopeTests
             ["Referencia", "Abrangencia", "Status", "Observacao"],
             [("DocumentoExigidoId", "FK interna.")]),
 
+        // Árvore de satisfação (Story #920) — substitui DocumentoExigido.GrupoSatisfacaoId
+        // (residual, acima). NENHUMA propriedade é congelada AINDA: o wrapper de árvore no
+        // envelope é fail-closed explícito nesta PR (ver
+        // ProcessoSeletivo.PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel) — publicar uma
+        // árvore com qualquer grupo E/OU é recusado, e chega na PR 4/4 da change
+        // documentos-exigidos-composicao (snapshot conjunto final). Uma folha solteira (sem
+        // grupo) continua publicável, mas via DocumentoExigido/exigencias[], não por aqui.
+        [typeof(NoExigencia)] = (
+            [],
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("NoPaiId", "Topologia da árvore — ainda não serializada no envelope (chega na PR 4/4, snapshot conjunto final)."),
+                ("Ordem", "Topologia da árvore — ainda não serializada no envelope (chega na PR 4/4)."),
+                ("Tipo", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("DocumentoExigidoId", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("DocumentoExigido", "Navegação da folha — ainda não serializada no envelope (chega na PR 4/4)."),
+                ("QuantidadeMinima", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("Consequencia", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("Filhos", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("BasesLegais", "Ainda não serializado no envelope (chega na PR 4/4)."),
+            ]),
+
+        [typeof(NoExigenciaBaseLegal)] = (
+            [],
+            [
+                ("NoExigenciaId", "FK interna."),
+                ("Referencia", "Ainda não serializado no envelope (chega na PR 4/4, snapshot conjunto final)."),
+                ("Abrangencia", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("Status", "Ainda não serializado no envelope (chega na PR 4/4)."),
+                ("Observacao", "Ainda não serializado no envelope (chega na PR 4/4)."),
+            ]),
+
         [typeof(IdadeMaximaEmissao)] = (
             ["Valor", "Unidade", "ReferenciaTipo", "Data", "ReferenciaFaseId"],
             []),

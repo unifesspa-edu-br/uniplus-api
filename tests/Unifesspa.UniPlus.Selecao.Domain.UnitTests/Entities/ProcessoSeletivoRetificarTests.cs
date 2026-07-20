@@ -377,9 +377,8 @@ public sealed class ProcessoSeletivoRetificarTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
 
         clock.Avancar(TimeSpan.FromMinutes(1));
@@ -457,7 +456,6 @@ public sealed class ProcessoSeletivoRetificarTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            grupoSatisfacaoId: null,
             condicoes: [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
             basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
@@ -468,7 +466,7 @@ public sealed class ProcessoSeletivoRetificarTests
         ProcessoSeletivo processo = NovoProcessoComDuasModalidades();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "AC", "ELIMINA")],
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "AC", "ELIMINA"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
@@ -486,7 +484,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // Mesma consequência ELIMINA — só o gatilho muda, de AC (ação null, coerente) para
         // LB_PPI (ação RECLASSIFICA_AC, incoerente com ELIMINA).
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LB_PPI", "ELIMINA")],
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LB_PPI", "ELIMINA"), 0).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
 
         clock.Avancar(TimeSpan.FromMinutes(1));

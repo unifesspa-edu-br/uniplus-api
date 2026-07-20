@@ -110,9 +110,8 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         return processo;
     }

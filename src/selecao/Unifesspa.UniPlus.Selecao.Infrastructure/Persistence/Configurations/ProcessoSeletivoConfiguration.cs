@@ -73,6 +73,14 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(d => d.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Árvore de satisfação (Story #920) — 0..*, coleção PLANA (todos os nós, não só
+        // raízes; ver NoExigenciaConfiguration). Cascade: FK obrigatória, mesmo padrão de
+        // DocumentosExigidos — Clear()+Add() no replace-all do agregado já prova orphan-delete.
+        builder.HasMany(p => p.NosExigencia)
+            .WithOne()
+            .HasForeignKey(n => n.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // ReferenciaTemporalFatos (Story #554, PR #896) — VO 0..1 sem identidade própria,
         // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
         // Id nem ciclo de vida próprio, diferente das coleções acima).
@@ -108,6 +116,15 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 
         builder.Navigation(p => p.DocumentosExigidos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(p => p.NosExigencia)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        // RaizesDeExigencia é projeção EM MEMÓRIA de NosExigencia (NoPaiId == null) — sem
+        // isto, o EF a descobre por convenção como uma SEGUNDA coleção de NoExigencia
+        // (mesmo tipo de retorno IEnumerable<NoExigencia>) e cria uma FK-sombra duplicada
+        // (processo_seletivo_id1) para desambiguar.
+        builder.Ignore(p => p.RaizesDeExigencia);
     }
 
     private static readonly Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<ReferenciaTipo, string?> ReferenciaTipoConverter =

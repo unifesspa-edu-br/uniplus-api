@@ -42,6 +42,7 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectClassificacao(processo),
         [.. processo.CronogramaFases.OrderBy(f => f.Ordem).ThenBy(f => f.Id).Select(ProjectFaseCronograma)],
         [.. processo.DocumentosExigidos.OrderBy(d => d.Id).Select(ProjectDocumentoExigido)],
+        [.. processo.RaizesDeExigencia.OrderBy(n => n.Ordem).ThenBy(n => n.Id).Select(ProjectNoExigencia)],
         ProjectReferenciaTemporalFatos(processo.ReferenciaTemporalFatos),
         processo.CreatedAt);
 
@@ -200,6 +201,27 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectIdadeMaximaEmissao(documento.IdadeMaximaEmissao),
         ProjectFormatosPermitidos(documento.FormatosPermitidos),
         documento.TamanhoMaximoBytes);
+
+    /// <summary>Projeta um nó da árvore de satisfação (<see cref="NoExigencia"/>, Story #920) recursivamente — mesmo formato de <c>NoExigenciaInput</c> (comando de escrita).</summary>
+    private static NoExigenciaDto ProjectNoExigencia(NoExigencia no) => new(
+        no.Id,
+        ProjectTipoNo(no.Tipo),
+        no.Tipo == TipoNo.Folha ? ProjectDocumentoExigido(no.DocumentoExigido!) : null,
+        no.QuantidadeMinima,
+        no.Consequencia,
+        [.. no.BasesLegais.OrderBy(static b => b.Id).Select(ProjectBaseLegalDeNo)],
+        [.. no.Filhos.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjectNoExigencia)]);
+
+    private static string ProjectTipoNo(TipoNo tipo) => tipo switch
+    {
+        TipoNo.Folha => "FOLHA",
+        TipoNo.GrupoE => "E",
+        TipoNo.GrupoOu => "OU",
+        _ => tipo.ToString(),
+    };
+
+    private static BaseLegalDto ProjectBaseLegalDeNo(NoExigenciaBaseLegal baseLegal) => new(
+        baseLegal.Id, baseLegal.Referencia, baseLegal.Abrangencia.ToCodigo(), baseLegal.Status.ToCodigo(), baseLegal.Observacao);
 
     /// <summary>
     /// Projeta <see cref="FormatosPermitidos"/> (Story #918) no MESMO valor JSON polimórfico

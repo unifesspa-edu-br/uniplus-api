@@ -114,7 +114,6 @@ public sealed class ParidadeExigenciasDocumentaisTests
         aplicabilidade: Aplicabilidade.Geral,
         obrigatorio: false,
         consequenciaIndeferimento: null,
-        grupoSatisfacaoId: null,
         condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
@@ -132,7 +131,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigido exigenciaA = ExigenciaGeral(faseId, "IDENTIDADE");
-        processo.DefinirDocumentosExigidos([exigenciaA], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = Canonicalizar(processo);
         JsonObject envelope = Envelope(congelado);
@@ -141,7 +140,8 @@ public sealed class ParidadeExigenciasDocumentaisTests
         // O envelope acima já está congelado (bytes fixos, como VersaoConfiguracao.Abrir
         // produziria) — o que acontece DEPOIS na configuração viva nunca o altera.
         DocumentoExigido exigenciaB = ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA");
-        processo.DefinirDocumentosExigidos([exigenciaA, exigenciaB], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Select(static d => d.Id).Should().Contain(exigenciaB.Id,
             "pré-condição: a exigência B está viva no agregado");
 
@@ -156,7 +156,8 @@ public sealed class ParidadeExigenciasDocumentaisTests
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigido exigenciaA = ExigenciaGeral(faseId, "IDENTIDADE");
         DocumentoExigido exigenciaB = ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA");
-        processo.DefinirDocumentosExigidos([exigenciaA, exigenciaB], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congeladoV1 = Canonicalizar(processo);
         JsonObject envelopeV1 = Envelope(congeladoV1);
@@ -164,7 +165,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
 
         // Retificação que remove B (ex.: exigência cadastrada por engano) — só na
         // configuração VIVA; o envelope V1, já congelado, é outro objeto, imutável.
-        processo.DefinirDocumentosExigidos([exigenciaA], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Select(static d => d.Id).Should().NotContain(exigenciaB.Id,
             "pré-condição: B não está mais viva no agregado");
 

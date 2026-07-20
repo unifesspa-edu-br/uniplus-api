@@ -60,6 +60,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<DocumentoExigido> _documentosExigidos = [];
     public IReadOnlyCollection<DocumentoExigido> DocumentosExigidos => _documentosExigidos.AsReadOnly();
 
+    /// <summary>
+    /// Árvore de satisfação dos documentos exigidos (0..*, Story #920) — coleção PLANA de
+    /// TODOS os nós (não só raízes; ver <see cref="NoExigenciaConfiguration"/>). Substitui o
+    /// antigo <c>DocumentoExigido.GrupoSatisfacaoId</c> (grupo plano, residual). Use
+    /// <see cref="RaizesDeExigencia"/> para as raízes da floresta.
+    /// </summary>
+    private readonly List<NoExigencia> _nosExigencia = [];
+    public IReadOnlyCollection<NoExigencia> NosExigencia => _nosExigencia.AsReadOnly();
+
+    /// <summary>As raízes da floresta de árvores de satisfação — projeção em memória de <see cref="NosExigencia"/> (<c>NoPaiId == null</c>).</summary>
+    public IEnumerable<NoExigencia> RaizesDeExigencia => _nosExigencia.Where(static n => n.NoPaiId is null);
+
     /// <summary>Âncora que resolve FAIXA_ETARIA na publicação (Story #554, PR #896) — ausência = nenhum gatilho por idade pode existir (bloqueado na publicação, ver <see cref="PendenciaDaReferenciaTemporalFatos"/>).</summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; private set; }
 
@@ -530,12 +542,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
 
             bool perdeuPermiteComplementacao = antiga.PermiteComplementacao && !nova.PermiteComplementacao;
-            if (perdeuPermiteComplementacao
-                && _documentosExigidos.Any(d => d.ExigidoNaFaseId == antiga.Id && d.ConsequenciaIndeferimento == "PENDENCIA_REENVIO"))
+            if (perdeuPermiteComplementacao && ExisteConsequenciaPendenciaReenvioNaFase(antiga.Id))
             {
                 return Result.Failure(new DomainError(
                     "FaseCronograma.PendenciaReenvioExigeComplementacao",
-                    $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por um documento exigido com consequência PENDENCIA_REENVIO."));
+                    $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por uma exigência (folha ou grupo) com consequência PENDENCIA_REENVIO."));
             }
 
             // Achado Codex P2 (PR #900): fase SOBREVIVENTE (mesma Ordem) cujo extremo
@@ -733,28 +744,40 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Substitui integralmente a coleção de documentos exigidos do processo (Story #554,
-    /// PR #895): mesmo padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/>
-    /// primeiro, <see cref="Result"/> nunca exceção, substituição integral da coleção.
+    /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
+    /// (Story #554, PR #895; Story #920 — árvore E/OU substitui o grupo plano): mesmo
+    /// padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/> primeiro,
+    /// <see cref="Result"/> nunca exceção, substituição integral das DUAS coleções
+    /// (<see cref="DocumentosExigidos"/>, as folhas, e <see cref="NosExigencia"/>, a árvore).
     /// </summary>
     /// <remarks>
     /// Valida aqui o que só a raiz consegue provar: cada <see cref="DocumentoExigido.ExigidoNaFaseId"/>
-    /// referencia uma fase viva do cronograma do MESMO processo (§2 da issue #547). O
-    /// gatilho DNF (<c>CondicaoGatilho</c>, PR #896), a base legal (PR #898) e a idade/formato/
-    /// tamanho (PR #900) não são tocados aqui.
+    /// referencia uma fase viva do cronograma do MESMO processo (§2 da issue #547), e o gate
+    /// <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c> (forward — Story #920, fecha
+    /// lacuna que só existia no sentido reverso em <see cref="DefinirCronogramaFases"/>) para
+    /// folha OU grupo <c>OU</c>/<c>N-de</c>. Os invariantes da árvore em si (grupo não vazio,
+    /// sem ciclo, mesma fase, cardinalidade por tipo de nó) já foram validados em
+    /// <see cref="NoExigencia.CriarGrupo"/>, na montagem de <paramref name="raizes"/> — não
+    /// revalidados aqui. O gatilho DNF (<c>CondicaoGatilho</c>, PR #896), a base legal
+    /// (PR #898) e a idade/formato/tamanho (PR #900) não são tocados aqui.
     /// </remarks>
     public Result DefinirDocumentosExigidos(
-        IReadOnlyList<DocumentoExigido> itens,
+        IReadOnlyList<NoExigencia> raizes,
         PrecondicaoIfMatch precondicao)
     {
-        ArgumentNullException.ThrowIfNull(itens);
+        ArgumentNullException.ThrowIfNull(raizes);
 
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
 
-        foreach (DocumentoExigido item in itens)
+        List<NoExigencia> todosOsNos = [.. raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
+        List<DocumentoExigido> folhas = [.. todosOsNos
+            .Where(static no => no.Tipo == TipoNo.Folha)
+            .Select(static no => no.DocumentoExigido!)];
+
+        foreach (DocumentoExigido item in folhas)
         {
             if (!_cronogramaFases.Any(fase => fase.Id == item.ExigidoNaFaseId))
             {
@@ -818,16 +841,74 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // Story #920: gate PENDENCIA_REENVIO×PermiteComplementacao FORWARD, para folha e
+        // grupo OU/N-de — fecha lacuna que só existia no sentido reverso (DefinirCronogramaFases).
+        foreach (NoExigencia no in todosOsNos)
+        {
+            string? consequenciaDoNo = no.Tipo == TipoNo.Folha
+                ? no.DocumentoExigido!.ConsequenciaIndeferimento
+                : no.Consequencia;
+
+            if (consequenciaDoNo != "PENDENCIA_REENVIO")
+            {
+                continue;
+            }
+
+            Guid? faseId = no.FaseComum();
+            if (faseId is { } faseIdValor && ValidarConsequenciaPendenciaReenvio(faseIdValor) is { } erroPendenciaReenvio)
+            {
+                return Result.Failure(erroPendenciaReenvio);
+            }
+        }
+
         _documentosExigidos.Clear();
-        foreach (DocumentoExigido item in itens)
+        foreach (DocumentoExigido item in folhas)
         {
             item.VincularProcesso(Id);
             _documentosExigidos.Add(item);
         }
 
+        _nosExigencia.Clear();
+        foreach (NoExigencia raiz in raizes)
+        {
+            raiz.VincularProcesso(Id);
+        }
+
+        foreach (NoExigencia no in todosOsNos)
+        {
+            _nosExigencia.Add(no);
+        }
+
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
+
+    /// <summary>
+    /// Gate <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c> (Story #920) — mesmo gate
+    /// para folha e grupo, forward (aqui, na escrita da exigência) e reverso (em
+    /// <see cref="DefinirCronogramaFases"/>, via <see cref="ExisteConsequenciaPendenciaReenvioNaFase"/>).
+    /// </summary>
+    private DomainError? ValidarConsequenciaPendenciaReenvio(Guid faseId)
+    {
+        FaseCronograma? fase = _cronogramaFases.FirstOrDefault(f => f.Id == faseId);
+        if (fase is null)
+        {
+            // FaseNaoPertenceAoProcesso já cobre a ausência — defesa em profundidade, não
+            // deveria ocorrer (a fase já foi validada acima nesta mesma chamada).
+            return null;
+        }
+
+        return fase.PermiteComplementacao
+            ? null
+            : new DomainError(
+                "DocumentoExigido.PendenciaReenvioExigeComplementacao",
+                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) não permite complementação — consequência PENDENCIA_REENVIO exige PermiteComplementacao.");
+    }
+
+    /// <summary>Lado reverso do gate acima — usado por <see cref="DefinirCronogramaFases"/> ao verificar se uma fase pode perder <c>PermiteComplementacao</c>, para folha OU grupo <c>OU</c>/<c>N-de</c>.</summary>
+    private bool ExisteConsequenciaPendenciaReenvioNaFase(Guid faseId) =>
+        _documentosExigidos.Any(d => d.ExigidoNaFaseId == faseId && d.ConsequenciaIndeferimento == "PENDENCIA_REENVIO")
+        || _nosExigencia.Any(n => n.Tipo == TipoNo.GrupoOu && n.Consequencia == "PENDENCIA_REENVIO" && n.FaseComum() == faseId);
 
     /// <summary>
     /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story #554, PR #896 —
@@ -910,9 +991,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // Story #554, PR #898 (issue #549, ADR-0074): toda exigência que determina
             // resultado precisa de ≥1 base legal RESOLVIDO — semântica vazia quando não há
             // exigência que determine resultado (Services.ValidadorBaseLegalExigencias).
+            // Story #920: estendido a grupo OU/N-de com consequência própria (exigência de
+            // 1ª classe, base legal NÃO derivada dos filhos).
             new ItemConformidade(
                 "Base legal das exigências documentais",
-                Services.ValidadorBaseLegalExigencias.TodasResolvidas(_documentosExigidos)),
+                Services.ValidadorBaseLegalExigencias.TodasResolvidas(_documentosExigidos)
+                    && GruposComConsequenciaTemBaseLegalResolvida()),
         ];
 
         if (Classificacao is { RegraCalculo.Codigo: RegraCalculoCodigo.FormulaMediaPonderada })
@@ -922,6 +1006,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return itens;
     }
+
+    /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria (Story #920) — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
+    private bool GruposComConsequenciaTemBaseLegalResolvida() =>
+        _nosExigencia
+            .Where(static no => no.DeterminaResultado())
+            .All(no => no.BasesLegais.Any(static b => b.Status == StatusBaseLegal.Resolvido));
 
     /// <summary>
     /// Pendência de conformidade do processo, ou <see langword="null"/> quando
@@ -1033,7 +1123,40 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return coerencia;
         }
 
-        return PendenciaDaReferenciaTemporalFatos();
+        if (PendenciaDaReferenciaTemporalFatos() is { } referenciaTemporal)
+        {
+            return referenciaTemporal;
+        }
+
+        return PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel();
+    }
+
+    /// <summary>
+    /// Story #920 (PR 1/4 da change <c>documentos-exigidos-composicao</c>): o envelope
+    /// canônico (<see cref="Infrastructure.Canonicalization"/>, fora deste projeto) ainda
+    /// serializa só a config POR-exigência (<see cref="DocumentoExigido"/>), não a
+    /// TOPOLOGIA da árvore (<see cref="NoExigencia"/>) — o wrapper de árvore no envelope +
+    /// o snapshot conjunto RN08 são entregues por inteiro na PR 4/4 (Story #923, dona
+    /// declarada do "schema_version final único"). Publicar uma árvore com qualquer grupo
+    /// E/OU HOJE perderia a topologia silenciosamente no envelope — proibido por ADR-0076
+    /// ("erros nomeados, nunca resultado vazio/parcial"). Fail-closed explícito, deliberado
+    /// e temporário: uma folha solteira (sem grupo — o caso degenerado, idêntico ao modelo
+    /// anterior) continua publicável normalmente.
+    /// </summary>
+    private DomainError? PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel()
+    {
+        bool possuiGrupo = _nosExigencia.Any(static no => no.Tipo is TipoNo.GrupoE or TipoNo.GrupoOu);
+        if (!possuiGrupo)
+        {
+            return null;
+        }
+
+        return new DomainError(
+            "NoExigencia.SnapshotConjuntoAindaNaoSuportado",
+            "A árvore de satisfação com grupos E/OU ainda não é publicável — o wrapper de árvore " +
+            "no envelope e o snapshot conjunto (RN08) chegam na Story seguinte da change " +
+            "documentos-exigidos-composicao (snapshot conjunto final). Documentos exigidos sem " +
+            "agrupamento (folha solteira) continuam publicáveis normalmente.");
     }
 
     /// <summary>
@@ -1126,6 +1249,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
+        // Story #920: os mesmos dois gates, estendidos ao grupo OU/N-de com consequência
+        // própria (exigência de 1ª classe) — o alcance de modalidade é a união (OR) das
+        // folhas descendentes (NoExigencia.PodeAlcancarModalidade).
+        foreach (NoExigencia grupo in _nosExigencia.Where(static no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is not null))
+        {
+            string consequenciaDoGrupo = grupo.Consequencia!;
+
+            if (consequenciaDoGrupo == "REMOVE_VANTAGEM" && BonusRegional is null)
+            {
+                return new DomainError(
+                    "NoExigencia.RemoveVantagemSemVantagemViva",
+                    $"O grupo '{grupo.Id}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
+            }
+
+            string consequenciaDoGrupoComoAcaoDaVaga = NormalizarConsequenciaParaAcaoDaVaga(consequenciaDoGrupo);
+            ModalidadeSelecionada? modalidadeIncoerenteDoGrupo = ModalidadesAlcancadasPor(grupo)
+                .FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
+                    && !string.Equals(acao, consequenciaDoGrupoComoAcaoDaVaga, StringComparison.Ordinal));
+            if (modalidadeIncoerenteDoGrupo is not null)
+            {
+                return new DomainError(
+                    "NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga",
+                    $"O grupo '{grupo.Id}' declara consequência '{consequenciaDoGrupo}', incoerente com a ação de indeferimento '{modalidadeIncoerenteDoGrupo.AcaoQuandoIndeferido}' configurada para a modalidade '{modalidadeIncoerenteDoGrupo.Codigo}'.");
+            }
+        }
+
         return null;
     }
 
@@ -1157,6 +1306,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _distribuicaoVagas
             .SelectMany(static d => d.Modalidades)
             .Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo));
+
+    /// <summary>Mesma checagem estrutural acima, para um nó de grupo (Story #920) — <see cref="NoExigencia.PodeAlcancarModalidade"/> é a união (OR) das folhas descendentes.</summary>
+    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(NoExigencia no) =>
+        _distribuicaoVagas
+            .SelectMany(static d => d.Modalidades)
+            .Where(modalidade => no.PodeAlcancarModalidade(modalidade.Codigo));
 
     /// <summary>
     /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR #896 — B-03 do
@@ -2176,6 +2331,20 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             documento.VincularProcesso(Id);
             _documentosExigidos.Add(documento);
+        }
+
+        // Árvore de satisfação (Story #920) — reposição SIMPLIFICADA, sem a reconciliação
+        // por Id-tracked que DocumentosExigidos tem acima: o envelope canônico ainda não
+        // serializa a topologia da árvore (ver PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel,
+        // fail-closed até a PR 4/4 da change), então `grafo.NosExigencia` está sempre vazio
+        // na prática hoje — não há nó congelado para reconciliar. Reposição completa
+        // (fix-up com tracked, remapeamento de fase) chega junto com o wrapper de árvore no
+        // envelope.
+        _nosExigencia.Clear();
+        foreach (NoExigencia no in grafo.NosExigencia)
+        {
+            no.VincularProcesso(Id);
+            _nosExigencia.Add(no);
         }
 
         // Referência temporal de fatos (Story #554, PR #903, B-03): o envelope congela a

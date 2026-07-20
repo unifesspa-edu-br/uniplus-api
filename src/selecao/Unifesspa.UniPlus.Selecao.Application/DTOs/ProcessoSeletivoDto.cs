@@ -21,6 +21,7 @@ public sealed record ProcessoSeletivoDto(
     ConfiguracaoClassificacaoDto? Classificacao,
     IReadOnlyList<FaseCronogramaDto> CronogramaFases,
     IReadOnlyList<DocumentoExigidoDto> DocumentosExigidos,
+    IReadOnlyList<NoExigenciaDto> RaizesExigencia,
     ReferenciaTemporalFatosDto? ReferenciaTemporalFatos,
     DateTimeOffset CriadoEm)
 {

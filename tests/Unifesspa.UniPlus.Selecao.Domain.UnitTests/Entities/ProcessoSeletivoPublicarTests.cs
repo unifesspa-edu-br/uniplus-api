@@ -266,7 +266,6 @@ public sealed class ProcessoSeletivoPublicarTests
         aplicabilidade: Aplicabilidade.Condicional,
         obrigatorio: true,
         consequenciaIndeferimento: null,
-        grupoSatisfacaoId: null,
         condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId) => DocumentoExigido.Criar(
@@ -278,7 +277,6 @@ public sealed class ProcessoSeletivoPublicarTests
         aplicabilidade: Aplicabilidade.Geral,
         obrigatorio: true,
         consequenciaIndeferimento: null,
-        grupoSatisfacaoId: null,
         condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-01: publicar com exigência CONDICIONAL vazia obrigatória é bloqueado")]
@@ -286,7 +284,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaCondicionalVaziaObrigatoria(faseId)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalVaziaObrigatoria(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -301,7 +299,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaGeral(faseId)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaGeral(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -337,7 +335,6 @@ public sealed class ProcessoSeletivoPublicarTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [condicao], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
 
@@ -387,7 +384,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         // Nenhuma ReferenciaTemporalFatos configurada — com a guarda B-01 removida, a
         // checagem B-03 (issue #892) agora é alcançada e recusa nomeadamente.
@@ -444,7 +441,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseSemExtremoId = AcrescentarFaseSemExtremo(processo);
         Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId)], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremoId).Value!, PrecondicaoIfMatch.Curinga)
@@ -503,7 +500,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseColetaId = DefinirCronogramaComColetaSemFim(processo);
-        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId)], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
@@ -562,7 +559,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirCronogramaFases([coletaOrdem2, coletaOrdem1], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
 
-        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id)], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
@@ -608,7 +605,7 @@ public sealed class ProcessoSeletivoPublicarTests
         Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
         Guid faseComViradaId = processo.CronogramaFases.Single(f => f.Ordem == 2).Id;
 
-        processo.DefinirDocumentosExigidos([ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId)], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!, PrecondicaoIfMatch.Curinga)
@@ -691,7 +688,6 @@ public sealed class ProcessoSeletivoPublicarTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido ExigenciaCondicionalPorModalidadeComConsequencia(
@@ -706,7 +702,6 @@ public sealed class ProcessoSeletivoPublicarTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            grupoSatisfacaoId: null,
             condicoes: [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
             basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
@@ -718,7 +713,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA")],
+            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "ELIMINA"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -736,7 +731,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(cota);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RENDA", "Comprovante de renda familiar", "RENDA", "ELIMINA")],
+            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RENDA", "Comprovante de renda familiar", "RENDA", "ELIMINA"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -754,7 +749,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(suplementar);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", "PSIQ_INDIGENA", "ELIMINA")],
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LAUDO_MEDICO", "Laudo médico", "SAUDE", "PSIQ_INDIGENA", "ELIMINA"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -771,7 +766,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM")],
+            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         // Nenhum ConfiguracaoBonusRegional definido — RN05, toggle por presença: a
         // ausência da entidade já significa "sem vantagem viva" para remover.
@@ -794,7 +789,7 @@ public sealed class ProcessoSeletivoPublicarTests
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM")],
+            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "COMPROVANTE_RESIDENCIA_CONVENIO", "Comprovante de residência no município do convênio", "BONUS_REGIONAL", "REMOVE_VANTAGEM"), 0).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -815,7 +810,6 @@ public sealed class ProcessoSeletivoPublicarTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: false,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            grupoSatisfacaoId: null,
             condicoes: [CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!],
             basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
@@ -832,7 +826,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorFaixaEtariaComConsequencia(faseId, "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", "ELIMINA")],
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorFaixaEtariaComConsequencia(faseId, "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", "ELIMINA"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!, PrecondicaoIfMatch.Curinga)
@@ -860,7 +854,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
-            [ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RECLASSIFICA_AC")],
+            [NoExigencia.CriarFolha(ExigenciaGeralComConsequencia(faseId, "RESULTADO_HETEROIDENTIFICACAO", "Resultado da banca de heteroidentificação", "HETEROIDENTIFICACAO", "RECLASSIFICA_AC"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(
@@ -883,7 +877,6 @@ public sealed class ProcessoSeletivoPublicarTests
         aplicabilidade: Aplicabilidade.Geral,
         obrigatorio: true,
         consequenciaIndeferimento: null,
-        grupoSatisfacaoId: null,
         condicoes: [],
         basesLegais: basesLegais, idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
@@ -908,7 +901,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
@@ -919,7 +912,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeTrue();
@@ -930,7 +923,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
@@ -941,11 +934,11 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido))], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeTrue();
 
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente))], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
@@ -956,11 +949,11 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido))], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeTrue();
 
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId)], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Single(i => i.Item == "Base legal das exigências documentais").Ok.Should().BeFalse();
@@ -971,7 +964,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([ExigenciaObrigatoriaCom(faseId)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(

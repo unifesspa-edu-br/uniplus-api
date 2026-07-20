@@ -34,6 +34,7 @@ public sealed class GrafoConfiguracao
         ConfiguracaoClassificacao classificacao,
         IReadOnlyList<FaseCronograma> cronogramaFases,
         IReadOnlyList<DocumentoExigido> documentosExigidos,
+        IReadOnlyList<NoExigencia> nosExigencia,
         ReferenciaTemporalFatos? referenciaTemporalFatos)
     {
         ArgumentNullException.ThrowIfNull(etapas);
@@ -43,6 +44,7 @@ public sealed class GrafoConfiguracao
         ArgumentNullException.ThrowIfNull(classificacao);
         ArgumentNullException.ThrowIfNull(cronogramaFases);
         ArgumentNullException.ThrowIfNull(documentosExigidos);
+        ArgumentNullException.ThrowIfNull(nosExigencia);
 
         // Cópias defensivas: o grafo é a fronteira entre os bytes congelados e o
         // agregado vivo. Guardar a referência do caller deixaria uma janela em que
@@ -56,6 +58,7 @@ public sealed class GrafoConfiguracao
         Classificacao = classificacao;
         CronogramaFases = [.. cronogramaFases];
         DocumentosExigidos = [.. documentosExigidos];
+        NosExigencia = [.. nosExigencia];
         ReferenciaTemporalFatos = referenciaTemporalFatos;
     }
 
@@ -75,8 +78,11 @@ public sealed class GrafoConfiguracao
     /// <summary>O cronograma de fases (Story #851) — 7ª dimensão do grafo, 1..*.</summary>
     public IReadOnlyList<FaseCronograma> CronogramaFases { get; }
 
-    /// <summary>Documentos exigidos (Story #554, PR #903) — 8ª dimensão do grafo, 0..*.</summary>
+    /// <summary>Documentos exigidos (Story #554, PR #903) — 8ª dimensão do grafo, 0..* (as folhas, com sua config por-exigência).</summary>
     public IReadOnlyList<DocumentoExigido> DocumentosExigidos { get; }
+
+    /// <summary>Árvore de satisfação (Story #920) — 9ª dimensão do grafo, 0..* (TODOS os nós, planos — raízes têm <c>NoPaiId == null</c>).</summary>
+    public IReadOnlyList<NoExigencia> NosExigencia { get; }
 
     /// <summary>
     /// Política de <see cref="ValueObjects.ReferenciaTemporalFatos"/> (Story #554, PR #903,

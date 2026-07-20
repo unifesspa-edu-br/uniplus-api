@@ -27,7 +27,6 @@ public sealed class ValidadorBaseLegalExigenciasTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            grupoSatisfacaoId: null,
             condicoes: [],
             basesLegais: basesLegais,
             idadeMaximaEmissao: null,

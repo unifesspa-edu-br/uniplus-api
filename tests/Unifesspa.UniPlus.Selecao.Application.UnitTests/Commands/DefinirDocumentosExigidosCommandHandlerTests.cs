@@ -112,8 +112,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns((TipoDocumentoView?)null);
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -133,8 +133,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -159,8 +159,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexo()]);
 
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -184,8 +184,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[]);
 
         CondicaoGatilhoInput condicao = new(0, "FATO_INEXISTENTE", "IGUAL", "\"X\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -209,8 +209,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]);
 
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE", "IGUAL", "\"LB_PPI\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -238,8 +238,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
 
         CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -264,8 +264,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoTipoDeficiencia()]);
 
         CondicaoGatilhoInput condicao = new(0, "TIPO_DEFICIENCIA", "IGUAL", "\"TEA\"");
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -287,9 +287,9 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         BaseLegalInput baseFederal = new("Lei Federal X", "FEDERAL", "RESOLVIDO", null);
         BaseLegalInput baseEdital = new("Cláusula do edital", "INTERNA_EDITAL", "RESOLVIDO", null);
-        ItemDocumentoExigidoInput primeiraExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseFederal], null, Qualquer, null);
-        ItemDocumentoExigidoInput segundaExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [baseEdital], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [primeiraExigencia, segundaExigencia], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput primeiraExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [baseFederal], null, Qualquer, null);
+        ItemDocumentoExigidoInput segundaExigencia = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [baseEdital], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", primeiraExigencia, null, null, null, null), new NoExigenciaInput("FOLHA", segundaExigencia, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -315,8 +315,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         JsonElement listaPdf = JsonSerializer.SerializeToElement(new[] { "PDF" });
         ItemDocumentoExigidoInput primeiro = new(
-            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, listaPdf, 5_000_000);
-        (await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [primeiro], PrecondicaoIfMatch.Ausente)))
+            fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, listaPdf, 5_000_000);
+        (await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", primeiro, null, null, null, null)], PrecondicaoIfMatch.Ausente)))
             .IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Single().FormatosPermitidos.Qualquer.Should().BeFalse();
         processo.DocumentosExigidos.Single().FormatosPermitidos.Lista!.Single().Formato.Should().Be(FormatoPermitido.Pdf);
@@ -324,9 +324,9 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         JsonElement listaJpeg = JsonSerializer.SerializeToElement(new[] { "JPEG" });
         ItemDocumentoExigidoInput segundo = new(
-            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, listaJpeg, 2_000_000);
+            fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, listaJpeg, 2_000_000);
         Result<MutacaoAceita> resultado = await HandleAsync(
-            mocks, new DefinirDocumentosExigidosCommand(processo.Id, [segundo], PrecondicaoIfMatch.Curinga));
+            mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", segundo, null, null, null, null)], PrecondicaoIfMatch.Curinga));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         DocumentoExigido exigencia = processo.DocumentosExigidos.Should().ContainSingle().Which;
@@ -349,8 +349,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, null, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, null, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -375,8 +375,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
         JsonElement valor = JsonDocument.Parse(valorJson).RootElement;
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, valor, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, valor, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -396,8 +396,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         mocks.TipoDocumentoReader.ObterPorIdAsync(tipoDocumentoId, Arg.Any<CancellationToken>())
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -418,8 +418,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
         JsonElement lista = JsonSerializer.SerializeToElement(new[] { "PDF", "JPEG", "PNG" });
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -447,8 +447,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         {
             new { formato = "PDF", tamanhoMaximoBytesMax = 5_000_000 },
         });
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -475,8 +475,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
         JsonElement lista = JsonDocument.Parse($$"""[{"formato": "PDF", "tamanhoMaximoBytesMax": {{tamanhoJson}}}]""").RootElement;
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -503,8 +503,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         // (FormatosPermitidosTests) — o handler não tem como produzir os dois braços ao
         // mesmo tempo a partir de um único JsonElement.
         JsonElement lista = JsonSerializer.SerializeToElement(new[] { "QUALQUER" });
-        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -526,8 +526,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
 
         IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, Guid.CreateVersion7());
         ItemDocumentoExigidoInput item = new(
-            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], idade, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+            fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], idade, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -550,8 +550,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         // FaseQualquer() não tem Inicio/Fim definidos — FIM_FASE não tem extremo a apontar.
         IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, fase.Id);
         ItemDocumentoExigidoInput item = new(
-            fase.Id, tipoDocumentoId, "GERAL", true, null, null, [], [], idade, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+            fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], idade, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -580,8 +580,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
 
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -609,8 +609,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         // O documento é exigido na fase HOMOLOGACAO (ordem 2) — SEXO conhecido na própria
         // fase ou numa fase anterior (INSCRICAO, ordem 1) satisfaz o gate.
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoInput item = new(homologacao.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(homologacao.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -633,8 +633,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             .Returns((IReadOnlyList<FatoCandidatoView>)[FatoSexoComPontoResolucao("HOMOLOGACAO")]);
 
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
-        ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, null, [condicao], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [item], PrecondicaoIfMatch.Ausente);
+        ItemDocumentoExigidoInput item = new(inscricao.Id, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 

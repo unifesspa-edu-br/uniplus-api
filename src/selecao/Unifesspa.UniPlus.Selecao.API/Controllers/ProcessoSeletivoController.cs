@@ -359,7 +359,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [EmiteETag]
     public async Task<IActionResult> DefinirDocumentosExigidos(
         Guid id,
-        [FromBody] IReadOnlyList<ItemDocumentoExigidoInput> itens,
+        [FromBody] IReadOnlyList<NoExigenciaInput> raizes,
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
@@ -367,7 +367,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirDocumentosExigidosCommand(id, itens, precondicao), cancellationToken);
+            new DefinirDocumentosExigidosCommand(id, raizes, precondicao), cancellationToken);
         return ResponderMutacao(resultado);
     }
 

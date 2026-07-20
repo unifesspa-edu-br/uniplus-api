@@ -65,7 +65,6 @@ public sealed record ItemDocumentoExigidoInput(
     string Aplicabilidade,
     bool Obrigatorio,
     string? ConsequenciaIndeferimento,
-    Guid? GrupoSatisfacaoId,
     IReadOnlyList<CondicaoGatilhoInput> Condicoes,
     IReadOnlyList<BaseLegalInput> BasesLegais,
     IdadeMaximaEmissaoInput? IdadeMaximaEmissao,
@@ -73,13 +72,33 @@ public sealed record ItemDocumentoExigidoInput(
     int? TamanhoMaximoBytes);
 
 /// <summary>
-/// Substitui integralmente a coleção de documentos exigidos do processo (Story #554 —
-/// núcleo da PR #895: fase, snapshot-copy do tipo de documento, aplicabilidade GERAL/
-/// CONDICIONAL, obrigatoriedade, consequência de indeferimento e grupo de satisfação;
-/// gatilho DNF dinâmico/multivalorado da PR #896; base legal 1:N da PR #898; idade de emissão/
-/// formato/tamanho da PR #900).
+/// Entrada de um nó da árvore de satisfação (Story #920) — substitui o antigo
+/// <c>GrupoSatisfacaoId</c> plano (correlação por Guid) por posição literal na árvore.
+/// <see cref="Tipo"/> ∈ {<c>FOLHA</c>, <c>E</c>, <c>OU</c>}: <c>FOLHA</c> exige
+/// <see cref="Documento"/> presente e os demais campos de grupo ausentes; <c>E</c>/<c>OU</c>
+/// exigem <see cref="Filhos"/> não-vazio e <see cref="Documento"/> ausente — <c>E</c> nunca
+/// carrega <see cref="QuantidadeMinima"/>/<see cref="Consequencia"/>/<see cref="BasesLegais"/>
+/// (transparente); <c>OU</c> aceita os três, todos opcionais (<see cref="QuantidadeMinima"/>
+/// ausente ⇒ default 1 no domínio; <see cref="BasesLegais"/> só quando <see cref="Consequencia"/>
+/// presente). O wire é uma árvore <b>por valor</b> — não expressa ciclo por construção (ver
+/// <see cref="Domain.Entities.NoExigencia.CriarGrupo"/>).
+/// </summary>
+public sealed record NoExigenciaInput(
+    string Tipo,
+    ItemDocumentoExigidoInput? Documento,
+    int? QuantidadeMinima,
+    string? Consequencia,
+    IReadOnlyList<BaseLegalInput>? BasesLegais,
+    IReadOnlyList<NoExigenciaInput>? Filhos);
+
+/// <summary>
+/// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
+/// (Story #554 — núcleo da PR #895: fase, snapshot-copy do tipo de documento, aplicabilidade
+/// GERAL/CONDICIONAL, obrigatoriedade e consequência de indeferimento; gatilho DNF dinâmico/
+/// multivalorado da PR #896; base legal 1:N da PR #898; idade de emissão/formato/tamanho da
+/// PR #900; árvore E/OU substituindo o grupo plano na Story #920).
 /// </summary>
 public sealed record DefinirDocumentosExigidosCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<ItemDocumentoExigidoInput> Itens,
+    IReadOnlyList<NoExigenciaInput> Raizes,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

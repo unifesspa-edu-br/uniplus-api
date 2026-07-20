@@ -247,9 +247,8 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigenciaOriginal], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaOriginal, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
         documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -297,9 +296,8 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigenciaEditada], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaEditada, 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
 
         await writeContext.SaveChangesAsync(CancellationToken.None);

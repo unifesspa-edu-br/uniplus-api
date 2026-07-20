@@ -48,7 +48,6 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             aplicabilidade,
             obrigatorio: consequenciaIndeferimento is null,
             consequenciaIndeferimento,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static FaseCronograma FaseComComplementacao(
@@ -76,7 +75,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         ProcessoSeletivo processo = NovoProcesso();
         DocumentoExigido exigencia = Exigencia(Guid.CreateVersion7());
 
-        Result resultado = processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.FaseNaoPertenceAoProcesso");
@@ -90,7 +89,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = Exigencia(fase.Id);
-        Result resultado = processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Id == exigencia.Id);
@@ -116,10 +115,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoExigido primeiraChamada = Exigencia(fase.Id);
-        processo.DefinirDocumentosExigidos([primeiraChamada], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(primeiraChamada, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DocumentoExigido segundaChamada = Exigencia(fase.Id);
-        Result resultado = processo.DefinirDocumentosExigidos([segundaChamada], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(segundaChamada, 0).Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().HaveCount(1);
@@ -133,7 +132,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DocumentoExigido exigencia = Exigencia(fase.Id);
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Mesma Ordem (1) E mesma FaseCanonicaOrigemId — "editar a mesma fase" (o caso
         // comum de uma sessão editorial que só ajusta datas), não "trocar qual fase ocupa
@@ -155,7 +154,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DocumentoExigido exigencia = Exigencia(fase.Id);
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Mesma Ordem (1), mas FaseCanonicaOrigemId DIFERENTE (não informado — gera um
         // novo) — é uma fase DIFERENTE ocupando o slot, não uma edição da mesma fase.
@@ -273,7 +272,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([Exigencia(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(Exigencia(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Ordem 2 no lugar de Ordem 1 — a fase de Ordem 1 desaparece de fato.
         Result resultado = processo.DefinirCronogramaFases([Fase(2, "INSCRICAO")], [], PrecondicaoIfMatch.Curinga);
@@ -300,7 +299,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [Exigencia(fase.Id, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO")], PrecondicaoIfMatch.Ausente)
+            [NoExigencia.CriarFolha(Exigencia(fase.Id, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO"), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
@@ -317,7 +316,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([Exigencia(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(Exigencia(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
             [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: false, fase.FaseCanonicaOrigemId)],
@@ -333,7 +332,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao: true);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [Exigencia(fase.Id, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO")], PrecondicaoIfMatch.Ausente)
+            [NoExigencia.CriarFolha(Exigencia(fase.Id, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO"), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
@@ -377,7 +376,6 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: idade, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
 
@@ -390,7 +388,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma faseAncora = FaseComExtremo(2, "ANALISE", inicio: null, fim: fim);
         processo.DefinirCronogramaFases([faseExigencia, faseAncora], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [ExigenciaComIdadeAncoradaEmFase(faseExigencia.Id, faseAncora.Id, ReferenciaTipoIdadeEmissao.FimFase)],
+            [NoExigencia.CriarFolha(ExigenciaComIdadeAncoradaEmFase(faseExigencia.Id, faseAncora.Id, ReferenciaTipoIdadeEmissao.FimFase), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Ordem 2 (faseAncora) desaparece — só a Ordem 1 (faseExigencia, referenciada por
@@ -410,7 +408,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = FaseComExtremo(1, "ANALISE", inicio: null, fim: fim);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [ExigenciaComIdadeAncoradaEmFase(fase.Id, fase.Id, ReferenciaTipoIdadeEmissao.FimFase)],
+            [NoExigencia.CriarFolha(ExigenciaComIdadeAncoradaEmFase(fase.Id, fase.Id, ReferenciaTipoIdadeEmissao.FimFase), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Mesma Ordem (1) E mesma FaseCanonicaOrigemId — a fase sobrevive via
@@ -430,7 +428,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = FaseComExtremo(1, "ANALISE", inicio: null, fim: fim);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [ExigenciaComIdadeAncoradaEmFase(fase.Id, fase.Id, ReferenciaTipoIdadeEmissao.FimFase)],
+            [NoExigencia.CriarFolha(ExigenciaComIdadeAncoradaEmFase(fase.Id, fase.Id, ReferenciaTipoIdadeEmissao.FimFase), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DateTimeOffset novoFim = new(2026, 2, 15, 0, 0, 0, TimeSpan.Zero);
@@ -474,7 +472,6 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: idade, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
 
@@ -485,7 +482,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = Fase(1, "ANALISE"); // ColetaInscricao = false
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComIdadeFimInscricao(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue("FIM_INSCRICAO não pode ser resolvido sem uma fase de coleta — não há fallback silencioso");
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
@@ -498,7 +495,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim: null);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComIdadeFimInscricao(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
@@ -512,7 +509,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComIdadeFimInscricao(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -526,7 +523,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         FaseCronograma segundaColeta = FaseColetaInscricao(2, "INSCRICAO_SEGUNDA_FASE", fim);
         processo.DefinirCronogramaFases([primeiraColeta, segundaColeta], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(primeiraColeta.Id)], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComIdadeFimInscricao(primeiraColeta.Id), 0).Value!], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "a segunda fase de coleta resolve FIM_INSCRICAO — escolher a primeira encontrada (sem Fim) seria um 422 falso");
     }
@@ -538,7 +535,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
         FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComIdadeFimInscricao(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Mesma Ordem e mesma FaseCanonicaOrigemId — a fase sobrevive via reconciliação,
         // mas perde o Fim.
@@ -556,7 +553,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         DateTimeOffset fim = new(2026, 1, 31, 0, 0, 0, TimeSpan.Zero);
         FaseCronograma fase = FaseColetaInscricao(1, "INSCRICAO", fim);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([ExigenciaComIdadeFimInscricao(fase.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComIdadeFimInscricao(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DateTimeOffset novoFim = new(2026, 2, 15, 0, 0, 0, TimeSpan.Zero);
         Result resultado = processo.DefinirCronogramaFases(
@@ -610,9 +607,9 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], PrecondicaoIfMatch.Ausente);
 
@@ -630,9 +627,9 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("MODALIDADE", "LB_PPI")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC", "LI_PPI")], PrecondicaoIfMatch.Ausente);
 
@@ -652,9 +649,9 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
@@ -676,9 +673,9 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE",
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         OfertaCondicao condicaoPcdNova = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
         OfertaCondicao condicaoLactante = OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante");

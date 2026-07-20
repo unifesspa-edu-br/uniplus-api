@@ -40,9 +40,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         Guid tipoDocumentoOrigemId = Guid.CreateVersion7();
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, tipoDocumentoOrigemId, "IDENTIDADE", "Documento de identidade", "PESSOAL",
-            aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            aplicabilidade, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -68,9 +68,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
             1, "MODALIDADE", Operador.Em, JsonSerializer.SerializeToElement(new[] { "LB_PPI", "AC" })).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR",
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [condicaoEscalar, condicaoMultivalorada], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -139,9 +139,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
             "Cláusula 5.2 do edital", TipoAbrangencia.InternaEdital, StatusBaseLegal.Pendente, null).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [baseResolvida, basePendente], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -178,10 +178,10 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
             qualquer: false, entradas: [("PDF", null)]).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RESIDENCIA", "Comprovante de residência", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [],
             idadeMaximaEmissao: idade, formatosPermitidos: formatosPermitidos, tamanhoMaximoBytes: 5_000_000).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -209,9 +209,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DocumentoExigido exigencia = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL",
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
