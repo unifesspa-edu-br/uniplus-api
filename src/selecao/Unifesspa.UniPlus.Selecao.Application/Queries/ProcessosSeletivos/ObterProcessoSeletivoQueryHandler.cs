@@ -213,7 +213,8 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. no.Filhos.OrderBy(static f => f.Ordem).ThenBy(static f => f.Id).Select(ProjectNoExigencia)],
         no.ChaveDistincao?.ToCodigo(),
         no.DataReferencia,
-        no.OcorrenciasEsperadas);
+        no.OcorrenciasEsperadas,
+        no.RepetePorEntidade?.ToCodigo());
 
     private static string ProjectTipoNo(TipoNo tipo) => tipo switch
     {

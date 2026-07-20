@@ -91,6 +91,12 @@ public sealed record ItemDocumentoExigidoInput(
 /// <see cref="DataReferencia"/>) ou <c>OCORRENCIA</c> (<see cref="OcorrenciasEsperadas"/>
 /// opcional). Ausente ⇒ contagem bruta, sem qualificação.
 /// </remarks>
+/// <remarks>
+/// Story #922 — <see cref="RepetePorEntidade"/> (token canônico
+/// <see cref="Domain.Enums.TipoEntidadeCodigo"/>) marca esta subárvore (folha ou grupo) como
+/// repetível por instância de entidade — em <c>FOLHA</c> ou em grupo (<c>E</c>/<c>OU</c>),
+/// nunca aninhada (uma subárvore marcada não pode conter outra). Ausente ⇒ nó não repete.
+/// </remarks>
 public sealed record NoExigenciaInput(
     string Tipo,
     ItemDocumentoExigidoInput? Documento,
@@ -100,7 +106,8 @@ public sealed record NoExigenciaInput(
     IReadOnlyList<NoExigenciaInput>? Filhos,
     string? ChaveDistincao = null,
     DateOnly? DataReferencia = null,
-    IReadOnlyList<string>? OcorrenciasEsperadas = null);
+    IReadOnlyList<string>? OcorrenciasEsperadas = null,
+    string? RepetePorEntidade = null);
 
 /// <summary>
 /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo

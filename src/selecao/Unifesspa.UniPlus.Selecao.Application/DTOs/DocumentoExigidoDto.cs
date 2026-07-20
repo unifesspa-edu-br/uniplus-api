@@ -70,4 +70,5 @@ public sealed record NoExigenciaDto(
     IReadOnlyList<NoExigenciaDto> Filhos,
     string? ChaveDistincao,
     DateOnly? DataReferencia,
-    IReadOnlyList<string>? OcorrenciasEsperadas);
+    IReadOnlyList<string>? OcorrenciasEsperadas,
+    string? RepetePorEntidade);

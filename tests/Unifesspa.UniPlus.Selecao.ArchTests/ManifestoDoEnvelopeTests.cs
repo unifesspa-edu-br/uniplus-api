@@ -238,6 +238,7 @@ public sealed class ManifestoDoEnvelopeTests
                 ("ChaveDistincao", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
                 ("DataReferencia", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
                 ("OcorrenciasEsperadas", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
+                ("RepetePorEntidade", "Repetição por entidade (Story #922) — ainda não serializado no envelope (chega na PR 4/4)."),
             ]),
 
         [typeof(NoExigenciaBaseLegal)] = (

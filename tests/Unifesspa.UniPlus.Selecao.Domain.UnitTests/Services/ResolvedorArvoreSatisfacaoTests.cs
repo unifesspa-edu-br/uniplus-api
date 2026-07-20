@@ -59,8 +59,23 @@ public sealed class ResolvedorArvoreSatisfacaoTests
     private static Result<ResultadoResolucaoArvore> Resolver(
         ArvoreExigenciasCongelada arvore,
         IReadOnlyDictionary<string, JsonElement>? fatos = null,
-        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null) =>
-        ResolvedorArvoreSatisfacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes);
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
+        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>? instancias = null) =>
+        ResolvedorArvoreSatisfacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes, instancias);
+
+    private static InstanciaEntidade Instancia(string entidadeId, params (string Fato, bool Valor)[] atributos) =>
+        new(entidadeId, atributos.ToDictionary(
+            static a => a.Fato,
+            static a => JsonSerializer.SerializeToElement(a.Valor),
+            StringComparer.Ordinal));
+
+    private static Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> InstanciasDe(
+        TipoEntidade tipo, params InstanciaEntidade[] instancias) =>
+        new() { [tipo] = instancias };
+
+    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentaDeEntidade(
+        DocumentoExigido documento, string entidadeId) =>
+        new() { [documento.Id] = [new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: entidadeId)] };
 
     [Fact(DisplayName = "Árvore ausente retorna ArvoreAusente")]
     public void Resolver_ArvoreAusente_RetornaErroNomeado()
@@ -492,6 +507,185 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
 
         resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
+    // ── Repetição por entidade (Story #922) ──────────────────────────────────────────────
+
+    [Fact(DisplayName = "Documento correlacionado à instância certa: RG do membro 2 satisfaz só (RG, MEMBRO_NUCLEO_FAMILIAR, membro_2)")]
+    public void RepeticaoPorEntidade_DocumentoCorrelacionadoAInstanciaCerta()
+    {
+        DocumentoExigido rg = DocumentoGeral("ELIMINA");
+        NoExigencia raiz = NoExigencia.CriarFolha(rg, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.MembroNucleoFamiliar, Instancia("membro_1"), Instancia("membro_2"), Instancia("membro_3"));
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaDeEntidade(rg, "membro_2"), instancias: instancias);
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.ConsequenciasVigentes.Should().HaveCount(2);
+        resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.EntidadeId == "membro_1" && c.Consequencia == "ELIMINA");
+        resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.EntidadeId == "membro_3" && c.Consequencia == "ELIMINA");
+        resultado.Value!.ConsequenciasVigentes.Should().NotContain(c => c.EntidadeId == "membro_2");
+    }
+
+    [Fact(DisplayName = "Gatilho por atributo da entidade: declaração de isento só é exigida do membro adulto e sem renda")]
+    public void RepeticaoPorEntidade_GatilhoPorAtributoDaEntidade()
+    {
+        DocumentoExigido declaracaoIsento = DocumentoExigido.Criar(
+            FaseId, Guid.CreateVersion7(), "DECL_ISENTO", "Declaração de isento", "CAT",
+            Aplicabilidade.Condicional, obrigatorio: false, "ELIMINA",
+            [
+                CondicaoGatilho.Criar(0, "MAIOR_IDADE", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
+                CondicaoGatilho.Criar(0, "SEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
+            ],
+            [], null, Qualquer, null).Value!;
+        NoExigencia raiz = NoExigencia.CriarFolha(declaracaoIsento, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.MembroNucleoFamiliar,
+            Instancia("membro_adulto_sem_renda", ("MAIOR_IDADE", true), ("SEM_RENDA", true)),
+            Instancia("membro_adulto_com_renda", ("MAIOR_IDADE", true), ("SEM_RENDA", false)),
+            Instancia("membro_menor", ("MAIOR_IDADE", false), ("SEM_RENDA", true)));
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), instancias: instancias);
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
+            c => c.EntidadeId == "membro_adulto_sem_renda" && c.Consequencia == "ELIMINA");
+    }
+
+    [Fact(DisplayName = "PF + PJ vinculada repete por empresa: extrato da PJ 1 satisfaz só essa PJ — PJ 2 continua com extrato e IRPJ pendentes")]
+    public void RepeticaoPorEntidade_PessoaJuridicaVinculada_CorrelacaoPorPj()
+    {
+        DocumentoExigido extrato = DocumentoGeral("ELIMINA");
+        DocumentoExigido irpj = DocumentoGeral("ELIMINA");
+        NoExigencia folhaExtrato = NoExigencia.CriarFolha(extrato, 0).Value!;
+        NoExigencia folhaIrpj = NoExigencia.CriarFolha(irpj, 1).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(
+            TipoNo.GrupoE, 0, null, null, [], [folhaExtrato, folhaIrpj],
+            repetePorEntidade: TipoEntidade.PessoaJuridicaVinculada).Value!;
+
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.PessoaJuridicaVinculada, Instancia("pj_1"), Instancia("pj_2"));
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(grupo), apresentacoes: ApresentaDeEntidade(extrato, "pj_1"), instancias: instancias);
+
+        resultado.Value!.EstadosPorNo[grupo.Id].Should().Be(EstadoSatisfacao.Pendente);
+        resultado.Value!.ConsequenciasVigentes.Should().HaveCount(3);
+        resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.EntidadeId == "pj_1" && c.NoExigenciaId == folhaIrpj.Id);
+        resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.EntidadeId == "pj_2" && c.NoExigenciaId == folhaExtrato.Id);
+        resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.EntidadeId == "pj_2" && c.NoExigenciaId == folhaIrpj.Id);
+        resultado.Value!.ConsequenciasVigentes.Should().NotContain(c => c.EntidadeId == "pj_1" && c.NoExigenciaId == folhaExtrato.Id);
+    }
+
+    [Fact(DisplayName = "Repetição por entidade sem nenhuma instância declarada é não-aplicável")]
+    public void RepeticaoPorEntidade_SemInstanciasDeclaradas_NaoAplicavel()
+    {
+        DocumentoExigido documento = DocumentoGeral("ELIMINA");
+        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.NaoAplicavel);
+        resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Repetição por entidade: todas as instâncias satisfeitas suprime consequências")]
+    public void RepeticaoPorEntidade_TodasSatisfeitas_Suprime()
+    {
+        DocumentoExigido rg = DocumentoGeral("ELIMINA");
+        NoExigencia raiz = NoExigencia.CriarFolha(rg, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.MembroNucleoFamiliar, Instancia("membro_1"), Instancia("membro_2"));
+
+        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = new()
+        {
+            [rg.Id] =
+            [
+                new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: "membro_1"),
+                new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: "membro_2"),
+            ],
+        };
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes, instancias: instancias);
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+        resultado.Value!.ConsequenciasVigentes.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Repetição por entidade: PendenciasDeOrientacao de um grupo OU opaco repetido carrega o EntidadeId correto por instância")]
+    public void RepeticaoPorEntidade_GrupoOuOpaco_PendenciasDeOrientacaoComEntidadeId()
+    {
+        DocumentoExigido docA = DocumentoGeral();
+        DocumentoExigido docB = DocumentoGeral();
+        NoExigencia folhaA = NoExigencia.CriarFolha(docA, 0).Value!;
+        NoExigencia folhaB = NoExigencia.CriarFolha(docB, 1).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 2, "ELIMINA", [BaseLegalResolvida()], [folhaA, folhaB],
+            repetePorEntidade: TipoEntidade.PessoaJuridicaVinculada).Value!;
+
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.PessoaJuridicaVinculada, Instancia("pj_1"), Instancia("pj_2"));
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(grupo), apresentacoes: ApresentaDeEntidade(docA, "pj_1"), instancias: instancias);
+
+        resultado.Value!.PendenciasDeOrientacao.Should().HaveCount(3);
+        resultado.Value!.PendenciasDeOrientacao.Should().Contain(p => p.NoExigenciaId == folhaB.Id && p.EntidadeId == "pj_1");
+        resultado.Value!.PendenciasDeOrientacao.Should().Contain(p => p.NoExigenciaId == folhaA.Id && p.EntidadeId == "pj_2");
+        resultado.Value!.PendenciasDeOrientacao.Should().Contain(p => p.NoExigenciaId == folhaB.Id && p.EntidadeId == "pj_2");
+        resultado.Value!.ConsequenciasVigentes.Should().HaveCount(2);
+        resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == grupo.Id && c.EntidadeId == "pj_1");
+        resultado.Value!.ConsequenciasVigentes.Should().Contain(c => c.NoExigenciaId == grupo.Id && c.EntidadeId == "pj_2");
+    }
+
+    [Fact(DisplayName = "Árvore congelada com repetição por entidade aninhada (só alcançável via Reidratar) é recusada")]
+    public void RepeticaoPorEntidade_AninhadaViaReidratar_Recusa()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia folhaInterna = NoExigencia.Reidratar(
+            Guid.CreateVersion7(), TipoNo.Folha, 0, documento.Id, documento, null, null, null, null, null,
+            TipoEntidade.PessoaJuridicaVinculada, [], []);
+        NoExigencia grupoExterno = NoExigencia.Reidratar(
+            Guid.CreateVersion7(), TipoNo.GrupoE, 0, null, null, null, null, null, null, null,
+            TipoEntidade.MembroNucleoFamiliar, [], [folhaInterna]);
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(grupoExterno));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida");
+    }
+
+    [Fact(DisplayName = "Instâncias de entidade com EntidadeId duplicado são recusadas")]
+    public void RepeticaoPorEntidade_InstanciasComIdDuplicado_Recusa()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.MembroNucleoFamiliar, Instancia("membro_1"), Instancia("membro_1"));
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), instancias: instancias);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida");
+    }
+
+    [Fact(DisplayName = "Instância de entidade com EntidadeId vazio é recusada")]
+    public void RepeticaoPorEntidade_InstanciaComIdVazio_Recusa()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+        Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasDe(
+            TipoEntidade.MembroNucleoFamiliar, Instancia(""));
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), instancias: instancias);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida");
     }
 
     private static NoExigenciaBaseLegal BaseLegalResolvida() =>

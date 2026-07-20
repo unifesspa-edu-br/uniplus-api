@@ -70,6 +70,9 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
     // Story #921 — cardinalidade qualificada, catálogo fechado (Domain.Enums.ChaveDistincaoCodigo).
     private static readonly string[] ChavesDistincaoValidas = ["COMPETENCIA_MENSAL", "EXERCICIO_ANUAL", "OCORRENCIA"];
 
+    // Story #922 — repetição por entidade, catálogo fechado (Domain.Enums.TipoEntidadeCodigo).
+    private static readonly string[] TiposEntidadeValidos = ["MEMBRO_NUCLEO_FAMILIAR", "PESSOA_JURIDICA_VINCULADA"];
+
     public NoExigenciaInputValidator()
     {
         RuleFor(x => x.Tipo)
@@ -149,6 +152,17 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
             .Must(static basesLegais => basesLegais is null or { Count: 0 })
             .When(static x => x.Tipo is "FOLHA" or "E" || string.IsNullOrWhiteSpace(x.Consequencia))
             .WithMessage("basesLegais de nó só é permitida em grupo OU/N-de com consequência declarada.");
+
+        // Story #922 — repetição por entidade: permitida em QUALQUER tipo de nó (folha ou
+        // grupo, ao contrário de chaveDistincao/dataReferencia/ocorrenciasEsperadas, exclusivas
+        // de folha) — só o catálogo fechado é validado aqui; aninhamento é invariante de
+        // ÁRVORE (não dá para checar localmente por nó) e fica com o domínio
+        // (NoExigencia.CriarGrupo). Mesmo cuidado de `is not null` (não IsNullOrWhiteSpace) do
+        // chaveDistincao: string vazia/em branco também precisa cair no Must.
+        RuleFor(x => x.RepetePorEntidade)
+            .Must(static valor => TiposEntidadeValidos.Contains(valor, StringComparer.Ordinal))
+            .When(static x => x.RepetePorEntidade is not null)
+            .WithMessage($"repetePorEntidade deve ser um de: {string.Join(", ", TiposEntidadeValidos)}.");
 
         RuleFor(x => x.Documento!)
             .SetValidator(new ItemDocumentoExigidoInputValidator())

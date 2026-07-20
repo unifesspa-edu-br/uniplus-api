@@ -102,6 +102,9 @@ public static class DefinirDocumentosExigidosCommandHandler
                 ChaveDistincao? chaveDistincao = input.ChaveDistincao is null
                     ? null
                     : ChaveDistincaoCodigo.FromCodigo(input.ChaveDistincao);
+                TipoEntidade? repetePorEntidadeFolha = input.RepetePorEntidade is null
+                    ? null
+                    : TipoEntidadeCodigo.FromCodigo(input.RepetePorEntidade);
 
                 return NoExigencia.CriarFolha(
                     documentoResult.Value!,
@@ -109,7 +112,8 @@ public static class DefinirDocumentosExigidosCommandHandler
                     input.QuantidadeMinima,
                     chaveDistincao,
                     input.DataReferencia,
-                    input.OcorrenciasEsperadas);
+                    input.OcorrenciasEsperadas,
+                    repetePorEntidadeFolha);
             }
 
             TipoNo tipo = input.Tipo switch
@@ -147,7 +151,12 @@ public static class DefinirDocumentosExigidosCommandHandler
                 return Result<NoExigencia>.Failure(basesLegaisResult.Error!);
             }
 
-            return NoExigencia.CriarGrupo(tipo, ordem, input.QuantidadeMinima, input.Consequencia, basesLegaisResult.Value!, filhos);
+            TipoEntidade? repetePorEntidadeGrupo = input.RepetePorEntidade is null
+                ? null
+                : TipoEntidadeCodigo.FromCodigo(input.RepetePorEntidade);
+
+            return NoExigencia.CriarGrupo(
+                tipo, ordem, input.QuantidadeMinima, input.Consequencia, basesLegaisResult.Value!, filhos, repetePorEntidadeGrupo);
         }
 
         List<NoExigencia> raizes = [];
