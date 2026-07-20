@@ -18,7 +18,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Xunit;
 
 /// <summary>
-/// <b>A prova de fidelidade da reidratação</b> (Story #859, ADR-0110 D1/D2/D8).
+/// <b>A prova de fidelidade da reidratação</b>: reidratar um envelope congelado e
+/// recanonicalizá-lo reproduz os mesmos bytes, byte a byte, incluindo a preservação de
+/// identidade (etapa.Id) e a impossibilidade de qualquer codec ser aposentado (Story #859;
+/// ADR-0110 decisões sobre fidelidade do round-trip, identidade na reidratação e
+/// permanência dos codecs).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -36,9 +40,9 @@ using Xunit;
 /// </remarks>
 public sealed class EnvelopeCodecRoundTripTests
 {
-    // ── CA-01 — round-trip byte-a-byte, com o encoder DA VERSÃO ──
+    // ── Round-trip byte-a-byte, com o encoder DA VERSÃO ──
 
-    [Fact(DisplayName = "CA-01 — reidratar a versão 1 e recanonicalizá-la reproduz os bytes congelados, inteiros")]
+    [Fact(DisplayName = "Reidratar a versão 1 e recanonicalizá-la reproduz os bytes congelados, inteiros")]
     public void RoundTrip_VersaoDeAbertura()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
@@ -50,7 +54,7 @@ public sealed class EnvelopeCodecRoundTripTests
         AssertRoundTrip(processo, versao, congelado);
     }
 
-    [Fact(DisplayName = "CA-01 — a versão N>1 tem o 18º bloco: o round-trip usa a RetificacaoInfo ORIGINAL, recuperada do próprio envelope")]
+    [Fact(DisplayName = "A versão N>1 tem o 18º bloco: o round-trip usa a RetificacaoInfo ORIGINAL, recuperada do próprio envelope")]
     public void RoundTrip_VersaoRetificada()
     {
         // O round-trip de uma versão retificada NÃO é "os 17 blocos". Ela tem o 18º
@@ -74,7 +78,7 @@ public sealed class EnvelopeCodecRoundTripTests
         envelope.Retificacao.Motivo.Should().Be("Correção do quadro de vagas do curso de Direito");
     }
 
-    [Fact(DisplayName = "CA-01 — o round-trip parte de uma configuração viva DIFERENTE da congelada (é o que o descarte faz)")]
+    [Fact(DisplayName = "O round-trip parte de uma configuração viva DIFERENTE da congelada (é o que o descarte faz)")]
     public void RoundTrip_SobreConfiguracaoViva_Divergente()
     {
         // Restaurar sobre uma configuração viva IDÊNTICA à congelada esconderia metade do
@@ -95,7 +99,7 @@ public sealed class EnvelopeCodecRoundTripTests
         AssertRoundTrip(processo, versao, congelado);
     }
 
-    [Fact(DisplayName = "CA-13/CA-20 — o round-trip preserva obrigatoriedades[] com Conformidade não vazia, ordenada por RegraId mesmo com regras fora de ordem na entrada")]
+    [Fact(DisplayName = "O round-trip preserva obrigatoriedades[] com Conformidade não vazia, ordenada por RegraId mesmo com regras fora de ordem na entrada")]
     public void RoundTrip_ComConformidadeLegalCongelada_PreservaObrigatoriedadesOrdenadasPorRegraId()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
@@ -193,9 +197,9 @@ public sealed class EnvelopeCodecRoundTripTests
         return envelope;
     }
 
-    // ── CA-03 — o etapa.Id é PRESERVADO (asserção direta sobre o decoder) ──
+    // ── O etapa.Id é PRESERVADO (asserção direta sobre o decoder) ──
 
-    [Fact(DisplayName = "CA-03 — o decoder preserva o etapa.Id congelado; regenerá-lo faz o etapaRef deixar de resolver")]
+    [Fact(DisplayName = "O decoder preserva o etapa.Id congelado; regenerá-lo faz o etapaRef deixar de resolver")]
     public void Decoder_PreservaIdDaEtapa()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
@@ -240,7 +244,7 @@ public sealed class EnvelopeCodecRoundTripTests
             "ProcessoSeletivo.EtapaRefEliminacaoInexistente");
     }
 
-    // ── CA-02 — o decoder LÊ cada campo (matriz fechada de paths) ──
+    // ── O decoder LÊ cada campo (matriz fechada de paths) ──
 
     /// <summary>
     /// Cada linha muta <b>um</b> valor no envelope congelado e exige que a reidratação o
@@ -275,7 +279,7 @@ public sealed class EnvelopeCodecRoundTripTests
     /// primária apenas.
     /// </para>
     /// </remarks>
-    [Theory(DisplayName = "CA-02 — o decoder não perde campo: mutar o JSON muda os bytes reidratados")]
+    [Theory(DisplayName = "O decoder não perde campo: mutar o JSON muda os bytes reidratados")]
     [InlineData("etapas.0.nome", "Prova Objetiva Reformulada")]
     [InlineData("etapas.0.peso", "9.8750")]
     [InlineData("etapas.0.notaMinima", "12.3400")]
@@ -318,7 +322,7 @@ public sealed class EnvelopeCodecRoundTripTests
     /// no array recodificado (ADR-0109 D9). Aqui só cabe a asserção primária: comparar com
     /// o “JSON mutado no lugar” reprovaria a implementação correta.
     /// </summary>
-    [Theory(DisplayName = "CA-02 — o decoder lê também os campos que são chave de ordenação")]
+    [Theory(DisplayName = "O decoder lê também os campos que são chave de ordenação")]
     [InlineData("etapas.0.ordem", "9")]
     [InlineData("criteriosDesempate.0.ordem", "9")]
     [InlineData("classificacao.regrasEliminacao.0.args.notaMinima", "88.7500")]
@@ -341,7 +345,7 @@ public sealed class EnvelopeCodecRoundTripTests
     /// recomputado a partir dele) — por isso, como os campos de ordenação, só cabe a
     /// asserção primária.
     /// </summary>
-    [Theory(DisplayName = "CA-02 — o decoder lê também os insumos que disparam recomputação do quadro de vagas")]
+    [Theory(DisplayName = "O decoder lê também os insumos que disparam recomputação do quadro de vagas")]
     [InlineData("distribuicao.0.voBase", "77")]
     [InlineData("distribuicao.0.pr", "0.9000")]
     [InlineData("distribuicao.0.referenciaDemografica.ppiPercentual", "12.34")]
@@ -501,7 +505,11 @@ public sealed class EnvelopeCodecRoundTripTests
         EntradaCanonicalizacao entrada = new(
             processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo,
             MetadadosFatosCongelados: metadadosFatos);
-        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
+        // Story #923 (bump 1.4): o canonicalizador VIVO passou a emitir 1.4 — esta suíte prova
+        // especificamente o EnvelopeCodecV13 (o encoder 1.3 AGORA CONGELADO), não a versão
+        // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
+        // EnvelopeCodecV13 já documenta para si).
+        SnapshotCanonico congelado = new EnvelopeCodecV13().Codificar(entrada);
         congelado.SchemaVersion.Should().Be("1.3", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
@@ -529,6 +537,164 @@ public sealed class EnvelopeCodecRoundTripTests
             "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
             "idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes, metadadosFatos) tem de reproduzir os bytes " +
             "congelados inteiros — qualquer campo perdido pelo decoder do bloco documentosExigidos sai daqui como divergência");
+    }
+
+    // ── Round-trip 1.4 — o bloco novo, arvoreSatisfacao (Story #923) ──
+
+    /// <summary>
+    /// Prova de fidelidade do bloco <c>arvoreSatisfacao</c> (Story #923, bump 1.4): uma
+    /// árvore com grupo <c>OU</c> + base legal própria, uma folha com cardinalidade
+    /// qualificada (<see cref="ChaveDistincao.CompetenciaMensal"/>) e uma folha
+    /// <c>repetePorEntidade</c> — as três dimensões que a árvore acumulou nas Stories
+    /// #920/#921/#922 e que o snapshot canônico só passa a congelar agora. Sem golden
+    /// fixture fixa (mesma razão de <see cref="RoundTrip13_ProcessoDeReferenciaComExigenciaDocumentalRica"/>
+    /// — os ids são sorteados); a prova é de AUTOCONSISTÊNCIA, e uma asserção direta sobre
+    /// a árvore recomposta fecha o que a comparação de bytes por si só não deixa óbvio.
+    /// </summary>
+    [Fact(DisplayName = "Round-trip 1.4 — árvore com grupo OU, folha com cardinalidade qualificada e folha repetePorEntidade reproduz os bytes")]
+    public void RoundTrip14_ArvoreComGrupoCardinalidadeERepeticao()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Árvore 1.4", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: CorpusEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [
+                ModalidadeSelecionada.Criar(
+                    modalidadeOrigemId: Guid.CreateVersion7(),
+                    codigo: "AC",
+                    descricao: null,
+                    naturezaLegal: NaturezaLegalModalidade.Ampla,
+                    composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+                    composicaoOrigemCodigo: null,
+                    regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+                    remanejamentoDestino: null,
+                    remanejamentoPar: null,
+                    remanejamentoFallback: null,
+                    criteriosCumulativos: [],
+                    acaoQuandoIndeferido: null,
+                    baseLegal: "Res. Unifesspa 532/2021",
+                    quantidadeDeclarada: 40).Value!,
+            ]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
+            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            regraArredondamento: null,
+            casasArredondamento: null,
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "INSCRICAO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: true,
+            produzResultado: true,
+            resultadoDefinitivo: true,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "INSCRICAO",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // obrigatorio: false — DocumentoExigido.DeterminaResultado() (obrigatória OU
+        // consequência declarada) fica falso nas duas folhas, então a checagem de base
+        // legal de AvaliarConformidade não exige NoExigenciaBaseLegal delas: só a
+        // consequência ELIMINA do GRUPO determina resultado aqui, e a base legal própria
+        // dele (baseLegalDoGrupo, abaixo) já cobre isso.
+        FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
+        DocumentoExigido rg = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+        DocumentoExigido comprovanteRenda = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "SOCIOECONOMICO",
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null, qualquer, null).Value!;
+
+        NoExigencia folhaRg = NoExigencia.CriarFolha(
+            rg, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal,
+            dataReferencia: new DateOnly(2026, 3, 31)).Value!;
+        NoExigencia folhaRenda = NoExigencia.CriarFolha(
+            comprovanteRenda, 1, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+        NoExigenciaBaseLegal baseLegalDoGrupo = NoExigenciaBaseLegal.Criar(
+            "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna").Value!;
+        NoExigencia raiz = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, "ELIMINA", [baseLegalDoGrupo], [folhaRg, folhaRenda]).Value!;
+
+        processo.DefinirDocumentosExigidos([raiz], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DadosEdital dados = DadosEdital.Criar(
+            numero: "099/2026",
+            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
+            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            documentoEditalId: Guid.CreateVersion7()).Value!;
+        const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
+
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
+            new EntradaCanonicalizacao(processo, dados, hashDocumento));
+        congelado.SchemaVersion.Should().Be("1.4", "pré-condição: esta suíte prova o bloco arvoreSatisfacao, novo na 1.4");
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            hashDocumento, "user-sub-arvore", TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        VersaoConfiguracao v1 = publicacao.Value!;
+
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        processo.RestaurarConfiguracaoCongelada(v1, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
+
+        byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
+            v1.SchemaVersion,
+            new EntradaCanonicalizacao(
+                processo,
+                reidratado.Value.Dados,
+                reidratado.Value.HashDocumento,
+                reidratado.Value.Retificacao,
+                reidratado.Value.Conformidade,
+                reidratado.Value.MetadadosFatosCongelados)).Value!.Bytes;
+
+        recodificado.Should().Equal(congelado.Bytes,
+            "reidratar e recanonicalizar uma árvore com grupo OU, cardinalidade qualificada e repetição por " +
+            "entidade tem de reproduzir os bytes congelados inteiros — qualquer campo perdido pelo decoder do " +
+            "bloco arvoreSatisfacao sai daqui como divergência");
+
+        NoExigencia raizRecarregada = processo.RaizesDeExigencia.Should().ContainSingle().Which;
+        raizRecarregada.Tipo.Should().Be(TipoNo.GrupoOu);
+        raizRecarregada.Consequencia.Should().Be("ELIMINA");
+        raizRecarregada.BasesLegais.Should().ContainSingle().Which.Referencia.Should().Be("Res. Unifesspa 532/2021, art. 12");
+        raizRecarregada.Filhos.Should().HaveCount(2);
+
+        NoExigencia folhaRgRecarregada = raizRecarregada.Filhos.Should().ContainSingle(static f => f.ChaveDistincao != null).Which;
+        folhaRgRecarregada.QuantidadeMinima.Should().Be(3);
+        folhaRgRecarregada.ChaveDistincao.Should().Be(ChaveDistincao.CompetenciaMensal);
+        folhaRgRecarregada.DataReferencia.Should().Be(new DateOnly(2026, 3, 31));
+        folhaRgRecarregada.DocumentoExigido.Should().NotBeNull();
+        folhaRgRecarregada.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("RG");
+
+        NoExigencia folhaRendaRecarregada = raizRecarregada.Filhos.Should().ContainSingle(static f => f.RepetePorEntidade != null).Which;
+        folhaRendaRecarregada.RepetePorEntidade.Should().Be(TipoEntidade.MembroNucleoFamiliar);
+        folhaRendaRecarregada.DocumentoExigido.Should().NotBeNull();
+        folhaRendaRecarregada.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("COMPROVANTE_RENDA");
     }
 
     internal static JsonObject Envelope(SnapshotCanonico snapshot) =>

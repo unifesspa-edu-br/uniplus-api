@@ -117,11 +117,9 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // Árvore de satisfação (Story #920) — MESMO raciocínio acima: sem o Include, a
             // coleção tracked nasce vazia em todo carregamento novo do agregado.
             // DefinirDocumentosExigidos faria Clear() num backing list já vazio (linhas
-            // antigas sobrevivem no banco) e PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel/
-            // GruposComConsequenciaTemBaseLegalResolvida/os gates de grupo REMOVE_VANTAGEM e
-            // PENDENCIA_REENVIO reverso sempre veriam zero nós — o fail-closed do wrapper de
-            // árvore ficaria aberto justamente no caminho ordinário (requisição nova recarrega
-            // o agregado). NoExigencia.DocumentoExigido é fixed-up automaticamente pelo change
+            // antigas sobrevivem no banco) e GruposComConsequenciaTemBaseLegalResolvida/os
+            // gates de grupo REMOVE_VANTAGEM e PENDENCIA_REENVIO reverso sempre veriam zero
+            // nós. NoExigencia.DocumentoExigido é fixed-up automaticamente pelo change
             // tracker a partir da MESMA instância já trazida por DocumentosExigidos acima —
             // sem novo ThenInclude de Condicoes/BasesLegais do documento.
             .Include(p => p.NosExigencia).ThenInclude(n => n.DocumentoExigido)

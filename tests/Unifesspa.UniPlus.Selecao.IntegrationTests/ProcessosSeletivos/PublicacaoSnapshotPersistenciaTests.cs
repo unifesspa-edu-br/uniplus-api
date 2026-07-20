@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 17 blocos — 13
+/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 18 blocos — 14
 /// reais + 4 stubs <c>nao_construido</c> na raiz — estão presentes).
 /// </summary>
 public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
@@ -158,7 +158,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 17 blocos (13 reais + 4 stubs na raiz) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 18 blocos (14 reais + 4 stubs na raiz) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -174,10 +174,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         [
             "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
             "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
-            "documentosExigidos", "formulario", "cascataRemanejamento", "divulgacao",
+            "documentosExigidos", "arvoreSatisfacao", "formulario", "cascataRemanejamento", "divulgacao",
             "cronogramaFases", "identidadesUnidade",
         ];
-        blocosEsperados.Should().HaveCount(17, "pré-condição do próprio teste — o envelope tem 17 chaves");
+        blocosEsperados.Should().HaveCount(18, "pré-condição do próprio teste — o envelope tem 18 chaves (Story #923: arvoreSatisfacao)");
 
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
@@ -185,10 +185,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             objeto.Should().ContainKey(bloco, $"o bloco canônico '{bloco}' deve estar presente no envelope");
         }
 
-        // CA-07: a contagem é DERIVADA do envelope, não escrita à mão. Um bloco
+        // A contagem é DERIVADA do envelope, não escrita à mão. Um bloco
         // que sai de stub sem que este teste seja atualizado faz a contagem
         // divergir — que é exatamente o sinal que se quer.
-        objeto.Should().HaveCount(17, "o envelope de abertura tem exatamente 17 chaves — nem mais, nem menos");
+        objeto.Should().HaveCount(18, "o envelope de abertura tem exatamente 18 chaves — nem mais, nem menos");
 
         string[] stubs = [.. objeto
             .Where(static kvp => kvp.Value is JsonObject bloco
@@ -207,7 +207,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "são reais, mesmo que documentosExigidos ainda carregue a sub-chave 'exigencias' (#554) como " +
             "stub aninhado");
 
-        // D8 — nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
+        // Nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
         // pendência de conformidade, não stub silencioso; a segunda nunca foi stub.
         // documentosExigidos é totalmente real desde a Story #554 (PR #903, bump 1.2): a sub-chave
@@ -229,9 +229,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         objeto["cronogramaFases"]!["fases"]!.AsArray().Should().NotBeEmpty();
     }
 
-    // ── Story #554 (PR #903, issue #548) — CA-12: imunidade pós-publicação ──
+    // ── Story #554 (PR #903, issue #548) — imunidade pós-publicação: editar a configuração
+    // viva durante uma retificação aberta não pode alterar o hash de uma versão já persistida ──
 
-    [Fact(DisplayName = "CA-12: editar a configuração viva numa retificação aberta não altera o hash já persistido da versão anterior")]
+    [Fact(DisplayName = "Editar a configuração viva numa retificação aberta não altera o hash já persistido da versão anterior")]
     public async Task Publicar_RetificacaoAbertaEditaConfiguracaoViva_NaoAlteraHashDaVersaoAnterior()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(nameof(Publicar_RetificacaoAbertaEditaConfiguracaoViva_NaoAlteraHashDaVersaoAnterior));
@@ -308,7 +309,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             .FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
 
         versaoRelida.HashConfiguracao.Should().Be(hashOriginal,
-            "CA-12: editar a configuração viva do processo (aqui, o TipoDocumento de uma exigência, dentro de uma " +
+            "editar a configuração viva do processo (aqui, o TipoDocumento de uma exigência, dentro de uma " +
             "sessão de retificação aberta e persistida) não pode alterar o hash de uma versão JÁ persistida");
         versaoRelida.ConfiguracaoCongeladaCanonica.Should().Equal(bytesOriginais,
             "os bytes congelados da versão anterior também permanecem imutáveis — não só o hash resumido");

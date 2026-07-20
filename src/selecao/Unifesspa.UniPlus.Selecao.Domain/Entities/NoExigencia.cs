@@ -507,6 +507,37 @@ public sealed class NoExigencia : EntityBase
         return Result<NoExigencia>.Success(no);
     }
 
+    /// <summary>
+    /// Story #923 — reconstrói o modelo achatado pré-Story #920 (uma raiz-folha por
+    /// <see cref="DocumentoExigido"/>, sem grupo, cardinalidade padrão) a partir de uma
+    /// versão congelada anterior à 1.4, cujo envelope nunca serializou a topologia da
+    /// árvore. Usado só na reidratação (<see cref="Infrastructure"/>, fora deste projeto) —
+    /// nunca no cadastro, onde a árvore vem sempre explícita do comando.
+    /// </summary>
+    /// <remarks>
+    /// A raiz sintetizada usa <c>Reidratar</c>, não <c>CriarFolha</c>, para que o Id do nó
+    /// seja o próprio <see cref="DocumentoExigido.Id"/> — determinístico e derivado do
+    /// conteúdo congelado — em vez do Guid v7 aleatório que <c>CriarFolha</c> gera a cada
+    /// chamada. Sem isso, cada descarte/restauração dessa mesma versão pré-1.4 produziria
+    /// Ids de nó diferentes, e uma republicação sob a 1.4 bateria o acaso da última
+    /// restauração no hash canônico, não o conteúdo da configuração.
+    /// </remarks>
+    public static IReadOnlyList<NoExigencia> SintetizarRaizesLegadas(IReadOnlyList<DocumentoExigido> documentosExigidos)
+    {
+        ArgumentNullException.ThrowIfNull(documentosExigidos);
+
+        List<NoExigencia> raizes = new(documentosExigidos.Count);
+        int ordem = 0;
+        foreach (DocumentoExigido documento in documentosExigidos)
+        {
+            raizes.Add(Reidratar(
+                documento.Id, TipoNo.Folha, ordem++, documento.Id, documento,
+                QuantidadeMinimaPadrao, null, null, null, null, null, [], []));
+        }
+
+        return raizes;
+    }
+
     /// <summary>Este nó, ou algum descendente (a qualquer profundidade), é <see cref="RepetePorEntidade"/> — usado para recusar aninhamento em <see cref="CriarGrupo"/>.</summary>
     private static bool ContemRepeticaoDeEntidade(NoExigencia no) =>
         no.RepetePorEntidade is not null || no._filhos.Any(ContemRepeticaoDeEntidade);
@@ -575,6 +606,21 @@ public sealed class NoExigencia : EntityBase
     }
 
     internal void VincularPai(Guid noPaiId) => NoPaiId = noPaiId;
+
+    /// <summary>
+    /// Corrige a navegação de uma FOLHA para o <see cref="DocumentoExigido"/> final, após a
+    /// reconciliação por Id em <see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>
+    /// (Story #923) escolher a instância VIVA (tracked) no lugar da congelada — mesmo
+    /// espírito de <see cref="DocumentoExigido.RemapearFase"/>. <see cref="DocumentoExigidoId"/>
+    /// não muda (é o mesmo Id nos dois lados); só a referência de objeto é substituída, para
+    /// que <see cref="DocumentoExigido"/> nunca aponte para uma instância descartada pela
+    /// reconciliação de <see cref="DocumentoExigido"/>.
+    /// </summary>
+    internal void RemapearDocumentoExigido(DocumentoExigido documentoExigido)
+    {
+        ArgumentNullException.ThrowIfNull(documentoExigido);
+        DocumentoExigido = documentoExigido;
+    }
 
     /// <summary>Achata esta subárvore (este nó + todos os descendentes) — usado para popular a coleção plana de EF do agregado.</summary>
     public IEnumerable<NoExigencia> AchatarComDescendentes()

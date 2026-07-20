@@ -215,41 +215,25 @@ public sealed class ManifestoDoEnvelopeTests
             ["Referencia", "Abrangencia", "Status", "Observacao"],
             [("DocumentoExigidoId", "FK interna.")]),
 
-        // Árvore de satisfação (Story #920) — substitui DocumentoExigido.GrupoSatisfacaoId
-        // (residual, acima). NENHUMA propriedade é congelada AINDA: o wrapper de árvore no
-        // envelope é fail-closed explícito nesta PR (ver
-        // ProcessoSeletivo.PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel) — publicar uma
-        // árvore com qualquer grupo E/OU é recusado, e chega na PR 4/4 da change
-        // documentos-exigidos-composicao (snapshot conjunto final). Uma folha solteira (sem
-        // grupo) continua publicável, mas via DocumentoExigido/exigencias[], não por aqui.
+        // Árvore de satisfação (Story #920, #921, #922) — substitui
+        // DocumentoExigido.GrupoSatisfacaoId (residual, acima). Story #923 (bump 1.4):
+        // congelada por inteiro no bloco de topo `arvoreSatisfacao` — cada folha referencia
+        // sua exigência pelo MESMO `exigenciaId` já congelado em
+        // `documentosExigidos.exigencias[]` (por isso `DocumentoExigido` — a navegação — não
+        // é uma chave própria do envelope: é `DocumentoExigidoId` que vira `exigenciaId`).
         [typeof(NoExigencia)] = (
-            [],
+            [
+                "NoPaiId", "Ordem", "Tipo", "DocumentoExigidoId", "QuantidadeMinima", "Consequencia", "Filhos",
+                "BasesLegais", "ChaveDistincao", "DataReferencia", "OcorrenciasEsperadas", "RepetePorEntidade",
+            ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
-                ("NoPaiId", "Topologia da árvore — ainda não serializada no envelope (chega na PR 4/4, snapshot conjunto final)."),
-                ("Ordem", "Topologia da árvore — ainda não serializada no envelope (chega na PR 4/4)."),
-                ("Tipo", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("DocumentoExigidoId", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("DocumentoExigido", "Navegação da folha — ainda não serializada no envelope (chega na PR 4/4)."),
-                ("QuantidadeMinima", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("Consequencia", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("Filhos", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("BasesLegais", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("ChaveDistincao", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
-                ("DataReferencia", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
-                ("OcorrenciasEsperadas", "Cardinalidade qualificada (Story #921) — ainda não serializado no envelope (chega na PR 4/4)."),
-                ("RepetePorEntidade", "Repetição por entidade (Story #922) — ainda não serializado no envelope (chega na PR 4/4)."),
+                ("DocumentoExigido", "Navegação da folha — o envelope congela DocumentoExigidoId (como `exigenciaId`, referenciando documentosExigidos.exigencias[]), não o objeto/conteúdo duplicado."),
             ]),
 
         [typeof(NoExigenciaBaseLegal)] = (
-            [],
-            [
-                ("NoExigenciaId", "FK interna."),
-                ("Referencia", "Ainda não serializado no envelope (chega na PR 4/4, snapshot conjunto final)."),
-                ("Abrangencia", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("Status", "Ainda não serializado no envelope (chega na PR 4/4)."),
-                ("Observacao", "Ainda não serializado no envelope (chega na PR 4/4)."),
-            ]),
+            ["Referencia", "Abrangencia", "Status", "Observacao"],
+            [("NoExigenciaId", "FK interna.")]),
 
         [typeof(IdadeMaximaEmissao)] = (
             ["Valor", "Unidade", "ReferenciaTipo", "Data", "ReferenciaFaseId"],
