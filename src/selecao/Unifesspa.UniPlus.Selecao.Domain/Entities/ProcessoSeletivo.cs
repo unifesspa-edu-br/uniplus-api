@@ -1143,20 +1143,43 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// e temporário: uma folha solteira (sem grupo — o caso degenerado, idêntico ao modelo
     /// anterior) continua publicável normalmente.
     /// </summary>
+    /// <remarks>
+    /// Story #921 (PR 2/4): pelo MESMO motivo (achado de revisão do PR #937), uma folha
+    /// solteira com cardinalidade qualificada (<see cref="NoExigencia.QuantidadeMinima"/> &gt; 1
+    /// ou <see cref="NoExigencia.ChaveDistincao"/> presente) também é bloqueada — o snapshot
+    /// canônico hoje só congela os campos de <see cref="DocumentoExigido"/>, nenhum campo de
+    /// <see cref="NoExigencia"/>; publicar perderia a exigência de cardinalidade
+    /// silenciosamente. Uma folha com cardinalidade padrão (1 apresentação, sem chave) é
+    /// idêntica ao modelo anterior e continua publicável.
+    /// </remarks>
     private DomainError? PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel()
     {
         bool possuiGrupo = _nosExigencia.Any(static no => no.Tipo is TipoNo.GrupoE or TipoNo.GrupoOu);
-        if (!possuiGrupo)
+        if (possuiGrupo)
         {
-            return null;
+            return new DomainError(
+                "NoExigencia.SnapshotConjuntoAindaNaoSuportado",
+                "A árvore de satisfação com grupos E/OU ainda não é publicável — o wrapper de árvore " +
+                "no envelope e o snapshot conjunto (RN08) chegam na Story seguinte da change " +
+                "documentos-exigidos-composicao (snapshot conjunto final). Documentos exigidos sem " +
+                "agrupamento (folha solteira) continuam publicáveis normalmente.");
         }
 
-        return new DomainError(
-            "NoExigencia.SnapshotConjuntoAindaNaoSuportado",
-            "A árvore de satisfação com grupos E/OU ainda não é publicável — o wrapper de árvore " +
-            "no envelope e o snapshot conjunto (RN08) chegam na Story seguinte da change " +
-            "documentos-exigidos-composicao (snapshot conjunto final). Documentos exigidos sem " +
-            "agrupamento (folha solteira) continuam publicáveis normalmente.");
+        bool possuiFolhaComCardinalidadeQualificada = _nosExigencia.Any(static no =>
+            no.Tipo == TipoNo.Folha && (no.QuantidadeMinima is > 1 || no.ChaveDistincao is not null));
+        if (possuiFolhaComCardinalidadeQualificada)
+        {
+            return new DomainError(
+                "NoExigencia.CardinalidadeQualificadaAindaNaoSuportada",
+                "Uma folha com cardinalidade qualificada (quantidadeMinima > 1 ou chaveDistincao) " +
+                "ainda não é publicável — o snapshot canônico hoje só congela os campos de " +
+                "DocumentoExigido, não os de NoExigencia; publicar perderia a exigência de " +
+                "cardinalidade silenciosamente. Chega junto com o wrapper de árvore no envelope " +
+                "(PR 4/4 da change documentos-exigidos-composicao). Uma folha com cardinalidade " +
+                "padrão (1 apresentação, sem chaveDistincao) continua publicável normalmente.");
+        }
+
+        return null;
     }
 
     /// <summary>

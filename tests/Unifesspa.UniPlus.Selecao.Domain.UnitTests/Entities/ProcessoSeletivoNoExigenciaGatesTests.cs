@@ -123,4 +123,58 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
     }
+
+    // ── Fail-closed de cardinalidade qualificada (Story #921, achado de revisão do PR #937):
+    // o snapshot canônico ainda não congela quantidadeMinima/chaveDistincao de NoExigencia —
+    // publicar uma folha solteira com cardinalidade não-padrão perderia a exigência
+    // silenciosamente, mesmo raciocínio do fail-closed de grupo E/OU (Story #920, PR 1/4). ──
+
+    [Fact(DisplayName = "Folha solteira com quantidadeMinima > 1 bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_QuantidadeMinimaMaiorQueUm_Bloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
+        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Code.Should().Be("NoExigencia.CardinalidadeQualificadaAindaNaoSuportada");
+    }
+
+    [Fact(DisplayName = "Folha solteira com chaveDistincao bloqueia PendenciaPreCanonicalizacao mesmo com quantidadeMinima padrão")]
+    public void FolhaSolteira_ComChaveDistincao_Bloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(
+            DocumentoQualquer(fase.Id), 0, quantidadeMinima: 1,
+            chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
+        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Code.Should().Be("NoExigencia.CardinalidadeQualificadaAindaNaoSuportada");
+    }
+
+    [Fact(DisplayName = "Folha solteira com cardinalidade padrão (1, sem chave) continua publicável")]
+    public void FolhaSolteira_CardinalidadePadrao_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
+        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = processo.PendenciaPreCanonicalizacao();
+
+        pendencia.Should().BeNull();
+    }
 }
