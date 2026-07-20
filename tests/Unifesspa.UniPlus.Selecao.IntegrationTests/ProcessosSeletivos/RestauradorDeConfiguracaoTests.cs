@@ -241,9 +241,8 @@ public sealed class RestauradorDeConfiguracaoTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!, PrecondicaoIfMatch.Curinga)
@@ -313,13 +312,12 @@ public sealed class RestauradorDeConfiguracaoTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [condicao],
             basesLegais: [baseLegal],
             idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
             tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         // O Binding "X" — resolvido do catálogo NO INSTANTE da publicação, congelado por
         // valor. Se a restauração reconsultasse o catálogo vivo, o teste não teria como

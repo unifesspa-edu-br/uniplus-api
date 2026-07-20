@@ -54,3 +54,17 @@ public sealed record CondicaoGatilhoDto(Guid Id, int Clausula, string Fato, stri
 /// materialização do envelope na PR #903, não deste DTO de edição).
 /// </summary>
 public sealed record BaseLegalDto(Guid Id, string Referencia, string Abrangencia, string Status, string? Observacao);
+
+/// <summary>
+/// DTO de leitura de UM nó da árvore de satisfação (<see cref="Domain.Entities.NoExigencia"/>,
+/// Story #920) — mesmo formato recursivo de <c>NoExigenciaInput</c> (comando de escrita),
+/// round-trip GET→PUT direto (<see cref="Filhos"/> já vem na ORDEM persistida).
+/// </summary>
+public sealed record NoExigenciaDto(
+    Guid Id,
+    string Tipo,
+    DocumentoExigidoDto? Documento,
+    int? QuantidadeMinima,
+    string? Consequencia,
+    IReadOnlyList<BaseLegalDto> BasesLegais,
+    IReadOnlyList<NoExigenciaDto> Filhos);

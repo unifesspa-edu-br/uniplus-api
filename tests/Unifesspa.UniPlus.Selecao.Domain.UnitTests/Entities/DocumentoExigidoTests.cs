@@ -33,7 +33,6 @@ public sealed class DocumentoExigidoTests
             aplicabilidade: aplicabilidade,
             obrigatorio: obrigatorio,
             consequenciaIndeferimento: consequenciaIndeferimento,
-            grupoSatisfacaoId: null,
             condicoes: condicoes ?? [],
             basesLegais: basesLegais ?? [],
             idadeMaximaEmissao: idadeMaximaEmissao,

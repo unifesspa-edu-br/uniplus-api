@@ -676,7 +676,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
         // DocumentoExigido configurado — sem gatilho por FAIXA_ETARIA possível, não há
         // política a resolver, e não há bytes de exigência real neste schema para
         // reconstruir.
-        GrafoConfiguracao grafo = new(etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases, [], null);
+        GrafoConfiguracao grafo = new(etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases, [], [], null);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao, conformidade));
     }

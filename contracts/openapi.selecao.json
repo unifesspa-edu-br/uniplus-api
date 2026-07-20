@@ -2083,7 +2083,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ItemDocumentoExigidoInput"
+                  "$ref": "#/components/schemas/NoExigenciaInput"
                 }
               }
             },
@@ -2091,7 +2091,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ItemDocumentoExigidoInput"
+                  "$ref": "#/components/schemas/NoExigenciaInput"
                 }
               }
             },
@@ -2099,7 +2099,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ItemDocumentoExigidoInput"
+                  "$ref": "#/components/schemas/NoExigenciaInput"
                 }
               }
             }
@@ -4976,7 +4976,6 @@
           "aplicabilidade",
           "obrigatorio",
           "consequenciaIndeferimento",
-          "grupoSatisfacaoId",
           "condicoes",
           "basesLegais",
           "idadeMaximaEmissao",
@@ -5004,13 +5003,6 @@
               "null",
               "string"
             ]
-          },
-          "grupoSatisfacaoId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           },
           "condicoes": {
             "type": "array",
@@ -5150,6 +5142,123 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "NoExigenciaDto": {
+        "required": [
+          "id",
+          "tipo",
+          "documento",
+          "quantidadeMinima",
+          "consequencia",
+          "basesLegais",
+          "filhos"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "documento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DocumentoExigidoDto"
+              }
+            ]
+          },
+          "quantidadeMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "consequencia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "basesLegais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalDto"
+            }
+          },
+          "filhos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoExigenciaDto"
+            }
+          }
+        }
+      },
+      "NoExigenciaInput": {
+        "required": [
+          "tipo",
+          "documento",
+          "quantidadeMinima",
+          "consequencia",
+          "basesLegais",
+          "filhos"
+        ],
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "documento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ItemDocumentoExigidoInput"
+              }
+            ]
+          },
+          "quantidadeMinima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "consequencia": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "basesLegais": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BaseLegalInput"
+            }
+          },
+          "filhos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/NoExigenciaInput"
+            }
           }
         }
       },
@@ -5551,6 +5660,7 @@
           "classificacao",
           "cronogramaFases",
           "documentosExigidos",
+          "raizesExigencia",
           "referenciaTemporalFatos",
           "criadoEm"
         ],
@@ -5630,6 +5740,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoExigidoDto"
+            }
+          },
+          "raizesExigencia": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoExigenciaDto"
             }
           },
           "referenciaTemporalFatos": {

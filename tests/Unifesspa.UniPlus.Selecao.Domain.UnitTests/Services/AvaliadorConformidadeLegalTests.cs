@@ -269,7 +269,7 @@ public sealed class AvaliadorConformidadeLegalTests
     private static DocumentoExigido ExigenciaGeral(Guid exigidoNaFaseId, string tipoDocumentoCodigo) =>
         DocumentoExigido.Criar(
             exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static DocumentoExigido ExigenciaCondicionalPorModalidade(
@@ -286,7 +286,7 @@ public sealed class AvaliadorConformidadeLegalTests
 
         return DocumentoExigido.Criar(
             exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: condicoes, basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
 
@@ -340,7 +340,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ProcessoSeletivo processo = NovoProcesso();
         Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
         processo.DefinirDocumentosExigidos(
-            [ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA")], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [NoExigencia.CriarFolha(ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA"), 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
@@ -352,7 +352,7 @@ public sealed class AvaliadorConformidadeLegalTests
     private static DocumentoExigido ExigenciaGeralOpcional(Guid exigidoNaFaseId, string tipoDocumentoCodigo) =>
         DocumentoExigido.Criar(
             exigidoNaFaseId, Guid.CreateVersion7(), tipoDocumentoCodigo, "Documento de teste", "CATEGORIA",
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, grupoSatisfacaoId: null,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     [Fact(DisplayName = "CA-09: exigência do tipo pedido que NÃO determina resultado (opcional, sem consequência) reprova — achado de revisão da PR #903")]
@@ -361,7 +361,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ProcessoSeletivo processo = NovoProcesso();
         Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
         processo.DefinirDocumentosExigidos(
-            [ExigenciaGeralOpcional(faseId, "COMPROVANTE_RESIDENCIA")], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [NoExigencia.CriarFolha(ExigenciaGeralOpcional(faseId, "COMPROVANTE_RESIDENCIA"), 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
 
@@ -378,7 +378,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ProcessoSeletivo processo = NovoProcesso();
         Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI")], PrecondicaoIfMatch.Curinga)
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
@@ -394,7 +394,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ProcessoSeletivo processo = NovoProcesso();
         Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI", fatoExtra: "FAIXA_ETARIA")],
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI", fatoExtra: "FAIXA_ETARIA"), 0).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
@@ -416,7 +416,7 @@ public sealed class AvaliadorConformidadeLegalTests
         // Ternario.Indeterminado (Story #916, fail-closed), não mais Ternario.Falso — a
         // conclusão de cobertura, porém, é a mesma: não prova incondicionalidade.
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI", fatoExtra: "FAIXA_ETARIA")],
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidade(faseId, "COMPROVANTE_RESIDENCIA", "LB_PPI", fatoExtra: "FAIXA_ETARIA"), 0).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));
@@ -433,7 +433,7 @@ public sealed class AvaliadorConformidadeLegalTests
         ProcessoSeletivo processo = NovoProcesso();
         Guid faseId = PrepararProcessoComModalidade(processo, "LB_PPI");
         processo.DefinirDocumentosExigidos(
-            [ExigenciaCondicionalPorModalidade(faseId, "LAUDO_MEDICO", "LB_PPI")], PrecondicaoIfMatch.Curinga)
+            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidade(faseId, "LAUDO_MEDICO", "LB_PPI"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         ObrigatoriedadeLegal regra = NovaRegra(
             "DOCUMENTO", new DocumentoObrigatorioParaModalidade("LB_PPI", "COMPROVANTE_RESIDENCIA"));

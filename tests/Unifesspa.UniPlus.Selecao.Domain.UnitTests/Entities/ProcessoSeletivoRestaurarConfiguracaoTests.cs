@@ -193,6 +193,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             classificacao: Classificacao([]),
             cronogramaFases: [FaseConforme()],
             documentosExigidos: [],
+            nosExigencia: [],
             referenciaTemporalFatos: null);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
@@ -245,9 +246,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             aplicabilidade: Aplicabilidade.Geral,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            grupoSatisfacaoId: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([exigencia], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Should().ContainSingle();
 
@@ -352,6 +352,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             classificacao: Classificacao([]),
             cronogramaFases: [faseCongelada],
             documentosExigidos: [documentoCongelado],
+            nosExigencia: [],
             referenciaTemporalFatos: referenciaCongelada);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, grafoCongelado);
@@ -437,6 +438,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             classificacao: Classificacao(eliminacoes ?? []),
             cronogramaFases: cronogramaFases ?? [FaseConforme()],
             documentosExigidos: [],
+            nosExigencia: [],
             referenciaTemporalFatos: null);
 
     /// <summary>Uma fase mínima e conforme: agrupa etapas (há 1 etapa por padrão) e produz resultado (há vagas por padrão).</summary>

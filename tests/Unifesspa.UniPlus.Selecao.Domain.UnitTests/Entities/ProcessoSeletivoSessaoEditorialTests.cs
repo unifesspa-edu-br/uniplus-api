@@ -461,6 +461,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         processo.Classificacao!,
         [.. processo.CronogramaFases],
         [.. processo.DocumentosExigidos],
+        [.. processo.NosExigencia],
         processo.ReferenciaTemporalFatos);
 
     /// <summary>Uma versão qualquer DESTE processo — o teste que a usa lança antes de tocá-la.</summary>

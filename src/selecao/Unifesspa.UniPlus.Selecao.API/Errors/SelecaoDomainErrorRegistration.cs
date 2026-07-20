@@ -365,12 +365,44 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Publicar/Retificar/FecharRetificacao logo após a guarda B-01 removida.
         new("DocumentoExigido.RemoveVantagemSemVantagemViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva", "A exigência declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover")),
         new("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga", "A consequência de indeferimento da exigência é incoerente com a ação de indeferimento da modalidade que ela alcança")),
-        // Resolvedor de exigências documentais (Story #554, PR #903, issue #548, ADR-0076) —
-        // domain service puro, sem caller HTTP nesta Story (o runtime de coleta é fora de
-        // escopo); registrado por disciplina uniforme com o restante do módulo.
-        new("ResolvedorExigencias.SnapshotAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_exigencias.snapshot_ausente", "Não há versão vigente congelada para resolver as exigências documentais")),
-        new("ResolvedorExigencias.BlocoEstruturalmenteInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_exigencias.bloco_estruturalmente_invalido", "O bloco de exigências congelado tem identidade repetida")),
-        new("ResolvedorExigencias.BlocoSemanticamenteInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_exigencias.bloco_semanticamente_invalido", "O bloco de exigências congelado viola uma invariante semântica (ex.: grupo de satisfação fora de escopo)")),
+        // Gate PENDENCIA_REENVIO×PermiteComplementacao FORWARD (Story #920) — complementa
+        // FaseCronograma.PendenciaReenvioExigeComplementacao (reverso, acima): aqui a escrita
+        // da própria exigência/grupo é recusada quando a fase já não permite complementação.
+        new("DocumentoExigido.PendenciaReenvioExigeComplementacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.pendencia_reenvio_exige_complementacao", "A fase não permite complementação — consequência PENDENCIA_REENVIO exige PermiteComplementacao")),
+        // Árvore de satisfação (Story #920, change documentos-exigidos-composicao) —
+        // substitui o grupo de satisfação plano (GrupoSatisfacaoId, residual) por nós
+        // folha/grupo E/OU. Invariantes de NoExigencia.CriarGrupo + erros de forma do handler
+        // (tipo de nó desconhecido, folha sem documento).
+        new("NoExigencia.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.ordem_invalida", "A ordem do nó não pode ser negativa")),
+        new("NoExigencia.GrupoVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.grupo_vazio", "Um grupo E/OU não pode ter zero filhos")),
+        new("NoExigencia.ArvoreComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.arvore_com_ciclo", "A árvore de satisfação não pode conter ciclos")),
+        new("NoExigencia.GrupoComFasesDiferentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.grupo_com_fases_diferentes", "Todos os nós de um grupo precisam pertencer à mesma fase do cronograma")),
+        new("NoExigencia.QuantidadeMinimaProibidaEmGrupoE", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.quantidade_minima_proibida_em_grupo_e", "Um grupo E não tem cardinalidade própria — quantidadeMinima é proibida")),
+        new("NoExigencia.ConsequenciaProibidaEmGrupoE", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.consequencia_proibida_em_grupo_e", "Um grupo E é transparente e não carrega consequência própria")),
+        new("NoExigencia.BaseLegalProibidaEmGrupoE", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.base_legal_proibida_em_grupo_e", "Um grupo E é transparente e não carrega base legal própria")),
+        new("NoExigencia.QuantidadeMinimaForaDosLimites", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.quantidade_minima_fora_dos_limites", "quantidadeMinima de um grupo OU/N-de deve estar entre 1 e o número de filhos")),
+        new("NoExigencia.ConsequenciaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.consequencia_invalida", "Consequência do grupo fora do domínio conhecido")),
+        new("NoExigencia.BaseLegalSemConsequencia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.base_legal_sem_consequencia", "Base legal de grupo só é permitida quando o grupo carrega consequência")),
+        new("NoExigencia.DocumentoObrigatorioEmFolha", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.documento_obrigatorio_em_folha", "Um nó do tipo FOLHA precisa declarar 'documento'")),
+        new("NoExigencia.TipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.tipo_invalido", "Tipo de nó inválido — esperado FOLHA, E ou OU")),
+        // Coerência consequência↔ação da vaga, estendida ao grupo OU/N-de (Story #920) —
+        // mesmos dois gates de DocumentoExigido acima, mesmo ponto de chamada.
+        new("NoExigencia.RemoveVantagemSemVantagemViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.remove_vantagem_sem_vantagem_viva", "O grupo declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover")),
+        new("NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.consequencia_incoerente_com_acao_da_vaga", "A consequência do grupo é incoerente com a ação de indeferimento da modalidade que ele alcança")),
+        // Fail-closed explícito e temporário (Story #920, PR 1/4): o wrapper de árvore no
+        // envelope chega na PR 4/4 (snapshot conjunto final) — publicar árvore com grupo
+        // E/OU hoje é recusado, não perde dado silenciosamente.
+        new("NoExigencia.SnapshotConjuntoAindaNaoSuportado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.snapshot_conjunto_ainda_nao_suportado", "A árvore de satisfação com grupos E/OU ainda não é publicável — chega na Story seguinte da change")),
+        // Base legal 1:N PRÓPRIA de grupo OU/N-de (Story #920) — mesmo shape/mensagens de
+        // DocumentoExigidoBaseLegal acima.
+        new("NoExigenciaBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
+        new("NoExigenciaBaseLegal.AbrangenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria", "A abrangência da base legal é obrigatória")),
+        new("NoExigenciaBaseLegal.StatusObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.status_obrigatorio", "O status da base legal é obrigatório")),
+        // Resolvedor da árvore de satisfação (Story #920; substitui ResolvedorExigencias.* do
+        // grupo plano) — domain service puro, sem caller HTTP nesta Story (o runtime de
+        // coleta é fora de escopo); registrado por disciplina uniforme com o resto do módulo.
+        new("ResolvedorArvoreSatisfacao.ArvoreAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_ausente", "Não há versão vigente congelada para resolver a árvore de exigências documentais")),
+        new("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida", "A árvore de exigências congelada tem identidade repetida entre folhas")),
         // Cursor.* codes vivem em Infrastructure.Core/Pagination/PaginationDomainErrorRegistration —
         // capability cross-module, registrada uma única vez via AddCursorPagination().
     ];

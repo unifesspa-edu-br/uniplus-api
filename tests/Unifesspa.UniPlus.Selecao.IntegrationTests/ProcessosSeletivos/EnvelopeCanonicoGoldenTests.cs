@@ -160,7 +160,8 @@ public sealed class EnvelopeCanonicoGoldenTests
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDocumentosExigidos([DocumentoExigidoDeReferencia(fase.Id)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos(
+            [NoExigencia.CriarFolha(DocumentoExigidoDeReferencia(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirReferenciaTemporalFatos(
@@ -198,7 +199,6 @@ public sealed class EnvelopeCanonicoGoldenTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: "ELIMINA",
-            grupoSatisfacaoId: null,
             condicoes: [condicao],
             basesLegais: [baseLegal],
             idadeMaximaEmissao: idadeMaximaEmissao,

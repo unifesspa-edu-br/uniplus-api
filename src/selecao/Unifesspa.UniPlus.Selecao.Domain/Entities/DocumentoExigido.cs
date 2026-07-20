@@ -60,7 +60,15 @@ public sealed class DocumentoExigido : EntityBase
     /// </summary>
     public string? ConsequenciaIndeferimento { get; private set; }
 
-    /// <summary>Escopo processo+fase — documentos do mesmo grupo são satisfeitos por uma única apresentação (semântica plena na PR #903).</summary>
+    /// <summary>
+    /// Escopo processo+fase — RESIDUAL (Story #920): a árvore de satisfação
+    /// (<see cref="NoExigencia"/>) substitui o grupo plano para toda exigência criada a
+    /// partir desta Story (<see cref="Criar"/> não aceita mais este campo — sempre
+    /// <see langword="null"/> em exigência nova). A propriedade e a coluna permanecem só
+    /// para <see cref="Reidratar"/> reconstruir com fidelidade um envelope publicado ANTES
+    /// da Story #920 (codecs 1.0–1.3, congelados) — nunca lida pelo resolvedor novo
+    /// (<see cref="Services.ResolvedorArvoreSatisfacao"/>).
+    /// </summary>
     public Guid? GrupoSatisfacaoId { get; private set; }
 
     /// <summary>
@@ -101,7 +109,6 @@ public sealed class DocumentoExigido : EntityBase
         Aplicabilidade aplicabilidade,
         bool obrigatorio,
         string? consequenciaIndeferimento,
-        Guid? grupoSatisfacaoId,
         IReadOnlyList<CondicaoGatilho> condicoes,
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais,
         IdadeMaximaEmissao? idadeMaximaEmissao,
@@ -164,7 +171,6 @@ public sealed class DocumentoExigido : EntityBase
             Aplicabilidade = aplicabilidade,
             Obrigatorio = obrigatorio,
             ConsequenciaIndeferimento = consequenciaNormalizada,
-            GrupoSatisfacaoId = grupoSatisfacaoId,
             IdadeMaximaEmissao = idadeMaximaEmissao,
             FormatosPermitidos = formatosPermitidos,
             TamanhoMaximoBytes = tamanhoMaximoBytes,

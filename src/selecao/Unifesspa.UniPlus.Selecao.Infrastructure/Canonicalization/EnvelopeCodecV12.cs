@@ -131,7 +131,7 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
 
         GrafoConfiguracao grafo = new(
             etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases,
-            documentosExigidos, referenciaTemporalFatos);
+            documentosExigidos, [], referenciaTemporalFatos);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao, conformidade));
     }

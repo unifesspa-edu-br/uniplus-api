@@ -15,11 +15,13 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
-/// Handler do <see cref="DefinirDocumentosExigidosCommand"/> (Story #554): resolve o
-/// snapshot-copy de <c>TipoDocumento</c> (módulo Configuração, ADR-0056) e, quando algum
-/// item declara gatilho, o vocabulário fechado de fatos do candidato
-/// (<c>IFatoCandidatoReader</c>, #846) estendido pelo domínio dinâmico da oferta do
-/// próprio processo (PR #896) — e delega a montagem/validação ao domínio.
+/// Handler do <see cref="DefinirDocumentosExigidosCommand"/> (Story #554; árvore E/OU na
+/// Story #920): resolve o snapshot-copy de <c>TipoDocumento</c> (módulo Configuração,
+/// ADR-0056) e, quando alguma folha declara gatilho, o vocabulário fechado de fatos do
+/// candidato (<c>IFatoCandidatoReader</c>, #846) estendido pelo domínio dinâmico da oferta do
+/// próprio processo (PR #896) — monta a árvore recursivamente (folhas primeiro, bottom-up,
+/// já que <see cref="NoExigencia.CriarGrupo"/> recebe os filhos prontos) e delega a
+/// montagem/validação final ao domínio.
 /// </summary>
 /// <remarks>
 /// <paramref name="clock"/> — Story #554, PR #900, issue #893 (ADR-0068 proposed): injetado
@@ -62,9 +64,9 @@ public static class DefinirDocumentosExigidosCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
-        // O vocabulário só é resolvido (I/O cross-módulo) quando algum item declara
+        // O vocabulário só é resolvido (I/O cross-módulo) quando alguma folha declara
         // gatilho — mesmo princípio de DefinirCriteriosDesempateCommandHandler.
-        bool existeGatilho = command.Itens.Any(static i => i.Condicoes.Count > 0);
+        bool existeGatilho = ExisteGatilho(command.Raizes);
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null;
         IReadOnlyDictionary<string, string>? pontoResolucaoPorFato = null;
         if (existeGatilho)
@@ -77,95 +79,82 @@ public static class DefinirDocumentosExigidosCommandHandler
             ? ResolverDominiosDinamicos(processo)
             : null;
 
-        List<DocumentoExigido> itens = [];
-        foreach (ItemDocumentoExigidoInput input in command.Itens)
+        // Folha primeiro, bottom-up: NoExigencia.CriarGrupo recebe os filhos já prontos.
+        async Task<Result<NoExigencia>> ConstruirNoAsync(NoExigenciaInput input, int ordem)
         {
-            TipoDocumentoView? tipoDocumento = await tipoDocumentoReader
-                .ObterPorIdAsync(input.TipoDocumentoId, cancellationToken)
-                .ConfigureAwait(false);
-            if (tipoDocumento is null)
+            if (string.Equals(input.Tipo, "FOLHA", StringComparison.Ordinal))
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
-                    "DocumentoExigido.TipoDocumentoNaoEncontrado",
-                    $"Tipo de documento {input.TipoDocumentoId} não encontrado ou não está mais vivo."));
+                if (input.Documento is not { } documentoInput)
+                {
+                    return Result<NoExigencia>.Failure(new DomainError(
+                        "NoExigencia.DocumentoObrigatorioEmFolha",
+                        "Um nó do tipo FOLHA precisa declarar 'documento'."));
+                }
+
+                Result<DocumentoExigido> documentoResult = await ConstruirDocumentoExigidoAsync(
+                        documentoInput, processo, tipoDocumentoReader, vocabularioFatos, pontoResolucaoPorFato, dominiosDinamicos, cancellationToken)
+                    .ConfigureAwait(false);
+                if (documentoResult.IsFailure)
+                {
+                    return Result<NoExigencia>.Failure(documentoResult.Error!);
+                }
+
+                return NoExigencia.CriarFolha(documentoResult.Value!, ordem);
             }
 
-            Aplicabilidade aplicabilidade = input.Aplicabilidade switch
+            TipoNo tipo = input.Tipo switch
             {
-                "GERAL" => Aplicabilidade.Geral,
-                "CONDICIONAL" => Aplicabilidade.Condicional,
-                _ => Aplicabilidade.Nenhuma,
+                "E" => TipoNo.GrupoE,
+                "OU" => TipoNo.GrupoOu,
+                _ => TipoNo.Nenhum,
             };
 
-            Result<IReadOnlyList<CondicaoGatilho>> condicoesResult = ResolverCondicoes(
-                input.Condicoes, vocabularioFatos, dominiosDinamicos);
-            if (condicoesResult.IsFailure)
+            if (tipo == TipoNo.Nenhum)
             {
-                return Result<MutacaoAceita>.Failure(condicoesResult.Error!);
+                return Result<NoExigencia>.Failure(new DomainError(
+                    "NoExigencia.TipoInvalido",
+                    $"Tipo de nó '{input.Tipo}' inválido — esperado FOLHA, E ou OU."));
             }
 
-            // Gate de fase (Story #916): uma condição de gatilho não pode citar um fato cujo
-            // PontoResolucao é uma fase posterior à fase em que o documento é exigido — não há
-            // como o gatilho já ter sido resolvido para o candidato quando a exigência entra
-            // em jogo.
-            if (condicoesResult.Value!.Count > 0)
+            List<NoExigencia> filhos = [];
+            int ordemFilho = 0;
+            foreach (NoExigenciaInput filhoInput in input.Filhos ?? [])
             {
-                Result gateDeFaseResult = ValidarGateDeFase(
-                    condicoesResult.Value!, input.ExigidoNaFaseId, processo, pontoResolucaoPorFato!);
-                if (gateDeFaseResult.IsFailure)
+                Result<NoExigencia> filhoResult = await ConstruirNoAsync(filhoInput, ordemFilho).ConfigureAwait(false);
+                if (filhoResult.IsFailure)
                 {
-                    return Result<MutacaoAceita>.Failure(gateDeFaseResult.Error!);
+                    return Result<NoExigencia>.Failure(filhoResult.Error!);
                 }
+
+                filhos.Add(filhoResult.Value!);
+                ordemFilho++;
             }
 
-            Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegaisResult = ResolverBasesLegais(input.BasesLegais);
+            Result<IReadOnlyList<NoExigenciaBaseLegal>> basesLegaisResult =
+                ResolverBasesLegaisDeGrupo(input.BasesLegais ?? []);
             if (basesLegaisResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(basesLegaisResult.Error!);
+                return Result<NoExigencia>.Failure(basesLegaisResult.Error!);
             }
 
-            IdadeMaximaEmissaoInput? idade = input.IdadeMaximaEmissao;
-            Result<IdadeMaximaEmissao?> idadeMaximaEmissaoResult = IdadeMaximaEmissao.Criar(
-                idade?.Valor,
-                UnidadeIdadeCodigo.FromCodigo(idade?.Unidade),
-                ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(idade?.ReferenciaTipo),
-                idade?.Data,
-                idade?.ReferenciaFaseId);
-            if (idadeMaximaEmissaoResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(idadeMaximaEmissaoResult.Error!);
-            }
-
-            Result<FormatosPermitidos> formatosPermitidosResult = ResolverFormatosPermitidos(input.FormatosPermitidos);
-            if (formatosPermitidosResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(formatosPermitidosResult.Error!);
-            }
-
-            Result<DocumentoExigido> itemResult = DocumentoExigido.Criar(
-                input.ExigidoNaFaseId,
-                tipoDocumento.Id,
-                tipoDocumento.Codigo,
-                tipoDocumento.Nome,
-                tipoDocumento.Categoria,
-                aplicabilidade,
-                input.Obrigatorio,
-                input.ConsequenciaIndeferimento,
-                input.GrupoSatisfacaoId,
-                condicoesResult.Value!,
-                basesLegaisResult.Value!,
-                idadeMaximaEmissaoResult.Value,
-                formatosPermitidosResult.Value!,
-                input.TamanhoMaximoBytes);
-            if (itemResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(itemResult.Error!);
-            }
-
-            itens.Add(itemResult.Value!);
+            return NoExigencia.CriarGrupo(tipo, ordem, input.QuantidadeMinima, input.Consequencia, basesLegaisResult.Value!, filhos);
         }
 
-        Result definirResult = processo.DefinirDocumentosExigidos(itens, command.Precondicao);
+        List<NoExigencia> raizes = [];
+        int ordemRaiz = 0;
+        foreach (NoExigenciaInput raizInput in command.Raizes)
+        {
+            Result<NoExigencia> raizResult = await ConstruirNoAsync(raizInput, ordemRaiz).ConfigureAwait(false);
+            if (raizResult.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(raizResult.Error!);
+            }
+
+            raizes.Add(raizResult.Value!);
+            ordemRaiz++;
+        }
+
+        Result definirResult = processo.DefinirDocumentosExigidos(raizes, command.Precondicao);
         if (definirResult.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(definirResult.Error!);
@@ -174,6 +163,103 @@ public static class DefinirDocumentosExigidosCommandHandler
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+    }
+
+    /// <summary>Resolve o vocabulário de gatilho recursivamente na floresta — só a presença de gatilho, ainda sem I/O.</summary>
+    private static bool ExisteGatilho(IReadOnlyList<NoExigenciaInput> nos) =>
+        nos.Any(no => (no.Documento?.Condicoes.Count ?? 0) > 0 || ExisteGatilho(no.Filhos ?? []));
+
+    /// <summary>
+    /// Constrói UMA folha da árvore — exatamente a mesma resolução por-item do modelo plano
+    /// anterior (tipo de documento, aplicabilidade, gatilho, gate de fase, base legal,
+    /// idade/formato/tamanho), sem o antigo <c>GrupoSatisfacaoId</c> (a posição na árvore o
+    /// substitui).
+    /// </summary>
+    private static async Task<Result<DocumentoExigido>> ConstruirDocumentoExigidoAsync(
+        ItemDocumentoExigidoInput input,
+        ProcessoSeletivo processo,
+        ITipoDocumentoReader tipoDocumentoReader,
+        IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos,
+        IReadOnlyDictionary<string, string>? pontoResolucaoPorFato,
+        IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos,
+        CancellationToken cancellationToken)
+    {
+        TipoDocumentoView? tipoDocumento = await tipoDocumentoReader
+            .ObterPorIdAsync(input.TipoDocumentoId, cancellationToken)
+            .ConfigureAwait(false);
+        if (tipoDocumento is null)
+        {
+            return Result<DocumentoExigido>.Failure(new DomainError(
+                "DocumentoExigido.TipoDocumentoNaoEncontrado",
+                $"Tipo de documento {input.TipoDocumentoId} não encontrado ou não está mais vivo."));
+        }
+
+        Aplicabilidade aplicabilidade = input.Aplicabilidade switch
+        {
+            "GERAL" => Aplicabilidade.Geral,
+            "CONDICIONAL" => Aplicabilidade.Condicional,
+            _ => Aplicabilidade.Nenhuma,
+        };
+
+        Result<IReadOnlyList<CondicaoGatilho>> condicoesResult = ResolverCondicoes(
+            input.Condicoes, vocabularioFatos, dominiosDinamicos);
+        if (condicoesResult.IsFailure)
+        {
+            return Result<DocumentoExigido>.Failure(condicoesResult.Error!);
+        }
+
+        // Gate de fase (Story #916): uma condição de gatilho não pode citar um fato cujo
+        // PontoResolucao é uma fase posterior à fase em que o documento é exigido — não há
+        // como o gatilho já ter sido resolvido para o candidato quando a exigência entra
+        // em jogo.
+        if (condicoesResult.Value!.Count > 0)
+        {
+            Result gateDeFaseResult = ValidarGateDeFase(
+                condicoesResult.Value!, input.ExigidoNaFaseId, processo, pontoResolucaoPorFato!);
+            if (gateDeFaseResult.IsFailure)
+            {
+                return Result<DocumentoExigido>.Failure(gateDeFaseResult.Error!);
+            }
+        }
+
+        Result<IReadOnlyList<DocumentoExigidoBaseLegal>> basesLegaisResult = ResolverBasesLegais(input.BasesLegais);
+        if (basesLegaisResult.IsFailure)
+        {
+            return Result<DocumentoExigido>.Failure(basesLegaisResult.Error!);
+        }
+
+        IdadeMaximaEmissaoInput? idade = input.IdadeMaximaEmissao;
+        Result<IdadeMaximaEmissao?> idadeMaximaEmissaoResult = IdadeMaximaEmissao.Criar(
+            idade?.Valor,
+            UnidadeIdadeCodigo.FromCodigo(idade?.Unidade),
+            ReferenciaTipoIdadeEmissaoCodigo.FromCodigo(idade?.ReferenciaTipo),
+            idade?.Data,
+            idade?.ReferenciaFaseId);
+        if (idadeMaximaEmissaoResult.IsFailure)
+        {
+            return Result<DocumentoExigido>.Failure(idadeMaximaEmissaoResult.Error!);
+        }
+
+        Result<FormatosPermitidos> formatosPermitidosResult = ResolverFormatosPermitidos(input.FormatosPermitidos);
+        if (formatosPermitidosResult.IsFailure)
+        {
+            return Result<DocumentoExigido>.Failure(formatosPermitidosResult.Error!);
+        }
+
+        return DocumentoExigido.Criar(
+            input.ExigidoNaFaseId,
+            tipoDocumento.Id,
+            tipoDocumento.Codigo,
+            tipoDocumento.Nome,
+            tipoDocumento.Categoria,
+            aplicabilidade,
+            input.Obrigatorio,
+            input.ConsequenciaIndeferimento,
+            condicoesResult.Value!,
+            basesLegaisResult.Value!,
+            idadeMaximaEmissaoResult.Value,
+            formatosPermitidosResult.Value!,
+            input.TamanhoMaximoBytes);
     }
 
     /// <summary>
@@ -287,7 +373,7 @@ public static class DefinirDocumentosExigidosCommandHandler
     }
 
     /// <summary>
-    /// Resolve as bases legais de um item (Story #554, PR #898, issue #549) — só a forma de
+    /// Resolve as bases legais de uma folha (Story #554, PR #898, issue #549) — só a forma de
     /// cada base é validada aqui (referência não vazia, abrangência/status no domínio
     /// fechado); o gate "≥1 RESOLVIDO por exigência que determina resultado" é da
     /// publicação (<c>Domain.Services.ValidadorBaseLegalExigencias</c>), nunca da escrita.
@@ -311,6 +397,28 @@ public static class DefinirDocumentosExigidosCommandHandler
         }
 
         return Result<IReadOnlyList<DocumentoExigidoBaseLegal>>.Success(basesLegais);
+    }
+
+    /// <summary>Mesma resolução de <see cref="ResolverBasesLegais"/>, para a base legal PRÓPRIA de um grupo <c>OU</c>/<c>N-de</c> (Story #920) — tipo de entidade diferente (<see cref="NoExigenciaBaseLegal"/>), mesma forma de wire (<see cref="BaseLegalInput"/>).</summary>
+    private static Result<IReadOnlyList<NoExigenciaBaseLegal>> ResolverBasesLegaisDeGrupo(IReadOnlyList<BaseLegalInput> inputs)
+    {
+        List<NoExigenciaBaseLegal> basesLegais = [];
+        foreach (BaseLegalInput input in inputs)
+        {
+            TipoAbrangencia abrangencia = TipoAbrangenciaCodigo.FromCodigo(input.Abrangencia);
+            StatusBaseLegal status = StatusBaseLegalCodigo.FromCodigo(input.Status);
+
+            Result<NoExigenciaBaseLegal> baseLegalResult = NoExigenciaBaseLegal.Criar(
+                input.Referencia, abrangencia, status, input.Observacao);
+            if (baseLegalResult.IsFailure)
+            {
+                return Result<IReadOnlyList<NoExigenciaBaseLegal>>.Failure(baseLegalResult.Error!);
+            }
+
+            basesLegais.Add(baseLegalResult.Value!);
+        }
+
+        return Result<IReadOnlyList<NoExigenciaBaseLegal>>.Success(basesLegais);
     }
 
     /// <summary>
