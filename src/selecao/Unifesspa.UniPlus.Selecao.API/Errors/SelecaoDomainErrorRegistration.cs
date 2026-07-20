@@ -404,6 +404,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // envelope chega na PR 4/4 (snapshot conjunto final) — publicar árvore com grupo
         // E/OU hoje é recusado, não perde dado silenciosamente.
         new("NoExigencia.SnapshotConjuntoAindaNaoSuportado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.snapshot_conjunto_ainda_nao_suportado", "A árvore de satisfação com grupos E/OU ainda não é publicável — chega na Story seguinte da change")),
+        // Mesmo fail-closed, estendido à cardinalidade qualificada de folha solteira (Story
+        // #921, achado de revisão do PR #937): o snapshot canônico ainda não congela
+        // quantidadeMinima/chaveDistincao de NoExigencia — publicar perderia a exigência
+        // silenciosamente.
+        new("NoExigencia.CardinalidadeQualificadaAindaNaoSuportada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia.cardinalidade_qualificada_ainda_nao_suportada", "Uma folha com cardinalidade qualificada ainda não é publicável — chega na Story seguinte da change")),
         // Base legal 1:N PRÓPRIA de grupo OU/N-de (Story #920) — mesmo shape/mensagens de
         // DocumentoExigidoBaseLegal acima.
         new("NoExigenciaBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
