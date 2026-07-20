@@ -1878,7 +1878,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"MODALIDADE\",\n        \"operador\": \"EM\",\n        \"valor\": \"[\\\"CODIGO_INEXISTENTE_{{run_suffix}}\\\"]\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": \"QUALQUER\",\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"EM\",\n          \"valor\": \"[\\\"CODIGO_INEXISTENTE_{{run_suffix}}\\\"]\"\n        }\n      ],\n      \"basesLegais\": [],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1943,7 +1943,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"FAIXA_ETARIA\",\n        \"operador\": \"MAIOR_IGUAL\",\n        \"valor\": \"18.5\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": \"QUALQUER\",\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"MAIOR_IGUAL\",\n          \"valor\": \"18.5\"\n        }\n      ],\n      \"basesLegais\": [],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2008,7 +2008,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"CONDICIONAL\",\n    \"obrigatorio\": false,\n    \"consequenciaIndeferimento\": \"ELIMINA\",\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"FAIXA_ETARIA\",\n        \"operador\": \"EM\",\n        \"valor\": \"[18,19]\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": \"QUALQUER\",\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"EM\",\n          \"valor\": \"[18,19]\"\n        }\n      ],\n      \"basesLegais\": [],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2073,7 +2073,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n    \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n    \"aplicabilidade\": \"GERAL\",\n    \"obrigatorio\": true,\n    \"consequenciaIndeferimento\": null,\n    \"grupoSatisfacaoId\": null,\n    \"condicoes\": [\n      {\n        \"clausula\": 0,\n        \"fato\": \"SEXO\",\n        \"operador\": \"IGUAL\",\n        \"valor\": \"MASCULINO\"\n      }\n    ],\n    \"basesLegais\": [],\n    \"idadeMaximaEmissao\": null,\n    \"formatosPermitidos\": \"QUALQUER\",\n    \"tamanhoMaximoBytes\": null\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SEXO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"MASCULINO\"\n        }\n      ],\n      \"basesLegais\": [],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2138,7 +2138,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Norma interna do certame\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"AC_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": null\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"EM\",\n          \"valor\": \"[\\\"LB_PPI_SMK_{{run_suffix}}\\\",\\\"LB_Q_SMK_{{run_suffix}}\\\"]\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 12.711/2012, art. 3\u00ba\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda per capita\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"CONDICAO_ATENDIMENTO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PCD_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 13.146/2015, art. 30\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo m\u00e9dico com CID\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SEXO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"MASCULINO\"\n        },\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"MAIOR_IGUAL\",\n          \"valor\": \"18\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Servi\u00e7o Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Certificado de alistamento/quita\u00e7\u00e3o militar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"NACIONALIDADE\",\n          \"operador\": \"DIFERENTE\",\n          \"valor\": \"ESTRANGEIRO\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Servi\u00e7o Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Quita\u00e7\u00e3o com o servi\u00e7o militar \u2014 exigida de candidatos n\u00e3o estrangeiros (PS Principal 2027, PSIQ 2027)\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        {\n          \"formato\": \"PDF\",\n          \"tamanhoMaximoBytesMax\": 3000000\n        },\n        {\n          \"formato\": \"JPEG\",\n          \"tamanhoMaximoBytesMax\": null\n        }\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 15\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda \u2014 \u00faltimos 3 meses\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": 3,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": \"COMPETENCIA_MENSAL\",\n    \"dataReferencia\": \"2027-03-01\",\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"RG de cada membro do n\u00facleo familiar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Norma interna do certame\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": false,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"AC_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 12\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": null\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"MODALIDADE\",\n          \"operador\": \"EM\",\n          \"valor\": \"[\\\"LB_PPI_SMK_{{run_suffix}}\\\",\\\"LB_Q_SMK_{{run_suffix}}\\\"]\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 12.711/2012, art. 3º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda per capita\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"CONDICAO_ATENDIMENTO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PCD_SMK_{{run_suffix}}\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 13.146/2015, art. 30\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Laudo médico com CID\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SEXO\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"MASCULINO\"\n        },\n        {\n          \"clausula\": 0,\n          \"fato\": \"FAIXA_ETARIA\",\n          \"operador\": \"MAIOR_IGUAL\",\n          \"valor\": \"18\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Certificado de alistamento/quitação militar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"NACIONALIDADE\",\n          \"operador\": \"DIFERENTE\",\n          \"valor\": \"ESTRANGEIRO\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei do Serviço Militar (Lei 4.375/1964)\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Quitação com o serviço militar — exigida de candidatos não estrangeiros (PS Principal 2027, PSIQ 2027)\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        {\n          \"formato\": \"PDF\",\n          \"tamanhoMaximoBytesMax\": 3000000\n        },\n        {\n          \"formato\": \"JPEG\",\n          \"tamanhoMaximoBytesMax\": null\n        }\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": null,\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 15\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Comprovante de renda — últimos 3 meses\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": 3,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": \"COMPETENCIA_MENSAL\",\n    \"dataReferencia\": \"2027-03-01\",\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  },\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{fase_cronograma_id}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"GERAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"RG de cada membro do núcleo familiar\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": [\n        \"PDF\"\n      ],\n      \"tamanhoMaximoBytes\": 5000000\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2698,10 +2698,10 @@
                   "  // tem de devolver, sempre, o mesmo hash.",
                   "  pm.environment.set('hash_configuracao_v1', j.hashConfiguracao);",
                   "});",
-                  "pm.test('bloco congelado tem as 6 exigências (7.3 + RN08) com os gatilhos corretos', () => {",
+                  "pm.test('bloco congelado tem as 8 exigências (7.3 + RN08 + cardinalidade + repetição) com os gatilhos corretos', () => {",
                   "  const j = pm.response.json();",
                   "  const exigencias = j.configuracao.documentosExigidos.exigencias;",
-                  "  pm.expect(exigencias, 'GERAL + 5 CONDICIONAL').to.have.lengthOf(6);",
+                  "  pm.expect(exigencias, '3 GERAL (nível de ensino + cardinalidade qualificada + repetição por entidade) + 5 CONDICIONAL').to.have.lengthOf(8);",
                   "",
                   "  const geral = exigencias.find(e => e.aplicabilidade === 'Geral');",
                   "  pm.expect(geral, 'nível de ensino (GERAL, sem gatilho)').to.not.be.undefined;",
@@ -3617,6 +3617,2664 @@
         }
       ],
       "description": "Abre → edita (If-Match) → altera motivo (If-Match) → fecha (congela N+1). Depois abre uma 2ª sessão só para provar o descarte (DELETE reidrata byte-a-byte a versão congelada)."
+    },
+    {
+      "name": "ProcessoSeletivo — Árvore de Satisfação (padrões estruturais, Story #923 §5)",
+      "description": "Matriz Postman dos padrões estruturais reais do corpus (PS Principal 2027 §41-42, PSIQ 2027 §2) que a coleção principal (folder \"ProcessoSeletivo — Configuração\") não cobre — aquela usa só folhas soltas na raiz, sem nenhum grupo E/OU. Cada padrão usa um ProcessoSeletivo DEDICADO (criado do zero, um único PUT documentos-exigidos, nunca substituído) — não um processo compartilhado entre padrões, por causa do achado #943 (substituir uma árvore que já contém um grupo E/OU por qualquer outra quebra com 500 de forma intermitente; rastreado separadamente, não é responsabilidade desta suíte corrigir).\n\nDois padrões do corpus ficam de fora da matriz por não serem estruturais da árvore de satisfação: \"três lideranças\" (PSIQ §2) é regra de CONTEÚDO de um único documento (Anexo III assinado por 3 lideranças) — modelada corretamente como UMA folha comum, não como cardinalidade OCORRENCIA de 3 slots; \"frente/verso\" (apresentação vs arquivo) é contagem resolvida na homologação/análise documental, ainda não implementada — não testável via PUT documentos-exigidos hoje.",
+      "item": [
+        {
+          "name": "Árvore p1 — Criar ProcessoSeletivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 1: Certificado E Histórico\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.environment.set('arvore_processo_id_p1', pm.response.json());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p1 — Definir Etapas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/etapas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}",
+                "etapas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p1 — Definir Oferta de Atendimento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/oferta-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}",
+                "oferta-atendimento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condicaoIds\": [],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p1 — Definir Distribuição de Vagas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/distribuicao-vagas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}",
+                "distribuicao-vagas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p1 — Definir Classificação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}",
+                "classificacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p1 — Definir Cronograma de Fases",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/cronograma-fases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}",
+                "cronograma-fases"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p1 — Obter ProcessoSeletivo (capturar fase)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('arvore_fase_id_p1', j.cronogramaFases[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 1 — Certificado E Histórico: PUT",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"tipo\": \"E\",\n    \"documento\": null,\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": [\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p1}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p1}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content — Certificado E Histórico: PUT\", () => {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 1 — Certificado E Histórico: verificar árvore persistida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p1}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('raiz é grupo E com 2 filhos FOLHA', () => {",
+                  "  const raizes = pm.response.json().raizesExigencia;",
+                  "  pm.expect(raizes).to.have.lengthOf(1);",
+                  "  pm.expect(raizes[0].tipo).to.eql('E');",
+                  "  pm.expect(raizes[0].filhos).to.have.lengthOf(2);",
+                  "  raizes[0].filhos.forEach(f => pm.expect(f.tipo).to.eql('FOLHA'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p2 — Criar ProcessoSeletivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 2: E[OU[RG,CPF], Certidão]\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.environment.set('arvore_processo_id_p2', pm.response.json());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p2 — Definir Etapas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/etapas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}",
+                "etapas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p2 — Definir Oferta de Atendimento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/oferta-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}",
+                "oferta-atendimento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condicaoIds\": [],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p2 — Definir Distribuição de Vagas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/distribuicao-vagas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}",
+                "distribuicao-vagas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p2 — Definir Classificação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}",
+                "classificacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p2 — Definir Cronograma de Fases",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/cronograma-fases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}",
+                "cronograma-fases"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p2 — Obter ProcessoSeletivo (capturar fase)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('arvore_fase_id_p2', j.cronogramaFases[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 2 — E[OU[RG,CPF], Certidão] por membro do núcleo familiar: PUT",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"tipo\": \"E\",\n    \"documento\": null,\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": [\n      {\n        \"tipo\": \"OU\",\n        \"documento\": null,\n        \"quantidadeMinima\": 1,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": [\n          {\n            \"tipo\": \"FOLHA\",\n            \"documento\": {\n              \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n              \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n              \"aplicabilidade\": \"CONDICIONAL\",\n              \"obrigatorio\": true,\n              \"consequenciaIndeferimento\": \"ELIMINA\",\n              \"condicoes\": [\n                {\n                  \"clausula\": 0,\n                  \"fato\": \"MAIOR_IDADE\",\n                  \"operador\": \"IGUAL\",\n                  \"valor\": \"false\"\n                }\n              ],\n              \"basesLegais\": [\n                {\n                  \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n                  \"abrangencia\": \"INTERNA_EDITAL\",\n                  \"status\": \"RESOLVIDO\",\n                  \"observacao\": null\n                }\n              ],\n              \"idadeMaximaEmissao\": null,\n              \"formatosPermitidos\": \"QUALQUER\",\n              \"tamanhoMaximoBytes\": null\n            },\n            \"quantidadeMinima\": null,\n            \"consequencia\": null,\n            \"basesLegais\": null,\n            \"filhos\": null,\n            \"chaveDistincao\": null,\n            \"dataReferencia\": null,\n            \"ocorrenciasEsperadas\": null,\n            \"repetePorEntidade\": null\n          },\n          {\n            \"tipo\": \"FOLHA\",\n            \"documento\": {\n              \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n              \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n              \"aplicabilidade\": \"CONDICIONAL\",\n              \"obrigatorio\": true,\n              \"consequenciaIndeferimento\": \"ELIMINA\",\n              \"condicoes\": [\n                {\n                  \"clausula\": 0,\n                  \"fato\": \"MAIOR_IDADE\",\n                  \"operador\": \"IGUAL\",\n                  \"valor\": \"false\"\n                }\n              ],\n              \"basesLegais\": [\n                {\n                  \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n                  \"abrangencia\": \"INTERNA_EDITAL\",\n                  \"status\": \"RESOLVIDO\",\n                  \"observacao\": null\n                }\n              ],\n              \"idadeMaximaEmissao\": null,\n              \"formatosPermitidos\": \"QUALQUER\",\n              \"tamanhoMaximoBytes\": null\n            },\n            \"quantidadeMinima\": null,\n            \"consequencia\": null,\n            \"basesLegais\": null,\n            \"filhos\": null,\n            \"chaveDistincao\": null,\n            \"dataReferencia\": null,\n            \"ocorrenciasEsperadas\": null,\n            \"repetePorEntidade\": null\n          }\n        ],\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p2}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": \"ELIMINA\",\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"false\"\n            }\n          ],\n          \"basesLegais\": [\n            {\n              \"referencia\": \"Res. Unifesspa 532/2021, art. 20\",\n              \"abrangencia\": \"INTERNA_EDITAL\",\n              \"status\": \"RESOLVIDO\",\n              \"observacao\": null\n            }\n          ],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content — E[OU[RG,CPF], Certidão] por membro do núcleo familiar: PUT\", () => {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 2 — E[OU[RG,CPF], Certidão]: verificar árvore persistida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('raiz E repetePorEntidade com filho OU e filho FOLHA', () => {",
+                  "  const raiz = pm.response.json().raizesExigencia[0];",
+                  "  pm.expect(raiz.tipo).to.eql('E');",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('MEMBRO_NUCLEO_FAMILIAR');",
+                  "  pm.expect(raiz.filhos).to.have.lengthOf(2);",
+                  "  const ou = raiz.filhos.find(f => f.tipo === 'OU');",
+                  "  pm.expect(ou, 'filho OU (RG ou CPF)').to.not.be.undefined;",
+                  "  pm.expect(ou.filhos).to.have.lengthOf(2);",
+                  "  pm.expect(ou.quantidadeMinima).to.eql(1);",
+                  "  const certidao = raiz.filhos.find(f => f.tipo === 'FOLHA');",
+                  "  pm.expect(certidao, 'filho FOLHA (Certidão)').to.not.be.undefined;",
+                  "  pm.expect(ou.repetePorEntidade, 'repetição não aninha — só a raiz carrega').to.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p3 — Criar ProcessoSeletivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 3: guarda condicional\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.environment.set('arvore_processo_id_p3', pm.response.json());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p3 — Definir Etapas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/etapas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}",
+                "etapas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p3 — Definir Oferta de Atendimento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/oferta-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}",
+                "oferta-atendimento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condicaoIds\": [],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p3 — Definir Distribuição de Vagas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/distribuicao-vagas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}",
+                "distribuicao-vagas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p3 — Definir Classificação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}",
+                "classificacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p3 — Definir Cronograma de Fases",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/cronograma-fases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}",
+                "cronograma-fases"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p3 — Obter ProcessoSeletivo (capturar fase)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('arvore_fase_id_p3', j.cronogramaFases[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 3 — Guarda condicional (SOB_GUARDA): PUT",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"tipo\": \"FOLHA\",\n    \"documento\": {\n      \"exigidoNaFaseId\": \"{{arvore_fase_id_p3}}\",\n      \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n      \"aplicabilidade\": \"CONDICIONAL\",\n      \"obrigatorio\": true,\n      \"consequenciaIndeferimento\": \"ELIMINA\",\n      \"condicoes\": [\n        {\n          \"clausula\": 0,\n          \"fato\": \"SOB_GUARDA\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"true\"\n        }\n      ],\n      \"basesLegais\": [\n        {\n          \"referencia\": \"Lei 12.711/2012, art. 3º\",\n          \"abrangencia\": \"INTERNA_EDITAL\",\n          \"status\": \"RESOLVIDO\",\n          \"observacao\": \"Documento judicial de guarda\"\n        }\n      ],\n      \"idadeMaximaEmissao\": null,\n      \"formatosPermitidos\": \"QUALQUER\",\n      \"tamanhoMaximoBytes\": null\n    },\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": null,\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content — Guarda condicional (SOB_GUARDA): PUT\", () => {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 3 — Guarda condicional: verificar árvore persistida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p3}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('folha repetePorEntidade com gatilho por atributo da entidade', () => {",
+                  "  const raiz = pm.response.json().raizesExigencia[0];",
+                  "  pm.expect(raiz.tipo).to.eql('FOLHA');",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('MEMBRO_NUCLEO_FAMILIAR');",
+                  "  pm.expect(raiz.documento.condicoes[0].fato).to.eql('SOB_GUARDA');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p4 — Criar ProcessoSeletivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 4: IRPF/isento por adulto\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.environment.set('arvore_processo_id_p4', pm.response.json());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p4 — Definir Etapas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/etapas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}",
+                "etapas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p4 — Definir Oferta de Atendimento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/oferta-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}",
+                "oferta-atendimento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condicaoIds\": [],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p4 — Definir Distribuição de Vagas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/distribuicao-vagas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}",
+                "distribuicao-vagas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p4 — Definir Classificação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}",
+                "classificacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p4 — Definir Cronograma de Fases",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/cronograma-fases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}",
+                "cronograma-fases"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p4 — Obter ProcessoSeletivo (capturar fase)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('arvore_fase_id_p4', j.cronogramaFases[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 4 — IRPF/isento por adulto sem renda: PUT",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"tipo\": \"OU\",\n    \"documento\": null,\n    \"quantidadeMinima\": 1,\n    \"consequencia\": \"ELIMINA\",\n    \"basesLegais\": [\n      {\n        \"referencia\": \"Res. Unifesspa 532/2021, art. 25\",\n        \"abrangencia\": \"INTERNA_EDITAL\",\n        \"status\": \"RESOLVIDO\",\n        \"observacao\": \"Isenção de renda para membro adulto sem renda\"\n      }\n    ],\n    \"filhos\": [\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p4}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            },\n            {\n              \"clausula\": 0,\n              \"fato\": \"SEM_RENDA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            }\n          ],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p4}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"CONDICIONAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [\n            {\n              \"clausula\": 0,\n              \"fato\": \"MAIOR_IDADE\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            },\n            {\n              \"clausula\": 0,\n              \"fato\": \"SEM_RENDA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"true\"\n            }\n          ],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"MEMBRO_NUCLEO_FAMILIAR\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content — IRPF/isento por adulto sem renda: PUT\", () => {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 4 — IRPF/isento por adulto: verificar árvore persistida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p4}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('raiz OU com consequência e base legal própria', () => {",
+                  "  const raiz = pm.response.json().raizesExigencia[0];",
+                  "  pm.expect(raiz.tipo).to.eql('OU');",
+                  "  pm.expect(raiz.consequencia).to.eql('ELIMINA');",
+                  "  pm.expect(raiz.basesLegais).to.have.lengthOf(1);",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('MEMBRO_NUCLEO_FAMILIAR');",
+                  "  pm.expect(raiz.filhos).to.have.lengthOf(2);",
+                  "  const fatos = raiz.filhos[0].documento.condicoes.map(c => c.fato).sort();",
+                  "  pm.expect(fatos, 'AND entre MAIOR_IDADE e SEM_RENDA na mesma cláusula').to.eql(['MAIOR_IDADE', 'SEM_RENDA']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p5 — Criar ProcessoSeletivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Árvore — Padrão 5: PF + PJ vinculada\",\n  \"tipo\": \"siSU\",\n  \"origemCandidatos\": \"inscricaoPropria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.environment.set('arvore_processo_id_p5', pm.response.json());",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p5 — Definir Etapas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/etapas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}",
+                "etapas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"nome\": \"Prova\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p5 — Definir Oferta de Atendimento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/oferta-atendimento",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}",
+                "oferta-atendimento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"condicaoIds\": [],\n  \"recursoIds\": [],\n  \"tipoDeficienciaIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p5 — Definir Distribuição de Vagas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/distribuicao-vagas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}",
+                "distribuicao-vagas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p5 — Definir Classificação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/classificacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}",
+                "classificacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p5 — Definir Cronograma de Fases",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/cronograma-fases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}",
+                "cronograma-fases"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"ordem\": 1,\n    \"faseCanonicaId\": \"{{fase_canonica_id}}\",\n    \"inicio\": \"2026-01-01T00:00:00Z\",\n    \"fim\": \"2026-01-31T00:00:00Z\",\n    \"atoProduzidoCodigo\": \"RESULTADO_FINAL\",\n    \"tiposBancaIds\": [],\n    \"regraRecurso\": null\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Árvore p5 — Obter ProcessoSeletivo (capturar fase)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.environment.set('arvore_fase_id_p5', j.cronogramaFases[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 5 — PF + PJ vinculada (extratos + IRPJ por PJ): PUT",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/documentos-exigidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}",
+                "documentos-exigidos"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"tipo\": \"E\",\n    \"documento\": null,\n    \"quantidadeMinima\": null,\n    \"consequencia\": null,\n    \"basesLegais\": null,\n    \"filhos\": [\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p5}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      },\n      {\n        \"tipo\": \"FOLHA\",\n        \"documento\": {\n          \"exigidoNaFaseId\": \"{{arvore_fase_id_p5}}\",\n          \"tipoDocumentoId\": \"{{tipo_documento_id}}\",\n          \"aplicabilidade\": \"GERAL\",\n          \"obrigatorio\": true,\n          \"consequenciaIndeferimento\": null,\n          \"condicoes\": [],\n          \"basesLegais\": [],\n          \"idadeMaximaEmissao\": null,\n          \"formatosPermitidos\": \"QUALQUER\",\n          \"tamanhoMaximoBytes\": null\n        },\n        \"quantidadeMinima\": null,\n        \"consequencia\": null,\n        \"basesLegais\": null,\n        \"filhos\": null,\n        \"chaveDistincao\": null,\n        \"dataReferencia\": null,\n        \"ocorrenciasEsperadas\": null,\n        \"repetePorEntidade\": null\n      }\n    ],\n    \"chaveDistincao\": null,\n    \"dataReferencia\": null,\n    \"ocorrenciasEsperadas\": null,\n    \"repetePorEntidade\": \"PESSOA_JURIDICA_VINCULADA\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content — PF + PJ vinculada (extratos + IRPJ por PJ): PUT\", () => {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Padrão 5 — PF + PJ vinculada: verificar árvore persistida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{arvore_processo_id_p5}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('raiz E repetePorEntidade PESSOA_JURIDICA_VINCULADA', () => {",
+                  "  const raiz = pm.response.json().raizesExigencia[0];",
+                  "  pm.expect(raiz.tipo).to.eql('E');",
+                  "  pm.expect(raiz.repetePorEntidade).to.eql('PESSOA_JURIDICA_VINCULADA');",
+                  "  pm.expect(raiz.filhos).to.have.lengthOf(2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }
