@@ -38,11 +38,20 @@ public sealed class ResolvedorArvoreSatisfacaoTests
     private static Dictionary<string, JsonElement> Fatos(string fato, bool valor) =>
         new(StringComparer.Ordinal) { [fato] = JsonSerializer.SerializeToElement(valor) };
 
-    private static Dictionary<Guid, ApresentacaoDocumento> Apresenta(params DocumentoExigido[] documentos) =>
-        documentos.ToDictionary(static d => d.Id, static d => new ApresentacaoDocumento(Guid.CreateVersion7()));
+    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Apresenta(params DocumentoExigido[] documentos) =>
+        documentos.ToDictionary(
+            static d => d.Id,
+            static IReadOnlyList<ApresentacaoDocumento> (d) => [new ApresentacaoDocumento(Guid.CreateVersion7())]);
 
-    private static readonly IReadOnlyDictionary<Guid, ApresentacaoDocumento> SemApresentacoes =
-        new Dictionary<Guid, ApresentacaoDocumento>();
+    private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> ApresentaComChaves(
+        DocumentoExigido documento, params string?[] chavesDistincao) =>
+        new()
+        {
+            [documento.Id] = [.. chavesDistincao.Select(static chave => new ApresentacaoDocumento(Guid.CreateVersion7(), chave))],
+        };
+
+    private static readonly IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> SemApresentacoes =
+        new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>();
 
     private static ArvoreExigenciasCongelada Arvore(params NoExigencia[] raizes) =>
         ArvoreExigenciasCongelada.DeGrafoReidratado(raizes);
@@ -50,7 +59,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
     private static Result<ResultadoResolucaoArvore> Resolver(
         ArvoreExigenciasCongelada arvore,
         IReadOnlyDictionary<string, JsonElement>? fatos = null,
-        IReadOnlyDictionary<Guid, ApresentacaoDocumento>? apresentacoes = null) =>
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null) =>
         ResolvedorArvoreSatisfacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes);
 
     [Fact(DisplayName = "Árvore ausente retorna ArvoreAusente")]
@@ -303,6 +312,143 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         resultado.Value!.ConsequenciasVigentes.Should().ContainSingle(
             c => c.NoExigenciaId == raiz.Id && c.TipoOrigem == TipoNo.Folha && c.Consequencia == "ELIMINA");
         resultado.Value!.StatusPorExigencia[documento.Id].Should().Be(StatusResolucaoExigencia.Pendente);
+    }
+
+    // ── Cardinalidade qualificada (Story #921) ───────────────────────────────────────────
+
+    [Fact(DisplayName = "Folha sem chaveDistincao: contagem bruta — 2 apresentações satisfazem N=2")]
+    public void Cardinalidade_SemChave_ContagemBrutaSatisfaz()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, quantidadeMinima: 2).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, null, null));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+    }
+
+    [Fact(DisplayName = "Folha sem chaveDistincao: 3 arquivos da mesma competência sem tag não satisfazem N=2 se só 1 apresentação")]
+    public void Cardinalidade_SemChave_UmaApresentacaoNaoSatisfazDois()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, quantidadeMinima: 2).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, (string?)null));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
+    [Fact(DisplayName = "CompetenciaMensal: 3 competências regulares corretas satisfaz")]
+    public void Cardinalidade_CompetenciaMensal_TresRegularesSatisfaz()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        DateOnly ancora = new(2026, 3, 15);
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: ancora).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "2026-03", "2026-02", "2026-01"));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+    }
+
+    [Fact(DisplayName = "CompetenciaMensal: falta a competência mais recente fica pendente mesmo com N apresentações")]
+    public void Cardinalidade_CompetenciaMensal_FaltaMaisRecentePendente()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        DateOnly ancora = new(2026, 3, 15);
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 3, chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: ancora).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "2026-02", "2026-01", "2025-12"));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Ocorrencia com ocorrenciasEsperadas: cobre os slots concretos satisfaz")]
+    public void Cardinalidade_OcorrenciaComLista_CobreSlotsSatisfaz()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
+            ocorrenciasEsperadas: ["eleicao_2026_1", "eleicao_2026_2"]).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_2026_1", "eleicao_2026_2"));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+    }
+
+    [Fact(DisplayName = "Ocorrencia com ocorrenciasEsperadas: falta um slot concreto fica pendente")]
+    public void Cardinalidade_OcorrenciaComLista_FaltaSlotPendente()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
+            ocorrenciasEsperadas: ["eleicao_2026_1", "eleicao_2026_2"]).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_2026_1"));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: distinção pura por N tags diferentes satisfaz")]
+    public void Cardinalidade_OcorrenciaSemLista_DistincaoPuraSatisfaz()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_x", "eleicao_y"));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Satisfeito);
+    }
+
+    [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: mesma tag repetida não conta duas vezes")]
+    public void Cardinalidade_OcorrenciaSemLista_TagRepetidaNaoConta()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_x", "eleicao_x"));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Ocorrencia sem ocorrenciasEsperadas: tag nula/em branco não conta como distinção")]
+    public void Cardinalidade_OcorrenciaSemLista_TagNulaNaoConta()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz), apresentacoes: ApresentaComChaves(documento, "eleicao_x", null, "   "));
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
+    }
+
+    [Fact(DisplayName = "Sem chaveDistincao: a mesma apresentação relatada duas vezes (mesmo Id) não conta como duas")]
+    public void Cardinalidade_SemChave_MesmaIdentidadeRepetidaNaoConta()
+    {
+        DocumentoExigido documento = DocumentoGeral();
+        NoExigencia raiz = NoExigencia.CriarFolha(documento, 0, quantidadeMinima: 2).Value!;
+        ApresentacaoDocumento apresentacao = new(Guid.CreateVersion7());
+        Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes = new()
+        {
+            [documento.Id] = [apresentacao, apresentacao],
+        };
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz), apresentacoes: apresentacoes);
+
+        resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Pendente);
     }
 
     private static NoExigenciaBaseLegal BaseLegalResolvida() =>

@@ -99,7 +99,17 @@ public static class DefinirDocumentosExigidosCommandHandler
                     return Result<NoExigencia>.Failure(documentoResult.Error!);
                 }
 
-                return NoExigencia.CriarFolha(documentoResult.Value!, ordem);
+                ChaveDistincao? chaveDistincao = input.ChaveDistincao is null
+                    ? null
+                    : ChaveDistincaoCodigo.FromCodigo(input.ChaveDistincao);
+
+                return NoExigencia.CriarFolha(
+                    documentoResult.Value!,
+                    ordem,
+                    input.QuantidadeMinima,
+                    chaveDistincao,
+                    input.DataReferencia,
+                    input.OcorrenciasEsperadas);
             }
 
             TipoNo tipo = input.Tipo switch

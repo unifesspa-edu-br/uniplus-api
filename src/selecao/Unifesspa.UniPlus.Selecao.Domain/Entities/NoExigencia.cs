@@ -24,11 +24,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <see cref="Enums.Aplicabilidade"/>).
 /// </para>
 /// <para>
-/// <b>Cardinalidade nesta Story</b>: <see cref="QuantidadeMinima"/> só existe em
-/// <see cref="TipoNo.GrupoOu"/> (quantos FILHOS satisfeitos) — a cardinalidade PRÓPRIA de uma
-/// folha (contar múltiplas apresentações da MESMA exigência, <c>chaveDistincao</c>) é a PR
-/// seguinte (§2, Story #921); nesta Story uma folha continua satisfeita por presença de UMA
-/// apresentação, igual ao modelo anterior.
+/// <b>Cardinalidade</b> (Story #920 + #921): <see cref="QuantidadeMinima"/> vale para os dois
+/// tipos que a carregam — em <see cref="TipoNo.GrupoOu"/>, quantos FILHOS satisfeitos; em
+/// <see cref="TipoNo.Folha"/>, quantas APRESENTAÇÕES distintas da mesma exigência (não arquivos —
+/// frente/verso é uma apresentação só). <see cref="ChaveDistincao"/> qualifica COMO essas
+/// apresentações se distinguem (calendário derivável ou ocorrências congeladas).
 /// </para>
 /// <para>
 /// <b>Consequência/base legal de grupo</b>: só <see cref="TipoNo.GrupoOu"/> pode carregar
@@ -50,6 +50,14 @@ public sealed class NoExigencia : EntityBase
 
     public const int QuantidadeMinimaPadrao = 1;
 
+    /// <summary>
+    /// Teto operacional de <see cref="QuantidadeMinima"/> em folha — não é regra de satisfação
+    /// (o domínio não limita quantas apresentações uma exigência pode pedir), mas defende
+    /// <see cref="ComputarCompetencias"/>/<see cref="ComputarExercicios"/> de loops/alocações
+    /// desproporcionais e de <c>quantidadeMinima</c> maior que o calendário representável.
+    /// </summary>
+    private const int QuantidadeMinimaDeFolhaMaxima = 366;
+
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>Nó pai na árvore — <see langword="null"/> significa raiz (Story #920, árvore recursiva sem limite semântico de profundidade).</summary>
@@ -66,7 +74,12 @@ public sealed class NoExigencia : EntityBase
     /// <summary>Navegação da folha — carregada junto pelo repositório (mesmo agregado, mesma transação).</summary>
     public DocumentoExigido? DocumentoExigido { get; private set; }
 
-    /// <summary>Só <see cref="TipoNo.GrupoOu"/> — mínimo de filhos satisfeitos (default <see cref="QuantidadeMinimaPadrao"/>). <see langword="null"/> em folha/E.</summary>
+    /// <summary>
+    /// Cardinalidade do nó (default <see cref="QuantidadeMinimaPadrao"/>) — em <see cref="TipoNo.Folha"/>
+    /// (Story #921), número mínimo de APRESENTAÇÕES distintas (não arquivos: frente/verso = 1
+    /// apresentação); em <see cref="TipoNo.GrupoOu"/> (Story #920), quantos filhos satisfeitos.
+    /// <see langword="null"/> só em <see cref="TipoNo.GrupoE"/> (sem cardinalidade própria).
+    /// </summary>
     public int? QuantidadeMinima { get; private set; }
 
     /// <summary>
@@ -75,6 +88,29 @@ public sealed class NoExigencia : EntityBase
     /// <see cref="TipoNo.GrupoE"/> é transparente e NUNCA carrega consequência própria.
     /// </summary>
     public string? Consequencia { get; private set; }
+
+    /// <summary>
+    /// Só <see cref="TipoNo.Folha"/> (Story #921) — catálogo fechado de 3 valores para distinguir
+    /// cardinalidade de apresentações. <see langword="null"/> = sem qualificação (contagem bruta de
+    /// <see cref="QuantidadeMinima"/> apresentações, sem exigir slot específico).
+    /// </summary>
+    public ChaveDistincao? ChaveDistincao { get; private set; }
+
+    /// <summary>
+    /// Âncora para <see cref="Enums.ChaveDistincao.CompetenciaMensal"/>/<see cref="Enums.ChaveDistincao.ExercicioAnual"/>
+    /// — obrigatória sse uma dessas duas chaves, proibida caso contrário. "Últimos N" = as N
+    /// unidades regulares imediatamente ≤ esta data (config congelada; ver <see cref="SlotsEsperados"/>).
+    /// </summary>
+    public DateOnly? DataReferencia { get; private set; }
+
+    /// <summary>
+    /// Só <see cref="Enums.ChaveDistincao.Ocorrencia"/>, opcional — a lista de slots esperados
+    /// (identificadores congelados, ex.: as duas eleições determinadas pelo edital). Presente ⇒
+    /// <see cref="QuantidadeMinima"/> deve igualar o tamanho da lista (cada slot é uma apresentação
+    /// distinta e obrigatória). Ausente ⇒ modo "distinção pura": bastam N ocorrências diferentes,
+    /// sem recência.
+    /// </summary>
+    public IReadOnlyList<string>? OcorrenciasEsperadas { get; private set; }
 
     private readonly List<NoExigencia> _filhos = [];
 
@@ -88,8 +124,20 @@ public sealed class NoExigencia : EntityBase
 
     private NoExigencia() { }
 
-    /// <summary>Cria um nó folha — envolve <paramref name="documentoExigido"/> 1:1.</summary>
-    public static Result<NoExigencia> CriarFolha(DocumentoExigido documentoExigido, int ordem)
+    /// <summary>
+    /// Cria um nó folha — envolve <paramref name="documentoExigido"/> 1:1. Cardinalidade
+    /// qualificada (Story #921): <paramref name="quantidadeMinima"/> conta APRESENTAÇÕES (não
+    /// arquivos); <paramref name="chaveDistincao"/>/<paramref name="dataReferencia"/>/
+    /// <paramref name="ocorrenciasEsperadas"/> só fazem sentido juntos, por chave (ver spec
+    /// "Cardinalidade qualificada" — <c>documentos-exigidos-composicao</c>).
+    /// </summary>
+    public static Result<NoExigencia> CriarFolha(
+        DocumentoExigido documentoExigido,
+        int ordem,
+        int? quantidadeMinima = null,
+        ChaveDistincao? chaveDistincao = null,
+        DateOnly? dataReferencia = null,
+        IReadOnlyList<string>? ocorrenciasEsperadas = null)
     {
         ArgumentNullException.ThrowIfNull(documentoExigido);
 
@@ -99,13 +147,189 @@ public sealed class NoExigencia : EntityBase
                 "NoExigencia.OrdemInvalida", "A ordem do nó não pode ser negativa."));
         }
 
+        int n = quantidadeMinima ?? QuantidadeMinimaPadrao;
+        if (n < 1 || n > QuantidadeMinimaDeFolhaMaxima)
+        {
+            return Result<NoExigencia>.Failure(new DomainError(
+                "NoExigencia.QuantidadeMinimaDeFolhaInvalida",
+                $"quantidadeMinima de uma folha, quando presente, deve estar entre 1 e {QuantidadeMinimaDeFolhaMaxima}."));
+        }
+
+        ChaveDistincao chaveNormalizada = chaveDistincao ?? Enums.ChaveDistincao.Nenhuma;
+        if (!Enum.IsDefined(chaveNormalizada))
+        {
+            return Result<NoExigencia>.Failure(new DomainError(
+                "NoExigencia.ChaveDistincaoInvalida",
+                "chaveDistincao fora do catálogo fechado (COMPETENCIA_MENSAL, EXERCICIO_ANUAL, OCORRENCIA)."));
+        }
+
+        DomainError? erroDeChave = chaveNormalizada switch
+        {
+            Enums.ChaveDistincao.Nenhuma => ValidarSemChave(dataReferencia, ocorrenciasEsperadas),
+            Enums.ChaveDistincao.CompetenciaMensal or Enums.ChaveDistincao.ExercicioAnual =>
+                ValidarChaveDeCalendario(chaveNormalizada, dataReferencia, ocorrenciasEsperadas, n),
+            Enums.ChaveDistincao.Ocorrencia => ValidarChaveDeOcorrencia(dataReferencia, ocorrenciasEsperadas, n),
+            _ => throw new ArgumentOutOfRangeException(nameof(chaveDistincao), chaveNormalizada, "ChaveDistincao desconhecida."),
+        };
+        if (erroDeChave is not null)
+        {
+            return Result<NoExigencia>.Failure(erroDeChave);
+        }
+
         return Result<NoExigencia>.Success(new NoExigencia
         {
             Tipo = TipoNo.Folha,
             Ordem = ordem,
             DocumentoExigidoId = documentoExigido.Id,
             DocumentoExigido = documentoExigido,
+            QuantidadeMinima = n,
+            ChaveDistincao = chaveNormalizada == Enums.ChaveDistincao.Nenhuma ? null : chaveNormalizada,
+            DataReferencia = dataReferencia,
+            OcorrenciasEsperadas = ocorrenciasEsperadas is null ? null : [.. ocorrenciasEsperadas],
         });
+    }
+
+    private static DomainError? ValidarSemChave(DateOnly? dataReferencia, IReadOnlyList<string>? ocorrenciasEsperadas)
+    {
+        if (dataReferencia is not null)
+        {
+            return new DomainError(
+                "NoExigencia.DataReferenciaIndevidaParaChave",
+                "dataReferencia só é aceita quando chaveDistincao é COMPETENCIA_MENSAL ou EXERCICIO_ANUAL.");
+        }
+
+        if (ocorrenciasEsperadas is not null)
+        {
+            return new DomainError(
+                "NoExigencia.OcorrenciasEsperadasIndevidasParaChave",
+                "ocorrenciasEsperadas só é aceita quando chaveDistincao é OCORRENCIA.");
+        }
+
+        return null;
+    }
+
+    private static DomainError? ValidarChaveDeCalendario(
+        ChaveDistincao chave, DateOnly? dataReferencia, IReadOnlyList<string>? ocorrenciasEsperadas, int quantidadeMinima)
+    {
+        if (dataReferencia is null)
+        {
+            return new DomainError(
+                "NoExigencia.DataReferenciaObrigatoriaParaChaveCalendario",
+                "dataReferencia é obrigatória quando chaveDistincao é COMPETENCIA_MENSAL ou EXERCICIO_ANUAL.");
+        }
+
+        if (ocorrenciasEsperadas is not null)
+        {
+            return new DomainError(
+                "NoExigencia.OcorrenciasEsperadasIndevidasParaChave",
+                "ocorrenciasEsperadas só é aceita quando chaveDistincao é OCORRENCIA.");
+        }
+
+        // Defende ComputarCompetencias/ComputarExercicios de subtrair além do calendário
+        // representável (ano 1, mês 1) — "últimos N" com N maior que a distância de
+        // dataReferencia até o início do calendário não tem N slots regulares para derivar.
+        DateOnly ancora = dataReferencia.Value;
+        int unidadeMaisAntigaAlcancavel = chave == Enums.ChaveDistincao.CompetenciaMensal
+            ? ((ancora.Year - 1) * 12) + ancora.Month - (quantidadeMinima - 1)
+            : ancora.Year - (quantidadeMinima - 1);
+        if (unidadeMaisAntigaAlcancavel < 1)
+        {
+            return new DomainError(
+                "NoExigencia.QuantidadeMinimaExcedeJanelaRepresentavel",
+                $"quantidadeMinima ({quantidadeMinima}) exige unidades regulares anteriores ao calendário representável a partir de dataReferencia ({ancora:yyyy-MM-dd}).");
+        }
+
+        return null;
+    }
+
+    private static DomainError? ValidarChaveDeOcorrencia(DateOnly? dataReferencia, IReadOnlyList<string>? ocorrenciasEsperadas, int quantidadeMinima)
+    {
+        if (dataReferencia is not null)
+        {
+            return new DomainError(
+                "NoExigencia.DataReferenciaIndevidaParaChave",
+                "dataReferencia não é aceita quando chaveDistincao é OCORRENCIA.");
+        }
+
+        if (ocorrenciasEsperadas is null)
+        {
+            return null;
+        }
+
+        if (ocorrenciasEsperadas.Count == 0)
+        {
+            return new DomainError(
+                "NoExigencia.OcorrenciasEsperadasVazia",
+                "ocorrenciasEsperadas, quando presente, não pode ser vazia.");
+        }
+
+        if (ocorrenciasEsperadas.Any(static id => string.IsNullOrWhiteSpace(id)))
+        {
+            return new DomainError(
+                "NoExigencia.OcorrenciasEsperadasComIdVazio",
+                "Os identificadores de ocorrenciasEsperadas não podem ser vazios ou em branco.");
+        }
+
+        if (ocorrenciasEsperadas.Distinct(StringComparer.Ordinal).Count() != ocorrenciasEsperadas.Count)
+        {
+            return new DomainError(
+                "NoExigencia.OcorrenciasEsperadasComIdsDuplicados",
+                "Os identificadores de ocorrenciasEsperadas devem ser únicos.");
+        }
+
+        if (quantidadeMinima != ocorrenciasEsperadas.Count)
+        {
+            return new DomainError(
+                "NoExigencia.OcorrenciasEsperadasQuantidadeMinimaDivergente",
+                $"quantidadeMinima ({quantidadeMinima}) deve ser igual ao número de ocorrenciasEsperadas ({ocorrenciasEsperadas.Count}).");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Os slots esperados desta folha, derivados da config congelada — <see langword="null"/>
+    /// quando não há qualificação (<see cref="ChaveDistincao"/> ausente) OU quando é
+    /// <see cref="Enums.ChaveDistincao.Ocorrencia"/> sem <see cref="OcorrenciasEsperadas"/> (modo
+    /// "distinção pura": conta bruta de apresentações distintas, sem slot concreto a cobrir).
+    /// Quando não-nulo, cada slot precisa de ≥1 apresentação própria — omitir um deixa a folha
+    /// pendente, mesmo com outras apresentações sobrando (Story #921).
+    /// </summary>
+    public IReadOnlyList<string>? SlotsEsperados() => ChaveDistincao switch
+    {
+        Enums.ChaveDistincao.CompetenciaMensal => ComputarCompetencias(DataReferencia!.Value, QuantidadeMinima ?? QuantidadeMinimaPadrao),
+        Enums.ChaveDistincao.ExercicioAnual => ComputarExercicios(DataReferencia!.Value, QuantidadeMinima ?? QuantidadeMinimaPadrao),
+        Enums.ChaveDistincao.Ocorrencia => OcorrenciasEsperadas,
+        _ => null,
+    };
+
+    /// <summary>As N competências mensais ("AAAA-MM") regulares imediatamente ≤ <paramref name="ancora"/>, do mais recente ao mais antigo — <see cref="DateOnly.AddMonths"/> já resolve virada de ano.</summary>
+    private static List<string> ComputarCompetencias(DateOnly ancora, int quantidade)
+    {
+        List<string> competencias = new(quantidade);
+        DateOnly cursor = ancora;
+        for (int i = 0; i < quantidade; i++)
+        {
+            competencias.Add($"{cursor.Year:D4}-{cursor.Month:D2}");
+            if (i < quantidade - 1)
+            {
+                cursor = cursor.AddMonths(-1);
+            }
+        }
+
+        return competencias;
+    }
+
+    /// <summary>Os N exercícios anuais ("AAAA") regulares imediatamente ≤ <paramref name="ancora"/>, do mais recente ao mais antigo.</summary>
+    private static List<string> ComputarExercicios(DateOnly ancora, int quantidade)
+    {
+        List<string> exercicios = new(quantidade);
+        for (int i = 0; i < quantidade; i++)
+        {
+            exercicios.Add($"{ancora.Year - i:D4}");
+        }
+
+        return exercicios;
     }
 
     /// <summary>
@@ -247,6 +471,9 @@ public sealed class NoExigencia : EntityBase
         DocumentoExigido? documentoExigido,
         int? quantidadeMinima,
         string? consequencia,
+        ChaveDistincao? chaveDistincao,
+        DateOnly? dataReferencia,
+        IReadOnlyList<string>? ocorrenciasEsperadas,
         IReadOnlyList<NoExigenciaBaseLegal> basesLegais,
         IReadOnlyList<NoExigencia> filhos)
     {
@@ -266,6 +493,9 @@ public sealed class NoExigencia : EntityBase
             DocumentoExigido = documentoExigido,
             QuantidadeMinima = quantidadeMinima,
             Consequencia = consequencia,
+            ChaveDistincao = chaveDistincao,
+            DataReferencia = dataReferencia,
+            OcorrenciasEsperadas = ocorrenciasEsperadas,
         };
 
         foreach (NoExigencia filho in filhos)

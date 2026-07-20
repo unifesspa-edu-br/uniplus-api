@@ -59,6 +59,209 @@ public sealed class NoExigenciaTests
         resultado.Error!.Code.Should().Be("NoExigencia.OrdemInvalida");
     }
 
+    [Fact(DisplayName = "CriarFolha recusa quantidadeMinima menor que 1")]
+    public void CriarFolha_QuantidadeMinimaMenorQueUm_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0, quantidadeMinima: 0);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaDeFolhaInvalida");
+    }
+
+    [Fact(DisplayName = "CriarFolha sem chaveDistincao recusa dataReferencia")]
+    public void CriarFolha_SemChave_ComDataReferencia_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, dataReferencia: new DateOnly(2026, 1, 1));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.DataReferenciaIndevidaParaChave");
+    }
+
+    [Fact(DisplayName = "CriarFolha sem chaveDistincao recusa ocorrenciasEsperadas")]
+    public void CriarFolha_SemChave_ComOcorrenciasEsperadas_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, ocorrenciasEsperadas: ["a"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasIndevidasParaChave");
+    }
+
+    [Theory(DisplayName = "CriarFolha com chave de calendário exige dataReferencia")]
+    [InlineData(ChaveDistincao.CompetenciaMensal)]
+    [InlineData(ChaveDistincao.ExercicioAnual)]
+    public void CriarFolha_ChaveDeCalendario_SemDataReferencia_Recusa(ChaveDistincao chave)
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0, chaveDistincao: chave);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.DataReferenciaObrigatoriaParaChaveCalendario");
+    }
+
+    [Fact(DisplayName = "CriarFolha com chave de calendário recusa ocorrenciasEsperadas")]
+    public void CriarFolha_ChaveDeCalendario_ComOcorrenciasEsperadas_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0,
+            chaveDistincao: ChaveDistincao.CompetenciaMensal,
+            dataReferencia: new DateOnly(2026, 1, 1),
+            ocorrenciasEsperadas: ["a"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasIndevidasParaChave");
+    }
+
+    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa dataReferencia")]
+    public void CriarFolha_Ocorrencia_ComDataReferencia_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, chaveDistincao: ChaveDistincao.Ocorrencia, dataReferencia: new DateOnly(2026, 1, 1));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.DataReferenciaIndevidaParaChave");
+    }
+
+    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa ocorrenciasEsperadas vazia")]
+    public void CriarFolha_Ocorrencia_ListaVazia_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: []);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasVazia");
+    }
+
+    [Theory(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa id vazio ou em branco")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void CriarFolha_Ocorrencia_IdVazioOuEmBranco_Recusa(string idInvalido)
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 2,
+            chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ["a", idInvalido]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasComIdVazio");
+    }
+
+    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa ids duplicados")]
+    public void CriarFolha_Ocorrencia_IdsDuplicados_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 2,
+            chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ["a", "a"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasComIdsDuplicados");
+    }
+
+    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia recusa quantidadeMinima divergente do tamanho da lista")]
+    public void CriarFolha_Ocorrencia_QuantidadeMinimaDivergente_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 3,
+            chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: ["a", "b"]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.OcorrenciasEsperadasQuantidadeMinimaDivergente");
+    }
+
+    [Fact(DisplayName = "CriarFolha com ChaveDistincao.Ocorrencia sem lista é modo distinção pura — aceita")]
+    public void CriarFolha_Ocorrencia_SemLista_Aceita()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.SlotsEsperados().Should().BeNull();
+    }
+
+    [Fact(DisplayName = "SlotsEsperados para CompetenciaMensal deriva as N competências regulares mais recentes")]
+    public void SlotsEsperados_CompetenciaMensal_DerivaAsMaisRecentes()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 3,
+            chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: new DateOnly(2026, 3, 15));
+
+        resultado.Value!.SlotsEsperados().Should().Equal("2026-03", "2026-02", "2026-01");
+    }
+
+    [Fact(DisplayName = "SlotsEsperados para ExercicioAnual deriva os N exercícios regulares mais recentes")]
+    public void SlotsEsperados_ExercicioAnual_DerivaOsMaisRecentes()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 3,
+            chaveDistincao: ChaveDistincao.ExercicioAnual, dataReferencia: new DateOnly(2026, 3, 15));
+
+        resultado.Value!.SlotsEsperados().Should().Equal("2026", "2025", "2024");
+    }
+
+    [Fact(DisplayName = "SlotsEsperados sem chaveDistincao é nulo — contagem bruta")]
+    public void SlotsEsperados_SemChave_Nulo()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0);
+
+        resultado.Value!.SlotsEsperados().Should().BeNull();
+    }
+
+    [Fact(DisplayName = "SlotsEsperados para CompetenciaMensal na âncora mínima representável (ano 1) não lança e não excede o calendário")]
+    public void SlotsEsperados_CompetenciaMensal_AncoraMinima_NaoLanca()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 1,
+            chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: DateOnly.MinValue);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.SlotsEsperados().Should().Equal("0001-01");
+    }
+
+    [Fact(DisplayName = "CriarFolha com CompetenciaMensal recusa quantidadeMinima que excede o calendário representável")]
+    public void CriarFolha_CompetenciaMensal_QuantidadeExcedeCalendario_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 2,
+            chaveDistincao: ChaveDistincao.CompetenciaMensal, dataReferencia: DateOnly.MinValue);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaExcedeJanelaRepresentavel");
+    }
+
+    [Fact(DisplayName = "CriarFolha com ExercicioAnual recusa quantidadeMinima que excede o calendário representável")]
+    public void CriarFolha_ExercicioAnual_QuantidadeExcedeCalendario_Recusa()
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 2,
+            chaveDistincao: ChaveDistincao.ExercicioAnual, dataReferencia: new DateOnly(1, 6, 1));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaExcedeJanelaRepresentavel");
+    }
+
+    [Theory(DisplayName = "CriarFolha recusa quantidadeMinima fora do teto operacional")]
+    [InlineData(0)]
+    [InlineData(367)]
+    public void CriarFolha_QuantidadeMinimaForaDoTeto_Recusa(int quantidadeInvalida)
+    {
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(Documento(), ordem: 0, quantidadeMinima: quantidadeInvalida);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("NoExigencia.QuantidadeMinimaDeFolhaInvalida");
+    }
+
+    [Fact(DisplayName = "CriarFolha copia ocorrenciasEsperadas defensivamente — mutação da lista original não afeta o nó")]
+    public void CriarFolha_Ocorrencia_ListaOriginalMutada_NaoAfetaNo()
+    {
+        List<string> listaOriginal = ["a", "b"];
+        Result<NoExigencia> resultado = NoExigencia.CriarFolha(
+            Documento(), ordem: 0, quantidadeMinima: 2,
+            chaveDistincao: ChaveDistincao.Ocorrencia, ocorrenciasEsperadas: listaOriginal);
+
+        listaOriginal.Add("c");
+
+        resultado.Value!.OcorrenciasEsperadas.Should().Equal("a", "b");
+    }
+
     [Theory(DisplayName = "CriarGrupo recusa grupo sem filhos, E ou OU")]
     [InlineData(TipoNo.GrupoE)]
     [InlineData(TipoNo.GrupoOu)]

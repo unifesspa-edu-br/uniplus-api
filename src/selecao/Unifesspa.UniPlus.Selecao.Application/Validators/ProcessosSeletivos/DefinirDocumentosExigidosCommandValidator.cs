@@ -67,6 +67,9 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
         "PENDENCIA_REENVIO",
     ];
 
+    // Story #921 — cardinalidade qualificada, catálogo fechado (Domain.Enums.ChaveDistincaoCodigo).
+    private static readonly string[] ChavesDistincaoValidas = ["COMPETENCIA_MENSAL", "EXERCICIO_ANUAL", "OCORRENCIA"];
+
     public NoExigenciaInputValidator()
     {
         RuleFor(x => x.Tipo)
@@ -93,15 +96,40 @@ public sealed class NoExigenciaInputValidator : AbstractValidator<NoExigenciaInp
             .When(static x => x.Tipo == "FOLHA")
             .WithMessage("Um nó FOLHA não pode ter filhos.");
 
+        // Story #921: quantidadeMinima passa a ser aceita também em FOLHA (cardinalidade de
+        // apresentações) — só grupo E permanece sem cardinalidade própria (transparente).
         RuleFor(x => x.QuantidadeMinima)
             .Null()
-            .When(static x => x.Tipo is "FOLHA" or "E")
-            .WithMessage("quantidadeMinima só é permitida em nó OU/N-de.");
+            .When(static x => x.Tipo == "E")
+            .WithMessage("quantidadeMinima só é permitida em nó FOLHA ou OU/N-de.");
 
         RuleFor(x => x.QuantidadeMinima)
             .GreaterThanOrEqualTo(1)
-            .When(static x => x.Tipo == "OU" && x.QuantidadeMinima is not null)
+            .When(static x => x.Tipo is "OU" or "FOLHA" && x.QuantidadeMinima is not null)
             .WithMessage("quantidadeMinima, quando presente, deve ser maior ou igual a 1.");
+
+        // Story #921 — cardinalidade qualificada, exclusiva de FOLHA. A coerência
+        // chave×dataReferencia×ocorrenciasEsperadas por valor de chaveDistincao é do domínio
+        // (NoExigencia.CriarFolha) — aqui só a forma (catálogo fechado + campo restrito a FOLHA).
+        RuleFor(x => x.ChaveDistincao)
+            .Null()
+            .When(static x => x.Tipo is "E" or "OU")
+            .WithMessage("chaveDistincao só é permitida em nó FOLHA.");
+
+        RuleFor(x => x.ChaveDistincao)
+            .Must(static valor => ChavesDistincaoValidas.Contains(valor, StringComparer.Ordinal))
+            .When(static x => x.Tipo == "FOLHA" && !string.IsNullOrWhiteSpace(x.ChaveDistincao))
+            .WithMessage($"chaveDistincao deve ser um de: {string.Join(", ", ChavesDistincaoValidas)}.");
+
+        RuleFor(x => x.DataReferencia)
+            .Null()
+            .When(static x => x.Tipo is "E" or "OU")
+            .WithMessage("dataReferencia só é permitida em nó FOLHA.");
+
+        RuleFor(x => x.OcorrenciasEsperadas)
+            .Must(static ocorrencias => ocorrencias is null or { Count: 0 })
+            .When(static x => x.Tipo is "E" or "OU")
+            .WithMessage("ocorrenciasEsperadas só é permitida em nó FOLHA.");
 
         RuleFor(x => x.Consequencia)
             .Null()
