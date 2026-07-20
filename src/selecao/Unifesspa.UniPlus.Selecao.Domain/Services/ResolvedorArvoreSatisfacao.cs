@@ -234,12 +234,9 @@ public static class ResolvedorArvoreSatisfacao
                 }
 
                 // Opaco: os filhos NÃO emitem consequência individual — só orientação.
-                foreach (NoExigencia filho in no.Filhos)
+                foreach (NoExigencia filho in no.Filhos.Where(filho => EhPendenteOuPior(estados[filho.Id])))
                 {
-                    if (EhPendenteOuPior(estados[filho.Id]))
-                    {
-                        pendenciasDeOrientacao.Add(filho.Id);
-                    }
+                    pendenciasDeOrientacao.Add(filho.Id);
                 }
 
                 break;
