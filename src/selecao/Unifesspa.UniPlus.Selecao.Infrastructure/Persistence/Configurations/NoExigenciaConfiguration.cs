@@ -114,17 +114,19 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
             .HasDatabaseName("ux_nos_exigencia_documento_exigido_id");
 
         // Sem colisão de posição entre irmãos (NoPaiId IS NOT NULL) nem entre raízes do
-        // mesmo processo (NoPaiId IS NULL) — dois índices filtrados porque NULL do Postgres
-        // já é distinto por padrão (a 2ª condição não precisa de AreNullsDistinct).
-        builder.HasIndex(n => new { n.NoPaiId, n.Ordem })
-            .IsUnique()
-            .HasFilter("no_pai_id IS NOT NULL")
-            .HasDatabaseName("ux_nos_exigencia_irmaos_ordem");
-
-        builder.HasIndex(n => new { n.ProcessoSeletivoId, n.Ordem })
-            .IsUnique()
-            .HasFilter("no_pai_id IS NULL")
-            .HasDatabaseName("ux_nos_exigencia_raiz_ordem");
+        // mesmo processo (NoPaiId IS NULL) — de propósito AUSENTES daqui como
+        // HasIndex().IsUnique(): são EXCLUDE constraints GiST DEFERRABLE INITIALLY DEFERRED
+        // (ex_nos_exigencia_irmaos_ordem/ex_nos_exigencia_raiz_ordem), criadas via SQL cru na
+        // migration — mesmo padrão de ex_tipo_ato_publicado_codigo_vigencia
+        // (TipoAtoPublicadoConfiguration.cs), que o Fluent API do EF Core não modela. Um
+        // índice único comum é verificado por-statement; como nos_exigencia é
+        // auto-referenciada (NoPaiId → Id, Restrict), substituir uma árvore com grupo E/OU
+        // faz o EF Core apagar bottom-up (netos → raiz) mas inserir a raiz NOVA antes da
+        // antiga sair do banco — a ordem Added-antes-Deleted do SaveChangesAsync não conhece
+        // este índice alternativo, e um índice não-deferível recusaria a raiz nova com a
+        // MESMA ordem da antiga, mesmo a transação terminando num estado válido (issue #943).
+        // Deferir a checagem para o COMMIT resolve sem separar a exclusão do outbox
+        // transacional (ADR-0004/0005) em duas chamadas a SaveChangesAsync.
 
         // Base legal 1:N PRÓPRIA de grupo OU/N-de com consequência (Story #920) — substituível
         // por inteiro junto com o próprio nó, mesmo padrão de DocumentoExigido.BasesLegais.

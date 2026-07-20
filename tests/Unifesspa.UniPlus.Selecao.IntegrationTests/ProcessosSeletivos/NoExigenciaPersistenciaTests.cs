@@ -2,6 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
+using Npgsql;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -97,5 +101,96 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         // incoerente, sem exigência CONDICIONAL vazia, sem gatilho por FAIXA_ETARIA).
         DomainError? pendencia = recarregado.PendenciaPreCanonicalizacao();
         pendencia.Should().BeNull(pendencia?.Message);
+    }
+
+    /// <summary>
+    /// Issue #943: <c>nos_exigencia</c> é auto-referenciada (<c>no_pai_id → id</c>, Restrict) —
+    /// substituir uma árvore que já tem um grupo E/OU por outra (ou pela mesma, de novo) faz o
+    /// EF Core apagar bottom-up (netos → raiz) mas inserir a raiz NOVA antes da antiga sair do
+    /// banco, dentro do mesmo <c>SaveChangesAsync</c>. Um índice único comum era verificado
+    /// por-statement e recusava a raiz nova com a MESMA ordem da antiga — mesmo a transação
+    /// terminando num estado final válido. A correção troca os dois índices únicos filtrados
+    /// (<c>ux_nos_exigencia_raiz_ordem</c>/<c>ux_nos_exigencia_irmaos_ordem</c>) por exclusion
+    /// constraints GiST <c>DEFERRABLE INITIALLY DEFERRED</c> (mesmo padrão de
+    /// <c>ex_tipo_ato_publicado_codigo_vigencia</c>), que só checam no <c>COMMIT</c>.
+    /// </summary>
+    [Fact(DisplayName = "Issue #943: substituir uma árvore com grupo E/OU por outra, várias vezes seguidas na mesma sessão, não falha com 500")]
+    public async Task SubstituiArvoreComGrupo_PorOutrasArvores_MultiplasVezesSeguidas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Substituição de árvore", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        FaseCronograma fase = FaseCronograma.Criar(
+            1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
+            agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
+            resultadoDefinitivo: false, coletaInscricao: false, inicio: null, fim: null,
+            atoProduzidoCodigo: null, atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [], regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        await repository.AdicionarAsync(processo, CancellationToken.None);
+        await context.SaveChangesAsync(CancellationToken.None);
+
+        // Três substituições seguidas na MESMA sessão de DbContext — a raiz de cada árvore usa
+        // Ordem 0, a mesma da raiz anterior, exatamente o cenário que colide com o índice
+        // não-deferível. A 1ª chamada não tem nada para colidir (árvore vazia -> com grupo);
+        // são a 2ª e a 3ª que exercitam a substituição de uma árvore-com-grupo por outra.
+        for (int tentativa = 1; tentativa <= 3; tentativa++)
+        {
+            NoExigencia grupoE = NoExigencia.CriarGrupo(
+                TipoNo.GrupoE, 0, null, null, [],
+                [NoExigencia.CriarFolha(Documento(fase.Id), 0).Value!, NoExigencia.CriarFolha(Documento(fase.Id), 1).Value!]).Value!;
+
+            Result definirResult = processo.DefinirDocumentosExigidos([grupoE], PrecondicaoIfMatch.Curinga);
+            definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
+
+            Func<Task> salvar = async () => await context.SaveChangesAsync(CancellationToken.None);
+            await salvar.Should().NotThrowAsync(
+                $"tentativa {tentativa}: substituir uma árvore com grupo E/OU por outra não pode falhar com " +
+                "violação de índice único transitória (issue #943)");
+        }
+
+        processo.RaizesDeExigencia.Should().ContainSingle().Which.Tipo.Should().Be(TipoNo.GrupoE);
+    }
+
+    /// <summary>
+    /// As duas exclusion constraints vivem em SQL cru, fora do <c>ModelSnapshot</c> (mesmo
+    /// padrão de <c>ex_tipo_ato_publicado_codigo_vigencia</c>,
+    /// <c>TipoAtoPublicadoPersistenceTests.ExclusionConstraint_ExisteNoCatalogo</c>): um
+    /// squash de migrations as descartaria em silêncio, e o teste de substituição acima
+    /// continuaria passando contra um Testcontainer criado do zero — só voltaria a falhar em
+    /// produção, contra um banco com histórico de migrations real. Esta asserção olha o
+    /// catálogo do Postgres diretamente: <c>contype = 'x'</c> (EXCLUDE) e
+    /// <c>condeferrable AND condeferred</c> (a checagem só no COMMIT é o que resolve a
+    /// issue #943 — sem isso, seria só um EXCLUDE normal, tão imediato quanto o índice
+    /// único que substituiu).
+    /// </summary>
+    [Theory(DisplayName = "As exclusion constraints de ordem existem no catálogo, como EXCLUDE deferível")]
+    [InlineData("ex_nos_exigencia_raiz_ordem")]
+    [InlineData("ex_nos_exigencia_irmaos_ordem")]
+    public async Task ExclusionConstraintsDeOrdem_ExistemNoCatalogo_ComoDeferiveis(string nomeDaConstraint)
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await context.Database.OpenConnectionAsync();
+
+        await using NpgsqlCommand command = new(
+            """
+            SELECT contype::text, condeferrable, condeferred
+            FROM pg_constraint c
+            JOIN pg_class t ON t.oid = c.conrelid
+            JOIN pg_namespace n ON n.oid = t.relnamespace
+            WHERE n.nspname = 'selecao'
+              AND t.relname = 'nos_exigencia'
+              AND c.conname = @nome
+            """,
+            (NpgsqlConnection)context.Database.GetDbConnection());
+        command.Parameters.AddWithValue("nome", nomeDaConstraint);
+
+        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue($"a constraint '{nomeDaConstraint}' deveria existir no catálogo");
+
+        reader.GetString(0).Should().Be("x", "'x' é o contype de EXCLUDE no pg_constraint");
+        reader.GetBoolean(1).Should().BeTrue("a checagem deferível é o que evita a colisão transitória da issue #943");
+        reader.GetBoolean(2).Should().BeTrue("INITIALLY DEFERRED — checada só no COMMIT, não a cada statement");
     }
 }
