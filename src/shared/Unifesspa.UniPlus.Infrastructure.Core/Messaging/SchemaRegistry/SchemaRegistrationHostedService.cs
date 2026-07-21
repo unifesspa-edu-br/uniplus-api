@@ -58,9 +58,9 @@ using Microsoft.Extensions.Logging;
 /// </remarks>
 public sealed partial class SchemaRegistrationHostedService : IHostedService
 {
-    private readonly ISchemaRegistryClient schemaRegistryClient;
-    private readonly IReadOnlyCollection<SchemaRegistration> registrations;
-    private readonly ILogger<SchemaRegistrationHostedService> logger;
+    private readonly ISchemaRegistryClient _schemaRegistryClient;
+    private readonly IReadOnlyCollection<SchemaRegistration> _registrations;
+    private readonly ILogger<SchemaRegistrationHostedService> _logger;
 
     public SchemaRegistrationHostedService(
         ISchemaRegistryClient schemaRegistryClient,
@@ -71,22 +71,22 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
         ArgumentNullException.ThrowIfNull(registrations);
         ArgumentNullException.ThrowIfNull(logger);
 
-        this.schemaRegistryClient = schemaRegistryClient;
-        this.registrations = [.. registrations];
-        this.logger = logger;
+        _schemaRegistryClient = schemaRegistryClient;
+        _registrations = [.. registrations];
+        _logger = logger;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (registrations.Count == 0)
+        if (_registrations.Count == 0)
         {
-            LogNoSchemasRegistered(logger);
+            LogNoSchemasRegistered(_logger);
             return;
         }
 
-        LogRegisteringSchemas(logger, registrations.Count);
+        LogRegisteringSchemas(_logger, _registrations.Count);
 
-        foreach (SchemaRegistration registration in registrations)
+        foreach (SchemaRegistration registration in _registrations)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -95,11 +95,11 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
                 string schemaContent = registration.ReadSchemaContent();
                 Schema schema = new(schemaContent, SchemaType.Avro);
 
-                int schemaId = await schemaRegistryClient
+                int schemaId = await _schemaRegistryClient
                     .RegisterSchemaAsync(registration.Subject, schema, normalize: true)
                     .ConfigureAwait(false);
 
-                LogSchemaRegistered(logger, registration.Subject, schemaId);
+                LogSchemaRegistered(_logger, registration.Subject, schemaId);
             }
             // Fail-graceful **apenas** para falhas transientes via inspeção do
             // HttpRequestError — Apicurio offline (ConnectionError) ou DNS não
@@ -115,15 +115,15 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
                 ex.HttpRequestError == HttpRequestError.ConnectionError
                 || ex.HttpRequestError == HttpRequestError.NameResolutionError)
             {
-                LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
+                LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
             }
             catch (SocketException ex)
             {
-                LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
+                LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
             }
             catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException || ex.CancellationToken == default)
             {
-                LogSchemaRegistrationTransientFailure(logger, registration.Subject, ex);
+                LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
             }
             // Falhas determinísticas (SchemaRegistryException = auth/conflict/malformed,
             // HttpRequestException com error codes não-recuperáveis, InvalidOperationException
