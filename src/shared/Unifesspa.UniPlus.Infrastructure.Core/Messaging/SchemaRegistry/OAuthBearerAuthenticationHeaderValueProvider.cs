@@ -37,16 +37,16 @@ using Microsoft.Extensions.Logging;
 public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
     : IAuthenticationHeaderValueProvider, IDisposable
 {
-    private readonly HttpClient httpClient;
-    private readonly bool ownsHttpClient;
-    private readonly OAuthBearerSettings settings;
-    private readonly ILogger<OAuthBearerAuthenticationHeaderValueProvider> logger;
-    private readonly TimeProvider timeProvider;
-    private readonly SemaphoreSlim refreshLock = new(initialCount: 1, maxCount: 1);
+    private readonly HttpClient _httpClient;
+    private readonly bool _ownsHttpClient;
+    private readonly OAuthBearerSettings _settings;
+    private readonly ILogger<OAuthBearerAuthenticationHeaderValueProvider> _logger;
+    private readonly TimeProvider _timeProvider;
+    private readonly SemaphoreSlim _refreshLock = new(initialCount: 1, maxCount: 1);
 
-    private string? cachedToken;
-    private DateTimeOffset cachedTokenExpiresAt;
-    private bool disposed;
+    private string? _cachedToken;
+    private DateTimeOffset _cachedTokenExpiresAt;
+    private bool _disposed;
 
     /// <summary>
     /// Construtor padrão para uso via DI (<c>IHttpClientFactory</c> + <c>AddHttpClient</c>):
@@ -78,12 +78,12 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        this.httpClient = httpClient;
-        this.ownsHttpClient = ownsHttpClient;
-        this.settings = settings;
-        this.logger = logger;
-        this.timeProvider = timeProvider;
-        this.httpClient.Timeout = TimeSpan.FromMilliseconds(settings.RequestTimeoutMs);
+        _httpClient = httpClient;
+        _ownsHttpClient = ownsHttpClient;
+        _settings = settings;
+        _logger = logger;
+        _timeProvider = timeProvider;
+        _httpClient.Timeout = TimeSpan.FromMilliseconds(settings.RequestTimeoutMs);
     }
 
     public AuthenticationHeaderValue GetAuthenticationHeader()
@@ -97,36 +97,36 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
 
     private async Task<string> GetOrRefreshTokenAsync(CancellationToken cancellationToken)
     {
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        TimeSpan skew = TimeSpan.FromSeconds(settings.RefreshSkewSeconds);
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        TimeSpan skew = TimeSpan.FromSeconds(_settings.RefreshSkewSeconds);
 
-        if (cachedToken is not null && now < cachedTokenExpiresAt - skew)
+        if (_cachedToken is not null && now < _cachedTokenExpiresAt - skew)
         {
-            return cachedToken;
+            return _cachedToken;
         }
 
-        await refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             // Re-check após acquire — outro thread pode ter renovado enquanto esperávamos.
-            now = timeProvider.GetUtcNow();
-            if (cachedToken is not null && now < cachedTokenExpiresAt - skew)
+            now = _timeProvider.GetUtcNow();
+            if (_cachedToken is not null && now < _cachedTokenExpiresAt - skew)
             {
-                return cachedToken;
+                return _cachedToken;
             }
 
             TokenEndpointResponse response = await RequestTokenAsync(cancellationToken).ConfigureAwait(false);
 
-            cachedToken = response.AccessToken;
-            cachedTokenExpiresAt = timeProvider.GetUtcNow().AddSeconds(response.ExpiresInSeconds);
+            _cachedToken = response.AccessToken;
+            _cachedTokenExpiresAt = _timeProvider.GetUtcNow().AddSeconds(response.ExpiresInSeconds);
 
-            LogTokenRefreshed(logger, settings.ClientId, response.ExpiresInSeconds);
+            LogTokenRefreshed(_logger, _settings.ClientId, response.ExpiresInSeconds);
 
-            return cachedToken;
+            return _cachedToken;
         }
         finally
         {
-            refreshLock.Release();
+            _refreshLock.Release();
         }
     }
 
@@ -135,25 +135,25 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
         List<KeyValuePair<string, string>> form =
         [
             new("grant_type", "client_credentials"),
-            new("client_id", settings.ClientId),
-            new("client_secret", settings.ClientSecret),
+            new("client_id", _settings.ClientId),
+            new("client_secret", _settings.ClientSecret),
         ];
 
-        if (!string.IsNullOrWhiteSpace(settings.Scope))
+        if (!string.IsNullOrWhiteSpace(_settings.Scope))
         {
-            form.Add(new("scope", settings.Scope));
+            form.Add(new("scope", _settings.Scope));
         }
 
         using FormUrlEncodedContent content = new(form);
-        using HttpResponseMessage response = await httpClient
-            .PostAsync(new Uri(settings.TokenEndpoint), content, cancellationToken)
+        using HttpResponseMessage response = await _httpClient
+            .PostAsync(new Uri(_settings.TokenEndpoint), content, cancellationToken)
             .ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)
         {
             string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             int status = (int)response.StatusCode;
-            LogTokenRequestFailed(logger, settings.ClientId, status, body);
+            LogTokenRequestFailed(_logger, _settings.ClientId, status, body);
 
             // 4xx = falha determinística (client_id/client_secret incorretos, scope inválido,
             // realm errado, client desabilitado). Propagar como InvalidOperationException
@@ -167,7 +167,7 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
                 throw new InvalidOperationException(
                     $"OAuth client_credentials para Schema Registry recebeu status determinístico {status} "
                     + "(config inválida — verifique ClientId/ClientSecret/TokenEndpoint/Scope no realm). "
-                    + $"ClientId={settings.ClientId}.");
+                    + $"ClientId={_settings.ClientId}.");
             }
 
             // 5xx do token endpoint é transitivo — Keycloak sob carga, restart em curso.
@@ -179,7 +179,7 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
             throw new HttpRequestException(
                 HttpRequestError.ConnectionError,
                 $"OAuth client_credentials para Schema Registry falhou com status transiente {status}. "
-                + $"ClientId={settings.ClientId}.");
+                + $"ClientId={_settings.ClientId}.");
         }
 
         TokenEndpointResponse? parsed = await response.Content
@@ -191,7 +191,7 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
             || parsed.ExpiresInSeconds <= 0)
         {
             throw new InvalidOperationException(
-                $"Resposta do token endpoint inválida. ClientId={settings.ClientId}.");
+                $"Resposta do token endpoint inválida. ClientId={_settings.ClientId}.");
         }
 
         return parsed;
@@ -199,18 +199,18 @@ public sealed partial class OAuthBearerAuthenticationHeaderValueProvider
 
     public void Dispose()
     {
-        if (disposed)
+        if (_disposed)
         {
             return;
         }
 
-        refreshLock.Dispose();
-        if (ownsHttpClient)
+        _refreshLock.Dispose();
+        if (_ownsHttpClient)
         {
-            httpClient.Dispose();
+            _httpClient.Dispose();
         }
 
-        disposed = true;
+        _disposed = true;
     }
 
     [LoggerMessage(

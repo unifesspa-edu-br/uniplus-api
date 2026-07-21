@@ -37,18 +37,18 @@ using Microsoft.Extensions.Hosting;
 /// </remarks>
 internal sealed class OAuthBearerAuthProviderDisposeHostedService : IHostedService
 {
-    private readonly OAuthBearerAuthenticationHeaderValueProvider provider;
+    private readonly OAuthBearerAuthenticationHeaderValueProvider _provider;
 
     public OAuthBearerAuthProviderDisposeHostedService(OAuthBearerAuthenticationHeaderValueProvider provider)
     {
-        this.provider = provider;
+        _provider = provider;
     }
 
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        provider.Dispose();
+        _provider.Dispose();
         return Task.CompletedTask;
     }
 }

@@ -244,13 +244,13 @@ public static class SchemaRegistryServiceCollectionExtensions
 /// </summary>
 public sealed class SchemaRegistryBuilder
 {
-    private readonly IServiceCollection services;
-    private readonly bool schemaRegistryEnabled;
+    private readonly IServiceCollection _services;
+    private readonly bool _schemaRegistryEnabled;
 
     internal SchemaRegistryBuilder(IServiceCollection services, bool schemaRegistryEnabled)
     {
-        this.services = services;
-        this.schemaRegistryEnabled = schemaRegistryEnabled;
+        _services = services;
+        _schemaRegistryEnabled = schemaRegistryEnabled;
     }
 
     /// <summary>
@@ -268,14 +268,14 @@ public sealed class SchemaRegistryBuilder
         ArgumentException.ThrowIfNullOrWhiteSpace(schemaResourceName);
         ArgumentNullException.ThrowIfNull(resourceAssembly);
 
-        if (!schemaRegistryEnabled)
+        if (!_schemaRegistryEnabled)
         {
             // Feature-off: não registra a SchemaRegistration no DI — o hosted service
             // não foi adicionado, e o cliente também não. AddSchema vira no-op.
             return this;
         }
 
-        services.AddSingleton(new SchemaRegistration(subject, schemaResourceName, resourceAssembly));
+        _services.AddSingleton(new SchemaRegistration(subject, schemaResourceName, resourceAssembly));
         return this;
     }
 }
