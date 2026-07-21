@@ -19,6 +19,7 @@ using Wolverine.Kafka;
 using Wolverine.Kafka.Serialization;
 using Wolverine.Postgresql;
 
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado;
 
 /// <summary>
@@ -37,7 +38,7 @@ using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado
     "Design",
     "CA1515:Consider making public types internal",
     Justification = "Referenciado pelo composition root (host do monólito modular) fora deste assembly.")]
-public static class SelecaoMessagingRegistration
+public static partial class SelecaoMessagingRegistration
 {
     /// <summary>
     /// Registra o Schema Registry do módulo (cliente + schema Avro
@@ -146,14 +147,7 @@ public static class SelecaoMessagingRegistration
             using ILoggerFactory missingSrLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
             Microsoft.Extensions.Logging.ILogger missingSrLogger =
                 missingSrLoggerFactory.CreateLogger("Selecao.Messaging.Bootstrap");
-#pragma warning disable CA1848 // Bootstrap logging — fora do hot path; LoggerMessage source generator overkill aqui.
-#pragma warning disable CA2254 // Mensagem fixa após format de string interpolada — sem placeholders dinâmicos.
-            missingSrLogger.LogWarning(
-                "Kafka habilitado sem Schema Registry em ambiente {Env} — publishing Avro cross-módulo desligado. "
-                + "Esperado em test factory que isola cascading puro; sinal de bug em ambiente produtivo (ADR-0051).",
-                environment.EnvironmentName);
-#pragma warning restore CA2254
-#pragma warning restore CA1848
+            LogKafkaSemSchemaRegistry(missingSrLogger, environment.EnvironmentName);
         }
 
         if (string.IsNullOrWhiteSpace(srSettings.Url))
@@ -169,4 +163,9 @@ public static class SelecaoMessagingRegistration
         services.AddSingleton(srClient);
         return srClient;
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Kafka habilitado sem Schema Registry em ambiente {Env} — publishing Avro cross-módulo desligado. Esperado em test factory que isola cascading puro; sinal de bug em ambiente produtivo (ADR-0051).")]
+    private static partial void LogKafkaSemSchemaRegistry(ILogger logger, string env);
 }
