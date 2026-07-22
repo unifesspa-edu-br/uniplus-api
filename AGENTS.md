@@ -17,9 +17,13 @@ dotnet restore UniPlus.slnx --locked-mode
 dotnet build UniPlus.slnx
 dotnet test UniPlus.slnx --filter "Category!=Integration"
 dotnet test UniPlus.slnx --filter "Category=Integration"
-dotnet format --verify-no-changes
+dotnet format --exclude-diagnostics CA1515 --verify-no-changes
 bash tools/forbidden-deps/check.sh
 ```
+Never run `dotnet format` without `--exclude-diagnostics CA1515`: `xunit.analyzers` ships a
+`DiagnosticSuppressor` for CA1515 that the build honors but `dotnet format` does not, so the
+command rewrites every public test class to `internal` and breaks the build with
+`xUnit1000: Test classes must be public`. See `CONTRIBUTING.md`.
 Use Docker for PostgreSQL, Redis, Kafka, MinIO, and Keycloak. Use
 `dotnet restore UniPlus.slnx --force-evaluate` only when intentionally updating
 NuGet versions or lockfiles. Regenerate OpenAPI baselines with
