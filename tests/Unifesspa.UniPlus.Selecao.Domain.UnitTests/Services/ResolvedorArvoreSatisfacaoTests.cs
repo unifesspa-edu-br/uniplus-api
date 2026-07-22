@@ -232,7 +232,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Indeterminado);
     }
 
-    [Fact(DisplayName = "Story #926: fato ausente e fato NÃO_APLICÁVEL levam a estados opostos na fronteira do resolvedor")]
+    [Fact(DisplayName = "Story #926: fato ausente e fato NAO_APLICAVEL levam a estados opostos na fronteira do resolvedor")]
     public void Folha_FatoAusenteVersusNaoAplicavel_EstadosOpostos()
     {
         DocumentoExigido condicional = DocumentoCondicional("CONCORRER_PCD");
@@ -535,7 +535,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
     // ── Repetição por entidade (Story #922) ──────────────────────────────────────────────
 
-    [Fact(DisplayName = "Story #926: atributo NÃO_APLICÁVEL da instância sobrescreve o mesmo fato resolvido do candidato")]
+    [Fact(DisplayName = "Story #926: atributo NAO_APLICAVEL da instância sobrescreve o mesmo fato resolvido do candidato")]
     public void RepeticaoPorEntidade_AtributoNaoAplicavelSobrescreveFatoDoCandidato()
     {
         DocumentoExigido condicional = DocumentoCondicional("SEM_RENDA");

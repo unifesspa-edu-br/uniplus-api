@@ -170,7 +170,7 @@ public static class AvaliadorConformidadeLegal
 
         // Só MODALIDADE entra: na publicação não há candidato, e todo outro fato é
         // legitimamente desconhecido. Ausência resolve INDETERMINADO, que aqui significa
-        // "cobertura não provada" — o que se quer. Materializá-los como NÃO_APLICÁVEL faria a
+        // "cobertura não provada" — o que se quer. Materializá-los como NAO_APLICAVEL faria a
         // cláusula colapsar em FALSO e afirmaria algo que não se sabe.
         Dictionary<string, FatoResolvido> fatoDaModalidade = new(StringComparer.Ordinal)
         {
