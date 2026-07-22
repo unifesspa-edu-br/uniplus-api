@@ -8,7 +8,7 @@ Guia para configurar e executar o ambiente de desenvolvimento da Uni+ API.
 |---|---|---|
 | Docker | 24+ | `docker --version` |
 | Docker Compose | 2.20+ | `docker compose version` |
-| .NET SDK | 10.0.100 | `dotnet --version` |
+| .NET SDK | 10.0.300 (qualquer patch `10.0.3xx`) | `dotnet --version` |
 | Git | 2.40+ | `git --version` |
 
 ## Setup rápido
@@ -154,10 +154,10 @@ docker exec docker-keycloak-1 bash -c "exec 3<>/dev/tcp/localhost/9000 && echo -
 
 ### Build Docker das APIs falha
 
-Se a imagem `sdk:10.0` não contiver o SDK GA, o build falhará. Os Dockerfiles usam a tag pinada `sdk:10.0.100` para evitar isso. Se precisar atualizar:
+Se a imagem `sdk:10.0` não contiver o SDK GA, o build falhará. Os Dockerfiles usam a tag pinada `sdk:10.0.300` para evitar isso — a mesma versão declarada em `global.json`, que restringe a resolução à feature band `10.0.3xx` (`rollForward: latestPatch`). Uma tag de outra band faz o `dotnet restore` falhar dentro da imagem antes do build. Se precisar atualizar:
 
 1. Verifique a versão local: `dotnet --version`
-2. Atualize a tag nos Dockerfiles: `FROM mcr.microsoft.com/dotnet/sdk:<versão>`
+2. Atualize `global.json` e a tag nos Dockerfiles juntos: `FROM mcr.microsoft.com/dotnet/sdk:<versão>` — as duas referências precisam ficar na mesma feature band
 
 ### Connection string inválida
 
