@@ -37,7 +37,7 @@ public sealed record ProcessoSeletivoDto(
 /// <summary>
 /// DTO de leitura de <see cref="Domain.ValueObjects.ReferenciaTemporalFatos"/> (Story #554,
 /// issue #892, PR #896). Mesmo formato flat aceito por
-/// <c>ProcessoSeletivoController.DefinirReferenciaTemporalFatosRequest</c> — round-trip
+/// <c>DefinirReferenciaTemporalFatosRequest</c> — round-trip
 /// GET→PUT direto. <see langword="null"/> é o estado válido "nenhuma política configurada".
 /// </summary>
 public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Guid? FaseId);
