@@ -1,7 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Publica o Edital de abertura do processo (RN08, Story #759, T4 #785):

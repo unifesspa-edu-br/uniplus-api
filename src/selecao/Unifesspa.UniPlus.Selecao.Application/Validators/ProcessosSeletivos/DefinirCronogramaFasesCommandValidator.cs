@@ -1,9 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
-using FluentValidation;
-
 using Commands.ProcessosSeletivos;
+
 using Domain.Enums;
+
+using FluentValidation;
 
 /// <summary>
 /// Validação de <b>forma</b> do <see cref="DefinirCronogramaFasesCommand"/> — o que não

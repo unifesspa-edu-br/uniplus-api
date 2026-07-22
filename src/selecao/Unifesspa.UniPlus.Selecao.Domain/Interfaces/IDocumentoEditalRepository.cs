@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 using Entities;
+
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>

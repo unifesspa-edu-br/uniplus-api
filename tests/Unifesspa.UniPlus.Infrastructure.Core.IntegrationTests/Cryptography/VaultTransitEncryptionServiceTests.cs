@@ -2,10 +2,11 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.IntegrationTests.Cryptography;
 
 using AwesomeAssertions;
 
+using DependencyInjection;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
-using DependencyInjection;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 [Collection(VaultContainerFixture.CollectionName)]

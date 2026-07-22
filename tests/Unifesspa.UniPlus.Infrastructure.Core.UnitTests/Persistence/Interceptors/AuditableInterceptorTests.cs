@@ -2,14 +2,15 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Persistence.Intercepto
 
 using AwesomeAssertions;
 
+using Kernel.Domain.Entities;
+using Kernel.Domain.Interfaces;
+
 using Microsoft.EntityFrameworkCore;
 
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Kernel.Domain.Entities;
-using Kernel.Domain.Interfaces;
 
 public sealed class AuditableInterceptorTests
 {

@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.LocaisOferta;
 
 using FluentValidation;
 
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 public sealed class AtualizarLocalOfertaCommandValidator : AbstractValidator<AtualizarLocalOfertaCommand>
 {

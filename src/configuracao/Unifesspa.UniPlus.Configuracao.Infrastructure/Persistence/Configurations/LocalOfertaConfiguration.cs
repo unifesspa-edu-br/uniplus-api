@@ -3,9 +3,9 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",

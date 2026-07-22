@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 /// <summary>

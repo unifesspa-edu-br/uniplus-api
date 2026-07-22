@@ -7,6 +7,12 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 
+using Cryptography;
+
+using Errors;
+
+using Kernel.Results;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -14,11 +20,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-using Cryptography;
-using Errors;
-
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Kernel.Results;
 
 /// <summary>
 /// Resource filter (roda antes de model binding e antes do action filter)

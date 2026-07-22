@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Hosting;
 
 /// <summary>

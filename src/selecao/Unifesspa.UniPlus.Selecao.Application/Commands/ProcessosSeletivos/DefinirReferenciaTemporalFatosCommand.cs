@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story

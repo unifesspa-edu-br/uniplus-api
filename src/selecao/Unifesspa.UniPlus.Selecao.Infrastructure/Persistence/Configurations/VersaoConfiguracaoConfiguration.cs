@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-using Domain.Entities;
 
 /// <summary>
 /// Configuração EF Core da tabela append-only <c>versoes_configuracao</c>

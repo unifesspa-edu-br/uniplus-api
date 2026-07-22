@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 using Unifesspa.UniPlus.Selecao.Domain.Events;
+
 using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado;
 
 /// <summary>

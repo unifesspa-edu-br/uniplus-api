@@ -4,11 +4,12 @@ using System.Text.RegularExpressions;
 
 using AwesomeAssertions;
 
+using Kernel.Results;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Kernel.Results;
 
 public sealed class ResultExtensionsTests
 {

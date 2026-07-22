@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.DependencyInjection;
-
 using Errors;
 
 using Kernel.Results;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Constrói a resposta para falhas de model binding de cursor pagination,

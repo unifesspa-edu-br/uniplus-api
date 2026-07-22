@@ -1,6 +1,6 @@
-using Wolverine.Attributes;
-
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
+
+using Wolverine.Attributes;
 
 // Wolverine descobre IWolverineExtension via [assembly: WolverineModule<T>] e
 // aplica Configure() automaticamente quando o assembly é carregado pelo host.

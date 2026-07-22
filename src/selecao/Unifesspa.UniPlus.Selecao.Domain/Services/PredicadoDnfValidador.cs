@@ -110,13 +110,13 @@ public static class PredicadoDnfValidador
         CondicaoDnf condicao,
         DescritorFatoCandidato descritor,
         IReadOnlyDictionary<string, IReadOnlySet<string>>? dominiosDinamicos) => descritor.TipoDominio switch
-    {
-        TipoDominioFato.Booleano => ValidarValorBooleano(condicao),
-        TipoDominioFato.Numerico => ValidarValorNumerico(condicao),
-        TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(condicao, descritor.ValoresDominio!),
-        TipoDominioFato.CategoricoDinamico => ValidarValorCategoricoDinamico(condicao, dominiosDinamicos),
-        _ => Result.Failure(new DomainError("PredicadoDnf.ValorIncompativelComTipo", "Domínio do fato desconhecido.")),
-    };
+        {
+            TipoDominioFato.Booleano => ValidarValorBooleano(condicao),
+            TipoDominioFato.Numerico => ValidarValorNumerico(condicao),
+            TipoDominioFato.CategoricoEstatico => ValidarValorCategorico(condicao, descritor.ValoresDominio!),
+            TipoDominioFato.CategoricoDinamico => ValidarValorCategoricoDinamico(condicao, dominiosDinamicos),
+            _ => Result.Failure(new DomainError("PredicadoDnf.ValorIncompativelComTipo", "Domínio do fato desconhecido.")),
+        };
 
     /// <summary>
     /// CA-03 (integridade referencial, Story #554): o domínio válido de um fato

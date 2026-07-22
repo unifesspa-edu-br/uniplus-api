@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
 
-using Microsoft.EntityFrameworkCore;
-
 using System.Globalization;
 using System.Linq;
+
+using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;

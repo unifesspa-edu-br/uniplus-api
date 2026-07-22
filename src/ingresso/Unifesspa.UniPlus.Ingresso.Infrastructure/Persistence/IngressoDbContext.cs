@@ -1,10 +1,13 @@
 namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 
-using Microsoft.EntityFrameworkCore;
+using Abstractions;
+
+using Application.Abstractions.Interfaces;
 
 using Domain.Entities;
-using Application.Abstractions.Interfaces;
-using Abstractions;
+
+using Microsoft.EntityFrameworkCore;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 public sealed class IngressoDbContext : DbContext, IIngressoUnitOfWork

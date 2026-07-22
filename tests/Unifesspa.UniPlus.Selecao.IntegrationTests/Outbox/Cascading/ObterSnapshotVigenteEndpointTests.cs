@@ -8,10 +8,11 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Domain.Entities;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 

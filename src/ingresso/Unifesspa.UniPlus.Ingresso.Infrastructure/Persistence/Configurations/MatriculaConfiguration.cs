@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Configurations;
 
+using Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-using Domain.Entities;
 
 public sealed class MatriculaConfiguration : IEntityTypeConfiguration<Matricula>
 {

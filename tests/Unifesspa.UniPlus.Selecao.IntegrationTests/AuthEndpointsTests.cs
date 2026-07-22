@@ -6,8 +6,9 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Infrastructure;
+
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 public sealed class AuthEndpointsTests : IClassFixture<SelecaoApiFactory>
 {

@@ -1,10 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
-using FluentValidation;
-
 using Commands.ProcessosSeletivos;
+
 using Domain.Entities;
 using Domain.ValueObjects;
+
+using FluentValidation;
 
 /// <summary>
 /// Validação de contrato da abertura da sessão editorial (Story #860).

@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using System.Text.Json;
 
 using Enums;
+
 using Events;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;

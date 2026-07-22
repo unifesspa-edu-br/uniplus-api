@@ -1,9 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
-using FluentValidation;
-
 using Commands.ProcessosSeletivos;
+
 using Domain.Enums;
+
+using FluentValidation;
 
 public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEtapasCommand>
 {

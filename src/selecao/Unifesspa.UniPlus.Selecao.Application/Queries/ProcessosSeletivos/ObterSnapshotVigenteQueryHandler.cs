@@ -4,8 +4,10 @@ using System.Text.Json.Nodes;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Results;
+
 using DTOs;
+
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler convention-based do <see cref="ObterSnapshotVigenteQuery"/> (RN08,

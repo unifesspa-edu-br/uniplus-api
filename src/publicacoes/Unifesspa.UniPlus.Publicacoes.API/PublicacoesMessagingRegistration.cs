@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Publicacoes.API;
 
+using Unifesspa.UniPlus.Publicacoes.Contracts;
+
 using Wolverine;
 using Wolverine.Postgresql;
-
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// routing da requisição de registro de ato: fila PostgreSQL

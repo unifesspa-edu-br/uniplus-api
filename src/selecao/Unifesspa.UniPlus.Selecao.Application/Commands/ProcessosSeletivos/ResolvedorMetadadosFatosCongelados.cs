@@ -1,8 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Abstractions;
+
 using Domain.Entities;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>

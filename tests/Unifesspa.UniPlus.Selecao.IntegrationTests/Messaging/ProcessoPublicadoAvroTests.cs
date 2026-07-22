@@ -2,11 +2,15 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Messaging;
 
 using System;
 using System.IO;
-using AwesomeAssertions;
+
 using Avro.IO;
 using Avro.Specific;
+
+using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
+
 using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado;
 
 /// <summary>

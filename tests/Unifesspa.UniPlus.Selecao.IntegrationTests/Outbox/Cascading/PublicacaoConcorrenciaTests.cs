@@ -2,19 +2,22 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Text.Json.Nodes;
 
+using Application.Commands.ProcessosSeletivos;
+
 using AwesomeAssertions;
+
+using Domain.Entities;
+using Domain.Enums;
+
+using Kernel.Results;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Wolverine;
-
-using Application.Commands.ProcessosSeletivos;
-using Domain.Entities;
-using Domain.Enums;
-using Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+
+using Wolverine;
 
 /// <summary>
 /// Cobertura de concorrência (revisão do PR #791, achado P1): dois handlers

@@ -2,13 +2,15 @@ namespace Unifesspa.UniPlus.Publicacoes.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Persistence;
+using Persistence.Repositories;
+
+using Readers;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
-using Persistence;
-using Persistence.Repositories;
-using Readers;
 
 public static class PublicacoesInfrastructureRegistration
 {

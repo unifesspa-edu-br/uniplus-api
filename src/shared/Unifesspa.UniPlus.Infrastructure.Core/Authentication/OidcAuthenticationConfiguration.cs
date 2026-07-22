@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 
+using HealthChecks;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
@@ -11,7 +13,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using HealthChecks;
 
 /// <summary>
 /// Extension methods for configuring OIDC/JWT Bearer authentication.

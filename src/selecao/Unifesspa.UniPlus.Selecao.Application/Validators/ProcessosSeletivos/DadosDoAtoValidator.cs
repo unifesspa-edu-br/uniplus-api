@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
-using FluentValidation;
-
 using Commands.ProcessosSeletivos;
+
+using FluentValidation;
 
 /// <summary>
 /// Valida o bloco documental do ato ANTES de a publicação ser gravada.

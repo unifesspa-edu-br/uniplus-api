@@ -1,16 +1,18 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
+using Application.Commands.ProcessosSeletivos;
+
 using AwesomeAssertions;
+
+using Domain.Entities;
+using Domain.Events;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Wolverine;
-
-using Application.Commands.ProcessosSeletivos;
-using Domain.Entities;
-using Domain.Events;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+
+using Wolverine;
 
 // Cenários produtivos do outbox cascading (ADR-0005), reconstruídos sobre o
 // slice ProcessoSeletivo (Story #759, T4 #785) — o slice Edital legado que

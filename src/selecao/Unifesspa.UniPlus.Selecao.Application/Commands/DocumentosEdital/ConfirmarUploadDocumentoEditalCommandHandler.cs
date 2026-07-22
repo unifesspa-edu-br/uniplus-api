@@ -3,9 +3,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
 using System.Security.Cryptography;
 
 using Abstractions;
-using DTOs;
+
 using Domain.Entities;
 using Domain.Interfaces;
+
+using DTOs;
+
 using Kernel.Results;
 
 /// <summary>

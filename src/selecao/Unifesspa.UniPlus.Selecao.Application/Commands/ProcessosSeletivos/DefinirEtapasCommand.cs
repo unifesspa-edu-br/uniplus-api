@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Domain.Enums;
-using Kernel.Results;
 using Domain.ValueObjects;
+
+using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Item de entrada de uma etapa pontuada, usado por

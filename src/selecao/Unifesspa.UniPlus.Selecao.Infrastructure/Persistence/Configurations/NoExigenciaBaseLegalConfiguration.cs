@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
+using Domain.Entities;
+using Domain.Enums;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-
-using Domain.Entities;
-using Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="NoExigenciaBaseLegal"/> (Story #920) — mesmo padrão de

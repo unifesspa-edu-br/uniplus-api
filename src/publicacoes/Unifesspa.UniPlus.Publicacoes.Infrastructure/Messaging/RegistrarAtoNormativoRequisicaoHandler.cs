@@ -4,10 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
-using Wolverine.Attributes;
-using Wolverine.ErrorHandling;
-using Wolverine.Runtime.Handlers;
-
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
@@ -16,6 +12,10 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
+
+using Wolverine.Attributes;
+using Wolverine.ErrorHandling;
+using Wolverine.Runtime.Handlers;
 
 /// <summary>
 /// Handler da <see cref="RegistrarAtoNormativoRequisicao"/>: a mensagem durável que um

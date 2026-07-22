@@ -5,7 +5,9 @@ using AwesomeAssertions;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>

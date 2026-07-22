@@ -2,6 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Application.Commands.ProcessosSeletivos;
+using Application.DTOs;
+using Application.Queries.ProcessosSeletivos;
+
+using Http;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -15,10 +21,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Application.Commands.ProcessosSeletivos;
-using Application.DTOs;
-using Application.Queries.ProcessosSeletivos;
-using Http;
 
 /// <summary>
 /// Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015): o

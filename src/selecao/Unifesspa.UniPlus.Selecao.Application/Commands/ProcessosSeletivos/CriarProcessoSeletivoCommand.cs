@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Domain.Enums;
+
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Cria a raiz do agregado <c>ProcessoSeletivo</c> em rascunho (CA-01 da

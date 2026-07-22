@@ -90,17 +90,17 @@ public static class AvaliadorConformidadeLegal
     /// </summary>
     private static (bool Aprovada, string? Motivo, string? Aviso) AvaliarPredicado(
         ProcessoSeletivo processo, PredicadoObrigatoriedade predicado) => predicado switch
-    {
-        EtapaObrigatoria p => AvaliarEtapaObrigatoria(processo, p),
-        ModalidadesMinimas p => AvaliarModalidadesMinimas(processo, p),
-        DesempateDeveIncluir p => AvaliarDesempateDeveIncluir(processo, p),
-        DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, p),
-        AtendimentoDisponivel p => AvaliarAtendimentoDisponivel(processo, p),
-        ConcorrenciaDuplaObrigatoria => AvaliarConcorrenciaDuplaObrigatoria(processo),
-        Customizado => (true, null, "predicado customizado — aprovado por padrão, sem verificação automática"),
-        _ => throw new UnreachableException(
-            $"Predicado {predicado.GetType().Name} não é uma das 7 variantes reconhecidas por este avaliador."),
-    };
+        {
+            EtapaObrigatoria p => AvaliarEtapaObrigatoria(processo, p),
+            ModalidadesMinimas p => AvaliarModalidadesMinimas(processo, p),
+            DesempateDeveIncluir p => AvaliarDesempateDeveIncluir(processo, p),
+            DocumentoObrigatorioParaModalidade p => AvaliarDocumentoObrigatorioParaModalidade(processo, p),
+            AtendimentoDisponivel p => AvaliarAtendimentoDisponivel(processo, p),
+            ConcorrenciaDuplaObrigatoria => AvaliarConcorrenciaDuplaObrigatoria(processo),
+            Customizado => (true, null, "predicado customizado — aprovado por padrão, sem verificação automática"),
+            _ => throw new UnreachableException(
+                $"Predicado {predicado.GetType().Name} não é uma das 7 variantes reconhecidas por este avaliador."),
+        };
 
     private static (bool, string?, string?) AvaliarEtapaObrigatoria(ProcessoSeletivo processo, EtapaObrigatoria predicado)
     {

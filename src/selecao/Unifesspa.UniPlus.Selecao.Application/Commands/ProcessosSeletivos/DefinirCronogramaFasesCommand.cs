@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Domain.Enums;
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Entrada de recurso de uma fase, usada por <see cref="FaseCronogramaInput"/>.

@@ -5,10 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Publicacoes.Application;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Publicacoes.API.Errors;
 using Unifesspa.UniPlus.Publicacoes.API.Hateoas;
+using Unifesspa.UniPlus.Publicacoes.Application;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Enums;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 

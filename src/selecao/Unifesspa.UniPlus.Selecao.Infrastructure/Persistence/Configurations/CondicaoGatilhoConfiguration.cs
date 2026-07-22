@@ -2,14 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using System.Text.Json;
 
+using Domain.Entities;
+using Domain.Enums;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-
-using Domain.Entities;
-using Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="CondicaoGatilho"/> (Story #554, PR #896) — entidade

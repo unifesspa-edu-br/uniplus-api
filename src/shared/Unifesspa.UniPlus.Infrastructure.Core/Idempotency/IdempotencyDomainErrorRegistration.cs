@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Microsoft.AspNetCore.Http;
-
 using Errors;
+
+using Microsoft.AspNetCore.Http;
 
 /// <summary>
 /// Mapeia codes de domínio do filter de idempotência para HTTP status +

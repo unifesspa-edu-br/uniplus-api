@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
+using Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-using Domain.Entities;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FaseCronograma"/> (Story #851) — entidade filha
