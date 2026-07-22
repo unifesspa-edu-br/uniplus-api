@@ -237,6 +237,31 @@ dotnet ef migrations add <Nome> \
 - **NUNCA adicionar Co-Authored-By**
 - **NUNCA usar --no-verify**
 
+## Referências têm de se explicar sozinhas
+
+Vale para **comentário de código, descrição de PR, corpo de issue e mensagem de commit** — tudo que sobrevive ao contexto em que foi escrito.
+
+**Nunca usar rótulo interno solto.** Numeração de PR de um plano de trabalho, letra de achado de revisão, sigla de decisão, número de rodada — só existem dentro do documento que os definiu. Para quem lê o código ou o PR seis meses depois, são ruído que obriga a caçar o significado num arquivo que talvez nem esteja no repositório.
+
+A referência tem de carregar o **conteúdo**, não o ponteiro:
+
+| Não | Sim |
+|---|---|
+| `// gate conforme A5` | `// COR_RACA é categórico estático: os valores de domínio vivem em FatoValorDominio` |
+| "aplica S3 e S10" | "MODALIDADE resolve por candidato e processo; a restrição por oferta de curso é passo da classificação" |
+| "corrige o achado da rodada 10" | "trata o fato ausente como indeterminado em vez de falso" |
+| "depende do PR 3" | "depende do PR que generaliza a gramática de binding do fato derivado" |
+
+**Identificador rastreável é permitido quando a prosa já explica o assunto.** O token acrescenta rastreabilidade, não substitui o sentido. `ADR-0111`, `UNI-REQ-0078`, `Lei 12.711/2012`, `#927` e `arquivo:linha` são legítimos **desde que** a frase continue compreensível se o leitor ignorar o token:
+
+- ✅ `// Pares de elegibilidade e opt-in do formulário de cotas (UNI-REQ-0078)`
+- ✅ "a imutabilidade de código de fato fixada na ADR-0111"
+- ❌ `// conforme UNI-REQ-0078` — sem a prosa, o token é a única informação
+
+Vale também para **títulos de seção** em PR e issue: nomear pelo assunto, não pelo rótulo.
+
+A regra é a mesma que proíbe citar ferramenta de IA ou processo de revisão em código-fonte: o artefato registra o **porquê técnico ou de negócio**, nunca o caminho burocrático que levou até ele.
+
 ## Idioma
 
 - Documentação e strings user-facing em **português do Brasil**
