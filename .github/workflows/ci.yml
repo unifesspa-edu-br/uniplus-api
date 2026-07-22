@@ -15,7 +15,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  DOTNET_VERSION: 10.0.x
   BUILD_CONFIG: Release
   SOLUTION_PATH: UniPlus.slnx
   COVERAGE_DIR: coverage
@@ -122,7 +121,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v5
@@ -144,16 +143,17 @@ jobs:
       # públicas como violação — e, no modo que aplica correções, converte todas
       # para internal, quebrando a descoberta de testes do xUnit (xUnit1000).
       #
-      # --exclude **/Migrations/**: o dotnet ef gera migrations com UTF-8 BOM
-      # enquanto o .editorconfig exige utf-8 sem BOM. Sem a exclusão, todo PR que
-      # adicionasse uma migration nasceria vermelho neste gate.
+      # Migrations NÃO são excluídas: o que o `dotnet ef` gera fora da política
+      # (BOM e usings sem separação de grupo) está declarado na seção
+      # [src/**/Migrations/**.cs] do .editorconfig, então elas passam pelo gate
+      # como qualquer outro arquivo — indentação, trailing whitespace e demais
+      # regras seguem valendo nelas.
       - name: Verificar formatação
         run: |
           dotnet format ${{ env.SOLUTION_PATH }} \
             --verify-no-changes \
             --no-restore \
-            --exclude-diagnostics CA1515 \
-            --exclude "**/Migrations/**"
+            --exclude-diagnostics CA1515
 
   # ─────────────────────────────────────────────────────────────────────────
   # Pipeline build → (test-unit ∥ test-integration) → coverage-summary
@@ -182,7 +182,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v5
@@ -238,7 +238,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v5
@@ -309,7 +309,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v5
@@ -448,7 +448,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Restore .NET tools (reportgenerator)
         run: dotnet tool restore
