@@ -47,7 +47,7 @@ public static class ResolvedorArvoreSatisfacao
 {
     public static Result<ResultadoResolucaoArvore> Resolver(
         ArvoreExigenciasCongelada? arvore,
-        IReadOnlyDictionary<string, JsonElement> fatosResolvidos,
+        IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
         IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>? instanciasPorTipoEntidade = null)
     {
@@ -160,7 +160,7 @@ public static class ResolvedorArvoreSatisfacao
 
     private static EstadoSatisfacao ResolverNo(
         NoExigencia no,
-        IReadOnlyDictionary<string, JsonElement> fatos,
+        IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
         Dictionary<Guid, EstadoSatisfacao> estados,
@@ -185,7 +185,7 @@ public static class ResolvedorArvoreSatisfacao
     private static EstadoSatisfacao ResolverNoRepetido(
         NoExigencia no,
         TipoEntidade tipoEntidade,
-        IReadOnlyDictionary<string, JsonElement> fatosCandidato,
+        IReadOnlyDictionary<string, FatoResolvido> fatosCandidato,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
@@ -202,7 +202,7 @@ public static class ResolvedorArvoreSatisfacao
         List<InstanciaResolvida> resolvidas = [];
         foreach (InstanciaEntidade instancia in instancias)
         {
-            Dictionary<string, JsonElement> fatosDaInstancia = MesclarFatosDeEntidade(fatosCandidato, instancia.Atributos);
+            Dictionary<string, FatoResolvido> fatosDaInstancia = MesclarFatosDeEntidade(fatosCandidato, instancia.Atributos);
             IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesDaInstancia =
                 FiltrarApresentacoesPorEntidade(apresentacoes, instancia.EntidadeId);
 
@@ -230,11 +230,11 @@ public static class ResolvedorArvoreSatisfacao
         return ResolverE([.. resolvidas.Select(static r => r.Estado)]);
     }
 
-    private static Dictionary<string, JsonElement> MesclarFatosDeEntidade(
-        IReadOnlyDictionary<string, JsonElement> fatosCandidato, IReadOnlyDictionary<string, JsonElement> atributosDaInstancia)
+    private static Dictionary<string, FatoResolvido> MesclarFatosDeEntidade(
+        IReadOnlyDictionary<string, FatoResolvido> fatosCandidato, IReadOnlyDictionary<string, FatoResolvido> atributosDaInstancia)
     {
-        Dictionary<string, JsonElement> mesclado = new(fatosCandidato, StringComparer.Ordinal);
-        foreach (KeyValuePair<string, JsonElement> atributo in atributosDaInstancia)
+        Dictionary<string, FatoResolvido> mesclado = new(fatosCandidato, StringComparer.Ordinal);
+        foreach (KeyValuePair<string, FatoResolvido> atributo in atributosDaInstancia)
         {
             mesclado[atributo.Key] = atributo.Value;
         }
@@ -260,7 +260,7 @@ public static class ResolvedorArvoreSatisfacao
 
     private static EstadoSatisfacao ResolverFolha(
         NoExigencia no,
-        IReadOnlyDictionary<string, JsonElement> fatos,
+        IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia)
     {
@@ -318,7 +318,7 @@ public static class ResolvedorArvoreSatisfacao
 
     private static EstadoSatisfacao ResolverGrupo(
         NoExigencia no,
-        IReadOnlyDictionary<string, JsonElement> fatos,
+        IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
         Dictionary<Guid, EstadoSatisfacao> estados,

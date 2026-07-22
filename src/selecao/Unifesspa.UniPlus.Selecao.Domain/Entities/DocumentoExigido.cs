@@ -321,7 +321,7 @@ public sealed class DocumentoExigido : EntityBase
     /// — por um fato sintético fixo, ex. só <c>MODALIDADE</c>, para provar cobertura
     /// incondicional de uma modalidade inteira).
     /// </summary>
-    public Ternario AplicavelPara(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
+    public Ternario AplicavelPara(IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 

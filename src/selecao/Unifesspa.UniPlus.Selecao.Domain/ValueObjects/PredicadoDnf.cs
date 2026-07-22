@@ -71,7 +71,7 @@ public sealed record PredicadoDnf
     /// <see cref="Ternario.Indeterminado"/>, fail-closed — nunca lança, e o restante do
     /// predicado continua avaliável normalmente.
     /// </summary>
-    public Ternario Avaliar(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
+    public Ternario Avaliar(IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 

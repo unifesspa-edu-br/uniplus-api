@@ -38,20 +38,27 @@ public sealed record ClausulaDnf
     /// <see cref="Ternario.Indeterminado"/> se qualquer uma avaliar indeterminada; senão
     /// <see cref="Ternario.Verdadeiro"/>.
     /// </summary>
-    public Ternario Avaliar(IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
+    /// <remarks>
+    /// O átomo tem quatro estados, mas a cláusula continua ternária (Story #926):
+    /// <see cref="EstadoAtomo.NaoAplicavel"/> <b>colapsa como <see cref="Ternario.Falso"/>
+    /// resolvido</b> aqui. É o colapso que dá a resposta correta ao consumidor: um gatilho
+    /// que cita um fato inaplicável resolve falso — a exigência não se aplica, em definitivo —
+    /// em vez de ficar pendente esperando um valor que nunca virá.
+    /// </remarks>
+    public Ternario Avaliar(IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 
         bool algumaIndeterminada = false;
         foreach (CondicaoDnf condicao in Condicoes)
         {
-            Ternario resultado = AvaliarCondicao(condicao, fatosResolvidos);
-            if (resultado == Ternario.Falso)
+            EstadoAtomo resultado = AvaliarCondicao(condicao, fatosResolvidos);
+            if (resultado is EstadoAtomo.Falso or EstadoAtomo.NaoAplicavel)
             {
                 return Ternario.Falso;
             }
 
-            if (resultado == Ternario.Indeterminado)
+            if (resultado == EstadoAtomo.Indeterminado)
             {
                 algumaIndeterminada = true;
             }
@@ -61,23 +68,44 @@ public sealed record ClausulaDnf
     }
 
     /// <summary>
-    /// Avalia uma condição isolada. Um fato citado que não está resolvido — chave ausente de
-    /// <paramref name="fatosResolvidos"/>, ou presente com <see cref="JsonValueKind.Null"/>/
-    /// <see cref="JsonValueKind.Undefined"/> — nunca vira <see cref="Ternario.Falso"/>: é
-    /// sempre <see cref="Ternario.Indeterminado"/> (Story #916, fail-closed). O mesmo vale
-    /// para um valor resolvido de tipo incoerente com o operador (ex.: comparação numérica
-    /// sobre um valor que não é número) — nunca lança, sempre <see cref="Ternario.Indeterminado"/>.
-    /// <see cref="Operador.Diferente"/>/<see cref="Operador.NaoEm"/> são a negação lógica de
-    /// <see cref="Operador.Igual"/>/<see cref="Operador.Em"/> — a negação só se aplica quando o
-    /// fato está efetivamente resolvido e coerente; nunca inverte ausência/indeterminação para
-    /// <see cref="Ternario.Verdadeiro"/>.
+    /// Avalia um átomo isolado, propagando o estado do fato para <b>qualquer</b> operador.
     /// </summary>
-    private static Ternario AvaliarCondicao(CondicaoDnf condicao, IReadOnlyDictionary<string, JsonElement> fatosResolvidos)
+    /// <remarks>
+    /// <para>
+    /// Fato <see cref="EstadoFato.NaoAplicavel"/> dá átomo <see cref="EstadoAtomo.NaoAplicavel"/>,
+    /// e fato ausente do dicionário ou <see cref="EstadoFato.Indeterminado"/> dá átomo
+    /// <see cref="EstadoAtomo.Indeterminado"/> — em ambos os casos para todo operador, inclusive
+    /// <see cref="Operador.Diferente"/>/<see cref="Operador.NaoEm"/>. A negação inverte um
+    /// <b>valor</b>; sobre a inaplicabilidade ou sobre a ausência de informação não há o que
+    /// inverter, e inverter mesmo assim faria o predicado ser satisfeito justamente pelos
+    /// candidatos sobre os quais nada se sabe.
+    /// </para>
+    /// <para>
+    /// Um valor resolvido de tipo incoerente com o operador (ex.: comparação numérica sobre um
+    /// valor que não é número) também é <see cref="EstadoAtomo.Indeterminado"/> — nunca lança, e
+    /// nunca vira falso silencioso, que confundiria "resolvido diferente" com "resolvido em
+    /// forma que este predicado não sabe comparar".
+    /// </para>
+    /// </remarks>
+    private static EstadoAtomo AvaliarCondicao(CondicaoDnf condicao, IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
     {
-        if (!fatosResolvidos.TryGetValue(condicao.Fato, out JsonElement valorCandidato)
-            || valorCandidato.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        // O nulo é tratado como ausência em vez de estourar: um dicionário montado por um
+        // adaptador descuidado não deve derrubar a avaliação inteira, e "não sei" é a leitura
+        // conservadora de uma entrada sem conteúdo — nunca "não se aplica", que dispensaria a
+        // exigência por um defeito de montagem.
+        if (!fatosResolvidos.TryGetValue(condicao.Fato, out FatoResolvido? fato) || fato is null)
         {
-            return Ternario.Indeterminado;
+            return EstadoAtomo.Indeterminado;
+        }
+
+        if (fato.Estado == EstadoFato.NaoAplicavel)
+        {
+            return EstadoAtomo.NaoAplicavel;
+        }
+
+        if (fato.Estado != EstadoFato.Resolvido || fato.Valor is not { } valorCandidato)
+        {
+            return EstadoAtomo.Indeterminado;
         }
 
         // Diferente/NaoEm são avaliados como a negação de Igual/Em: o resultado base é
@@ -100,11 +128,24 @@ public sealed record ClausulaDnf
         bool negar = condicao.Operador is Operador.Diferente or Operador.NaoEm;
         if (!negar || resultadoBase == Ternario.Indeterminado)
         {
-            return resultadoBase;
+            return TernarioParaAtomo(resultadoBase);
         }
 
-        return resultadoBase == Ternario.Verdadeiro ? Ternario.Falso : Ternario.Verdadeiro;
+        return resultadoBase == Ternario.Verdadeiro ? EstadoAtomo.Falso : EstadoAtomo.Verdadeiro;
     }
+
+    /// <summary>
+    /// Converte o resultado da comparação de valores — que é ternária, porque
+    /// <see cref="EstadoAtomo.NaoAplicavel"/> já foi decidido antes de comparar valor algum —
+    /// para o estado do átomo.
+    /// </summary>
+    private static EstadoAtomo TernarioParaAtomo(Ternario resultado) => resultado switch
+    {
+        Ternario.Verdadeiro => EstadoAtomo.Verdadeiro,
+        Ternario.Falso => EstadoAtomo.Falso,
+        Ternario.Indeterminado => EstadoAtomo.Indeterminado,
+        _ => throw new ArgumentOutOfRangeException(nameof(resultado), resultado, "Resultado ternário desconhecido."),
+    };
 
     /// <summary>
     /// Avalia os operadores positivos (<see cref="Operador.Igual"/>/<see cref="Operador.Em"/>/
