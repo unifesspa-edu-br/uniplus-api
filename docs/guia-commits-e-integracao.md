@@ -160,8 +160,11 @@ dotnet test UniPlus.slnx --filter "Category!=Integration"
 # Testes de integração (Testcontainers — requer Docker rodando)
 dotnet test UniPlus.slnx --filter "Category=Integration"
 
-# Formatação (verifica sem aplicar — falha se houver drift)
-dotnet format --verify-no-changes
+# Formatação (verifica sem aplicar — falha se houver drift).
+# A flag --exclude-diagnostics CA1515 é obrigatória: sem ela o comando
+# converte as classes de teste para `internal` e quebra o build.
+# Ver CONTRIBUTING.md.
+dotnet format --exclude-diagnostics CA1515 --verify-no-changes
 
 # Markdownlint (se mexeu em docs/**/*.md)
 npx markdownlint-cli2 'docs/**/*.md'
@@ -206,7 +209,8 @@ docs/0021-cache-distribuido
 - [ ] PR vinculado à issue com `Closes #N` na descrição (fora de blocos de código).
 - [ ] Build com `TreatWarningsAsErrors` passou — zero avisos, zero erros.
 - [ ] Testes unitários e de integração passando localmente.
-- [ ] `dotnet format --verify-no-changes` sem drift.
+- [ ] `dotnet format --exclude-diagnostics CA1515 --verify-no-changes` sem
+  drift nos arquivos que você tocou.
 
 ## 9. Particularidades do `uniplus-api`
 

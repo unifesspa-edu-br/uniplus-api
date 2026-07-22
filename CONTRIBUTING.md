@@ -265,11 +265,19 @@ dotnet test --filter "Category!=Integration"
 # Testes de integração (requer Docker)
 dotnet test --filter "Category=Integration"
 
-# Formatação
-dotnet format --verify-no-changes
+# Formatação — a flag --exclude-diagnostics CA1515 é OBRIGATÓRIA (ver aviso abaixo)
+dotnet format --exclude-diagnostics CA1515 --verify-no-changes
 ```
 
-Todos os comandos acima devem passar antes de abrir o PR.
+Todos os comandos acima devem passar antes de abrir o PR — com uma ressalva temporária para o
+`dotnet format`: enquanto a formatação do repositório não estiver normalizada, ele ainda acusa
+diagnósticos preexistentes. O que se exige hoje é que **os arquivos que você tocou** não apareçam
+no relatório. Ver [§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515).
+
+> ⚠️ **Nunca rode `dotnet format` sem `--exclude-diagnostics CA1515`.** Sem a flag, o comando
+> converte as classes de teste de `public` para `internal` e quebra o build inteiro — 688 erros,
+> entre eles `xUnit1000: Test classes must be public`. Detalhes em
+> [§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515).
 
 ### 4. Commit
 
@@ -368,6 +376,34 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 | Tabelas (EF Core) | PascalCase plural | `Candidatos`, `Inscricoes` |
 | Strings user-facing | pt-BR | `"Inscrição realizada com sucesso"` |
 | Mensagens de erro da API | pt-BR | `"CPF já cadastrado neste processo"` |
+
+### Formatação e o filtro CA1515
+
+O comando de formatação deste repositório é sempre:
+
+```bash
+dotnet format --exclude-diagnostics CA1515 --verify-no-changes
+```
+
+**A flag `--exclude-diagnostics CA1515` não é opcional — não a remova.**
+
+O `CA1515` ("Consider making public types internal") comporta-se de forma diferente nas duas
+ferramentas. O pacote `xunit.analyzers` fornece um `DiagnosticSuppressor` para o `CA1515`, que o
+`dotnet build` respeita — por isso as classes `public sealed class XTests` não são sinalizadas na
+compilação. O `dotnet format` não aplica esse suppressor: enxerga os 339 tipos públicos dos
+projetos de teste como violações e, quando executado sem `--verify-no-changes`, **aplica a
+"correção"** — converte todos para `internal`. O xUnit exige classes públicas para descobrir os
+testes, então o resultado é o build inteiro quebrado com `xUnit1000: Test classes must be public`.
+
+Manter o `CA1515` ativo no build é desejável: ele pega tipos públicos legítimos que deveriam ser
+`internal`, inclusive dentro de projetos de teste que o suppressor não cobre por não conterem
+métodos de teste (helpers e fixtures — daí os atributos `[SuppressMessage]` em
+`tests/*/Infrastructure/*ApiFactory.cs`). Por isso a regra é filtrada apenas no comando do
+`dotnet format`, e não silenciada no `.editorconfig`.
+
+> A formatação do repositório ainda não está normalizada — o `--verify-no-changes` acusa
+> diagnósticos preexistentes de `WHITESPACE`, `IMPORTS` e `CHARSET`. Isso é conhecido e está
+> sendo tratado em issue própria; não tente corrigi-los junto com a sua mudança.
 
 ### Validação
 
@@ -470,7 +506,7 @@ O PR será bloqueado se qualquer gate falhar:
 - [ ] Cobertura de código >= 80% nas camadas Domain e Application
 - [ ] SonarQube: zero issues críticos ou bloqueadores
 - [ ] Nenhuma vulnerabilidade crítica em dependências
-- [ ] Formatação correta (`dotnet format`)
+- [ ] Formatação correta (`dotnet format --exclude-diagnostics CA1515 --verify-no-changes`) — ver [§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515)
 - [ ] Pacotes proibidos ausentes (`bash tools/forbidden-deps/check.sh`) — ver [§ Pacotes proibidos](#pacotes-proibidos)
 
 ### Pacotes proibidos
