@@ -68,6 +68,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// antigo <c>DocumentoExigido.GrupoSatisfacaoId</c> (grupo plano, residual). Use
     /// <see cref="RaizesDeExigencia"/> para as raízes da floresta.
     /// </summary>
+    private readonly List<FatoColetado> _fatosColetados = [];
+
+    /// <summary>
+    /// Os fatos que este processo coleta do candidato, com a ordem de coleta e a pré-condição de
+    /// cada um (Story #926). Formam um grafo acíclico: a pré-condição de um fato só cita fatos
+    /// anteriores na ordem.
+    /// </summary>
+    public IReadOnlyCollection<FatoColetado> FatosColetados => _fatosColetados.AsReadOnly();
+
     private readonly List<NoExigencia> _nosExigencia = [];
     public IReadOnlyCollection<NoExigencia> NosExigencia => _nosExigencia.AsReadOnly();
 
@@ -763,6 +772,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// revalidados aqui. O gatilho DNF (<c>CondicaoGatilho</c>, PR #896), a base legal
     /// (PR #898) e a idade/formato/tamanho (PR #900) não são tocados aqui.
     /// </remarks>
+
     public Result DefinirDocumentosExigidos(
         IReadOnlyList<NoExigencia> raizes,
         PrecondicaoIfMatch precondicao)
@@ -883,6 +893,162 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         Rascunho?.IncrementarRevisao();
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Substitui integralmente o grafo de coleta de fatos: quais fatos este processo coleta, em
+    /// que ordem, e sob qual pré-condição cada campo é apresentado (Story #926).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Os invariantes fazem cumprir a norma de que uma pré-condição só cita <b>fatos
+    /// anteriores</b>. Isso é mais estrito do que exigir apenas aciclicidade: um grafo pode ser
+    /// acíclico e ainda assim ter um fato citando outro que vem depois dele na ordem de coleta —
+    /// o que produziria um formulário em que a pergunta depende de uma resposta ainda não dada.
+    /// </para>
+    /// <para>
+    /// A checagem de ordem sozinha já implica aciclicidade, porque um ciclo exigiria um fato com
+    /// ordem menor que a de si mesmo. A detecção de ciclo é feita mesmo assim, e antes: ela
+    /// devolve o <b>caminho</b> do ciclo, que é o que um administrador precisa para corrigir a
+    /// configuração — enquanto o erro de ordem apontaria só um par de fatos.
+    /// </para>
+    /// </remarks>
+    public Result DefinirFatosColetados(
+        IReadOnlyList<FatoColetado> fatosColetados,
+        PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(fatosColetados);
+
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (ValidarGrafoDeFatos(fatosColetados) is { } erro)
+        {
+            return Result.Failure(erro);
+        }
+
+        _fatosColetados.Clear();
+        foreach (FatoColetado fato in fatosColetados)
+        {
+            fato.VincularProcessoSeletivo(Id);
+            _fatosColetados.Add(fato);
+        }
+
+        // Numa retificação, esta escrita avança a revisão da sessão editorial — é o que faz o
+        // ETag mudar e impede que uma escrita concorrente com o If-Match antigo sobrescreva esta
+        // (mesmo controle dos demais Definir*). Fora de retificação, o rascunho é nulo e o bump
+        // é inócuo.
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    private static DomainError? ValidarGrafoDeFatos(IReadOnlyList<FatoColetado> fatos)
+    {
+        Dictionary<string, FatoColetado> porCodigo = new(StringComparer.Ordinal);
+        HashSet<int> ordens = [];
+
+        foreach (FatoColetado fato in fatos)
+        {
+            if (!porCodigo.TryAdd(fato.FatoCodigo, fato))
+            {
+                return new DomainError(
+                    FatoColetadoErrorCodes.FatoDuplicado,
+                    $"O fato '{fato.FatoCodigo}' aparece mais de uma vez na coleta.");
+            }
+
+            if (!ordens.Add(fato.Ordem))
+            {
+                return new DomainError(
+                    FatoColetadoErrorCodes.OrdemDuplicada,
+                    $"A ordem {fato.Ordem} é usada por mais de um fato — a ordem de coleta precisa ser total.");
+            }
+        }
+
+        // Ciclo antes de ordem: o erro de ciclo nomeia o caminho inteiro, que é acionável;
+        // o de ordem apontaria só o primeiro par fora de sequência do mesmo problema.
+        if (DetectarCiclo(porCodigo) is { } caminho)
+        {
+            return new DomainError(
+                FatoColetadoErrorCodes.GrafoComCiclo,
+                $"A pré-condição dos fatos forma um ciclo: {string.Join(" → ", caminho)}.");
+        }
+
+        foreach (FatoColetado fato in fatos)
+        {
+            foreach (string citado in fato.FatosCitados)
+            {
+                if (!porCodigo.TryGetValue(citado, out FatoColetado? anterior))
+                {
+                    return new DomainError(
+                        FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                        $"A pré-condição do fato '{fato.FatoCodigo}' cita '{citado}', que este processo não coleta.");
+                }
+
+                if (anterior.Ordem >= fato.Ordem)
+                {
+                    return new DomainError(
+                        FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior,
+                        $"A pré-condição do fato '{fato.FatoCodigo}' (ordem {fato.Ordem}) cita '{citado}' "
+                        + $"(ordem {anterior.Ordem}), que não é anterior — o campo dependeria de uma resposta ainda não dada.");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Busca em profundidade com marcação tricolor, devolvendo o caminho do primeiro ciclo
+    /// encontrado — ou <see langword="null"/> quando o grafo é acíclico. A travessia segue, de
+    /// cada fato, os fatos que a sua pré-condição <b>cita</b>, de modo que um caminho reportado
+    /// <c>A → B → A</c> se lê "A cita B, B cita A".
+    /// </summary>
+    private static IReadOnlyList<string>? DetectarCiclo(Dictionary<string, FatoColetado> porCodigo)
+    {
+        HashSet<string> visitados = new(StringComparer.Ordinal);
+        HashSet<string> naPilha = new(StringComparer.Ordinal);
+        List<string> caminho = [];
+
+        foreach (string codigo in porCodigo.Keys)
+        {
+            if (Visitar(codigo) is { } ciclo)
+            {
+                return ciclo;
+            }
+        }
+
+        return null;
+
+        IReadOnlyList<string>? Visitar(string codigo)
+        {
+            if (naPilha.Contains(codigo))
+            {
+                int inicio = caminho.IndexOf(codigo);
+                return [.. caminho[inicio..], codigo];
+            }
+
+            if (!visitados.Add(codigo) || !porCodigo.TryGetValue(codigo, out FatoColetado? fato))
+            {
+                return null;
+            }
+
+            naPilha.Add(codigo);
+            caminho.Add(codigo);
+
+            foreach (string citado in fato.FatosCitados)
+            {
+                if (Visitar(citado) is { } ciclo)
+                {
+                    return ciclo;
+                }
+            }
+
+            naPilha.Remove(codigo);
+            caminho.RemoveAt(caminho.Count - 1);
+            return null;
+        }
     }
 
     /// <summary>
