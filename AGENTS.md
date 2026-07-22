@@ -17,7 +17,7 @@ dotnet restore UniPlus.slnx --locked-mode
 dotnet build UniPlus.slnx
 dotnet test UniPlus.slnx --filter "Category!=Integration"
 dotnet test UniPlus.slnx --filter "Category=Integration"
-dotnet format --exclude-diagnostics CA1515 --verify-no-changes
+dotnet format --verify-no-changes --exclude-diagnostics CA1515 --exclude "**/Migrations/**"
 bash tools/forbidden-deps/check.sh
 ```
 Never run `dotnet format` without `--exclude-diagnostics CA1515`: `xunit.analyzers` ships a

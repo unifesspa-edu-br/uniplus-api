@@ -1,0 +1,14 @@
+# Commits que só mexem em formatação e poluiriam o `git blame`.
+#
+# O GitHub respeita este arquivo automaticamente na visão de blame da web.
+# Localmente, configure uma vez por clone:
+#
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Só entram aqui commits comprovadamente sem mudança de comportamento —
+# espaçamento, ordenação de `using`, encoding. Nunca renomeações de símbolo
+# ou refatorações, que o blame precisa mostrar.
+
+# chore(formatacao): normaliza formatação do repositório (#955)
+# 205 arquivos: WHITESPACE + IMPORTS conforme .editorconfig.
+44b8412409f321a3920e6aff2244e4598ba9f122

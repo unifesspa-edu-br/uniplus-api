@@ -265,14 +265,13 @@ dotnet test --filter "Category!=Integration"
 # Testes de integração (requer Docker)
 dotnet test --filter "Category=Integration"
 
-# Formatação — a flag --exclude-diagnostics CA1515 é OBRIGATÓRIA (ver aviso abaixo)
-dotnet format --exclude-diagnostics CA1515 --verify-no-changes
+# Formatação — as duas flags são OBRIGATÓRIAS (ver aviso abaixo)
+dotnet format --verify-no-changes --exclude-diagnostics CA1515 --exclude "**/Migrations/**"
 ```
 
-Todos os comandos acima devem passar antes de abrir o PR — com uma ressalva temporária para o
-`dotnet format`: enquanto a formatação do repositório não estiver normalizada, ele ainda acusa
-diagnósticos preexistentes. O que se exige hoje é que **os arquivos que você tocou** não apareçam
-no relatório. Ver [§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515).
+Todos os comandos acima devem passar antes de abrir o PR. O de formatação é o mesmo que o job
+`Formatação (dotnet format)` roda no CI, e ele bloqueia o merge — ver
+[§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515).
 
 > ⚠️ **Nunca rode `dotnet format` sem `--exclude-diagnostics CA1515`.** Sem a flag, o comando
 > converte as classes de teste de `public` para `internal` e quebra o build inteiro — 688 erros,
@@ -382,8 +381,11 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 O comando de formatação deste repositório é sempre:
 
 ```bash
-dotnet format --exclude-diagnostics CA1515 --verify-no-changes
+dotnet format --verify-no-changes --exclude-diagnostics CA1515 --exclude "**/Migrations/**"
 ```
+
+É exatamente o que o job **`Formatação (dotnet format)`** executa no CI, e ele bloqueia o merge.
+Rode antes do push para não descobrir divergência só no PR.
 
 **A flag `--exclude-diagnostics CA1515` não é opcional — não a remova.**
 
@@ -401,9 +403,24 @@ métodos de teste (helpers e fixtures — daí os atributos `[SuppressMessage]` 
 `tests/*/Infrastructure/*ApiFactory.cs`). Por isso a regra é filtrada apenas no comando do
 `dotnet format`, e não silenciada no `.editorconfig`.
 
-> A formatação do repositório ainda não está normalizada — o `--verify-no-changes` acusa
-> diagnósticos preexistentes de `WHITESPACE`, `IMPORTS` e `CHARSET`. Isso é conhecido e está
-> sendo tratado em issue própria; não tente corrigi-los junto com a sua mudança.
+A exclusão de `**/Migrations/**` também é necessária: o `dotnet ef` gera migrations com UTF-8 BOM
+enquanto o `.editorconfig` exige `charset = utf-8` sem BOM. Sem ela, todo PR que adicionasse uma
+migration nasceria vermelho no gate por um arquivo que a ferramenta regenera assim.
+
+### `git blame` e commits de formatação
+
+O commit que normalizou a formatação do repositório tocou 205 arquivos, o que faria o `git blame`
+apontar para ele em vez de para o commit que realmente escreveu cada linha. O
+`.git-blame-ignore-revs` na raiz resolve isso — o GitHub o respeita automaticamente na web.
+Localmente, configure uma vez por clone:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+Ao adicionar um commit novo a esse arquivo, inclua apenas mudanças comprovadamente sem alteração
+de comportamento (espaçamento, ordenação de `using`, encoding) — nunca renomeações de símbolo,
+que o blame precisa mostrar.
 
 ### Validação
 
@@ -506,7 +523,7 @@ O PR será bloqueado se qualquer gate falhar:
 - [ ] Cobertura de código >= 80% nas camadas Domain e Application
 - [ ] SonarQube: zero issues críticos ou bloqueadores
 - [ ] Nenhuma vulnerabilidade crítica em dependências
-- [ ] Formatação correta (`dotnet format --exclude-diagnostics CA1515 --verify-no-changes`) — ver [§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515)
+- [ ] Formatação correta — job `Formatação (dotnet format)` no CI; ver [§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515)
 - [ ] Pacotes proibidos ausentes (`bash tools/forbidden-deps/check.sh`) — ver [§ Pacotes proibidos](#pacotes-proibidos)
 
 ### Pacotes proibidos
