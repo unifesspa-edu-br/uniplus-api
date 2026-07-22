@@ -38,7 +38,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  DOTNET_VERSION: 10.0.x
   SOLUTION_PATH: UniPlus.slnx
 
 jobs:
@@ -65,7 +64,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
           # Cache de packages NuGet chaveado por hash dos .csproj. Reduz
           # restore frio (~30-60s na árvore atual de ~30 projetos) para
           # ~5s em cache hit, economizando runner minutes em PRs em rajada.
