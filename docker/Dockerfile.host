@@ -4,7 +4,7 @@
 # seguem deploy separado e NÃO entram na imagem.
 
 # ---- Restore + Build ----
-FROM mcr.microsoft.com/dotnet/sdk:10.0.100 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.300 AS build
 WORKDIR /src
 
 # Configuração da solution. .editorconfig é necessário porque políticas por glob

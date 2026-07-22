@@ -57,7 +57,7 @@ Para atualizar as dependências localmente:
 
 ## Pré-requisitos
 
-- .NET 10 SDK (10.0.100+)
+- .NET 10 SDK 10.0.300 ou um patch da mesma feature band (`10.0.3xx`) — `global.json` usa `rollForward: latestPatch`, então bands anteriores não satisfazem
 - Docker e Docker Compose v2
 
 ## Como executar
