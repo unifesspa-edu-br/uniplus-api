@@ -341,12 +341,12 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(fatos).Should().Be(Ternario.Falso);
     }
 
-    // ── Story #926 — NÃO_APLICÁVEL é estado próprio do átomo, distinto de INDETERMINADO ──
+    // ── Story #926 — NAO_APLICAVEL é estado próprio do átomo, distinto de INDETERMINADO ──
 
     private static Dictionary<string, FatoResolvido> Estados(params (string Fato, FatoResolvido Estado)[] entradas) =>
         entradas.ToDictionary(static e => e.Fato, static e => e.Estado, StringComparer.Ordinal);
 
-    [Theory(DisplayName = "Átomo sobre fato NÃO_APLICÁVEL é não-aplicável para todo operador — a negação não inverte a inaplicabilidade")]
+    [Theory(DisplayName = "Átomo sobre fato NAO_APLICAVEL é não-aplicável para todo operador — a negação não inverte a inaplicabilidade")]
     [InlineData(Operador.Igual)]
     [InlineData(Operador.Diferente)]
     [InlineData(Operador.Em)]
@@ -388,7 +388,7 @@ public sealed class PredicadoDnfTests
         predicado.Avaliar(Estados(("SEXO", fato))).Should().Be(Ternario.Verdadeiro);
     }
 
-    [Fact(DisplayName = "Cláusula E com VERDADEIRO e NÃO_APLICÁVEL resolve Falso — o não-aplicável colapsa, não é ignorado")]
+    [Fact(DisplayName = "Cláusula E com VERDADEIRO e NAO_APLICAVEL resolve Falso — o não-aplicável colapsa, não é ignorado")]
     public void Clausula_VerdadeiroComNaoAplicavel_Falso()
     {
         PredicadoDnf predicado = Predicado(
@@ -404,7 +404,7 @@ public sealed class PredicadoDnfTests
             "sem o colapso o átomo não-aplicável seria ignorado e a cláusula resolveria verdadeiro por um opt-in que nem foi perguntado");
     }
 
-    [Fact(DisplayName = "Cláusula E com NÃO_APLICÁVEL e INDETERMINADO resolve Falso — o não-aplicável é definitivo e vence a pendência")]
+    [Fact(DisplayName = "Cláusula E com NAO_APLICAVEL e INDETERMINADO resolve Falso — o não-aplicável é definitivo e vence a pendência")]
     public void Clausula_NaoAplicavelComIndeterminado_Falso()
     {
         PredicadoDnf predicado = Predicado(
