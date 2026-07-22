@@ -386,3 +386,116 @@ os protege.
 - RN08 (congelamento de parâmetros por processo).
 - Lei 12.711/2012 arts. 1º e 3º (red. Lei 14.723/2023), Lei 13.409/2016,
   Lei 13.146/2015, Lei 10.741/2003 art. 27, LGPD (Lei 13.709/2018) art. 5º, II.
+
+## Emenda 1 (2026-07-22) — operadores de exclusão, semântica sobre fato multivalorado e ordem canônica
+
+Esta emenda reconcilia a ADR com o código que a implementa. Os operadores de exclusão `DIFERENTE` e
+`NAO_EM` entraram no validador e no avaliador de predicado depois que esta ADR foi aceita, e a matriz
+acima ficou para trás. A emenda promove a texto de decisão o que hoje só existe em implementação e
+teste, e corrige quatro afirmações desta ADR que o código contradiz.
+
+**Trechos substituídos.** A tabela da seção "Matriz de compatibilidade operador × domínio" é
+substituída por 1.1. A frase "A lista de `EM` nunca é vazia", na seção "Cardinalidade e átomo canônico
+do predicado", é substituída por 1.3. A forma do valor booleano é corrigida em 1.1. A contagem de fatos
+é corrigida em 1.5. O restante da ADR permanece vigente sem alteração.
+
+### 1.1 — Matriz de compatibilidade operador × domínio
+
+| Domínio | Operadores aceitos | Forma do valor |
+|---|---|---|
+| `Booleano` | `IGUAL`, `DIFERENTE` | booleano JSON (`true`/`false`) |
+| `Numerico` | `IGUAL`, `DIFERENTE`, `MAIOR_IGUAL`, `MENOR_IGUAL` | número JSON **inteiro** — decimal é rejeitado |
+| `Categorico` (estático ou de escopo-processo) | `IGUAL`, `DIFERENTE`, `EM`, `NAO_EM` | `IGUAL`/`DIFERENTE`: um código do domínio; `EM`/`NAO_EM`: lista de códigos do domínio |
+
+A regra que gera a tabela: **`DIFERENTE` acompanha `IGUAL` em todo domínio onde `IGUAL` vale** —
+inclusive booleano e numérico —, e **`NAO_EM` acompanha `EM`**, valendo portanto só nos dois ramos
+categóricos, já que booleano e numérico nunca admitiram `EM`. A forma do valor de um operador negativo
+é a mesma do positivo que ele nega: escalar para `DIFERENTE`, lista para `NAO_EM`.
+
+A forma do valor booleano é o **booleano JSON**, não os tokens textuais `sim`/`não` que a tabela
+original registrava; `sim`/`não` é vocabulário de apresentação ao candidato, e não participa nem do
+predicado configurado nem da canonicalização — que também usam o booleano JSON. A restrição de que numérico é inteiro e rejeita decimal
+permanece, e passa a valer também para `DIFERENTE`.
+
+### 1.2 — Semântica dos operadores sobre fato multivalorado
+
+A seção "Cardinalidade e átomo canônico do predicado" define `IGUAL` e `EM` sobre fato multivalorado
+(`MODALIDADE`, `CONDICAO_ATENDIMENTO`). Os negativos completam a tabela e são a **negação lógica** do
+positivo correspondente, não operadores com regra própria:
+
+| Operador | Fato escalar | Fato multivalorado |
+|---|---|---|
+| `IGUAL X` | o valor é `X` | `X` pertence ao conjunto do candidato |
+| `DIFERENTE X` | o valor não é `X` | **nenhum** elemento do conjunto é `X` |
+| `EM [..]` | o valor está na lista | a interseção com a lista não é vazia |
+| `NAO_EM [..]` | o valor não está na lista | a interseção com a lista **é vazia** |
+
+A negação só se aplica quando o fato está **resolvido**. Fato ausente ou nulo avalia como
+*indeterminado*, e **indeterminado nunca inverte para verdadeiro** — a ausência tem precedência sobre a
+negação. Sem essa precedência, um predicado negativo passaria a ser satisfeito justamente pelos
+candidatos sobre os quais nada se sabe, que é o oposto do comportamento seguro.
+
+A incoerência de tipo entre o valor resolvido e o configurado tem tratamento **diferente** conforme a
+cardinalidade, e a diferença é deliberada:
+
+- No fato **escalar**, tipo incoerente é *indeterminado* — o predicado não sabe comparar aquilo, e
+  responder "falso" confundiria "resolvido e diferente" com "resolvido em forma que não sei comparar".
+- No fato **multivalorado**, a comparação é de pertinência elemento a elemento: um elemento de tipo
+  diferente simplesmente **não é igual**, e não contamina o conjunto. Um `DIFERENTE` sobre conjunto
+  cujos elementos são todos de outro tipo resolve *verdadeiro* — corretamente, porque de fato nenhum
+  elemento é igual ao valor configurado.
+
+### 1.3 — Lista vazia em `EM`/`NAO_EM` é aceita na forma e decidível na avaliação
+
+Esta ADR afirmava que "a lista de `EM` nunca é vazia". **Não é o caso**, e a emenda corrige: a factory
+do átomo aceita `EM []` e `NAO_EM []` como forma válida. A validação de forma não é o lugar de recusar
+a lista vazia, porque a lista pode chegar vazia legitimamente de uma projeção que não selecionou nada,
+e a avaliação é decidível sem ambiguidade.
+
+Sobre um fato **resolvido**, o resultado segue da definição de interseção:
+
+- `EM []` → **falso**: a interseção com o conjunto vazio é sempre vazia.
+- `NAO_EM []` → **verdadeiro**: nada pertence ao conjunto vazio. É verdade vácua, não caso especial.
+
+Sobre um fato **não resolvido**, ambos continuam *indeterminado*: a regra de precedência da ausência,
+fixada em 1.2, prevalece sobre a semântica de lista vazia.
+
+### 1.4 — Ordem canônica dos operadores
+
+A canonicalização do envelope de publicação ordena os átomos de uma cláusula, e essa ordem entra no
+hash congelado por RN08 — portanto precisa de **fonte única e declarada**. A ordem canônica dos
+operadores é a **ordinal do seu código textual**:
+
+```text
+DIFERENTE < EM < IGUAL < MAIOR_IGUAL < MENOR_IGUAL < NAO_EM
+```
+
+Ela não é uma regra própria de operador: **decorre** da regra geral da ADR-0109 de ordenar toda coleção
+sem chave de negócio natural pela própria serialização canônica do item. O átomo canônico é
+`{fato, operador, valor}` com chaves ordenadas, e a comparação é ordinal sobre o texto dessa
+serialização — de modo que recai primeiro sobre o fato e, no desempate, sobre o código textual do
+operador. Nenhuma tabela de precedência participa disso, e é assim que o canonicalizador se comporta
+hoje.
+
+Duas fontes rivais ficam explicitamente **descartadas** como critério de ordenação:
+
+- **A numeração do enum `Operador`** é identidade de persistência e reflete a cronologia em que os
+  operadores foram introduzidos, não precedência. Ordenar por valor numérico produziria outra ordem, e
+  renumerar o enum para alinhá-lo reescreveria valores já persistidos. A numeração **nunca** é peso de
+  ordenação.
+- **Uma ordem semântica** que agrupasse cada operador com a sua negação
+  (`IGUAL < DIFERENTE < EM < NAO_EM < MAIOR_IGUAL < MENOR_IGUAL`) seria mais legível para quem audita
+  um envelope, mas exigiria uma tabela de precedência específica de operador, criando exceção à regra
+  uniforme de canonicalização por conteúdo e um segundo lugar a manter em sincronia com o enum.
+
+A ordem só é observável quando dois átomos sobre o **mesmo fato** coexistem numa cláusula. Ela é
+critério de determinismo, não de semântica: o que o congelamento exige dela é que seja total e estável,
+não que exprima parentesco entre operadores.
+
+### 1.5 — Correção da contagem de fatos do vocabulário
+
+Esta ADR descreve "o vocabulário (nove fatos)". O catálogo semeado tem hoje **dezessete** fatos: os
+nove originais, os dois acrescentados ao refinar origem e binding (`NACIONALIDADE` e
+`TIPO_DEFICIENCIA`) e os seis da coleta de fatos de cota. A tabela dos nove permanece válida como
+registro do que esta decisão semeou; a contagem total vive no seed, que é a fonte única, e não deve ser
+repetida como número fixo em texto de ADR.
