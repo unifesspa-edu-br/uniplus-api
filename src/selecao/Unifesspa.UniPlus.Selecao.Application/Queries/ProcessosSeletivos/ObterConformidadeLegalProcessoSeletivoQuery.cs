@@ -1,7 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using DTOs;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Consulta a conformidade legal do Processo Seletivo (Story #853, CA-16)

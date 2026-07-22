@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using DTOs;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>

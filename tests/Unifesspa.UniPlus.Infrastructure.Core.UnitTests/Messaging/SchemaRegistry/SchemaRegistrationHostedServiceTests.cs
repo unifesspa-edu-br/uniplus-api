@@ -5,12 +5,18 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+
 using AwesomeAssertions;
+
 using Confluent.SchemaRegistry;
+
 using Microsoft.Extensions.Logging.Abstractions;
+
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
+
 using SrSchema = Confluent.SchemaRegistry.Schema;
 
 /// <summary>

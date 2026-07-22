@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
+using Authentication;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -8,8 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
-
-using Authentication;
 
 /// <summary>
 /// Base <see cref="WebApplicationFactory{TEntryPoint}"/> that wires up shared integration test

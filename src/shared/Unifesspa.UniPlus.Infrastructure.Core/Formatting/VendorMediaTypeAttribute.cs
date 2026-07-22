@@ -5,12 +5,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
+using Errors;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Net.Http.Headers;
-
-using Errors;
 
 /// <summary>
 /// Action filter que negocia <c>application/vnd.uniplus.&lt;resource&gt;.v&lt;N&gt;+json</c>

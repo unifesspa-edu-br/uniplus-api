@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.Repositories;
 
-using Microsoft.EntityFrameworkCore;
-
 using Domain.Entities;
 using Domain.Interfaces;
+
+using Microsoft.EntityFrameworkCore;
 
 public sealed class ChamadaRepository : IChamadaRepository
 {

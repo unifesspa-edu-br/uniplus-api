@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Application.Commands.DocumentosEdital;
+using Application.DTOs;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,8 +12,6 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Kernel.Results;
-using Application.Commands.DocumentosEdital;
-using Application.DTOs;
 
 /// <summary>
 /// Upload direto do documento (PDF) do Edital via URL pre-assinada do MinIO

@@ -2,13 +2,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
 using System.Text.Json;
 
+using Domain.Entities;
+using Domain.Enums;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-
-using Domain.Entities;
-using Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="NoExigencia"/> (Story #920) — árvore de satisfação:

@@ -1,12 +1,15 @@
 namespace Unifesspa.UniPlus.Ingresso.Infrastructure;
 
+using Abstractions;
+
+using Domain.Interfaces;
+
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Abstractions;
-using Domain.Interfaces;
 using Persistence;
 using Persistence.Repositories;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 public static class IngressoInfrastructureRegistration
 {

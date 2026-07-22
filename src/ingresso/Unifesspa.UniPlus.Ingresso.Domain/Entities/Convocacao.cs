@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Ingresso.Domain.Entities;
 
 using Enums;
+
 using Events;
-using ValueObjects;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+
+using ValueObjects;
 
 public sealed class Convocacao : SoftDeletableEntity
 {

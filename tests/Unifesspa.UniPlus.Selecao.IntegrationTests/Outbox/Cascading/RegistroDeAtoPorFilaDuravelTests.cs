@@ -7,11 +7,12 @@ using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
+using Domain.Entities;
+using Domain.Events;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Domain.Entities;
-using Domain.Events;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;

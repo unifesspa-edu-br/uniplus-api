@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>

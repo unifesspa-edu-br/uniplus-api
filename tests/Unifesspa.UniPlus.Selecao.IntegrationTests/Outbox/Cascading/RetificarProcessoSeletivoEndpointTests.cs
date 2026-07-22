@@ -10,11 +10,12 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Domain.Entities;
+using Domain.Events;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Domain.Entities;
-using Domain.Events;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -222,15 +223,15 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
-            ato = new
-            {
-                orgao = "CEPS",
-                serie = "EDITAL",
-                ano = 2026,
-                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                assinante = "Diretor do CEPS",
-                tipoAtoCodigo = "EDITAL_ABERTURA",
-            },
+        ato = new
+        {
+            orgao = "CEPS",
+            serie = "EDITAL",
+            ano = 2026,
+            dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            assinante = "Diretor do CEPS",
+            tipoAtoCodigo = "EDITAL_ABERTURA",
+        },
     };
 
     private static object NovoCorpoRetificacao(Guid documentoEditalId, string motivo) => new
@@ -240,15 +241,15 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(40)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
-            ato = new
-            {
-                orgao = "CEPS",
-                serie = "EDITAL",
-                ano = 2026,
-                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                assinante = "Diretor do CEPS",
-                tipoAtoCodigo = "EDITAL_RETIFICACAO",
-            },
+        ato = new
+        {
+            orgao = "CEPS",
+            serie = "EDITAL",
+            ano = 2026,
+            dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            assinante = "Diretor do CEPS",
+            tipoAtoCodigo = "EDITAL_RETIFICACAO",
+        },
     };
 
     private static async Task<HttpResponseMessage> PostPublicarAsync(

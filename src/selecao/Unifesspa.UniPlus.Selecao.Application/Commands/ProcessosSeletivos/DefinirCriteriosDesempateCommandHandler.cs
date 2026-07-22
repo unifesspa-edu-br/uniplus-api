@@ -3,11 +3,14 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using System.Text.Json;
 
 using Abstractions;
+
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>

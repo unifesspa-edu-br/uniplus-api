@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
+
 using Kernel.Results;
 
 /// <summary>

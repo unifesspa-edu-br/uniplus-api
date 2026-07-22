@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o

@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
+using Interceptors;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
-
-using Interceptors;
 
 /// <summary>
 /// Helpers de configuração de <see cref="DbContext"/> consumidos pelos 3

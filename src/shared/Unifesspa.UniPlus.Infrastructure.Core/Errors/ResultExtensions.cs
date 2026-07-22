@@ -3,10 +3,10 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
+using Kernel.Results;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
-using Kernel.Results;
 
 [SuppressMessage(
     "Performance",

@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Kernel.Results;
 using Domain.ValueObjects;
+
+using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Item de entrada de uma distribuição de vagas por oferta, usado por

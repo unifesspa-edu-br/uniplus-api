@@ -3,13 +3,16 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
+
 using Confluent.SchemaRegistry;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using SchemaRegistryConfig = Confluent.SchemaRegistry.SchemaRegistryConfig;
 
 /// <summary>

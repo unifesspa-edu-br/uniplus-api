@@ -3,10 +3,10 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using System.Globalization;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Avisos;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;

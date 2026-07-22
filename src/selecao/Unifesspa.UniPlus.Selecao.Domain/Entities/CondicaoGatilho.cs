@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using System.Text.Json;
 
 using Enums;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;

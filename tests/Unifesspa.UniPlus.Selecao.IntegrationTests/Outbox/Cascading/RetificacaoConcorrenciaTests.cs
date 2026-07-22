@@ -1,16 +1,19 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
+using Application.Commands.ProcessosSeletivos;
+
 using AwesomeAssertions;
+
+using Domain.Entities;
+
+using Kernel.Results;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Wolverine;
-
-using Application.Commands.ProcessosSeletivos;
-using Domain.Entities;
-using Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+
+using Wolverine;
 
 /// <summary>
 /// Cobertura de concorrência do ciclo de publicação (ADR-0101/0102/0103/0104): a cadeia de

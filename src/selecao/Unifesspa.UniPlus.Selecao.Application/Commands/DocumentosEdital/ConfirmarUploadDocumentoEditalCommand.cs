@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
 
 using DTOs;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>

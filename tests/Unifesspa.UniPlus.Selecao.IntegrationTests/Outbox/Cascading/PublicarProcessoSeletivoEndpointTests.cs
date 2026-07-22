@@ -8,12 +8,13 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Events;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -253,15 +254,15 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         periodoInscricaoInicio = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         periodoInscricaoFim = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         documentoEditalId,
-            ato = new
-            {
-                orgao = "CEPS",
-                serie = "EDITAL",
-                ano = 2026,
-                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                assinante = "Diretor do CEPS",
-                tipoAtoCodigo = "EDITAL_ABERTURA",
-            },
+        ato = new
+        {
+            orgao = "CEPS",
+            serie = "EDITAL",
+            ano = 2026,
+            dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            assinante = "Diretor do CEPS",
+            tipoAtoCodigo = "EDITAL_ABERTURA",
+        },
     };
 
     private static async Task<HttpResponseMessage> PostPublicarAsync(

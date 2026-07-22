@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
+using DTOs;
+
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
-using DTOs;
 
 /// <summary>
 /// Resolve o snapshot congelado vigente do Processo Seletivo num instante

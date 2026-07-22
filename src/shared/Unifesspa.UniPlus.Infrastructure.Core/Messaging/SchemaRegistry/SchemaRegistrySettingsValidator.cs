@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 
 using System;
+
 using Microsoft.Extensions.Options;
 
 /// <summary>

@@ -4,12 +4,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
+using Errors;
+
 using FluentValidation;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-
-using Errors;
 
 public sealed partial class GlobalExceptionMiddleware
 {

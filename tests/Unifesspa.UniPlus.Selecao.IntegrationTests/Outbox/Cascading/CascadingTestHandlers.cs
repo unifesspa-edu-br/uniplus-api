@@ -3,10 +3,13 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using System.Diagnostics.CodeAnalysis;
 
 using Application.Abstractions;
+
 using Domain.Entities;
 using Domain.Events;
 using Domain.ValueObjects;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 // Handler do cenário de rollback (V9): semeia um processo conforme, publica

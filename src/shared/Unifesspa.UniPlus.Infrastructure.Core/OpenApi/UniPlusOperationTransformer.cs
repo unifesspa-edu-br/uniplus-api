@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 using System.Text.Json.Nodes;
 
+using Idempotency;
+
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-
-using Idempotency;
 
 /// <summary>
 /// Operation transformer que injeta metadata Uni+ por operação:

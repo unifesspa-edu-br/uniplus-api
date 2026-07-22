@@ -1,9 +1,10 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
+using Messaging;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Messaging;
 
 public static class WolverineMessagingServiceCollectionExtensions
 {

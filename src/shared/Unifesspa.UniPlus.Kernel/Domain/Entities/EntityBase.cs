@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 using Events;
+
 using Interfaces;
 
 public abstract class EntityBase : IIdentificavel

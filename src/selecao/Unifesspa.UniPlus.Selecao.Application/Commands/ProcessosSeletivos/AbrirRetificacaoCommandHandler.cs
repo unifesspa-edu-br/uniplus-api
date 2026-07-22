@@ -1,10 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Abstractions;
+
 using Domain.Entities;
 using Domain.Interfaces;
+
 using DTOs;
+
 using Kernel.Results;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>

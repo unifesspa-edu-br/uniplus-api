@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
+using Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-using Domain.Entities;
 
 /// <summary>Configuração EF Core de <see cref="BancaRequerida"/> (Story #851) — filha 0..* de <see cref="FaseCronograma"/>.</summary>
 public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<BancaRequerida>

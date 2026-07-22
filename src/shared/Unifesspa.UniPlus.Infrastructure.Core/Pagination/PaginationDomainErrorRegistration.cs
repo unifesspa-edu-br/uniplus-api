@@ -2,9 +2,9 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Microsoft.AspNetCore.Http;
-
 using Errors;
+
+using Microsoft.AspNetCore.Http;
 
 /// <summary>
 /// Mapeamento dos códigos de cursor pagination produzidos pelo

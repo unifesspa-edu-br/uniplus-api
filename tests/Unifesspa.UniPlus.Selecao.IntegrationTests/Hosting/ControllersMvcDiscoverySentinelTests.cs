@@ -2,11 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Hosting;
 
 using AwesomeAssertions;
 
+using Infrastructure;
+
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-
-using Infrastructure;
 
 /// <summary>
 /// Sentinela contra recidiva da regressão #173 — controllers MVC marcados

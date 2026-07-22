@@ -9,8 +9,10 @@ namespace unifesspa.uniplus.selecao.events;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+
 using global::Avro;
 using global::Avro.Specific;
+
 using ProcessoPublicadoEvent = Unifesspa.UniPlus.Selecao.Domain.Events.ProcessoPublicadoEvent;
 
 /// <summary>

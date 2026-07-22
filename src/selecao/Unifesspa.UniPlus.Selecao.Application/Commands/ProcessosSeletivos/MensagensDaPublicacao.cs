@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>

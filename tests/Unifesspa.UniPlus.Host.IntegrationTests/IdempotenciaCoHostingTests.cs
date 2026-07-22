@@ -13,8 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Fitness test do co-hosting de idempotência: trava a regressão do P1 em que o

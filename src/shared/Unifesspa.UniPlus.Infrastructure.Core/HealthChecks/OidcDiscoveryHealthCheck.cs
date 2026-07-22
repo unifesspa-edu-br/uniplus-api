@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Authentication;
+
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-
-using Authentication;
 
 /// <summary>
 /// Probes the OIDC discovery endpoint (<c>/.well-known/openid-configuration</c>, RFC 8414).

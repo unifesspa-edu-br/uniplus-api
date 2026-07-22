@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
-using DTOs;
 using Domain.Entities;
 using Domain.Interfaces;
+
+using DTOs;
 
 /// <summary>
 /// A listagem carrega apenas a raiz (sem a configuração) e projeta em

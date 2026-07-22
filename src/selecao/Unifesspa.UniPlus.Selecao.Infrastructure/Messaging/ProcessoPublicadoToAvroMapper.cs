@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 
 using System;
+
 using Unifesspa.UniPlus.Selecao.Domain.Events;
+
 using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado;
 
 /// <summary>

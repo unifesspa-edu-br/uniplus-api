@@ -4,9 +4,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;

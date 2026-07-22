@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Abstractions;
+
 using Domain.Entities;
 using Domain.Interfaces;
+
 using Kernel.Results;
 
 public static class DefinirEtapasCommandHandler

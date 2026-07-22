@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 
-using FluentValidation;
-
 using Commands.ProcessosSeletivos;
+
+using FluentValidation;
 
 public sealed class DefinirClassificacaoCommandValidator : AbstractValidator<DefinirClassificacaoCommand>
 {

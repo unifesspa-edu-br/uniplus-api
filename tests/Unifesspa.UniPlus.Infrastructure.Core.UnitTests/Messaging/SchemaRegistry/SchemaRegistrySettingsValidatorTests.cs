@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Messaging.SchemaRegistry;
 
 using AwesomeAssertions;
+
 using Microsoft.Extensions.Options;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 
 public sealed class SchemaRegistrySettingsValidatorTests

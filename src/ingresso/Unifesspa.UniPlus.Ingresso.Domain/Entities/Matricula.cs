@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Ingresso.Domain.Entities;
 
 using Enums;
+
 using Events;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 public sealed class Matricula : SoftDeletableEntity

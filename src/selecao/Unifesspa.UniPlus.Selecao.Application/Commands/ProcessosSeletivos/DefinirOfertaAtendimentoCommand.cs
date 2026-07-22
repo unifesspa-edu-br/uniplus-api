@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Kernel.Results;
 using Domain.ValueObjects;
+
+using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
 /// Define (ou substitui) a oferta de atendimento especializado do processo

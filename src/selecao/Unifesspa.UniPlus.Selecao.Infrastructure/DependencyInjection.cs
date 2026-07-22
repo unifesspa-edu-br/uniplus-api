@@ -1,18 +1,22 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure;
 
+using Canonicalization;
+
+using Domain.Interfaces;
+
+using ExternalServices;
+
 using Microsoft.Extensions.DependencyInjection;
+
+using Persistence;
+using Persistence.Interceptors;
+using Persistence.Readers;
+using Persistence.Repositories;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
-using Canonicalization;
-using Domain.Interfaces;
-using ExternalServices;
-using Persistence;
-using Persistence.Interceptors;
-using Persistence.Readers;
-using Persistence.Repositories;
 
 public static class SelecaoInfrastructureRegistration
 {

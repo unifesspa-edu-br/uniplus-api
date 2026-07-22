@@ -4,11 +4,12 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
+using Infrastructure;
+
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
-using Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Selecao.API.Controllers;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;

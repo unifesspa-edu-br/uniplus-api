@@ -2,11 +2,11 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 using System.Reflection;
 
+using Idempotency;
+
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
-
-using Idempotency;
 
 /// <summary>
 /// Declara no contrato as respostas que o <see cref="IdempotencyFilter{TDbContext}"/> produz

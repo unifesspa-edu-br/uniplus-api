@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Portal.Infrastructure;
 
+using Application.Abstractions.Interfaces;
+
 using Microsoft.Extensions.DependencyInjection;
 
-using Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Persistence;
+
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 public static class PortalInfrastructureRegistration
 {

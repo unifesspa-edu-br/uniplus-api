@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
-using Microsoft.EntityFrameworkCore;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
+
+using Microsoft.EntityFrameworkCore;
 
 public sealed class DocumentoEditalRepository : IDocumentoEditalRepository
 {
