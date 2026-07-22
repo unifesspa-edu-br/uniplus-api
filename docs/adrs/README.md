@@ -139,12 +139,12 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) | accepted | 2026-07-12 |
 | [0109](0109-envelope-canonico-v2-do-congelamento.md) | Contrato do envelope canônico do congelamento (v2) | accepted | 2026-07-13 |
 | [0110](0110-retificacao-como-sessao-editorial.md) | A retificação é uma sessão editorial sobre a configuração, não um estado do certame | accepted | 2026-07-13 |
-| [0111](0111-vocabulario-fechado-de-fatos-do-candidato.md) | Vocabulário fechado de fatos do candidato (catálogo seed-governado em Configuração, identidade imutável) | accepted | 2026-07-15 |
+| [0111](0111-vocabulario-fechado-de-fatos-do-candidato.md) | Vocabulário fechado de fatos do candidato (catálogo seed-governado em Configuração, identidade imutável) — emendada em 2026-07-22: operadores de exclusão, semântica sobre fato multivalorado e ordem canônica | accepted | 2026-07-15 |
 | [0112](0112-fronteira-append-only-do-catalogo-de-regras.md) | Fronteira do append-only na correção do catálogo de regras (substituível enquanto nada congelado referenciar) | accepted | 2026-07-14 |
 | [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro | accepted | 2026-07-15 |
 | [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
 | [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
-| [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111 | accepted | 2026-07-19 |
+| [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111; emendada em 2026-07-22: `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem | accepted | 2026-07-19 |
 
 > **Nota de numeração:** a sequência de `0001` a `0116` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0117+`.
 

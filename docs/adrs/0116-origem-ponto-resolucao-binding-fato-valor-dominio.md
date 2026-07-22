@@ -167,3 +167,138 @@ mesmo mecanismo de `OfertaAtendimentoEspecializado`/`OfertaTipoDeficiencia`).
 - ADR-0061 (snapshot-copy cross-módulo).
 - Change OpenSpec `documentos-exigidos-cobertura-editais`, Story
   [#917](https://github.com/unifesspa-edu-br/uniplus-api/issues/917).
+
+## Emenda 1 (2026-07-22) — `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem
+
+Esta emenda registra decisões **prospectivas**: o código ainda classifica `MODALIDADE` como `Declarado`
+com binding `CAMPO_INSCRICAO:MODALIDADE`, e a factory de `FatoCandidato` ainda aceita um único prefixo
+por origem. A emenda é pré-requisito das stories que implementam a derivação — decide antes, para que o
+código não nasça contradizendo a decisão registrada.
+
+**Trechos substituídos.** A tabela de origem dos fatos, na seção "Resultado da decisão", passa a
+classificar `MODALIDADE` como `Derivado` (1.1). A gramática de binding da mesma seção é substituída por
+1.2. Na ADR-0111, o parágrafo que atribui ao eixo de origem a sustentação da invariante "um fato
+derivado não é insumo de si mesmo nem de um gatilho avaliado antes da etapa que o produz" é substituído
+por 1.4. As demais decisões de ambas permanecem vigentes.
+
+### 1.1 — `MODALIDADE` passa de `Declarado` a `Derivado`, mantendo o código
+
+O desenho da coleta de fatos do candidato mostrou que `MODALIDADE` não é resposta do candidato: ele
+declara fatos (cor/raça, egresso de escola pública, deficiência, renda) e manifesta opt-ins de
+concorrência, e o **conjunto de modalidades resulta** da avaliação dessas declarações contra as regras
+congeladas do processo. Mantê-la como `Declarado` obrigaria a tela a perguntar "em qual modalidade você
+concorre?" — pergunta que a legislação de ações afirmativas não delega ao candidato, e que produziria
+inscrição inválida sempre que a resposta divergisse dos fatos declarados.
+
+`MODALIDADE` passa a `Derivado` mantendo o mesmo código — sem `MODALIDADE_V2` nem código novo. Isso
+exige reconciliar a regra de imutabilidade da ADR-0111, que declara `Codigo`, `Dominio`, `Origem` e
+`Cardinalidade` imutáveis **desde a semeadura**, exigindo código novo para mudança incompatível.
+
+**A emenda revoga esse marco e o substitui por outro:** os quatro eixos tornam-se imutáveis **a partir
+da primeira publicação de um processo seletivo que cite o fato**. Não é releitura da regra antiga — é
+troca deliberada, e vale a pena declarar por que.
+
+A regra existe para uma finalidade única e declarada na própria ADR-0111: proteger **predicado já
+publicado**, que carrega o código por valor e seria reinterpretado com outra semântica se o significado
+do código mudasse sob ele. Não existe predicado publicado — o sistema está em pré-produção e o
+congelamento só ocorre no ato de publicar, o que nunca ocorreu. Não há passado a preservar, e criar um
+código novo apenas para satisfazer a letra da regra deixaria `MODALIDADE` como lixo permanente no
+vocabulário, com um sucessor idêntico ao lado. Depois da primeira publicação, a regra da ADR-0111 volta
+a valer integralmente, incluindo a exigência de código novo para mudança incompatível.
+
+O marco **não exige mecanismo em runtime**, e não é omissão. A entidade `FatoCandidato` já é imutável
+nesses eixos por construção (propriedades sem mutador público), e ela continua assim: a reclassificação
+de um fato não acontece por chamada de domínio, mas por alteração do seed e migration — operação de
+desenvolvimento, sujeita a revisão de PR. O marco governa **o que um PR pode fazer**, e é aí que ele é
+verificável: enquanto não houver publicação, a reclassificação é legítima; depois, o PR que a tentasse
+estaria violando decisão registrada.
+
+A reclassificação não altera o avaliador — ver 1.4.
+
+### 1.2 — O mapa origem → prefixo de binding deixa de ser bijeção
+
+A gramática fixada por esta ADR associa **exatamente um** prefixo a cada origem
+(`Derivado`→`ATRIBUTO_CANDIDATO:`, `Declarado`→`CAMPO_INSCRICAO:`, `Integracao`→`INTEGRACAO:`), e a
+factory recusa qualquer outro. É estreito demais para `Derivado`, que passa a ter **dois mecanismos
+distintos** de produção de valor:
+
+| Origem | Prefixos aceitos | Referência |
+|---|---|---|
+| `Derivado` | `ATRIBUTO_CANDIDATO:` | atributo do candidato do qual o valor é computado — o mecanismo de `FAIXA_ETARIA` e `RENDA_PER_CAPITA` |
+| `Derivado` | `REGRA_DERIVACAO:` | código do próprio fato, cuja regra de derivação vive na configuração congelada do processo |
+| `Declarado` | `CAMPO_INSCRICAO:` | campo do formulário de inscrição |
+| `Integracao` | `INTEGRACAO:` | sistema externo de origem |
+
+`MODALIDADE` passa a `REGRA_DERIVACAO:MODALIDADE`.
+
+A divisão de responsabilidade que isso expressa: **o catálogo de fatos é global e diz o mecanismo; a
+configuração do processo diz o conteúdo.** A matriz de regras que decide quais modalidades um perfil
+alcança é parâmetro de edital, congelado por RN08 junto com o resto da configuração, não entrada de um
+catálogo compartilhado por todos os processos. Um binding que apontasse para a matriz tornaria o
+catálogo global dependente de configuração por edital; apontar para o **código do fato** mantém a
+referência estável e resolve a matriz onde ela de fato vive.
+
+A validação continua recusando prefixo incoerente com a origem — `REGRA_DERIVACAO:` em fato `Declarado`
+ou `Integracao` é recusado como sempre foi. O que muda é que a coerência passa a ser verificada contra
+um **conjunto** de prefixos aceitos por origem, e a mensagem de erro deixa de anunciar um prefixo único
+como o esperado.
+
+Não há restrição declarativa de banco a ajustar: os CHECKs de `rol_de_fatos_candidato` cobrem
+cardinalidade, domínio, origem e coerência de valores de domínio — o binding é validado no agregado.
+
+### 1.3 — `AC_PCD` é a identidade da modalidade de pessoa com deficiência fora da reserva federal
+
+A modalidade de pessoa com deficiência que concorre fora da reserva da Lei 12.711/2012 tem **`AC_PCD`**
+como código canônico. O termo `V`, usado nos editais, é rótulo de apresentação e vive na `Descricao` da
+modalidade cadastrada ("Ampla Concorrência – Pessoa com Deficiência (V)").
+
+**Não haverá alias.** O formato de `CodigoModalidade` aceita `V` como código sintaticamente válido, e
+continuará aceitando — a recusa não é sintática. Ela vem do **domínio congelado da configuração**: um
+código de modalidade que não pertença ao conjunto ofertado e congelado naquele processo é recusado com
+erro nomeado, nunca traduzido para o código canônico. É a mesma disciplina que o decodificador de wire
+aplica: recusar, jamais normalizar. Um tradutor de alias criaria duas grafias para a mesma identidade,
+e a que entrasse no envelope congelado dependeria de qual caminho de código a produziu.
+
+Isso vale para todo código de modalidade, e não introduz lista global fixa: o domínio de `MODALIDADE`
+continua sendo de escopo-processo, resolvido contra a oferta congelada, como a ADR-0111 fixa.
+
+### 1.4 — Quem faz cumprir a ordem de resolução é o ponto de resolução, não a origem
+
+A ADR-0111 atribui ao eixo de origem a sustentação da invariante de que um fato derivado não é insumo
+de si mesmo nem de um gatilho avaliado antes da etapa que o produz. Essa atribuição fica **superada**:
+quem faz cumprir a ordem temporal é o `PontoResolucao` introduzido por esta ADR, comparado contra a
+fase da exigência pela tabela de precedência entre fases — e é assim que o código a implementa.
+
+A origem passa a ser **puramente descritiva**: diz de onde o valor vem e qual binding é coerente, e
+**nunca** entra na avaliação de um predicado. É por isso que reclassificar `MODALIDADE` de `Declarado`
+para `Derivado` não muda nenhum resultado de avaliação — só muda o mecanismo pelo qual o valor passa a
+ser produzido.
+
+A invariante de que um fato derivado não é insumo de si mesmo continua valendo, mas por outro
+mecanismo: a lista **explícita** de dependências do fato derivado, validada como grafo acíclico no
+cadastro e congelada na publicação.
+
+### 1.5 — O que a regra de derivação precisa ser para que este binding signifique algo
+
+`REGRA_DERIVACAO:{codigoDoFato}` só é uma promessa cumprida se a regra apontada for **determinística e
+congelável**. Hoje a configuração de modalidade guarda critérios como lista de texto livre, que não
+serve: texto livre não é avaliável, não tem vocabulário fechado e não pode ser congelado com garantia
+de que a mesma entrada produz a mesma saída.
+
+Esta ADR fixa, portanto, o que a story de implementação deve entregar junto com o prefixo, sob pena de
+o binding ficar decorativo — exatamente o defeito que a ADR-0111 existe para impedir:
+
+1. **Regra tipada** sobre o vocabulário fechado de fatos, na forma `{quando, contribui}`, em que
+   `quando` é um predicado em forma normal disjuntiva de átomos completos, sem referência de uma regra
+   a outra. Regra incondicional é a disjunção **vazia**, não um literal textual.
+2. **Agregação declarada**: o valor do fato derivado é a **união** das contribuições de todas as regras
+   cujo `quando` é verdadeiro. A união é idempotente e comutativa, o que torna o resultado independente
+   da ordem de avaliação; nenhuma regra aplicável produz o conjunto vazio.
+3. **Dependências explícitas**, não inferidas do texto da regra — é o que alimenta o grafo acíclico
+   de 1.4.
+4. **Recorte pela oferta congelada** do processo como último passo, e não como propriedade da regra.
+5. **Congelamento**: a regra entra no snapshot da publicação junto com o vocabulário e a versão do
+   interpretador que a avalia, de modo que uma reavaliação futura produza o mesmo resultado (RN08).
+
+Sem esses cinco elementos, o binding não deve ser adotado — é preferível manter o fato como
+`Declarado` a registrar uma origem que o código não sustenta.
