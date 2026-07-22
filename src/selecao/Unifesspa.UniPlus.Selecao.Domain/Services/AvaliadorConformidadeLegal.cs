@@ -168,9 +168,13 @@ public static class AvaliadorConformidadeLegal
             return (true, null, null);
         }
 
-        Dictionary<string, JsonElement> fatoDaModalidade = new()
+        // Só MODALIDADE entra: na publicação não há candidato, e todo outro fato é
+        // legitimamente desconhecido. Ausência resolve INDETERMINADO, que aqui significa
+        // "cobertura não provada" — o que se quer. Materializá-los como NÃO_APLICÁVEL faria a
+        // cláusula colapsar em FALSO e afirmaria algo que não se sabe.
+        Dictionary<string, FatoResolvido> fatoDaModalidade = new(StringComparer.Ordinal)
         {
-            ["MODALIDADE"] = JsonSerializer.SerializeToElement(predicado.Modalidade),
+            ["MODALIDADE"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(predicado.Modalidade)),
         };
 
         // Achado de revisão (Story #554, PR #903): uma exigência que casa por tipo e cobre a

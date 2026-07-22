@@ -17,4 +17,4 @@ using System.Text.Json;
 /// irmã). Vazio para <see cref="Enums.TipoEntidade.PessoaJuridicaVinculada"/> (repetição pura,
 /// sem atributos). O vocabulário fechado por tipo é validado fora do domínio (Application).
 /// </param>
-public sealed record InstanciaEntidade(string EntidadeId, IReadOnlyDictionary<string, JsonElement> Atributos);
+public sealed record InstanciaEntidade(string EntidadeId, IReadOnlyDictionary<string, FatoResolvido> Atributos);

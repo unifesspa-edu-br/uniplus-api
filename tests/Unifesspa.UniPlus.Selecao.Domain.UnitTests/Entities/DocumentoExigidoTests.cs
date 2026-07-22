@@ -179,7 +179,7 @@ public sealed class DocumentoExigidoTests
     {
         DocumentoExigido exigencia = Exigencia(Aplicabilidade.Geral).Value!;
 
-        exigencia.AplicavelPara(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Verdadeiro);
+        exigencia.AplicavelPara(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Verdadeiro);
     }
 
     [Fact(DisplayName = "AplicavelPara: CONDICIONAL sem condição viva (zero cláusulas) é Falso — estrutural, não ausência de dado")]
@@ -187,7 +187,7 @@ public sealed class DocumentoExigidoTests
     {
         DocumentoExigido exigencia = Exigencia(Aplicabilidade.Condicional).Value!;
 
-        exigencia.AplicavelPara(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Falso);
+        exigencia.AplicavelPara(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Falso);
     }
 
     [Fact(DisplayName = "AplicavelPara: CONDICIONAL cujo fato não está resolvido é Indeterminado, nunca Falso")]
@@ -196,7 +196,7 @@ public sealed class DocumentoExigidoTests
         DocumentoExigido exigencia = Exigencia(
             Aplicabilidade.Condicional, condicoes: [CondicaoDe("SEXO", Operador.Igual, "\"MASCULINO\"")]).Value!;
 
-        exigencia.AplicavelPara(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Indeterminado);
+        exigencia.AplicavelPara(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
     [Fact(DisplayName = "AplicavelPara: CONDICIONAL com fato resolvido avalia normalmente (Verdadeiro/Falso)")]
@@ -205,10 +205,10 @@ public sealed class DocumentoExigidoTests
         DocumentoExigido exigencia = Exigencia(
             Aplicabilidade.Condicional, condicoes: [CondicaoDe("SEXO", Operador.Igual, "\"MASCULINO\"")]).Value!;
 
-        Dictionary<string, JsonElement> fatos = new() { ["SEXO"] = JsonSerializer.SerializeToElement("MASCULINO") };
+        Dictionary<string, FatoResolvido> fatos = new() { ["SEXO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("MASCULINO")) };
         exigencia.AplicavelPara(fatos).Should().Be(Ternario.Verdadeiro);
 
-        Dictionary<string, JsonElement> fatosDivergentes = new() { ["SEXO"] = JsonSerializer.SerializeToElement("FEMININO") };
+        Dictionary<string, FatoResolvido> fatosDivergentes = new() { ["SEXO"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("FEMININO")) };
         exigencia.AplicavelPara(fatosDivergentes).Should().Be(Ternario.Falso);
     }
 
@@ -256,7 +256,7 @@ public sealed class DocumentoExigidoTests
         DocumentoExigido comIdadeExigidaNaoEmPermanentes =
             ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
 
-        Dictionary<string, JsonElement> fatos = new() { ["TIPO_DEFICIENCIA"] = JsonSerializer.SerializeToElement("TEA") };
+        Dictionary<string, FatoResolvido> fatos = new() { ["TIPO_DEFICIENCIA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("TEA")) };
 
         semIdadeExigidaEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Verdadeiro,
             "TEA é permanente — a exigência SEM idade máxima (gatilhada por EM permanentes) se aplica");
@@ -273,7 +273,7 @@ public sealed class DocumentoExigidoTests
         DocumentoExigido comIdadeExigidaNaoEmPermanentes =
             ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
 
-        Dictionary<string, JsonElement> fatos = new() { ["TIPO_DEFICIENCIA"] = JsonSerializer.SerializeToElement("DEPRESSAO") };
+        Dictionary<string, FatoResolvido> fatos = new() { ["TIPO_DEFICIENCIA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("DEPRESSAO")) };
 
         semIdadeExigidaEmPermanentes.AplicavelPara(fatos).Should().Be(Ternario.Falso,
             "DEPRESSAO não é permanente — a exigência SEM idade máxima (gatilhada por EM permanentes) NÃO se aplica");
@@ -290,7 +290,7 @@ public sealed class DocumentoExigidoTests
         DocumentoExigido comIdadeExigidaNaoEmPermanentes =
             ExigenciaSemIdadeGatilhadaPorTipoDeficiencia(Operador.NaoEm, listaPermanentes);
 
-        Dictionary<string, JsonElement> semFatos = [];
+        Dictionary<string, FatoResolvido> semFatos = [];
 
         semIdadeExigidaEmPermanentes.AplicavelPara(semFatos).Should().Be(Ternario.Indeterminado);
         comIdadeExigidaNaoEmPermanentes.AplicavelPara(semFatos).Should().Be(Ternario.Indeterminado);

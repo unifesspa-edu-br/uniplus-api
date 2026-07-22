@@ -47,10 +47,10 @@ public sealed class ClausulaDnfTests
     public void Avaliar_TodasVerdadeiras_Verdadeiro()
     {
         ClausulaDnf clausula = ClausulaDnf.Criar([Condicao("PCD"), Condicao("QUILOMBOLA")]).Value!;
-        Dictionary<string, JsonElement> fatos = new()
+        Dictionary<string, FatoResolvido> fatos = new()
         {
-            ["PCD"] = JsonSerializer.SerializeToElement(true),
-            ["QUILOMBOLA"] = JsonSerializer.SerializeToElement(true),
+            ["PCD"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)),
+            ["QUILOMBOLA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)),
         };
 
         clausula.Avaliar(fatos).Should().Be(Ternario.Verdadeiro);
@@ -60,7 +60,7 @@ public sealed class ClausulaDnfTests
     public void Avaliar_UmaFalsoVenceSobreIndeterminado()
     {
         ClausulaDnf clausula = ClausulaDnf.Criar([Condicao("PCD"), Condicao("FATO_AUSENTE")]).Value!;
-        Dictionary<string, JsonElement> fatos = new() { ["PCD"] = JsonSerializer.SerializeToElement(false) };
+        Dictionary<string, FatoResolvido> fatos = new() { ["PCD"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)) };
 
         clausula.Avaliar(fatos).Should().Be(Ternario.Falso);
     }
@@ -69,7 +69,7 @@ public sealed class ClausulaDnfTests
     public void Avaliar_SemFalso_IndeterminadoVence()
     {
         ClausulaDnf clausula = ClausulaDnf.Criar([Condicao("PCD"), Condicao("FATO_AUSENTE")]).Value!;
-        Dictionary<string, JsonElement> fatos = new() { ["PCD"] = JsonSerializer.SerializeToElement(true) };
+        Dictionary<string, FatoResolvido> fatos = new() { ["PCD"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)) };
 
         clausula.Avaliar(fatos).Should().Be(Ternario.Indeterminado);
     }

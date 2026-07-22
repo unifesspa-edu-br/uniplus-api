@@ -21,7 +21,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 {
     private static readonly Guid FaseId = Guid.CreateVersion7();
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
-    private static readonly IReadOnlyDictionary<string, JsonElement> SemFatos = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+    private static readonly IReadOnlyDictionary<string, FatoResolvido> SemFatos = new Dictionary<string, FatoResolvido>(StringComparer.Ordinal);
 
     private static DocumentoExigido DocumentoGeral(string? consequencia = null) =>
         DocumentoExigido.Criar(
@@ -35,8 +35,8 @@ public sealed class ResolvedorArvoreSatisfacaoTests
             [CondicaoGatilho.Criar(0, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
             [], null, Qualquer, null).Value!;
 
-    private static Dictionary<string, JsonElement> Fatos(string fato, bool valor) =>
-        new(StringComparer.Ordinal) { [fato] = JsonSerializer.SerializeToElement(valor) };
+    private static Dictionary<string, FatoResolvido> Fatos(string fato, bool valor) =>
+        new(StringComparer.Ordinal) { [fato] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(valor)) };
 
     private static Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> Apresenta(params DocumentoExigido[] documentos) =>
         documentos.ToDictionary(
@@ -58,7 +58,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
 
     private static Result<ResultadoResolucaoArvore> Resolver(
         ArvoreExigenciasCongelada arvore,
-        IReadOnlyDictionary<string, JsonElement>? fatos = null,
+        IReadOnlyDictionary<string, FatoResolvido>? fatos = null,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>? apresentacoes = null,
         IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>? instancias = null) =>
         ResolvedorArvoreSatisfacao.Resolver(arvore, fatos ?? SemFatos, apresentacoes ?? SemApresentacoes, instancias);
@@ -66,7 +66,7 @@ public sealed class ResolvedorArvoreSatisfacaoTests
     private static InstanciaEntidade Instancia(string entidadeId, params (string Fato, bool Valor)[] atributos) =>
         new(entidadeId, atributos.ToDictionary(
             static a => a.Fato,
-            static a => JsonSerializer.SerializeToElement(a.Valor),
+            static a => FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(a.Valor)),
             StringComparer.Ordinal));
 
     private static Dictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> InstanciasDe(
@@ -230,6 +230,30 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         Result<ResultadoResolucaoArvore> resultado = Resolver(Arvore(raiz));
 
         resultado.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Indeterminado);
+    }
+
+    [Fact(DisplayName = "Story #926: fato ausente e fato NÃO_APLICÁVEL levam a estados opostos na fronteira do resolvedor")]
+    public void Folha_FatoAusenteVersusNaoAplicavel_EstadosOpostos()
+    {
+        DocumentoExigido condicional = DocumentoCondicional("CONCORRER_PCD");
+        NoExigencia raiz = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, null, null, [], [NoExigencia.CriarFolha(condicional, 0).Value!]).Value!;
+
+        // Ausente do dicionário: nada se sabe sobre o fato, a exigência segue pendente.
+        Result<ResultadoResolucaoArvore> comFatoAusente = Resolver(Arvore(raiz));
+
+        // Declarado não-aplicável: a pré-condição do campo é falsa, a exigência está resolvida
+        // como não-exigida — e o candidato não é cobrado por um documento que não lhe cabe.
+        Dictionary<string, FatoResolvido> naoAplicavel = new(StringComparer.Ordinal)
+        {
+            ["CONCORRER_PCD"] = FatoResolvido.NaoAplicavel(),
+        };
+        Result<ResultadoResolucaoArvore> comFatoNaoAplicavel = Resolver(Arvore(raiz), naoAplicavel);
+
+        comFatoAusente.Value!.EstadosPorNo[raiz.Id].Should().Be(EstadoSatisfacao.Indeterminado);
+        comFatoNaoAplicavel.Value!.EstadosPorNo[raiz.Id].Should().Be(
+            EstadoSatisfacao.NaoAplicavel,
+            "a ausência do fato é pendência; a inaplicabilidade declarada é resposta definitiva");
     }
 
     [Fact(DisplayName = "E ignora alternativa não-aplicável")]
@@ -510,6 +534,36 @@ public sealed class ResolvedorArvoreSatisfacaoTests
     }
 
     // ── Repetição por entidade (Story #922) ──────────────────────────────────────────────
+
+    [Fact(DisplayName = "Story #926: atributo NÃO_APLICÁVEL da instância sobrescreve o mesmo fato resolvido do candidato")]
+    public void RepeticaoPorEntidade_AtributoNaoAplicavelSobrescreveFatoDoCandidato()
+    {
+        DocumentoExigido condicional = DocumentoCondicional("SEM_RENDA");
+        NoExigencia raiz = NoExigencia.CriarFolha(
+            condicional, 0, repetePorEntidade: TipoEntidade.MembroNucleoFamiliar).Value!;
+
+        // O candidato declarou o fato, mas para ESTE membro do núcleo familiar ele não se
+        // aplica — o sujeito do gatilho é a instância, não o candidato.
+        Dictionary<string, FatoResolvido> fatosDoCandidato = new(StringComparer.Ordinal)
+        {
+            ["SEM_RENDA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)),
+        };
+        InstanciaEntidade membro = new("membro_1", new Dictionary<string, FatoResolvido>(StringComparer.Ordinal)
+        {
+            ["SEM_RENDA"] = FatoResolvido.NaoAplicavel(),
+        });
+
+        Result<ResultadoResolucaoArvore> resultado = Resolver(
+            Arvore(raiz),
+            fatos: fatosDoCandidato,
+            instancias: InstanciasDe(TipoEntidade.MembroNucleoFamiliar, membro));
+
+        resultado.Value!.StatusPorEntidade.Should().Contain(
+            s => s.DocumentoExigidoId == condicional.Id
+                && s.EntidadeId == "membro_1"
+                && s.Status == StatusResolucaoExigencia.NaoAplicavel,
+            "o atributo da instância tem precedência — sem isso, o fato do candidato exigiria o documento de um membro a quem ele não cabe");
+    }
 
     [Fact(DisplayName = "Documento correlacionado à instância certa: RG do membro 2 satisfaz só (RG, MEMBRO_NUCLEO_FAMILIAR, membro_2)")]
     public void RepeticaoPorEntidade_DocumentoCorrelacionadoAInstanciaCerta()

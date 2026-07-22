@@ -21,7 +21,7 @@ public sealed class PredicadoDnfTests
 
         resultado.IsSuccess.Should().BeTrue("zero cláusulas é um estado estruturalmente válido");
         resultado.Value!.Clausulas.Should().BeEmpty();
-        resultado.Value.Avaliar(new Dictionary<string, JsonElement>()).Should().Be(
+        resultado.Value.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(
             Ternario.Falso, "zero cláusulas é estado estrutural — nunca casa com ninguém, não se confunde com indeterminação");
     }
 
@@ -51,19 +51,19 @@ public sealed class PredicadoDnfTests
         ]);
         PredicadoDnf predicado = resultado.Value!;
 
-        Dictionary<string, JsonElement> soPcd = new()
+        Dictionary<string, FatoResolvido> soPcd = new()
         {
-            ["PCD"] = JsonSerializer.SerializeToElement(true),
-            ["QUILOMBOLA"] = JsonSerializer.SerializeToElement(false),
-            ["EGRESSO_ESCOLA_PUBLICA"] = JsonSerializer.SerializeToElement(false),
+            ["PCD"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)),
+            ["QUILOMBOLA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)),
+            ["EGRESSO_ESCOLA_PUBLICA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)),
         };
         predicado.Avaliar(soPcd).Should().Be(Ternario.Falso, "a primeira cláusula exige AMBAS as condições");
 
-        Dictionary<string, JsonElement> soEgresso = new()
+        Dictionary<string, FatoResolvido> soEgresso = new()
         {
-            ["PCD"] = JsonSerializer.SerializeToElement(false),
-            ["QUILOMBOLA"] = JsonSerializer.SerializeToElement(false),
-            ["EGRESSO_ESCOLA_PUBLICA"] = JsonSerializer.SerializeToElement(true),
+            ["PCD"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)),
+            ["QUILOMBOLA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)),
+            ["EGRESSO_ESCOLA_PUBLICA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)),
         };
         predicado.Avaliar(soEgresso).Should().Be(Ternario.Verdadeiro, "a segunda cláusula sozinha já satisfaz o OU");
     }
@@ -74,10 +74,10 @@ public sealed class PredicadoDnfTests
         Result<PredicadoDnf> resultado = PredicadoDnf.CriarDeCondicoesAgrupadas([(1, Booleana("SEXO_DESCONHECIDO", true))]);
         PredicadoDnf predicado = resultado.Value!;
 
-        Action avaliar = () => predicado.Avaliar(new Dictionary<string, JsonElement>());
+        Action avaliar = () => predicado.Avaliar(new Dictionary<string, FatoResolvido>());
 
         avaliar.Should().NotThrow();
-        predicado.Avaliar(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Indeterminado);
+        predicado.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
     // ── Story #554 (PR #896, issue #892) — extensão dinâmica/multivalorada ──
@@ -97,9 +97,9 @@ public sealed class PredicadoDnfTests
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, Categorica("MODALIDADE", Operador.Igual, StringJson("LB_PPI")))]).Value!;
 
-        Dictionary<string, JsonElement> fatos = new()
+        Dictionary<string, FatoResolvido> fatos = new()
         {
-            ["MODALIDADE"] = ArrayJson("LB_PPI", "AC"),
+            ["MODALIDADE"] = FatoResolvido.Resolvido(ArrayJson("LB_PPI", "AC")),
         };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Verdadeiro, "LB_PPI pertence ao conjunto [LB_PPI, AC] do candidato");
@@ -111,9 +111,9 @@ public sealed class PredicadoDnfTests
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, Categorica("MODALIDADE", Operador.Igual, StringJson("LB_Q")))]).Value!;
 
-        Dictionary<string, JsonElement> fatos = new()
+        Dictionary<string, FatoResolvido> fatos = new()
         {
-            ["MODALIDADE"] = ArrayJson("LB_PPI", "AC"),
+            ["MODALIDADE"] = FatoResolvido.Resolvido(ArrayJson("LB_PPI", "AC")),
         };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Falso);
@@ -125,9 +125,9 @@ public sealed class PredicadoDnfTests
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, Categorica("MODALIDADE", Operador.Em, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
 
-        Dictionary<string, JsonElement> fatos = new()
+        Dictionary<string, FatoResolvido> fatos = new()
         {
-            ["MODALIDADE"] = ArrayJson("AC"),
+            ["MODALIDADE"] = FatoResolvido.Resolvido(ArrayJson("AC")),
         };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Falso, "[AC] intersecta [LB_PPI, LB_Q] em vazio");
@@ -139,9 +139,9 @@ public sealed class PredicadoDnfTests
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, Categorica("MODALIDADE", Operador.Em, ArrayJson("LB_PPI", "LB_Q")))]).Value!;
 
-        Dictionary<string, JsonElement> fatos = new()
+        Dictionary<string, FatoResolvido> fatos = new()
         {
-            ["MODALIDADE"] = ArrayJson("AC", "LB_PPI"),
+            ["MODALIDADE"] = FatoResolvido.Resolvido(ArrayJson("AC", "LB_PPI")),
         };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Verdadeiro, "[AC, LB_PPI] intersecta [LB_PPI, LB_Q] em [LB_PPI], não vazio");
@@ -153,7 +153,7 @@ public sealed class PredicadoDnfTests
         PredicadoDnf predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, Categorica("SEXO", Operador.Igual, StringJson("MASCULINO")))]).Value!;
 
-        Dictionary<string, JsonElement> fatos = new() { ["SEXO"] = StringJson("MASCULINO") };
+        Dictionary<string, FatoResolvido> fatos = new() { ["SEXO"] = FatoResolvido.Resolvido(StringJson("MASCULINO")) };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Verdadeiro, "fato escalar (não-array) segue o ramo original, sem mudança de comportamento");
     }
@@ -163,8 +163,8 @@ public sealed class PredicadoDnfTests
     private static PredicadoDnf Predicado(params (int Clausula, CondicaoDnf Condicao)[] linhas) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas(linhas).Value!;
 
-    private static Dictionary<string, JsonElement> Fatos(string chave, JsonElement valor) =>
-        new() { [chave] = valor };
+    private static Dictionary<string, FatoResolvido> Fatos(string chave, JsonElement valor) =>
+        new(StringComparer.Ordinal) { [chave] = FatoResolvido.Resolvido(valor) };
 
     [Theory(DisplayName = "DIFERENTE escalar: nega IGUAL quando o fato está resolvido")]
     [InlineData("FEMININO", Ternario.Verdadeiro)]
@@ -181,7 +181,7 @@ public sealed class PredicadoDnfTests
     {
         PredicadoDnf predicado = Predicado((1, Categorica("SEXO", Operador.Diferente, StringJson("MASCULINO"))));
 
-        predicado.Avaliar(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Indeterminado);
+        predicado.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
     [Theory(DisplayName = "NAO_EM categórico: nega EM quando o fato está resolvido")]
@@ -200,7 +200,7 @@ public sealed class PredicadoDnfTests
     {
         PredicadoDnf predicado = Predicado((1, Categorica("COR_RACA", Operador.NaoEm, ArrayJson("PRETA"))));
 
-        predicado.Avaliar(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Indeterminado);
+        predicado.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
     [Fact(DisplayName = "EM [] com fato resolvido é Falso (interseção vazia)")]
@@ -225,17 +225,31 @@ public sealed class PredicadoDnfTests
         PredicadoDnf emVazio = Predicado((1, Categorica("COR_RACA", Operador.Em, ArrayJson())));
         PredicadoDnf naoEmVazio = Predicado((1, Categorica("COR_RACA", Operador.NaoEm, ArrayJson())));
 
-        emVazio.Avaliar(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Indeterminado);
-        naoEmVazio.Avaliar(new Dictionary<string, JsonElement>()).Should().Be(Ternario.Indeterminado);
+        emVazio.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
+        naoEmVazio.Avaliar(new Dictionary<string, FatoResolvido>()).Should().Be(Ternario.Indeterminado);
     }
 
-    [Fact(DisplayName = "Fato presente porém null é Indeterminado, não Falso")]
-    public void Avaliar_FatoNulo_Indeterminado()
+    [Fact(DisplayName = "Fato presente com estado Indeterminado é Indeterminado, não Falso")]
+    public void Avaliar_FatoIndeterminado_Indeterminado()
     {
         PredicadoDnf predicado = Predicado((1, Booleana("PCD", true)));
+
+        Dictionary<string, FatoResolvido> fatos = new(StringComparer.Ordinal) { ["PCD"] = FatoResolvido.Indeterminado() };
+
+        predicado.Avaliar(fatos).Should().Be(Ternario.Indeterminado);
+    }
+
+    [Fact(DisplayName = "Um fato sem valor não pode ser construído como resolvido — o estado é declarado, nunca inferido do nulo")]
+    public void FatoResolvido_ResolvidoComNulo_Recusado()
+    {
         using JsonDocument nulo = JsonDocument.Parse("null");
 
-        predicado.Avaliar(Fatos("PCD", nulo.RootElement.Clone())).Should().Be(Ternario.Indeterminado);
+        Action comNulo = () => FatoResolvido.Resolvido(nulo.RootElement.Clone());
+        Action comIndefinido = () => FatoResolvido.Resolvido(default);
+
+        comNulo.Should().Throw<ArgumentException>(
+            "aceitar null como resolvido reintroduziria a ambiguidade entre não-aplicável e indeterminado");
+        comIndefinido.Should().Throw<ArgumentException>();
     }
 
     [Fact(DisplayName = "Comparação numérica sobre valor de tipo incoerente é Indeterminado, nunca lança")]
@@ -276,7 +290,7 @@ public sealed class PredicadoDnfTests
             (1, Booleana("PCD", true)),
             (1, Booleana("FATO_AUSENTE", true)));
 
-        Dictionary<string, JsonElement> fatos = new() { ["PCD"] = JsonSerializer.SerializeToElement(true) };
+        Dictionary<string, FatoResolvido> fatos = new() { ["PCD"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)) };
 
         // PCD=true (Verdadeiro) E FATO_AUSENTE (Indeterminado) -> Indeterminado.
         predicado.Avaliar(fatos).Should().Be(Ternario.Indeterminado);
@@ -290,10 +304,10 @@ public sealed class PredicadoDnfTests
             (2, Booleana("FATO_AUSENTE", true)),
             (3, Booleana("QUILOMBOLA", true)));
 
-        Dictionary<string, JsonElement> fatos = new()
+        Dictionary<string, FatoResolvido> fatos = new()
         {
-            ["EGRESSO_ESCOLA_PUBLICA"] = JsonSerializer.SerializeToElement(true),
-            ["QUILOMBOLA"] = JsonSerializer.SerializeToElement(false),
+            ["EGRESSO_ESCOLA_PUBLICA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true)),
+            ["QUILOMBOLA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)),
         };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Verdadeiro);
@@ -306,7 +320,7 @@ public sealed class PredicadoDnfTests
             (1, Booleana("QUILOMBOLA", true)),
             (2, Booleana("FATO_AUSENTE", true)));
 
-        Dictionary<string, JsonElement> fatos = new() { ["QUILOMBOLA"] = JsonSerializer.SerializeToElement(false) };
+        Dictionary<string, FatoResolvido> fatos = new() { ["QUILOMBOLA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)) };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Indeterminado);
     }
@@ -318,12 +332,120 @@ public sealed class PredicadoDnfTests
             (1, Booleana("QUILOMBOLA", true)),
             (2, Booleana("PCD", true)));
 
-        Dictionary<string, JsonElement> fatos = new()
+        Dictionary<string, FatoResolvido> fatos = new()
         {
-            ["QUILOMBOLA"] = JsonSerializer.SerializeToElement(false),
-            ["PCD"] = JsonSerializer.SerializeToElement(false),
+            ["QUILOMBOLA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)),
+            ["PCD"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(false)),
         };
 
         predicado.Avaliar(fatos).Should().Be(Ternario.Falso);
+    }
+
+    // ── Story #926 — NÃO_APLICÁVEL é estado próprio do átomo, distinto de INDETERMINADO ──
+
+    private static Dictionary<string, FatoResolvido> Estados(params (string Fato, FatoResolvido Estado)[] entradas) =>
+        entradas.ToDictionary(static e => e.Fato, static e => e.Estado, StringComparer.Ordinal);
+
+    [Theory(DisplayName = "Átomo sobre fato NÃO_APLICÁVEL é não-aplicável para todo operador — a negação não inverte a inaplicabilidade")]
+    [InlineData(Operador.Igual)]
+    [InlineData(Operador.Diferente)]
+    [InlineData(Operador.Em)]
+    [InlineData(Operador.NaoEm)]
+    [InlineData(Operador.MaiorIgual)]
+    [InlineData(Operador.MenorIgual)]
+    public void Atomo_SobreFatoNaoAplicavel_NuncaEhVerdadeiro(Operador operador)
+    {
+        JsonElement valor = operador switch
+        {
+            Operador.Em or Operador.NaoEm => ArrayJson("SIM"),
+            Operador.MaiorIgual or Operador.MenorIgual => JsonSerializer.SerializeToElement(18),
+            _ => StringJson("SIM"),
+        };
+        PredicadoDnf predicado = Predicado((1, Categorica("CONCORRER_PCD", operador, valor)));
+
+        Ternario resultado = predicado.Avaliar(Estados(("CONCORRER_PCD", FatoResolvido.NaoAplicavel())));
+
+        resultado.Should().Be(
+            Ternario.Falso,
+            "o candidato não é PcD, então o opt-in não se aplica — nem satisfaz o gatilho, nem fica pendente esperando resposta");
+    }
+
+    [Fact(DisplayName = "Um fato resolvido sobrevive ao descarte do documento que o originou")]
+    public void FatoResolvido_SobreviveAoDescarteDoDocumentoDeOrigem()
+    {
+        FatoResolvido fato;
+        using (JsonDocument documento = JsonDocument.Parse("\"MASCULINO\""))
+        {
+            fato = FatoResolvido.Resolvido(documento.RootElement);
+        }
+
+        PredicadoDnf predicado = Predicado((1, Categorica("SEXO", Operador.Igual, StringJson("MASCULINO"))));
+
+        Action avaliar = () => predicado.Avaliar(Estados(("SEXO", fato)));
+
+        avaliar.Should().NotThrow<ObjectDisposedException>(
+            "o valor é clonado na construção — sem isso, o fato ficaria preso ao tempo de vida do documento que o produziu");
+        predicado.Avaliar(Estados(("SEXO", fato))).Should().Be(Ternario.Verdadeiro);
+    }
+
+    [Fact(DisplayName = "Cláusula E com VERDADEIRO e NÃO_APLICÁVEL resolve Falso — o não-aplicável colapsa, não é ignorado")]
+    public void Clausula_VerdadeiroComNaoAplicavel_Falso()
+    {
+        PredicadoDnf predicado = Predicado(
+            (1, Booleana("EGRESSO_ESCOLA_PUBLICA", true)),
+            (1, Categorica("CONCORRER_Q", Operador.Igual, StringJson("SIM"))));
+
+        Ternario resultado = predicado.Avaliar(Estados(
+            ("EGRESSO_ESCOLA_PUBLICA", FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(true))),
+            ("CONCORRER_Q", FatoResolvido.NaoAplicavel())));
+
+        resultado.Should().Be(
+            Ternario.Falso,
+            "sem o colapso o átomo não-aplicável seria ignorado e a cláusula resolveria verdadeiro por um opt-in que nem foi perguntado");
+    }
+
+    [Fact(DisplayName = "Cláusula E com NÃO_APLICÁVEL e INDETERMINADO resolve Falso — o não-aplicável é definitivo e vence a pendência")]
+    public void Clausula_NaoAplicavelComIndeterminado_Falso()
+    {
+        PredicadoDnf predicado = Predicado(
+            (1, Categorica("CONCORRER_Q", Operador.Igual, StringJson("SIM"))),
+            (1, Booleana("PCD", true)));
+
+        Ternario resultado = predicado.Avaliar(Estados(
+            ("CONCORRER_Q", FatoResolvido.NaoAplicavel()),
+            ("PCD", FatoResolvido.Indeterminado())));
+
+        resultado.Should().Be(
+            Ternario.Falso,
+            "a cláusula já é impossível pelo átomo não-aplicável — esperar a resposta pendente do outro fato não mudaria o resultado");
+    }
+
+    [Fact(DisplayName = "DNF misto: cláusula não-aplicável e cláusula pendente resolvem Indeterminado — os dois estados não colapsam num só")]
+    public void Dnf_ClausulaNaoAplicavelComClausulaIndeterminada_Indeterminado()
+    {
+        PredicadoDnf predicado = Predicado(
+            (1, Categorica("CONCORRER_Q", Operador.Igual, StringJson("SIM"))),
+            (2, Booleana("PCD", true)));
+
+        Ternario resultado = predicado.Avaliar(Estados(
+            ("CONCORRER_Q", FatoResolvido.NaoAplicavel()),
+            ("PCD", FatoResolvido.Indeterminado())));
+
+        resultado.Should().Be(
+            Ternario.Indeterminado,
+            "a primeira cláusula está resolvida em falso, mas a segunda ainda pode virar verdadeira quando o candidato responder");
+    }
+
+    [Fact(DisplayName = "O estado vem do discriminador, não da ausência de valor: dois fatos sem valor levam a resultados opostos")]
+    public void Estado_VemDoDiscriminador_NaoDaAusenciaDeValor()
+    {
+        PredicadoDnf predicado = Predicado((1, Categorica("CONCORRER_PCD", Operador.Igual, StringJson("SIM"))));
+
+        Ternario naoAplicavel = predicado.Avaliar(Estados(("CONCORRER_PCD", FatoResolvido.NaoAplicavel())));
+        Ternario indeterminado = predicado.Avaliar(Estados(("CONCORRER_PCD", FatoResolvido.Indeterminado())));
+
+        naoAplicavel.Should().Be(Ternario.Falso, "não se aplica — a exigência que depende disso fica dispensada em definitivo");
+        indeterminado.Should().Be(Ternario.Indeterminado, "aplica-se e ainda não foi respondido — a exigência segue pendente");
+        naoAplicavel.Should().NotBe(indeterminado, "os dois carregam valor nulo e mesmo assim decidem coisas opostas");
     }
 }
