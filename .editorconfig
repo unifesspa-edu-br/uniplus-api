@@ -94,7 +94,14 @@ dotnet_diagnostic.CA1861.severity = none
 # - CA1062: tool não emite ArgumentNullException no migrationBuilder
 # - CA1861: tool emite arrays inline (`new[] { ... }`) em CreateIndex
 # - IDE0161: tool emite namespace-block clássico, não file-scoped
+#
+# Pelo mesmo motivo, duas regras de formatação seguem o que o `dotnet ef`
+# emite, em vez de exigir retrabalho manual a cada migration gerada:
+# - charset: o tool grava com BOM
+# - separate_import_directive_groups: o tool não separa grupos de using
 [src/**/Migrations/**.cs]
+charset = utf-8-bom
+dotnet_separate_import_directive_groups = false
 dotnet_diagnostic.CA1062.severity = none
 dotnet_diagnostic.CA1861.severity = none
 dotnet_diagnostic.IDE0161.severity = none
