@@ -13,10 +13,11 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Integração ponta-a-ponta do catálogo <c>rol_de_fatos_candidato</c> contra Postgres real
-/// (UNI-REQ-0077, ADR-0111, refinada pela ADR-0116): seed dos onze fatos, leitor
+/// (UNI-REQ-0077, ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078): seed dos dezessete fatos, leitor
 /// cross-módulo, ordenação, resolução por chave natural, sobrevivência do
 /// <c>valores_dominio</c> nulo ao round-trip, CHECKs de domínio/coerência, índice
 /// único total do código e o seed de <c>fato_valor_dominio</c>.
@@ -39,14 +40,127 @@ public sealed class FatoCandidatoPersistenceTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Seed materializa exatamente os onze fatos da ADR-0111/ADR-0116, batendo com a fonte única")]
-    public async Task Seed_MaterializaOnzeFatos()
+    [Fact(DisplayName = "Todo item do seed passa pela factory de domínio — a linha materializada é construível")]
+    public void Seed_TodoItemEhAceitoPelaFactory()
+    {
+        // O seed materializa linhas direto pela migration, sem passar pela factory.
+        // Este teste fecha essa lacuna: garante que cada item semeado satisfaz as
+        // invariantes de FatoCandidato.Criar (formato de código, tamanho de nome,
+        // coerência binding × origem, ponto de resolução canônico).
+        foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
+        {
+            Result<FatoCandidato> resultado = FatoCandidato.Criar(
+                item.Codigo,
+                item.Nome,
+                item.Descricao,
+                item.Dominio,
+                item.Origem,
+                item.Cardinalidade,
+                item.ValoresDominio,
+                item.PontoResolucao,
+                item.Binding);
+
+            resultado.IsSuccess.Should().BeTrue(
+                $"o item semeado {item.Codigo} deve satisfazer as invariantes de domínio; erro: {resultado.Error?.Code}");
+        }
+    }
+
+    [Fact(DisplayName = "Cada cota tem par elegibilidade + opt-in como fatos independentes (UNI-REQ-0078)")]
+    public async Task Seed_CadaCotaTemParElegibilidadeEOptIn()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
 
-        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(11);
+        // Os quatro blocos do formulário de cotas. A elegibilidade de PPI é COR_RACA
+        // (categórico); as demais são booleanas. O opt-in é sempre booleano.
+        (string Elegibilidade, string OptIn)[] pares =
+        [
+            ("PCD", "CONCORRER_PCD"),
+            ("EGRESSO_ESCOLA_PUBLICA", "CONCORRER_EP"),
+            ("COR_RACA", "CONCORRER_PPI"),
+            ("QUILOMBOLA", "CONCORRER_Q"),
+            ("BAIXA_RENDA", "CONCORRER_RENDA"),
+        ];
+
+        foreach ((string elegibilidade, string optIn) in pares)
+        {
+            FatoCandidato fatoElegibilidade = fatos.Single(f => f.Codigo == elegibilidade);
+            FatoCandidato fatoOptIn = fatos.Single(f => f.Codigo == optIn);
+
+            fatoElegibilidade.Id.Should().NotBe(fatoOptIn.Id,
+                $"{elegibilidade} e {optIn} são fatos independentes — a elegibilidade sozinha não coloca na cota");
+            fatoOptIn.Dominio.Should().Be(DominioFato.Booleano);
+            fatoOptIn.Origem.Should().Be(OrigemFato.Declarado,
+                "o opt-in é seleção direta do candidato, ainda que expresse vontade e não elegibilidade");
+            fatoOptIn.Cardinalidade.Should().Be(CardinalidadeFato.Escalar);
+        }
+    }
+
+    [Fact(DisplayName = "Fatos reutilizados mantêm a identidade semeada — o vocabulário não duplica código")]
+    public async Task Seed_FatosPreexistentesSaoReutilizadosSemDuplicar()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+
+        // Quatro fatos já existiam antes desta leva e são REUTILIZADOS, não recadastrados:
+        // renomeá-los violaria a imutabilidade de código da ADR-0111.
+        (string Codigo, string IdSufixo)[] reutilizados =
+        [
+            ("COR_RACA", "001"),
+            ("QUILOMBOLA", "002"),
+            ("PCD", "003"),
+            ("EGRESSO_ESCOLA_PUBLICA", "004"),
+        ];
+
+        foreach ((string codigo, string idSufixo) in reutilizados)
+        {
+            FatoCandidato fato = fatos.Single(f => f.Codigo == codigo);
+            fato.Id.Should().Be(Guid.Parse($"fa700000-0000-7000-8000-{idSufixo.PadLeft(12, '0')}"),
+                $"{codigo} preserva o Guid determinístico da semeadura original");
+        }
+
+        fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems("o catálogo nunca tem dois fatos com o mesmo código");
+        fatos.Select(f => f.Id).Should().OnlyHaveUniqueItems();
+
+        // Nenhum código adjacente foi criado como sinônimo dos reutilizados.
+        fatos.Select(f => f.Codigo).Should().NotContain(["PCD_AUTODECLARADO", "ESCOLA_PUBLICA"]);
+
+        // BAIXA_RENDA não substitui RENDA_PER_CAPITA: coexistem com naturezas distintas.
+        fatos.Single(f => f.Codigo == "BAIXA_RENDA").Origem.Should().Be(OrigemFato.Declarado);
+        fatos.Single(f => f.Codigo == "RENDA_PER_CAPITA").Origem.Should().Be(OrigemFato.Derivado);
+    }
+
+    [Fact(DisplayName = "Fato booleano não recebe FatoValorDominio (ADR-0111/ADR-0116)")]
+    public async Task Seed_BooleanoNaoRecebeValorDominio()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<FatoCandidato> booleanos = await ctx.FatosCandidato.AsNoTracking()
+            .Where(f => f.Dominio == DominioFato.Booleano)
+            .Include(f => f.ValoresDominioDeclarados)
+            .ToListAsync();
+
+        // Prende a leva nova: sem os seis fatos desta story o conjunto não os contém.
+        booleanos.Select(f => f.Codigo).Should().Contain(
+            ["BAIXA_RENDA", "CONCORRER_PCD", "CONCORRER_EP", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"]);
+        foreach (FatoCandidato fato in booleanos)
+        {
+            fato.ValoresDominio.Should().BeNull($"{fato.Codigo} é booleano — domínio intrínseco SIM/NÃO");
+            fato.ValoresDominioDeclarados.Should().BeEmpty(
+                $"{fato.Codigo} é booleano; FatoValorDominio só vale para categórico estático");
+        }
+    }
+
+    [Fact(DisplayName = "Seed materializa exatamente os dezessete fatos do vocabulário, batendo com a fonte única")]
+    public async Task Seed_MaterializaTodosOsFatosDaFonteUnica()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().ToListAsync();
+
+        fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(17);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
 
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
@@ -70,7 +184,7 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
-    [Fact(DisplayName = "Origem: FAIXA_ETARIA e RENDA_PER_CAPITA são Derivado; os demais nove são Declarado (ADR-0116)")]
+    [Fact(DisplayName = "Origem: só FAIXA_ETARIA e RENDA_PER_CAPITA são Derivado; todos os demais são Declarado (ADR-0116)")]
     public async Task Seed_OrigemReclassificadaConformeADR0116()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -87,7 +201,7 @@ public sealed class FatoCandidatoPersistenceTests
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
 
-    [Fact(DisplayName = "PontoResolucao: todos os onze fatos resolvem em INSCRICAO")]
+    [Fact(DisplayName = "PontoResolucao: todos os dezessete fatos resolvem em INSCRICAO")]
     public async Task Seed_PontoResolucaoInscricaoParaTodos()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -194,7 +308,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         IReadOnlyList<FatoCandidatoView> views = await reader.ListarAsync();
 
-        views.Should().HaveCount(11);
+        views.Should().HaveCount(17);
         views.Select(v => v.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
 
         FatoCandidatoView corRaca = views.Single(v => v.Codigo == "COR_RACA");
@@ -392,6 +506,12 @@ public sealed class FatoCandidatoPersistenceTests
             ("CONDICAO_ATENDIMENTO", "009", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO"),
             ("NACIONALIDADE", "010", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NACIONALIDADE"),
             ("TIPO_DEFICIENCIA", "011", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:TIPO_DEFICIENCIA"),
+            ("BAIXA_RENDA", "012", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:BAIXA_RENDA"),
+            ("CONCORRER_PCD", "013", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PCD"),
+            ("CONCORRER_EP", "014", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_EP"),
+            ("CONCORRER_PPI", "015", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_PPI"),
+            ("CONCORRER_Q", "016", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_Q"),
+            ("CONCORRER_RENDA", "017", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:CONCORRER_RENDA"),
         ];
 
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);

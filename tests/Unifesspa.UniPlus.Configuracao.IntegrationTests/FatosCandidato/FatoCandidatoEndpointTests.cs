@@ -44,7 +44,7 @@ public sealed class FatoCandidatoEndpointTests
 
         List<FatoCandidatoView>? fatos = await response.Content.ReadFromJsonAsync<List<FatoCandidatoView>>();
         fatos.Should().NotBeNull();
-        fatos!.Should().HaveCount(11);
+        fatos!.Should().HaveCount(17);
         fatos.Select(f => f.Codigo).Should().BeInAscendingOrder(StringComparer.Ordinal);
         fatos.Should().Contain(f => f.Codigo == "MODALIDADE" && f.Cardinalidade == "MULTIVALORADO" && f.ValoresDominio == null);
     }

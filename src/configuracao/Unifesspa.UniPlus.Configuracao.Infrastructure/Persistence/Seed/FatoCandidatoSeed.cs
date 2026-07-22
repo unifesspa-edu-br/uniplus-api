@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Fonte única do seed do catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0077,
-/// ADR-0111, refinada pela ADR-0116): os onze fatos do vocabulário fechado do
-/// candidato. Consumida tanto pela configuração EF Core (que materializa as linhas
+/// ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078): os dezessete
+/// fatos do vocabulário fechado do candidato. Consumida tanto pela configuração EF Core (que materializa as linhas
 /// via <c>HasData</c> na migration) quanto pelos testes (que conferem o seed do
 /// banco contra esta lista), garantindo uma única definição por fato.
 /// </summary>
@@ -27,16 +27,22 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <see langword="null"/>.
 /// </para>
 /// <para>
-/// <see cref="OrigemFato"/> (ADR-0116) reclassifica os nove fatos originais:
-/// <c>FAIXA_ETARIA</c> e <c>RENDA_PER_CAPITA</c> são <see cref="OrigemFato.Derivado"/>
-/// (computados — o motor deriva o valor, o candidato não o responde diretamente); os
-/// demais sete + <c>NACIONALIDADE</c>/<c>TIPO_DEFICIENCIA</c> são
-/// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato).
-/// <see cref="OrigemFato.Integracao"/> fica reservada, sem fato semeado (fonte
-/// externa futura, ex.: SIGAA #874).
+/// <see cref="OrigemFato"/> (ADR-0116): apenas <c>FAIXA_ETARIA</c> e
+/// <c>RENDA_PER_CAPITA</c> são <see cref="OrigemFato.Derivado"/> (computados — o motor
+/// deriva o valor, o candidato não o responde diretamente); todos os demais são
+/// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato), inclusive
+/// os cinco opt-ins <c>CONCORRER_*</c> — que são seleção direta, ainda que expressem
+/// vontade e não afirmação de elegibilidade. <see cref="OrigemFato.Integracao"/> fica
+/// reservada, sem fato semeado (fonte externa futura, ex.: SIGAA #874).
 /// </para>
 /// <para>
-/// Todos os onze fatos resolvem em <c>PontoResolucao = "INSCRICAO"</c> — são
+/// <c>BAIXA_RENDA</c> <b>não</b> substitui <c>RENDA_PER_CAPITA</c>: são fatos distintos e
+/// coexistem. O primeiro é a autodeclaração booleana feita na inscrição (item 5.1 do
+/// formulário de cotas); o segundo é o valor numérico derivado, cuja comprovação ocorre em
+/// fase posterior.
+/// </para>
+/// <para>
+/// Todos os dezessete fatos resolvem em <c>PontoResolucao = "INSCRICAO"</c> — são
 /// respondidos/derivados no cadastro de inscrição do candidato, nenhum depende de
 /// fase posterior (o gate que recusaria isso é a Story #916/PR2).
 /// </para>
@@ -50,7 +56,7 @@ public static class FatoCandidatoSeed
     private static Guid SeedId(int n) =>
         Guid.Parse($"fa700000-0000-7000-8000-{n:D12}");
 
-    /// <summary>Os onze fatos do vocabulário, na ordem canônica da ADR-0111/ADR-0116.</summary>
+    /// <summary>Os dezessete fatos do vocabulário, na ordem canônica de semeadura.</summary>
     public static IReadOnlyList<FatoCandidatoSeedItem> Itens { get; } =
     [
         new(SeedId(1), "COR_RACA", "Cor ou raça", null,
@@ -96,6 +102,35 @@ public static class FatoCandidatoSeed
         new(SeedId(11), "TIPO_DEFICIENCIA", "Tipo de deficiência", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:TIPO_DEFICIENCIA"),
+
+        // ── Pares elegibilidade + opt-in do formulário de cotas (UNI-REQ-0078) ──
+        // A elegibilidade dos quatro blocos já está semeada acima e é REUTILIZADA:
+        // COR_RACA (PPI), QUILOMBOLA, PCD e EGRESSO_ESCOLA_PUBLICA. Falta a quinta
+        // elegibilidade — a autodeclaração de renda — e os cinco opt-ins.
+
+        new(SeedId(12), "BAIXA_RENDA", "Renda familiar per capita igual ou inferior a um salário mínimo", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:BAIXA_RENDA"),
+
+        new(SeedId(13), "CONCORRER_PCD", "Deseja concorrer às vagas reservadas a pessoas com deficiência", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_PCD"),
+
+        new(SeedId(14), "CONCORRER_EP", "Deseja concorrer às vagas reservadas a egressos de escola pública", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_EP"),
+
+        new(SeedId(15), "CONCORRER_PPI", "Deseja concorrer às vagas reservadas a pretos, pardos e indígenas", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_PPI"),
+
+        new(SeedId(16), "CONCORRER_Q", "Deseja concorrer às vagas reservadas a quilombolas", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_Q"),
+
+        new(SeedId(17), "CONCORRER_RENDA", "Deseja concorrer às vagas reservadas por renda familiar per capita", null,
+            DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
+            null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:CONCORRER_RENDA"),
     ];
 }
 
