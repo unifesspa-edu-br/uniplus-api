@@ -81,6 +81,17 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(n => n.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Grafo de coleta de fatos (Story #926) — quais fatos o processo coleta, em que ordem e
+        // sob qual pré-condição. Cascade pelo mesmo motivo dos documentos exigidos: a FK é
+        // obrigatória e o agregado substitui a coleção por inteiro.
+        builder.HasMany(p => p.FatosColetados)
+            .WithOne()
+            .HasForeignKey(f => f.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.FatosColetados)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         // ReferenciaTemporalFatos (Story #554, PR #896) — VO 0..1 sem identidade própria,
         // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
         // Id nem ciclo de vida próprio, diferente das coleções acima).

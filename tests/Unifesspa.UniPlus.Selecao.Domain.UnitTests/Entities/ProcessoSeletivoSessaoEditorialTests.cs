@@ -246,6 +246,21 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         rascunho.Revisao.Should().Be(3);
     }
 
+    [Fact(DisplayName = "Definir o grafo de coleta de fatos sob sessão INCREMENTA a revisão — sem isso, um ETag obsoleto sobrescreveria a escrita")]
+    public void DefinirFatosColetados_ComSessao_IncrementaRevisao()
+    {
+        ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
+        rascunho.Revisao.Should().Be(1);
+
+        FatoColetado fato = FatoColetado.Criar("PCD", 0, null).Value!;
+        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+            .IsSuccess.Should().BeTrue();
+
+        rascunho.Revisao.Should().Be(
+            2,
+            "a escrita do grafo de fatos é mutação como qualquer outra — se a revisão não avançasse, uma escrita concorrente com o If-Match antigo passaria e sobrescreveria esta");
+    }
+
     [Fact(DisplayName = "Uma mutação RECUSADA não move a revisão — o ETag do cliente continua válido")]
     public void Definir_Recusado_NaoIncrementaRevisao()
     {

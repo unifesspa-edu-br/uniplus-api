@@ -125,6 +125,12 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // sem novo ThenInclude de Condicoes/BasesLegais do documento.
             .Include(p => p.NosExigencia).ThenInclude(n => n.DocumentoExigido)
             .Include(p => p.NosExigencia).ThenInclude(n => n.BasesLegais)
+            // Grafo de coleta de fatos (Story #926) — MESMO raciocínio: sem o Include, a coleção
+            // tracked nasce vazia e DefinirFatosColetados faria Clear() num backing list já vazio,
+            // deixando as linhas antigas no banco. Sem o ThenInclude das pré-condições, o grafo
+            // seria reidratado sem aresta nenhuma: todo fato pareceria coletado
+            // incondicionalmente, e campos que deveriam ser suprimidos passariam a ser exigidos.
+            .Include(p => p.FatosColetados).ThenInclude(f => f.Precondicoes)
             // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
             // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
             // modalidades × desempate × eliminação × fases × bancas) num único JOIN
