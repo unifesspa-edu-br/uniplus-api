@@ -164,7 +164,8 @@ dotnet test UniPlus.slnx --filter "Category=Integration"
 # A flag --exclude-diagnostics CA1515 é obrigatória: sem ela o comando
 # converte as classes de teste para `internal` e quebra o build.
 # Ver CONTRIBUTING.md.
-dotnet format --exclude-diagnostics CA1515 --verify-no-changes
+dotnet format --verify-no-changes --exclude-diagnostics CA1515 \
+  --exclude "**/Migrations/**"
 
 # Markdownlint (se mexeu em docs/**/*.md)
 npx markdownlint-cli2 'docs/**/*.md'
@@ -209,8 +210,8 @@ docs/0021-cache-distribuido
 - [ ] PR vinculado à issue com `Closes #N` na descrição (fora de blocos de código).
 - [ ] Build com `TreatWarningsAsErrors` passou — zero avisos, zero erros.
 - [ ] Testes unitários e de integração passando localmente.
-- [ ] `dotnet format --exclude-diagnostics CA1515 --verify-no-changes` sem
-  drift nos arquivos que você tocou.
+- [ ] Formatação sem drift — o job `Formatação (dotnet format)` do CI roda o
+  mesmo comando e bloqueia o merge.
 
 ## 9. Particularidades do `uniplus-api`
 

@@ -108,6 +108,53 @@ jobs:
       - name: Verificar pacotes proibidos
         run: bash tools/forbidden-deps/check.sh
 
+  formatacao:
+    name: Formatação (dotnet format)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props', '**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # O dotnet format precisa dos pacotes restaurados: sem eles o compilador
+      # não resolve tipo nenhum e a ferramenta emite milhares de CS0246, em vez
+      # dos diagnósticos de formatação que interessam aqui.
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
+
+      # --exclude-diagnostics CA1515: o xunit.analyzers fornece um
+      # DiagnosticSuppressor para essa regra que o build respeita e o
+      # dotnet format não. Sem o filtro, a ferramenta trata as classes de teste
+      # públicas como violação — e, no modo que aplica correções, converte todas
+      # para internal, quebrando a descoberta de testes do xUnit (xUnit1000).
+      #
+      # --exclude **/Migrations/**: o dotnet ef gera migrations com UTF-8 BOM
+      # enquanto o .editorconfig exige utf-8 sem BOM. Sem a exclusão, todo PR que
+      # adicionasse uma migration nasceria vermelho neste gate.
+      - name: Verificar formatação
+        run: |
+          dotnet format ${{ env.SOLUTION_PATH }} \
+            --verify-no-changes \
+            --no-restore \
+            --exclude-diagnostics CA1515 \
+            --exclude "**/Migrations/**"
+
   # ─────────────────────────────────────────────────────────────────────────
   # Pipeline build → (test-unit ∥ test-integration) → coverage-summary
   #
