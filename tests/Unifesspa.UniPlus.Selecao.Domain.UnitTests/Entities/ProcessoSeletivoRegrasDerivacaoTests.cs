@@ -144,4 +144,48 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         RegraDerivacaoConfigurada comCondicao = config.Regras.Single(r => r.Contribui == "LI_PCD");
         comCondicao.Condicoes.Should().OnlyContain(c => c.RegraDerivacaoConfiguradaId == comCondicao.Id);
     }
+
+    // ── Grafo de dependência conjunto a partir da configuração do agregado (Story #928, §6) ────────
+
+    private static CondicaoPrecondicaoFato Precond(string fato) =>
+        CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
+
+    private static ConfiguracaoDerivacaoFato DerivadoDe(string codigo, params string[] citados) =>
+        ConfiguracaoDerivacaoFato.Criar(codigo,
+        [
+            RegraDerivacaoConfigurada.Criar(0, "AC",
+                [.. citados.Select(static c => CondicaoRegraDerivacao.Criar(
+                    1, c, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
+        ]).Value!;
+
+    [Fact(DisplayName = "Constrói o grafo conjunto acíclico da configuração do processo em rascunho")]
+    public void ConstruirGrafoDependencia_ConfigAciclica_Sucesso()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirFatosColetados(
+        [
+            FatoColetado.Criar("PCD", 0, null).Value!,
+            FatoColetado.Criar("CONCORRER_PCD", 1, [Precond("PCD")]).Value!,
+        ]).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoDe("MODALIDADE", "CONCORRER_PCD")]).IsSuccess.Should().BeTrue();
+
+        Result<GrafoDependenciaConjunta> grafo = processo.ConstruirGrafoDependencia();
+
+        grafo.IsSuccess.Should().BeTrue(grafo.Error?.Message);
+        grafo.Value!.Nos.Should().Contain(n => n.Classe == ClasseNoGrafo.Fato && n.Codigo == "MODALIDADE");
+    }
+
+    [Fact(DisplayName = "Ciclo de derivação passa nas factories das componentes mas o grafo conjunto o recusa")]
+    public void ConstruirGrafoDependencia_CicloDeDerivacao_Falha()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        // Cada ConfiguracaoDerivacaoFato é válida isoladamente (a factory não checa citação); o ciclo
+        // D1↔D2 só emerge quando as arestas de derivação são consideradas juntas.
+        processo.DefinirRegrasDerivacao([DerivadoDe("D1", "D2"), DerivadoDe("D2", "D1")]).IsSuccess.Should().BeTrue();
+
+        Result<GrafoDependenciaConjunta> grafo = processo.ConstruirGrafoDependencia();
+
+        grafo.IsFailure.Should().BeTrue();
+        grafo.Error!.Code.Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
+    }
 }

@@ -73,9 +73,17 @@ public sealed record StatusPorEntidade(Guid DocumentoExigidoId, string EntidadeI
 /// uma entrada por (folha, instância) — o complemento de <see cref="StatusPorExigencia"/> que
 /// este NÃO cobre. Vazio quando a árvore não usa repetição.
 /// </param>
+/// <param name="NosEmissaoSuprimida">
+/// Story #928, §6 — os ids dos nós cuja emissão está suprimida pela fronteira de disponibilidade
+/// (<c>emissionBlocked</c>): folha BLOQUEADA ou grupo cuja fronteira decisiva é toda bloqueada. Um
+/// nó aqui projeta <see cref="EstadoSatisfacao.Indeterminado"/> na agregação, mas não emite
+/// consequência nem orientação — distingue "bloqueado" (não pedir) de "indeterminado no ponto
+/// devido" (pode emitir), que compartilham o mesmo estado. Vazio quando não há fronteira a mascarar.
+/// </param>
 public sealed record ResultadoResolucaoArvore(
     IReadOnlyDictionary<Guid, EstadoSatisfacao> EstadosPorNo,
     IReadOnlyDictionary<Guid, StatusResolucaoExigencia> StatusPorExigencia,
     IReadOnlyList<ConsequenciaEmitida> ConsequenciasVigentes,
     IReadOnlyList<PendenciaDeOrientacao> PendenciasDeOrientacao,
-    IReadOnlyList<StatusPorEntidade> StatusPorEntidade);
+    IReadOnlyList<StatusPorEntidade> StatusPorEntidade,
+    IReadOnlySet<Guid> NosEmissaoSuprimida);
