@@ -1360,7 +1360,29 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return coerencia;
         }
 
-        return PendenciaDaReferenciaTemporalFatos();
+        if (PendenciaDaReferenciaTemporalFatos() is { } referenciaTemporal)
+        {
+            return referenciaTemporal;
+        }
+
+        return PendenciaDoGrafoConjunto();
+    }
+
+    /// <summary>
+    /// O grafo de dependência conjunto (campos, fatos, exigências e as quatro arestas, §6) tem
+    /// de ser um DAG para ser congelável: a ordem topológica total que o snapshot congela (RN08)
+    /// não existe se houver ciclo. A construção do grafo (<see cref="ConstruirGrafoDependencia"/>)
+    /// já detecta o ciclo — aqui ela vira gate de publicação, antes de canonicalizar.
+    /// </summary>
+    /// <remarks>
+    /// O grafo ignora deliberadamente uma referência a fato ausente (ele projeta o que existe),
+    /// então este gate <b>não</b> prova sozinho que todo fato citado existe — essa é uma recusa
+    /// à parte (§7.3). Aqui só se garante a aciclicidade.
+    /// </remarks>
+    private DomainError? PendenciaDoGrafoConjunto()
+    {
+        Result<GrafoDependenciaConjunta> grafo = ConstruirGrafoDependencia();
+        return grafo.IsFailure ? grafo.Error : null;
     }
 
     /// <summary>
