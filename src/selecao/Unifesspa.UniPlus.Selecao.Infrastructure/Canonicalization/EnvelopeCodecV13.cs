@@ -71,7 +71,9 @@ public sealed class EnvelopeCodecV13 : IEnvelopeCodec
 
     public string SchemaVersion => "1.3";
 
-    public string AlgoritmoHash => "canonical-json/sha256@v1";
+    public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
+
+    public string AlgoritmoHash => Perfil.Algoritmo;
 
     public bool TemEncoder => true;
 
@@ -83,7 +85,7 @@ public sealed class EnvelopeCodecV13 : IEnvelopeCodec
     {
         ArgumentNullException.ThrowIfNull(versao);
 
-        Result<JsonObject> parse = EnvelopeCodecV11.Parsear(versao.ConfiguracaoCongeladaCanonica);
+        Result<JsonObject> parse = EnvelopeCodecV11.Parsear(Perfil, versao.ConfiguracaoCongeladaCanonica);
         if (parse.IsFailure)
         {
             return Result<EnvelopeReidratado>.Failure(parse.Error!);
@@ -371,7 +373,7 @@ public sealed class EnvelopeCodecV13 : IEnvelopeCodec
             };
         }
 
-        byte[] bytes = HashCanonicalComputer.ComputeSnapshotBytes(payload);
+        byte[] bytes = PerfilCanonicoV1.Instancia.Serializar(payload);
         return new SnapshotCanonico(bytes, SchemaVersion, AlgoritmoHash);
     }
 
@@ -781,7 +783,7 @@ public sealed class EnvelopeCodecV13 : IEnvelopeCodec
             .OrderBy(static e => e.ExigidoNaFaseId)
             .ThenBy(static e => e.TipoDocumentoOrigemId)
             .ThenBy(static e => System.Text.Encoding.UTF8.GetString(
-                HashCanonicalComputer.ComputeSnapshotBytes(SerializarExigenciaSemIdentidadeV13(e))),
+                PerfilCanonicoV1.Instancia.Serializar(SerializarExigenciaSemIdentidadeV13(e))),
                 StringComparer.Ordinal)
             // Achado de revisão (Story #554, PR #903): duas exigências byte-idênticas em
             // todo o resto (mesma fase, mesmo tipo, mesmo conteúdo) empatam na chave de
@@ -1078,7 +1080,7 @@ public sealed class EnvelopeCodecV13 : IEnvelopeCodec
     private static JsonArray OrdenarPorConteudoV13(IEnumerable<JsonObject> itens)
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
-            static item => System.Text.Encoding.UTF8.GetString(HashCanonicalComputer.ComputeSnapshotBytes(item)),
+            static item => System.Text.Encoding.UTF8.GetString(PerfilCanonicoV1.Instancia.Serializar(item)),
             StringComparer.Ordinal);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);

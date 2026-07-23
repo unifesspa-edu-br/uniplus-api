@@ -60,7 +60,9 @@ public sealed class EnvelopeCodecV14 : IEnvelopeCodec
 
     public string SchemaVersion => "1.4";
 
-    public string AlgoritmoHash => "canonical-json/sha256@v1";
+    public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
+
+    public string AlgoritmoHash => Perfil.Algoritmo;
 
     public bool TemEncoder => true;
 
@@ -94,7 +96,7 @@ public sealed class EnvelopeCodecV14 : IEnvelopeCodec
     {
         ArgumentNullException.ThrowIfNull(versao);
 
-        Result<JsonObject> parse = EnvelopeCodecV11.Parsear(versao.ConfiguracaoCongeladaCanonica);
+        Result<JsonObject> parse = EnvelopeCodecV11.Parsear(Perfil, versao.ConfiguracaoCongeladaCanonica);
         if (parse.IsFailure)
         {
             return Result<EnvelopeReidratado>.Failure(parse.Error!);

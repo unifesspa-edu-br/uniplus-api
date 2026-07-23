@@ -25,7 +25,9 @@ public sealed class EnvelopeCodecV10 : IEnvelopeCodec
 {
     public string SchemaVersion => "1.0";
 
-    public string AlgoritmoHash => "canonical-json/sha256@v1";
+    public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
+
+    public string AlgoritmoHash => Perfil.Algoritmo;
 
     public bool TemEncoder => false;
 

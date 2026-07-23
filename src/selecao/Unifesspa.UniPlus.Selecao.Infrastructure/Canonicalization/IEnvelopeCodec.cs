@@ -18,7 +18,18 @@ public interface IEnvelopeCodec
 {
     string SchemaVersion { get; }
 
-    /// <summary>Algoritmo de hash que esta versão emite — parte da evidência, não detalhe.</summary>
+    /// <summary>
+    /// Regras de bytes sob as quais esta versão foi congelada. É por aqui que o gate de forma
+    /// pergunta “estes bytes são canônicos?” — a pergunta só tem resposta <b>relativa a um
+    /// perfil</b>, e a de uma versão nunca é a de outra.
+    /// </summary>
+    IPerfilCanonico Perfil { get; }
+
+    /// <summary>
+    /// Algoritmo de hash que esta versão emite — parte da evidência, não detalhe. Deriva do
+    /// <see cref="Perfil"/>: o rótulo persistido e o código que produz os bytes têm de ser a
+    /// mesma coisa dita duas vezes, nunca dois literais que alguém mantém em sincronia.
+    /// </summary>
     string AlgoritmoHash { get; }
 
     bool TemEncoder { get; }

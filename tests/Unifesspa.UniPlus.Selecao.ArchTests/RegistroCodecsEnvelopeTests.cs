@@ -81,6 +81,42 @@ public sealed class RegistroCodecsEnvelopeTests
     }
 
     /// <summary>
+    /// Todo codec do assembly está no registro, e todo codec declara sob que <b>perfil de
+    /// bytes</b> emite.
+    /// </summary>
+    /// <remarks>
+    /// A varredura é por reflexão sobre os tipos concretos, e não sobre uma lista mantida aqui:
+    /// o caso que este teste existe para pegar é justamente o codec novo que alguém escreve e
+    /// esquece de registrar — invisível para qualquer teste que parta do registro. O
+    /// <c>AlgoritmoHash</c> conferido contra o perfil fecha o outro lado: o rótulo gravado em
+    /// <c>versao_configuracao.algoritmo_hash</c> tem de vir do mesmo objeto que produz os bytes,
+    /// nunca de um literal que alguém mantém em sincronia de memória.
+    /// </remarks>
+    [Fact(DisplayName = "CA-08 — todo codec do assembly está registrado e declara o perfil sob o qual emite")]
+    public void TodoCodec_EstaRegistrado_EDeclaraPerfil()
+    {
+        IReadOnlyList<IEnvelopeCodec> codecs =
+        [
+            .. typeof(RegistroCodecsEnvelope).Assembly.GetTypes()
+                .Where(static t => typeof(IEnvelopeCodec).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false })
+                .Select(static t => (IEnvelopeCodec)Activator.CreateInstance(t)!),
+        ];
+
+        codecs.Should().NotBeEmpty();
+
+        codecs.Select(static c => c.SchemaVersion).Order(StringComparer.Ordinal).Should().Equal(
+            Registro.Capacidades.Select(static c => c.SchemaVersion).Order(StringComparer.Ordinal),
+            "um codec escrito e não registrado é uma versão que o sistema sabe produzir e não sabe ler de volta");
+
+        foreach (IEnvelopeCodec codec in codecs)
+        {
+            codec.Perfil.Should().NotBeNull($"o codec '{codec.SchemaVersion}' tem de dizer sob que regras de bytes ele emite");
+            codec.AlgoritmoHash.Should().Be(codec.Perfil.Algoritmo,
+                $"o algoritmo declarado pelo codec '{codec.SchemaVersion}' é o do seu perfil, não um literal paralelo");
+        }
+    }
+
+    /// <summary>
     /// O registro pode estar perfeitamente coerente consigo mesmo e ainda assim divergir do
     /// que a <b>produção grava</b>: <c>Publicar</c> e <c>Retificar</c> injetam o
     /// <see cref="ISnapshotPublicacaoCanonicalizer"/>, não o registro. Este teste amarra os

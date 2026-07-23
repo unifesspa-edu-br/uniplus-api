@@ -288,6 +288,14 @@ public static class HashCanonicalComputer
     /// bytes uma vez, na publicação; o hash é derivado deles (nunca
     /// recalculado a partir de uma forma intermediária).
     /// </summary>
+    /// <remarks>
+    /// <strong>Este método é a implementação do perfil <c>canonical-json/sha256@v1</c></strong>
+    /// — o perfil sob o qual todo envelope já publicado foi congelado. Ele não muda: alterar
+    /// aqui a ordenação, a tabela de escapes, a forma dos números ou o tratamento de
+    /// <c>null</c> reescreveria retroativamente os bytes de certames encerrados, que deixariam
+    /// de reproduzir o próprio hash. Um perfil com outras regras se escreve <b>ao lado</b>,
+    /// com serialização própria, e vale só para as versões de schema que nascerem depois dele.
+    /// </remarks>
     public static byte[] ComputeSnapshotBytes(JsonObject payload)
     {
         ArgumentNullException.ThrowIfNull(payload);

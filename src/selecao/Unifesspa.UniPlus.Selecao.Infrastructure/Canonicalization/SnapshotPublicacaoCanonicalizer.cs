@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// ADR-0109). Projeta a configuração viva do agregado num payload de 18 chaves
 /// — <b>14 blocos reais + 4 stubs</b> <c>{"status":"nao_construido"}</c> para as
 /// dimensões que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
-/// devolve os bytes via <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/>.
+/// devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) é um dos 14: já carrega
 /// <c>obrigatoriedades[]</c> real, com <c>exigencias[]</c> (#554) ainda
 /// aninhada como stub — o bloco nasce parcialmente real. <c>vagas</c> (issue
@@ -29,9 +29,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// todo decimal por <see cref="HashCanonicalComputer.SerializeDecimalCanonical"/>
 /// com a escala declarada do campo; instantes por
 /// <see cref="HashCanonicalComputer.SerializeInstantCanonical"/>. A
-/// reordenação de chaves e a serialização byte-estável final acontecem em
-/// <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/> — este tipo só
-/// monta o <see cref="JsonObject"/> com os valores já normalizados.
+/// reordenação de chaves e a serialização byte-estável final acontecem no
+/// <see cref="IPerfilCanonico"/> — este tipo só monta o <see cref="JsonObject"/>
+/// com os valores já normalizados. A normalização NFC é responsabilidade daqui,
+/// não do perfil: o perfil serializa o nó que recebe, e uma sequência combinante
+/// que chegasse até ele produziria bytes distintos dos da forma pré-composta.
 /// </para>
 /// <para>
 /// <strong>Leitura do bloco "vagas" vs. "distribuição" (ADR-0100 item 10):</strong>
@@ -87,7 +89,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// </remarks>
     internal const string SchemaVersionAtual = "1.4";
 
-    private const string AlgoritmoHashAtual = "canonical-json/sha256@v1";
+    /// <summary>
+    /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
+    /// digest, identificadas à parte da <see cref="SchemaVersionAtual"/>. O rótulo gravado em
+    /// <c>versao_configuracao.algoritmo_hash</c> vem daqui, do mesmo objeto que produz os
+    /// bytes: literal e código andando juntos por construção, não por disciplina.
+    /// </summary>
+    private static readonly PerfilCanonicoV1 PerfilAtual = PerfilCanonicoV1.Instancia;
+
     private const int EscalaPadrao = 4;
     private const int EscalaPercentual = 2;
 
@@ -150,8 +159,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             };
         }
 
-        byte[] bytes = HashCanonicalComputer.ComputeSnapshotBytes(payload);
-        return new SnapshotCanonico(bytes, SchemaVersionAtual, AlgoritmoHashAtual);
+        byte[] bytes = PerfilAtual.Serializar(payload);
+        return new SnapshotCanonico(bytes, SchemaVersionAtual, PerfilAtual.Algoritmo);
     }
 
     private static JsonObject SerializarPeriodo(DadosEdital dados) => new()
@@ -616,7 +625,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             .OrderBy(static e => e.ExigidoNaFaseId)
             .ThenBy(static e => e.TipoDocumentoOrigemId)
             .ThenBy(static e => System.Text.Encoding.UTF8.GetString(
-                HashCanonicalComputer.ComputeSnapshotBytes(SerializarExigenciaSemIdentidade(e))),
+                PerfilAtual.Serializar(SerializarExigenciaSemIdentidade(e))),
                 StringComparer.Ordinal)
             // Achado de revisão (Story #554, PR #903): duas exigências byte-idênticas em
             // todo o resto (mesma fase, mesmo tipo, mesmo conteúdo) empatam na chave de
@@ -913,7 +922,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonArray OrdenarPorConteudo(IEnumerable<JsonObject> itens)
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
-            static item => System.Text.Encoding.UTF8.GetString(HashCanonicalComputer.ComputeSnapshotBytes(item)),
+            static item => System.Text.Encoding.UTF8.GetString(PerfilAtual.Serializar(item)),
             StringComparer.Ordinal);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
