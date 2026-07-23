@@ -79,6 +79,18 @@ public sealed record RegrasDerivacaoFato
         }
 
         HashSet<string> citados = new(regras.SelectMany(static r => r.FatosCitados), StringComparer.Ordinal);
+
+        // Auto-referência: uma regra que cita o próprio fato derivado exigiria que ele já estivesse
+        // resolvido para ser computado — o gate do motor o manteria indeterminado para sempre, ou o
+        // decidiria por um valor pré-computado obsoleto. É recusada no cadastro.
+        string codigoNormalizado = codigoFato.Trim();
+        if (citados.Contains(codigoNormalizado))
+        {
+            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
+                RegrasDerivacaoFatoErrorCodes.DerivacaoAutorreferente,
+                $"A derivação de '{codigoNormalizado}' cita o próprio fato — um derivado não pode depender de si mesmo."));
+        }
+
         HashSet<string> declarados = new(dependenciasDeclaradas, StringComparer.Ordinal);
 
         if (!citados.SetEquals(declarados))
@@ -107,4 +119,5 @@ public static class RegrasDerivacaoFatoErrorCodes
     public const string SemRegras = "RegrasDerivacaoFato.SemRegras";
     public const string ContribuiForaDoDominio = "RegrasDerivacaoFato.ContribuiForaDoDominio";
     public const string DependenciasIncoerentes = "RegrasDerivacaoFato.DependenciasIncoerentes";
+    public const string DerivacaoAutorreferente = "RegrasDerivacaoFato.DerivacaoAutorreferente";
 }
