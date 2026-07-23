@@ -145,8 +145,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
 | [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
 | [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111; emendada em 2026-07-22: `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem | accepted | 2026-07-19 |
+| [0117](0117-politica-de-analise-estatica-e-supressao.md) | Política de análise estática e supressão de diagnósticos: `AnalysisLevel=latest-recommended` com opt-in/opt-out nomeado no `.editorconfig` e critério de supressão por alcance | proposed | 2026-07-22 |
 
-> **Nota de numeração:** a sequência de `0001` a `0116` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0117+`.
+> **Nota de numeração:** a sequência de `0001` a `0117` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0118+`.
 
 ## Como adicionar um novo ADR
 
