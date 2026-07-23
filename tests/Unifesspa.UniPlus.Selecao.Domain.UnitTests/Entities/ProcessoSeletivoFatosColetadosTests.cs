@@ -89,23 +89,21 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     }
 
     /// <summary>
-    /// Uma pré-condição pode citar um fato <b>derivado</b>, que não tem Ordem de coleta e por
-    /// isso não é checável na definição isolada (§7.3a): a definição relaxou. A garantia de que
-    /// o fato citado existe — em coletados ∪ derivados — passou para o gate de pré-canonicalização.
-    /// Aqui o fato citado (<c>PCD</c>) não é coletado nem derivado, então a definição aceita e a
-    /// recusa aflora ao publicar.
+    /// Uma pré-condição de campo só cita fato <b>coletado</b>, nunca derivado: o resolvedor de
+    /// estado dos fatos percorre só os coletados e não aciona o motor de derivação, de modo que
+    /// uma pré-condição sobre um derivado avaliaria indeterminada para sempre. A recusa é na
+    /// definição, antes de o campo virar configuração.
     /// </summary>
-    [Fact(DisplayName = "Pré-condição que cita fato inexistente passa na definição, mas é recusada no gate de pré-canonicalização")]
-    public void CitaFatoInexistente_RecusadoNoGateDePublicacao()
+    [Fact(DisplayName = "Pré-condição que cita fato não coletado pelo processo é recusada")]
+    public void CitaFatoNaoColetado_Recusado()
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        processo.DefinirFatosColetados([Fato("CONCORRER_PCD", 0, "PCD")]).IsSuccess.Should().BeTrue(
-            "a definição isolada não tem os fatos derivados em mãos para checar a existência da citação");
+        Result resultado = processo.DefinirFatosColetados(
+            [Fato("CONCORRER_PCD", 0, "PCD")]);
 
-        processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
-        processo.PendenciaPreCanonicalizacao()!.Code
-            .Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+        resultado.IsFailure.Should().BeTrue("o gate ficaria preso a um fato que este processo nunca vai resolver");
+        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
