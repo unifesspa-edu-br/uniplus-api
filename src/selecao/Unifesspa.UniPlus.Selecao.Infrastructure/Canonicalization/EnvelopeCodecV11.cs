@@ -115,7 +115,9 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
 
     public string SchemaVersion => "1.1";
 
-    public string AlgoritmoHash => "canonical-json/sha256@v1";
+    public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
+
+    public string AlgoritmoHash => Perfil.Algoritmo;
 
     public bool TemEncoder => true;
 
@@ -178,7 +180,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
             };
         }
 
-        byte[] bytes = HashCanonicalComputer.ComputeSnapshotBytes(payload);
+        byte[] bytes = PerfilCanonicoV1.Instancia.Serializar(payload);
         return new SnapshotCanonico(bytes, SchemaVersion, AlgoritmoHash);
     }
 
@@ -612,7 +614,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     private static JsonArray OrdenarPorConteudoV11(IEnumerable<JsonObject> itens)
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
-            static item => System.Text.Encoding.UTF8.GetString(HashCanonicalComputer.ComputeSnapshotBytes(item)),
+            static item => System.Text.Encoding.UTF8.GetString(PerfilCanonicoV1.Instancia.Serializar(item)),
             StringComparer.Ordinal);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
@@ -629,7 +631,7 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     {
         ArgumentNullException.ThrowIfNull(versao);
 
-        Result<JsonObject> parse = Parsear(versao.ConfiguracaoCongeladaCanonica);
+        Result<JsonObject> parse = Parsear(Perfil, versao.ConfiguracaoCongeladaCanonica);
         if (parse.IsFailure)
         {
             return Result<EnvelopeReidratado>.Failure(parse.Error!);
@@ -688,8 +690,23 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     /// o parser escolheria uma) não é um envelope <c>1.1</c>, é outra coisa com o mesmo
     /// hash recomputado por quem o adulterou.
     /// </summary>
-    internal static Result<JsonObject> Parsear(byte[] bytes)
+    /// <remarks>
+    /// <para>
+    /// O <paramref name="perfil"/> é do <b>chamador</b>, não deste codec: os decoders das
+    /// versões seguintes reusam este parse, e "estar na forma canônica" é uma pergunta que só
+    /// tem resposta relativa às regras de bytes daquela versão. Fixar o perfil <c>v1</c> aqui
+    /// faria uma versão futura, emitida sob outro perfil, ser recusada dentro do próprio
+    /// decoder — depois de ter passado, corretamente, pelo gate do registro.
+    /// </para>
+    /// <para>
+    /// A checagem de forma repete a do <see cref="RegistroCodecsEnvelope"/> de propósito:
+    /// <c>Decodificar</c> é público e chamável direto, sem passar pelo registro.
+    /// </para>
+    /// </remarks>
+    internal static Result<JsonObject> Parsear(IPerfilCanonico perfil, byte[] bytes)
     {
+        ArgumentNullException.ThrowIfNull(perfil);
+
         JsonNode? node;
         try
         {
@@ -709,7 +726,18 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
                 "Os bytes congelados não são um objeto JSON."));
         }
 
-        byte[] recanonicalizado = HashCanonicalComputer.ComputeSnapshotBytes(payload);
+        byte[] recanonicalizado;
+        try
+        {
+            recanonicalizado = perfil.Serializar(payload);
+        }
+        catch (PayloadForaDoPerfilCanonicoException excecao)
+        {
+            return Result<JsonObject>.Failure(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"Os bytes congelados contêm o que o perfil '{perfil.Algoritmo}' não representa: {excecao.Message}"));
+        }
+
         if (!recanonicalizado.AsSpan().SequenceEqual(bytes))
         {
             return Result<JsonObject>.Failure(new DomainError(

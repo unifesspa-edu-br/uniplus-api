@@ -37,11 +37,58 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
     private readonly Dictionary<string, IEnvelopeCodec> _codecs;
 
     public RegistroCodecsEnvelope()
+        : this(
+            [new EnvelopeCodecV10(), new EnvelopeCodecV11(), new EnvelopeCodecV12(), new EnvelopeCodecV13(), new EnvelopeCodecV14()],
+            new EnvelopeCodecV14().SchemaVersion)
     {
-        IEnvelopeCodec[] codecs =
-            [new EnvelopeCodecV10(), new EnvelopeCodecV11(), new EnvelopeCodecV12(), new EnvelopeCodecV13(), new EnvelopeCodecV14()];
-        _codecs = codecs.ToDictionary(static c => c.SchemaVersion, StringComparer.Ordinal);
-        SchemaVersionDeEmissaoCorrente = new EnvelopeCodecV14().SchemaVersion;
+    }
+
+    /// <summary>
+    /// Registro montado com um conjunto explícito de codecs — o caminho por onde os testes
+    /// plugam um codec com perfil próprio para provar que os gates perguntam ao <b>perfil da
+    /// versão</b>, e não a um serializador global. As invariantes do registro de produção
+    /// valem aqui igualmente: sem elas, um registro parcial passaria despercebido justamente
+    /// no teste que deveria provar o contrário.
+    /// </summary>
+    internal RegistroCodecsEnvelope(IEnumerable<IEnvelopeCodec> codecs, string schemaVersionDeEmissaoCorrente)
+    {
+        ArgumentNullException.ThrowIfNull(codecs);
+        ArgumentException.ThrowIfNullOrWhiteSpace(schemaVersionDeEmissaoCorrente);
+
+        IEnvelopeCodec[] materializados = [.. codecs];
+        if (materializados.Length == 0)
+        {
+            throw new ArgumentException("Um registro de codecs vazio não reidrata envelope nenhum.", nameof(codecs));
+        }
+
+        string? repetida = materializados
+            .GroupBy(static c => c.SchemaVersion, StringComparer.Ordinal)
+            .FirstOrDefault(static grupo => grupo.Count() > 1)?.Key;
+        if (repetida is not null)
+        {
+            throw new ArgumentException(
+                $"A versão '{repetida}' aparece em mais de um codec — qual deles reidrata um envelope dela seria indeterminado.",
+                nameof(codecs));
+        }
+
+        _codecs = materializados.ToDictionary(static c => c.SchemaVersion, StringComparer.Ordinal);
+
+        if (!_codecs.TryGetValue(schemaVersionDeEmissaoCorrente, out IEnvelopeCodec? corrente))
+        {
+            throw new ArgumentException(
+                $"A versão de emissão corrente '{schemaVersionDeEmissaoCorrente}' não tem codec no registro.",
+                nameof(schemaVersionDeEmissaoCorrente));
+        }
+
+        if (!corrente.TemEncoder || !corrente.TemDecoder)
+        {
+            throw new ArgumentException(
+                $"A versão de emissão corrente '{schemaVersionDeEmissaoCorrente}' precisa de codec completo: sem decoder, o " +
+                "descarte de tudo o que ela congelar seria irreversível; sem encoder, seria irreverificável.",
+                nameof(schemaVersionDeEmissaoCorrente));
+        }
+
+        SchemaVersionDeEmissaoCorrente = schemaVersionDeEmissaoCorrente;
     }
 
     public string SchemaVersionDeEmissaoCorrente { get; }
@@ -82,8 +129,10 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 $"'{codec.SchemaVersion}' emite '{codec.AlgoritmoHash}'."));
         }
 
-        // O gate. Antes de qualquer parse: os bytes produzem o hash persistido?
-        string hash = HashCanonicalComputer.ComputeSha256Hex(versao.ConfiguracaoCongeladaCanonica);
+        // O gate. Antes de qualquer parse: os bytes produzem o hash persistido? O digest é o
+        // do PERFIL daquela versão — o algoritmo faz parte da evidência, e conferi-lo com
+        // outro seria comparar a prova consigo mesma pela régua errada.
+        string hash = codec.Perfil.HashHex(versao.ConfiguracaoCongeladaCanonica);
         if (!string.Equals(hash, versao.HashConfiguracao, StringComparison.Ordinal))
         {
             return Result<EnvelopeReidratado>.Failure(new DomainError(
@@ -92,7 +141,7 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 "a evidência não prova o que diz provar, e não se reidrata configuração a partir dela."));
         }
 
-        if (VerificarFormaCanonica(versao.ConfiguracaoCongeladaCanonica) is { } malformado)
+        if (VerificarFormaCanonica(codec.Perfil, versao.ConfiguracaoCongeladaCanonica) is { } malformado)
         {
             return Result<EnvelopeReidratado>.Failure(malformado);
         }
@@ -164,10 +213,11 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
     /// <para>
     /// O hash prova que os bytes são os que <b>foram gravados</b>. Não prova que eles são um
     /// <b>envelope</b>: quem adultera a coluna e recomputa o hash da linha passa pelo
-    /// primeiro gate inteiro. O que sobra é a <b>forma</b> — e ela é verificável sem
-    /// conhecer versão nenhuma: um envelope canônico (ADR-0100) é, por definição, o que
-    /// <c>ComputeSnapshotBytes</c> produz. Reserializar o que se leu tem de <b>reproduzir os
-    /// bytes</b>.
+    /// primeiro gate inteiro. O que sobra é a <b>forma</b> — e ela é verificável sem conhecer
+    /// a versão, mas não sem conhecer o <b>perfil</b>: um envelope canônico é, por definição,
+    /// o que o perfil daquela versão produz. Reserializar o que se leu tem de <b>reproduzir
+    /// os bytes</b>. Perguntar a um serializador global funcionaria enquanto houvesse um só
+    /// perfil e recusaria envelope legítimo no dia seguinte ao primeiro perfil novo.
     /// </para>
     /// <para>
     /// Isso recusa, de uma vez, chaves fora de ordem, espaços, e a chave <b>duplicada</b> —
@@ -176,7 +226,7 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
     /// ter forma canônica diferente, e a garantia não pode depender disso).
     /// </para>
     /// </remarks>
-    private static DomainError? VerificarFormaCanonica(byte[] bytes)
+    private static DomainError? VerificarFormaCanonica(IPerfilCanonico perfil, byte[] bytes)
     {
         JsonNode? node;
         try
@@ -197,7 +247,22 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
                 "Os bytes congelados não são um objeto JSON.");
         }
 
-        return HashCanonicalComputer.ComputeSnapshotBytes(payload).AsSpan().SequenceEqual(bytes)
+        byte[] recanonicalizado;
+        try
+        {
+            recanonicalizado = perfil.Serializar(payload);
+        }
+        catch (PayloadForaDoPerfilCanonicoException excecao)
+        {
+            // Um perfil estrito recusa o que não sabe representar. Vindo da LEITURA, isso é
+            // envelope malformado — recusa nomeada —, e não falha não tratada: quem grava a
+            // coluna à mão consegue produzir exatamente esse payload.
+            return new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"Os bytes congelados contêm o que o perfil '{perfil.Algoritmo}' não representa: {excecao.Message}");
+        }
+
+        return recanonicalizado.AsSpan().SequenceEqual(bytes)
             ? null
             : new DomainError(
                 ErrosCodecEnvelope.IntegridadeViolada,
