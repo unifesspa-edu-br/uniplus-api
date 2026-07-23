@@ -639,6 +639,12 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.fato_candidato.binding_prefixo_incoerente_com_origem",
                 "Prefixo do binding incoerente com a origem do fato")),
 
+        new(FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.fato_candidato.binding_referencia_regra_incoerente",
+                "Binding de regra de derivação referencia outro fato, não o próprio")),
+
         new(FatoCandidatoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,

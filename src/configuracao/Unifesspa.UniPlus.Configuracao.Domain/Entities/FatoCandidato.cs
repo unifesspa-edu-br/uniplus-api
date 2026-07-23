@@ -217,7 +217,7 @@ public sealed class FatoCandidato : EntityBase
             return Result<FatoCandidato>.Failure(pontoResolucaoResult.Error!);
         }
 
-        Result<string> bindingResult = ValidarBinding(binding, origem);
+        Result<string> bindingResult = ValidarBinding(binding, origem, codigoResult.Value!.Valor);
         if (bindingResult.IsFailure)
         {
             return Result<FatoCandidato>.Failure(bindingResult.Error!);
@@ -355,7 +355,7 @@ public sealed class FatoCandidato : EntityBase
         return Result<string>.Success(normalizado);
     }
 
-    private static Result<string> ValidarBinding(string binding, OrigemFato origem)
+    private static Result<string> ValidarBinding(string binding, OrigemFato origem, string codigo)
     {
         if (string.IsNullOrWhiteSpace(binding))
         {
@@ -390,6 +390,21 @@ public sealed class FatoCandidato : EntityBase
             return Result<string>.Failure(new DomainError(
                 FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem,
                 $"O prefixo do binding deve ser {esperado} para a origem {origem} (recebido \"{prefixo}\")."));
+        }
+
+        // REGRA_DERIVACAO referencia a regra de derivação do PRÓPRIO fato (ADR-0116): a referência
+        // após o prefixo tem de ser o código do fato. Sem isso, um fato poderia apontar para a regra
+        // de outro — e o metadado congelado descreveria uma derivação que não é a sua.
+        if (string.Equals(prefixo, PrefixoBindingDerivadoRegra, StringComparison.Ordinal))
+        {
+            string referencia = normalizado[(separador + 1)..];
+            if (!string.Equals(referencia, codigo, StringComparison.Ordinal))
+            {
+                return Result<string>.Failure(new DomainError(
+                    FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente,
+                    $"O binding \"{PrefixoBindingDerivadoRegra}:\" referencia a regra de derivação do próprio fato — "
+                    + $"a referência deve ser \"{codigo}\" (recebido \"{referencia}\")."));
+            }
         }
 
         return Result<string>.Success(normalizado);

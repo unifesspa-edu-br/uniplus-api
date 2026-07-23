@@ -256,6 +256,28 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem);
     }
 
+    [Fact(DisplayName = "REGRA_DERIVACAO cuja referência não é o código do próprio fato é recusado")]
+    public void Criar_BindingRegraDerivacaoReferenciaOutroFato_Falha()
+    {
+        Result<FatoCandidato> resultado = Criar(
+            codigo: "FAIXA_ETARIA", origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:MODALIDADE");
+
+        resultado.IsFailure.Should().BeTrue(
+            "a regra de derivação referenciada é a do próprio fato — apontar para outro congelaria metadado de derivação alheio");
+        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente);
+    }
+
+    [Fact(DisplayName = "REGRA_DERIVACAO cuja referência é o código do próprio fato é aceito")]
+    public void Criar_BindingRegraDerivacaoReferenciaProprioFato_Aceita()
+    {
+        Result<FatoCandidato> resultado = Criar(
+            codigo: "MODALIDADE", dominio: DominioFato.Categorico, valoresDominio: null,
+            cardinalidade: CardinalidadeFato.Multivalorado,
+            origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:MODALIDADE");
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
     [Fact(DisplayName = "A mensagem de prefixo incoerente lista os dois prefixos aceitos quando a origem é derivada")]
     public void Criar_BindingPrefixoIncoerente_Derivado_MensagemListaOsDois()
     {
@@ -270,7 +292,8 @@ public sealed class FatoCandidatoTests
     [Theory(DisplayName = "Binding com prefixo coerente com a origem é aceito")]
     [InlineData(OrigemFato.Declarado, "CAMPO_INSCRICAO:COR_RACA")]
     [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
-    [InlineData(OrigemFato.Derivado, "REGRA_DERIVACAO:MODALIDADE")]
+    // REGRA_DERIVACAO referencia o próprio fato: a referência bate com o código FATO_QUALQUER.
+    [InlineData(OrigemFato.Derivado, "REGRA_DERIVACAO:FATO_QUALQUER")]
     [InlineData(OrigemFato.Integracao, "INTEGRACAO:ANO_ENEM")]
     public void Criar_BindingPrefixoCoerenteComOrigem_Aceita(OrigemFato origem, string binding)
     {
