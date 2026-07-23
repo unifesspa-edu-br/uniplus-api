@@ -291,6 +291,23 @@ public sealed class MotorDerivacaoModalidadeTests
         resultado.Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.DependenciasIncoerentes);
     }
 
+    [Fact(DisplayName = "Derivação que cita o próprio fato é recusada — um derivado não depende de si mesmo")]
+    public void DerivacaoAutorreferente_Recusada()
+    {
+        // Uma regra de MODALIDADE cujo quando cita MODALIDADE: o motor exigiria MODALIDADE resolvida
+        // para computar MODALIDADE, deixando-a indeterminada para sempre.
+        RegraDerivacao regra = Regra("AC", ("MODALIDADE", true));
+
+        Result<RegrasDerivacaoFato> resultado = RegrasDerivacaoFato.Criar(
+            "MODALIDADE",
+            [regra],
+            dependenciasDeclaradas: ["MODALIDADE"],
+            RegrasDerivacaoModalidadeLei12711.DominioCanonico);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.DerivacaoAutorreferente);
+    }
+
     [Fact(DisplayName = "Dependência citada mas não declarada é recusada")]
     public void DependenciaCitadaNaoDeclarada_Recusada()
     {
