@@ -288,12 +288,14 @@ public sealed class ModalidadePersistenceTests
 
         Modalidade ac = semeadas.Single(m => m.Codigo.Valor == "AC");
         ac.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
+        ac.ComposicaoVagas.Should().Be(ComposicaoVagas.ResidualDoVo, "só a ampla concorrência é residual do volume de oferta");
         ac.RegraRemanejamento.Should().BeNull("ampla concorrência não remaneja como cota");
 
         semeadas.Where(m => m.Codigo.Valor.StartsWith('L'))
             .Should().OnlyContain(m => m.NaturezaLegal == NaturezaLegal.CotaReservada
+                && m.ComposicaoVagas == ComposicaoVagas.DentroDoVr
                 && m.RegraRemanejamento == RegraRemanejamento.SegueCascata,
-                "toda cota reservada segue a cascata legal de remanejamento");
+                "as cotas federais são sub-reservas dentro das vagas reservadas e seguem a cascata legal");
     }
 
     [Fact(DisplayName = "Seed: cada item satisfaz as invariantes de Modalidade.Criar (natureza × composição × remanejamento × args)")]
