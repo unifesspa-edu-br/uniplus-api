@@ -49,10 +49,19 @@ public static class ResolvedorArvoreSatisfacao
         ArvoreExigenciasCongelada? arvore,
         IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
-        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>? instanciasPorTipoEntidade = null)
+        IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>>? instanciasPorTipoEntidade = null,
+        IReadOnlySet<Guid>? exigenciasBloqueadas = null)
     {
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
+
+        // A fronteira de disponibilidade por candidato (Story #928, §6): uma exigência cujo fato
+        // gatilho ainda não alcançou a fronteira (produtor não executado ou gate de fase não
+        // satisfeito) está BLOQUEADA. BLOQUEADO não é um 6º estado da árvore — é máscara+projeção:
+        // a folha projeta-se em INDETERMINADO na agregação (mantém o pai pendente) E tem a emissão
+        // suprimida pelo predicado recursivo emissionBlocked. Ausência = nada bloqueado (a resolução
+        // no ponto devido, sem fronteira a mascarar).
+        IReadOnlySet<Guid> bloqueadas = exigenciasBloqueadas ?? new HashSet<Guid>();
 
         if (arvore is null)
         {
@@ -137,12 +146,17 @@ public static class ResolvedorArvoreSatisfacao
         List<ConsequenciaEmitida> consequenciasVigentes = [];
         List<PendenciaDeOrientacao> pendenciasDeOrientacao = [];
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo = [];
+        HashSet<Guid> nosEmissaoSuprimida = [];
 
         foreach (NoExigencia raiz in arvore.Raizes)
         {
             EstadoSatisfacao estadoRaiz = ResolverNo(
-                raiz, fatosResolvidos, apresentacoesPorExigenciaId, instancias, estados, statusPorExigencia, instanciasResolvidasPorNo);
-            EmitirFronteira(raiz, estadoRaiz, estados, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
+                raiz, fatosResolvidos, apresentacoesPorExigenciaId, instancias, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo);
+
+            // A máscara emissionBlocked é resolvida DEPOIS que a subárvore inteira tem estado — o
+            // predicado de um grupo depende do de todos os seus filhos decisivos.
+            CalcularEmissionBlocked(raiz, estados, bloqueadas, nosEmissaoSuprimida);
+            EmitirFronteira(raiz, estadoRaiz, estados, nosEmissaoSuprimida, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
         }
 
         // Story #922 — achata o status por (folha, instância) de TODAS as subárvores
@@ -155,7 +169,7 @@ public static class ResolvedorArvoreSatisfacao
                 par => new StatusPorEntidade(par.Key, instancia.EntidadeId, par.Value)))];
 
         return Result<ResultadoResolucaoArvore>.Success(new ResultadoResolucaoArvore(
-            estados, statusPorExigencia, consequenciasVigentes, pendenciasDeOrientacao, statusPorEntidade));
+            estados, statusPorExigencia, consequenciasVigentes, pendenciasDeOrientacao, statusPorEntidade, nosEmissaoSuprimida));
     }
 
     private static EstadoSatisfacao ResolverNo(
@@ -163,15 +177,18 @@ public static class ResolvedorArvoreSatisfacao
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
+        IReadOnlySet<Guid> bloqueadas,
         Dictionary<Guid, EstadoSatisfacao> estados,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
         EstadoSatisfacao estado = no.RepetePorEntidade is { } tipoEntidade
+            // Fronteira de disponibilidade não mascara dentro de subárvore repetida (fora do escopo
+            // do §6): as instâncias resolvem como antes, sem conjunto de bloqueio.
             ? ResolverNoRepetido(no, tipoEntidade, fatos, apresentacoes, instanciasPorTipoEntidade, instanciasResolvidasPorNo)
             : no.Tipo == TipoNo.Folha
-                ? ResolverFolha(no, fatos, apresentacoes, statusPorExigencia)
-                : ResolverGrupo(no, fatos, apresentacoes, instanciasPorTipoEntidade, estados, statusPorExigencia, instanciasResolvidasPorNo);
+                ? ResolverFolha(no, fatos, apresentacoes, bloqueadas, statusPorExigencia)
+                : ResolverGrupo(no, fatos, apresentacoes, instanciasPorTipoEntidade, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo);
 
         estados[no.Id] = estado;
         return estado;
@@ -212,10 +229,12 @@ public static class ResolvedorArvoreSatisfacao
             // descendente aqui dentro pode ser, ele mesmo, repetePorEntidade; um dicionário
             // vazio é seguro (nunca populado nesta subárvore).
             Dictionary<Guid, List<InstanciaResolvida>> semRepeticaoAninhada = [];
+            // Sem máscara de fronteira dentro da repetição (fora do escopo do §6) — conjunto vazio.
+            IReadOnlySet<Guid> semBloqueio = new HashSet<Guid>();
             EstadoSatisfacao estadoInstancia = no.Tipo == TipoNo.Folha
-                ? ResolverFolha(no, fatosDaInstancia, apresentacoesDaInstancia, statusDaInstancia)
+                ? ResolverFolha(no, fatosDaInstancia, apresentacoesDaInstancia, semBloqueio, statusDaInstancia)
                 : ResolverGrupo(
-                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorTipoEntidade,
+                    no, fatosDaInstancia, apresentacoesDaInstancia, instanciasPorTipoEntidade, semBloqueio,
                     estadosDaInstancia, statusDaInstancia, semRepeticaoAninhada);
 
             resolvidas.Add(new InstanciaResolvida(instancia.EntidadeId, estadoInstancia, estadosDaInstancia, statusDaInstancia));
@@ -262,9 +281,22 @@ public static class ResolvedorArvoreSatisfacao
         NoExigencia no,
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
+        IReadOnlySet<Guid> bloqueadas,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia)
     {
         DocumentoExigido folha = no.DocumentoExigido!;
+
+        // Fronteira de disponibilidade (Story #928, §6): enquanto o fato gatilho não alcançou a
+        // fronteira (produtor não executado ou fase não satisfeita), a folha está BLOQUEADA. Projeta
+        // INDETERMINADO — antes de avaliar o gatilho, exatamente como uma folha indeterminada —, e a
+        // emissão é suprimida por emissionBlocked. Ao desbloquear (o conjunto deixa de contê-la),
+        // reavalia normalmente, sem latch.
+        if (bloqueadas.Contains(folha.Id))
+        {
+            statusPorExigencia[folha.Id] = StatusResolucaoExigencia.AplicabilidadeIndeterminada;
+            return EstadoSatisfacao.Indeterminado;
+        }
+
         Ternario aplicavel = folha.AplicavelPara(fatos);
 
         // Story #916 (herdado): Indeterminado é resolvido fato-a-fato, SEMPRE — independente de já
@@ -321,12 +353,13 @@ public static class ResolvedorArvoreSatisfacao
         IReadOnlyDictionary<string, FatoResolvido> fatos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
         IReadOnlyDictionary<TipoEntidade, IReadOnlyList<InstanciaEntidade>> instanciasPorTipoEntidade,
+        IReadOnlySet<Guid> bloqueadas,
         Dictionary<Guid, EstadoSatisfacao> estados,
         Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia,
         Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
     {
         List<EstadoSatisfacao> estadosFilhos = [.. no.Filhos.Select(filho =>
-            ResolverNo(filho, fatos, apresentacoes, instanciasPorTipoEntidade, estados, statusPorExigencia, instanciasResolvidasPorNo))];
+            ResolverNo(filho, fatos, apresentacoes, instanciasPorTipoEntidade, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo))];
 
         return no.Tipo == TipoNo.GrupoE
             ? ResolverE(estadosFilhos)
@@ -391,10 +424,78 @@ public static class ResolvedorArvoreSatisfacao
     /// desdobra por instância (cada uma com seu próprio dicionário de estados descendentes,
     /// nunca o global) antes de aplicar a regra normal de fronteira.
     /// </summary>
+    /// <summary>
+    /// O predicado recursivo <c>emissionBlocked</c> (Story #928, §6), fonte única da máscara de
+    /// emissão sob a fronteira de disponibilidade. Preenche <paramref name="suprimidos"/> com os ids
+    /// dos nós cuja emissão é suprimida, num pós-percurso (o resultado de um grupo depende do dos
+    /// filhos). Regras: folha em pendente/indeterminado é <c>emissionBlocked</c> sse BLOQUEADA; grupo
+    /// em pendente/indeterminado é <c>emissionBlocked</c> sse a sua fronteira decisiva (filhos
+    /// não-satisfeitos e não-não-aplicáveis) é não vazia e TODOS os seus membros são
+    /// <c>emissionBlocked</c> recursivamente; <c>IMPOSSIVEL</c> decidido nunca é suprimido (emite o
+    /// inevitável); satisfeito/não-aplicável é irrelevante para a máscara. Sem latch — recalculado a
+    /// cada resolução, então o desbloqueio reavalia sozinho.
+    /// </summary>
+    private static bool CalcularEmissionBlocked(
+        NoExigencia no,
+        IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> bloqueadas,
+        HashSet<Guid> suprimidos)
+    {
+        // Subárvore repetida está fora do escopo da fronteira (§6): nunca é suprimida, e a sua emissão
+        // não consulta o conjunto global — não precisa percorrer os descendentes por-instância aqui.
+        if (no.RepetePorEntidade is not null)
+        {
+            return false;
+        }
+
+        EstadoSatisfacao estado = estados[no.Id];
+
+        if (no.Tipo == TipoNo.Folha)
+        {
+            // Uma folha só é emissionBlocked em pendente/indeterminado (a bloqueada projeta
+            // indeterminado). Satisfeita/não-aplicável é irrelevante para a máscara.
+            bool folhaBloqueada = estado is not (EstadoSatisfacao.Satisfeito or EstadoSatisfacao.NaoAplicavel)
+                && bloqueadas.Contains(no.DocumentoExigido!.Id);
+            if (folhaBloqueada)
+            {
+                suprimidos.Add(no.Id);
+            }
+
+            return folhaBloqueada;
+        }
+
+        // Grupo: percorre SEMPRE todos os filhos primeiro, para preencher o conjunto na subárvore
+        // inteira — inclusive quando o próprio grupo já é terminal (IMPOSSIVEL/SATISFEITO). Uma folha
+        // bloqueada sob um grupo IMPOSSIVEL continua suprimida, senão o grupo emitiria o inevitável
+        // (correto) mas também a folha bloqueada (errado).
+        List<bool> decisivosBloqueados = [];
+        foreach (NoExigencia filho in no.Filhos)
+        {
+            bool filhoBloqueado = CalcularEmissionBlocked(filho, estados, bloqueadas, suprimidos);
+            if (estados[filho.Id] is not (EstadoSatisfacao.Satisfeito or EstadoSatisfacao.NaoAplicavel))
+            {
+                decisivosBloqueados.Add(filhoBloqueado);
+            }
+        }
+
+        // O próprio grupo só é emissionBlocked em pendente/indeterminado com a fronteira decisiva não
+        // vazia e toda bloqueada; IMPOSSIVEL decidido emite o inevitável, satisfeito/NA é irrelevante.
+        bool grupoBloqueado = estado is not (EstadoSatisfacao.Impossivel
+            or EstadoSatisfacao.Satisfeito or EstadoSatisfacao.NaoAplicavel)
+            && decisivosBloqueados.Count > 0 && decisivosBloqueados.All(static b => b);
+        if (grupoBloqueado)
+        {
+            suprimidos.Add(no.Id);
+        }
+
+        return grupoBloqueado;
+    }
+
     private static void EmitirFronteira(
         NoExigencia no,
         EstadoSatisfacao estado,
         IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> nosEmissaoSuprimida,
         List<ConsequenciaEmitida> consequenciasVigentes,
         List<PendenciaDeOrientacao> pendenciasDeOrientacao,
         IReadOnlyDictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
@@ -402,6 +503,13 @@ public static class ResolvedorArvoreSatisfacao
         if (estado is EstadoSatisfacao.Satisfeito or EstadoSatisfacao.NaoAplicavel)
         {
             // Nó satisfeito/não-aplicável suprime toda a subárvore — nada abaixo vigora.
+            return;
+        }
+
+        // Máscara de emissão sob a fronteira (§6): um nó emissionBlocked não emite — nem a própria
+        // consequência de OU/N-de opaco, nem desce para os filhos. Ao desbloquear, reavalia.
+        if (nosEmissaoSuprimida.Contains(no.Id))
+        {
             return;
         }
 
@@ -422,8 +530,9 @@ public static class ResolvedorArvoreSatisfacao
 
                 List<ConsequenciaEmitida> consequenciasDaInstancia = [];
                 List<PendenciaDeOrientacao> pendenciasDaInstancia = [];
+                // Sem máscara de fronteira dentro da repetição (fora do escopo do §6) — conjunto vazio.
                 EmitirFronteiraNormal(
-                    no, instancia.Estado, instancia.EstadosDescendentes,
+                    no, instancia.Estado, instancia.EstadosDescendentes, new HashSet<Guid>(),
                     consequenciasDaInstancia, pendenciasDaInstancia, instanciasResolvidasPorNo);
 
                 consequenciasVigentes.AddRange(
@@ -435,13 +544,14 @@ public static class ResolvedorArvoreSatisfacao
             return;
         }
 
-        EmitirFronteiraNormal(no, estado, estados, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
+        EmitirFronteiraNormal(no, estado, estados, nosEmissaoSuprimida, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
     }
 
     private static void EmitirFronteiraNormal(
         NoExigencia no,
         EstadoSatisfacao estado,
         IReadOnlyDictionary<Guid, EstadoSatisfacao> estados,
+        IReadOnlySet<Guid> nosEmissaoSuprimida,
         List<ConsequenciaEmitida> consequenciasVigentes,
         List<PendenciaDeOrientacao> pendenciasDeOrientacao,
         IReadOnlyDictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo)
@@ -462,8 +572,11 @@ public static class ResolvedorArvoreSatisfacao
                     consequenciasVigentes.Add(new ConsequenciaEmitida(no.Id, TipoNo.GrupoOu, consequenciaGrupo));
                 }
 
-                // Opaco: os filhos NÃO emitem consequência individual — só orientação.
-                foreach (NoExigencia filho in no.Filhos.Where(filho => EhPendenteOuPior(estados[filho.Id])))
+                // Opaco: os filhos NÃO emitem consequência individual — só orientação. Um filho
+                // emissionBlocked (fronteira não alcançada) não gera nem orientação — não se pede o
+                // que ainda não está disponível.
+                foreach (NoExigencia filho in no.Filhos.Where(filho =>
+                    EhPendenteOuPior(estados[filho.Id]) && !nosEmissaoSuprimida.Contains(filho.Id)))
                 {
                     pendenciasDeOrientacao.Add(new PendenciaDeOrientacao(filho.Id));
                 }
@@ -480,7 +593,7 @@ public static class ResolvedorArvoreSatisfacao
                     EstadoSatisfacao estadoFilho = estados[filho.Id];
                     if (EhPendenteOuPior(estadoFilho))
                     {
-                        EmitirFronteira(filho, estadoFilho, estados, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
+                        EmitirFronteira(filho, estadoFilho, estados, nosEmissaoSuprimida, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
                     }
                 }
 

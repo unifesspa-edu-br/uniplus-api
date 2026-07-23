@@ -1002,6 +1002,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Result.Success();
     }
 
+    /// <summary>
+    /// Monta o grafo de dependência conjunto (Story #928, §6) a partir das três dimensões da
+    /// configuração que o alimentam — os fatos coletados (campo + fato + pré-condição), as regras de
+    /// derivação (fato derivado + dependências) e as exigências (gatilho) — e valida a sua
+    /// aciclicidade sobre as quatro classes de aresta juntas. Projeção read-only, sem mutar o
+    /// agregado: um ciclo volta como erro nomeado, nunca lança. O congelamento do grafo no envelope e
+    /// a recusa de publicação por ciclo são da fatia de determinismo (§7).
+    /// </summary>
+    public Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia() =>
+        GrafoDependenciaConjunta.Construir(_fatosColetados, _regrasDerivacao, _documentosExigidos);
+
     private static DomainError? ValidarGrafoDeFatos(IReadOnlyList<FatoColetado> fatos)
     {
         Dictionary<string, FatoColetado> porCodigo = new(StringComparer.Ordinal);

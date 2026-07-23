@@ -34,6 +34,17 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
 
     public IReadOnlyCollection<RegraDerivacaoConfigurada> Regras => _regras.AsReadOnly();
 
+    /// <summary>
+    /// Códigos dos fatos citados nos predicados <c>quando</c> de todas as regras, sem repetição — a
+    /// lista de dependências da derivação. Recomputada dos citados, nunca persistida (§927), e usada
+    /// como aresta de <see cref="Enums.TipoArestaGrafo.Derivacao"/> no grafo conjunto (§928, §6).
+    /// </summary>
+    public IReadOnlyCollection<string> FatosCitados =>
+        [.. _regras
+            .SelectMany(static r => r.Condicoes)
+            .Select(static c => c.Fato)
+            .Distinct(StringComparer.Ordinal)];
+
     private ConfiguracaoDerivacaoFato() { }
 
     public static Result<ConfiguracaoDerivacaoFato> Criar(
