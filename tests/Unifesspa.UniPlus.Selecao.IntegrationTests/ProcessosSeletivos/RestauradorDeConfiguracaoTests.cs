@@ -342,8 +342,8 @@ public sealed class RestauradorDeConfiguracaoTests
         // (nova na 1.4), então a fonte é o codec 1.3 CONGELADO, não o vivo.
         DadosEdital dados = CorpusEnvelope.DadosRicos();
         EntradaCanonicalizacao entrada = new(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos);
-        SnapshotCanonico congelado = new EnvelopeCodecV13().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("1.3", "pré-condição: metadadosFatos só existe a partir da 1.3");
+        SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
+        congelado.SchemaVersion.Should().Be("0.0.1", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -361,120 +361,11 @@ public sealed class RestauradorDeConfiguracaoTests
         // incluindo o bloco metadadosFatos, que só sobreviveu porque veio inteiro dentro do
         // envelope decodificado (EnvelopeReidratado.MetadadosFatosCongelados), nunca porque
         // foi reconsultado.
-        new EnvelopeCodecV13().Codificar(new EntradaCanonicalizacao(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos)).Bytes
+        new EnvelopeCodec().Codificar(new EntradaCanonicalizacao(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
     }
 
-    /// <summary>
-    /// Toda versão anterior à 1.4 nunca serializou <c>arvoreSatisfacao</c> — o decoder dela
-    /// devolve <c>NosExigencia</c> sempre vazio,
-    /// mesmo com <c>documentosExigidos.exigencias</c> populado. Sem
-    /// <c>RegistroCodecsEnvelope.SincronizarArvoreComDocumentosExigidos</c>, restaurar uma
-    /// versão legada e republicá-la sob o encoder 1.4 emitiria <c>arvoreSatisfacao: []</c>
-    /// enquanto a exigência continua viva em <c>documentosExigidos</c> — o resolvedor de
-    /// satisfação (que opera sobre a árvore) veria zero obrigações documentais para um
-    /// processo que na verdade tem uma exigência.
-    /// </summary>
-    [Fact(DisplayName = "Story #923: restaurar uma versão 1.3 (sem arvoreSatisfacao) sintetiza a raiz-folha e republica corretamente sob a 1.4")]
-    public void Restaurar_VersaoLegadaSemArvoreSerializada_SintetizaRaizFolhaERepublicaSobA14()
-    {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        Guid faseId = processo.CronogramaFases.First().Id;
-
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, tipoDocumentoOrigemId: Guid.CreateVersion7(), tipoDocumentoCodigo: "IDENTIDADE",
-            tipoDocumentoNome: "Documento de identidade", tipoDocumentoCategoria: "PESSOAL",
-            aplicabilidade: Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-
-        DadosEdital dados = CorpusEnvelope.DadosRicos();
-        EntradaCanonicalizacao entrada = new(processo, dados, CorpusEnvelope.HashDocumento);
-        SnapshotCanonico congelado = new EnvelopeCodecV13().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("1.3", "pré-condição: a 1.3 nunca serializou arvoreSatisfacao");
-
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System);
-        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        VersaoConfiguracao versao = publicacao.Value!;
-
-        RegistroCodecsEnvelope registro = new();
-        RestauradorDeConfiguracao restaurador = new(registro);
-        Result resultado = restaurador.Restaurar(processo, versao);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-
-        NoExigencia raizSintetizada = processo.RaizesDeExigencia.Should().ContainSingle(
-            "a versão 1.3 tinha uma exigência real, mesmo sem árvore serializada — a reidratação sintetiza a raiz " +
-            "achatada pré-Story #920 em vez de deixar a árvore vazia").Which;
-        raizSintetizada.Tipo.Should().Be(TipoNo.Folha);
-        raizSintetizada.DocumentoExigido.Should().NotBeNull();
-        raizSintetizada.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("IDENTIDADE");
-
-        SnapshotCanonico recodificadoSobA14 = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, CorpusEnvelope.HashDocumento));
-        recodificadoSobA14.SchemaVersion.Should().Be("1.4");
-
-        JsonArray arvore = EnvelopeCodecRoundTripTests.Envelope(recodificadoSobA14)["arvoreSatisfacao"]!.AsArray();
-        arvore.Should().ContainSingle(
-            "sem a síntese, republicar este processo legado sob o encoder 1.4 emitiria arvoreSatisfacao vazio " +
-            "enquanto documentosExigidos.exigencias continua com a exigência — perda silenciosa de obrigação " +
-            "documental para o resolvedor de satisfação, que opera sobre a árvore");
-    }
-
-    /// <summary>
-    /// A raiz sintetizada por <see cref="NoExigencia.SintetizarRaizesLegadas"/> tem de ter
-    /// o mesmo Id em toda restauração da mesma versão — do contrário, cada descarte/
-    /// restauração produziria um Id de nó diferente para a MESMA exigência congelada, e uma
-    /// republicação subsequente sob a 1.4 bateria o acaso da última restauração no hash
-    /// canônico, não o conteúdo real da configuração.
-    /// </summary>
-    [Fact(DisplayName = "Story #923: sintetizar a raiz-folha de uma versão 1.3 é determinístico — restaurar duas vezes produz o MESMO Id de nó")]
-    public void Restaurar_VersaoLegadaSemArvoreSerializada_SinteseDeRaizEDeterministica()
-    {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        Guid faseId = processo.CronogramaFases.First().Id;
-
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, tipoDocumentoOrigemId: Guid.CreateVersion7(), tipoDocumentoCodigo: "IDENTIDADE",
-            tipoDocumentoNome: "Documento de identidade", tipoDocumentoCategoria: "PESSOAL",
-            aplicabilidade: Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-
-        DadosEdital dados = CorpusEnvelope.DadosRicos();
-        EntradaCanonicalizacao entrada = new(processo, dados, CorpusEnvelope.HashDocumento);
-        SnapshotCanonico congelado = new EnvelopeCodecV13().Codificar(entrada);
-
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System);
-        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        VersaoConfiguracao versao = publicacao.Value!;
-
-        RegistroCodecsEnvelope registro = new();
-        RestauradorDeConfiguracao restaurador = new(registro);
-
-        restaurador.Restaurar(processo, versao).IsSuccess.Should().BeTrue();
-        Guid idPrimeiraRestauracao = processo.RaizesDeExigencia.Single().Id;
-
-        restaurador.Restaurar(processo, versao).IsSuccess.Should().BeTrue();
-        Guid idSegundaRestauracao = processo.RaizesDeExigencia.Single().Id;
-
-        idSegundaRestauracao.Should().Be(idPrimeiraRestauracao,
-            "a raiz sintetizada usa o Id do próprio DocumentoExigido, não um Guid aleatório novo a cada chamada — " +
-            "duas restaurações da mesma versão legada têm de produzir o MESMO Id de nó");
-        idPrimeiraRestauracao.Should().Be(exigencia.Id,
-            "a derivação determinística mais simples: a raiz sintetizada reusa o Id do DocumentoExigido como Id " +
-            "do nó");
-    }
-
-    [Fact(DisplayName = "Uma versão que não reidrata (1.0) faz a restauração falhar sem tocar no agregado")]
+    [Fact(DisplayName = "Uma versão de schema desconhecido faz a restauração falhar sem tocar no agregado")]
     public void VersaoNaoReidratavel_Falha()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
@@ -484,7 +375,7 @@ public sealed class RestauradorDeConfiguracaoTests
         VersaoConfiguracao versao10 = VersaoConfiguracao.Abrir(
             processo.Id,
             bytes,
-            schemaVersion: "1.0",
+            schemaVersion: "9.9",
             CorpusEnvelope.Codec.AlgoritmoHash,
             atoCriadorId: CorpusEnvelope.AtoAbertura,
             atoCriadorHash: CorpusEnvelope.HashDocumento,
@@ -496,7 +387,7 @@ public sealed class RestauradorDeConfiguracaoTests
         Result resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao10);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoNaoReidratavel);
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoDesconhecida);
 
         CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes
             .Should().Equal(antes, "uma restauração recusada não altera a configuração");

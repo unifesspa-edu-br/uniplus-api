@@ -89,7 +89,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// folha da árvore referencia sua exigência pelo mesmo <c>exigenciaId</c> já congelado
     /// em <c>documentosExigidos.exigencias[].exigenciaId</c>, sem duplicar conteúdo.
     /// </remarks>
-    internal const string SchemaVersionAtual = "1.4";
+    internal const string SchemaVersionAtual = "0.0.1";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e

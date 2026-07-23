@@ -37,9 +37,7 @@ public sealed class RegistroCodecsEnvelope : IRegistroCodecsEnvelope
     private readonly Dictionary<string, IEnvelopeCodec> _codecs;
 
     public RegistroCodecsEnvelope()
-        : this(
-            [new EnvelopeCodecV10(), new EnvelopeCodecV11(), new EnvelopeCodecV12(), new EnvelopeCodecV13(), new EnvelopeCodecV14()],
-            new EnvelopeCodecV14().SchemaVersion)
+        : this([new EnvelopeCodec()], new EnvelopeCodec().SchemaVersion)
     {
     }
 

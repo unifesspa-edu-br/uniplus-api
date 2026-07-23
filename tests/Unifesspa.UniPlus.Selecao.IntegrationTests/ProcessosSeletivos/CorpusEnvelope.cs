@@ -36,7 +36,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 /// </remarks>
 internal static class CorpusEnvelope
 {
-    internal static readonly EnvelopeCodecV11 Codec = new();
+    internal static readonly EnvelopeCodec Codec = new();
     internal static readonly RegistroCodecsEnvelope Registro = new();
 
     internal const string HashDocumento = "1111111111111111111111111111111111111111111111111111111111111111";
@@ -145,14 +145,15 @@ internal static class CorpusEnvelope
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
             ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirCronogramaFases([FaseInscricao(), FaseResultadoPreliminarComRecurso()], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante)], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         return processo;
     }
 
     /// <summary>Fase 1: coleta inscrição, sem ato produzido — a origem é InscricaoPropria.</summary>
-    private static FaseCronograma FaseInscricao() => FaseCronograma.Criar(
+    private static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(
+        id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000001"),
         ordem: 1,
         faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"),
         codigo: "INSCRICAO",
@@ -168,7 +169,7 @@ internal static class CorpusEnvelope
         atoProduzidoCodigo: null,
         atoProduzidoEfeitoIrreversivel: false,
         bancasRequeridas: [],
-        regraRecurso: null).Value!;
+        regraRecurso: null);
 
     /// <summary>
     /// Fase 2: agrupa as três etapas, produz o resultado preliminar (efeito irreversível),
@@ -176,7 +177,8 @@ internal static class CorpusEnvelope
     /// 1ª instância com valor (5 dias corridos), a 2ª <b>nula</b> (não bloqueia — o caso
     /// normal do Ingresso via judicial). É o ramo mais rico do bloco <c>cronogramaFases</c>.
     /// </summary>
-    private static FaseCronograma FaseResultadoPreliminarComRecurso() => FaseCronograma.Criar(
+    private static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0) => FaseCronograma.Reidratar(
+        id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         ordem: 2,
         faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"),
         codigo: "RESULTADO_PRELIMINAR",
@@ -204,7 +206,7 @@ internal static class CorpusEnvelope
                 SuspensividadePrimeiraInstanciaValor: 5.0000m,
                 SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.Dias,
                 SuspensividadeSegundaInstanciaValor: null,
-                SuspensividadeSegundaInstanciaUnidade: null)).Value!).Value!;
+                SuspensividadeSegundaInstanciaUnidade: null)).Value!);
 
     /// <summary>
     /// Oferta sob a Lei 12.711: exige a referência demográfica (INV-5) e as 8 modalidades

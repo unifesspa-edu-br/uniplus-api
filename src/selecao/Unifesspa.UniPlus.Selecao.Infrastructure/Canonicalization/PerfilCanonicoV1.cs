@@ -1,50 +1,54 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O perfil com que todo envelope das versões <c>1.0</c> a <c>1.4</c> foi congelado —
-/// <c>canonical-json/sha256@v1</c>. <b>Congelado</b>: descreve o que já está publicado, e por
-/// isso não muda mais.
+/// As regras de bytes do envelope de congelamento — <c>canonical-json/sha256@v1</c>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// As regras, tais como são (ADR-0100):
+/// A forma, tal como é:
 /// </para>
 /// <list type="number">
 ///   <item>chaves de todo objeto reordenadas recursivamente por comparação ordinal; arrays
 ///   preservam a ordem, que é semântica;</item>
-///   <item><c>null</c> explícito é <b>preservado</b> — o envelope distingue “campo ausente”
-///   de “campo presente e vazio”, e blocos publicados dependem disso (o número do ato ainda
-///   não atribuído, por exemplo);</item>
-///   <item>serialização por <c>Utf8JsonWriter</c> sem indentação e <b>sem encoder próprio</b>,
-///   o que significa o encoder padrão do runtime: escapa aspas, contrabarra e controles nas
-///   formas curtas, e escapa em <c>\uXXXX</c> com <b>hex maiúsculo</b> tudo o que estiver fora
-///   do latim básico — inclusive os caracteres sensíveis a HTML (<c>&lt;</c>, <c>&gt;</c>,
-///   <c>&amp;</c>, <c>'</c>, <c>+</c>) e toda letra acentuada;</item>
+///   <item>toda string de negócio normalizada para <b>NFC</b> — a forma pré-composta e a
+///   sequência com acento combinante são o mesmo texto, e têm de virar os mesmos bytes;</item>
+///   <item>todo número é <b>inteiro de 64 bits</b> na forma canônica (<c>-0</c> vira <c>0</c>,
+///   sem zero à esquerda, sem expoente): o léxico com que o valor entrou não sobrevive. Um
+///   número fracionário ou fora do alcance de <see cref="long"/> é <b>recusado</b>, não
+///   aproximado;</item>
+///   <item><c>null</c> explícito é <b>preservado</b> — o envelope distingue "campo ausente" de
+///   "campo presente e vazio";</item>
+///   <item>escape mínimo: aspa e contrabarra e os cinco controles com forma curta
+///   (<c>\" \\ \b \t \n \f \r</c>), os demais controles como <c>\u00xx</c>, e <b>todo o resto
+///   literal</b> — inclusive acentuação e os caracteres que só seriam perigosos dentro de HTML
+///   (o envelope nunca é interpolado em HTML). É o que o encoder relaxado do runtime emite;</item>
 ///   <item>digest SHA-256, hex minúsculo, sobre os bytes assim produzidos.</item>
 /// </list>
 /// <para>
-/// O item 3 nunca foi decisão deliberada — é o comportamento padrão do serializador, e é
-/// exatamente por isso que ele precisa estar escrito e coberto por vetores fixos. Um perfil
-/// posterior pode preferir literais UTF-8 e hex minúsculo; o que ele não pode é <b>ser este</b>.
-/// </para>
-/// <para>
-/// A implementação delega a <see cref="HashCanonicalComputer"/>, que continua sendo o código
-/// v1 compartilhado. A consequência prática, e o motivo de este tipo existir: um perfil novo
-/// se escreve <b>ao lado</b>, com serialização própria — nunca editando aquele computador, que
-/// hoje está no caminho dos bytes de todo envelope já publicado.
+/// Enquanto não há produção, esta forma <b>evolui livremente</b>: mudar uma regra reescreve a
+/// fixture golden, não gera um perfil congelado ao lado. A imutabilidade "um perfil não muda
+/// depois de emitir" passa a valer na primeira emissão de <b>produção</b> (a versão
+/// <c>1.0.0</c>). Este perfil serializa por conta própria — não passa por
+/// <see cref="HashCanonicalComputer.ComputeSnapshotBytes"/>, que tem forma distinta e é
+/// compartilhado com o histórico de <c>ObrigatoriedadeLegal</c>, fora do envelope.
 /// </para>
 /// </remarks>
 public sealed class PerfilCanonicoV1 : IPerfilCanonico
 {
-    /// <summary>
-    /// Instância única — o perfil não tem estado, e os encoders congelados (<c>static</c> por
-    /// construção) referenciam esta constante em vez de receberem o perfil por parâmetro: a
-    /// versão <c>1.1</c> emite sob o perfil <c>v1</c> por definição, não por configuração.
-    /// </summary>
+    private static readonly JsonWriterOptions OpcoesEscrita = new()
+    {
+        Indented = false,
+        // Escape mínimo, tudo o mais literal — inclusive não-ASCII e os sensíveis a HTML.
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    /// <summary>Instância única — o perfil não tem estado.</summary>
     public static readonly PerfilCanonicoV1 Instancia = new();
 
     private PerfilCanonicoV1()
@@ -53,7 +57,110 @@ public sealed class PerfilCanonicoV1 : IPerfilCanonico
 
     public string Algoritmo => "canonical-json/sha256@v1";
 
-    public byte[] Serializar(JsonObject payload) => HashCanonicalComputer.ComputeSnapshotBytes(payload);
+    public byte[] Serializar(JsonObject payload)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+
+        JsonNode canonico = Canonicalizar(payload);
+
+        using MemoryStream buffer = new();
+        using (Utf8JsonWriter writer = new(buffer, OpcoesEscrita))
+        {
+            canonico.WriteTo(writer);
+        }
+
+        return buffer.ToArray();
+    }
 
     public string HashHex(byte[] bytes) => HashCanonicalComputer.ComputeSha256Hex(bytes);
+
+    /// <summary>
+    /// Reescreve a árvore na forma canônica: objetos com chaves ordenadas, strings em NFC,
+    /// números como inteiro canônico, <c>null</c> e ordem de array preservados.
+    /// </summary>
+    private static JsonNode Canonicalizar(JsonNode node)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                JsonObject ordenado = [];
+                foreach (KeyValuePair<string, JsonNode?> par in obj.OrderBy(static p => p.Key, StringComparer.Ordinal))
+                {
+                    ordenado[par.Key] = par.Value is null ? null : Canonicalizar(par.Value);
+                }
+                return ordenado;
+
+            case JsonArray arr:
+                JsonArray reescrito = [];
+                foreach (JsonNode? item in arr)
+                {
+                    reescrito.Add(item is null ? null : Canonicalizar(item));
+                }
+                return reescrito;
+
+            case JsonValue valor:
+                return CanonicalizarValor(valor);
+
+            default:
+                // JsonNode só tem estas três formas concretas; o default é inalcançável.
+                return node.DeepClone();
+        }
+    }
+
+    private static JsonNode CanonicalizarValor(JsonValue valor)
+    {
+        switch (valor.GetValueKind())
+        {
+            case JsonValueKind.String when valor.TryGetValue(out string? texto):
+                // NFC de toda string de negócio — fecha o furo do valor copiado por texto cru
+                // (ex.: valor de condição DNF) que não passou por normalização na projeção.
+                return JsonValue.Create(HashCanonicalComputer.NormalizeNfc(texto));
+
+            case JsonValueKind.String:
+                // String-kind com backing não-textual (Guid, data): já é ASCII canônico, sem
+                // sequência combinante a normalizar.
+                return valor.DeepClone();
+
+            case JsonValueKind.Number:
+                return JsonValue.Create(ExigirInteiro(valor));
+
+            default:
+                // true/false não têm léxico ambíguo; reusar é seguro (o nó vem de um clone da árvore).
+                return valor.DeepClone();
+        }
+    }
+
+    /// <summary>
+    /// O número canônico é o inteiro de 64 bits. Cobre os dois backings de <see cref="JsonValue"/>:
+    /// o parseado (respeita a forma textual — <c>1.0</c>/<c>1e2</c> não são inteiros) e o
+    /// criado a partir de um número CLR (<c>Create(int)</c> não satisfaz <c>TryGetValue&lt;long&gt;</c>).
+    /// </summary>
+    private static long ExigirInteiro(JsonValue valor)
+    {
+        if (valor.TryGetValue(out JsonElement elemento) && elemento.ValueKind == JsonValueKind.Number)
+        {
+            if (elemento.TryGetInt64(out long lidoDoElemento))
+            {
+                return lidoDoElemento;
+            }
+
+            throw new PayloadForaDoPerfilCanonicoException(
+                $"O número '{elemento.GetRawText()}' não é um inteiro de 64 bits — a forma canônica não representa " +
+                "fração, expoente nem valor fora do alcance de Int64.");
+        }
+
+        if (valor.TryGetValue(out long comoLong))
+        {
+            return comoLong;
+        }
+
+        if (valor.TryGetValue(out int comoInt))
+        {
+            return comoInt;
+        }
+
+        throw new PayloadForaDoPerfilCanonicoException(
+            "Um número do payload não é um inteiro de 64 bits — a forma canônica não representa fração, " +
+            "expoente nem valor fora do alcance de Int64.");
+    }
 }

@@ -43,32 +43,6 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoDesconhecida);
     }
 
-    [Fact(DisplayName = "A versão 1.0 é conhecida e RECUSADA: ela podia congelar classificação como stub")]
-    public void Versao10_RecusaComMotivo()
-    {
-        VersaoConfiguracao versao = VersaoComSchema("1.0");
-
-        Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(versao);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoNaoReidratavel);
-        resultado.Error.Message.Should().Contain("nao_construido",
-            "a recusa da 1.0 é NOMEADA — ela podia trazer 'atendimento'/'classificacao' como stub (o fallback que a " +
-            "decisão de banir o bloco 'nao_construido' matou, ADR-0109), e reidratar parcialmente reconstruiria um " +
-            "certame sem a dimensão que determina o resultado dele");
-    }
-
-    /// <summary>
-    /// A <c>1.0</c> e a <c>9.9</c> são ambas recusadas — mas por motivos <b>diferentes</b>,
-    /// e o operador diante de um descarte que falhou precisa saber qual dos dois é.
-    /// </summary>
-    [Fact(DisplayName = "'Conhecida e recusada' e 'desconhecida' são erros DISTINTOS")]
-    public void RecusasSaoDistinguiveis()
-    {
-        CorpusEnvelope.Registro.Reidratar(VersaoComSchema("1.0")).Error!.Code
-            .Should().NotBe(CorpusEnvelope.Registro.Reidratar(VersaoComSchema("9.9")).Error!.Code);
-    }
-
     // ── Integridade forense: a evidência tem de provar o que diz provar ──
 
     [Fact(DisplayName = "Bytes adulterados não produzem o hash persistido — recusa antes de qualquer parse")]
@@ -81,7 +55,7 @@ public sealed class EnvelopeCodecRecusaTests
 
         JsonObject adulterado = JsonNode.Parse(Encoding.UTF8.GetString(bytes))!.AsObject();
         adulterado["periodo"]!["numero"] = "666/2026";
-        byte[] bytesAdulterados = HashCanonicalComputer.ComputeSnapshotBytes(adulterado);
+        byte[] bytesAdulterados = PerfilCanonicoV1.Instancia.Serializar(adulterado);
 
         // A versão continua declarando o hash ORIGINAL — é o cenário de quem trocou os
         // bytes na coluna sem poder recomputar o hash da linha forense.
@@ -333,7 +307,7 @@ public sealed class EnvelopeCodecRecusaTests
 
         VersaoConfiguracao v1 = CorpusEnvelope.VersaoDeAbertura(processo, abertura);
         VersaoConfiguracao v2 = CorpusEnvelope.VersaoDeRetificacao(
-            v1, HashCanonicalComputer.ComputeSnapshotBytes(envelope));
+            v1, PerfilCanonicoV1.Instancia.Serializar(envelope));
 
         Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(v2);
 
@@ -671,7 +645,7 @@ public sealed class EnvelopeCodecRecusaTests
         exigencias.Should().HaveCount(2, "pré-condição: duas exigências para duplicar o id de uma na outra");
         exigencias[1]!["exigenciaId"] = exigencias[0]!["exigenciaId"]!.DeepClone();
 
-        byte[] adulterados = HashCanonicalComputer.ComputeSnapshotBytes(envelope);
+        byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(envelope);
         adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a adulteração tem de mudar os bytes");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
@@ -715,7 +689,7 @@ public sealed class EnvelopeCodecRecusaTests
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();
         adulterar(envelope);
 
-        byte[] adulterados = HashCanonicalComputer.ComputeSnapshotBytes(envelope);
+        byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(envelope);
         adulterados.Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
 
         // A versão é reconstruída SOBRE os bytes adulterados — o hash bate, e o gate de
