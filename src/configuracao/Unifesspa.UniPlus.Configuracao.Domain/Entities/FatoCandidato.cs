@@ -48,9 +48,22 @@ public sealed class FatoCandidato : EntityBase
     private const int DescricaoMaxLength = 1000;
     private const int BindingMaxLength = 200;
 
-    private const string PrefixoBindingDerivado = "ATRIBUTO_CANDIDATO";
+    private const string PrefixoBindingDerivadoAtributo = "ATRIBUTO_CANDIDATO";
+    private const string PrefixoBindingDerivadoRegra = "REGRA_DERIVACAO";
     private const string PrefixoBindingDeclarado = "CAMPO_INSCRICAO";
     private const string PrefixoBindingIntegracao = "INTEGRACAO";
+
+    // Um fato derivado tem dois mecanismos de produção de valor: computar de um atributo do
+    // candidato (FAIXA_ETARIA, RENDA_PER_CAPITA) ou referenciar a regra de derivação congelada do
+    // processo (MODALIDADE). O catálogo é global e diz o mecanismo; a config do edital diz o
+    // conteúdo. Declarado e Integracao seguem com um prefixo cada (ADR-0116, emenda de 2026-07-22).
+    private static readonly Dictionary<OrigemFato, IReadOnlyList<string>> PrefixosBindingPorOrigem =
+        new()
+        {
+            [OrigemFato.Derivado] = [PrefixoBindingDerivadoAtributo, PrefixoBindingDerivadoRegra],
+            [OrigemFato.Declarado] = [PrefixoBindingDeclarado],
+            [OrigemFato.Integracao] = [PrefixoBindingIntegracao],
+        };
 
     public string Codigo { get; private set; } = null!;
     public string Nome { get; private set; } = null!;
@@ -368,24 +381,24 @@ public sealed class FatoCandidato : EntityBase
         }
 
         string prefixo = normalizado[..separador];
-        string prefixoEsperado = PrefixoBindingEsperado(origem);
-        if (!string.Equals(prefixo, prefixoEsperado, StringComparison.Ordinal))
+        IReadOnlyList<string> prefixosAceitos = PrefixosBindingAceitos(origem);
+        if (!prefixosAceitos.Contains(prefixo, StringComparer.Ordinal))
         {
+            string esperado = prefixosAceitos.Count == 1
+                ? $"\"{prefixosAceitos[0]}\""
+                : $"um de {string.Join(", ", prefixosAceitos.Select(p => $"\"{p}\""))}";
             return Result<string>.Failure(new DomainError(
                 FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem,
-                $"O prefixo do binding deve ser \"{prefixoEsperado}\" para a origem {origem} (recebido \"{prefixo}\")."));
+                $"O prefixo do binding deve ser {esperado} para a origem {origem} (recebido \"{prefixo}\")."));
         }
 
         return Result<string>.Success(normalizado);
     }
 
-    private static string PrefixoBindingEsperado(OrigemFato origem) => origem switch
-    {
-        OrigemFato.Derivado => PrefixoBindingDerivado,
-        OrigemFato.Declarado => PrefixoBindingDeclarado,
-        OrigemFato.Integracao => PrefixoBindingIntegracao,
-        _ => throw new ArgumentOutOfRangeException(nameof(origem), origem, "Origem de fato fora do domínio fechado."),
-    };
+    private static IReadOnlyList<string> PrefixosBindingAceitos(OrigemFato origem) =>
+        PrefixosBindingPorOrigem.TryGetValue(origem, out IReadOnlyList<string>? prefixos)
+            ? prefixos
+            : throw new ArgumentOutOfRangeException(nameof(origem), origem, "Origem de fato fora do domínio fechado.");
 
     private static Result<FatoCandidato> Falha(string codigo, string mensagem) =>
         Result<FatoCandidato>.Failure(new DomainError(codigo, mensagem));

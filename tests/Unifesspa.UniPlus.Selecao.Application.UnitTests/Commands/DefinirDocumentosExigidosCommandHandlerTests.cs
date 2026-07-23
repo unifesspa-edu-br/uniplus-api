@@ -80,8 +80,8 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         bancasRequeridas: [], regraRecurso: null).Value!;
 
     private static FatoCandidatoView FatoModalidade() => new(
-        Guid.CreateVersion7(), "MODALIDADE", "Modalidade", null, "CATEGORICO", "DECLARADO", "MULTIVALORADO", null,
-        "INSCRICAO", "CAMPO_INSCRICAO:MODALIDADE", null);
+        Guid.CreateVersion7(), "MODALIDADE", "Modalidade de concorrência", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO", null,
+        "INSCRICAO", "REGRA_DERIVACAO:MODALIDADE", null);
 
     private static FatoCandidatoView FatoTipoDeficiencia() => new(
         Guid.CreateVersion7(), "TIPO_DEFICIENCIA", "Tipo de deficiência", null, "CATEGORICO", "DECLARADO", "ESCALAR", null,

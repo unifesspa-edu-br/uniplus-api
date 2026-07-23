@@ -496,11 +496,11 @@ public sealed class EnvelopeCodecRoundTripTests
                 Codigo: "MODALIDADE",
                 Dominio: "CATEGORICO",
                 Origem: "DERIVADO",
-                Cardinalidade: "ESCALAR",
+                Cardinalidade: "MULTIVALORADO",
                 PontoResolucao: "INSCRICAO",
-                Binding: "OFERTA:MODALIDADE_CODIGO",
-                ValoresDominio: ["AC"],
-                ValoresDominioDeclarados: [new ValorDominioDeclaradoCongelado("AC", "Ampla concorrência")]),
+                Binding: "REGRA_DERIVACAO:MODALIDADE",
+                ValoresDominio: null,
+                ValoresDominioDeclarados: null),
         };
         EntradaCanonicalizacao entrada = new(
             processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo,

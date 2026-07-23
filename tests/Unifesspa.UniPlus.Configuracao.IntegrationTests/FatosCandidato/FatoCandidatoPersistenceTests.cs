@@ -184,7 +184,7 @@ public sealed class FatoCandidatoPersistenceTests
         }
     }
 
-    [Fact(DisplayName = "Origem: só FAIXA_ETARIA e RENDA_PER_CAPITA são Derivado; todos os demais são Declarado (ADR-0116)")]
+    [Fact(DisplayName = "Origem: FAIXA_ETARIA, RENDA_PER_CAPITA e MODALIDADE são Derivado; todos os demais são Declarado (ADR-0116)")]
     public async Task Seed_OrigemReclassificadaConformeADR0116()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -196,7 +196,9 @@ public sealed class FatoCandidatoPersistenceTests
             .Select(f => f.Codigo)
             .OrderBy(c => c, StringComparer.Ordinal)];
 
-        derivados.Should().Equal("FAIXA_ETARIA", "RENDA_PER_CAPITA");
+        // MODALIDADE passou a Derivado: não é resposta do candidato, e sim resultado da avaliação
+        // dos fatos declarados contra as regras congeladas do processo (ADR-0116, emenda 2026-07-22).
+        derivados.Should().Equal("FAIXA_ETARIA", "MODALIDADE", "RENDA_PER_CAPITA");
         fatos.Where(f => f.Origem != OrigemFato.Derivado)
             .Should().OnlyContain(f => f.Origem == OrigemFato.Declarado);
     }
@@ -502,7 +504,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("RENDA_PER_CAPITA", "005", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA"),
             ("FAIXA_ETARIA", "006", DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA"),
             ("SEXO", "007", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:SEXO"),
-            ("MODALIDADE", "008", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_INSCRICAO:MODALIDADE"),
+            ("MODALIDADE", "008", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "REGRA_DERIVACAO:MODALIDADE"),
             ("CONDICAO_ATENDIMENTO", "009", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, "CAMPO_INSCRICAO:CONDICAO_ATENDIMENTO"),
             ("NACIONALIDADE", "010", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:NACIONALIDADE"),
             ("TIPO_DEFICIENCIA", "011", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, "CAMPO_INSCRICAO:TIPO_DEFICIENCIA"),
