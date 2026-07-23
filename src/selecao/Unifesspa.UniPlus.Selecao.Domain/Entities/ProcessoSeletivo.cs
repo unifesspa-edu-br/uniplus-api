@@ -1048,12 +1048,20 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             foreach (string citado in fato.FatosCitados)
             {
-                // Citar um fato NÃO coletado é permitido: pode ser um fato DERIVADO, que não tem
-                // Ordem de coleta e por isso não é checável aqui isoladamente (§7.3a). A garantia
-                // de que todo fato citado existe — em coletados ∪ derivados — e de que não há
-                // ciclo vem do grafo conjunto, no gate de pré-canonicalização. Aqui só resta a
-                // anterioridade ENTRE coletados, que é a única com Ordem para comparar.
-                if (porCodigo.TryGetValue(citado, out FatoColetado? anterior) && anterior.Ordem >= fato.Ordem)
+                // A pré-condição de um campo só cita fato COLETADO — não um derivado. O resolvedor
+                // de estado dos fatos (runtime) percorre apenas os fatos coletados por Ordem e não
+                // aciona o motor de derivação; uma pré-condição que citasse um fato derivado
+                // avaliaria indeterminada para sempre, e o campo nunca ficaria respondível. Enquanto
+                // a coleta não for dirigida pelo grafo conjunto (§6, dependente do portador do
+                // estado de coleta, ainda inexistente), a citação fica restrita ao que se coleta.
+                if (!porCodigo.TryGetValue(citado, out FatoColetado? anterior))
+                {
+                    return new DomainError(
+                        FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                        $"A pré-condição do fato '{fato.FatoCodigo}' cita '{citado}', que este processo não coleta.");
+                }
+
+                if (anterior.Ordem >= fato.Ordem)
                 {
                     return new DomainError(
                         FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior,
@@ -1372,17 +1380,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Todo fato citado — na pré-condição de um campo ou na condição de uma regra de derivação —
-    /// tem de existir no processo, como fato coletado ou derivado (§7.3). O grafo conjunto ignora
-    /// de propósito uma referência ausente (projeta só o que existe), então esta é a recusa que
-    /// prova a completude do vocabulário citado, antes que a aciclicidade e a ordem topológica
-    /// sejam congeladas — e é o substituto do gate isolado de <c>DefinirFatosColetados</c>, que
-    /// relaxou para deixar uma pré-condição citar um fato derivado (§7.3a).
+    /// A condição de uma regra de derivação tem de citar um fato que exista no processo — coletado
+    /// ou derivado (§7.3). O motor de derivação resolve os derivados em ordem, então um derivado
+    /// que dependa de outro é resolúvel; o que ele não sabe fazer é resolver um fato que o processo
+    /// não configura. O grafo conjunto ignora de propósito uma referência ausente (projeta só o
+    /// que existe), então é esta recusa que prova a completude do vocabulário citado, antes que a
+    /// aciclicidade e a ordem topológica sejam congeladas (RN08).
     /// </summary>
     /// <remarks>
-    /// O gatilho de exigência cita fato pelo mesmo vocabulário e caberia aqui; a checagem da sua
-    /// completude fica para o mesmo passo em que a exigência passa a exigir os seus fatos
-    /// coletados (fora desta fatia).
+    /// A pré-condição de campo já é barrada na definição (<see cref="ValidarGrafoDeFatos"/>): ela
+    /// só cita coletado, porque o resolvedor de runtime não aciona o motor de derivação. O gatilho
+    /// de exigência cita pelo mesmo vocabulário e caberá aqui quando passar a exigir os seus fatos.
     /// </remarks>
     private DomainError? PendenciaDeFatosCitados()
     {
@@ -1397,17 +1405,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             universo.Add(derivacao.CodigoFato);
         }
 
-        foreach (FatoColetado fato in _fatosColetados)
-        {
-            foreach (string citado in fato.FatosCitados)
-            {
-                if (!universo.Contains(citado))
-                {
-                    return FatoCitadoAusente("a pré-condição do fato", fato.FatoCodigo, citado);
-                }
-            }
-        }
-
         foreach (ConfiguracaoDerivacaoFato derivacao in _regrasDerivacao)
         {
             foreach (RegraDerivacaoConfigurada regra in derivacao.Regras)
@@ -1416,7 +1413,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 {
                     if (!universo.Contains(condicao.Fato))
                     {
-                        return FatoCitadoAusente("a regra de derivação do fato", derivacao.CodigoFato, condicao.Fato);
+                        return new DomainError(
+                            FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
+                            $"A regra de derivação do fato '{derivacao.CodigoFato}' cita '{condicao.Fato}', "
+                            + "que este processo não coleta nem deriva.");
                     }
                 }
             }
@@ -1424,11 +1424,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return null;
     }
-
-    private static DomainError FatoCitadoAusente(string onde, string dono, string citado) =>
-        new(
-            FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
-            $"{char.ToUpperInvariant(onde[0])}{onde[1..]} '{dono}' cita '{citado}', que este processo não coleta nem deriva.");
 
     /// <summary>
     /// O grafo de dependência conjunto (campos, fatos, exigências e as quatro arestas, §6) tem
