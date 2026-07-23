@@ -28,6 +28,21 @@ dotnet_diagnostic.CS8602.severity = error
 dotnet_diagnostic.CS8603.severity = error
 dotnet_diagnostic.CS8604.severity = error
 
+# Análise estática — política registrada na ADR-0117 (AnalysisLevel=latest-recommended
+# com opt-in/opt-out nomeado). Regras abaixo são decisões, não exceções pontuais.
+
+# CA1000: Result<T> usa factory methods estáticos (Success/Failure) por design — padrão
+# consagrado do Result pattern, praticado pela própria BCL (EqualityComparer<T>.Default,
+# ImmutableArray<T>.Empty). A regra mira adoção de bibliotecas públicas; não se aplica ao
+# Kernel interno. Desligada globalmente em vez de suprimida caso a caso.
+dotnet_diagnostic.CA1000.severity = none
+
+# CA1062: null-check em argumento de método público. O latest-recommended não a liga por
+# padrão, mas o código já a satisfaz (ArgumentNullException.ThrowIfNull é convenção do
+# projeto). Religada via opt-in para preservar a proteção de null-safety que o latest-all
+# dava — decisão consciente, não herança automática.
+dotnet_diagnostic.CA1062.severity = warning
+
 # Naming conventions — ordem importa: Roslyn aplica a primeira regra que casa,
 # então constantes e static readonly precisam vir ANTES da regra geral de
 # private_fields, senão IDE1006 marca `const Foo` como violação por não ter

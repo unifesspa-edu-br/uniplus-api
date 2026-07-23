@@ -42,9 +42,7 @@ public sealed class IdempotencyEntry
     /// Response body cifrado at-rest via <c>IUniPlusEncryptionService</c> com
     /// chave nomeada <c>"idempotency"</c> (ADR-0027 §"Cifragem at-rest").
     /// </summary>
-#pragma warning disable CA1819 // Properties should not return arrays — entidade EF Core mapeia bytea diretamente; record value-equality não se aplica.
     public byte[]? ResponseBodyCipher { get; set; }
-#pragma warning restore CA1819
 
     public DateTimeOffset ExpiresAt { get; set; }
 

@@ -9,9 +9,7 @@ using Domain.ValueObjects;
 /// <c>VersaoConfiguracao.Abrir</c> deriva o hash dos bytes internamente
 /// (revisão de plano, evita divergência entre bytes e hash persistidos).
 /// </summary>
-#pragma warning disable CA1819 // Properties should not return arrays — bytes canônicos, sem value-equality de record aplicável.
 public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string AlgoritmoHash);
-#pragma warning restore CA1819
 
 /// <summary>
 /// Informação do ato de retificação (ADR-0103) acrescentada ao envelope como um

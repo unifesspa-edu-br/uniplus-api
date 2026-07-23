@@ -10,6 +10,4 @@ namespace Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// (e vice-versa) e permite que middleware aplique políticas distintas a cada
 /// lado do CQRS. Ver ADR-0003.
 /// </summary>
-#pragma warning disable CA1040 // Avoid empty interfaces — este é marker interface intencional do contrato CQRS (ADR-0003).
 public interface IQuery<TResponse>;
-#pragma warning restore CA1040

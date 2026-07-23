@@ -6,6 +6,4 @@ namespace Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <see cref="ICommand{TResponse}"/> como tipo genérico — recebem sempre o tipo concreto.
 /// Ver ADR-0003.
 /// </summary>
-#pragma warning disable CA1040 // Avoid empty interfaces — este é marker interface intencional do contrato CQRS (ADR-0003).
 public interface ICommand<TResponse>;
-#pragma warning restore CA1040

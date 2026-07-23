@@ -55,9 +55,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
     public string AlgoritmoHash { get; private init; } = null!;
 
     /// <summary>Bytes canônicos (ADR-0100) — a base do hash; fonte única de verdade.</summary>
-#pragma warning disable CA1819 // Properties should not return arrays — entidade EF Core mapeia bytea diretamente; sem value-equality de record.
     public byte[] ConfiguracaoCongeladaCanonica { get; private init; } = null!;
-#pragma warning restore CA1819
 
     /// <summary>Derivado por parsing UTF-8 dos bytes canônicos — só consulta (jsonb).</summary>
     public string ConfiguracaoCongelada { get; private init; } = null!;
