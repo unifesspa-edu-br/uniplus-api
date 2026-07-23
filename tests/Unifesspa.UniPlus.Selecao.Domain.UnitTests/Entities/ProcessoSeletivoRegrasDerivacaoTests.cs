@@ -63,6 +63,21 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             .Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
     }
 
+    [Fact(DisplayName = "Regra de derivação que cita fato inexistente é recusada no gate de pré-canonicalização")]
+    public void DerivacaoCitaFatoInexistente_RecusadaNoGateDePublicacao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        ConfiguracaoDerivacaoFato d1 = ConfiguracaoDerivacaoFato.Criar("D1", [Regra(0, "X", ("BOGUS", true))]).Value!;
+
+        processo.DefinirRegrasDerivacao([d1]).IsSuccess.Should().BeTrue(
+            "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
+
+        processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
+        processo.PendenciaPreCanonicalizacao()!.Code
+            .Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+    }
+
     [Fact(DisplayName = "Define e reidrata a configuração de derivação em rascunho")]
     public void Definir_EmRascunho_Aceita()
     {
