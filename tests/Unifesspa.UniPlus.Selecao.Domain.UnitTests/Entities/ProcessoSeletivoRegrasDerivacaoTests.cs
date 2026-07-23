@@ -40,6 +40,29 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             Regra(2, "LI_PCD", ("CONCORRER_PCD", true), ("EGRESSO_ESCOLA_PUBLICA", true)),
         ]).Value!;
 
+    /// <summary>
+    /// Um ciclo de derivação (D1 depende de D2, D2 depende de D1) atravessa a validação isolada
+    /// de <see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/> — que só barra código duplicado.
+    /// A aciclicidade do grafo conjunto (§7) é condição para congelar a ordem topológica (RN08),
+    /// e o gate de pré-canonicalização a exige antes de publicar. O ciclo entre classes/regras
+    /// que nenhuma factory isolada pega é exatamente o que o grafo conjunto existe para recusar.
+    /// </summary>
+    [Fact(DisplayName = "Ciclo de derivação passa pela definição isolada mas é recusado no gate de pré-canonicalização")]
+    public void CicloDeDerivacao_RecusadoNoGateDePublicacao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        ConfiguracaoDerivacaoFato d1 = ConfiguracaoDerivacaoFato.Criar("D1", [Regra(0, "X", ("D2", true))]).Value!;
+        ConfiguracaoDerivacaoFato d2 = ConfiguracaoDerivacaoFato.Criar("D2", [Regra(0, "Y", ("D1", true))]).Value!;
+
+        processo.DefinirRegrasDerivacao([d1, d2]).IsSuccess.Should().BeTrue(
+            "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
+
+        processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
+        processo.PendenciaPreCanonicalizacao()!.Code
+            .Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
+    }
+
     [Fact(DisplayName = "Define e reidrata a configuração de derivação em rascunho")]
     public void Definir_EmRascunho_Aceita()
     {
