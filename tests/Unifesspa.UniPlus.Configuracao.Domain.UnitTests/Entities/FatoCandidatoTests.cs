@@ -156,11 +156,12 @@ public sealed class FatoCandidatoTests
     {
         FatoCandidato fato = Criar(
             codigo: "MODALIDADE",
-            nome: "Modalidade",
+            nome: "Modalidade de concorrência",
             dominio: DominioFato.Categorico,
+            origem: OrigemFato.Derivado,
             cardinalidade: CardinalidadeFato.Multivalorado,
             valoresDominio: null,
-            binding: "CAMPO_INSCRICAO:MODALIDADE").Value!;
+            binding: "REGRA_DERIVACAO:MODALIDADE").Value!;
 
         fato.ValoresDominio.Should().BeNull("categórico sem valores é de escopo-processo, não lista vazia");
     }
@@ -243,8 +244,10 @@ public sealed class FatoCandidatoTests
 
     [Theory(DisplayName = "Binding com prefixo incoerente com a origem é rejeitado")]
     [InlineData(OrigemFato.Declarado, "ATRIBUTO_CANDIDATO:COR_RACA")]
+    [InlineData(OrigemFato.Declarado, "REGRA_DERIVACAO:MODALIDADE")]
     [InlineData(OrigemFato.Derivado, "CAMPO_INSCRICAO:FAIXA_ETARIA")]
     [InlineData(OrigemFato.Integracao, "CAMPO_INSCRICAO:ANO_ENEM")]
+    [InlineData(OrigemFato.Integracao, "REGRA_DERIVACAO:ALGO")]
     public void Criar_BindingPrefixoIncoerenteComOrigem_Falha(OrigemFato origem, string binding)
     {
         Result<FatoCandidato> resultado = Criar(origem: origem, binding: binding);
@@ -253,9 +256,21 @@ public sealed class FatoCandidatoTests
         resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem);
     }
 
+    [Fact(DisplayName = "A mensagem de prefixo incoerente lista os dois prefixos aceitos quando a origem é derivada")]
+    public void Criar_BindingPrefixoIncoerente_Derivado_MensagemListaOsDois()
+    {
+        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Derivado, binding: "CAMPO_INSCRICAO:X");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Message.Should().Contain("ATRIBUTO_CANDIDATO")
+            .And.Contain("REGRA_DERIVACAO",
+                "a origem derivada aceita dois prefixos — a mensagem precisa apontar ambos, não um só");
+    }
+
     [Theory(DisplayName = "Binding com prefixo coerente com a origem é aceito")]
     [InlineData(OrigemFato.Declarado, "CAMPO_INSCRICAO:COR_RACA")]
     [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
+    [InlineData(OrigemFato.Derivado, "REGRA_DERIVACAO:MODALIDADE")]
     [InlineData(OrigemFato.Integracao, "INTEGRACAO:ANO_ENEM")]
     public void Criar_BindingPrefixoCoerenteComOrigem_Aceita(OrigemFato origem, string binding)
     {

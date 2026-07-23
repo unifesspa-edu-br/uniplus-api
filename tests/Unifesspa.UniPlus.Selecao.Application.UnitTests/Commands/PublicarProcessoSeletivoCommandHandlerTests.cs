@@ -116,15 +116,15 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     private static FatoCandidatoView FatoModalidade() => new(
         Id: Guid.CreateVersion7(),
         Codigo: "MODALIDADE",
-        Nome: "Modalidade",
+        Nome: "Modalidade de concorrência",
         Descricao: null,
         Dominio: "CATEGORICO",
         Origem: "DERIVADO",
-        Cardinalidade: "ESCALAR",
-        ValoresDominio: ["AC"],
+        Cardinalidade: "MULTIVALORADO",
+        ValoresDominio: null,
         PontoResolucao: "INSCRICAO",
-        Binding: "OFERTA:MODALIDADE_CODIGO",
-        ValoresDominioDeclarados: [new FatoValorDominioViewItem("AC", "Ampla concorrência", 1, true)]);
+        Binding: "REGRA_DERIVACAO:MODALIDADE",
+        ValoresDominioDeclarados: null);
 
     private sealed record Mocks(
         IProcessoSeletivoRepository ProcessoRepository,
@@ -235,10 +235,10 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         MetadadoFatoCongelado metadado = entradaCapturada.MetadadosFatosCongelados!["MODALIDADE"];
         metadado.Dominio.Should().Be("CATEGORICO");
         metadado.Origem.Should().Be("DERIVADO");
-        metadado.Cardinalidade.Should().Be("ESCALAR");
+        metadado.Cardinalidade.Should().Be("MULTIVALORADO");
         metadado.PontoResolucao.Should().Be("INSCRICAO");
-        metadado.Binding.Should().Be("OFERTA:MODALIDADE_CODIGO");
-        metadado.ValoresDominioDeclarados.Should().ContainSingle(v => v.Codigo == "AC" && v.Descricao == "Ampla concorrência");
+        metadado.Binding.Should().Be("REGRA_DERIVACAO:MODALIDADE");
+        metadado.ValoresDominioDeclarados.Should().BeNull("MODALIDADE é escopo-processo — os valores vêm da oferta do processo, não de FatoValorDominio");
     }
 
     [Fact(DisplayName = "Código de fato que não resolve no catálogo aborta a publicação ANTES de canonicalizar")]

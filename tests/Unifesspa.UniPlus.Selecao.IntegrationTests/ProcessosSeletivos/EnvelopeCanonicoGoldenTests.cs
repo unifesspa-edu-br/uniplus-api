@@ -240,9 +240,10 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     /// <summary>
     /// Metadado do fato "MODALIDADE" (Story #919, RN08) citado na condição de gatilho de
-    /// <see cref="DocumentoExigidoDeReferencia"/> — exercita <c>metadadosFatos</c> com um
-    /// item real na golden fixture, com <c>valoresDominioDeclarados</c> populado (categórico
-    /// estático) para cobrir as duas variantes nulas/preenchidas do bloco.
+    /// <see cref="DocumentoExigidoDeReferencia"/> — exercita <c>metadadosFatos</c> com um item
+    /// real na golden fixture. MODALIDADE é derivado e de escopo-processo (ADR-0116): seus valores
+    /// vêm da oferta congelada, então <c>valoresDominio</c> e <c>valoresDominioDeclarados</c> são
+    /// nulos — o bloco exercita a variante nula.
     /// </summary>
     private static Dictionary<string, MetadadoFatoCongelado> MetadadosFatosDeReferencia() =>
         new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal)
@@ -251,11 +252,11 @@ public sealed class EnvelopeCanonicoGoldenTests
                 Codigo: "MODALIDADE",
                 Dominio: "CATEGORICO",
                 Origem: "DERIVADO",
-                Cardinalidade: "ESCALAR",
+                Cardinalidade: "MULTIVALORADO",
                 PontoResolucao: "INSCRICAO",
-                Binding: "OFERTA:MODALIDADE_CODIGO",
-                ValoresDominio: ["AC"],
-                ValoresDominioDeclarados: [new ValorDominioDeclaradoCongelado("AC", "Ampla concorrência")]),
+                Binding: "REGRA_DERIVACAO:MODALIDADE",
+                ValoresDominio: null,
+                ValoresDominioDeclarados: null),
         };
 
     internal static SnapshotCanonico CanonicalizarReferencia() =>

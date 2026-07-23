@@ -27,9 +27,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <see langword="null"/>.
 /// </para>
 /// <para>
-/// <see cref="OrigemFato"/> (ADR-0116): apenas <c>FAIXA_ETARIA</c> e
-/// <c>RENDA_PER_CAPITA</c> são <see cref="OrigemFato.Derivado"/> (computados — o motor
-/// deriva o valor, o candidato não o responde diretamente); todos os demais são
+/// <see cref="OrigemFato"/> (ADR-0116): <c>FAIXA_ETARIA</c> e <c>RENDA_PER_CAPITA</c>
+/// (computados de atributo do candidato) e <c>MODALIDADE</c> (derivada das regras
+/// congeladas do processo) são <see cref="OrigemFato.Derivado"/>; todos os demais são
 /// <see cref="OrigemFato.Declarado"/> (resposta/seleção direta do candidato), inclusive
 /// os cinco opt-ins <c>CONCORRER_*</c> — que são seleção direta, ainda que expressem
 /// vontade e não afirmação de elegibilidade. <see cref="OrigemFato.Integracao"/> fica
@@ -87,9 +87,13 @@ public static class FatoCandidatoSeed
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:SEXO"),
 
+        // MODALIDADE é derivado, não declarado: o candidato declara fatos e opt-ins, e o conjunto
+        // de modalidades resulta da avaliação deles contra as regras congeladas do processo. O
+        // binding referencia a regra de derivação — o catálogo diz o mecanismo, a config do edital
+        // diz o conteúdo (ADR-0116, emenda de 2026-07-22).
         new(SeedId(8), "MODALIDADE", "Modalidade de concorrência", null,
-            DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado,
-            null, PontoResolucaoInscricao, "CAMPO_INSCRICAO:MODALIDADE"),
+            DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado,
+            null, PontoResolucaoInscricao, "REGRA_DERIVACAO:MODALIDADE"),
 
         new(SeedId(9), "CONDICAO_ATENDIMENTO", "Condição de atendimento especializado", null,
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado,
