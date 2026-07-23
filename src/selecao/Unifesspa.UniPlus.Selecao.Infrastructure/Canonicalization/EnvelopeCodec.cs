@@ -9,26 +9,21 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Codec da versão <c>1.4</c> do envelope (Story #923, snapshot conjunto final da change
-/// <c>documentos-exigidos-composicao</c>, ADR-0109 D1): acrescenta o 14º bloco de topo,
-/// <c>arvoreSatisfacao</c> — a TOPOLOGIA da árvore de satisfação (<see cref="NoExigencia"/>,
-/// Stories #920/#921/#922: grupos E/OU, cardinalidade qualificada de folha, repetição por
-/// entidade), até aqui fail-closed na publicação por não ter onde congelar
-/// (<c>ProcessoSeletivo.PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel</c>, removido nesta
-/// Story). <see cref="SnapshotPublicacaoCanonicalizer"/> é o encoder — "o canonicalizador de
-/// hoje" — enquanto for também o corrente; no dia de um bump para 1.5, este codec congela sua
-/// própria cópia do encoder, exatamente como <see cref="EnvelopeCodecV13"/> fez para a 1.3.
+/// O codec do envelope de congelamento — <b>um só</b>. Enquanto não há produção nem certame
+/// congelado, o sistema emite e lê uma forma canônica corrente (<c>0.0.1</c>) e a evolui
+/// livremente: mudar a forma reescreve a fixture, não gera um encoder congelado ao lado. O
+/// versionamento forense — um codec por <c>schema_version</c>, encoders aposentados só quando
+/// deixam de ser correntes — volta a valer quando a primeira release de produção fixar a
+/// versão <c>1.0.0</c>.
 /// </summary>
 /// <remarks>
-/// O decoder reaproveita <see cref="EnvelopeCodecV11"/> (via <see cref="EnvelopeCodecV12"/>)
-/// para os 11 blocos cuja FORMA não mudou desde a 1.1, e <see cref="EnvelopeCodecV13.LerDocumentosExigidos"/>
-/// para <c>documentosExigidos</c> (forma inalterada entre a 1.3 e a 1.4 — <c>arvoreSatisfacao</c>
-/// é bloco de topo IRMÃO, não uma mudança daquele). <c>LerArvoreSatisfacao</c>/<c>LerNo</c> são
-/// os únicos leitores novos: cada folha referencia sua exigência pelo <c>exigenciaId</c> já
-/// decodificado por <c>LerDocumentosExigidos</c>, resolvido contra um dicionário por Id — nunca
-/// duplicando a exigência dentro da árvore.
+/// <c>Codificar</c> delega ao <see cref="SnapshotPublicacaoCanonicalizer"/>, a projeção viva —
+/// e, sendo o único codec, os dois nunca podem divergir. <c>Decodificar</c> reconstrói o
+/// envelope pelos leitores de bloco (os métodos <c>Ler*</c> estáticos, hoje agrupados nos tipos
+/// de leitura de bloco) e resolve <c>arvoreSatisfacao</c> contra as exigências já lidas, por Id,
+/// sem duplicá-las.
 /// </remarks>
-public sealed class EnvelopeCodecV14 : IEnvelopeCodec
+public sealed class EnvelopeCodec : IEnvelopeCodec
 {
     private static readonly string[] Stubs =
     [
@@ -58,7 +53,7 @@ public sealed class EnvelopeCodecV14 : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "1.4";
+    public string SchemaVersion => "0.0.1";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -71,11 +66,10 @@ public sealed class EnvelopeCodecV14 : IEnvelopeCodec
     public string? MotivoDaRecusa => null;
 
     /// <summary>
-    /// O encoder <c>1.4</c> é o canonicalizador de hoje — e enquanto ele for também o
-    /// corrente, a delegação basta. Mesma guarda de <see cref="EnvelopeCodecV13"/> antes do
-    /// bump para 1.4: se a emissão de produção mudar de versão sem este codec acompanhar, a
-    /// guarda estoura em vez de deixar o round-trip das versões 1.4 já publicadas ficar
-    /// não-verificável em silêncio (ADR-0110 D1, fitness test CA-08).
+    /// Delega à projeção viva. A guarda confere que o codec e o canonicalizador declaram a
+    /// mesma versão e o mesmo algoritmo — sendo um sistema só, eles têm de concordar; uma
+    /// divergência aqui é erro de programação (o codec e a emissão saíram de sincronia), não
+    /// um estado alcançável em runtime.
     /// </summary>
     public SnapshotCanonico Codificar(EntradaCanonicalizacao entrada)
     {
@@ -84,9 +78,8 @@ public sealed class EnvelopeCodecV14 : IEnvelopeCodec
         if (snapshot.SchemaVersion != SchemaVersion || snapshot.AlgoritmoHash != AlgoritmoHash)
         {
             throw new InvalidOperationException(
-                $"O codec {SchemaVersion} delegou a um canonicalizador que emite {snapshot.SchemaVersion}/{snapshot.AlgoritmoHash}. " +
-                $"A emissão corrente mudou: o encoder {SchemaVersion} precisa ser congelado neste codec para que o round-trip " +
-                "das versões já publicadas continue verificável (ADR-0110 D1).");
+                $"O codec ({SchemaVersion}/{AlgoritmoHash}) e o canonicalizador ({snapshot.SchemaVersion}/{snapshot.AlgoritmoHash}) " +
+                "declaram versões distintas — o codec e a emissão saíram de sincronia.");
         }
 
         return snapshot;

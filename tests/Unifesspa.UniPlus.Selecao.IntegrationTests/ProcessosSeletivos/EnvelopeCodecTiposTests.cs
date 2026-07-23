@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
@@ -9,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using Xunit;
 
@@ -80,7 +83,7 @@ public sealed class EnvelopeCodecTiposTests
     [Fact(DisplayName = "Número fracionário onde deveria haver inteiro é recusado")]
     public void FracionarioNoLugarDeInteiro_Recusa()
     {
-        Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
+        Result<EnvelopeReidratado> resultado = ReidratarBruto(envelope =>
             envelope["classificacao"]!["nOpcoesAlocacao"] = 1.5);
 
         resultado.IsFailure.Should().BeTrue();
@@ -109,7 +112,7 @@ public sealed class EnvelopeCodecTiposTests
     [Fact(DisplayName = "Decimal como NÚMERO JSON (e não string) é recusado")]
     public void DecimalComoNumero_Recusa()
     {
-        Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
+        Result<EnvelopeReidratado> resultado = ReidratarBruto(envelope =>
             envelope["etapas"]!.AsArray()[0]!["peso"] = 3.5);
 
         resultado.IsFailure.Should().BeTrue();
@@ -353,7 +356,34 @@ public sealed class EnvelopeCodecTiposTests
         atual.AsObject()[partes[^1]] = valor;
     }
 
-    private static Result<EnvelopeReidratado> Reidratar(Action<JsonObject> adulterar)
+    private static Result<EnvelopeReidratado> Reidratar(Action<JsonObject> adulterar) =>
+        Reidratar(adulterar, PerfilCanonicoV1.Instancia.Serializar);
+
+    /// <summary>
+    /// Variante que serializa os bytes adulterados <b>sem</b> passar pela canonicalização do
+    /// perfil — necessária quando a própria adulteração é algo que o perfil recusa representar
+    /// (um número não-inteiro). Os bytes chegam ao codec, e é o <b>gate de forma</b> que os
+    /// recusa ao reserializar pelo perfil: exatamente o caminho que se quer exercitar.
+    /// </summary>
+    private static Result<EnvelopeReidratado> ReidratarBruto(Action<JsonObject> adulterar) =>
+        Reidratar(adulterar, SerializarBruto);
+
+    private static byte[] SerializarBruto(JsonObject envelope)
+    {
+        using MemoryStream buffer = new();
+        using (Utf8JsonWriter writer = new(buffer, new JsonWriterOptions
+        {
+            Indented = false,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        }))
+        {
+            envelope.WriteTo(writer);
+        }
+
+        return buffer.ToArray();
+    }
+
+    private static Result<EnvelopeReidratado> Reidratar(Action<JsonObject> adulterar, Func<JsonObject, byte[]> serializar)
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         byte[] originais = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
@@ -362,7 +392,7 @@ public sealed class EnvelopeCodecTiposTests
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();
         adulterar(envelope);
 
-        byte[] adulterados = HashCanonicalComputer.ComputeSnapshotBytes(envelope);
+        byte[] adulterados = serializar(envelope);
         adulterados.Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
 
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, adulterados);

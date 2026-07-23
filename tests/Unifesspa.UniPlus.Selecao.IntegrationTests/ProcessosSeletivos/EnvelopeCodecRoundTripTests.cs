@@ -366,7 +366,7 @@ public sealed class EnvelopeCodecRoundTripTests
         JsonObject mutado = Envelope(congelado);
         Mutar(mutado, caminho, valorNovo);
 
-        byte[] bytesMutados = HashCanonicalComputer.ComputeSnapshotBytes(mutado);
+        byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes, $"pré-condição: mutar '{caminho}' tem de mudar os bytes");
 
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, bytesMutados);
@@ -432,7 +432,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Dados,
                 reidratado.Value.HashDocumento,
                 reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade)).Value!.Bytes;
+                reidratado.Value.Conformidade,
+                reidratado.Value.MetadadosFatosCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(fixture,
             "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +
@@ -461,12 +462,12 @@ public sealed class EnvelopeCodecRoundTripTests
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        "envelope-1.1-rico.json"));
+        "envelope-0.0.1-rico.json"));
 
     private static string CaminhoNoFonte([CallerFilePath] string origem = "") => Path.Join(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        "envelope-1.1-rico.json");
+        "envelope-0.0.1-rico.json");
 
     // ── Round-trip 1.3 com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
 
@@ -509,8 +510,8 @@ public sealed class EnvelopeCodecRoundTripTests
         // especificamente o EnvelopeCodecV13 (o encoder 1.3 AGORA CONGELADO), não a versão
         // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
         // EnvelopeCodecV13 já documenta para si).
-        SnapshotCanonico congelado = new EnvelopeCodecV13().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("1.3", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
+        SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
+        congelado.SchemaVersion.Should().Be("0.0.1", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -650,7 +651,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento));
-        congelado.SchemaVersion.Should().Be("1.4", "pré-condição: esta suíte prova o bloco arvoreSatisfacao, novo na 1.4");
+        congelado.SchemaVersion.Should().Be("0.0.1", "pré-condição: esta suíte prova o bloco arvoreSatisfacao, novo na 1.4");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
