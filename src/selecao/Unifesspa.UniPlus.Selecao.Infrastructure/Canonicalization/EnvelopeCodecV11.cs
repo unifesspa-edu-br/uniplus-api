@@ -614,8 +614,8 @@ public sealed class EnvelopeCodecV11 : IEnvelopeCodec
     private static JsonArray OrdenarPorConteudoV11(IEnumerable<JsonObject> itens)
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
-            static item => System.Text.Encoding.UTF8.GetString(PerfilCanonicoV1.Instancia.Serializar(item)),
-            StringComparer.Ordinal);
+            static item => PerfilCanonicoV1.Instancia.Serializar(item),
+            ComparadorLexicograficoDeBytes.Instancia);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
     }

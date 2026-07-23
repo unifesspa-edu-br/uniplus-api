@@ -54,7 +54,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// critérios de desempate), identidade de negócio única quando existe
 /// (oferta/modalidade/condição/recurso por seus <c>*OrigemId</c>), e — onde
 /// não há chave natural — pela <b>chave de conteúdo</b>: os bytes canônicos
-/// do próprio item. Ordenar por <c>EntityBase.Id</c> era determinístico entre
+/// do próprio item, comparados como bytes
+/// (<see cref="ComparadorLexicograficoDeBytes"/>), não como texto decodificado.
+/// Ordenar por <c>EntityBase.Id</c> era determinístico entre
 /// leituras da MESMA linha, mas não entre <b>configurações equivalentes</b>:
 /// duas regras de eliminação idênticas inseridas em ordem inversa recebem
 /// Guids v7 distintos e produziriam bytes distintos para a mesma configuração.
@@ -624,9 +626,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         IOrderedEnumerable<DocumentoExigido> ordenadas = exigencias
             .OrderBy(static e => e.ExigidoNaFaseId)
             .ThenBy(static e => e.TipoDocumentoOrigemId)
-            .ThenBy(static e => System.Text.Encoding.UTF8.GetString(
-                PerfilAtual.Serializar(SerializarExigenciaSemIdentidade(e))),
-                StringComparer.Ordinal)
+            .ThenBy(
+                static e => PerfilAtual.Serializar(SerializarExigenciaSemIdentidade(e)),
+                ComparadorLexicograficoDeBytes.Instancia)
             // Achado de revisão (Story #554, PR #903): duas exigências byte-idênticas em
             // todo o resto (mesma fase, mesmo tipo, mesmo conteúdo) empatam na chave de
             // conteúdo acima — e, ao contrário de regrasEliminacao (sem identidade), o Id
@@ -922,8 +924,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonArray OrdenarPorConteudo(IEnumerable<JsonObject> itens)
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
-            static item => System.Text.Encoding.UTF8.GetString(PerfilAtual.Serializar(item)),
-            StringComparer.Ordinal);
+            static item => PerfilAtual.Serializar(item),
+            ComparadorLexicograficoDeBytes.Instancia);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
     }

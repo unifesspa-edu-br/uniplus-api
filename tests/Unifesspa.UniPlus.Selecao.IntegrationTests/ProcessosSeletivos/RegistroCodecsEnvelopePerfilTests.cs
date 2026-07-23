@@ -48,7 +48,11 @@ public sealed class RegistroCodecsEnvelopePerfilTests
         public string HashHex(byte[] bytes) => PerfilCanonicoV1.Instancia.HashHex(bytes);
     }
 
-    /// <summary>Perfil que recusa <c>null</c> — a estrita que a versão seguinte do envelope terá.</summary>
+    /// <summary>
+    /// Perfil que recusa <c>null</c> <b>em qualquer profundidade</b> — a estrita que a versão
+    /// seguinte do envelope terá. A recursão importa: um perfil que só olhasse a raiz deixaria
+    /// passar o <c>null</c> aninhado, que é onde ele de fato aparece num envelope.
+    /// </summary>
     private sealed class PerfilQueRecusaNulo : IPerfilCanonico
     {
         public string Algoritmo => "canonical-json-sem-nulo/sha256@teste";
@@ -56,16 +60,47 @@ public sealed class RegistroCodecsEnvelopePerfilTests
         public byte[] Serializar(JsonObject payload)
         {
             ArgumentNullException.ThrowIfNull(payload);
-            if (payload.Any(static par => par.Value is null))
-            {
-                throw new PayloadForaDoPerfilCanonicoException(
-                    "'null' não é representável neste perfil — a ausência do dado se declara antes de canonicalizar.");
-            }
-
+            RecusarNulo(payload, "$");
             return PerfilCanonicoV1.Instancia.Serializar(payload);
         }
 
         public string HashHex(byte[] bytes) => PerfilCanonicoV1.Instancia.HashHex(bytes);
+
+        private static void RecusarNulo(JsonNode no, string caminho)
+        {
+            switch (no)
+            {
+                case JsonObject objeto:
+                    foreach (KeyValuePair<string, JsonNode?> par in objeto)
+                    {
+                        Descer(par.Value, $"{caminho}.{par.Key}");
+                    }
+
+                    break;
+
+                case JsonArray array:
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        Descer(array[i], $"{caminho}[{i}]");
+                    }
+
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        private static void Descer(JsonNode? filho, string caminho)
+        {
+            if (filho is null)
+            {
+                throw new PayloadForaDoPerfilCanonicoException(
+                    $"'{caminho}' é null, e null não é representável neste perfil — a ausência do dado se declara antes de canonicalizar.");
+            }
+
+            RecusarNulo(filho, caminho);
+        }
     }
 
     private sealed class CodecDeTeste(IPerfilCanonico perfil) : IEnvelopeCodec
@@ -145,17 +180,55 @@ public sealed class RegistroCodecsEnvelopePerfilTests
     /// O que um perfil estrito recusa vira <b>recusa nomeada</b>, não falha não tratada — quem
     /// grava a coluna à mão consegue produzir exatamente o payload que ele não representa.
     /// </summary>
-    [Fact(DisplayName = "Gate de forma — payload que o perfil recusa vira envelope malformado, não exceção")]
-    public void GateDeForma_PayloadRecusadoPeloPerfil_ViraRecusaNomeada()
+    [Theory(DisplayName = "Gate de forma — payload que o perfil recusa vira envelope malformado, não exceção")]
+    [InlineData("""{"a":null}""")]
+    [InlineData("""{"a":{"b":null}}""")]
+    [InlineData("""{"a":[1,null]}""")]
+    public void GateDeForma_PayloadRecusadoPeloPerfil_ViraRecusaNomeada(string json)
     {
         PerfilQueRecusaNulo perfil = new();
-        byte[] comNulo = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["a"] = null });
+        byte[] comNulo = PerfilCanonicoV1.Instancia.Serializar(JsonNode.Parse(json)!.AsObject());
 
         Result<EnvelopeReidratado> resultado = RegistroCom(perfil).Reidratar(VersaoCom(perfil, comNulo));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
         resultado.Error.Message.Should().Contain(perfil.Algoritmo);
+    }
+
+    /// <summary>
+    /// O mesmo contrato no <b>outro</b> caminho: <c>Decodificar</c> é público e chamável sem
+    /// passar pelo registro, e o parse que os decoders compartilham reserializa por conta
+    /// própria. Um tratamento que existisse só no registro deixaria escapar uma falha não
+    /// tratada por esta porta.
+    /// </summary>
+    [Fact(DisplayName = "Parse compartilhado — payload recusado pelo perfil vira envelope malformado, não exceção")]
+    public void ParseCompartilhado_PayloadRecusadoPeloPerfil_ViraRecusaNomeada()
+    {
+        PerfilQueRecusaNulo perfil = new();
+        byte[] comNulo = PerfilCanonicoV1.Instancia.Serializar(JsonNode.Parse("""{"a":{"b":null}}""")!.AsObject());
+
+        Result<JsonObject> resultado = EnvelopeCodecV11.Parsear(perfil, comNulo);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain(perfil.Algoritmo);
+    }
+
+    /// <summary>O parse também usa o perfil recebido para julgar a forma, não um global.</summary>
+    [Fact(DisplayName = "Parse compartilhado — a forma canônica é julgada pelo perfil recebido")]
+    public void ParseCompartilhado_UsaOPerfilRecebido()
+    {
+        PerfilIndentado perfil = new();
+
+        EnvelopeCodecV11.Parsear(perfil, perfil.Serializar(PayloadQualquer()))
+            .IsSuccess.Should().BeTrue("os bytes são canônicos sob o perfil que julga");
+
+        Result<JsonObject> recusado = EnvelopeCodecV11.Parsear(
+            perfil, PerfilCanonicoV1.Instancia.Serializar(PayloadQualquer()));
+
+        recusado.IsFailure.Should().BeTrue();
+        recusado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
     }
 
     [Fact(DisplayName = "Registro — versão repetida entre codecs é recusada na construção")]
