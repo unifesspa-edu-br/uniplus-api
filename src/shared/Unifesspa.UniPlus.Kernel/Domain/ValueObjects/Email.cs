@@ -16,9 +16,7 @@ public sealed partial record Email
             return Result<Email>.Failure(new DomainError("Email.Vazio", "E-mail é obrigatório."));
 
         // E-mail é case-insensitive por RFC 5321, normalização para lowercase é intencional
-#pragma warning disable CA1308
         string normalizado = email.Trim().ToLowerInvariant();
-#pragma warning restore CA1308
 
         if (!EmailRegex().IsMatch(normalizado))
             return Result<Email>.Failure(new DomainError("Email.Invalido", "E-mail inválido."));

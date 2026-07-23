@@ -34,9 +34,7 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
     public string Resource { get; init; } = string.Empty;
 
     /// <summary>Versões inteiras aceitas. A última posição é o latest usado como fallback.</summary>
-#pragma warning disable CA1819 // Properties should not return arrays
     public int[] Versions { get; init; } = [];
-#pragma warning restore CA1819
 
     public override void OnActionExecuting(ActionExecutingContext context)
     {

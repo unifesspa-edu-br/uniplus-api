@@ -140,18 +140,22 @@ Sem `SkipEnabledCheck`, o source generator sempre gera a guarda internamente —
 
 ## Supressão de análise de código
 
-`TreatWarningsAsErrors` está ligado — supressões são permanentes. Antes de suprimir, **investigar causa raiz**: warning pode apontar naming, dependência invertida ou catch-all legítimos de refactor (CA1716 "Shared" virou rename `IntegrationTests.Fixtures`, ADR-001 crosscutting).
+`AnalysisLevel=latest-recommended` + `TreatWarningsAsErrors` — política registrada na [ADR-0117](docs/adrs/0117-politica-de-analise-estatica-e-supressao.md). Regras extras de valor que o `recommended` não liga por padrão são religadas por opt-in nomeado no `.editorconfig` (ex.: `CA1062`); regras que não se aplicam ao projeto são desligadas ali com justificativa (ex.: `CA1000` para o `Result<T>`). Supressões são permanentes — antes de suprimir, **investigar causa raiz**: o warning pode apontar naming, dependência invertida ou catch-all legítimo de refactor.
 
-Adotar a técnica **mais específica** possível, sempre com `Justification` preenchida:
+Escolher o mecanismo pelo **alcance da exceção**, sempre com justificativa:
 
-1. `[SuppressMessage]` no símbolo ou `GlobalSuppressions.cs` com `Scope`/`Target`. Padrão.
-2. `.editorconfig` com glob de caminho — apenas para política de camada (ex.: `[tests/**/*.cs]` para convenções xUnit).
-3. `<NoWarn>` em csproj — evitar.
-4. `#pragma warning disable` inline — evitar; aceitável só em bloco muito localizado (ex.: `catch (Exception)` em exception boundary).
+| Alcance | Mecanismo |
+|---|---|
+| A regra não se aplica ao projeto ou a uma camada (é decisão, não exceção) | `.editorconfig`: `severity = none` (global) ou glob de caminho (camada) + comentário com o porquê |
+| A exceção pertence a um símbolo (membro ou tipo) | `[SuppressMessage]` no símbolo, ou `GlobalSuppressions.cs` com `Scope`/`Target`, com `Justification` |
+| A exceção é de 1–2 linhas dentro de um símbolo maior | `#pragma disable/restore` + comentário na mesma linha explicando o porquê |
+| Código gerado (migrations EF) | não suprimir manualmente — o tool já emite as supressões |
 
-Exemplos no repo: `src/*/API/GlobalSuppressions.cs` (CA1515/Program), `tests/*/Infrastructure/*ApiFactory.cs` (CA1515/fixture), `.editorconfig` seção `[tests/**/*.cs]`.
+**Regra de desempate:** a mesma regra suprimida 3+ vezes pelo mesmo motivo virou decisão — sobe para o `.editorconfig`. Evitar `<NoWarn>` em csproj.
 
-Docs: [SuppressMessageAttribute](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/suppress-warnings), [editorconfig](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/configuration-files).
+Exemplos no repo: `.editorconfig` seção `[*.cs]` (CA1000/CA1062, globais) e `[tests/**/*.cs]` (convenções xUnit), `src/*/API/GlobalSuppressions.cs` (CA1515/Program), `#pragma` de `CA1873` em `MigrationServiceCollectionExtensions` (1 linha).
+
+Docs: [ADR-0117](docs/adrs/0117-politica-de-analise-estatica-e-supressao.md), [SuppressMessageAttribute](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/suppress-warnings), [editorconfig](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/configuration-files).
 
 ## Comandos úteis
 

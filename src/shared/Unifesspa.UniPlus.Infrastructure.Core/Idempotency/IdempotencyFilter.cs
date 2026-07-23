@@ -262,12 +262,10 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
                     await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                         .ConfigureAwait(false);
                 }
-#pragma warning disable CA1031 // catch genérico justificado: delete é best-effort no rollback path; falha aqui deve cair no TTL, não substituir/mascarar a exceção original que estamos rethrowing.
                 catch
                 {
                     // Best-effort: se delete falhar, entry expira via TTL.
                 }
-#pragma warning restore CA1031
             }
             throw;
         }
@@ -411,9 +409,7 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         // teria caches separados — replay quebrado. Lowercase é prática
         // canônica de URL normalization (RFC 3986 §6.2.2.1).
         string method = context.HttpContext.Request.Method;
-#pragma warning disable CA1308 // ToLowerInvariant em URL é canônico — ToUpperInvariant deixaria a key ilegível em queries SQL diagnósticas.
         string path = context.HttpContext.Request.Path.ToString().ToLowerInvariant();
-#pragma warning restore CA1308
         return $"{method} {path}";
     }
 

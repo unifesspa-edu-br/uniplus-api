@@ -2,9 +2,7 @@
 // `namespace` declarado no schema Avro (Apache.Avro NET resolve a classe via
 // reflection usando <namespace>.<name> qualificado). Manter alinhado com
 // `Events/Schemas/ProcessoPublicado.avsc` em Selecao.Domain.
-#pragma warning disable CA1050 // Declare types in namespaces — namespace declarado, mas em lowercase.
 namespace unifesspa.uniplus.selecao.events;
-#pragma warning restore CA1050
 
 using System;
 using System.Diagnostics.CodeAnalysis;

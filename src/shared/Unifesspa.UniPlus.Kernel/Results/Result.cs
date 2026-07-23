@@ -39,10 +39,8 @@ public sealed class Result<T>
         Error = error;
     }
 
-#pragma warning disable CA1000 // Factory methods em tipos genéricos são padrão Result<T>
     public static Result<T> Success(T value) => new(true, value, null);
     public static Result<T> Failure(DomainError error) => new(false, default, error);
-#pragma warning restore CA1000
 
     public TResult Match<TResult>(Func<T, TResult> onSuccess, Func<DomainError, TResult> onFailure)
     {
