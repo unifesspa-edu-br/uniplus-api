@@ -131,6 +131,11 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // seria reidratado sem aresta nenhuma: todo fato pareceria coletado
             // incondicionalmente, e campos que deveriam ser suprimidos passariam a ser exigidos.
             .Include(p => p.FatosColetados).ThenInclude(f => f.Precondicoes)
+            // Regras de derivação (Story #927) — MESMO raciocínio, nos três níveis: sem os Include, a
+            // configuração reidrataria sem regra nenhuma (ou sem as condições/o predicado de cada
+            // regra), e a substituição por inteiro faria Clear() num backing list vazio, deixando as
+            // linhas antigas no banco. O motor produziria conjunto errado ou indeterminado.
+            .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes)
             // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
             // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
             // modalidades × desempate × eliminação × fases × bancas) num único JOIN

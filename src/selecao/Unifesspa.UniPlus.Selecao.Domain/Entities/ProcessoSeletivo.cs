@@ -77,6 +77,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public IReadOnlyCollection<FatoColetado> FatosColetados => _fatosColetados.AsReadOnly();
 
+    private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];
+
+    /// <summary>
+    /// As regras de derivação dos fatos derivados deste processo, por código de fato (Story #927):
+    /// a configuração <c>{quando, contribui}</c> que o motor usa para resolver, por exemplo,
+    /// <c>MODALIDADE</c> a partir dos fatos declarados.
+    /// </summary>
+    public IReadOnlyCollection<ConfiguracaoDerivacaoFato> RegrasDerivacao => _regrasDerivacao.AsReadOnly();
+
     private readonly List<NoExigencia> _nosExigencia = [];
     public IReadOnlyCollection<NoExigencia> NosExigencia => _nosExigencia.AsReadOnly();
 
@@ -944,6 +953,50 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             fato.VincularProcessoSeletivo(Id);
             _fatosColetados.Add(fato);
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Substitui integralmente as regras de derivação dos fatos derivados do processo (Story #927).
+    /// </summary>
+    /// <remarks>
+    /// Só é aceito antes da primeira publicação (processo em rascunho), como a coleta de fatos: a
+    /// regra ainda não entra no envelope congelado nem na restauração, e permitir a edição sob
+    /// retificação criaria estado mutável fora da configuração congelada. A validação aqui é
+    /// estrutural — código de fato único no processo. A validação semântica (o fato alvo é derivado
+    /// com binding de regra; fatos citados e código contribuído no vocabulário e no domínio) depende
+    /// de dados cross-módulo e é do comando na Application.
+    /// </remarks>
+    public Result DefinirRegrasDerivacao(IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao)
+    {
+        ArgumentNullException.ThrowIfNull(regrasDerivacao);
+
+        if (Status != StatusProcesso.Rascunho)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho",
+                "As regras de derivação só podem ser definidas antes da primeira publicação — "
+                + "a edição sob retificação depende do congelamento conjunto da configuração (#928)."));
+        }
+
+        HashSet<string> codigos = new(StringComparer.Ordinal);
+        foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
+        {
+            if (!codigos.Add(config.CodigoFato))
+            {
+                return Result.Failure(new DomainError(
+                    ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
+                    $"O fato '{config.CodigoFato}' tem mais de uma configuração de derivação neste processo."));
+            }
+        }
+
+        _regrasDerivacao.Clear();
+        foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
+        {
+            config.VincularProcessoSeletivo(Id);
+            _regrasDerivacao.Add(config);
         }
 
         return Result.Success();
