@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 [SuppressMessage(
     "Performance",
@@ -97,6 +98,35 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             .IsUnique()
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ix_modalidade_codigo_vivo");
+
+        builder.HasData(MaterializarSeed());
+    }
+
+    /// <summary>
+    /// Projeta o seed (<see cref="ModalidadeSeed.Itens"/>) para linhas que o <c>HasData</c> congela
+    /// como literais na migration. O instante-âncora é fixo (as linhas não passam pelo
+    /// <c>AuditableInterceptor</c>); as oito federais mais AC e AC_PCD nascem com a migração.
+    /// </summary>
+    private static IEnumerable<object> MaterializarSeed()
+    {
+        DateTimeOffset seedCriadoEm = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        return ModalidadeSeed.Itens.Select(item => new
+        {
+            item.Id,
+            Codigo = CodigoModalidade.Criar(item.Codigo).Value!,
+            item.Descricao,
+            NaturezaLegal = item.Natureza,
+            ComposicaoVagas = item.Composicao,
+            item.ComposicaoOrigem,
+            RegraRemanejamento = item.Regra,
+            item.RemanejamentoArgs,
+            CriteriosCumulativos = (IReadOnlyList<string>)[],
+            AcaoQuandoIndeferido = (AcaoQuandoIndeferido?)null,
+            item.BaseLegal,
+            CreatedAt = seedCriadoEm,
+            IsDeleted = false,
+        });
     }
 
     private static void ConfigurarChecks(TableBuilder<Modalidade> table)

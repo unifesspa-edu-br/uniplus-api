@@ -8,11 +8,14 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Integração ponta-a-ponta da Modalidade contra Postgres real (UNI-REQ-0011):
@@ -259,6 +262,62 @@ public sealed class ModalidadePersistenceTests
     {
         CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
         return ctx.Modalidades.Single(m => m.Codigo == vo).Id;
+    }
+
+    [Fact(DisplayName = "Seed: as oito federais + AC + AC_PCD nascem com a migração, vivas e com os atributos corretos")]
+    public async Task Seed_ModalidadesFederais_PresentesEVivas()
+    {
+        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+
+        List<Modalidade> semeadas = await ctx.Modalidades.AsNoTracking()
+            .Where(m => !m.IsDeleted)
+            .ToListAsync();
+
+        string[] codigos = [.. semeadas.Select(m => m.Codigo.Valor).OrderBy(c => c, StringComparer.Ordinal)];
+        codigos.Should().Contain(
+            ["AC", "AC_PCD", "LB_EP", "LB_PCD", "LB_PPI", "LB_Q", "LI_EP", "LI_PCD", "LI_PPI", "LI_Q"],
+            "o seed torna as modalidades legais fixas presentes sem digitação por edital");
+
+        Modalidade acPcd = semeadas.Single(m => m.Codigo.Valor == "AC_PCD");
+        acPcd.NaturezaLegal.Should().Be(NaturezaLegal.OutraModalidade);
+        acPcd.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiraDe);
+        acPcd.ComposicaoOrigem.Should().Be("AC", "AC_PCD retira suas vagas da ampla concorrência, não do total");
+        acPcd.RegraRemanejamento.Should().Be(RegraRemanejamento.DestinoUnico);
+        acPcd.RemanejamentoArgs.Destino.Should().Be("AC", "a vaga ociosa de AC_PCD retorna à ampla concorrência");
+        acPcd.Descricao.Should().Contain("(V)", "o rótulo V dos editais vive na descrição, nunca no código");
+
+        Modalidade ac = semeadas.Single(m => m.Codigo.Valor == "AC");
+        ac.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
+        ac.RegraRemanejamento.Should().BeNull("ampla concorrência não remaneja como cota");
+
+        semeadas.Where(m => m.Codigo.Valor.StartsWith('L'))
+            .Should().OnlyContain(m => m.NaturezaLegal == NaturezaLegal.CotaReservada
+                && m.RegraRemanejamento == RegraRemanejamento.SegueCascata,
+                "toda cota reservada segue a cascata legal de remanejamento");
+    }
+
+    [Fact(DisplayName = "Seed: cada item satisfaz as invariantes de Modalidade.Criar (natureza × composição × remanejamento × args)")]
+    public void Seed_CadaItem_SatisfazInvariantesDoAgregado()
+    {
+        foreach (ModalidadeSeedItem item in ModalidadeSeed.Itens)
+        {
+            Result<Modalidade> resultado = Modalidade.Criar(
+                item.Codigo,
+                item.Descricao,
+                NaturezasLegais.ParaTokenCanonico(item.Natureza),
+                ComposicoesVagas.ParaTokenCanonico(item.Composicao),
+                item.ComposicaoOrigem,
+                item.Regra is { } regra ? RegrasRemanejamento.ParaTokenCanonico(regra) : null,
+                item.RemanejamentoArgs.Destino,
+                item.RemanejamentoArgs.Par,
+                item.RemanejamentoArgs.Fallback,
+                criteriosCumulativos: [],
+                acaoQuandoIndeferido: null,
+                item.BaseLegal);
+
+            resultado.IsSuccess.Should().BeTrue(
+                $"o item de seed '{item.Codigo}' precisa satisfazer as invariantes do agregado — {resultado.Error?.Message}");
+        }
     }
 
     private static Modalidade Ampla(string codigo) =>
