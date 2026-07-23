@@ -17,6 +17,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// torna presentes desde a migração.
 /// </para>
 /// <para>
+/// As oito cotas federais são <b>dentro das vagas reservadas</b> (<c>DENTRO_DO_VR</c>) — sub-reservas
+/// calculadas sobre a fração reservada do total —, e só a ampla concorrência é residual do volume de
+/// oferta (<c>RESIDUAL_DO_VO</c>), coerente com o domínio da distribuição de vagas em Seleção.
+/// </para>
+/// <para>
 /// <c>AC_PCD</c> é a identidade da modalidade de pessoa com deficiência fora da reserva federal; o
 /// termo <c>V</c> dos editais vive apenas na <c>Descricao</c>, nunca como código. As suas vagas são
 /// <b>retiradas</b> da ampla concorrência (não acrescidas ao total), e a vaga ociosa retorna a
@@ -44,35 +49,35 @@ public static class ModalidadeSeed
             Regra: null, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(2), "LB_PPI", "Cota — baixa renda, preto/pardo/indígena",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(3), "LB_Q", "Cota — baixa renda, quilombola",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(4), "LB_PCD", "Cota — baixa renda, pessoa com deficiência",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(5), "LB_EP", "Cota — baixa renda, egresso de escola pública",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(6), "LI_PPI", "Cota — independente de renda, preto/pardo/indígena",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(7), "LI_Q", "Cota — independente de renda, quilombola",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(8), "LI_PCD", "Cota — independente de renda, pessoa com deficiência",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(9), "LI_EP", "Cota — independente de renda, egresso de escola pública",
-            NaturezaLegal.CotaReservada, ComposicaoVagas.ResidualDoVo, ComposicaoOrigem: null,
+            NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDoVr, ComposicaoOrigem: null,
             RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711),
 
         new(SeedId(10), "AC_PCD", "Ampla Concorrência – Pessoa com Deficiência (V)",

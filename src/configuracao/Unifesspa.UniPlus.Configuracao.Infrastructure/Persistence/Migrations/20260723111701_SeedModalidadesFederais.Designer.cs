@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    [Migration("20260723032943_SeedModalidadesFederais")]
+    [Migration("20260723111701_SeedModalidadesFederais")]
     partial class SeedModalidadesFederais
     {
         /// <inheritdoc />
@@ -1096,7 +1096,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000002"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_PPI",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, preto/pardo/indígena",
@@ -1110,7 +1110,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000003"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_Q",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, quilombola",
@@ -1124,7 +1124,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000004"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_PCD",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, pessoa com deficiência",
@@ -1138,7 +1138,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000005"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_EP",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — baixa renda, egresso de escola pública",
@@ -1152,7 +1152,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000006"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_PPI",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, preto/pardo/indígena",
@@ -1166,7 +1166,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000007"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_Q",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, quilombola",
@@ -1180,7 +1180,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000008"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_PCD",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, pessoa com deficiência",
@@ -1194,7 +1194,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000009"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_EP",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "DENTRO_DO_VR",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CriteriosCumulativos = "[]",
                             Descricao = "Cota — independente de renda, egresso de escola pública",
