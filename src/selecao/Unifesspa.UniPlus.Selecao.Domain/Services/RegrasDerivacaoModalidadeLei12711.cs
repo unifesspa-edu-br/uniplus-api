@@ -68,10 +68,9 @@ public static class RegrasDerivacaoModalidadeLei12711
     private static RegraDerivacao Regra(string contribui, params (string Fato, bool Valor)[] atomos)
     {
         // Todos os átomos de uma regra vivem na MESMA cláusula (E lógico) — a ordinal 1.
-        var linhas = atomos
+        List<(int Clausula, CondicaoDnf Condicao)> linhas = [.. atomos
             .Select(a => (Clausula: 1, Condicao: CondicaoDnf.Criar(
-                a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))
-            .ToList();
+                a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))];
 
         return RegraDerivacao.Criar(PredicadoDnf.CriarDeCondicoesAgrupadas(linhas).Value!, contribui).Value!;
     }
