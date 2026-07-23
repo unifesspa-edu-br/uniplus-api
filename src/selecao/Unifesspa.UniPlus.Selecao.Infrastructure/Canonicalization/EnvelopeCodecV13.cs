@@ -782,9 +782,9 @@ public sealed class EnvelopeCodecV13 : IEnvelopeCodec
         IOrderedEnumerable<DocumentoExigido> ordenadas = exigencias
             .OrderBy(static e => e.ExigidoNaFaseId)
             .ThenBy(static e => e.TipoDocumentoOrigemId)
-            .ThenBy(static e => System.Text.Encoding.UTF8.GetString(
-                PerfilCanonicoV1.Instancia.Serializar(SerializarExigenciaSemIdentidadeV13(e))),
-                StringComparer.Ordinal)
+            .ThenBy(
+                static e => PerfilCanonicoV1.Instancia.Serializar(SerializarExigenciaSemIdentidadeV13(e)),
+                ComparadorLexicograficoDeBytes.Instancia)
             // Achado de revisão (Story #554, PR #903): duas exigências byte-idênticas em
             // todo o resto (mesma fase, mesmo tipo, mesmo conteúdo) empatam na chave de
             // conteúdo acima — e, ao contrário de regrasEliminacao (sem identidade), o Id
@@ -1080,8 +1080,8 @@ public sealed class EnvelopeCodecV13 : IEnvelopeCodec
     private static JsonArray OrdenarPorConteudoV13(IEnumerable<JsonObject> itens)
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
-            static item => System.Text.Encoding.UTF8.GetString(PerfilCanonicoV1.Instancia.Serializar(item)),
-            StringComparer.Ordinal);
+            static item => PerfilCanonicoV1.Instancia.Serializar(item),
+            ComparadorLexicograficoDeBytes.Instancia);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
     }

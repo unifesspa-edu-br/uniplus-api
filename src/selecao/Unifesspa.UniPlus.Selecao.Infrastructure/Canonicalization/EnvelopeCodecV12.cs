@@ -953,9 +953,9 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
         IOrderedEnumerable<DocumentoExigido> ordenadas = exigencias
             .OrderBy(static e => e.ExigidoNaFaseId)
             .ThenBy(static e => e.TipoDocumentoOrigemId)
-            .ThenBy(static e => System.Text.Encoding.UTF8.GetString(
-                PerfilCanonicoV1.Instancia.Serializar(SerializarExigenciaSemIdentidadeV12(e))),
-                StringComparer.Ordinal)
+            .ThenBy(
+                static e => PerfilCanonicoV1.Instancia.Serializar(SerializarExigenciaSemIdentidadeV12(e)),
+                ComparadorLexicograficoDeBytes.Instancia)
             .ThenBy(static e => e.Id);
 
         return new JsonArray([.. ordenadas.Select(static e =>
@@ -1185,8 +1185,8 @@ public sealed class EnvelopeCodecV12 : IEnvelopeCodec
     private static JsonArray OrdenarPorConteudoV12(IEnumerable<JsonObject> itens)
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
-            static item => System.Text.Encoding.UTF8.GetString(PerfilCanonicoV1.Instancia.Serializar(item)),
-            StringComparer.Ordinal);
+            static item => PerfilCanonicoV1.Instancia.Serializar(item),
+            ComparadorLexicograficoDeBytes.Instancia);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
     }
