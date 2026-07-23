@@ -912,16 +912,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// devolve o <b>caminho</b> do ciclo, que é o que um administrador precisa para corrigir a
     /// configuração — enquanto o erro de ordem apontaria só um par de fatos.
     /// </para>
+    /// <para>
+    /// <b>Só é aceito antes da primeira publicação</b> (processo em <c>Rascunho</c>), e por isso
+    /// não recebe precondição de concorrência — em rascunho não há sessão editorial nem ETag. Ao
+    /// contrário dos demais <c>Definir*</c>, o grafo ainda não participa do congelamento nem da
+    /// restauração da configuração; enquanto essa integração não existe, permitir a edição sob
+    /// retificação criaria um estado mutável que o envelope congelado não cobre e que o descarte
+    /// da retificação não reverteria. A edição sob retificação, junto do congelamento do grafo no
+    /// envelope, é entregue na story do congelamento conjunto (#928).
+    /// </para>
     /// </remarks>
-    public Result DefinirFatosColetados(
-        IReadOnlyList<FatoColetado> fatosColetados,
-        PrecondicaoIfMatch precondicao)
+    public Result DefinirFatosColetados(IReadOnlyList<FatoColetado> fatosColetados)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        if (Status != StatusProcesso.Rascunho)
         {
-            return Result.Failure(bloqueio);
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho",
+                "O grafo de coleta de fatos só pode ser definido antes da primeira publicação — "
+                + "a edição sob retificação depende do congelamento conjunto do grafo (#928)."));
         }
 
         if (ValidarGrafoDeFatos(fatosColetados) is { } erro)
@@ -936,11 +946,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _fatosColetados.Add(fato);
         }
 
-        // Numa retificação, esta escrita avança a revisão da sessão editorial — é o que faz o
-        // ETag mudar e impede que uma escrita concorrente com o If-Match antigo sobrescreva esta
-        // (mesmo controle dos demais Definir*). Fora de retificação, o rascunho é nulo e o bump
-        // é inócuo.
-        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 

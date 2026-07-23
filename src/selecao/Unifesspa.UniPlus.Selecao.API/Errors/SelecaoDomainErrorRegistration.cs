@@ -206,6 +206,21 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.ConformidadeInsuficiente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conformidade_insuficiente", "Processo não conforme para publicação")),
         new("ProcessoSeletivo.ConformidadeLegalInsuficiente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conformidade_legal_insuficiente", "Processo não conforme às obrigatoriedades legais vigentes")),
         new("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada", "Processo publicado não aceita mutação direta da configuração")),
+        // Grafo de coleta de fatos do candidato (Story #926). Todas as recusas são de configuração
+        // (422): grafo mal formado, ou tentativa de editá-lo após a publicação enquanto o
+        // congelamento conjunto (#928) ainda não existe. Os códigos de FatoColetado usam constantes
+        // e escapam do fitness test — registrados aqui à mão para não caírem em 500 genérico quando
+        // o endpoint de configuração do grafo existir.
+        new("ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.grafo_de_fatos_somente_em_rascunho", "O grafo de coleta de fatos só é editável antes da primeira publicação")),
+        new("FatoColetado.FatoCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_codigo_obrigatorio", "O código do fato coletado é obrigatório")),
+        new("FatoColetado.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.ordem_invalida", "A ordem de coleta não pode ser negativa")),
+        new("FatoColetado.PrecondicaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_autorreferente", "A pré-condição de um fato cita o próprio fato")),
+        new("FatoColetado.FatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_duplicado", "Um fato aparece mais de uma vez na coleta")),
+        new("FatoColetado.OrdemDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.ordem_duplicada", "A ordem de coleta precisa ser total — sem empate entre fatos")),
+        new("FatoColetado.PrecondicaoCitaFatoNaoColetado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_cita_fato_nao_coletado", "A pré-condição cita um fato que este processo não coleta")),
+        new("FatoColetado.PrecondicaoCitaFatoPosterior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_cita_fato_posterior", "A pré-condição cita um fato posterior na ordem de coleta")),
+        new("FatoColetado.GrafoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.grafo_com_ciclo", "As pré-condições dos fatos formam um ciclo")),
+        new("CondicaoPrecondicaoFato.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_precondicao_fato.clausula_invalida", "O ordinal da cláusula da pré-condição não pode ser negativo")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
         // Story #919 (RN08): defesa em profundidade — o vocabulário de fatos é fechado e

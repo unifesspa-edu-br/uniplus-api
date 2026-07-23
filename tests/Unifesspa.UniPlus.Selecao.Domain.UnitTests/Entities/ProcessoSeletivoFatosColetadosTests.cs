@@ -33,8 +33,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirFatosColetados(
-            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1), Fato("CONCORRER_PCD", 2, "PCD")],
-            PrecondicaoIfMatch.Ausente);
+            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1), Fato("CONCORRER_PCD", 2, "PCD")]);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.FatosColetados.Should().HaveCount(3);
@@ -48,8 +47,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         // Grafo perfeitamente acíclico: CONCORRER_PCD depende de PCD e nada depende de CONCORRER_PCD.
         // Mas PCD vem DEPOIS na ordem de coleta, então a pergunta seria feita antes da resposta existir.
         Result resultado = processo.DefinirFatosColetados(
-            [Fato("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)],
-            PrecondicaoIfMatch.Ausente);
+            [Fato("CONCORRER_PCD", 0, "PCD"), Fato("PCD", 1)]);
 
         resultado.IsFailure.Should().BeTrue("aciclicidade sozinha não garante que a dependência venha antes");
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoPosterior);
@@ -61,8 +59,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirFatosColetados(
-            [Fato("A", 0, "C"), Fato("B", 1, "A"), Fato("C", 2, "B")],
-            PrecondicaoIfMatch.Ausente);
+            [Fato("A", 0, "C"), Fato("B", 1, "A"), Fato("C", 2, "B")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.GrafoComCiclo);
@@ -81,8 +78,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         // ENTRADA cita A; A e B formam o ciclo (A cita B, B cita A). O caminho reportado deve ser
         // "A → B → A", nunca "ENTRADA → A → B → A": ENTRADA leva ao ciclo mas não faz parte dele.
         Result resultado = processo.DefinirFatosColetados(
-            [Fato("ENTRADA", 0, "A"), Fato("A", 1, "B"), Fato("B", 2, "A")],
-            PrecondicaoIfMatch.Ausente);
+            [Fato("ENTRADA", 0, "A"), Fato("A", 1, "B"), Fato("B", 2, "A")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.GrafoComCiclo);
@@ -98,8 +94,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirFatosColetados(
-            [Fato("CONCORRER_PCD", 0, "PCD")],
-            PrecondicaoIfMatch.Ausente);
+            [Fato("CONCORRER_PCD", 0, "PCD")]);
 
         resultado.IsFailure.Should().BeTrue("o gate ficaria preso a um fato que este processo nunca vai resolver");
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
@@ -120,8 +115,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirFatosColetados(
-            [Fato("PCD", 0), Fato("PCD", 1)],
-            PrecondicaoIfMatch.Ausente);
+            [Fato("PCD", 0), Fato("PCD", 1)]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
@@ -133,8 +127,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirFatosColetados(
-            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 0)],
-            PrecondicaoIfMatch.Ausente);
+            [Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 0)]);
 
         resultado.IsFailure.Should().BeTrue(
             "com empate de ordem, 'anterior' deixa de ser decidível entre os dois fatos");
@@ -145,10 +138,10 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     public void Definir_SubstituiPorInteiro()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirFatosColetados([Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirFatosColetados([Fato("PCD", 0), Fato("EGRESSO_ESCOLA_PUBLICA", 1)])
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados([Fato("SEXO", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados([Fato("SEXO", 0)]).IsSuccess.Should().BeTrue();
 
         processo.FatosColetados.Should().HaveCount(1);
         processo.FatosColetados.Single().FatoCodigo.Should().Be("SEXO");
@@ -159,7 +152,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirFatosColetados([], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirFatosColetados([]);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.FatosColetados.Should().BeEmpty();
@@ -170,7 +163,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        processo.DefinirFatosColetados([Fato("PCD", 0), Fato("CONCORRER_PCD", 1, "PCD")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirFatosColetados([Fato("PCD", 0), Fato("CONCORRER_PCD", 1, "PCD")])
             .IsSuccess.Should().BeTrue();
 
         processo.FatosColetados.Should().OnlyContain(f => f.ProcessoSeletivoId == processo.Id);

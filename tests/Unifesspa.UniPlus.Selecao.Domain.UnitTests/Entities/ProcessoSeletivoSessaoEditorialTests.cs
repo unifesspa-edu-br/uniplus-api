@@ -246,19 +246,18 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         rascunho.Revisao.Should().Be(3);
     }
 
-    [Fact(DisplayName = "Definir o grafo de coleta de fatos sob sessão INCREMENTA a revisão — sem isso, um ETag obsoleto sobrescreveria a escrita")]
-    public void DefinirFatosColetados_ComSessao_IncrementaRevisao()
+    [Fact(DisplayName = "O grafo de coleta de fatos NÃO é editável após a publicação — nem sob retificação (aguarda o congelamento conjunto de #928)")]
+    public void DefinirFatosColetados_ProcessoPublicado_Recusa()
     {
-        ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
-        rascunho.Revisao.Should().Be(1);
+        // Publicado, com sessão de retificação aberta: os demais Definir* aceitam neste estado.
+        // O grafo de fatos não, porque ainda não entra no congelamento nem na restauração — aceitá-lo
+        // deixaria estado mutável fora do envelope congelado e sem rollback no descarte.
+        ProcessoSeletivo processo = ComSessaoAberta(out _);
 
-        FatoColetado fato = FatoColetado.Criar("PCD", 0, null).Value!;
-        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
-            .IsSuccess.Should().BeTrue();
+        Result resultado = processo.DefinirFatosColetados([FatoColetado.Criar("PCD", 0, null).Value!]);
 
-        rascunho.Revisao.Should().Be(
-            2,
-            "a escrita do grafo de fatos é mutação como qualquer outra — se a revisão não avançasse, uma escrita concorrente com o If-Match antigo passaria e sobrescreveria esta");
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho");
     }
 
     [Fact(DisplayName = "Uma mutação RECUSADA não move a revisão — o ETag do cliente continua válido")]
