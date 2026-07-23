@@ -92,6 +92,16 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Navigation(p => p.FatosColetados)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        // Regras de derivação (Story #927) — mesma disciplina de FatosColetados: FK obrigatória,
+        // cascade, substituição por inteiro pelo agregado.
+        builder.HasMany(p => p.RegrasDerivacao)
+            .WithOne()
+            .HasForeignKey(c => c.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(p => p.RegrasDerivacao)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         // ReferenciaTemporalFatos (Story #554, PR #896) — VO 0..1 sem identidade própria,
         // owned inline em processos_seletivos (nunca entidade filha própria — ela não tem
         // Id nem ciclo de vida próprio, diferente das coleções acima).

@@ -260,6 +260,20 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho");
     }
 
+    [Fact(DisplayName = "As regras de derivação NÃO são editáveis após a publicação (aguardam o congelamento conjunto de #928)")]
+    public void DefinirRegrasDerivacao_ProcessoPublicado_Recusa()
+    {
+        ProcessoSeletivo processo = ComSessaoAberta(out _);
+
+        ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+            [RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!]).Value!;
+
+        Result resultado = processo.DefinirRegrasDerivacao([config]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho");
+    }
+
     [Fact(DisplayName = "Uma mutação RECUSADA não move a revisão — o ETag do cliente continua válido")]
     public void Definir_Recusado_NaoIncrementaRevisao()
     {

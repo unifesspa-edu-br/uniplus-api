@@ -221,6 +221,25 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FatoColetado.PrecondicaoCitaFatoPosterior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_cita_fato_posterior", "A pré-condição cita um fato posterior na ordem de coleta")),
         new("FatoColetado.GrafoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.grafo_com_ciclo", "As pré-condições dos fatos formam um ciclo")),
         new("CondicaoPrecondicaoFato.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_precondicao_fato.clausula_invalida", "O ordinal da cláusula da pré-condição não pode ser negativo")),
+        // Regra de derivação de fato (Story #927). Todas as recusas são de configuração (422): regra
+        // mal formada, ou tentativa de editá-la após a publicação enquanto o congelamento conjunto
+        // (#928) ainda não existe. Os códigos usam constantes e escapam do fitness test — registrados
+        // à mão para não caírem em 500 quando o endpoint de configuração da regra existir.
+        new("ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.regras_derivacao_somente_em_rascunho", "As regras de derivação só são editáveis antes da primeira publicação")),
+        new("ConfiguracaoDerivacaoFato.CodigoFatoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.codigo_fato_obrigatorio", "O código do fato derivado é obrigatório")),
+        new("ConfiguracaoDerivacaoFato.SemRegras", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.sem_regras", "A derivação de um fato precisa de ao menos uma regra")),
+        new("ConfiguracaoDerivacaoFato.OrdemRegraDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.ordem_regra_duplicada", "Duas regras da mesma derivação têm a mesma ordem")),
+        new("ConfiguracaoDerivacaoFato.CodigoFatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.codigo_fato_duplicado", "Um fato tem mais de uma configuração de derivação neste processo")),
+        new("RegraDerivacaoConfigurada.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao_configurada.ordem_invalida", "A ordem da regra não pode ser negativa")),
+        new("RegraDerivacaoConfigurada.ContribuiObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao_configurada.contribui_obrigatorio", "Uma regra de derivação precisa contribuir um código")),
+        new("CondicaoRegraDerivacao.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_regra_derivacao.clausula_invalida", "O ordinal da cláusula da regra não pode ser negativo")),
+        // Códigos do value object da regra (motor), que ParaRegrasDerivacao pode devolver ao
+        // reconstruir a regra contra o domínio do fato.
+        new("RegraDerivacao.ContribuiObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao.contribui_obrigatorio", "Uma regra de derivação precisa contribuir um código")),
+        new("RegrasDerivacaoFato.SemRegras", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.sem_regras", "A derivação de um fato precisa de ao menos uma regra")),
+        new("RegrasDerivacaoFato.ContribuiForaDoDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.contribui_fora_do_dominio", "Uma regra contribui um código fora do domínio do fato")),
+        new("RegrasDerivacaoFato.DependenciasIncoerentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.dependencias_incoerentes", "As dependências declaradas não são exatamente os fatos citados")),
+        new("RegrasDerivacaoFato.DerivacaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_derivacao_fato.derivacao_autorreferente", "Um fato derivado não pode depender de si mesmo")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
         // Story #919 (RN08): defesa em profundidade — o vocabulário de fatos é fechado e
