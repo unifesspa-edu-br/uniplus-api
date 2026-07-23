@@ -49,5 +49,8 @@ public static class FatoCandidatoErrorCodes
     /// <summary>Prefixo do binding incoerente com a <see cref="Enums.OrigemFato"/> declarada.</summary>
     public const string BindingPrefixoIncoerenteComOrigem = "FatoCandidato.BindingPrefixoIncoerenteComOrigem";
 
+    /// <summary>Binding <c>REGRA_DERIVACAO:</c> cuja referência não é o código do próprio fato.</summary>
+    public const string BindingReferenciaRegraIncoerente = "FatoCandidato.BindingReferenciaRegraIncoerente";
+
     public const string NaoEncontrado = "FatoCandidato.NaoEncontrado";
 }
