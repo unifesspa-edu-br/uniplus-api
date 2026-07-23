@@ -103,6 +103,49 @@ public sealed class RestauradorDeConfiguracaoTests
     }
 
     /// <summary>
+    /// A válvula de escape de obrigatoriedade (<see cref="Customizado"/>, ADR-0058) carrega
+    /// JSON arbitrário — inclusive número decimal legítimo. A forma canônica <b>preserva</b> o
+    /// número em vez de exigir inteiro: se o exigisse, este publish lançaria no meio da
+    /// canonicalização (500), e um parâmetro <c>{"limite":1.5}</c> perfeitamente válido não
+    /// poderia ser congelado. O decoder aceita o bloco opaco, e o round-trip reproduz os bytes.
+    /// </summary>
+    [Fact(DisplayName = "Predicado customizado com número decimal no bloco opaco publica e reidrata — a forma preserva, não recusa")]
+    public void Restaurar_ComPredicadoCustomizadoDecimal_PublicaEReidrata()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+
+        using JsonDocument parametros = JsonDocument.Parse("""{"limite":1.5,"regra":"transitoria"}""");
+        RegraAvaliada regra = new(
+            RegraId: Guid.CreateVersion7(),
+            RegraCodigo: "REGRA-CUSTOMIZADA",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            TipoProcessoCodigoAvaliado: "SiSU",
+            Predicado: new Customizado(parametros.RootElement.Clone()),
+            Aprovada: true,
+            Motivo: null,
+            BaseLegal: "Lei de teste",
+            AtoNormativoUrl: null,
+            PortariaInterna: null,
+            DescricaoHumana: "Válvula de escape com parâmetro decimal",
+            VigenciaInicio: new DateOnly(2020, 1, 1),
+            VigenciaFim: null,
+            Hash: new string('c', 64));
+        ResultadoConformidade conformidade = new([regra], []);
+
+        // O publish canonicaliza; se a forma exigisse inteiro, estouraria aqui.
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
+            CorpusEnvelope.Entrada(processo, conformidade: conformidade));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+
+        Result resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    /// <summary>
     /// O teste decisivo desta classe: um codec que <b>perde um campo</b> não passa. Sem o
     /// guard, a restauração devolveria <c>Success</c> e a configuração empobrecida seria
     /// gravada.

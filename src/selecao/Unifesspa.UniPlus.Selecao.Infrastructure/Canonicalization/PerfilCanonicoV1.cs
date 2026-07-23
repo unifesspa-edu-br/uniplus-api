@@ -16,12 +16,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <list type="number">
 ///   <item>chaves de todo objeto reordenadas recursivamente por comparação ordinal; arrays
 ///   preservam a ordem, que é semântica;</item>
-///   <item>toda string de negócio normalizada para <b>NFC</b> — a forma pré-composta e a
-///   sequência com acento combinante são o mesmo texto, e têm de virar os mesmos bytes;</item>
-///   <item>todo número é <b>inteiro de 64 bits</b> na forma canônica (<c>-0</c> vira <c>0</c>,
-///   sem zero à esquerda, sem expoente): o léxico com que o valor entrou não sobrevive. Um
-///   número fracionário ou fora do alcance de <see cref="long"/> é <b>recusado</b>, não
-///   aproximado;</item>
+///   <item>chaves reordenadas por comparação ordinal (não são normalizadas em NFC — as chaves
+///   estruturais são ASCII; a normalização de chaves de bloco opaco fica para quando a válvula
+///   de escape deixar de ser exceção);</item>
+///   <item>toda string de negócio de valor normalizada para <b>NFC</b> — a forma pré-composta e
+///   a sequência com acento combinante são o mesmo texto e viram os mesmos bytes;</item>
+///   <item>número e booleano são <b>preservados</b> — o perfil não interpreta os valores. A
+///   válvula de escape de obrigatoriedade (ADR-0058) carrega JSON arbitrário, com decimais
+///   legítimos; a canonicalização do número de DOMÍNIO (o valor de condição, Int64 por regra)
+///   é feita na projeção, no ponto em que aquele valor é emitido;</item>
 ///   <item><c>null</c> explícito é <b>preservado</b> — o envelope distingue "campo ausente" de
 ///   "campo presente e vazio";</item>
 ///   <item>escape mínimo: aspa e contrabarra e os cinco controles com forma curta
@@ -121,46 +124,14 @@ public sealed class PerfilCanonicoV1 : IPerfilCanonico
                 // sequência combinante a normalizar.
                 return valor.DeepClone();
 
-            case JsonValueKind.Number:
-                return JsonValue.Create(ExigirInteiro(valor));
-
             default:
-                // true/false não têm léxico ambíguo; reusar é seguro (o nó vem de um clone da árvore).
+                // Número e booleano são preservados como estão. O perfil não interpreta os
+                // valores — a válvula de escape de obrigatoriedade (ADR-0058) carrega JSON
+                // arbitrário, com decimais legítimos, e impor "todo número é inteiro" recusaria
+                // configuração válida na emissão. A canonicalização de número de DOMÍNIO (o
+                // valor de condição, que é Int64 por regra) é feita na projeção, no ponto em que
+                // aquele valor é emitido — não como política global de bytes.
                 return valor.DeepClone();
         }
-    }
-
-    /// <summary>
-    /// O número canônico é o inteiro de 64 bits. Cobre os dois backings de <see cref="JsonValue"/>:
-    /// o parseado (respeita a forma textual — <c>1.0</c>/<c>1e2</c> não são inteiros) e o
-    /// criado a partir de um número CLR (<c>Create(int)</c> não satisfaz <c>TryGetValue&lt;long&gt;</c>).
-    /// </summary>
-    private static long ExigirInteiro(JsonValue valor)
-    {
-        if (valor.TryGetValue(out JsonElement elemento) && elemento.ValueKind == JsonValueKind.Number)
-        {
-            if (elemento.TryGetInt64(out long lidoDoElemento))
-            {
-                return lidoDoElemento;
-            }
-
-            throw new PayloadForaDoPerfilCanonicoException(
-                $"O número '{elemento.GetRawText()}' não é um inteiro de 64 bits — a forma canônica não representa " +
-                "fração, expoente nem valor fora do alcance de Int64.");
-        }
-
-        if (valor.TryGetValue(out long comoLong))
-        {
-            return comoLong;
-        }
-
-        if (valor.TryGetValue(out int comoInt))
-        {
-            return comoInt;
-        }
-
-        throw new PayloadForaDoPerfilCanonicoException(
-            "Um número do payload não é um inteiro de 64 bits — a forma canônica não representa fração, " +
-            "expoente nem valor fora do alcance de Int64.");
     }
 }
