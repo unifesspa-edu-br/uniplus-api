@@ -153,38 +153,26 @@ public sealed class PerfilCanonicoV1GoldenTests
     }
 
     /// <summary>
-    /// Todo número é inteiro de 64 bits na forma canônica: <c>-0</c> vira <c>0</c>, sem léxico
-    /// residual. Cobre inteiro grande além de <c>2^53</c> (Int64, nunca via double).
+    /// O perfil <b>preserva</b> o número — não o interpreta. A válvula de escape de
+    /// obrigatoriedade (ADR-0058) carrega JSON arbitrário com decimais legítimos; impor "todo
+    /// número é inteiro" recusaria configuração válida na emissão. O léxico do número parseado
+    /// sobrevive; o número construído a partir de um valor CLR sai na sua forma canônica de
+    /// runtime.
     /// </summary>
-    [Fact(DisplayName = "Perfil v1 — número canônico: inteiro de 64 bits, -0 vira 0")]
-    public void Numeros_InteiroCanonico()
+    [Fact(DisplayName = "Perfil v1 — número é preservado, não canonicalizado nem recusado")]
+    public void Numeros_Preservados()
     {
         JsonObject payload = new()
         {
-            ["inteiro"] = 42,
-            ["negativo"] = -7,
-            ["zero"] = 0,
+            ["criado"] = 42,
             ["grande"] = 9007199254740993L,
+            ["decimalParseado"] = JsonNode.Parse("1.50"),
+            ["expoenteParseado"] = JsonNode.Parse("1e2"),
             ["menosZeroParseado"] = JsonNode.Parse("-0"),
-            ["expoenteEquivalente"] = 100,
         };
 
         Serializar(payload).Should().Be(
-            """{"expoenteEquivalente":100,"grande":9007199254740993,"inteiro":42,"menosZeroParseado":0,"negativo":-7,"zero":0}""");
-    }
-
-    /// <summary>Número fracionário ou com expoente é recusado — a forma canônica não o representa.</summary>
-    [Theory(DisplayName = "Perfil v1 — número não-inteiro é recusado, não aproximado")]
-    [InlineData("1.0")]
-    [InlineData("1e2")]
-    [InlineData("1.5")]
-    public void Numeros_NaoInteiro_Recusado(string raw)
-    {
-        JsonObject payload = new() { ["v"] = JsonNode.Parse(raw) };
-
-        Action serializar = () => PerfilCanonicoV1.Instancia.Serializar(payload);
-
-        serializar.Should().Throw<PayloadForaDoPerfilCanonicoException>();
+            """{"criado":42,"decimalParseado":1.50,"expoenteParseado":1e2,"grande":9007199254740993,"menosZeroParseado":-0}""");
     }
 
     [Fact(DisplayName = "Perfil v1 — o digest é SHA-256 hex minúsculo sobre os bytes recebidos")]
