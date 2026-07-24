@@ -11,7 +11,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
-using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Ingresso.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
@@ -139,7 +138,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapSharedAuthEndpoints();
 app.MapSharedProfileEndpoints();
-app.MapUniPlusSmokeEndpoints();
 app.MapControllers();
 app.MapOpenApi("/openapi/{documentName}.json");
 

@@ -11,7 +11,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
-using Unifesspa.UniPlus.Infrastructure.Core.Smoke;
 using Unifesspa.UniPlus.Portal.API.Errors;
 using Unifesspa.UniPlus.Portal.Infrastructure;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
@@ -103,7 +102,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapSharedAuthEndpoints();
 app.MapSharedProfileEndpoints();
-app.MapUniPlusSmokeEndpoints();
 app.MapControllers();
 app.MapOpenApi("/openapi/{documentName}.json");
 // Liveness dependency-free: 200 enquanto o processo está respondendo, sem
