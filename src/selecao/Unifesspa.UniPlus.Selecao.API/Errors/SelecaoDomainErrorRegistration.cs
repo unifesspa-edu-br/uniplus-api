@@ -221,6 +221,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FatoColetado.PrecondicaoCitaFatoPosterior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_cita_fato_posterior", "A pré-condição cita um fato posterior na ordem de coleta")),
         new("FatoColetado.GrafoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.grafo_com_ciclo", "As pré-condições dos fatos formam um ciclo")),
         new("CondicaoPrecondicaoFato.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_precondicao_fato.clausula_invalida", "O ordinal da cláusula da pré-condição não pode ser negativo")),
+        // Coletabilidade de fato (Story #984) — semântica cross-módulo resolvida na Application:
+        // um fato coletado tem de existir no vocabulário e ser declarado com binding de campo de
+        // inscrição (derivado/computado não é coletável).
+        new("FatoColetado.FatoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_desconhecido", "O fato coletado não pertence ao vocabulário de fatos do candidato")),
+        new("FatoColetado.FatoNaoColetavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_nao_coletavel", "O fato não é coletável — só um fato declarado respondido em campo de inscrição pode ser coletado")),
         // Regra de derivação de fato (Story #927). Todas as recusas são de configuração (422): regra
         // mal formada, ou tentativa de editá-la após a publicação enquanto o congelamento conjunto
         // (#928) ainda não existe. Os códigos usam constantes e escapam do fitness test — registrados
