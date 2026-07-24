@@ -704,6 +704,26 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Theory(DisplayName = "DNF vazio numa pré-condição ([] ou cláusula vazia [[]]) é recusado — o encoder emite null, nunca vazio")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DnfVazio_Recusa(bool clausulaVazia)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            // RENDA é o fato com pré-condição; troca-a por um DNF vazio, que o decoder colapsaria para
+            // "sem pré-condição" — uma forma que o encoder jamais emite (a ausência de condição é null).
+            JsonObject renda = envelope["fatosColetados"]!.AsArray()
+                .Single(fato => fato!["fatoCodigo"]!.GetValue<string>() == "RENDA")!.AsObject();
+            renda["precondicao"] = clausulaVazia ? new JsonArray(new JsonArray()) : new JsonArray();
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "um DNF vazio colapsaria para 'sem pré-condição' e a restauração o recanonicalizaria como null, " +
+            "aceitando uma forma que o certame nunca congelou");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Código contribuído por MODALIDADE fora do domínio de modalidades ofertadas é recusado")]
     public void ContribuiForaDoDominioDeModalidades_Recusa()
     {
