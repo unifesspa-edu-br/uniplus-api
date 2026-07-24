@@ -1,18 +1,21 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de 18 chaves
-/// — <b>14 blocos reais + 4 stubs</b> <c>{"status":"nao_construido"}</c> para as
+/// ADR-0109). Projeta a configuração viva do agregado num payload de 23 chaves
+/// — <b>19 blocos reais + 4 stubs</b> <c>{"status":"nao_construido"}</c> para as
 /// dimensões que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
 /// devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) é um dos 14: já carrega
@@ -89,7 +92,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// folha da árvore referencia sua exigência pelo mesmo <c>exigenciaId</c> já congelado
     /// em <c>documentosExigidos.exigencias[].exigenciaId</c>, sem duplicar conteúdo.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.1";
+    internal const string SchemaVersionAtual = "0.0.2";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -146,9 +149,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["divulgacao"] = NaoConstruido.DeepClone(),
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
             ["identidadesUnidade"] = NaoConstruido.DeepClone(),
+            ["fatosColetados"] = SerializarFatosColetados(processo.FatosColetados),
+            ["regrasDerivacao"] = SerializarRegrasDerivacao(processo.RegrasDerivacao),
+            ["grafoDependencia"] = SerializarGrafoDependencia(processo),
+            ["versaoInterpretador"] = MotorDerivacao.VersaoSemantica,
+            ["modalidadesOfertadas"] = SerializarModalidadesOfertadas(processo.DistribuicaoVagas),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 18º bloco preservando os 17
+        // ADR-0101: a retificação ACRESCENTA um 24º bloco preservando os 23
         // anteriores. A abertura não escreve esta chave — seu payload é
         // byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
@@ -936,4 +944,153 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["versao"] = regra.Versao,
         ["hash"] = regra.Hash,
     };
+
+    /// <summary>
+    /// Os fatos que o processo coleta do candidato (Story #928, §7.4), ordenados pela <c>Ordem</c>
+    /// de coleta (total e única — a mesma que dá sentido a "fato anterior"). A pré-condição de cada
+    /// fato é a mesma forma DNF de <see cref="SerializarCondicaoGatilho"/> — <c>null</c> quando o
+    /// fato é coletado incondicionalmente.
+    /// </summary>
+    internal static JsonArray SerializarFatosColetados(IEnumerable<FatoColetado> fatos)
+    {
+        JsonArray array = [];
+        foreach (FatoColetado fato in fatos.OrderBy(static f => f.Ordem))
+        {
+            array.Add(new JsonObject
+            {
+                ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
+                ["ordem"] = fato.Ordem,
+                ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(
+                    static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
+            });
+        }
+
+        return array;
+    }
+
+    /// <summary>
+    /// As regras de derivação dos fatos derivados do processo (Story #928, §7.4), ordenadas pelo
+    /// <c>codigoFato</c> derivado (chave de negócio única no processo). As regras de cada fato saem
+    /// pela sua <c>Ordem</c> (total e única na configuração); a regra âncora (incondicional) tem
+    /// <c>quando</c> nulo — nunca um predicado vazio, que avaliaria falso.
+    /// </summary>
+    internal static JsonArray SerializarRegrasDerivacao(IEnumerable<ConfiguracaoDerivacaoFato> regrasDerivacao)
+    {
+        JsonArray array = [];
+        foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao.OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
+        {
+            JsonArray regras = [];
+            foreach (RegraDerivacaoConfigurada regra in config.Regras.OrderBy(static r => r.Ordem))
+            {
+                regras.Add(new JsonObject
+                {
+                    ["ordem"] = regra.Ordem,
+                    ["contribui"] = HashCanonicalComputer.NormalizeNfc(regra.Contribui),
+                    ["quando"] = SerializarDnf(regra.Condicoes.Select(
+                        static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
+                });
+            }
+
+            array.Add(new JsonObject
+            {
+                ["codigoFato"] = HashCanonicalComputer.NormalizeNfc(config.CodigoFato),
+                ["regras"] = regras,
+            });
+        }
+
+        return array;
+    }
+
+    /// <summary>
+    /// Um predicado DNF <c>{fato, operador, valor}</c> na mesma forma que
+    /// <see cref="SerializarCondicaoGatilho"/> — OU de cláusulas, E de condições dentro de cada uma:
+    /// cláusulas ordenadas por <c>Clausula</c>, condições dentro da cláusula pela chave de conteúdo
+    /// (não têm ordinal próprio). <see langword="null"/> quando não há condição nenhuma.
+    /// </summary>
+    private static JsonArray? SerializarDnf(
+        IEnumerable<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> condicoes)
+    {
+        List<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> lista = [.. condicoes];
+        if (lista.Count == 0)
+        {
+            return null;
+        }
+
+        JsonArray clausulas = [];
+        foreach (IGrouping<int, (int Clausula, string Fato, Operador Operador, JsonElement Valor)> clausula
+            in lista.GroupBy(static c => c.Clausula).OrderBy(static g => g.Key))
+        {
+            clausulas.Add(OrdenarPorConteudo(clausula.Select(static c => new JsonObject
+            {
+                ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
+                ["operador"] = c.Operador.ToCodigo(),
+                ["valor"] = JsonNode.Parse(c.Valor.GetRawText()),
+            })));
+        }
+
+        return clausulas;
+    }
+
+    /// <summary>
+    /// O grafo de dependência conjunto (Story #928, §6/§7.4) congelado como testemunho: nós, arestas
+    /// e ordem topológica total. É recomputado da configuração viva (<see cref="ProcessoSeletivo.ConstruirGrafoDependencia"/>);
+    /// um ciclo é invariante quebrada — o gate de publicação já o recusou antes de canonicalizar
+    /// (mesma disciplina de <see cref="SerializarAtendimento"/>: nunca se congela um grafo cíclico
+    /// em silêncio).
+    /// </summary>
+    private static JsonObject SerializarGrafoDependencia(ProcessoSeletivo processo)
+    {
+        Result<GrafoDependenciaConjunta> grafo = processo.ConstruirGrafoDependencia();
+        if (grafo.IsFailure)
+        {
+            throw new InvalidOperationException(
+                "Canonicalização de processo cujo grafo de dependência conjunto forma um ciclo — o gate de "
+                + $"publicação deveria tê-lo recusado antes deste ponto: {grafo.Error!.Message}");
+        }
+
+        return SerializarGrafoDependencia(grafo.Value!);
+    }
+
+    /// <summary>
+    /// A projeção pura do grafo conjunto num <see cref="JsonObject"/> — reusada pelo decoder para
+    /// recomputar o testemunho a partir das partes reidratadas e comparar bytes com o congelado. Os
+    /// nós, arestas e a ordem topológica saem na ordem canônica que <see cref="GrafoDependenciaConjunta"/>
+    /// já devolve (por ordem efetiva de coleta, depois <c>(Classe, Codigo)</c>) — não se reordena aqui.
+    /// Cada nó é <c>tipoDeNo/codigo</c> — a identidade escopada ao processo <b>por construção</b> (o
+    /// envelope pertence a um único processo, <c>VersaoConfiguracao.ProcessoSeletivoId</c>), sem repetir
+    /// o Id da raiz em cada nó.
+    /// </summary>
+    internal static JsonObject SerializarGrafoDependencia(GrafoDependenciaConjunta grafo) => new()
+    {
+        ["nos"] = new JsonArray([.. grafo.Nos.Select(no => (JsonNode)new JsonObject
+        {
+            ["idCanonico"] = RotuloCanonico(no),
+        })]),
+        ["arestas"] = new JsonArray([.. grafo.Arestas.Select(aresta => (JsonNode)new JsonObject
+        {
+            ["tipo"] = aresta.Tipo.ToCodigo(),
+            ["origem"] = RotuloCanonico(aresta.Origem),
+            ["destino"] = RotuloCanonico(aresta.Destino),
+        })]),
+        ["ordemTopologica"] = new JsonArray(
+            [.. grafo.OrdemTopologica.Select(no => (JsonNode?)JsonValue.Create(RotuloCanonico(no)))]),
+    };
+
+    private static string RotuloCanonico(NoGrafoDependencia no) => $"{no.Classe.ToCodigo()}/{no.Codigo}";
+
+    /// <summary>
+    /// O conjunto de códigos de modalidade ofertados pelo processo (Story #928, §7.4) — o domínio
+    /// usado na interseção do fato derivado <c>MODALIDADE</c>. Normalizado NFC antes do <c>Distinct</c>
+    /// e ordenado ordinal (para códigos ASCII atuais coincide, mas fecha o contrato declarado).
+    /// </summary>
+    internal static JsonArray SerializarModalidadesOfertadas(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicao)
+    {
+        IEnumerable<string> codigos = distribuicao
+            .SelectMany(static d => d.Modalidades)
+            .Select(static m => HashCanonicalComputer.NormalizeNfc(m.Codigo))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static c => c, StringComparer.Ordinal);
+
+        return new JsonArray([.. codigos.Select(static c => (JsonNode?)JsonValue.Create(c))]);
+    }
 }

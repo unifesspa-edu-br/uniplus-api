@@ -250,6 +250,35 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(ReferenciaTemporalFatos)] = (
             ["Tipo", "Data", "FaseId"],
             []),
+
+        // Coleta de fatos + derivação (Story #928, §7.4) — congeladas nos blocos de topo
+        // `fatosColetados`/`regrasDerivacao` e testemunhadas no grafo conjunto (`grafoDependencia`).
+        [typeof(FatoColetado)] = (
+            ["FatoCodigo", "Ordem", "Precondicoes"],
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("SemPrecondicao", "Derivada de Precondicoes — congelá-la duplicaria a fonte de verdade."),
+                ("FatosCitados", "Derivada das Precondicoes — a lista de citações é recomputada, nunca persistida."),
+            ]),
+
+        [typeof(CondicaoPrecondicaoFato)] = (
+            ["Clausula", "Fato", "Operador", "Valor"],
+            [("FatoColetadoId", "FK interna.")]),
+
+        [typeof(ConfiguracaoDerivacaoFato)] = (
+            ["CodigoFato", "Regras"],
+            [
+                ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
+                ("FatosCitados", "Derivada das condições das regras — recomputada, nunca persistida."),
+            ]),
+
+        [typeof(RegraDerivacaoConfigurada)] = (
+            ["Ordem", "Contribui", "Condicoes"],
+            [("ConfiguracaoDerivacaoFatoId", "FK interna.")]),
+
+        [typeof(CondicaoRegraDerivacao)] = (
+            ["Clausula", "Fato", "Operador", "Valor"],
+            [("RegraDerivacaoConfiguradaId", "FK interna.")]),
     };
 
     /// <summary>

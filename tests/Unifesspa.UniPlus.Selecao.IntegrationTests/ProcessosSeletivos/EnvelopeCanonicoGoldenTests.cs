@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -54,17 +55,28 @@ public sealed class EnvelopeCanonicoGoldenTests
     private static readonly Guid TipoDocumentoFixo = new("44444444-4444-4444-4444-444444444444");
 
     private static readonly Regex GuidPattern = new(
-        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+        "(?<![0-9a-fA-F])[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![0-9a-fA-F])",
+        RegexOptions.None,
+        TimeSpan.FromSeconds(1));
+
+    /// <summary>
+    /// Guid na forma "N" (32 hex, sem hífens) — como o nó de exigência do bloco
+    /// <c>grafoDependencia</c> serializa a identidade da exigência (<c>EXIGENCIA/&lt;id:N&gt;</c>). Os
+    /// <see cref="Regex"/> negados nas bordas impedem casar um trecho de 32 de dentro de um hash de 64
+    /// hex — que também é conteúdo e nunca é um Guid.
+    /// </summary>
+    private static readonly Regex GuidFormaNPattern = new(
+        "(?<![0-9a-fA-F])[0-9a-fA-F]{32}(?![0-9a-fA-F])",
         RegexOptions.None,
         TimeSpan.FromSeconds(1));
 
     /// <summary>Ids de referência cross-módulo — <b>conteúdo</b>, e portanto NÃO normalizados.</summary>
-    private static readonly HashSet<string> IdsDeConteudo =
+    private static readonly HashSet<Guid> IdsDeConteudo =
     [
-        OfertaCursoFixa.ToString(),
-        ModalidadeFixa.ToString(),
-        DocumentoFixo.ToString(),
-        TipoDocumentoFixo.ToString(),
+        OfertaCursoFixa,
+        ModalidadeFixa,
+        DocumentoFixo,
+        TipoDocumentoFixo,
     ];
 
     /// <summary>
@@ -90,23 +102,37 @@ public sealed class EnvelopeCanonicoGoldenTests
     {
         string json = Encoding.UTF8.GetString(bytes);
 
-        Dictionary<string, string> tokens = new(StringComparer.Ordinal);
+        // Token por IDENTIDADE de Guid (não por texto): o mesmo id de exigência aparece hifenado em
+        // documentosExigidos.exigencias[].exigenciaId E na forma "N" no nó do grafo — as duas
+        // aparições têm de virar o MESMO token para preservar a referência (ADR-0109 D3). Guid.Parse
+        // aceita ambas as formas, então a chave é o Guid canônico.
+        Dictionary<Guid, string> tokens = [];
 
-        return GuidPattern.Replace(json, match =>
+        string Substituir(Match match)
         {
-            if (IdsDeConteudo.Contains(match.Value))
+            if (!Guid.TryParse(match.Value, CultureInfo.InvariantCulture, out Guid id))
             {
                 return match.Value;
             }
 
-            if (!tokens.TryGetValue(match.Value, out string? token))
+            if (IdsDeConteudo.Contains(id))
+            {
+                return match.Value;
+            }
+
+            if (!tokens.TryGetValue(id, out string? token))
             {
                 token = $"<<id-{tokens.Count + 1}>>";
-                tokens[match.Value] = token;
+                tokens[id] = token;
             }
 
             return token;
-        });
+        }
+
+        // A forma hifenada primeiro (a ordem de aparição define a numeração dos tokens, estável entre
+        // regenerações); depois a forma "N", que reusa o token do id já visto.
+        json = GuidPattern.Replace(json, Substituir);
+        return GuidFormaNPattern.Replace(json, Substituir);
     }
 
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
@@ -167,6 +193,27 @@ public sealed class EnvelopeCanonicoGoldenTests
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4). O documento de referência é
+        // gatado por MODALIDADE (derivado), então congelar a derivação é o que fecha as QUATRO
+        // classes de aresta do grafo conjunto no mesmo snapshot — produção (campo→fato),
+        // pré-condição (COR_RACA gata RENDA), derivação (RENDA→MODALIDADE) e gatilho
+        // (MODALIDADE→exigência). MODALIDADE só contribui AC, a única modalidade ofertada.
+        processo.DefinirFatosColetados([
+            FatoColetado.Criar("COR_RACA", 0, null).Value!,
+            FatoColetado.Criar("RENDA", 1, [
+                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+            ]).Value!,
+        ]).IsSuccess.Should().BeTrue();
+
+        processo.DefinirRegrasDerivacao([
+            ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [
+                RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!,
+                RegraDerivacaoConfigurada.Criar(1, "AC", [
+                    CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!,
+                ]).Value!,
+            ]).Value!,
+        ]).IsSuccess.Should().BeTrue();
 
         return processo;
     }

@@ -219,6 +219,12 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas)
+            // Fatos coletados e regras de derivação (Story #928, §7.4): sem os Include, a coleção
+            // tracked nasce vazia e a restauração (AplicarGrafo) inseriria linhas novas para os
+            // mesmos (ProcessoSeletivoId, FatoCodigo)/(…, CodigoFato) já persistidos, colidindo no
+            // índice único — a mesma razão pela qual o repositório de produção já os inclui.
+            .Include(p => p.FatosColetados).ThenInclude(f => f.Precondicoes)
+            .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == id);
 }

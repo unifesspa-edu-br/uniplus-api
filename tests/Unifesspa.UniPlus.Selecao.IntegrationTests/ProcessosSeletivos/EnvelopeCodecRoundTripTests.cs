@@ -232,7 +232,9 @@ public sealed class EnvelopeCodecRoundTripTests
             cronogramaFases: envelope.Grafo.CronogramaFases,
             documentosExigidos: envelope.Grafo.DocumentosExigidos,
             nosExigencia: envelope.Grafo.NosExigencia,
-            referenciaTemporalFatos: envelope.Grafo.ReferenciaTemporalFatos);
+            referenciaTemporalFatos: envelope.Grafo.ReferenciaTemporalFatos,
+            fatosColetados: envelope.Grafo.FatosColetados,
+            regrasDerivacao: envelope.Grafo.RegrasDerivacao);
 
         Result recusa = processo.RestaurarConfiguracaoCongelada(versao, comIdRegenerado);
 
@@ -462,12 +464,12 @@ public sealed class EnvelopeCodecRoundTripTests
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        "envelope-0.0.1-rico.json"));
+        "envelope-0.0.2-rico.json"));
 
     private static string CaminhoNoFonte([CallerFilePath] string origem = "") => Path.Join(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        "envelope-0.0.1-rico.json");
+        "envelope-0.0.2-rico.json");
 
     // ── Round-trip 1.3 com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
 
@@ -511,7 +513,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
         // EnvelopeCodecV13 já documenta para si).
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.1", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
+        congelado.SchemaVersion.Should().Be("0.0.2", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -651,7 +653,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento));
-        congelado.SchemaVersion.Should().Be("0.0.1", "pré-condição: esta suíte prova o bloco arvoreSatisfacao, novo na 1.4");
+        congelado.SchemaVersion.Should().Be("0.0.2", "pré-condição: esta suíte prova o bloco arvoreSatisfacao, novo na 1.4");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

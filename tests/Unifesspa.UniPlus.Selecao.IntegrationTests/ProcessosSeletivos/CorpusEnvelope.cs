@@ -148,6 +148,28 @@ internal static class CorpusEnvelope
         processo.DefinirCronogramaFases([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante)], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
+        // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4): COR_RACA é coletado sem
+        // gate; RENDA é gatado por COR_RACA (pré-condição); MODALIDADE é derivado — âncora AC e a
+        // regra que contribui LB_PPI quando COR_RACA=PRETA E RENDA=ATE_1_SM. Exercita, no mesmo
+        // snapshot, as arestas de produção, pré-condição e derivação, com predicado DNF de duas
+        // condições numa cláusula. Ambos os códigos contribuídos (AC, LB_PPI) são ofertados.
+        processo.DefinirFatosColetados([
+            FatoColetado.Criar("COR_RACA", 0, null).Value!,
+            FatoColetado.Criar("RENDA", 1, [
+                CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+            ]).Value!,
+        ]).IsSuccess.Should().BeTrue();
+
+        processo.DefinirRegrasDerivacao([
+            ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [
+                RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!,
+                RegraDerivacaoConfigurada.Criar(1, "LB_PPI", [
+                    CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
+                    CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!,
+                ]).Value!,
+            ]).Value!,
+        ]).IsSuccess.Should().BeTrue();
+
         return processo;
     }
 
@@ -405,7 +427,9 @@ internal static class CorpusEnvelope
             cronogramaFases: [FaseCronogramaConforme(variante)],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            fatosColetados: [],
+            regrasDerivacao: []);
     }
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
@@ -425,7 +449,9 @@ internal static class CorpusEnvelope
         cronogramaFases: [FaseCronogramaConforme(variante)],
         documentosExigidos: [],
         nosExigencia: [],
-        referenciaTemporalFatos: null);
+        referenciaTemporalFatos: null,
+        fatosColetados: [],
+        regrasDerivacao: []);
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
     private static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(

@@ -13,9 +13,9 @@ public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string
 
 /// <summary>
 /// Informação do ato de retificação (ADR-0103) acrescentada ao envelope como um
-/// bloco adicional (<c>retificacao</c>) além dos 17 blocos canônicos.
+/// bloco adicional (<c>retificacao</c>) além dos 23 blocos canônicos.
 /// <see langword="null"/> na publicação de abertura — o envelope de abertura
-/// mantém exatamente os 17 blocos, sem o bloco de retificação.
+/// mantém exatamente os 23 blocos, sem o bloco de retificação.
 /// </summary>
 public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 
@@ -104,12 +104,12 @@ public sealed record EntradaCanonicalizacao(
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>17 chaves</b> — hoje <b>13 blocos reais + 4 stubs</b>
+/// <b>23 chaves</b> — <b>19 blocos reais + 4 stubs</b>
 /// <c>{"status":"nao_construido"}</c> para as dimensões que a Feature #40 ainda
 /// não implementou — e devolve os bytes que <c>VersaoConfiguracao.Abrir</c>
 /// persiste como base do hash. Quando a entrada carrega
-/// <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 18º bloco
-/// <c>retificacao</c> preservando os 17 anteriores intactos (ADR-0103).
+/// <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 24º bloco
+/// <c>retificacao</c> preservando os 23 anteriores intactos (ADR-0103).
 /// </summary>
 /// <remarks>
 /// A assinatura recebe <b>um único</b> parâmetro por decisão (ADR-0109 D6):
