@@ -9,6 +9,7 @@ using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -1376,7 +1377,47 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return fatoCitado;
         }
 
+        if (PendenciaDoDominioDeContribuicao() is { } contribuicaoForaDoDominio)
+        {
+            return contribuicaoForaDoDominio;
+        }
+
         return PendenciaDoGrafoConjunto();
+    }
+
+    /// <summary>
+    /// O código que a derivação de <c>MODALIDADE</c> contribui tem de pertencer ao domínio congelado
+    /// daquele processo — o conjunto de modalidades ofertadas (Story #928, §7.2). Um código fora dele
+    /// é recusado com erro nomeado, <b>sem tradução de alias</b>: <c>V</c>, por exemplo, é rótulo de
+    /// exibição de <c>AC_PCD</c> no edital, nunca um código de entrada. A canonicidade é avaliada
+    /// contra o domínio da configuração, não contra o conjunto federal global.
+    /// </summary>
+    /// <remarks>
+    /// Reconstruir o VO da regra contra o domínio (<see cref="ConfiguracaoDerivacaoFato.ParaRegrasDerivacao"/>)
+    /// é o contrato que faz a recusa: o VO valida que todo <c>contribui</c> pertence ao domínio, e
+    /// devolve o mesmo erro nomeado que o decodificador do envelope aplica na reidratação — publish e
+    /// decode barram o mesmo código desconhecido.
+    /// </remarks>
+    private DomainError? PendenciaDoDominioDeContribuicao()
+    {
+        IReadOnlyCollection<string> modalidadesOfertadas =
+            [.. _distribuicaoVagas.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo).Distinct(StringComparer.Ordinal)];
+
+        foreach (ConfiguracaoDerivacaoFato config in _regrasDerivacao)
+        {
+            if (!string.Equals(config.CodigoFato, RegrasDerivacaoModalidadeLei12711.CodigoFato, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            Result<RegrasDerivacaoFato> regras = config.ParaRegrasDerivacao(modalidadesOfertadas);
+            if (regras.IsFailure)
+            {
+                return regras.Error;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
