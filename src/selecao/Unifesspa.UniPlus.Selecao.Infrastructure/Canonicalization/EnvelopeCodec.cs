@@ -596,6 +596,17 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'{pathPai}.{chave}' deveria ser um array de cláusulas ou null.")) ?? [];
         }
 
+        // O encoder nunca emite DNF vazio: "sem condição" é `null`, não `[]`. Um array vazio (ou uma
+        // cláusula vazia `[]`) num envelope adulterado colapsaria para "sem pré-condição"/"regra âncora"
+        // — uma forma que a projeção viva não produz — e a restauração o recanonicalizaria como `null`,
+        // aceitando em silêncio um snapshot que o certame nunca congelou. Recusa como malformado.
+        if (clausulas.Count == 0)
+        {
+            return leitor.Propagar<IReadOnlyList<(int, string, Operador, JsonElement)>>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'{pathPai}.{chave}' é um array de cláusulas vazio — a ausência de condição é `null`, nunca `[]`.")) ?? [];
+        }
+
         List<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> condicoes = [];
         for (int c = 0; c < clausulas.Count; c++)
         {
@@ -604,6 +615,13 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             {
                 return leitor.Propagar<IReadOnlyList<(int, string, Operador, JsonElement)>>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado, $"'{clausulaPath}' deveria ser um array de condições.")) ?? [];
+            }
+
+            if (condicoesDaClausula.Count == 0)
+            {
+                return leitor.Propagar<IReadOnlyList<(int, string, Operador, JsonElement)>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{clausulaPath}' é uma cláusula vazia — toda cláusula tem ao menos uma condição.")) ?? [];
             }
 
             for (int i = 0; i < condicoesDaClausula.Count; i++)
