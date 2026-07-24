@@ -40,6 +40,40 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             Regra(2, "LI_PCD", ("CONCORRER_PCD", true), ("EGRESSO_ESCOLA_PUBLICA", true)),
         ]).Value!;
 
+    /// <summary>Oferta uma distribuição mínima cujas modalidades são o domínio congelado de contribuição.</summary>
+    private static void OfertarModalidades(ProcessoSeletivo processo, params string[] codigos)
+    {
+        List<ModalidadeSelecionada> modalidades =
+        [
+            .. codigos.Select(static codigo => ModalidadeSelecionada.Criar(
+                modalidadeOrigemId: Guid.CreateVersion7(),
+                codigo: codigo,
+                descricao: null,
+                naturezaLegal: NaturezaLegalModalidade.Ampla,
+                composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+                composicaoOrigemCodigo: null,
+                regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+                remanejamentoDestino: null,
+                remanejamentoPar: null,
+                remanejamentoFallback: null,
+                criteriosCumulativos: [],
+                acaoQuandoIndeferido: null,
+                baseLegal: "Res. Unifesspa 532/2021",
+                quantidadeDeclarada: 10).Value!),
+        ];
+
+        ConfiguracaoDistribuicaoVagas config = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: modalidades).Value!;
+
+        processo.DefinirDistribuicaoVagas([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
+
     /// <summary>
     /// Um ciclo de derivação (D1 depende de D2, D2 depende de D1) atravessa a validação isolada
     /// de <see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/> — que só barra código duplicado.
@@ -61,6 +95,35 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
         processo.PendenciaPreCanonicalizacao()!.Code
             .Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
+    }
+
+    [Fact(DisplayName = "MODALIDADE que contribui código fora das modalidades ofertadas é recusada no gate de pré-canonicalização")]
+    public void ContribuiForaDoDominioDoProcesso_RecusadoNoGateDePublicacao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        OfertarModalidades(processo, "AC");
+
+        // "V" é rótulo de exibição de AC_PCD no edital, nunca código — e não está entre as
+        // modalidades ofertadas por este processo. Contribuí-lo é recusado, sem tradução de alias.
+        processo.DefinirRegrasDerivacao([ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [Ancora(0, "V")]).Value!])
+            .IsSuccess.Should().BeTrue("a definição isolada não conhece o domínio de modalidades ofertadas");
+
+        processo.PendenciaPreCanonicalizacao().Should().NotBeNull();
+        processo.PendenciaPreCanonicalizacao()!.Code
+            .Should().Be(RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio);
+    }
+
+    [Fact(DisplayName = "MODALIDADE que contribui apenas códigos ofertados passa o gate de pré-canonicalização")]
+    public void ContribuiDentroDoDominioDoProcesso_PassaNoGateDePublicacao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        OfertarModalidades(processo, "AC");
+
+        processo.DefinirRegrasDerivacao([ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [Ancora(0, "AC")]).Value!])
+            .IsSuccess.Should().BeTrue();
+
+        processo.PendenciaPreCanonicalizacao().Should().BeNull(
+            "AC está entre as modalidades ofertadas — o gate de domínio de contribuição não barra");
     }
 
     [Fact(DisplayName = "Regra de derivação que cita fato inexistente é recusada no gate de pré-canonicalização")]
