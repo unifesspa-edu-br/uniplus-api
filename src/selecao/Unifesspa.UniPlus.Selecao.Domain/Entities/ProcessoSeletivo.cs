@@ -2871,6 +2871,36 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             referencia && faseIdCongeladaParaViva.TryGetValue(faseIdCongelada, out Guid faseVivaIdReferencia)
                 ? referencia.ComFaseIdRemapeada(faseVivaIdReferencia)
                 : grafo.ReferenciaTemporalFatos;
+
+        // Fatos coletados e regras de derivação (Story #928, §7.4): repostos da configuração
+        // congelada. A reconciliação é por chave natural (FatoCodigo / CodigoFato) reusando a
+        // instância TRACKED quando o código bate — nunca substituindo por uma instância nova de
+        // mesmo Id, o que colidiria com o identity map, e nunca fazendo DELETE+INSERT do mesmo
+        // (ProcessoSeletivoId, FatoCodigo)/(…, Ordem)/(…, CodigoFato) único na mesma transação. É
+        // seguro reusar a tracked por INTEIRO (com os seus filhos) porque, enquanto a edição sob
+        // retificação não é liberada (§8), fatos/regras são imutáveis após a primeira publicação: o
+        // conteúdo da instância viva JÁ É, por construção, o mesmo do congelado — a mesma garantia
+        // que sustenta a reconciliação de arvoreSatisfacao acima. A reconciliação profunda dos
+        // filhos (sob edição) chega com o §8.
+        Dictionary<string, FatoColetado> fatosTracked = _fatosColetados.ToDictionary(f => f.FatoCodigo, StringComparer.Ordinal);
+        _fatosColetados.Clear();
+        foreach (FatoColetado congelado in grafo.FatosColetados)
+        {
+            FatoColetado fato = fatosTracked.TryGetValue(congelado.FatoCodigo, out FatoColetado? vivo) ? vivo : congelado;
+            fato.VincularProcessoSeletivo(Id);
+            _fatosColetados.Add(fato);
+        }
+
+        Dictionary<string, ConfiguracaoDerivacaoFato> derivacoesTracked =
+            _regrasDerivacao.ToDictionary(c => c.CodigoFato, StringComparer.Ordinal);
+        _regrasDerivacao.Clear();
+        foreach (ConfiguracaoDerivacaoFato congelada in grafo.RegrasDerivacao)
+        {
+            ConfiguracaoDerivacaoFato config =
+                derivacoesTracked.TryGetValue(congelada.CodigoFato, out ConfiguracaoDerivacaoFato? viva) ? viva : congelada;
+            config.VincularProcessoSeletivo(Id);
+            _regrasDerivacao.Add(config);
+        }
     }
 
     /// <summary>

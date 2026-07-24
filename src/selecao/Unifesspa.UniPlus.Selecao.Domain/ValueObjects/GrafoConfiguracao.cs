@@ -35,7 +35,12 @@ public sealed class GrafoConfiguracao
         IReadOnlyList<FaseCronograma> cronogramaFases,
         IReadOnlyList<DocumentoExigido> documentosExigidos,
         IReadOnlyList<NoExigencia> nosExigencia,
-        ReferenciaTemporalFatos? referenciaTemporalFatos)
+        ReferenciaTemporalFatos? referenciaTemporalFatos,
+        // Fatos e regras (Story #928, §7.4) são opcionais com default vazio: um processo sem coleta
+        // nem derivação é estado válido, e os muitos grafos de teste que antecedem a fatia não os
+        // constroem. O decoder do envelope sempre os passa explicitamente.
+        IReadOnlyList<FatoColetado>? fatosColetados = null,
+        IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -60,6 +65,8 @@ public sealed class GrafoConfiguracao
         DocumentosExigidos = [.. documentosExigidos];
         NosExigencia = [.. nosExigencia];
         ReferenciaTemporalFatos = referenciaTemporalFatos;
+        FatosColetados = fatosColetados is null ? [] : [.. fatosColetados];
+        RegrasDerivacao = regrasDerivacao is null ? [] : [.. regrasDerivacao];
     }
 
     public IReadOnlyList<EtapaProcesso> Etapas { get; }
@@ -91,4 +98,17 @@ public sealed class GrafoConfiguracao
     /// configurada (estado válido enquanto não existir gatilho por <c>FAIXA_ETARIA</c>).
     /// </summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; }
+
+    /// <summary>
+    /// Os fatos que o processo coleta do candidato (Story #928, §7.4) — congelados no envelope e
+    /// repostos na restauração. Imutáveis após a primeira publicação (a edição sob retificação chega
+    /// no §8), então reusar a instância viva de mesmo código na reconciliação é seguro por construção.
+    /// </summary>
+    public IReadOnlyList<FatoColetado> FatosColetados { get; }
+
+    /// <summary>
+    /// As regras de derivação dos fatos derivados do processo (Story #928, §7.4) — congeladas no
+    /// envelope e repostas na restauração, mesma garantia de imutabilidade de <see cref="FatosColetados"/>.
+    /// </summary>
+    public IReadOnlyList<ConfiguracaoDerivacaoFato> RegrasDerivacao { get; }
 }

@@ -24,6 +24,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public static class MotorDerivacao
 {
+    /// <summary>
+    /// Versão semântica do interpretador de derivação, congelada no envelope de publicação (RN08).
+    /// É a identidade da semântica com que um snapshot publicado foi resolvido — muda quando a
+    /// forma como o motor avalia as regras muda (não a cada deploy), para que um snapshot antigo
+    /// continue reidratável com a semântica que o produziu. Enquanto há uma só semântica, é "1".
+    /// </summary>
+    public const string VersaoSemantica = "1";
+
     public static ResultadoDerivacao Derivar(
         RegrasDerivacaoFato regras,
         IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)

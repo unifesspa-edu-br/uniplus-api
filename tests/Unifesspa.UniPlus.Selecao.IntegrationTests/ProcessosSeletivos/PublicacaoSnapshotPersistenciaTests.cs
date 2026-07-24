@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 18 blocos — 14
+/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 23 blocos — 19
 /// reais + 4 stubs <c>nao_construido</c> na raiz — estão presentes).
 /// </summary>
 public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
@@ -158,7 +158,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 18 blocos (14 reais + 4 stubs na raiz) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 23 blocos (19 reais + 4 stubs na raiz) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -176,8 +176,11 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
             "documentosExigidos", "arvoreSatisfacao", "formulario", "cascataRemanejamento", "divulgacao",
             "cronogramaFases", "identidadesUnidade",
+            // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
+            // interpretador e conjunto de modalidades ofertadas.
+            "fatosColetados", "regrasDerivacao", "grafoDependencia", "versaoInterpretador", "modalidadesOfertadas",
         ];
-        blocosEsperados.Should().HaveCount(18, "pré-condição do próprio teste — o envelope tem 18 chaves (Story #923: arvoreSatisfacao)");
+        blocosEsperados.Should().HaveCount(23, "pré-condição do próprio teste — o envelope tem 23 chaves (Story #928: fatos/regras/grafo)");
 
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
@@ -188,7 +191,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         // A contagem é DERIVADA do envelope, não escrita à mão. Um bloco
         // que sai de stub sem que este teste seja atualizado faz a contagem
         // divergir — que é exatamente o sinal que se quer.
-        objeto.Should().HaveCount(18, "o envelope de abertura tem exatamente 18 chaves — nem mais, nem menos");
+        objeto.Should().HaveCount(23, "o envelope de abertura tem exatamente 23 chaves — nem mais, nem menos");
 
         string[] stubs = [.. objeto
             .Where(static kvp => kvp.Value is JsonObject bloco

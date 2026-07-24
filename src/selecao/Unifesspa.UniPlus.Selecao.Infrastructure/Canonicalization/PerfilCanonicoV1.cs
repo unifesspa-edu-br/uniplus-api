@@ -79,7 +79,9 @@ public sealed class PerfilCanonicoV1 : IPerfilCanonico
 
     /// <summary>
     /// Reescreve a árvore na forma canônica: objetos com chaves ordenadas, strings em NFC,
-    /// números como inteiro canônico, <c>null</c> e ordem de array preservados.
+    /// número e booleano <b>preservados</b> (não canonicalizados — a válvula de escape de
+    /// obrigatoriedade carrega JSON opaco com decimais legítimos), <c>null</c> e ordem de array
+    /// preservados.
     /// </summary>
     private static JsonNode Canonicalizar(JsonNode node)
     {

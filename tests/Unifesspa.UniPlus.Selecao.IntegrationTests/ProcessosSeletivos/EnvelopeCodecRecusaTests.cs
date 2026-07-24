@@ -662,6 +662,53 @@ public sealed class EnvelopeCodecRecusaTests
 
     // ── Infraestrutura dos testes ──
 
+    // ── Coleta de fatos / derivação / grafo conjunto (Story #928, §7.4) ──
+
+    [Fact(DisplayName = "Versão do interpretador de derivação desconhecida é recusada")]
+    public void VersaoInterpretadorDesconhecida_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(
+            envelope => envelope["versaoInterpretador"] = "999");
+
+        resultado.IsFailure.Should().BeTrue(
+            "um snapshot resolvido por uma semântica de motor que este sistema não conhece não pode ser " +
+            "reidratado como se fosse íntegro");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "Grafo conjunto congelado que não reproduz o recomputado é recusado (testemunho)")]
+    public void GrafoTestemunhoDivergente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            // Tira uma aresta do grafo congelado: o grafo recomputado das partes reidratadas ainda a
+            // terá, então o testemunho não fecha — o congelado deixou de ser cópia verificável.
+            JsonArray arestas = envelope["grafoDependencia"]!["arestas"]!.AsArray();
+            arestas.RemoveAt(arestas.Count - 1);
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "o grafo congelado é testemunho redundante — se ele diverge do recomputado, a evidência não prova o que diz");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "Código contribuído por MODALIDADE fora do domínio de modalidades ofertadas é recusado")]
+    public void ContribuiForaDoDominioDeModalidades_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            // A regra âncora de MODALIDADE contribui um código que o processo não oferta — o conjunto
+            // de modalidades ofertadas congelado prova o domínio, mas não que cada contribui caiba nele.
+            JsonObject modalidade = envelope["regrasDerivacao"]!.AsArray()
+                .Single(no => no!["codigoFato"]!.GetValue<string>() == "MODALIDADE")!.AsObject();
+            modalidade["regras"]!.AsArray()[0]!["contribui"] = "CODIGO_NAO_OFERTADO";
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "uma regra que contribui um código fora do domínio de modalidades ofertadas resolveria um valor " +
+            "impossível — a reconstrução do VO da regra contra o domínio congelado recusa");
+    }
+
     private static ProcessoSeletivo ProcessoPublicado()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
