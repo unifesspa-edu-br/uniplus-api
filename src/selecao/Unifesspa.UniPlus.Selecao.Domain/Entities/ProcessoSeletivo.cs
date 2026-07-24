@@ -932,16 +932,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// envelope, é entregue na story do congelamento conjunto (#928).
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Guard não-mutante da edição do grafo de coleta: devolve o erro de "só em rascunho" quando
+    /// o processo já foi publicado, ou <see langword="null"/> quando a edição é permitida. Existe
+    /// para que a Application possa recusar a operação <b>antes</b> de resolver o vocabulário
+    /// cross-módulo e validar o corpo — o mesmo guard continua dentro de
+    /// <see cref="DefinirFatosColetados"/>, esta antecipação dá a ordem, não a garantia.
+    /// </summary>
+    public DomainError? EdicaoDeGrafoDeFatosBloqueada() =>
+        Status != StatusProcesso.Rascunho
+            ? new DomainError(
+                "ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho",
+                "O grafo de coleta de fatos só pode ser definido antes da primeira publicação — "
+                + "a edição sob retificação depende do congelamento conjunto do grafo (#928).")
+            : null;
+
     public Result DefinirFatosColetados(IReadOnlyList<FatoColetado> fatosColetados)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
 
-        if (Status != StatusProcesso.Rascunho)
+        if (EdicaoDeGrafoDeFatosBloqueada() is { } bloqueio)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho",
-                "O grafo de coleta de fatos só pode ser definido antes da primeira publicação — "
-                + "a edição sob retificação depende do congelamento conjunto do grafo (#928)."));
+            return Result.Failure(bloqueio);
         }
 
         if (ValidarGrafoDeFatos(fatosColetados) is { } erro)

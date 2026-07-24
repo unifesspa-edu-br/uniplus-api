@@ -2305,6 +2305,107 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/fatos-coletados": {
+      "put": {
+        "tags": [
+          "ProcessoSeletivo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FatoColetadoInput"
+                }
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FatoColetadoInput"
+                }
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FatoColetadoInput"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Requisi\u00E7\u00E3o concorrente com a mesma Idempotency-Key ainda em processamento (uniplus.idempotency.processing_conflict). Repetir depois \u2014 a opera\u00E7\u00E3o anterior ainda n\u00E3o concluiu."
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor."
+          }
+        },
+        "x-uniplus-idempotent": true
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/publicacao": {
       "post": {
         "tags": [
@@ -3631,6 +3732,25 @@
           }
         }
       },
+      "CondicaoPrecondicaoInput": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
       "ConfiguracaoBonusRegionalDto": {
         "required": [
           "id",
@@ -4801,6 +4921,39 @@
                 "$ref": "#/components/schemas/RegraRecursoFaseInput"
               }
             ]
+          }
+        }
+      },
+      "FatoColetadoInput": {
+        "required": [
+          "fatoCodigo",
+          "ordem",
+          "precondicao"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "precondicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoInput"
+              }
+            }
           }
         }
       },

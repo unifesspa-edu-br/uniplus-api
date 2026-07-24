@@ -404,6 +404,31 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Substitui integralmente os fatos que o processo coleta do candidato, com a sua ordem de
+    /// coleta e a pré-condição opcional que decide se o campo produtor é apresentado (Story
+    /// #984). Só é coletável um fato declarado, respondido em campo de inscrição — derivados e
+    /// computados são recusados. Escopo desta Story: edição só em rascunho (pré-publicação); um
+    /// processo publicado é recusado com <c>422</c>. Sem <c>If-Match</c>: em rascunho não há
+    /// sessão editorial nem ETag — a resposta é <c>204</c> sem ETag (a edição sob retificação é
+    /// entregue junto do congelamento conjunto do grafo).
+    /// </summary>
+    [HttpPut("{id:guid}/fatos-coletados")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirFatosColetados(
+        Guid id,
+        [FromBody] IReadOnlyList<FatoColetadoInput> fatos,
+        CancellationToken cancellationToken)
+    {
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirFatosColetadosCommand(id, fatos), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Publica o processo (RN08): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
     /// transação — junto da requisição durável que registra o ato em Publicações
