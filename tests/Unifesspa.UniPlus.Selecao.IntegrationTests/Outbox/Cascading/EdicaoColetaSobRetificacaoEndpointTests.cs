@@ -71,6 +71,29 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
         (await ctx.PutFatosAsync(FatosTrocados, ifMatch: etagInicial)).StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
     }
 
+    [Fact(DisplayName = "Editar fatos sob sessão TROCANDO as ordens (0↔1) de uma coleta já persistida persiste sem colisão de índice único")]
+    public async Task Fatos_SobSessao_TrocaOrdens_Persiste()
+    {
+        // A edição sob sessão substitui a coleta inteira: as duas linhas persistidas saem e duas
+        // novas entram, reusando as mesmas chaves (processo, ordem) e (processo, fatoCodigo). O EF
+        // Core ordena os DELETEs antes dos INSERTs para o conflito de índice único (entidades novas,
+        // PKs distintas), então a troca persiste — não há colisão nem necessidade de flush aqui,
+        // diferente do descarte, cujo flush existe pela FIDELIDADE (repor as congeladas, não as vivas).
+        Contexto ctx = await PublicarComColetaAsync(nameof(Fatos_SobSessao_TrocaOrdens_Persiste));
+        string etag = await ctx.AbrirSessaoAsync();
+
+        (await ctx.PutFatosAsync(FatosTrocados, ifMatch: etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using JsonDocument doc = await ctx.ObterProcessoAsync();
+        JsonElement fatos = doc.RootElement.GetProperty("fatosColetados");
+        fatos.EnumerateArray().Select(f => f.GetProperty("fatoCodigo").GetString())
+            .Should().Equal(["BAIXA_RENDA", "COR_RACA"], "a troca de ordens sob sessão persistiu");
+
+        await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        db.Set<FatoColetado>().Count(f => f.ProcessoSeletivoId == ctx.ProcessoId).Should().Be(2, "sem linha órfã");
+    }
+
     [Fact(DisplayName = "Editar fatos de um processo publicado SEM sessão é 422")]
     public async Task Fatos_PublicadoSemSessao_422()
     {
