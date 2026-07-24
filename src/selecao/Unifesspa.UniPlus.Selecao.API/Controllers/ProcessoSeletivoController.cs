@@ -429,6 +429,32 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Substitui integralmente as regras que derivam os fatos derivados do processo — hoje a
+    /// modalidade de concorrência (Story #985). Cada configuração traz o fato derivado e a lista de
+    /// regras <c>{ ordem, contribui, quando? }</c>; a regra incondicional (âncora) tem <c>quando</c>
+    /// nulo. Só um fato derivado com binding de regra de derivação é alvo válido — para a
+    /// modalidade, cada código contribuído tem de ser uma das modalidades ofertadas pelo processo.
+    /// Escopo desta Story: edição só em rascunho (pré-publicação); um processo publicado é recusado
+    /// com <c>422</c>. Sem <c>If-Match</c>: em rascunho não há sessão editorial nem ETag — a
+    /// resposta é <c>204</c> sem ETag.
+    /// </summary>
+    [HttpPut("{id:guid}/regras-derivacao")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DefinirRegrasDerivacao(
+        Guid id,
+        [FromBody] IReadOnlyList<ConfiguracaoDerivacaoInput> configuracoes,
+        CancellationToken cancellationToken)
+    {
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirRegrasDerivacaoCommand(id, configuracoes), cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Publica o processo (RN08): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
     /// transação — junto da requisição durável que registra o ato em Publicações
