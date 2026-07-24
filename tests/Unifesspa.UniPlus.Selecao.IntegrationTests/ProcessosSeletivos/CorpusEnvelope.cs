@@ -82,8 +82,14 @@ internal static class CorpusEnvelope
     /// e o segundo <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> em silêncio. Um corpus com “uma de
     /// cada variante” não pegaria isso.
     /// </remarks>
-    internal static ProcessoSeletivo ProcessoRico(int variante = 0)
+    internal static ProcessoSeletivo ProcessoRico(int variante = 0, bool permutar = false)
     {
+        // Permuta a ORDEM DE ENTRADA das coleções não ordenadas (Story #928, §7.5): o mesmo conteúdo
+        // apresentado ao agregado em ordem inversa tem de produzir bytes canônicos idênticos, porque a
+        // projeção ordena tudo por chave determinística. Só a ordem de entrada muda — nunca o conteúdo.
+        static IReadOnlyList<T> Ordem<T>(IReadOnlyList<T> itens, bool inverter) =>
+            inverter ? [.. ((IEnumerable<T>)itens).Reverse()] : itens;
+
         Guid objetiva = EtapaId(1, variante);
         Guid redacao = EtapaId(2, variante);
         Guid entrevista = EtapaId(3, variante);
@@ -111,7 +117,7 @@ internal static class CorpusEnvelope
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "Deficiência auditiva"),
             ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoLei12711(), DistribuicaoInstitucional()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional()], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirBonusRegional(ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
@@ -153,22 +159,31 @@ internal static class CorpusEnvelope
         // regra que contribui LB_PPI quando COR_RACA=PRETA E RENDA=ATE_1_SM. Exercita, no mesmo
         // snapshot, as arestas de produção, pré-condição e derivação, com predicado DNF de duas
         // condições numa cláusula. Ambos os códigos contribuídos (AC, LB_PPI) são ofertados.
-        processo.DefinirFatosColetados([
+        processo.DefinirFatosColetados(Ordem([
             FatoColetado.Criar("COR_RACA", 0, null).Value!,
             FatoColetado.Criar("RENDA", 1, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], permutar)).IsSuccess.Should().BeTrue();
 
-        processo.DefinirRegrasDerivacao([
-            ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [
+        processo.DefinirRegrasDerivacao(Ordem([
+            ConfiguracaoDerivacaoFato.Criar("MODALIDADE", Ordem([
                 RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!,
-                RegraDerivacaoConfigurada.Criar(1, "LB_PPI", [
+                RegraDerivacaoConfigurada.Criar(1, "LB_PPI", Ordem([
                     CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
                     CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!,
+                ], permutar)).Value!,
+            ], permutar)).Value!,
+            // Segundo fato derivado (não MODALIDADE) — a lista EXTERNA de configurações de derivação é
+            // ordenada por codigoFato na projeção; sem dois itens, a permutação da lista externa não
+            // seria exercitada. Cita COR_RACA (coletado), sem ciclo; domínio próprio, não o de MODALIDADE.
+            ConfiguracaoDerivacaoFato.Criar("REGIME_INGRESSO", [
+                RegraDerivacaoConfigurada.Criar(0, "AMPLA", null).Value!,
+                RegraDerivacaoConfigurada.Criar(1, "COTISTA", [
+                    CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
                 ]).Value!,
             ]).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], permutar)).IsSuccess.Should().BeTrue();
 
         return processo;
     }
