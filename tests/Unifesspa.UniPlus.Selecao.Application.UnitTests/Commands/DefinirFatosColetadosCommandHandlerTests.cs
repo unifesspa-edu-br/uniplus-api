@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura do <see cref="DefinirFatosColetadosCommandHandler"/> (Story #984): a coletabilidade
@@ -63,7 +64,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo: null, processoId);
-        DefinirFatosColetadosCommand command = new(processoId, []);
+        DefinirFatosColetadosCommand command = new(processoId, [], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -81,7 +82,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         [
             new FatoColetadoInput("COR_RACA", 0, null),
             new FatoColetadoInput("BAIXA_RENDA", 1, [[Condicao("COR_RACA", "IGUAL", "PRETA")]]),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -96,7 +97,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("MODALIDADE", 0, null)]);
+        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("MODALIDADE", 0, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -110,7 +111,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("RENDA_PER_CAPITA", 0, null)]);
+        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("RENDA_PER_CAPITA", 0, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -123,7 +124,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("V", 0, null)]);
+        DefinirFatosColetadosCommand command = new(processo.Id, [new FatoColetadoInput("V", 0, null)], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -142,7 +143,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         [
             new FatoColetadoInput("COR_RACA", 0, null),
             new FatoColetadoInput("BAIXA_RENDA", 1, [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -161,7 +162,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         [
             new FatoColetadoInput("BAIXA_RENDA", 0, [[Condicao("COR_RACA", "IGUAL", "PRETA")]]),
             new FatoColetadoInput("COR_RACA", 1, null),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 

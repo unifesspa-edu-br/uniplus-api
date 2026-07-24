@@ -207,11 +207,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.ConformidadeLegalInsuficiente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.conformidade_legal_insuficiente", "Processo não conforme às obrigatoriedades legais vigentes")),
         new("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada", "Processo publicado não aceita mutação direta da configuração")),
         // Grafo de coleta de fatos do candidato (Story #926). Todas as recusas são de configuração
-        // (422): grafo mal formado, ou tentativa de editá-lo após a publicação enquanto o
-        // congelamento conjunto (#928) ainda não existe. Os códigos de FatoColetado usam constantes
-        // e escapam do fitness test — registrados aqui à mão para não caírem em 500 genérico quando
-        // o endpoint de configuração do grafo existir.
-        new("ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.grafo_de_fatos_somente_em_rascunho", "O grafo de coleta de fatos só é editável antes da primeira publicação")),
+        // (422): grafo mal formado. A edição é permitida em rascunho e sob sessão de retificação
+        // (Story #986) — a recusa de mutação de processo publicado sem sessão é a geral
+        // (ProcessoSeletivo.MutacaoPosPublicacaoBloqueada). Os códigos de FatoColetado usam
+        // constantes e escapam do fitness test — registrados aqui à mão para não caírem em 500.
         new("FatoColetado.FatoCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_codigo_obrigatorio", "O código do fato coletado é obrigatório")),
         new("FatoColetado.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.ordem_invalida", "A ordem de coleta não pode ser negativa")),
         new("FatoColetado.PrecondicaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_autorreferente", "A pré-condição de um fato cita o próprio fato")),
@@ -227,10 +226,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("FatoColetado.FatoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_desconhecido", "O fato coletado não pertence ao vocabulário de fatos do candidato")),
         new("FatoColetado.FatoNaoColetavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_nao_coletavel", "O fato não é coletável — só um fato declarado respondido em campo de inscrição pode ser coletado")),
         // Regra de derivação de fato (Story #927). Todas as recusas são de configuração (422): regra
-        // mal formada, ou tentativa de editá-la após a publicação enquanto o congelamento conjunto
-        // (#928) ainda não existe. Os códigos usam constantes e escapam do fitness test — registrados
-        // à mão para não caírem em 500 quando o endpoint de configuração da regra existir.
-        new("ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.regras_derivacao_somente_em_rascunho", "As regras de derivação só são editáveis antes da primeira publicação")),
+        // mal formada. A edição é permitida em rascunho e sob sessão de retificação (Story #986) — a
+        // recusa de mutação de processo publicado sem sessão é a geral
+        // (ProcessoSeletivo.MutacaoPosPublicacaoBloqueada). Os códigos usam constantes e escapam do
+        // fitness test — registrados à mão para não caírem em 500.
         // Alvo de derivação (Story #985) — semântica cross-módulo resolvida na Application: o fato
         // configurado tem de existir e ser derivado com binding de regra de derivação.
         new("ConfiguracaoDerivacaoFato.FatoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.fato_desconhecido", "O fato derivado não pertence ao vocabulário de fatos do candidato")),

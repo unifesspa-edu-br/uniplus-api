@@ -29,21 +29,31 @@ public sealed class RestauracaoSempreProvadaTests
 {
     private const string MetodoDoDominio = "RestaurarConfiguracaoCongelada";
 
+    private const string HandlerDoDescarte =
+        "Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DescartarRetificacaoCommandHandler.cs";
+
     /// <summary>
-    /// Os três lugares onde o nome do método pode aparecer legitimamente em <c>src/</c> —
-    /// declarados como caminhos relativos com <c>/</c>, e comparados contra o caminho do
-    /// arquivo já normalizado (<see cref="Normalizar"/>).
+    /// Os lugares onde o nome do método pode aparecer legitimamente em <c>src/</c> — declarados
+    /// como caminhos relativos com <c>/</c>, e comparados contra o caminho do arquivo já
+    /// normalizado (<see cref="Normalizar"/>).
     /// </summary>
     private static readonly string[] CallersAutorizados =
     [
         // A própria declaração, no agregado.
         "Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs",
 
-        // O único caller: decodifica, repõe e PROVA — numa operação só.
+        // O restaurador PROVA (round-trip byte-a-byte numa sombra) e devolve o grafo provado — mas
+        // não toca a raiz viva (Story #986): o descarte precisa intercalar um SaveChanges entre
+        // limpar as coleções mutáveis e reinserir as congeladas, para não colidir no índice único.
         "Unifesspa.UniPlus.Selecao.Application/Services/RestauradorDeConfiguracao.cs",
 
         // A porta que o descreve.
         "Unifesspa.UniPlus.Selecao.Application/Abstractions/IRestauradorDeConfiguracao.cs",
+
+        // O descarte APLICA na raiz viva o grafo que o restaurador provou-e-devolveu — nunca um
+        // grafo qualquer. O teste DescarteProvaAntesDeAplicar abaixo é o que garante que a prova
+        // precede a aplicação aqui, fechando a mesma porta que o split de #986 abriu.
+        HandlerDoDescarte,
     ];
 
     /// <summary>Caminho com separador <c>/</c>, para comparar do mesmo jeito em qualquer host.</summary>
@@ -138,6 +148,39 @@ public sealed class RestauracaoSempreProvadaTests
         fonte.Should().Contain("SombraParaVerificacao(",
             "a prova roda ANTES de tocar a raiz viva — provar depois deixaria o agregado tracked empobrecido quando " +
             "a prova falhasse, e a atomicidade dependeria de o handler lembrar de não salvar");
+    }
+
+    /// <summary>
+    /// O descarte é o único caller da raiz viva além do agregado/restaurador (Story #986), e ele
+    /// só é legítimo porque APLICA o grafo que o restaurador <b>provou-e-devolveu</b> — nunca um
+    /// grafo qualquer. Este teste fecha a porta que o split abriu: exige que, no handler do
+    /// descarte, a prova (<c>restaurador.Restaurar</c>) apareça ANTES da aplicação na raiz viva
+    /// (<c>RestaurarConfiguracaoCongelada</c>). Um handler que aplicasse sem provar antes passaria
+    /// no fitness de allowlist, mas não aqui.
+    /// </summary>
+    [Fact(DisplayName = "O descarte PROVA (chama o restaurador) antes de aplicar a configuração congelada na raiz viva")]
+    public void DescarteProvaAntesDeAplicar()
+    {
+        string handler = Path.Join(
+            RaizDoSrc(),
+            "selecao",
+            "Unifesspa.UniPlus.Selecao.Application",
+            "Commands",
+            "ProcessosSeletivos",
+            "DescartarRetificacaoCommandHandler.cs");
+
+        File.Exists(handler).Should().BeTrue($"o handler do descarte deveria existir em {handler}");
+
+        string fonte = CodigoSemComentarios(handler);
+        int posProva = fonte.IndexOf("restaurador.Restaurar(", StringComparison.Ordinal);
+        int posAplicacao = fonte.IndexOf($".{MetodoDoDominio}(", StringComparison.Ordinal);
+
+        posProva.Should().BeGreaterThanOrEqualTo(0,
+            "o descarte tem de PROVAR pelo restaurador — sem a prova, ele repõe um grafo que o agregado não autentica");
+        posAplicacao.Should().BeGreaterThanOrEqualTo(0, "o descarte aplica o grafo provado na raiz viva");
+        posProva.Should().BeLessThan(posAplicacao,
+            "a prova precede a aplicação: o restaurador devolve o grafo só quando o round-trip byte-a-byte bate, e é " +
+            "esse grafo — nunca um qualquer — que o descarte aplica na raiz viva");
     }
 
     /// <summary>

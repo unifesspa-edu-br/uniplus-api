@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Xunit;
@@ -76,9 +77,16 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
 
-            Result resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(tracked, versao);
-            resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+            // A prova é do restaurador; a APLICAÇÃO com flush intermediário é do descarte (Story
+            // #986): limpa as coleções mutáveis, flusha os DELETEs, e só então repõe o grafo
+            // congelado (INSERT) — os DELETEs saem antes dos INSERTs, sem colidir no índice único.
+            Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(tracked, versao);
+            prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
 
+            tracked.LimparColetaEDerivacaoParaRestauracao();
+            await descarte.SaveChangesAsync();
+
+            tracked.RestaurarConfiguracaoCongelada(versao, prova.Value!).IsSuccess.Should().BeTrue();
             await descarte.SaveChangesAsync();
         }
 
@@ -184,8 +192,16 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         await using (SelecaoDbContext descarte = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
-            new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(tracked, versao)
-                .IsSuccess.Should().BeTrue();
+
+            // Orquestração do descarte (Story #986): prova, limpa fatos/regras + flush, aplica. A
+            // etapa NÃO é limpa — reconcilia por Id (reuse-tracked), preservando o CreatedAt.
+            Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(tracked, versao);
+            prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
+
+            tracked.LimparColetaEDerivacaoParaRestauracao();
+            await descarte.SaveChangesAsync();
+
+            tracked.RestaurarConfiguracaoCongelada(versao, prova.Value!).IsSuccess.Should().BeTrue();
             await descarte.SaveChangesAsync();
         }
 

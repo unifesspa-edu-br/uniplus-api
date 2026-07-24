@@ -2321,6 +2321,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -2364,7 +2371,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -2388,6 +2403,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2422,6 +2457,13 @@
             }
           },
           {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "Idempotency-Key",
             "in": "header",
             "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
@@ -2465,7 +2507,15 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "No Content",
+            "headers": {
+              "ETag": {
+                "description": "ETag forte da sess\u00E3o editorial de retifica\u00E7\u00E3o, no formato \u0022{idDaSessao}:{revisao}\u0022. Devolva-o no If-Match da pr\u00F3xima muta\u00E7\u00E3o. Toda muta\u00E7\u00E3o aceita INCREMENTA a revis\u00E3o e emite o tag novo aqui \u2014 o cliente encadeia sem um GET no meio. Ausente quando n\u00E3o h\u00E1 sess\u00E3o em curso (o processo em rascunho n\u00E3o tem precondi\u00E7\u00E3o a satisfazer).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -2489,6 +2539,26 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Precondition Failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Precondition Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

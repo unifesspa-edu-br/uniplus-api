@@ -923,35 +923,20 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// configuração — enquanto o erro de ordem apontaria só um par de fatos.
     /// </para>
     /// <para>
-    /// <b>Só é aceito antes da primeira publicação</b> (processo em <c>Rascunho</c>), e por isso
-    /// não recebe precondição de concorrência — em rascunho não há sessão editorial nem ETag. Ao
-    /// contrário dos demais <c>Definir*</c>, o grafo ainda não participa do congelamento nem da
-    /// restauração da configuração; enquanto essa integração não existe, permitir a edição sob
-    /// retificação criaria um estado mutável que o envelope congelado não cobre e que o descarte
-    /// da retificação não reverteria. A edição sob retificação, junto do congelamento do grafo no
-    /// envelope, é entregue na story do congelamento conjunto (#928).
+    /// Editável em <b>rascunho</b> (pré-publicação) e sob <b>sessão de retificação</b> de um
+    /// processo publicado — o mesmo padrão dos demais <c>Definir*</c>: <see cref="MutacaoBloqueada"/>
+    /// primeiro, e a revisão do rascunho da sessão é incrementada ao final. Em rascunho puro não há
+    /// sessão nem ETag (a precondição é ignorada); sob sessão, a precondição de concorrência é
+    /// obrigatória. Os fatos coletados já participam do congelamento no envelope e da restauração
+    /// da configuração (Story #928, §7.4), então o descarte da sessão repõe fielmente a coleta
+    /// congelada — por isso a edição sob retificação é segura.
     /// </para>
     /// </remarks>
-    /// <summary>
-    /// Guard não-mutante da edição do grafo de coleta: devolve o erro de "só em rascunho" quando
-    /// o processo já foi publicado, ou <see langword="null"/> quando a edição é permitida. Existe
-    /// para que a Application possa recusar a operação <b>antes</b> de resolver o vocabulário
-    /// cross-módulo e validar o corpo — o mesmo guard continua dentro de
-    /// <see cref="DefinirFatosColetados"/>, esta antecipação dá a ordem, não a garantia.
-    /// </summary>
-    public DomainError? EdicaoDeGrafoDeFatosBloqueada() =>
-        Status != StatusProcesso.Rascunho
-            ? new DomainError(
-                "ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho",
-                "O grafo de coleta de fatos só pode ser definido antes da primeira publicação — "
-                + "a edição sob retificação depende do congelamento conjunto do grafo (#928).")
-            : null;
-
-    public Result DefinirFatosColetados(IReadOnlyList<FatoColetado> fatosColetados)
+    public Result DefinirFatosColetados(IReadOnlyList<FatoColetado> fatosColetados, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(fatosColetados);
 
-        if (EdicaoDeGrafoDeFatosBloqueada() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
@@ -968,6 +953,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _fatosColetados.Add(fato);
         }
 
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -975,33 +961,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Substitui integralmente as regras de derivação dos fatos derivados do processo (Story #927).
     /// </summary>
     /// <remarks>
-    /// Só é aceito antes da primeira publicação (processo em rascunho), como a coleta de fatos: a
-    /// regra ainda não entra no envelope congelado nem na restauração, e permitir a edição sob
-    /// retificação criaria estado mutável fora da configuração congelada. A validação aqui é
-    /// estrutural — código de fato único no processo. A validação semântica (o fato alvo é derivado
-    /// com binding de regra; fatos citados e código contribuído no vocabulário e no domínio) depende
-    /// de dados cross-módulo e é do comando na Application.
+    /// Editável em rascunho (pré-publicação) e sob sessão de retificação de um processo publicado —
+    /// o mesmo padrão da coleta de fatos: <see cref="MutacaoBloqueada"/> primeiro, revisão do
+    /// rascunho da sessão incrementada ao final. As regras já entram no envelope congelado e na
+    /// restauração (Story #928, §7.4), então o descarte da sessão as repõe fielmente. A validação
+    /// aqui é estrutural — código de fato único no processo. A validação semântica (o fato alvo é
+    /// derivado com binding de regra; fatos citados e código contribuído no vocabulário e no
+    /// domínio) depende de dados cross-módulo e é do comando na Application.
     /// </remarks>
-    /// <summary>
-    /// Guard não-mutante da edição das regras de derivação: devolve o erro de "só em rascunho"
-    /// quando o processo já foi publicado, ou <see langword="null"/> quando a edição é permitida.
-    /// Existe para que a Application possa recusar a operação <b>antes</b> de resolver o vocabulário
-    /// cross-módulo e validar o corpo — o mesmo guard continua dentro de
-    /// <see cref="DefinirRegrasDerivacao"/>, esta antecipação dá a ordem, não a garantia.
-    /// </summary>
-    public DomainError? EdicaoDeRegrasDerivacaoBloqueada() =>
-        Status != StatusProcesso.Rascunho
-            ? new DomainError(
-                "ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho",
-                "As regras de derivação só podem ser definidas antes da primeira publicação — "
-                + "a edição sob retificação depende do congelamento conjunto da configuração (#928).")
-            : null;
-
-    public Result DefinirRegrasDerivacao(IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao)
+    public Result DefinirRegrasDerivacao(IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(regrasDerivacao);
 
-        if (EdicaoDeRegrasDerivacaoBloqueada() is { } bloqueio)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
@@ -1024,7 +996,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _regrasDerivacao.Add(config);
         }
 
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Limpa a coleta de fatos e as regras de derivação como passo da <b>restauração fiel</b> no
+    /// descarte de uma retificação (Story #986). São as duas coleções que a edição sob retificação
+    /// tornou mutáveis: uma sessão pode ter trocado ordens (0↔1) ou alterado pré-condições/regras,
+    /// e repor as instâncias congeladas por cima das vivas colidiria no índice único de
+    /// <c>Ordem</c>/código na mesma transação. A orquestração do descarte chama este método, faz um
+    /// <c>SaveChanges</c> intermediário (os <c>DELETE</c>s saem primeiro) e só então aplica o grafo
+    /// congelado (<c>INSERT</c> das instâncias reidratadas) — a reposição fiel de graça, sem
+    /// reconciliação profunda dos filhos. Nenhuma identidade precisa sobreviver: são
+    /// <c>EntityBase</c> puros, sem soft-delete, e o <c>Id</c> não é congelado no envelope nem
+    /// referenciado por FK externa.
+    /// </summary>
+    public void LimparColetaEDerivacaoParaRestauracao()
+    {
+        _fatosColetados.Clear();
+        _regrasDerivacao.Clear();
     }
 
     /// <summary>
@@ -2939,14 +2930,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // Fatos coletados e regras de derivação (Story #928, §7.4): repostos da configuração
         // congelada. A reconciliação é por chave natural (FatoCodigo / CodigoFato) reusando a
-        // instância TRACKED quando o código bate — nunca substituindo por uma instância nova de
-        // mesmo Id, o que colidiria com o identity map, e nunca fazendo DELETE+INSERT do mesmo
-        // (ProcessoSeletivoId, FatoCodigo)/(…, Ordem)/(…, CodigoFato) único na mesma transação. É
-        // seguro reusar a tracked por INTEIRO (com os seus filhos) porque, enquanto a edição sob
-        // retificação não é liberada (§8), fatos/regras são imutáveis após a primeira publicação: o
-        // conteúdo da instância viva JÁ É, por construção, o mesmo do congelado — a mesma garantia
-        // que sustenta a reconciliação de arvoreSatisfacao acima. A reconciliação profunda dos
-        // filhos (sob edição) chega com o §8.
+        // instância TRACKED quando o código bate — segura quando a coleção viva NÃO foi editada (o
+        // conteúdo da viva JÁ É o do congelado, como na sombra de verificação, que nasce vazia, e no
+        // caminho de restauração sem edição prévia). Sob edição sob retificação (Story #986), a viva
+        // pode ter trocado ordens ou alterado pré-condições/regras: reusá-la NÃO restauraria o
+        // congelado, e substituí-la na mesma transação colidiria no índice único de Ordem/código.
+        // Por isso a orquestração do descarte chama LimparColetaEDerivacaoParaRestauracao() e FAZ UM
+        // SaveChanges intermediário ANTES desta reposição: as coleções chegam aqui vazias, o ramo
+        // TRACKED não é tomado, e as instâncias CONGELADAS entram como INSERT (Id novo da
+        // reidratação — nenhuma identidade precisa sobreviver). A reposição fiel de graça, sem
+        // reconciliação profunda dos filhos.
         Dictionary<string, FatoColetado> fatosTracked = _fatosColetados.ToDictionary(f => f.FatoCodigo, StringComparer.Ordinal);
         _fatosColetados.Clear();
         foreach (FatoColetado congelado in grafo.FatosColetados)

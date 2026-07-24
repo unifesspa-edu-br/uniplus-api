@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação de <see cref="IRestauradorDeConfiguracao"/>: decodifica, repõe e
@@ -17,7 +18,7 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
     /// </summary>
     public const string RoundTripDivergente = "EnvelopeCodec.RoundTripDivergente";
 
-    public Result Restaurar(ProcessoSeletivo processo, VersaoConfiguracao versao)
+    public Result<GrafoConfiguracao> Restaurar(ProcessoSeletivo processo, VersaoConfiguracao versao)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(versao);
@@ -25,7 +26,7 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         Result<EnvelopeReidratado> reidratado = registro.Reidratar(versao);
         if (reidratado.IsFailure)
         {
-            return Result.Failure(reidratado.Error!);
+            return Result<GrafoConfiguracao>.Failure(reidratado.Error!);
         }
 
         EnvelopeReidratado envelope = reidratado.Value!;
@@ -44,7 +45,7 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         Result ensaio = sombra.RestaurarConfiguracaoCongelada(versao, envelope.Grafo);
         if (ensaio.IsFailure)
         {
-            return ensaio;
+            return Result<GrafoConfiguracao>.Failure(ensaio.Error!);
         }
 
         // Recanonicaliza com o encoder DAQUELA versão — não com o corrente: no dia da 1.2, o
@@ -62,21 +63,21 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
 
         if (recodificado.IsFailure)
         {
-            return Result.Failure(recodificado.Error!);
+            return Result<GrafoConfiguracao>.Failure(recodificado.Error!);
         }
 
         if (!recodificado.Value!.Bytes.AsSpan().SequenceEqual(versao.ConfiguracaoCongeladaCanonica))
         {
-            return Result.Failure(new DomainError(
+            return Result<GrafoConfiguracao>.Failure(new DomainError(
                 RoundTripDivergente,
                 $"A configuração reidratada da versão {versao.NumeroVersao} não reproduz os bytes congelados — " +
                 "algum dado se perdeu na reconstrução. A restauração é recusada: repor uma configuração empobrecida " +
                 "faria o certame publicado divergir do documento que o publicou, sem que nada acusasse."));
         }
 
-        // Provado. Só agora a raiz viva é tocada — e esta chamada não tem como falhar por
-        // outro motivo que a sombra não tenha encontrado: as duas validam o MESMO grafo,
-        // contra o mesmo Tipo e o mesmo Status.
-        return processo.RestaurarConfiguracaoCongelada(versao, envelope.Grafo);
+        // Provado. Devolve o grafo congelado para o chamador aplicá-lo na raiz viva — o descarte
+        // intercala um SaveChanges entre limpar fatos/regras e reinserir as congeladas (evita a
+        // colisão no índice único de ordem), o que exige não tocar a raiz aqui.
+        return Result<GrafoConfiguracao>.Success(envelope.Grafo);
     }
 }

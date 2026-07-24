@@ -2,37 +2,35 @@ namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Repõe no <see cref="ProcessoSeletivo"/> a configuração de uma
-/// <see cref="VersaoConfiguracao"/> congelada — <b>e prova que repôs</b> (ADR-0110 D1/D2).
+/// Prova que a configuração de uma <see cref="VersaoConfiguracao"/> congelada pode ser reposta com
+/// fidelidade e devolve o grafo <b>já provado</b> para o chamador aplicar (ADR-0110 D1/D2).
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>É uma operação única, e é assim de propósito.</b> Decodificar, repor e provar são
-/// três passos que <b>não</b> podem ser oferecidos separadamente a um chamador: quem
-/// repusesse sem provar teria feito exatamente o que a ADR proíbe — um descarte que
-/// destrói configuração em silêncio. A raiz sabe repor um grafo e sabe recusar um grafo
-/// incoerente, mas <b>não</b> sabe recanonicalizar (ADR-0042: o Domain não chama o
-/// codec). Só aqui os dois lados existem ao mesmo tempo.
+/// <b>Prova primeiro, aplica depois — e a prova é aqui.</b> Decodifica o envelope, repõe numa
+/// <b>sombra destacada</b> (fora do change tracker), recanonicaliza com o encoder <b>daquela</b>
+/// versão e compara byte a byte com os bytes congelados. Só devolve <see cref="Result{T}.Success"/>
+/// — com o grafo congelado a aplicar — quando os bytes batem; se um único campo se perdeu na
+/// reconstrução, os bytes divergem e a operação <b>falha</b>, em vez de deixar o chamador repor uma
+/// configuração empobrecida que ninguém mais teria como detectar. A raiz sabe repor um grafo e
+/// recusar um incoerente, mas <b>não</b> sabe recanonicalizar (ADR-0042: o Domain não chama o
+/// codec); por isso a prova vive aqui.
 /// </para>
 /// <para>
-/// <b>A prova é o round-trip, e ela roda em produção — não só em teste.</b> Depois de
-/// repor, o agregado é recanonicalizado com o encoder <b>daquela</b> versão e os bytes
-/// têm de reproduzir os que estão congelados. Se um único campo se perdeu no caminho, os
-/// bytes divergem e a operação <b>falha</b> — em vez de gravar uma configuração
-/// empobrecida que ninguém mais teria como detectar.
-/// </para>
-/// <para>
-/// <b>Falhar aqui não deixa resíduo.</b> A reposição é em memória e a transação é do
-/// handler: uma prova que falha devolve <c>Failure</c> antes de qualquer
-/// <c>SalvarAlteracoesAsync</c>, e o agregado mutado morre com o escopo. É o mesmo
-/// contrato de toda regra de negócio recusada no projeto.
+/// <b>Não toca a raiz viva.</b> A reposição na raiz é do chamador, DEPOIS da prova — o descarte
+/// precisa intercalar um <c>SaveChanges</c> intermediário entre limpar as coleções mutáveis
+/// (fatos/regras) e reinserir as congeladas, para não colidir no índice único de ordem. Devolver o
+/// grafo provado (em vez de aplicá-lo aqui) é o que permite esse flush sem tocar a raiz antes de a
+/// prova passar. O grafo devolvido <b>já foi provado</b>: o chamador não repõe nada não verificado.
 /// </para>
 /// </remarks>
 public interface IRestauradorDeConfiguracao
 {
-    /// <param name="processo">O agregado a repor — carregado com o grafo completo, e o mesmo a que a versão pertence.</param>
+    /// <param name="processo">O agregado cuja identidade a sombra empresta — carregado com o grafo completo, e o mesmo a que a versão pertence.</param>
     /// <param name="versao">A versão congelada cuja configuração volta a valer.</param>
-    Result Restaurar(ProcessoSeletivo processo, VersaoConfiguracao versao);
+    /// <returns>O grafo congelado <b>provado</b>, pronto para o chamador aplicar na raiz viva; ou a falha da prova.</returns>
+    Result<GrafoConfiguracao> Restaurar(ProcessoSeletivo processo, VersaoConfiguracao versao);
 }
