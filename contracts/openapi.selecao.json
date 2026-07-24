@@ -3772,6 +3772,25 @@
         ],
         "type": "string"
       },
+      "CondicaoDerivacaoDto": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
       "CondicaoDerivacaoInput": {
         "required": [
           "fato",
@@ -3849,6 +3868,25 @@
           },
           "valor": {
             "type": "string"
+          }
+        }
+      },
+      "CondicaoPrecondicaoDto": {
+        "required": [
+          "fato",
+          "operador",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fato": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string"
+          },
+          "valor": {
+            "$ref": "#/components/schemas/JsonElement"
           }
         }
       },
@@ -3978,6 +4016,24 @@
           },
           "concorrenciaDuplaAplicavel": {
             "type": "boolean"
+          }
+        }
+      },
+      "ConfiguracaoDerivacaoDto": {
+        "required": [
+          "codigoFato",
+          "regras"
+        ],
+        "type": "object",
+        "properties": {
+          "codigoFato": {
+            "type": "string"
+          },
+          "regras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegraDerivacaoDto"
+            }
           }
         }
       },
@@ -5062,6 +5118,39 @@
           }
         }
       },
+      "FatoColetadoDto": {
+        "required": [
+          "fatoCodigo",
+          "ordem",
+          "precondicao"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "precondicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          }
+        }
+      },
       "FatoColetadoInput": {
         "required": [
           "fatoCodigo",
@@ -6013,6 +6102,8 @@
           "documentosExigidos",
           "raizesExigencia",
           "referenciaTemporalFatos",
+          "fatosColetados",
+          "regrasDerivacao",
           "criadoEm"
         ],
         "type": "object",
@@ -6108,6 +6199,18 @@
                 "$ref": "#/components/schemas/ReferenciaTemporalFatosDto"
               }
             ]
+          },
+          "fatosColetados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FatoColetadoDto"
+            }
+          },
+          "regrasDerivacao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfiguracaoDerivacaoDto"
+            }
           },
           "criadoEm": {
             "type": "string",
@@ -6375,6 +6478,39 @@
           },
           "hash": {
             "type": "string"
+          }
+        }
+      },
+      "RegraDerivacaoDto": {
+        "required": [
+          "ordem",
+          "contribui",
+          "quando"
+        ],
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "contribui": {
+            "type": "string"
+          },
+          "quando": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoDerivacaoDto"
+              }
+            }
           }
         }
       },

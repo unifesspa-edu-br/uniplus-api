@@ -44,7 +44,52 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.DocumentosExigidos.OrderBy(d => d.Id).Select(ProjectDocumentoExigido)],
         [.. processo.RaizesDeExigencia.OrderBy(n => n.Ordem).ThenBy(n => n.Id).Select(ProjectNoExigencia)],
         ProjectReferenciaTemporalFatos(processo.ReferenciaTemporalFatos),
+        [.. processo.FatosColetados.OrderBy(f => f.Ordem).Select(ProjectFatoColetado)],
+        [.. processo.RegrasDerivacao.OrderBy(c => c.CodigoFato, StringComparer.Ordinal).Select(ProjectConfiguracaoDerivacao)],
         processo.CreatedAt);
+
+    private static FatoColetadoDto ProjectFatoColetado(FatoColetado fato) => new(
+        fato.FatoCodigo,
+        fato.Ordem,
+        ProjectPredicado(fato.Precondicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
+            static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)));
+
+    private static ConfiguracaoDerivacaoDto ProjectConfiguracaoDerivacao(ConfiguracaoDerivacaoFato config) => new(
+        config.CodigoFato,
+        [.. config.Regras.OrderBy(r => r.Ordem).Select(ProjectRegraDerivacao)]);
+
+    private static RegraDerivacaoDto ProjectRegraDerivacao(RegraDerivacaoConfigurada regra) => new(
+        regra.Ordem,
+        regra.Contribui,
+        ProjectPredicado(regra.Condicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
+            static (f, o, v) => new CondicaoDerivacaoDto(f, o, v)));
+
+    /// <summary>
+    /// Projeta um predicado relacional (linhas com ordinal de cláusula) na forma normal disjuntiva
+    /// tipada: agrupa por cláusula na ordem do ordinal, e dentro de cada cláusula ordena por
+    /// conteúdo (fato, operador, valor) para um round-trip determinístico. Ausência de condição é
+    /// <see langword="null"/>, nunca uma lista vazia — a projeção reflete o contrato de escrita.
+    /// </summary>
+    private static IReadOnlyList<IReadOnlyList<TCondicao>>? ProjectPredicado<TLinha, TCondicao>(
+        IReadOnlyCollection<TLinha> linhas,
+        Func<TLinha, (int Clausula, string Fato, Domain.Enums.Operador Operador, JsonElement Valor)> extrair,
+        Func<string, string, JsonElement, TCondicao> criar)
+    {
+        if (linhas.Count == 0)
+        {
+            return null;
+        }
+
+        return [.. linhas
+            .Select(extrair)
+            .GroupBy(static c => c.Clausula)
+            .OrderBy(static g => g.Key)
+            .Select(g => (IReadOnlyList<TCondicao>)[.. g
+                .OrderBy(static c => c.Fato, StringComparer.Ordinal)
+                .ThenBy(static c => c.Operador.ToCodigo(), StringComparer.Ordinal)
+                .ThenBy(static c => c.Valor.GetRawText(), StringComparer.Ordinal)
+                .Select(c => criar(c.Fato, c.Operador.ToCodigo(), c.Valor))])];
+    }
 
     // Achado Codex P2 (PR #896, issue #892): sem isto, um FIM_FASE/DATA_ESPECIFICA salvo
     // desaparecia do agregado GET, e o formulário de edição podia sobrescrevê-lo ou
