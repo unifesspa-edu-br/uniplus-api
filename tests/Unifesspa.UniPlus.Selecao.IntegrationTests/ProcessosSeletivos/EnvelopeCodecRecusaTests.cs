@@ -692,6 +692,18 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Fact(DisplayName = "Grafo conjunto congelado como null é recusado, não estoura em 500")]
+    public void GrafoNulo_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(
+            envelope => envelope["grafoDependencia"] = null);
+
+        resultado.IsFailure.Should().BeTrue(
+            "uma coluna adulterada com `grafoDependencia: null` e hash recomputado tem de recusar como malformada, " +
+            "nunca produzir NullReferenceException");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Código contribuído por MODALIDADE fora do domínio de modalidades ofertadas é recusado")]
     public void ContribuiForaDoDominioDeModalidades_Recusa()
     {
