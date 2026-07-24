@@ -2222,6 +2222,130 @@
               }
             }
           ]
+        },
+        {
+          "name": "Definir Fatos Coletados",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fatos-coletados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "fatos-coletados"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 0,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 1,\n    \"precondicao\": [\n      [\n        {\n          \"fato\": \"COR_RACA\",\n          \"operador\": \"IGUAL\",\n          \"valor\": \"PRETA\"\n        }\n      ]\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Definir Regras de Derivação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/regras-derivacao",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "regras-derivacao"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"codigoFato\": \"MODALIDADE\",\n    \"regras\": [\n      {\n        \"ordem\": 0,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": null\n      },\n      {\n        \"ordem\": 1,\n        \"contribui\": \"AC_SMK_{{run_suffix}}\",\n        \"quando\": [\n          [\n            {\n              \"fato\": \"COR_RACA\",\n              \"operador\": \"IGUAL\",\n              \"valor\": \"PRETA\"\n            }\n          ]\n        ]\n      }\n    ]\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
         }
       ],
       "description": "Exercita as 9 dimensões de configuração (PUT idempotentes/substituição integral) na ordem exigida pelas dependências. Nenhuma requer If-Match nesta fase — a precondição só é obrigatória durante uma sessão editorial (ver folder de Sessão editorial)."
@@ -3187,6 +3311,78 @@
             "body": {
               "mode": "raw",
               "raw": "[\n  {\n    \"nome\": \"Prova Objetiva (revisada)\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 2.0,\n    \"notaMinima\": null,\n    \"ordem\": 1\n  },\n  {\n    \"nome\": \"Entrevista\",\n    \"carater\": \"classificatoria\",\n    \"peso\": 1.0,\n    \"notaMinima\": null,\n    \"ordem\": 2\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content com ETag novo', () => {",
+                  "  pm.response.to.have.status(204);",
+                  "  const etag = pm.response.headers.get('ETag');",
+                  "  pm.expect(etag).to.be.a('string');",
+                  "  pm.environment.set('etag', etag);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar Fatos Coletados dentro da sessão (troca ordens, com If-Match)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "If-Match",
+                "value": "{{etag}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/fatos-coletados",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "processos-seletivos",
+                "{{processo_id}}",
+                "fatos-coletados"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"fatoCodigo\": \"BAIXA_RENDA\",\n    \"ordem\": 0,\n    \"precondicao\": null\n  },\n  {\n    \"fatoCodigo\": \"COR_RACA\",\n    \"ordem\": 1,\n    \"precondicao\": null\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
