@@ -22,6 +22,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// rascunho e a autorização.
 /// </summary>
 [Collection(CascadingCollection.Name)]
+[Trait("Category", "Integration")]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
 public sealed class DefinirRegrasDerivacaoEndpointTests
