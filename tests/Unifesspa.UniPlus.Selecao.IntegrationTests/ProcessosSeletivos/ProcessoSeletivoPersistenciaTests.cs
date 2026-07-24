@@ -135,7 +135,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
                 [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
         ]).Value!;
-        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -172,7 +172,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
                 RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
                     [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
             ]).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -194,7 +194,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
                 [
                     RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
                 ]).Value!,
-            ]).IsSuccess.Should().BeTrue();
+            ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
             await mutateContext.SaveChangesAsync(CancellationToken.None);
         }

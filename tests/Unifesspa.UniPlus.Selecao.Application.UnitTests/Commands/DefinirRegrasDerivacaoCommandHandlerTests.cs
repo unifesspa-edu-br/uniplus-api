@@ -61,7 +61,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoBase();
 
-        processo.DefinirFatosColetados([FatoColetado.Criar("COR_RACA", 0, null).Value!])
+        processo.DefinirFatosColetados([FatoColetado.Criar("COR_RACA", 0, null).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
@@ -106,7 +106,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         Guid processoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo: null, processoId);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processoId, []));
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processoId, [], PrecondicaoIfMatch.Ausente));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -123,7 +123,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             ConfigModalidade(
                 new RegraDerivacaoInput(0, "AC", null),
                 new RegraDerivacaoInput(1, "AC", [[Condicao("COR_RACA", "IGUAL", "PRETA")]])),
-        ]);
+        ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -139,7 +139,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoBase();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [new ConfiguracaoDerivacaoInput("BOGUS", [new RegraDerivacaoInput(0, "AC", null)])]);
+            [new ConfiguracaoDerivacaoInput("BOGUS", [new RegraDerivacaoInput(0, "AC", null)])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -153,7 +153,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoBase();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [new ConfiguracaoDerivacaoInput("COR_RACA", [new RegraDerivacaoInput(0, "PRETA", null)])]);
+            [new ConfiguracaoDerivacaoInput("COR_RACA", [new RegraDerivacaoInput(0, "PRETA", null)])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -169,7 +169,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         // "V" não é uma modalidade ofertada (só AC é).
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigModalidade(new RegraDerivacaoInput(0, "V", null))]);
+            [ConfigModalidade(new RegraDerivacaoInput(0, "V", null))], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -185,7 +185,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         // BAIXA_RENDA existe no vocabulário mas não é coletado nem derivado neste processo.
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigModalidade(new RegraDerivacaoInput(0, "AC", [[Condicao("BAIXA_RENDA", "IGUAL", true)]]))]);
+            [ConfigModalidade(new RegraDerivacaoInput(0, "AC", [[Condicao("BAIXA_RENDA", "IGUAL", true)]]))], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 
@@ -201,7 +201,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         // COR_RACA é categórico: MAIOR_IGUAL não se aplica.
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigModalidade(new RegraDerivacaoInput(0, "AC", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]))]);
+            [ConfigModalidade(new RegraDerivacaoInput(0, "AC", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]))], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
 

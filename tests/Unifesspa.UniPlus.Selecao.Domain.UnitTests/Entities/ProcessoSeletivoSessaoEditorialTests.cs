@@ -246,32 +246,44 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         rascunho.Revisao.Should().Be(3);
     }
 
-    [Fact(DisplayName = "O grafo de coleta de fatos NÃO é editável após a publicação — nem sob retificação (aguarda o congelamento conjunto de #928)")]
-    public void DefinirFatosColetados_ProcessoPublicado_Recusa()
+    [Fact(DisplayName = "O grafo de coleta de fatos É editável sob sessão de retificação — a revisão avança; publicado sem sessão é bloqueado (Story #986)")]
+    public void DefinirFatosColetados_SobSessao_AceitaEIncrementaRevisao()
     {
-        // Publicado, com sessão de retificação aberta: os demais Definir* aceitam neste estado.
-        // O grafo de fatos não, porque ainda não entra no congelamento nem na restauração — aceitá-lo
-        // deixaria estado mutável fora do envelope congelado e sem rollback no descarte.
-        ProcessoSeletivo processo = ComSessaoAberta(out _);
+        // Sob sessão de retificação, o grafo de fatos passa a ser editável como os demais Definir*:
+        // já entra no congelamento do envelope e é reposto fielmente no descarte (Story #928/#986).
+        ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
+        int revisaoAntes = rascunho.Revisao;
 
-        Result resultado = processo.DefinirFatosColetados([FatoColetado.Criar("PCD", 0, null).Value!]);
+        processo.DefinirFatosColetados([FatoColetado.Criar("PCD", 0, null).Value!], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+            .IsSuccess.Should().BeTrue();
+        rascunho.Revisao.Should().Be(revisaoAntes + 1);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.GrafoDeFatosSomenteEmRascunho");
+        // Publicado SEM sessão: bloqueado pela recusa geral de mutação pós-publicação.
+        ProcessoSeletivo semSessao = NovoProcessoPublicado(out _);
+        Result recusa = semSessao.DefinirFatosColetados([FatoColetado.Criar("PCD", 0, null).Value!], PrecondicaoIfMatch.Ausente);
+        recusa.IsFailure.Should().BeTrue();
+        recusa.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
-    [Fact(DisplayName = "As regras de derivação NÃO são editáveis após a publicação (aguardam o congelamento conjunto de #928)")]
-    public void DefinirRegrasDerivacao_ProcessoPublicado_Recusa()
+    [Fact(DisplayName = "As regras de derivação SÃO editáveis sob sessão de retificação — a revisão avança; publicado sem sessão é bloqueado (Story #986)")]
+    public void DefinirRegrasDerivacao_SobSessao_AceitaEIncrementaRevisao()
     {
-        ProcessoSeletivo processo = ComSessaoAberta(out _);
+        ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
+        int revisaoAntes = rascunho.Revisao;
 
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
             [RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!]).Value!;
 
-        Result resultado = processo.DefinirRegrasDerivacao([config]);
+        processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+            .IsSuccess.Should().BeTrue();
+        rascunho.Revisao.Should().Be(revisaoAntes + 1);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho");
+        ProcessoSeletivo semSessao = NovoProcessoPublicado(out _);
+        ConfiguracaoDerivacaoFato config2 = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+            [RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!]).Value!;
+        Result recusa = semSessao.DefinirRegrasDerivacao([config2], PrecondicaoIfMatch.Ausente);
+        recusa.IsFailure.Should().BeTrue();
+        recusa.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 
     [Fact(DisplayName = "Uma mutação RECUSADA não move a revisão — o ETag do cliente continua válido")]

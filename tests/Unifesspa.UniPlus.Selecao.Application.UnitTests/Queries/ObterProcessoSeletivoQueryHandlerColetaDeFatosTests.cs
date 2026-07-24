@@ -47,7 +47,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1,
             [Precondicao(0, "BAIXA_RENDA", Operador.Igual, true)]).Value!;
         // Passa fora de ordem de propósito — a projeção é quem ordena.
-        processo.DefinirFatosColetados([corRaca, baixaRenda]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 
@@ -73,7 +73,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
             [CondicaoRegra(0, "COR_RACA", Operador.Igual, "PRETA")]).Value!;
         // Regras fora de ordem — a projeção ordena por Ordem.
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [condicional, ancora]).Value!;
-        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 

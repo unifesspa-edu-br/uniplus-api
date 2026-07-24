@@ -47,8 +47,9 @@ public static class DefinirRegrasDerivacaoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // Guard de rascunho ANTES da resolução do vocabulário cross-módulo.
-        if (processo.EdicaoDeRegrasDerivacaoBloqueada() is { } bloqueio)
+        // Precondição / bloqueio de mutação pós-publicação sem sessão ANTES da resolução do
+        // vocabulário cross-módulo. O mesmo guard continua dentro de DefinirRegrasDerivacao.
+        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
         {
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
@@ -88,7 +89,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
             configuracoes.Add(configResult.Value!);
         }
 
-        Result result = processo.DefinirRegrasDerivacao(configuracoes);
+        Result result = processo.DefinirRegrasDerivacao(configuracoes, command.Precondicao);
         if (result.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(result.Error!);
@@ -96,6 +97,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
+        // Rascunho puro: 204 sem ETag. Sob sessão de retificação: 204 com o ETag da nova revisão.
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 

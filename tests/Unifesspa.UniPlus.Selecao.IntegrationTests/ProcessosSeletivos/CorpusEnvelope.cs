@@ -164,7 +164,7 @@ internal static class CorpusEnvelope
             FatoColetado.Criar("RENDA", 1, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
-        ], permutar)).IsSuccess.Should().BeTrue();
+        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao(Ordem([
             ConfiguracaoDerivacaoFato.Criar("MODALIDADE", Ordem([
@@ -183,7 +183,7 @@ internal static class CorpusEnvelope
                     CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
                 ]).Value!,
             ]).Value!,
-        ], permutar)).IsSuccess.Should().BeTrue();
+        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

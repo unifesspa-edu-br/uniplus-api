@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using System.Text.Json;
 
+using Domain.ValueObjects;
+
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -35,10 +37,11 @@ public sealed record ConfiguracaoDerivacaoInput(
 
 /// <summary>
 /// Substitui integralmente as regras que derivam os fatos derivados do processo (Story #985).
-/// Escopo desta Story: edição só em rascunho (pré-publicação) — a edição sob sessão de retificação
-/// é entregue junto do congelamento conjunto da configuração. Por isso o comando não carrega
-/// precondição de concorrência: em rascunho não há sessão editorial nem ETag.
+/// Editável em rascunho (pré-publicação) e sob sessão de retificação de um processo publicado
+/// (Story #986). Em rascunho puro a precondição é ignorada (não há sessão nem ETag); sob sessão, o
+/// <c>If-Match</c> é obrigatório e a revisão do rascunho avança.
 /// </summary>
 public sealed record DefinirRegrasDerivacaoCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<ConfiguracaoDerivacaoInput> Configuracoes) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<ConfiguracaoDerivacaoInput> Configuracoes,
+    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

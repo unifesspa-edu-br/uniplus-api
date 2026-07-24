@@ -50,9 +50,14 @@ public sealed class RestauradorDeConfiguracaoTests
 
         RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
 
-        Result resultado = restaurador.Restaurar(processo, versao);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+
+        // A prova é a do restaurador; a APLICAÇÃO na raiz viva é do descarte (Story #986): limpa as
+        // coleções mutáveis e repõe o grafo provado — as demais dimensões reconciliam por reuse.
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        processo.RestaurarConfiguracaoCongelada(versao, resultado.Value!).IsSuccess.Should().BeTrue();
 
         CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado voltou a ser, byte a byte, o que a versão congelou");
@@ -97,7 +102,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
 
-        Result resultado = restaurador.Restaurar(processo, versao);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -140,7 +145,7 @@ public sealed class RestauradorDeConfiguracaoTests
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
         processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
 
-        Result resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao);
+        Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -178,7 +183,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         byte[] antesDaTentativa = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
 
-        Result resultado = restaurador.Restaurar(processo, versao);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
 
         resultado.IsFailure.Should().BeTrue(
             "a configuração reposta não recanonicaliza nos bytes congelados — algo se perdeu. Aceitar isto faria o " +
@@ -308,7 +313,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         RestauradorDeConfiguracao restaurador = new(new RegistroCodecsEnvelope());
 
-        Result resultado = restaurador.Restaurar(processo, versao);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
 
         resultado.IsSuccess.Should().BeTrue(
             resultado.Error?.Message ?? "sem o Id da fase congelado no envelope 1.2, ResolverDataReferenciaFatos " +
@@ -396,9 +401,14 @@ public sealed class RestauradorDeConfiguracaoTests
 
         RestauradorDeConfiguracao restaurador = new(new RegistroCodecsEnvelope());
 
-        Result resultado = restaurador.Restaurar(processo, versao);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+
+        // A APLICAÇÃO na raiz viva é do descarte (Story #986): limpa as coleções mutáveis e repõe o
+        // grafo provado.
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        processo.RestaurarConfiguracaoCongelada(versao, resultado.Value!).IsSuccess.Should().BeTrue();
 
         // A prova final: recanonicalizar o agregado reposto reproduz os MESMOS bytes —
         // incluindo o bloco metadadosFatos, que só sobreviveu porque veio inteiro dentro do
@@ -427,7 +437,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
 
-        Result resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao10);
+        Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao10);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoDesconhecida);

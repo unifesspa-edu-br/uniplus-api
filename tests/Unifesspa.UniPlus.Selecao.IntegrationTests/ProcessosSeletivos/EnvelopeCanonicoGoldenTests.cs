@@ -204,7 +204,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             FatoColetado.Criar("RENDA", 1, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([
             ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [
@@ -213,7 +213,7 @@ public sealed class EnvelopeCanonicoGoldenTests
                     CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!,
                 ]).Value!,
             ]).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

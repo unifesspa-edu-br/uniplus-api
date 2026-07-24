@@ -47,10 +47,11 @@ public static class DefinirFatosColetadosCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // Guard de rascunho ANTES da resolução do vocabulário cross-módulo: um processo já
-        // publicado é recusado sem pagar o I/O do reader nem caçar um fato desconhecido que o
-        // cliente não errou. O mesmo guard continua dentro de DefinirFatosColetados.
-        if (processo.EdicaoDeGrafoDeFatosBloqueada() is { } bloqueio)
+        // A precondição (e o bloqueio de mutação pós-publicação sem sessão) é conferida AQUI, ANTES
+        // da resolução do vocabulário cross-módulo: um processo publicado sem sessão, ou um cliente
+        // com If-Match defasado, é recusado sem pagar o I/O do reader nem caçar um fato que ele não
+        // errou. O mesmo guard continua dentro de DefinirFatosColetados.
+        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
         {
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
@@ -76,7 +77,7 @@ public static class DefinirFatosColetadosCommandHandler
             fatos.Add(fatoResult.Value!);
         }
 
-        Result result = processo.DefinirFatosColetados(fatos);
+        Result result = processo.DefinirFatosColetados(fatos, command.Precondicao);
         if (result.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(result.Error!);
@@ -86,9 +87,8 @@ public static class DefinirFatosColetadosCommandHandler
         // persistida por change detection no SaveChanges — não chamar DbSet.Update.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        // Rascunho não tem sessão editorial: ETagDaSessaoEditorial é nulo e a resposta é 204
-        // sem ETag. O tipo de retorno já prepara a Story da edição sob retificação, que passará
-        // a emitir a tag da revisão.
+        // Em rascunho puro não há sessão: ETagDaSessaoEditorial é nulo e a resposta é 204 sem ETag.
+        // Sob sessão de retificação, a revisão avançou e o ETag novo é devolvido.
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 

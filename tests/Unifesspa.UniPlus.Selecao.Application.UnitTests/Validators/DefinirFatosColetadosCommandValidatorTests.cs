@@ -8,6 +8,7 @@ using FluentValidation.Results;
 
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirFatosColetadosCommandValidatorTests
 {
@@ -19,7 +20,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Passa com lista de fatos vazia — zera a coleta")]
     public void Aceita_ListaVazia()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), []));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -28,7 +29,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Aceita_FatoSemPrecondicao()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), [new FatoColetadoInput("COR_RACA", 0, null)]));
+            Guid.CreateVersion7(), [new FatoColetadoInput("COR_RACA", 0, null)], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }
@@ -36,7 +37,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     [Fact(DisplayName = "Falha quando a lista de fatos é nula (payload malformado)")]
     public void Rejeita_FatosNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), null!));
+        ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(Guid.CreateVersion7(), null!, PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Fatos");
@@ -46,7 +47,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Rejeita_FatoCodigoVazio()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), [new FatoColetadoInput("", 0, null)]));
+            Guid.CreateVersion7(), [new FatoColetadoInput("", 0, null)], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].FatoCodigo");
@@ -56,7 +57,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Rejeita_OrdemNegativa()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), [new FatoColetadoInput("COR_RACA", -1, null)]));
+            Guid.CreateVersion7(), [new FatoColetadoInput("COR_RACA", -1, null)], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].Ordem");
@@ -66,7 +67,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Rejeita_PrecondicaoListaExternaVazia()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [])]));
+            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [])], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].Precondicao");
@@ -76,7 +77,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Rejeita_PrecondicaoClausulaVazia()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [[]])]));
+            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [[]])], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].Precondicao");
@@ -86,7 +87,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Rejeita_PrecondicaoCondicaoNula()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [[null!]])]));
+            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [[null!]])], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Fatos[0].Precondicao");
@@ -96,7 +97,7 @@ public sealed class DefinirFatosColetadosCommandValidatorTests
     public void Aceita_PrecondicaoBemFormada()
     {
         ValidationResult result = Validator.Validate(new DefinirFatosColetadosCommand(
-            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [[Condicao("COR_RACA")]])]));
+            Guid.CreateVersion7(), [new FatoColetadoInput("BAIXA_RENDA", 0, [[Condicao("COR_RACA")]])], PrecondicaoIfMatch.Ausente));
 
         result.IsValid.Should().BeTrue();
     }

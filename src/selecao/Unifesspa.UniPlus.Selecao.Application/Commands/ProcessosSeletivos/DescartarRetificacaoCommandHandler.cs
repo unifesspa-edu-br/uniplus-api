@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -110,19 +111,41 @@ public static class DescartarRetificacaoCommandHandler
                 + "a sessão não pode ser descartada com segurança."));
         }
 
-        // Repõe E PROVA (round-trip byte a byte com o encoder daquela versão). Falha aqui não
-        // deixa resíduo: a prova roda numa sombra destacada, antes de a raiz viva ser tocada.
-        Result restauracao = restaurador.Restaurar(processo, versaoAtual);
-        if (restauracao.IsFailure)
+        // PROVA (round-trip byte a byte com o encoder daquela versão) numa sombra destacada, sem
+        // tocar a raiz viva. Falha aqui não deixa resíduo. Devolve o grafo congelado a aplicar.
+        Result<GrafoConfiguracao> prova = restaurador.Restaurar(processo, versaoAtual);
+        if (prova.IsFailure)
         {
-            return restauracao;
+            return Result.Failure(prova.Error!);
         }
 
-        // Só agora — com a configuração já de volta ao que o documento publicado diz.
+        // A sessão pode ter EDITADO fatos/regras (Story #986) — inclusive trocado ordens. Repor as
+        // instâncias congeladas por cima das vivas colidiria no índice único de ordem/código na
+        // mesma transação. Limpa as duas coleções e FAZ UM SaveChanges intermediário para que os
+        // DELETEs saiam ANTES dos INSERTs das congeladas; a reposição fiel de graça.
+        //
+        // A partir deste flush, NENHUM caminho pode retornar Failure: o Wolverine commita a
+        // transação ambiente ao término normal do handler (AutoApplyTransactions), inclusive num
+        // Result.Failure — que gravaria o DELETE sem o INSERT correspondente. Uma falha após o
+        // flush é bug (a sombra já provou o MESMO grafo, contra o mesmo Tipo e Status) e LANÇA,
+        // forçando o rollback da transação em vez de commitar uma restauração meia-feita.
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+        Result aplicar = processo.RestaurarConfiguracaoCongelada(versaoAtual, prova.Value!);
+        if (aplicar.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"A restauração da versão {versaoAtual.NumeroVersao} foi provada na sombra mas falhou ao aplicar na "
+                + $"raiz viva ({aplicar.Error!.Code}) — estado inconsistente após o flush, revertendo a transação.");
+        }
+
         Result descarte = processo.DescartarRetificacao(command.Precondicao);
         if (descarte.IsFailure)
         {
-            return descarte;
+            throw new InvalidOperationException(
+                $"O descarte falhou após a configuração congelada já ter sido reaplicada ({descarte.Error!.Code}) — "
+                + "estado inconsistente após o flush, revertendo a transação.");
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
