@@ -39,6 +39,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         services.TryAddSingleton<CursorPaginationOperationTransformer>();
         services.TryAddSingleton<PrecondicaoOperationTransformer>();
         services.TryAddSingleton<IdempotenciaOperationTransformer>();
+        services.TryAddSingleton<AuthorizationOperationTransformer>();
         services.TryAddSingleton<PaginationOrphanSchemaDocumentTransformer>();
         services.TryAddSingleton<UniPlusSchemaTransformer>();
 
@@ -49,6 +50,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
             options.AddOperationTransformer<CursorPaginationOperationTransformer>();
             options.AddOperationTransformer<PrecondicaoOperationTransformer>();
             options.AddOperationTransformer<IdempotenciaOperationTransformer>();
+            options.AddOperationTransformer<AuthorizationOperationTransformer>();
             options.AddDocumentTransformer<PaginationOrphanSchemaDocumentTransformer>();
             options.AddSchemaTransformer<UniPlusSchemaTransformer>();
         });
