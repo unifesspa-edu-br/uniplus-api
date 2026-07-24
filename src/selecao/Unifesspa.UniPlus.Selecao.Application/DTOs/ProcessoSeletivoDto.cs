@@ -23,6 +23,8 @@ public sealed record ProcessoSeletivoDto(
     IReadOnlyList<DocumentoExigidoDto> DocumentosExigidos,
     IReadOnlyList<NoExigenciaDto> RaizesExigencia,
     ReferenciaTemporalFatosDto? ReferenciaTemporalFatos,
+    IReadOnlyList<FatoColetadoDto> FatosColetados,
+    IReadOnlyList<ConfiguracaoDerivacaoDto> RegrasDerivacao,
     DateTimeOffset CriadoEm)
 {
     /// <summary>
