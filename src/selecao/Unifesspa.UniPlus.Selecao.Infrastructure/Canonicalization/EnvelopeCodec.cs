@@ -773,11 +773,19 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// </summary>
     private static bool DivergeDoCongelado(JsonObject payload, string chave, JsonNode esperado)
     {
+        // Bloco ausente ou JSON `null` (uma coluna adulterada com hash recomputado consegue produzir
+        // `"grafoDependencia": null`): o recomputado nunca é nulo, então diverge — recusa fail-closed,
+        // nunca um NullReferenceException (500).
+        if (payload[chave] is not JsonNode congelado)
+        {
+            return true;
+        }
+
         // O perfil serializa um JsonObject; envolve-se cada lado num wrapper para comparar array ou
         // objeto pela mesma projeção. O congelado é clonado antes de reparentar — mutá-lo tiraria o
         // bloco do payload que ainda está sendo lido.
         byte[] bytesEsperados = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["v"] = esperado });
-        byte[] bytesCongelados = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["v"] = payload[chave]!.DeepClone() });
+        byte[] bytesCongelados = PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["v"] = congelado.DeepClone() });
         return !bytesEsperados.AsSpan().SequenceEqual(bytesCongelados);
     }
 }
