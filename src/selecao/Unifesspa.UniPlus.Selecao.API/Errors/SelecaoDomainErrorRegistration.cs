@@ -231,6 +231,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // (#928) ainda não existe. Os códigos usam constantes e escapam do fitness test — registrados
         // à mão para não caírem em 500 quando o endpoint de configuração da regra existir.
         new("ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.regras_derivacao_somente_em_rascunho", "As regras de derivação só são editáveis antes da primeira publicação")),
+        // Alvo de derivação (Story #985) — semântica cross-módulo resolvida na Application: o fato
+        // configurado tem de existir e ser derivado com binding de regra de derivação.
+        new("ConfiguracaoDerivacaoFato.FatoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.fato_desconhecido", "O fato derivado não pertence ao vocabulário de fatos do candidato")),
+        new("ConfiguracaoDerivacaoFato.FatoNaoDerivavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.fato_nao_derivavel", "O fato não é um alvo de derivação — só um fato derivado com binding de regra de derivação pode ter regras configuradas")),
         new("ConfiguracaoDerivacaoFato.CodigoFatoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.codigo_fato_obrigatorio", "O código do fato derivado é obrigatório")),
         new("ConfiguracaoDerivacaoFato.SemRegras", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.sem_regras", "A derivação de um fato precisa de ao menos uma regra")),
         new("ConfiguracaoDerivacaoFato.OrdemRegraDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.ordem_regra_duplicada", "Duas regras da mesma derivação têm a mesma ordem")),

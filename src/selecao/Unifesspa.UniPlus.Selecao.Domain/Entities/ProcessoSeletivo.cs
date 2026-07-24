@@ -982,16 +982,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// com binding de regra; fatos citados e código contribuído no vocabulário e no domínio) depende
     /// de dados cross-módulo e é do comando na Application.
     /// </remarks>
+    /// <summary>
+    /// Guard não-mutante da edição das regras de derivação: devolve o erro de "só em rascunho"
+    /// quando o processo já foi publicado, ou <see langword="null"/> quando a edição é permitida.
+    /// Existe para que a Application possa recusar a operação <b>antes</b> de resolver o vocabulário
+    /// cross-módulo e validar o corpo — o mesmo guard continua dentro de
+    /// <see cref="DefinirRegrasDerivacao"/>, esta antecipação dá a ordem, não a garantia.
+    /// </summary>
+    public DomainError? EdicaoDeRegrasDerivacaoBloqueada() =>
+        Status != StatusProcesso.Rascunho
+            ? new DomainError(
+                "ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho",
+                "As regras de derivação só podem ser definidas antes da primeira publicação — "
+                + "a edição sob retificação depende do congelamento conjunto da configuração (#928).")
+            : null;
+
     public Result DefinirRegrasDerivacao(IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao)
     {
         ArgumentNullException.ThrowIfNull(regrasDerivacao);
 
-        if (Status != StatusProcesso.Rascunho)
+        if (EdicaoDeRegrasDerivacaoBloqueada() is { } bloqueio)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.RegrasDerivacaoSomenteEmRascunho",
-                "As regras de derivação só podem ser definidas antes da primeira publicação — "
-                + "a edição sob retificação depende do congelamento conjunto da configuração (#928)."));
+            return Result.Failure(bloqueio);
         }
 
         HashSet<string> codigos = new(StringComparer.Ordinal);
