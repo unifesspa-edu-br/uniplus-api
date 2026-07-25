@@ -298,6 +298,17 @@ public sealed class ModalidadePersistenceTests
                 "as cotas federais são sub-reservas dentro das vagas reservadas e seguem a cascata legal");
     }
 
+    [Fact(DisplayName = "Seed: o conjunto semeado é exatamente o catálogo legal fixo protegido")]
+    public void Seed_Codigos_CoincidemComOCatalogoProtegido()
+    {
+        string[] semeados = [.. ModalidadeSeed.Itens.Select(i => i.Codigo).Order(StringComparer.Ordinal)];
+        string[] protegidos = [.. CodigoModalidade.CodigosLegaisFixos.Order(StringComparer.Ordinal)];
+
+        semeados.Should().Equal(protegidos,
+            "acrescentar uma linha ao seed sem protegê-la (ou proteger um código que ninguém semeia) "
+            + "deixaria o catálogo legal incoerente");
+    }
+
     [Fact(DisplayName = "Seed: cada item satisfaz as invariantes de Modalidade.Criar (natureza × composição × remanejamento × args)")]
     public void Seed_CadaItem_SatisfazInvariantesDoAgregado()
     {

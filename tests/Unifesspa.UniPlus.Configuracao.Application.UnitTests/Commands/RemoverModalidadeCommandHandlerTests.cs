@@ -16,8 +16,10 @@ public sealed class RemoverModalidadeCommandHandlerTests
     private readonly IModalidadeRepository _repository = Substitute.For<IModalidadeRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
-    private static Modalidade Modalidade() =>
-        Domain.Entities.Modalidade.Criar("AC", null, "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null, null, null, null)
+    private const string CodigoInstitucional = "PSVR_AMPLA";
+
+    private static Modalidade Modalidade(string codigo = CodigoInstitucional) =>
+        Domain.Entities.Modalidade.Criar(codigo, null, "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null, null, null, null)
             .Value!;
 
     [Fact(DisplayName = "Modalidade referenciada por outra viva bloqueia a remoção (409)")]
@@ -25,7 +27,7 @@ public sealed class RemoverModalidadeCommandHandlerTests
     {
         Modalidade modalidade = Modalidade();
         _repository.ObterPorIdAsync(modalidade.Id, Arg.Any<CancellationToken>()).Returns(modalidade);
-        _repository.EhReferenciadaPorOutraModalidadeVivaAsync("AC", modalidade.Id, Arg.Any<CancellationToken>())
+        _repository.EhReferenciadaPorOutraModalidadeVivaAsync(CodigoInstitucional, modalidade.Id, Arg.Any<CancellationToken>())
             .Returns(true);
 
         Result resultado = await RemoverModalidadeCommandHandler.Handle(
@@ -42,7 +44,7 @@ public sealed class RemoverModalidadeCommandHandlerTests
     {
         Modalidade modalidade = Modalidade();
         _repository.ObterPorIdAsync(modalidade.Id, Arg.Any<CancellationToken>()).Returns(modalidade);
-        _repository.EhReferenciadaPorOutraModalidadeVivaAsync("AC", modalidade.Id, Arg.Any<CancellationToken>())
+        _repository.EhReferenciadaPorOutraModalidadeVivaAsync(CodigoInstitucional, modalidade.Id, Arg.Any<CancellationToken>())
             .Returns(false);
 
         Result resultado = await RemoverModalidadeCommandHandler.Handle(
@@ -51,6 +53,26 @@ public sealed class RemoverModalidadeCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         _repository.Received(1).Remover(modalidade);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory(DisplayName = "Modalidade do catálogo legal fixo bloqueia a remoção (409) sem consultar referências")]
+    [InlineData("LB_PPI")]
+    [InlineData("AC")]
+    [InlineData("AC_PCD")]
+    public async Task Handle_LegalFixa_RetornaConflito(string codigo)
+    {
+        Modalidade modalidade = Modalidade(codigo);
+        _repository.ObterPorIdAsync(modalidade.Id, Arg.Any<CancellationToken>()).Returns(modalidade);
+
+        Result resultado = await RemoverModalidadeCommandHandler.Handle(
+            new RemoverModalidadeCommand(modalidade.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.RemocaoBloqueadaCodigoProtegido);
+        await _repository.DidNotReceive().EhReferenciadaPorOutraModalidadeVivaAsync(
+            Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        _repository.DidNotReceive().Remover(Arg.Any<Modalidade>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Modalidade inexistente retorna NaoEncontrada (404)")]

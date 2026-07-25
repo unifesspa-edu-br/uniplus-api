@@ -4,11 +4,13 @@ using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarModalidadeCommand"/> (convention-based Wolverine).
-/// Orquestra: unicidade do código entre vivos (409), construção do agregado
+/// Orquestra: reserva dos códigos do catálogo legal fixo (409), unicidade do
+/// código entre vivos (409), construção do agregado
 /// (invariantes de coerência, 422), integridade referencial dos códigos citados em
 /// composição/remanejamento (422), persistência e commit. Protege a corrida
 /// check-then-act traduzindo a violação do índice único parcial em
@@ -25,6 +27,19 @@ public static class CriarModalidadeCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        // Os dez códigos legais fixos só nascem do seed. A reserva precede a checagem de
+        // unicidade porque é propriedade do código, não do estado do banco: o índice único é
+        // parcial (WHERE is_deleted = false), então uma dessas linhas removida antes desta
+        // regra existir libera o código — e o cadastro recriaria a modalidade com estrutura
+        // de vagas arbitrária, que a proteção de atualização então congelaria.
+        if (CodigoModalidade.EhCodigoLegalFixo(command.Codigo))
+        {
+            return Result<Guid>.Failure(new DomainError(
+                ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido,
+                $"O código '{command.Codigo.Trim()}' é reservado ao catálogo legal fixo "
+                + "e não pode ser criado por cadastro."));
+        }
 
         if (await repository.CodigoExisteEntreVivosAsync(command.Codigo, null, cancellationToken).ConfigureAwait(false))
         {

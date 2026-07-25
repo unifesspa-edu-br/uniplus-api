@@ -30,7 +30,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// exige consulta ao banco e mora no handler via repositório.</para>
 /// <para>A remoção é sempre soft-delete; nunca bloqueada por snapshot-copy de
 /// Seleção (ADR-0061), apenas por referência intra-banco viva (outra modalidade
-/// viva que a aponte como origem ou destino/par/fallback).</para>
+/// viva que a aponte como origem ou destino/par/fallback) — ou por ser uma
+/// modalidade do catálogo legal fixo.</para>
+/// <para>As dez modalidades do <b>catálogo legal fixo</b>
+/// (<see cref="CodigoModalidade.CodigosLegaisFixos"/>) são cadastro só na forma: a
+/// estrutura de vagas de cada uma vem da Lei 12.711/2012 (red. Lei 14.723/2023), não
+/// da universidade. Nelas <see cref="Atualizar"/> aceita apenas <see cref="Descricao"/>
+/// e <see cref="BaseLegal"/>; os handlers recusam removê-las e recusam cadastrar os
+/// seus códigos. Alterar a estrutura exige mudança no seed e migração — o mesmo canal
+/// que as criou.</para>
 /// </remarks>
 public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
 {
@@ -89,7 +97,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             return Result<Modalidade>.Failure(codigoResult.Error!);
         }
 
-        Result<CamposResolvidos> camposResult = ValidarComuns(
+        Result<CamposResolvidos> camposResult = ResolverCampos(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
             criteriosCumulativos, acaoQuandoIndeferido, baseLegal);
@@ -98,8 +106,16 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             return Result<Modalidade>.Failure(camposResult.Error!);
         }
 
+        CamposResolvidos campos = camposResult.Value!;
+
+        Result<CamposResolvidos>? coerencia = ValidarCoerencia(campos);
+        if (coerencia is not null)
+        {
+            return Result<Modalidade>.Failure(coerencia.Error!);
+        }
+
         var modalidade = new Modalidade { Codigo = codigoResult.Value! };
-        modalidade.AplicarCampos(camposResult.Value!);
+        modalidade.AplicarCampos(campos);
 
         return Result<Modalidade>.Success(modalidade);
     }
@@ -109,6 +125,14 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// são <b>imutáveis</b> — este método não os recebe nem os altera. Revalida
     /// todas as invariantes de coerência de domínio.
     /// </summary>
+    /// <remarks>
+    /// Numa modalidade do catálogo legal fixo (<see cref="ValueObjects.CodigoModalidade.EhLegalFixa"/>)
+    /// só <c>Descricao</c> e <c>BaseLegal</c> são editáveis; divergência em qualquer outro
+    /// campo retorna <c>EstruturaProtegidaNaoEditavel</c>. A guarda roda depois de resolver
+    /// os campos e <b>antes</b> das invariantes cruzadas: assim uma tentativa de alterar a
+    /// natureza de uma cota federal responde "esta modalidade não se edita" em vez de
+    /// "corrija a coerência do payload", que sugeriria que a edição seria possível.
+    /// </remarks>
     public Result Atualizar(
         string? descricao,
         string? naturezaLegal,
@@ -122,7 +146,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? acaoQuandoIndeferido,
         string? baseLegal)
     {
-        Result<CamposResolvidos> camposResult = ValidarComuns(
+        Result<CamposResolvidos> camposResult = ResolverCampos(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
             criteriosCumulativos, acaoQuandoIndeferido, baseLegal);
@@ -131,10 +155,42 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             return Result.Failure(camposResult.Error!);
         }
 
-        AplicarCampos(camposResult.Value!);
+        CamposResolvidos campos = camposResult.Value!;
+
+        if (Codigo.EhLegalFixa && EstruturaDivergeDe(campos))
+        {
+            return Result.Failure(new DomainError(
+                ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel,
+                $"A modalidade legal fixa '{Codigo.Valor}' admite alteração apenas de descrição "
+                + "e base legal — natureza, composição, remanejamento, critérios e ação no "
+                + "indeferimento são fixados em lei."));
+        }
+
+        Result<CamposResolvidos>? coerencia = ValidarCoerencia(campos);
+        if (coerencia is not null)
+        {
+            return Result.Failure(coerencia.Error!);
+        }
+
+        AplicarCampos(campos);
 
         return Result.Success();
     }
+
+    /// <summary>
+    /// Indica se <paramref name="campos"/> altera algum atributo fora da allowlist de
+    /// edição do catálogo legal fixo. A allowlist enumera o que <b>pode</b> mudar
+    /// (descrição e base legal) — assim um atributo novo do agregado nasce protegido por
+    /// omissão, em vez de desprotegido.
+    /// </summary>
+    private bool EstruturaDivergeDe(CamposResolvidos campos) =>
+        campos.NaturezaLegal != NaturezaLegal
+        || campos.ComposicaoVagas != ComposicaoVagas
+        || !string.Equals(campos.ComposicaoOrigem, ComposicaoOrigem, StringComparison.Ordinal)
+        || campos.RegraRemanejamento != RegraRemanejamento
+        || campos.RemanejamentoArgs != RemanejamentoArgs
+        || !campos.CriteriosCumulativos.SequenceEqual(CriteriosCumulativos, StringComparer.Ordinal)
+        || campos.AcaoQuandoIndeferido != AcaoQuandoIndeferido;
 
     private void AplicarCampos(CamposResolvidos campos)
     {
@@ -149,7 +205,13 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         BaseLegal = campos.BaseLegal;
     }
 
-    private static Result<CamposResolvidos> ValidarComuns(
+    /// <summary>
+    /// Primeira metade da validação: analisa os tokens dos enums, normaliza os textos e
+    /// confere tamanhos — tudo que depende só do valor recebido. As invariantes que
+    /// cruzam campos ficam em <see cref="ValidarCoerencia"/>, para que a guarda do
+    /// catálogo legal fixo possa correr entre as duas.
+    /// </summary>
+    private static Result<CamposResolvidos> ResolverCampos(
         string? descricao,
         string? naturezaLegalToken,
         string? composicaoVagasToken,
@@ -232,35 +294,8 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
                 $"Código de origem da composição deve ter no máximo {CodigoReferenciaMaxLength} caracteres.");
         }
 
-        // Invariante 4 — equivalência exata RetiraDe ⟺ ComposicaoOrigem preenchida.
-        bool ehRetiraDe = composicao == ComposicaoVagas.RetiraDe;
-        if (ehRetiraDe && origemNorm is null)
-        {
-            return Falha(ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
-                "Composição RETIRA_DE exige o código de origem (composicao_origem).");
-        }
-
-        if (!ehRetiraDe && origemNorm is not null)
-        {
-            return Falha(ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
-                "Código de origem (composicao_origem) só é permitido na composição RETIRA_DE.");
-        }
-
-        // Invariante 3 — coerência natureza ↔ regra de remanejamento.
-        Result<CamposResolvidos>? coerencia = ValidarCoerenciaNaturezaRemanejamento(natureza, regra);
-        if (coerencia is not null)
-        {
-            return coerencia;
-        }
-
-        // Invariante 5 — argumentos exigidos/proibidos por regra.
         RemanejamentoArgs args = RemanejamentoArgs.Criar(
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback);
-        Result<CamposResolvidos>? argsCheck = ValidarArgumentosPorRegra(regra, args);
-        if (argsCheck is not null)
-        {
-            return argsCheck;
-        }
 
         IReadOnlyList<string> criterios = NormalizarCriterios(criteriosCumulativos);
 
@@ -274,6 +309,39 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
             criterios,
             acao,
             NormalizarOpcional(baseLegal)));
+    }
+
+    /// <summary>
+    /// Segunda metade da validação: as invariantes que cruzam campos já resolvidos —
+    /// RetiraDe⟺origem, natureza↔regra de remanejamento e argumentos exigidos ou
+    /// proibidos por regra. Retorna <see langword="null"/> quando tudo é coerente.
+    /// </summary>
+    private static Result<CamposResolvidos>? ValidarCoerencia(CamposResolvidos campos)
+    {
+        // Invariante 4 — equivalência exata RetiraDe ⟺ ComposicaoOrigem preenchida.
+        bool ehRetiraDe = campos.ComposicaoVagas == ComposicaoVagas.RetiraDe;
+        if (ehRetiraDe && campos.ComposicaoOrigem is null)
+        {
+            return Falha(ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
+                "Composição RETIRA_DE exige o código de origem (composicao_origem).");
+        }
+
+        if (!ehRetiraDe && campos.ComposicaoOrigem is not null)
+        {
+            return Falha(ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
+                "Código de origem (composicao_origem) só é permitido na composição RETIRA_DE.");
+        }
+
+        // Invariante 3 — coerência natureza ↔ regra de remanejamento.
+        Result<CamposResolvidos>? coerencia = ValidarCoerenciaNaturezaRemanejamento(
+            campos.NaturezaLegal, campos.RegraRemanejamento);
+        if (coerencia is not null)
+        {
+            return coerencia;
+        }
+
+        // Invariante 5 — argumentos exigidos/proibidos por regra.
+        return ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs);
     }
 
     private static Result<CamposResolvidos>? ValidarCoerenciaNaturezaRemanejamento(

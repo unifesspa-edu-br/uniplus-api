@@ -779,6 +779,24 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.modalidade.remocao_bloqueada_por_referencia",
                 "Não é possível remover uma modalidade referenciada por outra modalidade ativa")),
 
+        new(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel",
+                "A modalidade legal fixa admite alteração apenas de descrição e base legal")),
+
+        new(ModalidadeErrorCodes.RemocaoBloqueadaCodigoProtegido,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.modalidade.remocao_bloqueada_codigo_protegido",
+                "A modalidade legal fixa não pode ser removida")),
+
+        new(ModalidadeErrorCodes.CriacaoBloqueadaCodigoProtegido,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.modalidade.criacao_bloqueada_codigo_protegido",
+                "Código reservado ao catálogo legal fixo de modalidades")),
+
         new(ModalidadeErrorCodes.BaseLegalTamanho,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

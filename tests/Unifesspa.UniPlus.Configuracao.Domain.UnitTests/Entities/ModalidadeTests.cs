@@ -248,7 +248,9 @@ public sealed class ModalidadeTests
     [Fact(DisplayName = "Atualizar troca atributos editáveis mantendo Codigo e Id imutáveis")]
     public void Atualizar_MantemCodigoEId()
     {
-        Modalidade m = Criar(codigo: "LB_PPI", natureza: "COTA_RESERVADA", regra: "SEGUE_CASCATA").Value!;
+        Modalidade m = Criar(
+            codigo: "PSIQ_INDIGENA", composicao: "DENTRO_DO_VR",
+            natureza: "COTA_RESERVADA", regra: "SEGUE_CASCATA").Value!;
         Guid idOriginal = m.Id;
 
         Result r = m.Atualizar(
@@ -258,7 +260,7 @@ public sealed class ModalidadeTests
             criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
 
         r.IsSuccess.Should().BeTrue();
-        m.Codigo.Valor.Should().Be("LB_PPI", "o código é imutável");
+        m.Codigo.Valor.Should().Be("PSIQ_INDIGENA", "o código é imutável");
         m.Id.Should().Be(idOriginal, "o Id é imutável");
         m.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
         m.Descricao.Should().Be("Nova descrição");
@@ -267,7 +269,7 @@ public sealed class ModalidadeTests
     [Fact(DisplayName = "Atualizar revalida coerência (cota sem cascata falha)")]
     public void Atualizar_Incoerente_Falha()
     {
-        Modalidade m = Criar(codigo: "AC", natureza: "AMPLA").Value!;
+        Modalidade m = Criar(codigo: "PSVR_AMPLA", natureza: "AMPLA").Value!;
 
         Result r = m.Atualizar(
             descricao: null, naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
@@ -277,5 +279,200 @@ public sealed class ModalidadeTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaRemanejamentoIncoerente);
+    }
+
+    // ── Proteção do catálogo legal fixo ────────────────────────────────────────
+
+    /// <summary>Cota federal tal como semeada: reservada, dentro das vagas reservadas, cascata.</summary>
+    private static Modalidade CotaFederal(IReadOnlyList<string>? criterios = null) =>
+        Criar(codigo: "LB_PPI", descricao: "Cota", natureza: "COTA_RESERVADA",
+            composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA", criterios: criterios,
+            baseLegal: "Lei 12.711/2012").Value!;
+
+    /// <summary>Pessoa com deficiência na ampla concorrência: única fixa com argumento de remanejamento.</summary>
+    private static Modalidade AcPcd() =>
+        Criar(codigo: "AC_PCD", natureza: "OUTRA_MODALIDADE", composicao: "RETIRA_DE",
+            origem: "AC", regra: "DESTINO_UNICO", destino: "AC").Value!;
+
+    [Fact(DisplayName = "Legal fixa recusa alteração de natureza")]
+    public void Atualizar_LegalFixaNatureza_Recusa()
+    {
+        Modalidade m = CotaFederal();
+
+        Result r = m.Atualizar(
+            descricao: "Cota", naturezaLegal: "AMPLA", composicaoVagas: "DENTRO_DO_VR",
+            composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        m.NaturezaLegal.Should().Be(NaturezaLegal.CotaReservada, "a recusa não muta a entidade");
+    }
+
+    [Fact(DisplayName = "Legal fixa recusa alteração de composição de vagas")]
+    public void Atualizar_LegalFixaComposicao_Recusa()
+    {
+        Modalidade m = CotaFederal();
+
+        Result r = m.Atualizar(
+            descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        m.ComposicaoVagas.Should().Be(ComposicaoVagas.DentroDoVr);
+    }
+
+    [Fact(DisplayName = "Legal fixa recusa alteração da origem da composição")]
+    public void Atualizar_LegalFixaOrigem_Recusa()
+    {
+        Modalidade m = CotaFederal();
+
+        Result r = m.Atualizar(
+            descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
+            composicaoOrigem: "AC", regraRemanejamento: "SEGUE_CASCATA",
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        m.ComposicaoOrigem.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Legal fixa recusa alteração da regra de remanejamento")]
+    public void Atualizar_LegalFixaRegra_Recusa()
+    {
+        Modalidade m = CotaFederal();
+
+        Result r = m.Atualizar(
+            descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
+            composicaoOrigem: null, regraRemanejamento: null,
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: "Lei 12.711/2012");
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        m.RegraRemanejamento.Should().Be(RegraRemanejamento.SegueCascata);
+    }
+
+    [Fact(DisplayName = "Legal fixa recusa alteração dos critérios cumulativos")]
+    public void Atualizar_LegalFixaCriterios_Recusa()
+    {
+        Modalidade m = CotaFederal();
+
+        Result r = m.Atualizar(
+            descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
+            composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: ["RENDA_PER_CAPITA"], acaoQuandoIndeferido: null,
+            baseLegal: "Lei 12.711/2012");
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        m.CriteriosCumulativos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Legal fixa recusa alteração da ação quando indeferido")]
+    public void Atualizar_LegalFixaAcaoIndeferimento_Recusa()
+    {
+        Modalidade m = CotaFederal();
+
+        Result r = m.Atualizar(
+            descricao: "Cota", naturezaLegal: "COTA_RESERVADA", composicaoVagas: "DENTRO_DO_VR",
+            composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: null, acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+            baseLegal: "Lei 12.711/2012");
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        m.AcaoQuandoIndeferido.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Legal fixa recusa alteração de cada argumento de remanejamento")]
+    [InlineData("LB_PPI", null, null)]
+    [InlineData("AC", "AC", null)]
+    [InlineData("AC", null, "AC")]
+    public void Atualizar_LegalFixaArgumentos_Recusa(string? destino, string? par, string? fallback)
+    {
+        Modalidade m = AcPcd();
+
+        Result r = m.Atualizar(
+            descricao: null, naturezaLegal: "OUTRA_MODALIDADE", composicaoVagas: "RETIRA_DE",
+            composicaoOrigem: "AC", regraRemanejamento: "DESTINO_UNICO",
+            remanejamentoDestino: destino, remanejamentoPar: par, remanejamentoFallback: fallback,
+            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        m.RemanejamentoArgs.Destino.Should().Be("AC");
+        m.RemanejamentoArgs.Par.Should().BeNull();
+        m.RemanejamentoArgs.Fallback.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Legal fixa aceita alteração de descrição e base legal com a estrutura reenviada idêntica")]
+    public void Atualizar_LegalFixaSomenteRedacao_Aceita()
+    {
+        // Critérios não vazios: com lista vazia os dois lados podem cair na mesma
+        // instância cacheada e o teste não distinguiria comparação por valor de
+        // comparação por referência.
+        Modalidade m = CotaFederal(criterios: ["RENDA_PER_CAPITA"]);
+
+        Result r = m.Atualizar(
+            descricao: "Cota — baixa renda, preto/pardo/indígena", naturezaLegal: "COTA_RESERVADA",
+            composicaoVagas: "DENTRO_DO_VR", composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: ["RENDA_PER_CAPITA"], acaoQuandoIndeferido: null,
+            baseLegal: "Lei 12.711/2012 (red. Lei 14.723/2023)");
+
+        r.IsSuccess.Should().BeTrue();
+        m.Descricao.Should().Be("Cota — baixa renda, preto/pardo/indígena");
+        m.BaseLegal.Should().Be("Lei 12.711/2012 (red. Lei 14.723/2023)");
+        m.NaturezaLegal.Should().Be(NaturezaLegal.CotaReservada);
+    }
+
+    [Fact(DisplayName = "Modalidade institucional segue alterando a estrutura livremente")]
+    public void Atualizar_Institucional_AlteraEstrutura()
+    {
+        Modalidade m = Criar(
+            codigo: "PSIQ_QUILOMBOLA", natureza: "COTA_RESERVADA",
+            composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA").Value!;
+
+        Result r = m.Atualizar(
+            descricao: null, naturezaLegal: "SUPLEMENTAR", composicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            composicaoOrigem: null, regraRemanejamento: "DESTINO_UNICO",
+            remanejamentoDestino: "AC", remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+
+        r.IsSuccess.Should().BeTrue();
+        m.NaturezaLegal.Should().Be(NaturezaLegal.Suplementar);
+    }
+
+    [Fact(DisplayName = "Token inválido numa legal fixa reporta o erro de domínio, não a proteção")]
+    public void Atualizar_LegalFixaTokenInvalido_ReportaErroDeDominio()
+    {
+        Modalidade m = CotaFederal();
+
+        Result r = m.Atualizar(
+            descricao: null, naturezaLegal: "XPTO", composicaoVagas: "DENTRO_DO_VR",
+            composicaoOrigem: null, regraRemanejamento: "SEGUE_CASCATA",
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: null, acaoQuandoIndeferido: null, baseLegal: null);
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.NaturezaInvalida,
+            "não se compara com o cânone aquilo que sequer resolve para um valor de domínio");
+    }
+
+    [Fact(DisplayName = "A factory materializa códigos legais fixos — a reserva é do cadastro, não do domínio")]
+    public void Criar_CodigoLegalFixo_Aceita()
+    {
+        Result<Modalidade> r = Criar(codigo: "LB_PPI", natureza: "COTA_RESERVADA",
+            composicao: "DENTRO_DO_VR", regra: "SEGUE_CASCATA");
+
+        r.IsSuccess.Should().BeTrue("o seed e a reidratação dependem da factory aceitá-los");
     }
 }
