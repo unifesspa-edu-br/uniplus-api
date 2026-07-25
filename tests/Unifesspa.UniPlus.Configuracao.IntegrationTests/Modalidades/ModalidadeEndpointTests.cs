@@ -8,6 +8,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
@@ -167,6 +168,112 @@ public sealed class ModalidadeEndpointTests
 
         HttpResponseMessage segundo = await EnviarPostAdmin(client, new { codigo, naturezaLegal = "AMPLA" });
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact(DisplayName = "POST com código do catálogo legal fixo retorna 409 com o código de erro da reserva")]
+    public async Task Criar_CodigoLegalFixo_Retorna409Reservado()
+    {
+        var body = new { codigo = "LB_PPI", naturezaLegal = "AMPLA" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await LerCodigoDeErro(response)).Should().Be(
+            "uniplus.configuracao.modalidade.criacao_bloqueada_codigo_protegido",
+            "a reserva do código é resposta distinta de 'já existe uma modalidade com este código'");
+    }
+
+    [Fact(DisplayName = "DELETE de modalidade legal fixa retorna 409 e a modalidade continua viva")]
+    public async Task Remover_LegalFixa_Retorna409EPermanece()
+    {
+        Guid id = IdSemeado("LB_PPI");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(
+            HttpMethod.Delete, new Uri($"/api/configuracao/admin/modalidades/{id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await LerCodigoDeErro(response)).Should().Be(
+            "uniplus.configuracao.modalidade.remocao_bloqueada_codigo_protegido");
+
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/modalidades/{id}", UriKind.Relative));
+        obter.StatusCode.Should().Be(HttpStatusCode.OK, "a cota federal continua no catálogo");
+    }
+
+    [Fact(DisplayName = "PUT que altera a estrutura de modalidade legal fixa retorna 422")]
+    public async Task Atualizar_LegalFixaEstrutura_Retorna422()
+    {
+        Guid id = IdSemeado("LI_Q");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, new
+        {
+            id,
+            naturezaLegal = "AMPLA",
+            composicaoVagas = "RESIDUAL_DO_VO",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be(
+            "uniplus.configuracao.modalidade.estrutura_protegida_nao_editavel");
+    }
+
+    [Fact(DisplayName = "PUT que altera só descrição e base legal de modalidade legal fixa retorna 204 e persiste")]
+    public async Task Atualizar_LegalFixaRedacao_Retorna204EPersiste()
+    {
+        Guid id = IdSemeado("LI_EP");
+        string descricao = $"Cota — independente de renda, egresso de escola pública ({Guid.NewGuid():N})";
+        const string BaseLegal = "Lei 12.711/2012, art. 3º (red. Lei 14.723/2023)";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, new
+        {
+            id,
+            descricao,
+            naturezaLegal = "COTA_RESERVADA",
+            composicaoVagas = "DENTRO_DO_VR",
+            regraRemanejamento = "SEGUE_CASCATA",
+            baseLegal = BaseLegal,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage obter = await client.GetAsync(
+            new Uri($"/api/configuracao/modalidades/{id}", UriKind.Relative));
+        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+        JsonElement root = doc.RootElement;
+        root.GetProperty("descricao").GetString().Should().Be(descricao);
+        root.GetProperty("baseLegal").GetString().Should().Be(BaseLegal);
+        root.GetProperty("naturezaLegal").GetString().Should().Be("COTA_RESERVADA",
+            "a estrutura de vagas permanece a da lei");
+        root.GetProperty("composicaoVagas").GetString().Should().Be("DENTRO_DO_VR");
+        root.GetProperty("regraRemanejamento").GetString().Should().Be("SEGUE_CASCATA");
+    }
+
+    private static Guid IdSemeado(string codigo) =>
+        ModalidadeSeed.Itens.Single(i => i.Codigo == codigo).Id;
+
+    private static async Task<string?> LerCodigoDeErro(HttpResponseMessage response)
+    {
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return doc.RootElement.GetProperty("code").GetString();
+    }
+
+    private static async Task<HttpResponseMessage> EnviarPutAdmin(HttpClient client, Guid id, object body)
+    {
+        using HttpRequestMessage request = new(
+            HttpMethod.Put, new Uri($"/api/configuracao/admin/modalidades/{id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(body);
+        return await client.SendAsync(request);
     }
 
     private static string CodigoUnico() => $"MOD_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";

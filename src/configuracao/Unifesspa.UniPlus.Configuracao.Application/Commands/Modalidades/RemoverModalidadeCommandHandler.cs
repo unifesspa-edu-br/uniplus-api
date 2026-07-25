@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="RemoverModalidadeCommand"/>. Soft-delete via
-/// <c>SoftDeleteInterceptor</c> — bloqueia (409) quando ESTA modalidade é
+/// <c>SoftDeleteInterceptor</c> — bloqueia (409) as modalidades do catálogo legal fixo
+/// (<c>RemocaoBloqueadaCodigoProtegido</c>) e bloqueia (409) quando ESTA modalidade é
 /// referenciada por OUTRA modalidade viva como <c>composicao_origem</c> ou como
 /// destino/par/fallback em <c>remanejamento_args</c> (integridade referencial
 /// intra-banco, invariante 7). Nunca é bloqueada por snapshot-copy de Seleção
@@ -35,6 +36,17 @@ public static class RemoverModalidadeCommandHandler
             return Result.Failure(new DomainError(
                 ModalidadeErrorCodes.NaoEncontrada,
                 "Modalidade de concorrência não encontrada."));
+        }
+
+        // As dez modalidades legais fixas são o piso de ações afirmativas exigido pela Lei
+        // 12.711/2012 (red. Lei 14.723/2023): sem elas não há como configurar a distribuição
+        // de vagas de um edital que aplique a lei. A checagem precede a de referência —
+        // é determinística e não vai ao banco.
+        if (modalidade.Codigo.EhLegalFixa)
+        {
+            return Result.Failure(new DomainError(
+                ModalidadeErrorCodes.RemocaoBloqueadaCodigoProtegido,
+                $"A modalidade legal fixa '{modalidade.Codigo.Valor}' não pode ser removida."));
         }
 
         // Check-then-act, simétrico ao bloqueio de remoção dos demais cadastros. A

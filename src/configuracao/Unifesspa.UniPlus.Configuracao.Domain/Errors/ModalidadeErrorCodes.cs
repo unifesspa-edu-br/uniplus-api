@@ -7,6 +7,8 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 /// <list type="bullet">
 ///   <item><description><see cref="CodigoJaExiste"/> → 409 Conflict</description></item>
 ///   <item><description><see cref="RemocaoBloqueadaPorReferencia"/> → 409 Conflict</description></item>
+///   <item><description><see cref="RemocaoBloqueadaCodigoProtegido"/> → 409 Conflict</description></item>
+///   <item><description><see cref="CriacaoBloqueadaCodigoProtegido"/> → 409 Conflict</description></item>
 ///   <item><description><see cref="NaoEncontrada"/> → 404 Not Found</description></item>
 ///   <item><description>demais → 422 Unprocessable Entity</description></item>
 /// </list>
@@ -27,6 +29,19 @@ public static class ModalidadeErrorCodes
     public const string AcaoIndeferimentoInvalida = "Modalidade.AcaoIndeferimentoInvalida";
     public const string ReferenciaInexistenteOuInativa = "Modalidade.ReferenciaInexistenteOuInativa";
     public const string RemocaoBloqueadaPorReferencia = "Modalidade.RemocaoBloqueadaPorReferencia";
+
+    /// <summary>
+    /// Tentativa de alterar natureza, composição, remanejamento, critérios ou ação no
+    /// indeferimento de uma modalidade do catálogo legal fixo — nessas, só descrição e
+    /// base legal são editáveis.
+    /// </summary>
+    public const string EstruturaProtegidaNaoEditavel = "Modalidade.EstruturaProtegidaNaoEditavel";
+
+    /// <summary>Tentativa de remover uma modalidade do catálogo legal fixo.</summary>
+    public const string RemocaoBloqueadaCodigoProtegido = "Modalidade.RemocaoBloqueadaCodigoProtegido";
+
+    /// <summary>Tentativa de cadastrar uma modalidade com código reservado ao catálogo legal fixo.</summary>
+    public const string CriacaoBloqueadaCodigoProtegido = "Modalidade.CriacaoBloqueadaCodigoProtegido";
     public const string BaseLegalTamanho = "Modalidade.BaseLegalTamanho";
     public const string NaoEncontrada = "Modalidade.NaoEncontrada";
 }

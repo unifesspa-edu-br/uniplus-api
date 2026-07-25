@@ -10,6 +10,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// chegam como tokens canônicos UPPER_SNAKE. O ator (<c>updated_by</c>) é carimbado
 /// server-side via <c>IUserContext</c>.
 /// </summary>
+/// <remarks>
+/// A operação é <b>substituição integral</b>: campo omitido não é "mantido como está",
+/// é reenviado com o default (natureza <c>AMPLA</c>, composição <c>RESIDUAL_DO_VO</c>,
+/// demais nulos). Numa modalidade do catálogo legal fixo, onde só descrição e base legal
+/// são editáveis, isso significa reenviar a estrutura tal como está — omitir a natureza de
+/// uma cota federal para corrigir a descrição resulta em <c>EstruturaProtegidaNaoEditavel</c>
+/// (422), não em edição parcial silenciosa.
+/// </remarks>
 public sealed record AtualizarModalidadeCommand(
     Guid Id,
     string? Descricao = null,

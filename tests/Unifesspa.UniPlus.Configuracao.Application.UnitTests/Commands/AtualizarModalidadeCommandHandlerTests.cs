@@ -16,7 +16,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     private readonly IModalidadeRepository _repository = Substitute.For<IModalidadeRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
-    private static Modalidade Existente(string codigo = "AC") =>
+    private static Modalidade Existente(string codigo = "PSVR_AMPLA") =>
         Modalidade.Criar(codigo, "Ampla", "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null, null, null, null)
             .Value!;
 
@@ -37,7 +37,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     [Fact(DisplayName = "Atualização válida persiste e o código permanece imutável")]
     public async Task Handle_Valido_PersisteCodigoImutavel()
     {
-        Modalidade existente = Existente("AC");
+        Modalidade existente = Existente();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         var comando = new AtualizarModalidadeCommand(
@@ -47,9 +47,29 @@ public sealed class AtualizarModalidadeCommandHandlerTests
             comando, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-        existente.Codigo.Valor.Should().Be("AC", "o código é imutável — não há campo para alterá-lo");
+        existente.Codigo.Valor.Should().Be("PSVR_AMPLA", "o código é imutável — não há campo para alterá-lo");
         existente.Descricao.Should().Be("Descrição nova");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Modalidade legal fixa recusa alteração estrutural antes de checar referências")]
+    public async Task Handle_LegalFixa_RecusaSemChecarReferencias()
+    {
+        Modalidade existente = Existente("LB_PPI");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        var comando = new AtualizarModalidadeCommand(
+            existente.Id, NaturezaLegal: "SUPLEMENTAR", ComposicaoVagas: "SUPLEMENTAR_AO_TOTAL",
+            RegraRemanejamento: "DESTINO_UNICO", RemanejamentoDestino: "AC");
+
+        Result resultado = await AtualizarModalidadeCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
+        await _repository.DidNotReceive().CodigosVivosExistemAsync(
+            Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Referência de remanejamento inexistente entre vivos retorna 422 sem persistir")]

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
+using System.Collections.Frozen;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -14,19 +15,80 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// reidratação).
 /// </summary>
 /// <remarks>
-/// Diferente do <c>TipoDocumento</c>, o código da Modalidade é <b>imutável</b>: o
+/// <para>Diferente do <c>TipoDocumento</c>, o código da Modalidade é <b>imutável</b>: o
 /// comando de atualização não o aceita como campo editável, pois a cascata de
 /// remanejamento e as referências de composição (<c>ComposicaoOrigem</c>,
 /// <c>RemanejamentoArgs</c>) apontam para modalidades por código — renomear
-/// quebraria a integridade referencial intra-banco.
+/// quebraria a integridade referencial intra-banco.</para>
+/// <para>Dez códigos são <b>reservados</b> ao catálogo legal fixo (ver
+/// <see cref="CodigosLegaisFixos"/>): as oito modalidades da Lei 12.711/2012 (red. Lei
+/// 14.723/2023), a ampla concorrência e a modalidade de pessoa com deficiência fora da
+/// reserva federal. A proteção é exposta por <see cref="EhLegalFixa"/> e aplicada pelo
+/// agregado (atualização) e pelos handlers (criação e remoção), não pelo banco.</para>
 /// </remarks>
 public sealed partial record CodigoModalidade
 {
     private const int TamanhoMaximo = 60;
 
+    /// <summary>Ampla concorrência.</summary>
+    public const string Ac = "AC";
+
+    /// <summary>Pessoa com deficiência na ampla concorrência (rótulo <c>V</c> nos editais).</summary>
+    public const string AcPcd = "AC_PCD";
+
+    /// <summary>Cota de baixa renda para pessoa preta, parda ou indígena.</summary>
+    public const string LbPpi = "LB_PPI";
+
+    /// <summary>Cota de baixa renda para pessoa quilombola.</summary>
+    public const string LbQ = "LB_Q";
+
+    /// <summary>Cota de baixa renda para pessoa com deficiência.</summary>
+    public const string LbPcd = "LB_PCD";
+
+    /// <summary>Cota de baixa renda para egresso de escola pública.</summary>
+    public const string LbEp = "LB_EP";
+
+    /// <summary>Cota independente de renda para pessoa preta, parda ou indígena.</summary>
+    public const string LiPpi = "LI_PPI";
+
+    /// <summary>Cota independente de renda para pessoa quilombola.</summary>
+    public const string LiQ = "LI_Q";
+
+    /// <summary>Cota independente de renda para pessoa com deficiência.</summary>
+    public const string LiPcd = "LI_PCD";
+
+    /// <summary>Cota independente de renda para egresso de escola pública.</summary>
+    public const string LiEp = "LI_EP";
+
+    /// <summary>
+    /// Os dez códigos do catálogo legal fixo — piso de ações afirmativas da Lei
+    /// 12.711/2012 (red. Lei 14.723/2023) mais a ampla concorrência e a modalidade de
+    /// pessoa com deficiência fora da reserva federal. Não são cadastro: nascem do seed,
+    /// e a estrutura de vagas de cada um (natureza, composição, remanejamento) é ditada
+    /// pela lei, não pela universidade. Alterá-la exige mudança no seed e migração.
+    /// </summary>
+    public static FrozenSet<string> CodigosLegaisFixos { get; } = FrozenSet.ToFrozenSet(
+        [Ac, AcPcd, LbPpi, LbQ, LbPcd, LbEp, LiPpi, LiQ, LiPcd, LiEp],
+        StringComparer.Ordinal);
+
     public string Valor { get; }
 
     private CodigoModalidade(string valor) => Valor = valor;
+
+    /// <summary>
+    /// Indica se este código pertence ao catálogo legal fixo — comparação case-sensitive
+    /// (<see cref="StringComparison.Ordinal"/>), alinhada ao formato canônico do value
+    /// object (maiúsculas).
+    /// </summary>
+    public bool EhLegalFixa => CodigosLegaisFixos.Contains(Valor);
+
+    /// <summary>
+    /// Indica se <paramref name="valor"/> é um código do catálogo legal fixo, sem alocar
+    /// value object. Apara o valor antes de comparar, como faz <see cref="Criar"/> — um
+    /// código com espaços à volta é o mesmo código.
+    /// </summary>
+    public static bool EhCodigoLegalFixo(string? valor) =>
+        !string.IsNullOrWhiteSpace(valor) && CodigosLegaisFixos.Contains(valor.Trim());
 
     /// <summary>
     /// Cria um <see cref="CodigoModalidade"/> validando o formato fechado. Valor
