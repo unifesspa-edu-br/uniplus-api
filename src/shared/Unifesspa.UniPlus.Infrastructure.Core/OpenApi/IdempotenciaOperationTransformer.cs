@@ -63,7 +63,7 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
     // de domínio próprios (ex.: AtosNormativosController.Registrar), mas quando não há um, o
     // filtro é a única fonte — e precisa do mesmo corpo tipado que o `AuthorizationOperationTransformer`
     // já dá a 401/403.
-    private static readonly HashSet<string> StatusComCorpoTipado = ["409", "413"];
+    private static readonly HashSet<string> StatusesWithTypedBody = ["409", "413"];
 
     public Task TransformAsync(
         OpenApiOperation operation,
@@ -99,14 +99,14 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
                 continue;
             }
 
-            OpenApiResponse resposta = new() { Description = descricao };
+            OpenApiResponse response = new() { Description = descricao };
 
             // Mesmo tratamento do AuthorizationOperationTransformer para 401/403: referenciar o
             // schema (não uma resposta só com descrição) é o que faz um cliente gerado tipar o
             // erro em vez de tratá-lo como corpo desconhecido.
-            if (StatusComCorpoTipado.Contains(status))
+            if (StatusesWithTypedBody.Contains(status))
             {
-                resposta.Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
+                response.Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
                 {
                     ["application/problem+json"] = new OpenApiMediaType
                     {
@@ -115,7 +115,7 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
                 };
             }
 
-            operation.Responses[status] = resposta;
+            operation.Responses[status] = response;
         }
 
         return Task.CompletedTask;

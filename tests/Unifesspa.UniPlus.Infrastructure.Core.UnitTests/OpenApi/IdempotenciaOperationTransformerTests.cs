@@ -17,12 +17,12 @@ public sealed class IdempotenciaOperationTransformerTests
     [Theory]
     [InlineData("409")]
     [InlineData("413")]
-    public async Task TransformAsync_Should_AddCorpoTipado_QuandoStatusENaoDeclaradoPelaAction(string status)
+    public async Task TransformAsync_Should_AddTypedBody_WhenStatusIsNotDeclaredByAction(string status)
     {
         OpenApiOperation operation = new();
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(ControllerIdempotenteFicticio.ActionIdempotente)), CancellationToken.None);
+            operation, Context(nameof(IdempotentControllerFixture.IdempotentAction)), CancellationToken.None);
 
         operation.Responses.Should().ContainKey(status);
         OpenApiMediaType media = operation.Responses[status].Content!["application/problem+json"];
@@ -33,12 +33,12 @@ public sealed class IdempotenciaOperationTransformerTests
     [Theory]
     [InlineData("400")]
     [InlineData("422")]
-    public async Task TransformAsync_Should_AddSoDescricao_QuandoStatusNaoTemCorpoTipadoPeloFiltro(string status)
+    public async Task TransformAsync_Should_AddDescriptionOnly_WhenStatusHasNoTypedBodyFromFilter(string status)
     {
         OpenApiOperation operation = new();
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(ControllerIdempotenteFicticio.ActionIdempotente)), CancellationToken.None);
+            operation, Context(nameof(IdempotentControllerFixture.IdempotentAction)), CancellationToken.None);
 
         operation.Responses.Should().ContainKey(status);
         operation.Responses[status].Content.Should().BeNullOrEmpty(
@@ -51,7 +51,7 @@ public sealed class IdempotenciaOperationTransformerTests
         OpenApiOperation operation = new();
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(ControllerIdempotenteFicticio.ActionNaoIdempotente)), CancellationToken.None);
+            operation, Context(nameof(IdempotentControllerFixture.NonIdempotentAction)), CancellationToken.None);
 
         operation.Responses.Should().BeNullOrEmpty();
     }
@@ -63,14 +63,14 @@ public sealed class IdempotenciaOperationTransformerTests
         OpenApiOperation operation = new() { Responses = new OpenApiResponses { ["409"] = own } };
 
         await new IdempotenciaOperationTransformer().TransformAsync(
-            operation, Context(nameof(ControllerIdempotenteFicticio.ActionIdempotente)), CancellationToken.None);
+            operation, Context(nameof(IdempotentControllerFixture.IdempotentAction)), CancellationToken.None);
 
         operation.Responses["409"].Description.Should().Be("Conflito de domínio específico");
         operation.Responses["409"].Content.Should().BeNullOrEmpty("a declaração própria da action não é sobrescrita nem ganha corpo");
         operation.Responses.Should().ContainKey("413");
     }
 
-    private static OpenApiOperationTransformerContext Context(string nomeDaAction) =>
+    private static OpenApiOperationTransformerContext Context(string actionName) =>
         new()
         {
             DocumentName = "selecao",
@@ -79,20 +79,20 @@ public sealed class IdempotenciaOperationTransformerTests
             {
                 ActionDescriptor = new ControllerActionDescriptor
                 {
-                    MethodInfo = typeof(ControllerIdempotenteFicticio).GetMethod(nomeDaAction)!,
-                    ControllerTypeInfo = typeof(ControllerIdempotenteFicticio).GetTypeInfo(),
+                    MethodInfo = typeof(IdempotentControllerFixture).GetMethod(actionName)!,
+                    ControllerTypeInfo = typeof(IdempotentControllerFixture).GetTypeInfo(),
                 },
             },
         };
 
-    private sealed class ControllerIdempotenteFicticio
+    private sealed class IdempotentControllerFixture
     {
         [RequiresIdempotencyKey]
-        public static void ActionIdempotente()
+        public static void IdempotentAction()
         {
         }
 
-        public static void ActionNaoIdempotente()
+        public static void NonIdempotentAction()
         {
         }
     }
