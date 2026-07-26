@@ -56,6 +56,15 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
             + "a chave identifica a requisição pelo hash do corpo."),
     ];
 
+    // 400 e 422 ficam só com descrição: quase toda action idempotente já declara o próprio 400/422
+    // com corpo tipado (a validação do handler é mais específica), e o injetado aqui só aparece
+    // nas exceções sem declaração própria — corrigidas na action, não generalizadas aqui. 413 é
+    // sempre o filtro (nenhuma action do repositório o declara por conta própria); 409 tem casos
+    // de domínio próprios (ex.: AtosNormativosController.Registrar), mas quando não há um, o
+    // filtro é a única fonte — e precisa do mesmo corpo tipado que o `AuthorizationOperationTransformer`
+    // já dá a 401/403.
+    private static readonly HashSet<string> StatusComCorpoTipado = ["409", "413"];
+
     public Task TransformAsync(
         OpenApiOperation operation,
         OpenApiOperationTransformerContext context,
@@ -90,7 +99,23 @@ public sealed class IdempotenciaOperationTransformer : IOpenApiOperationTransfor
                 continue;
             }
 
-            operation.Responses[status] = new OpenApiResponse { Description = descricao };
+            OpenApiResponse resposta = new() { Description = descricao };
+
+            // Mesmo tratamento do AuthorizationOperationTransformer para 401/403: referenciar o
+            // schema (não uma resposta só com descrição) é o que faz um cliente gerado tipar o
+            // erro em vez de tratá-lo como corpo desconhecido.
+            if (StatusComCorpoTipado.Contains(status))
+            {
+                resposta.Content = new Dictionary<string, OpenApiMediaType>(StringComparer.Ordinal)
+                {
+                    ["application/problem+json"] = new OpenApiMediaType
+                    {
+                        Schema = new OpenApiSchemaReference("ProblemDetails"),
+                    },
+                };
+            }
+
+            operation.Responses[status] = resposta;
         }
 
         return Task.CompletedTask;
