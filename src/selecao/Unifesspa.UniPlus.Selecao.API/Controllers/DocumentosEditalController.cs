@@ -52,6 +52,7 @@ public sealed class DocumentosEditalController : ControllerBase
     [ProducesResponseType(typeof(IniciarUploadDocumentoEditalDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> IniciarUpload(Guid processoSeletivoId, CancellationToken cancellationToken)
     {
         Result<IniciarUploadDocumentoEditalDto> resultado = await _commandBus.Send(
