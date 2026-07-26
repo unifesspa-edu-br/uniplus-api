@@ -90,8 +90,7 @@ public sealed class LeituraInProcessTests
             tipo: TipoUnidade.Centro,
             unidadeAcademica: false,
             vigenciaInicio: DataInicio,
-            vigenciaFim: null,
-            origem: OrigemUnidade.CriadoNoUniPlus).Value!;
+            vigenciaFim: null).Value!;
 
         // Semeia pelo DbContext do MÓDULO resolvido do container do host — o
         // schema `organizacao` já foi criado pelas migrations on startup no boot.

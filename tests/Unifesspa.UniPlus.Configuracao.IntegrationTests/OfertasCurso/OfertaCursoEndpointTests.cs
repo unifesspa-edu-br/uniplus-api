@@ -451,8 +451,7 @@ public sealed class OfertaCursoEndpointTests
             tipo: TipoUnidade.Centro,
             unidadeAcademica: true,
             vigenciaInicio: VigenciaInicio,
-            vigenciaFim: null,
-            origem: OrigemUnidade.CriadoNoUniPlus).Value!;
+            vigenciaFim: null).Value!;
 
         // Semeia pelo DbContext do MÓDULO Organização resolvido do container do
         // host — o schema `organizacao` foi criado pelas migrations no boot; o

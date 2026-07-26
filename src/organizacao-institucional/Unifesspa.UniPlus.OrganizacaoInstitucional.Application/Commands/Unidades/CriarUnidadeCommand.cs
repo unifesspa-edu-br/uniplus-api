@@ -14,5 +14,4 @@ public sealed record CriarUnidadeCommand(
     TipoUnidade Tipo,
     bool UnidadeAcademica,
     DateOnly VigenciaInicio,
-    DateOnly? VigenciaFim,
-    OrigemUnidade Origem) : ICommand<Result<Guid>>;
+    DateOnly? VigenciaFim) : ICommand<Result<Guid>>;

@@ -26,8 +26,7 @@ public sealed class RemoverUnidadeCommandHandlerTests
             TipoUnidade.Centro,
             false,
             new DateOnly(2026, 1, 1),
-            null,
-            OrigemUnidade.CriadoNoUniPlus).Value!;
+            null).Value!;
 
     [Fact(DisplayName = "Handle com unidade válida e sem subordinadas remove e invalida cache")]
     public async Task Handle_ComUnidadeValida_RemoveEInvalidaCache()

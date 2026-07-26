@@ -47,7 +47,6 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
     public bool UnidadeAcademica { get; private set; }
     public DateOnly VigenciaInicio { get; private set; }
     public DateOnly? VigenciaFim { get; private set; }
-    public OrigemUnidade Origem { get; private set; }
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -76,14 +75,13 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         TipoUnidade tipo,
         bool unidadeAcademica,
         DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        OrigemUnidade origem)
+        DateOnly? vigenciaFim)
     {
         ArgumentNullException.ThrowIfNull(nome);
         ArgumentNullException.ThrowIfNull(sigla);
         ArgumentNullException.ThrowIfNull(codigo);
 
-        Result validacao = ValidarCampos(nome, alias, sigla, codigo, tipo, origem, vigenciaInicio, vigenciaFim);
+        Result validacao = ValidarCampos(nome, alias, sigla, codigo, tipo, vigenciaInicio, vigenciaFim);
         if (validacao.IsFailure)
         {
             return Result<Unidade>.Failure(validacao.Error!);
@@ -101,7 +99,6 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
             UnidadeAcademica = unidadeAcademica,
             VigenciaInicio = vigenciaInicio,
             VigenciaFim = vigenciaFim,
-            Origem = origem,
         };
 
         // Abre histórico inicial para identificadores com variação temporal.
@@ -142,7 +139,7 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         ArgumentNullException.ThrowIfNull(sigla);
         ArgumentNullException.ThrowIfNull(codigo);
 
-        Result validacao = ValidarCampos(nome, alias, sigla, codigo, tipo, Origem, VigenciaInicio, vigenciaFim);
+        Result validacao = ValidarCampos(nome, alias, sigla, codigo, tipo, VigenciaInicio, vigenciaFim);
         if (validacao.IsFailure)
         {
             return validacao;
@@ -209,7 +206,6 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         string sigla,
         string codigo,
         TipoUnidade tipo,
-        OrigemUnidade origem,
         DateOnly vigenciaInicio,
         DateOnly? vigenciaFim)
     {
@@ -218,13 +214,6 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
             return Result.Failure(new DomainError(
                 UnidadeErrorCodes.TipoInvalido,
                 "Tipo de Unidade inválido — use um valor definido em TipoUnidade, diferente de Nenhum."));
-        }
-
-        if (!Enum.IsDefined(origem) || origem == OrigemUnidade.Nenhum)
-        {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.OrigemInvalida,
-                "Origem da Unidade inválida."));
         }
 
         if (string.IsNullOrWhiteSpace(nome))

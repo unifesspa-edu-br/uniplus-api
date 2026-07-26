@@ -18,7 +18,6 @@ public sealed record UnidadeDto(
     bool UnidadeAcademica,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim,
-    string Origem,
     DateTimeOffset CriadoEm)
 {
     [JsonPropertyName("_links")]

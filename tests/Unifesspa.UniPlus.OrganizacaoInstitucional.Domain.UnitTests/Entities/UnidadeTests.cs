@@ -24,8 +24,7 @@ public sealed class UnidadeTests
             TipoUnidade.Centro,
             false,
             DataInicio,
-            null,
-            OrigemUnidade.CriadoNoUniPlus).Value!;
+            null).Value!;
 
     // ── Criar ──────────────────────────────────────────────────────────
 
@@ -42,8 +41,7 @@ public sealed class UnidadeTests
             TipoUnidade.Centro,
             false,
             DataInicio,
-            null,
-            OrigemUnidade.CriadoNoUniPlus);
+            null);
 
         resultado.IsSuccess.Should().BeTrue();
         Unidade u = resultado.Value!;
@@ -52,7 +50,6 @@ public sealed class UnidadeTests
         u.Sigla.Should().Be("CEPS");
         u.Codigo.Should().Be("0001");
         u.Tipo.Should().Be(TipoUnidade.Centro);
-        u.Origem.Should().Be(OrigemUnidade.CriadoNoUniPlus);
         u.Id.Should().NotBeEmpty("ADR-0032 exige Guid v7 via EntityBase");
         u.IsDeleted.Should().BeFalse();
     }
@@ -88,7 +85,7 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             nomeInvalido, null, SlugValido, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NomeObrigatorio);
@@ -99,7 +96,7 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "a", null, SlugValido, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NomeTamanho);
@@ -110,7 +107,7 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "Nome valido", null, SlugValido, "  ", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaObrigatoria);
@@ -121,7 +118,7 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "Nome valido", null, SlugValido, new string('A', 51), "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaTamanho);
@@ -132,7 +129,7 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "Nome valido", null, SlugValido, "CEPS", "  ", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.CodigoObrigatorio);
@@ -143,7 +140,7 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "Nome valido", new string('a', 101), SlugValido, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.AliasTamanho);
@@ -156,23 +153,10 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "Nome valido", null, SlugValido, "CEPS", "0001", null,
-            tipoInvalido, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            tipoInvalido, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.TipoInvalido);
-    }
-
-    [Theory(DisplayName = "Criar com OrigemUnidade.Nenhum ou cast inválido retorna OrigemInvalida")]
-    [InlineData(OrigemUnidade.Nenhum)]
-    [InlineData((OrigemUnidade)99)]
-    public void Criar_ComOrigemInvalida_DeveRetornarOrigemInvalida(OrigemUnidade origemInvalida)
-    {
-        Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null, origemInvalida);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.OrigemInvalida);
     }
 
     [Fact(DisplayName = "Criar com vigenciaFim anterior ao início retorna VigenciaFimAnteriorAoInicio")]
@@ -182,7 +166,7 @@ public sealed class UnidadeTests
 
         Result<Unidade> resultado = Unidade.Criar(
             "Nome valido", null, SlugValido, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, fimAnterior, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, fimAnterior);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.VigenciaFimAnteriorAoInicio);
@@ -240,7 +224,7 @@ public sealed class UnidadeTests
     {
         Unidade unidade = Unidade.Criar(
             "Centro de Processos Seletivos", null, SlugValido, "CEPS", "ABC", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus).Value!;
+            TipoUnidade.Centro, false, DataInicio, null).Value!;
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
@@ -265,7 +249,7 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "Nome valido", null, SlugValido, "ceps", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null, OrigemUnidade.CriadoNoUniPlus);
+            TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Sigla.Should().Be("CEPS");

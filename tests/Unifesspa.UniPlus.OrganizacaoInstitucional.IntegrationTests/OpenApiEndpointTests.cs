@@ -68,6 +68,36 @@ public sealed class OpenApiEndpointTests : IClassFixture<OrganizacaoApiFactory>
             $"contrato OpenAPI mudou — regerar a baseline com `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e revisar o diff antes de commit (ADR-0030).");
     }
 
+    [Fact(DisplayName = "Contrato de Unidade não anuncia vocabulário de procedência do registro")]
+    public async Task SpecRuntime_NaoDeclaraProcedenciaDaUnidade()
+    {
+        using HttpClient client = _factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/organizacao.json", UriKind.Relative));
+        response.EnsureSuccessStatusCode();
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement schemas = doc.RootElement.GetProperty("components").GetProperty("schemas");
+
+        // Procedência de registro é metadado de carga, não atributo da Unidade: o
+        // enum saiu do domínio e nenhum schema de Unidade deve reintroduzir o campo.
+        schemas.TryGetProperty("OrigemUnidade", out _).Should().BeFalse(
+            "o vocabulário de procedência foi removido do domínio da Unidade");
+
+        foreach (string schemaDeUnidade in new[] { "CriarUnidadeCommand", "AtualizarUnidadeCommand", "UnidadeDto" })
+        {
+            JsonElement schema = schemas.GetProperty(schemaDeUnidade);
+
+            schema.GetProperty("properties").TryGetProperty("origem", out _).Should().BeFalse(
+                $"{schemaDeUnidade} não deve declarar a propriedade origem");
+
+            if (schema.TryGetProperty("required", out JsonElement obrigatorios))
+            {
+                obrigatorios.EnumerateArray().Select(campo => campo.GetString())
+                    .Should().NotContain("origem", $"{schemaDeUnidade} não deve exigir origem");
+            }
+        }
+    }
+
     private static string NormalizeJson(string raw)
     {
         using JsonDocument document = JsonDocument.Parse(raw);

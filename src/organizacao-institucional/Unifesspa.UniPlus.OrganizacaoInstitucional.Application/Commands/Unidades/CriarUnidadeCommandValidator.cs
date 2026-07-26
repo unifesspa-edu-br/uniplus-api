@@ -32,10 +32,6 @@ public sealed class CriarUnidadeCommandValidator : AbstractValidator<CriarUnidad
             .Must(t => Enum.IsDefined(t) && t != TipoUnidade.Nenhum)
             .WithMessage("Tipo de Unidade inválido.");
 
-        RuleFor(x => x.Origem)
-            .Must(o => Enum.IsDefined(o) && o != OrigemUnidade.Nenhum)
-            .WithMessage("Origem da Unidade inválida.");
-
         RuleFor(x => x.VigenciaFim)
             .GreaterThanOrEqualTo(x => x.VigenciaInicio)
             .WithMessage("Data de encerramento deve ser igual ou posterior à data de início.")

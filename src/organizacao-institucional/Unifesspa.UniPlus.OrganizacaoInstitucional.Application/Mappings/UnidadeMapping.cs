@@ -21,7 +21,6 @@ public static class UnidadeMapping
             unidade.UnidadeAcademica,
             unidade.VigenciaInicio,
             unidade.VigenciaFim,
-            unidade.Origem.ToString(),
             unidade.CreatedAt);
     }
 
