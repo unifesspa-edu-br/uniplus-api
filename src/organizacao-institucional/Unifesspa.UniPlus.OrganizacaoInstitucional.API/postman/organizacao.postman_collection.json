@@ -292,6 +292,144 @@
             "header": [],
             "url": "{{base_url}}/api/organizacao/unidades"
           }
+        },
+        {
+          "name": "Criar Unidade sem informar procedência → 201",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "// Slug, sigla e código são únicos entre unidades vivas — um sufixo por",
+              "// execução evita 409 ao reexecutar a coleção sem limpar a base.",
+              "pm.environment.set('smoke_sufixo', Date.now().toString(36));"
+            ] } },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const id = pm.response.json();",
+              "pm.test('retorna Id Guid v7', () => { pm.expect(id).to.be.a('string'); pm.expect(id[14]).to.eql('7'); });",
+              "pm.environment.set('unidade_id', id);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Centro de Smoke {{smoke_sufixo}}\",\"alias\":null,\"slug\":\"centro-smoke-{{smoke_sufixo}}\",\"sigla\":\"CSMK{{smoke_sufixo}}\",\"codigo\":\"SMK-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"centro\",\"unidadeAcademica\":false,\"vigenciaInicio\":\"2026-01-01\",\"vigenciaFim\":null}"
+            },
+            "url": "{{base_url}}/api/organizacao/admin/unidades"
+          }
+        },
+        {
+          "name": "Obter Unidade → 200 (corpo sem campo de procedência)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('vendor MIME unidade.v1', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.uniplus.unidade.v1+json'));",
+              "const u = pm.response.json();",
+              "pm.test('descreve a unidade', () => { pm.expect(u.sigla).to.eql(('CSMK' + pm.environment.get('smoke_sufixo')).toUpperCase()); pm.expect(u.tipo).to.be.a('string'); });",
+              "// Procedência de registro saiu do agregado: o contrato não deve reintroduzi-la.",
+              "pm.test('não declara procedência do registro', () => pm.expect(u).to.not.have.property('origem'));"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/organizacao/unidades/{{unidade_id}}"
+          }
+        },
+        {
+          "name": "Criar Unidade com payload legado que ainda envia origem → 201",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "// O cliente que ainda não removeu o campo continua funcionando: o binding",
+              "// ignora membro desconhecido, então o intervalo entre o merge da API e o do",
+              "// frontend não produz 400. Se algum dia o decode passar a recusar membro não",
+              "// mapeado, este teste falha e avisa antes de quebrar a tela.",
+              "pm.test('201 Created — membro desconhecido é ignorado', () => pm.response.to.have.status(201));",
+              "pm.environment.set('unidade_legado_id', pm.response.json());"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\":\"Centro Legado {{smoke_sufixo}}\",\"alias\":null,\"slug\":\"centro-legado-{{smoke_sufixo}}\",\"sigla\":\"CLEG{{smoke_sufixo}}\",\"codigo\":\"LEG-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"centro\",\"unidadeAcademica\":false,\"vigenciaInicio\":\"2026-01-01\",\"vigenciaFim\":null,\"origem\":\"criadoNoUniPlus\"}"
+            },
+            "url": "{{base_url}}/api/organizacao/admin/unidades"
+          }
+        },
+        {
+          "name": "Atualizar Unidade → 204",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ] } }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [
+              { "key": "Idempotency-Key", "value": "{{$guid}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id\":\"{{unidade_id}}\",\"nome\":\"Centro de Smoke {{smoke_sufixo}} (renomeado)\",\"alias\":\"Smoke\",\"slug\":\"centro-smoke-{{smoke_sufixo}}\",\"sigla\":\"CSMK{{smoke_sufixo}}\",\"codigo\":\"SMK-{{smoke_sufixo}}\",\"unidadeSuperiorId\":null,\"tipo\":\"centro\",\"unidadeAcademica\":true,\"vigenciaFim\":null,\"motivoMudancaIdentificador\":null}"
+            },
+            "url": "{{base_url}}/api/organizacao/admin/unidades/{{unidade_id}}"
+          }
+        },
+        {
+          "name": "Obter Unidade após atualização → 200 (mudança aplicada, sem procedência)",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const u = pm.response.json();",
+              "pm.test('atualização aplicada', () => { pm.expect(u.nome).to.include('renomeado'); pm.expect(u.unidadeAcademica).to.eql(true); pm.expect(u.alias).to.eql('Smoke'); });",
+              "pm.test('não declara procedência do registro', () => pm.expect(u).to.not.have.property('origem'));"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/organizacao/unidades/{{unidade_id}}"
+          }
+        },
+        {
+          "name": "Remover Unidade criada no smoke → 204",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ] } }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [ { "key": "Idempotency-Key", "value": "{{$guid}}" } ],
+            "url": "{{base_url}}/api/organizacao/admin/unidades/{{unidade_id}}"
+          }
+        },
+        {
+          "name": "Remover Unidade do payload legado → 204",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ] } }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{token}}" } ] },
+            "header": [ { "key": "Idempotency-Key", "value": "{{$guid}}" } ],
+            "url": "{{base_url}}/api/organizacao/admin/unidades/{{unidade_legado_id}}"
+          }
         }
       ]
     }
