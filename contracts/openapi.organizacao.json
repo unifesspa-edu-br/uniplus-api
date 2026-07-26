@@ -1446,8 +1446,7 @@
           "tipo",
           "unidadeAcademica",
           "vigenciaInicio",
-          "vigenciaFim",
-          "origem"
+          "vigenciaFim"
         ],
         "type": "object",
         "properties": {
@@ -1492,9 +1491,6 @@
               "string"
             ],
             "format": "date"
-          },
-          "origem": {
-            "$ref": "#/components/schemas/OrigemUnidade"
           }
         }
       },
@@ -1821,15 +1817,6 @@
           }
         }
       },
-      "OrigemUnidade": {
-        "enum": [
-          "nenhum",
-          "legadoCoc",
-          "criadoNoUniPlus",
-          "importadoSiorg"
-        ],
-        "type": "string"
-      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -1898,7 +1885,6 @@
           "unidadeAcademica",
           "vigenciaInicio",
           "vigenciaFim",
-          "origem",
           "criadoEm"
         ],
         "type": "object",
@@ -1948,9 +1934,6 @@
               "string"
             ],
             "format": "date"
-          },
-          "origem": {
-            "type": "string"
           },
           "criadoEm": {
             "type": "string",

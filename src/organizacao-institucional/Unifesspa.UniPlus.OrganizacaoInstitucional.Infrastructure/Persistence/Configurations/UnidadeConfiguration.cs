@@ -28,7 +28,6 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.Property(u => u.Sigla).HasMaxLength(50).IsRequired();
         builder.Property(u => u.Codigo).HasMaxLength(50).IsRequired();
         builder.Property(u => u.Tipo).HasConversion<string>().HasMaxLength(30).IsRequired();
-        builder.Property(u => u.Origem).HasConversion<string>().HasMaxLength(30).IsRequired();
 
         builder.Property(u => u.UnidadeAcademica).IsRequired();
         builder.Property(u => u.VigenciaInicio).IsRequired();

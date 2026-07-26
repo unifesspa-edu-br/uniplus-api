@@ -100,12 +100,6 @@ internal sealed class OrganizacaoDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.organizacao.unidade.tipo_invalido",
                 "Tipo de unidade inválido")),
 
-        new(UnidadeErrorCodes.OrigemInvalida,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.organizacao.unidade.origem_invalida",
-                "Origem da unidade inválida")),
-
         new(UnidadeErrorCodes.VigenciaFimAnteriorAoInicio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

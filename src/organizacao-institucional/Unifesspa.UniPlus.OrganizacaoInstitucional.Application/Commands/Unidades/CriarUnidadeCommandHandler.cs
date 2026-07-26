@@ -88,8 +88,7 @@ public static class CriarUnidadeCommandHandler
             command.Tipo,
             command.UnidadeAcademica,
             command.VigenciaInicio,
-            command.VigenciaFim,
-            command.Origem);
+            command.VigenciaFim);
 
         if (unidadeResult.IsFailure)
         {

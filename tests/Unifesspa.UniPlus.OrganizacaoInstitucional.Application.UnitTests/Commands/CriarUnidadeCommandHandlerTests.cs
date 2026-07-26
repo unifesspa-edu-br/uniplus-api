@@ -27,8 +27,7 @@ public sealed class CriarUnidadeCommandHandlerTests
         TipoUnidade.Centro,
         false,
         DataInicio,
-        null,
-        OrigemUnidade.CriadoNoUniPlus);
+        null);
 
     [Fact(DisplayName = "Handle com command válido persiste e invalida cache")]
     public async Task Handle_ComCommandValido_PersisteEInvalidaCache()

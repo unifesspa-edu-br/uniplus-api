@@ -428,6 +428,5 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             tipo: TipoUnidade.Reitoria,
             unidadeAcademica: false,
             vigenciaInicio: DataInicio,
-            vigenciaFim: null,
-            origem: OrigemUnidade.CriadoNoUniPlus).Value!;
+            vigenciaFim: null).Value!;
 }

@@ -187,8 +187,7 @@ public sealed class UnidadeEndpointTests
             tipo,
             false,
             new DateOnly(2026, 1, 1),
-            null,
-            OrigemUnidade.CriadoNoUniPlus).Value!;
+            null).Value!;
 
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
         OrganizacaoInstitucionalDbContext ctx =

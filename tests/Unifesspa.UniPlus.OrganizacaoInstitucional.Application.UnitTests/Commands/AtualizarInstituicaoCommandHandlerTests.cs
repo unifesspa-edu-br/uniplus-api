@@ -44,7 +44,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     private static Unidade NovaUnidade(TipoUnidade tipo) =>
         Unidade.Criar(
             "Reitoria", null, Slug.From("reitoria").Value!, "REIT", "REIT001",
-            null, tipo, false, new DateOnly(2026, 1, 1), null, OrigemUnidade.CriadoNoUniPlus).Value!;
+            null, tipo, false, new DateOnly(2026, 1, 1), null).Value!;
 
     [Fact(DisplayName = "Handle com Instituição inexistente retorna NaoEncontrada e NÃO persiste")]
     public async Task Handle_ComInstituicaoInexistente_RetornaNaoEncontrada()

@@ -27,8 +27,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         TipoUnidade.Centro,
         false,
         DataInicio,
-        null,
-        OrigemUnidade.CriadoNoUniPlus).Value!;
+        null).Value!;
 
     // Command que reapresenta os mesmos identificadores da unidade existente —
     // as verificações de unicidade são puladas (não houve mudança).
@@ -179,8 +178,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
             TipoUnidade.Centro,
             false,
             DataInicio,
-            null,
-            OrigemUnidade.CriadoNoUniPlus).Value!;
+            null).Value!;
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         repo.CodigoExisteEntreLivosAsync("abc", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 

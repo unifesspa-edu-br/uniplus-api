@@ -431,6 +431,5 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             tipo: TipoUnidade.Centro,
             unidadeAcademica: false,
             vigenciaInicio: DataInicio,
-            vigenciaFim: null,
-            origem: OrigemUnidade.CriadoNoUniPlus).Value!;
+            vigenciaFim: null).Value!;
 }
