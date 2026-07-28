@@ -67,6 +67,7 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
             ["ConnectionStrings:OrganizacaoDb"] = _connectionString,
             ["ConnectionStrings:SelecaoDb"] = _connectionString,
             ["ConnectionStrings:IngressoDb"] = _connectionString,
+            ["ConnectionStrings:DiscentesDb"] = _connectionString,
             ["Auth:Authority"] = "http://localhost/test-realm",
             ["Auth:Audience"] = "uniplus",
         };

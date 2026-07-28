@@ -15,12 +15,20 @@ public class SyncRun
 
     private SyncRun() { }
 
-    public SyncRun(Guid id, int totalItems)
+    /// <param name="clock">
+    /// Fonte de "agora" para <c>StartedAt</c>. Obrigatório (sem default
+    /// <see cref="TimeProvider.System"/>): a convenção de relógio exige que o
+    /// <see cref="TimeProvider"/> seja sempre injetado. Testes passam um
+    /// <see cref="TimeProvider"/> fake para isolar o cenário do relógio.
+    /// </param>
+    public SyncRun(Guid id, int totalItems, TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
+
         Id = id;
         Status = SyncRunStatus.Running;
         TotalItems = totalItems;
-        StartedAt = DateTime.UtcNow;
+        StartedAt = clock.GetUtcNow().UtcDateTime;
     }
 
     public void UpdateProgress(int processed, int success, int errors)
@@ -30,9 +38,11 @@ public class SyncRun
         ErrorCount = errors;
     }
 
-    public void Complete(SyncRunStatus finalStatus)
+    public void Complete(SyncRunStatus finalStatus, TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
+
         Status = finalStatus;
-        FinishedAt = DateTime.UtcNow;
+        FinishedAt = clock.GetUtcNow().UtcDateTime;
     }
 }

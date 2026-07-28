@@ -14,6 +14,12 @@
     <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Domain/Unifesspa.UniPlus.Selecao.Domain.csproj" />
     <Project Path="src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/discentes/">
+    <Project Path="src/discentes/Unifesspa.UniPlus.Discentes.API/Unifesspa.UniPlus.Discentes.API.csproj" />
+    <Project Path="src/discentes/Unifesspa.UniPlus.Discentes.Application/Unifesspa.UniPlus.Discentes.Application.csproj" />
+    <Project Path="src/discentes/Unifesspa.UniPlus.Discentes.Domain/Unifesspa.UniPlus.Discentes.Domain.csproj" />
+    <Project Path="src/discentes/Unifesspa.UniPlus.Discentes.Infrastructure/Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/organizacao-institucional/">
     <Project Path="src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
     <Project Path="src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />
@@ -65,6 +71,7 @@
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests/Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.csproj" />
+    <Project Path="tests/Unifesspa.UniPlus.Discentes.IntegrationTests/Unifesspa.UniPlus.Discentes.IntegrationTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Configuracao.Domain.UnitTests/Unifesspa.UniPlus.Configuracao.Domain.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Configuracao.Application.UnitTests/Unifesspa.UniPlus.Configuracao.Application.UnitTests.csproj" />
     <Project Path="tests/Unifesspa.UniPlus.Configuracao.IntegrationTests/Unifesspa.UniPlus.Configuracao.IntegrationTests.csproj" />

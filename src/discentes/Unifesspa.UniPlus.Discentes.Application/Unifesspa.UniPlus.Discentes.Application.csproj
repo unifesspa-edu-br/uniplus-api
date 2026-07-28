@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Application.Abstractions\Unifesspa.UniPlus.Application.Abstractions.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Discentes.Domain\Unifesspa.UniPlus.Discentes.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
