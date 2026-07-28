@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\publicacoes\Unifesspa.UniPlus.Publicacoes.API\Unifesspa.UniPlus.Publicacoes.API.csproj" />
     <ProjectReference Include="..\..\configuracao\Unifesspa.UniPlus.Configuracao.API\Unifesspa.UniPlus.Configuracao.API.csproj" />
     <ProjectReference Include="..\..\organizacao-institucional\Unifesspa.UniPlus.OrganizacaoInstitucional.API\Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
+    <ProjectReference Include="..\..\discentes\Unifesspa.UniPlus.Discentes.API\Unifesspa.UniPlus.Discentes.API.csproj" />
   </ItemGroup>
 
   <!--

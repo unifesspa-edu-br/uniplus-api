@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Módulo interno do monólito modular: class library (não executável). Sem
+    controllers/OpenAPI/HATEOAS ainda — o módulo Discentes, nesta fase, é só a
+    réplica de dados (entidades+DbContext+migration+repositório), sem endpoints
+    públicos. Este projeto existe para que o Host componha o registro do módulo
+    e para que `dotnet ef migrations` localize o assembly de Infrastructure a
+    partir do parâmetro startup-project apontando para o Host.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Unifesspa.UniPlus.Discentes.Application\Unifesspa.UniPlus.Discentes.Application.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Discentes.Infrastructure\Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

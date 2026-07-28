@@ -1,13 +1,14 @@
 -- Provisionamento do banco do MONÓLITO MODULAR — variante do init-db.sql.
 --
 -- Topologia: banco ÚNICO `uniplus` com schema-por-módulo (vs. um banco por
--- módulo no init-db.sql padrão). Os 5 módulos internos (Selecao, Ingresso,
--- Configuracao, OrganizacaoInstitucional, Publicacoes) coabitam no banco `uniplus`, cada um
--- no seu schema; o Wolverine usa o schema `wolverine`. Geo permanece deploy
--- separado (banco `uniplus_geo` próprio, ADR-0090/0091) e não é tocado aqui.
+-- módulo no init-db.sql padrão). Os 6 módulos internos (Selecao, Ingresso,
+-- Configuracao, OrganizacaoInstitucional, Publicacoes, Discentes) coabitam no banco
+-- `uniplus`, cada um no seu schema; o Wolverine usa o schema `wolverine`. Geo
+-- permanece deploy separado (banco `uniplus_geo` próprio, ADR-0090/0091) e não é
+-- tocado aqui.
 --
 -- O banco `uniplus` já é criado pelo entrypoint do container (POSTGRES_DB=uniplus,
--- dono = superusuário `uniplus`). Os 5 schemas + `wolverine` NÃO são criados aqui:
+-- dono = superusuário `uniplus`). Os 6 schemas + `wolverine` NÃO são criados aqui:
 -- são materializados pelas migrations on startup do host (EnsureSchema via
 -- HasDefaultSchema) e pelo AutoBuildMessageStorageOnStartup do Wolverine. Este
 -- script apenas instala as extensões que as migrations assumem.
@@ -30,7 +31,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE DATABASE keycloak;
 
 -- ISOLAMENTO — decisão em aberto para o ADR ("role-por-schema vs role única"):
--- por ora, as 5 connection strings do host usam o superusuário `uniplus` (dono
+-- por ora, as 6 connection strings do host usam o superusuário `uniplus` (dono
 -- do banco), o que basta para bootar e provar o monólito. A variante recomendada
 -- (role-por-schema: `uniplus_<modulo>` com USAGE/CREATE apenas no seu schema +
 -- `search_path` dedicado, e um role de outbox no schema `wolverine`) fica para o

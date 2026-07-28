@@ -149,12 +149,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0118](0118-identidade-publica-modulos-api-metadado-assembly.md) | Identidade pública de módulos de API via metadado de assembly | proposed | 2026-07-29 |
 | [0119](0119-padrao-concorrencia-otimista-handlers-wolverine.md) | Padrão de conflito de concorrência otimista em handlers Wolverine — propagar sem catch quando o endpoint não é idempotency-protected; mapeamento centralizado no GlobalExceptionMiddleware | accepted | 2026-08-03 |
 | [0120](0120-fonte-normativa-matriz-cascata-remanejamento.md) | Fonte normativa da matriz de remanejamento de cotas (Portaria MEC 704/2025, Anexo — art. 20-A da Portaria Normativa MEC 18/2012) e decisão de alcance institucional além do Sisu | accepted | 2026-08-03 |
+| [0121](0121-criptografia-de-dados-sensiveis-em-repouso.md) | Criptografia de campo sensível em repouso (CPF hoje, outros dados pessoais no futuro): proteção assíncrona na fronteira de repositório/query service, opt-in por propriedade, sem alterar `ValueObjectConventions` globalmente | proposed | 2026-07-28 |
 
-> **Nota de numeração:** a sequência de `0001` a `0120` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0121+`.
+> **Nota de numeração:** a sequência de `0001` a `0121` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0122+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0119`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0122`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
