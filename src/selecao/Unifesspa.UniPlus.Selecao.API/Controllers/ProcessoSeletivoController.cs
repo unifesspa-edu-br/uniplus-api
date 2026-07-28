@@ -36,7 +36,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// (<see cref="Publicar"/>, Story #759 T4 #785).
 /// </summary>
 [ApiController]
-[Route("api/selecao/processos-seletivos")]
+[Route("processos-seletivos")]
 // Configuração administrativa: todo o ciclo do processo em rascunho (criar,
 // montar etapas/atendimento e consultar conformidade) é
 // restrito a plataforma-admin — sem [Authorize] os endpoints ficariam anônimos

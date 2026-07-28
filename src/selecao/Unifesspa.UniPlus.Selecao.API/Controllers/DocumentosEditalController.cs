@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// registro confirmado.
 /// </summary>
 [ApiController]
-[Route("api/selecao/processos-seletivos/{processoSeletivoId:guid}/documentos-edital")]
+[Route("processos-seletivos/{processoSeletivoId:guid}/documentos-edital")]
 // Mesma justificativa de ProcessoSeletivoController: fluxo administrativo de
 // publicação, sem fallback policy — restrito a plataforma-admin.
 [Authorize(Roles = "plataforma-admin")]

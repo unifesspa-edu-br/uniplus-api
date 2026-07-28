@@ -27,7 +27,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// interina).
 /// </summary>
 [ApiController]
-[Route("api/selecao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

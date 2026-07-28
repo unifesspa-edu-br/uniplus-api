@@ -23,7 +23,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <c>plataforma-admin</c> (UNI-REQ-0013).
 /// </summary>
 [ApiController]
-[Route("api/configuracao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

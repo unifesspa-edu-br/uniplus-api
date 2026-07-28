@@ -24,7 +24,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// em rota, autenticação, HATEOAS, vendor media type e idempotência.
 /// </summary>
 [ApiController]
-[Route("api/configuracao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
