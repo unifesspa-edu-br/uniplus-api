@@ -56,13 +56,13 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         VinculoDiscenteRepository writeRepository = new(writeContext, _fixture.Encryption);
 
         VinculoDiscente original = NovoVinculo(idSigaa: 1001, CpfValido);
-        await writeRepository.AddAsync(original);
+        await writeRepository.AdicionarVinculoDiscenteAsync(original);
         await writeContext.SaveChangesAsync();
 
         await using DiscentesDbContext readContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository readRepository = new(readContext, _fixture.Encryption);
 
-        VinculoDiscente? lido = await readRepository.GetByIdSigaaAsync(1001);
+        VinculoDiscente? lido = await readRepository.ObterComIdSigaaAsync(1001);
 
         lido.Should().NotBeNull();
         lido!.Cpf.Valor.Should().Be(CpfValido);
@@ -75,7 +75,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         await using DiscentesDbContext writeContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository repository = new(writeContext, _fixture.Encryption);
 
-        await repository.AddAsync(NovoVinculo(idSigaa: 1002, CpfValido));
+        await repository.AdicionarVinculoDiscenteAsync(NovoVinculo(idSigaa: 1002, CpfValido));
         await writeContext.SaveChangesAsync();
 
         await using NpgsqlConnection connection = new(_fixture.ConnectionString);
@@ -101,8 +101,8 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         await using DiscentesDbContext writeContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository repository = new(writeContext, _fixture.Encryption);
 
-        await repository.AddAsync(NovoVinculo(idSigaa: 1003, CpfValido));
-        await repository.AddAsync(NovoVinculo(idSigaa: 1004, CpfValido));
+        await repository.AdicionarVinculoDiscenteAsync(NovoVinculo(idSigaa: 1003, CpfValido));
+        await repository.AdicionarVinculoDiscenteAsync(NovoVinculo(idSigaa: 1004, CpfValido));
         await writeContext.SaveChangesAsync();
 
         await using DiscentesDbContext readContext = _fixture.CreateDbContext();
@@ -127,7 +127,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         VinculoDiscenteRepository writeRepository = new(writeContext, _fixture.Encryption);
 
         VinculoDiscente original = NovoVinculo(idSigaa: 1005, CpfValido);
-        await writeRepository.AddAsync(original);
+        await writeRepository.AdicionarVinculoDiscenteAsync(original);
         await writeContext.SaveChangesAsync();
 
         await using DiscentesDbContext updateContext = _fixture.CreateDbContext();
@@ -152,13 +152,13 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
             atualizado.AnoIngresso,
             atualizado.PeriodoIngresso);
 
-        await updateRepository.UpdateAsync(comIdOriginal);
+        await updateRepository.AtualizarVinculoDiscenteAsync(comIdOriginal);
         await updateContext.SaveChangesAsync();
 
         await using DiscentesDbContext readContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository readRepository = new(readContext, _fixture.Encryption);
 
-        VinculoDiscente? lido = await readRepository.GetByIdAsync(original.Id);
+        VinculoDiscente? lido = await readRepository.ObterVinculoDiscenteAsync(original.Id);
 
         lido.Should().NotBeNull();
         lido!.Cpf.Valor.Should().Be(OutroCpfValido);

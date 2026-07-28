@@ -31,14 +31,14 @@ public class SyncRun
         StartedAt = clock.GetUtcNow().UtcDateTime;
     }
 
-    public void UpdateProgress(int processed, int success, int errors)
+    public void AtualizarProgresso(int processed, int success, int errors)
     {
         ProcessedItems = processed;
         SuccessCount = success;
         ErrorCount = errors;
     }
 
-    public void Complete(SyncRunStatus finalStatus, TimeProvider clock)
+    public void Completo(SyncRunStatus finalStatus, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(clock);
 
