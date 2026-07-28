@@ -37,7 +37,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         _encryption = encryption;
     }
 
-    public async Task<VinculoDiscente?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<VinculoDiscente?> ObterVinculoDiscenteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         VinculoDiscenteRecord? record = await _dbContext.VinculosDiscentes
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken)
@@ -46,7 +46,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<VinculoDiscente?> GetByIdSigaaAsync(long idDiscenteSigaa, CancellationToken cancellationToken = default)
+    public async Task<VinculoDiscente?> ObterComIdSigaaAsync(long idDiscenteSigaa, CancellationToken cancellationToken = default)
     {
         VinculoDiscenteRecord? record = await _dbContext.VinculosDiscentes
             .FirstOrDefaultAsync(r => r.IdDiscenteSigaa == idDiscenteSigaa, cancellationToken)
@@ -55,7 +55,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task AddAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
+    public async Task AdicionarVinculoDiscenteAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
@@ -63,7 +63,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         await _dbContext.VinculosDiscentes.AddAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task UpdateAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
+    public async Task AtualizarVinculoDiscenteAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
 

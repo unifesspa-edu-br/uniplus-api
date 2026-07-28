@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Discentes.Domain.Interfaces;
 
 public interface ISyncRunRepository
 {
-    Task<SyncRun?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task AddAsync(SyncRun entity, CancellationToken ct = default);
-    void Update(SyncRun entity);
+    Task<SyncRun?> ObterSyncRunAsync(Guid id, CancellationToken ct = default);
+    Task AdicionarSyncRunAsync(SyncRun entity, CancellationToken ct = default);
+    void AtualizarSyncRunAsync(SyncRun entity);
 }
