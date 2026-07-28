@@ -2,6 +2,7 @@ using Serilog;
 
 using Unifesspa.UniPlus.Configuracao.API;
 using Unifesspa.UniPlus.Configuracao.Application;
+using Unifesspa.UniPlus.Discentes.API;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
@@ -81,7 +82,12 @@ builder.Services.AddSelecaoModule(builder.Configuration);
 builder.Services.AddIngressoModule(builder.Configuration);
 builder.Services.AddPublicacoesModule(builder.Configuration);
 
-// Health checks: os 5 módulos compartilham o banco `uniplus`, então um
+// Discentes ainda é só réplica de dados (sem endpoints públicos) — traz apenas
+// Infrastructure + migrations on startup; OpenAPI/HATEOAS/idempotência/Application
+// entram quando o módulo ganhar endpoints/handlers.
+builder.Services.AddDiscentesModule(builder.Configuration);
+
+// Health checks: os 6 módulos compartilham o banco `uniplus`, então um
 // único check de banco + infra (Redis/MinIO/Kafka/OIDC) cobre o processo.
 builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "UniPlusDb");
 

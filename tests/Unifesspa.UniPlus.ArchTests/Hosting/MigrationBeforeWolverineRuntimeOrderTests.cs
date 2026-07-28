@@ -68,7 +68,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
 
     /// <summary>
     /// DbContexts cuja migration on startup CADA entry point deve registrar. O
-    /// host UniPlus co-hospeda os 5 módulos internos, então precisa dos 5; o
+    /// host UniPlus co-hospeda os 6 módulos internos, então precisa dos 6; o
     /// Portal é autônomo com um DbContext. Travar o conjunto exato impede
     /// que um módulo perca silenciosamente seu <c>AddDbContextMigrationsOnStartup</c>
     /// enquanto outro ainda registra o seu (a ordem sozinha não pegaria isso).
@@ -82,6 +82,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
             "ConfiguracaoDbContext",
             "OrganizacaoInstitucionalDbContext",
             "PublicacoesDbContext",
+            "DiscentesDbContext",
         ],
         [MigrationOrderFixture.PortalKey] = ["PortalDbContext"],
     };

@@ -53,7 +53,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      # As 5 connection strings apontam para o MESMO banco `uniplus`; cada
+      # As 6 connection strings apontam para o MESMO banco `uniplus`; cada
       # DbContext usa seu schema (HasDefaultSchema). UniPlusDb é o outbox
       # Wolverine (schema `wolverine`) + health checks. Role única.
       ConnectionStrings__UniPlusDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
@@ -62,6 +62,7 @@ services:
       ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
+      ConnectionStrings__DiscentesDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
       # Stack mínima sem broker: limpa o Kafka:BootstrapServers do
       # appsettings.Development.json (localhost:9092) para o
