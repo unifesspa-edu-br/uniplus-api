@@ -19,18 +19,18 @@ public sealed class SyncRunRepository : ISyncRunRepository
         _dbContext = dbContext;
     }
 
-    public Task<SyncRun?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public Task<SyncRun?> ObterSyncRunAsync(Guid id, CancellationToken ct = default)
     {
         return _dbContext.SyncRuns.FirstOrDefaultAsync(s => s.Id == id, ct);
     }
 
-    public async Task AddAsync(SyncRun entity, CancellationToken ct = default)
+    public async Task AdicionarSyncRunAsync(SyncRun entity, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
         await _dbContext.SyncRuns.AddAsync(entity, ct).ConfigureAwait(false);
     }
 
-    public void Update(SyncRun entity)
+    public void AtualizarSyncRunAsync(SyncRun entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
         _dbContext.SyncRuns.Update(entity);
