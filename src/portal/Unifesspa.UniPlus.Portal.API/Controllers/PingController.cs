@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 /// (issue #336).
 /// </summary>
 [ApiController]
-[Route("api/portal/ping")]
+[Route("ping")]
 [AllowAnonymous]
 [SuppressMessage(
     "Performance",

@@ -18,7 +18,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 /// isso não há rota admin de escrita.
 /// </summary>
 [ApiController]
-[Route("api/configuracao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

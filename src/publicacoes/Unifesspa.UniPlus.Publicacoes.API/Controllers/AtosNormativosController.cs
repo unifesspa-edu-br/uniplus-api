@@ -31,7 +31,6 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 /// remoção via HTTP (o ato é prova, o passado documental não se muta).
 /// </remarks>
 [ApiController]
-[Route("api/publicacoes")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

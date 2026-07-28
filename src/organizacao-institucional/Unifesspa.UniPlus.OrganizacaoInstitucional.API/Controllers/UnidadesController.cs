@@ -24,11 +24,10 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 /// <c>plataforma-admin</c>.
 /// </summary>
 /// <remarks>
-/// Rotas público/admin em caminhos distintos — o controller declara
-/// <c>[Route("api/organizacao")]</c> e cada action especifica seu caminho.
+/// O prefixo da rota é aplicado automaticamente por convenção.
+/// e cada action especifica seu caminho.
 /// </remarks>
 [ApiController]
-[Route("api/organizacao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

@@ -56,6 +56,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(
     options => options.Conventions.Add(new Unifesspa.UniPlus.Host.ModuleApiGroupingConvention()));
 
+// Resolve os prefixos de endpoints de acordo com seu módulo,
+// evitando que os controllers precisem declarar [Route("api/{module}")].
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(
+    options => options.Conventions.Add(new Unifesspa.UniPlus.Infrastructure.Core.Routing.ModuleRoutePrefixConvention()));
+
 // --- Cross-cutting compartilhado (registrado uma vez no host) ---
 builder.Services.AddDomainErrorMapper();
 builder.Services.AddUniPlusEncryption(builder.Configuration);

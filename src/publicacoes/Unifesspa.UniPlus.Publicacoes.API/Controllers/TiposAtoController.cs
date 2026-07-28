@@ -29,7 +29,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// (<c>created_by</c>) não é exposta.
 /// </remarks>
 [ApiController]
-[Route("api/publicacoes")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

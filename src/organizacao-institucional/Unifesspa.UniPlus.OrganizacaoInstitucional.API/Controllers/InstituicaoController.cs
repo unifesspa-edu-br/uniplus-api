@@ -23,7 +23,6 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Instituicoe
 /// tempo.
 /// </summary>
 [ApiController]
-[Route("api/organizacao")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

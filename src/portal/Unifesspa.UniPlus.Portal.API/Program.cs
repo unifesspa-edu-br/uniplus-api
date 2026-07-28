@@ -51,6 +51,11 @@ builder.Services.AddEndpointsApiExplorer();
 // (info, operation, schema). Spec exposto em /openapi/portal.json.
 builder.Services.AddUniPlusOpenApi("portal", builder.Configuration);
 
+// Resolve os prefixos de endpoints de acordo com seu módulo,
+// evitando que os controllers precisem declarar [Route("api/{module}")].
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(
+    options => options.Conventions.Add(new Unifesspa.UniPlus.Infrastructure.Core.Routing.ModuleRoutePrefixConvention()));
+
 builder.Services.AddSingleton<IDomainErrorRegistration, PortalDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();
 
