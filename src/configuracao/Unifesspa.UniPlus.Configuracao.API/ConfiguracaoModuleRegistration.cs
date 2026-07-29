@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 
 /// <summary>
 /// Registro self-describing do módulo Configuracao para o composition root do
@@ -39,7 +40,7 @@ public static class ConfiguracaoModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         // OpenAPI 3.1 (ADR-0030) — spec em /openapi/configuracao.json.
-        services.AddUniPlusOpenApi("configuracao", configuration);
+        services.AddUniPlusOpenApi(ConfiguracaoApiAssemblyMarker.ModuleName, configuration);
 
         // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).

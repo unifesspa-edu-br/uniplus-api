@@ -1,3 +1,8 @@
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
+
+[assembly: ApiModule(
+    global::Unifesspa.UniPlus.Publicacoes.API.PublicacoesApiAssemblyMarker.ModuleName)]
+
 namespace Unifesspa.UniPlus.Publicacoes.API;
 
 /// <summary>
@@ -9,6 +14,8 @@ namespace Unifesspa.UniPlus.Publicacoes.API;
 /// </summary>
 public sealed class PublicacoesApiAssemblyMarker
 {
+    public const string ModuleName = "publicacoes";
+
     private PublicacoesApiAssemblyMarker()
     {
     }

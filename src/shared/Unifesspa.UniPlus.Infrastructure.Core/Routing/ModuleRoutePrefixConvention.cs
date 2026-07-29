@@ -8,14 +8,11 @@ public sealed class ModuleRoutePrefixConvention : IControllerModelConvention
     public void Apply(ControllerModel controller)
     {
         ArgumentNullException.ThrowIfNull(controller);
-        string? groupName = controller.ApiExplorer.GroupName;
-        if (groupName is null)
-        {
-            return;
-        }
+        string moduleName = ApiModuleMetadata.GetRequiredName(
+            controller.ControllerType.Assembly);
 
         var prefix = new AttributeRouteModel(
-            new RouteAttribute($"api/{groupName}")
+            new RouteAttribute($"api/{moduleName}")
         );
 
         foreach (SelectorModel selector in controller.Selectors)
