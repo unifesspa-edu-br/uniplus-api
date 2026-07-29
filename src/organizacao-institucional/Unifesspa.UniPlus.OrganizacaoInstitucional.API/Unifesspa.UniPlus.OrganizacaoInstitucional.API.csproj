@@ -3,7 +3,7 @@
   <!--
     Módulo interno do monólito modular: class library (não executável). Roda apenas
     dentro da API UniPlus; não carrega Program/appsettings próprios. Deploy: somente
-    Geo, Portal e UniPlus são executáveis. FrameworkReference dá acesso ao ASP.NET
+    Portal e UniPlus são executáveis. FrameworkReference dá acesso ao ASP.NET
     Core (controllers, OpenAPI, DI) numa library.
   -->
   <ItemGroup>

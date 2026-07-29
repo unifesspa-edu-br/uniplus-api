@@ -58,7 +58,6 @@ public static class UniPlusDbContextOptionsExtensions
         this DbContextOptionsBuilder options,
         IServiceProvider serviceProvider,
         string connectionStringName,
-        Action<NpgsqlDbContextOptionsBuilder>? configurarNpgsql = null,
         string? schema = null)
         where TContext : DbContext
     {
@@ -103,9 +102,6 @@ public static class UniPlusDbContextOptionsExtensions
             {
                 npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
             }
-
-            // Composição opcional do provider (ex.: UseNetTopologySuite no Geo).
-            configurarNpgsql?.Invoke(npgsqlOptions);
         });
 
         // snake_case automático em tabelas, colunas, índices e FKs (ADR-0054).
@@ -147,7 +143,6 @@ public static class UniPlusDbContextOptionsExtensions
     /// gere o mapeamento <c>geography(Point,4326)</c>. Default <c>null</c>.
     /// </param>
     public static DbContextOptions<TContext> BuildDesignTimeOptions<TContext>(
-        Action<NpgsqlDbContextOptionsBuilder>? configurarNpgsql = null,
         string? schema = null)
         where TContext : DbContext
     {
@@ -165,8 +160,6 @@ public static class UniPlusDbContextOptionsExtensions
                     {
                         npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
                     }
-
-                    configurarNpgsql?.Invoke(npgsqlOptions);
                 })
             .UseSnakeCaseNamingConvention()
             .Options;
