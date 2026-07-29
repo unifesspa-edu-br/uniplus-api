@@ -50,7 +50,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 
 // Isola os documentos OpenAPI por módulo no processo único: atribui GroupName
-// por namespace de controller para que cada /openapi/{modulo}.json contenha
+// pelo metadado do assembly para que cada /openapi/{modulo}.json contenha
 // apenas os endpoints do seu módulo (+ compartilhados). Só faz sentido no host
 // (co-hosting); os módulos standalone não recebem e mantêm seus baselines.
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(

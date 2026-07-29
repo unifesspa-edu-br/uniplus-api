@@ -1,3 +1,8 @@
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
+
+[assembly: ApiModule(
+    global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker.ModuleName)]
+
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 
 /// <summary>
@@ -9,6 +14,8 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 /// </summary>
 public sealed class OrganizacaoApiAssemblyMarker
 {
+    public const string ModuleName = "organizacao";
+
     private OrganizacaoApiAssemblyMarker()
     {
     }

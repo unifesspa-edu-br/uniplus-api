@@ -11,6 +11,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
+using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Portal.API.Errors;
 using Unifesspa.UniPlus.Portal.Infrastructure;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
@@ -49,12 +51,12 @@ builder.Services.TryAddSingleton(TimeProvider.System);
 builder.Services.AddEndpointsApiExplorer();
 // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers Uni+
 // (info, operation, schema). Spec exposto em /openapi/portal.json.
-builder.Services.AddUniPlusOpenApi("portal", builder.Configuration);
+builder.Services.AddUniPlusOpenApi(PortalApiAssemblyMarker.ModuleName, builder.Configuration);
 
 // Resolve os prefixos de endpoints de acordo com seu módulo,
 // evitando que os controllers precisem declarar [Route("api/{module}")].
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(
-    options => options.Conventions.Add(new Unifesspa.UniPlus.Infrastructure.Core.Routing.ModuleRoutePrefixConvention()));
+    options => options.Conventions.Add(new ModuleRoutePrefixConvention()));
 
 builder.Services.AddSingleton<IDomainErrorRegistration, PortalDomainErrorRegistration>();
 builder.Services.AddDomainErrorMapper();

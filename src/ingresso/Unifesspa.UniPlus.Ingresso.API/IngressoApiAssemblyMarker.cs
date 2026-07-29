@@ -1,3 +1,8 @@
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
+
+[assembly: ApiModule(
+    global::Unifesspa.UniPlus.Ingresso.API.IngressoApiAssemblyMarker.ModuleName)]
+
 namespace Unifesspa.UniPlus.Ingresso.API;
 
 /// <summary>
@@ -9,6 +14,8 @@ namespace Unifesspa.UniPlus.Ingresso.API;
 /// </summary>
 public sealed class IngressoApiAssemblyMarker
 {
+    public const string ModuleName = "ingresso";
+
     private IngressoApiAssemblyMarker()
     {
     }

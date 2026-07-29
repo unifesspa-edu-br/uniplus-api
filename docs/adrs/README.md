@@ -146,12 +146,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
 | [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111; emendada em 2026-07-22: `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem | accepted | 2026-07-19 |
 | [0117](0117-politica-de-analise-estatica-e-supressao.md) | Política de análise estática e supressão de diagnósticos: `AnalysisLevel=latest-recommended` com opt-in/opt-out nomeado no `.editorconfig` e critério de supressão por alcance | proposed | 2026-07-22 |
+| [0118](0118-identidade-publica-modulos-api-metadado-assembly.md) | Identidade pública de módulos de API via metadado de assembly | proposed | 2026-07-29 |
 
-> **Nota de numeração:** a sequência de `0001` a `0117` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0118+`.
+> **Nota de numeração:** a sequência de `0001` a `0118` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0119+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0114`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0118`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.

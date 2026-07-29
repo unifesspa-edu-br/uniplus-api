@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Ingresso.API.Errors;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
 using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
@@ -38,7 +39,7 @@ public static class IngressoModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         // OpenAPI 3.1 (ADR-0030) — spec em /openapi/ingresso.json.
-        services.AddUniPlusOpenApi("ingresso", configuration);
+        services.AddUniPlusOpenApi(IngressoApiAssemblyMarker.ModuleName, configuration);
 
         // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).

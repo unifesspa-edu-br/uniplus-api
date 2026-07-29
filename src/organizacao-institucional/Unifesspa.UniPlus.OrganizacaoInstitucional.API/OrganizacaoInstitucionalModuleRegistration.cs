@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Hateoas;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
@@ -39,7 +40,7 @@ public static class OrganizacaoInstitucionalModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo. Spec em /openapi/organizacao.json.
-        services.AddUniPlusOpenApi("organizacao", configuration);
+        services.AddUniPlusOpenApi(OrganizacaoApiAssemblyMarker.ModuleName, configuration);
 
         // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).

@@ -27,26 +27,26 @@
     <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Domain/Unifesspa.UniPlus.Selecao.Domain.csproj" />
     <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Application/Unifesspa.UniPlus.Selecao.Application.csproj" />
     <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
-    <ProjectReference Include="../../src/selecao/Unifesspa.UniPlus.Selecao.API/Unifesspa.UniPlus.Selecao.API.csproj" />
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Domain/Unifesspa.UniPlus.Ingresso.Domain.csproj" />
     <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.Infrastructure/Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
-    <ProjectReference Include="../../src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj" />
     <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Domain/Unifesspa.UniPlus.Portal.Domain.csproj" />
     <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.Infrastructure/Unifesspa.UniPlus.Portal.Infrastructure.csproj" />
-    <ProjectReference Include="../../src/portal/Unifesspa.UniPlus.Portal.API/Unifesspa.UniPlus.Portal.API.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure/Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
-    <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.API/Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Unifesspa.UniPlus.Configuracao.Domain.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Application/Unifesspa.UniPlus.Configuracao.Application.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Contracts/Unifesspa.UniPlus.Configuracao.Contracts.csproj" />
     <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
-    <ProjectReference Include="../../src/configuracao/Unifesspa.UniPlus.Configuracao.API/Unifesspa.UniPlus.Configuracao.API.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Domain/Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Unifesspa.UniPlus.Publicacoes.Application.csproj" />
     <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.Infrastructure/Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
-    <ProjectReference Include="../../src/publicacoes/Unifesspa.UniPlus.Publicacoes.API/Unifesspa.UniPlus.Publicacoes.API.csproj" />
+    <!--
+      O glob é intencional: todo assembly *.API entra automaticamente no output
+      do ArchTests e, portanto, no fitness test de metadados. Um módulo novo não
+      depende de alguém lembrar de atualizar um roster manual no código de teste.
+    -->
+    <ProjectReference Include="../../src/*/Unifesspa.UniPlus.*.API/Unifesspa.UniPlus.*.API.csproj" />
     <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Governance.Contracts/Unifesspa.UniPlus.Governance.Contracts.csproj" />
     <!-- Host composition root do monólito modular — referenciado pelo fato
          positivo do R8 (host PODE compor todos os módulos). Fica FORA do roster. -->

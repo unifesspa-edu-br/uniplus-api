@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.API.Hateoas;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -41,7 +42,7 @@ public static class SelecaoModuleRegistration
 
         // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers
         // Uni+ (info, operation, schema). Spec exposto em /openapi/selecao.json.
-        services.AddUniPlusOpenApi("selecao", configuration);
+        services.AddUniPlusOpenApi(SelecaoApiAssemblyMarker.ModuleName, configuration);
 
         // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).
