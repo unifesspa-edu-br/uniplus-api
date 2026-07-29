@@ -1,3 +1,8 @@
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
+
+[assembly: ApiModule(
+    global::Unifesspa.UniPlus.Selecao.API.SelecaoApiAssemblyMarker.ModuleName)]
+
 namespace Unifesspa.UniPlus.Selecao.API;
 
 /// <summary>
@@ -9,6 +14,8 @@ namespace Unifesspa.UniPlus.Selecao.API;
 /// </summary>
 public sealed class SelecaoApiAssemblyMarker
 {
+    public const string ModuleName = "selecao";
+
     private SelecaoApiAssemblyMarker()
     {
     }

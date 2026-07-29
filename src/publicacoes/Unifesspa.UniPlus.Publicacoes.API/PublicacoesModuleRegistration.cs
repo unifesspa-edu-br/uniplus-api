@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Publicacoes.API.Errors;
 using Unifesspa.UniPlus.Publicacoes.API.Hateoas;
 using Unifesspa.UniPlus.Publicacoes.Application;
@@ -39,7 +40,7 @@ public static class PublicacoesModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         // OpenAPI 3.1 (ADR-0030) — spec em /openapi/publicacoes.json.
-        services.AddUniPlusOpenApi("publicacoes", configuration);
+        services.AddUniPlusOpenApi(PublicacoesApiAssemblyMarker.ModuleName, configuration);
 
         // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).

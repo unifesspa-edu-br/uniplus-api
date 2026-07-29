@@ -1,3 +1,8 @@
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
+
+[assembly: ApiModule(
+    global::Unifesspa.UniPlus.Portal.API.PortalApiAssemblyMarker.ModuleName)]
+
 namespace Unifesspa.UniPlus.Portal.API;
 
 /// <summary>
@@ -9,6 +14,8 @@ namespace Unifesspa.UniPlus.Portal.API;
 /// </summary>
 public sealed class PortalApiAssemblyMarker
 {
+    public const string ModuleName = "portal";
+
     private PortalApiAssemblyMarker()
     {
     }
