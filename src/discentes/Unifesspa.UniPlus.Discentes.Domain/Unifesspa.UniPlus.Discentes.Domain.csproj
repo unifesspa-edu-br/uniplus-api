@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
+      <InternalsVisibleTo Include="Unifesspa.UniPlus.Discentes.UnitTests" />
   </ItemGroup>
 
 </Project>
