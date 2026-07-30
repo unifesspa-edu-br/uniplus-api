@@ -10,9 +10,9 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Cryptography;
 public static class DiscentesEncryptionKeys
 {
     /// <summary>
-    /// Categoria de identificadores pessoais (CPF, RG e afins) — key compartilhável
-    /// entre módulos que persistam esse tipo de dado, conforme ADR-0121 (nomes e
-    /// políticas de key ainda pendentes de aprovação de Segurança/DPO para produção).
+    /// Categoria de identificadores pessoais (CPF, RG e afins), isolada por módulo
+    /// conforme a ADR-0121. A correlação cross-module acontece via Reader; a chave
+    /// criptográfica nunca é compartilhada entre módulos.
     /// </summary>
-    public const string IdentificadoresPessoais = "uniplus-pii-identifiers-aesgcm";
+    public const string IdentificadoresPessoais = "uniplus-discentes-identificadores-aesgcm";
 }
