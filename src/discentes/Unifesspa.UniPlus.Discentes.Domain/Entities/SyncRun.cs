@@ -24,23 +24,51 @@ public class SyncRun
     public SyncRun(Guid id, int totalItems, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentOutOfRangeException.ThrowIfNegative(totalItems);
+        if (id == Guid.Empty)
+            throw new ArgumentException("O identificador não pode ser vazio.", nameof(id));
 
         Id = id;
         Status = SyncRunStatus.Running;
         TotalItems = totalItems;
         StartedAt = clock.GetUtcNow().UtcDateTime;
     }
-
-    public void AtualizarProgresso(int processed, int success, int errors)
+    public void AtualizarProgresso(int processedItems, int successCount, int errorCount)
     {
-        ProcessedItems = processed;
-        SuccessCount = success;
-        ErrorCount = errors;
-    }
+        ArgumentOutOfRangeException.ThrowIfNegative(processedItems);
+        ArgumentOutOfRangeException.ThrowIfNegative(successCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(errorCount);
 
-    public void Completo(SyncRunStatus finalStatus, TimeProvider clock)
+        if (processedItems > TotalItems)
+            throw new ArgumentOutOfRangeException(
+                nameof(processedItems),
+                "A quantidade processada não pode ser maior que o total de itens.");
+
+        if (successCount + errorCount > processedItems)
+            throw new ArgumentException(
+                "A soma de sucessos e erros não pode ser maior que a quantidade processada.");
+
+        ProcessedItems = processedItems;
+        SuccessCount = successCount;
+        ErrorCount = errorCount;
+    }
+    public void Concluir(SyncRunStatus finalStatus, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(clock);
+
+        if (Status != SyncRunStatus.Running)
+        {
+            throw new InvalidOperationException(
+                $"Transição de estado inválida. Não é possível concluir um SyncRun no estado '{Status}'. " +
+                "A conclusão só é permitida para execuções no estado 'Running'.");
+        }
+
+        if (finalStatus is not (SyncRunStatus.Completed or SyncRunStatus.Partial or SyncRunStatus.Failed))
+        {
+            throw new ArgumentException(
+                $"Estado '{finalStatus}' não é um estado terminal válido. " +
+                "A conclusão exige um dos estados: Completed, Partial ou Failed.", nameof(finalStatus));
+        }
 
         Status = finalStatus;
         FinishedAt = clock.GetUtcNow().UtcDateTime;

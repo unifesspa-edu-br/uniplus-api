@@ -1402,9 +1402,9 @@
       "unifesspa.uniplus.organizacaoinstitucional.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
-          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "Microsoft.EntityFrameworkCore": "(, )",
+          "Microsoft.EntityFrameworkCore.Relational": "(, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "(, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.Application": "[1.0.0, )"
         }

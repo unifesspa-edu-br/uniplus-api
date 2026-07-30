@@ -30,7 +30,7 @@ public sealed class SyncRunRepository : ISyncRunRepository
         await _dbContext.SyncRuns.AddAsync(entity, ct).ConfigureAwait(false);
     }
 
-    public void AtualizarSyncRunAsync(SyncRun entity)
+    public void AtualizarSyncRun(SyncRun entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
         _dbContext.SyncRuns.Update(entity);
