@@ -31,8 +31,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
     }
 
     private static VinculoDiscente NovoVinculo(long idSigaa, string cpfValor) =>
-        new(
-            Guid.CreateVersion7(),
+        VinculoDiscente.Criar(
             idSigaa,
             matricula: idSigaa.ToString(System.Globalization.CultureInfo.InvariantCulture),
             cpf: Cpf.Criar(cpfValor).Match(cpf => cpf, erro => throw new InvalidOperationException(erro.Code)),
@@ -127,6 +126,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         VinculoDiscenteRepository writeRepository = new(writeContext, _fixture.Encryption);
 
         VinculoDiscente original = NovoVinculo(idSigaa: 1005, CpfValido);
+
         await writeRepository.AdicionarVinculoDiscenteAsync(original);
         await writeContext.SaveChangesAsync();
 
@@ -134,7 +134,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         VinculoDiscenteRepository updateRepository = new(updateContext, _fixture.Encryption);
 
         VinculoDiscente atualizado = NovoVinculo(idSigaa: 1005, OutroCpfValido);
-        VinculoDiscente comIdOriginal = new(
+        VinculoDiscente comIdOriginal = VinculoDiscente.Reidratar(
             original.Id,
             atualizado.IdDiscenteSigaa,
             atualizado.Matricula,

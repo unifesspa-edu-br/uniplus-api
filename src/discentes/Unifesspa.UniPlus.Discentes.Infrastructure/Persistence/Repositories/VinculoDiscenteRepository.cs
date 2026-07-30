@@ -82,8 +82,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
 
         Cpf cpf = ReidratarCpf(cpfPlano);
 
-        return new VinculoDiscente(
-            record.Id,
+        return VinculoDiscente.Criar(
             record.IdDiscenteSigaa,
             record.Matricula,
             cpf,
