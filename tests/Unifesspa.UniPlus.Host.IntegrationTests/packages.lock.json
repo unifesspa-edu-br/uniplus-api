@@ -1270,7 +1270,9 @@
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "Unifesspa.UniPlus.Discentes.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )"
+          "Unifesspa.UniPlus.Discentes.Domain": "[1.0.0, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.governance.contracts": {
@@ -1414,9 +1416,9 @@
       "unifesspa.uniplus.organizacaoinstitucional.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "(, )",
-          "Microsoft.EntityFrameworkCore.Relational": "(, )",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "(, )",
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.Application": "[1.0.0, )"
         }
