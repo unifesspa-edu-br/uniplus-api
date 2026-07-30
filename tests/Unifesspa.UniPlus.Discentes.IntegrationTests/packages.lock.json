@@ -1172,7 +1172,9 @@
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.10, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "Unifesspa.UniPlus.Discentes.Application": "[1.0.0, )",
-          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )"
+          "Unifesspa.UniPlus.Discentes.Domain": "[1.0.0, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )"
         }
       },
       "unifesspa.uniplus.governance.contracts": {
