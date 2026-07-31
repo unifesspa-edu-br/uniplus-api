@@ -7,8 +7,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
-
 /// <summary>
 /// Helpers de configuração de <see cref="DbContext"/> consumidos pelos 3
 /// módulos (Selecao, Ingresso, Portal). Centraliza invariantes da camada de
@@ -46,14 +44,6 @@ public static class UniPlusDbContextOptionsExtensions
     /// <c>InMemoryCollection</c> ganham o override automaticamente, sem
     /// re-registrar o DbContext.</para>
     /// </remarks>
-    /// <param name="configurarNpgsql">
-    /// Hook opcional para compor o bloco <c>UseNpgsql</c> com extensões do
-    /// provider Npgsql (ex.: <c>o =&gt; o.UseNetTopologySuite()</c> no módulo Geo,
-    /// ADR-0091). Executado <em>depois</em> de <c>MigrationsAssembly</c> e
-    /// <c>MigrationsHistoryTable</c>, dentro do mesmo callback. Default
-    /// <c>null</c> — não-invasivo: módulos que não passam o hook mantêm o
-    /// comportamento atual inalterado.
-    /// </param>
     public static DbContextOptionsBuilder UseUniPlusNpgsqlConventions<TContext>(
         this DbContextOptionsBuilder options,
         IServiceProvider serviceProvider,
@@ -136,12 +126,6 @@ public static class UniPlusDbContextOptionsExtensions
     /// ao banco durante <c>migrations add</c>. <c>database update</c> rodado
     /// localmente sobrescreve via <c>--connection</c>.
     /// </remarks>
-    /// <param name="configurarNpgsql">
-    /// Hook opcional idêntico ao de <see cref="UseUniPlusNpgsqlConventions{TContext}"/>
-    /// — garante paridade runtime↔design-time. O módulo Geo passa
-    /// <c>o =&gt; o.UseNetTopologySuite()</c> para que <c>dotnet ef migrations</c>
-    /// gere o mapeamento <c>geography(Point,4326)</c>. Default <c>null</c>.
-    /// </param>
     public static DbContextOptions<TContext> BuildDesignTimeOptions<TContext>(
         string? schema = null)
         where TContext : DbContext
