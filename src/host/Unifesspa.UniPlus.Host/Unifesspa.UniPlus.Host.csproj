@@ -9,7 +9,7 @@
 
   <!--
     Composition root do monólito modular. Referencia os 5 módulos internos
-    (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) e os compõe num
+    (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional e Publicações) e os compõe num
     processo único. Portal permanece deploy separado. Este assembly é o
     único autorizado a depender de múltiplos módulos — fica FORA do ModulesRoster
     do fitness R8 (CrossModuleReadIsolationTests).
