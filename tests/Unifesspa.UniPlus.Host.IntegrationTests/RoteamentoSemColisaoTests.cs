@@ -2,14 +2,17 @@ namespace Unifesspa.UniPlus.Host.IntegrationTests;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Reflection;
 
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -69,22 +72,20 @@ public sealed class RoteamentoSemColisaoTests
             + "o prefixo api/<modulo>/ deve garantir templates únicos por (método, caminho)");
     }
 
-    [Theory(DisplayName = "Cada módulo expõe rotas sob seu prefixo api/{modulo}/")]
-    [InlineData("api/configuracao/")]
-    [InlineData("api/organizacao/")]
-    [InlineData("api/selecao/")]
-    public void RotasDeModulo_SaoNamespacedPorPrefixo(string prefixo)
+    [Fact(DisplayName = "Cada módulo expõe rotas sob seu prefixo api/{modulo}/")]
+    public void RotasDeModulo_SaoNamespacedPorPrefixo()
     {
         EndpointDataSource dataSource =
             _fixture.Factory.Services.GetRequiredService<EndpointDataSource>();
 
-        IEnumerable<string> templates = dataSource.Endpoints
+        RouteEndpoint[] endpoints = dataSource.Endpoints
             .OfType<RouteEndpoint>()
-            .Select(e => e.RoutePattern.RawText ?? string.Empty);
+            .Where(e => e.Metadata.GetMetadata<ControllerActionDescriptor>() != null)
+            .ToArray();
 
-        templates.Should().Contain(
-            t => t.StartsWith(prefixo, StringComparison.Ordinal),
-            $"o módulo deve expor seus controllers sob {prefixo} no monólito co-hospedado");
+        endpoints.Should().NotBeEmpty();
+
+        endpoints.Should().OnlyContain(e => HasExpectedRoutePrefix(e));
     }
 
     [Fact(DisplayName = "Smoke: pipeline HTTP vivo (/health/live 200) e rotas de módulo resolvem (200)")]
@@ -105,5 +106,25 @@ public sealed class RoteamentoSemColisaoTests
         HttpResponseMessage unidades = await client.GetAsync(
             new Uri("/api/organizacao/unidades", UriKind.Relative));
         unidades.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private static bool HasExpectedRoutePrefix(RouteEndpoint endpoint)
+    {
+        ControllerActionDescriptor? actionDescriptor =
+            endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
+
+        Assembly? assembly = actionDescriptor?
+            .ControllerTypeInfo
+            .Assembly;
+        if (assembly is null) return false;
+
+        string moduleName = ApiModuleMetadata.GetRequiredName(assembly);
+        string prefix = $"api/{moduleName}";
+
+        string template = endpoint.RoutePattern.RawText ?? string.Empty;
+
+        return template == prefix || template.StartsWith(
+                   $"{prefix}/",
+                   StringComparison.Ordinal);
     }
 }
