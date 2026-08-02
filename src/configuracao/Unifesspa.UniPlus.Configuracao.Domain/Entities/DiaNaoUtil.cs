@@ -17,6 +17,7 @@ public sealed class DiaNaoUtil : EntityBase
     public Guid CalendarioDiasUteisId { get; private set; }
     public Abrangencia Abrangencia { get; private set; }
     public string? MunicipioIbge { get; private set; }
+    public string? Uf { get; private set; }
     public DateOnly Data { get; private set; }
     public string Descricao { get; private set; } = string.Empty;
 
@@ -29,6 +30,7 @@ public sealed class DiaNaoUtil : EntityBase
         Guid calendarioDiasUteisId,
         Abrangencia abrangencia,
         string? municipioIbge,
+        string? uf,
         DateOnly data,
         string descricao)
     {
@@ -37,6 +39,7 @@ public sealed class DiaNaoUtil : EntityBase
             CalendarioDiasUteisId = calendarioDiasUteisId,
             Abrangencia = abrangencia,
             MunicipioIbge = municipioIbge,
+            Uf = uf,
             Data = data,
             Descricao = descricao,
         };

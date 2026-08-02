@@ -1258,6 +1258,24 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_formato_invalido",
                 "Código IBGE do município em formato inválido")),
 
+        new(CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.uf_obrigatoria_para_estadual",
+                "UF é obrigatória para abrangência estadual")),
+
+        new(CalendarioDiasUteisErrorCodes.UfApenasParaEstadual,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.uf_apenas_para_estadual",
+                "UF só se aplica a abrangência estadual")),
+
+        new(CalendarioDiasUteisErrorCodes.UfFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.uf_formato_invalido",
+                "UF em formato inválido")),
+
         new(CalendarioDiasUteisErrorCodes.DiaNaoUtilNulo,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

@@ -32,6 +32,7 @@ public static class CalendarioDiasUteisMapping
             dia.Id,
             Abrangencias.ParaTokenCanonico(dia.Abrangencia),
             dia.MunicipioIbge,
+            dia.Uf,
             dia.Data,
             dia.Descricao);
 }

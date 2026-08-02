@@ -9181,6 +9181,12 @@
           },
           "descricao": {
             "type": "string"
+          },
+          "uf": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -9189,6 +9195,7 @@
           "id",
           "abrangencia",
           "municipioIbge",
+          "uf",
           "data",
           "descricao"
         ],
@@ -9202,6 +9209,12 @@
             "type": "string"
           },
           "municipioIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "uf": {
             "type": [
               "null",
               "string"

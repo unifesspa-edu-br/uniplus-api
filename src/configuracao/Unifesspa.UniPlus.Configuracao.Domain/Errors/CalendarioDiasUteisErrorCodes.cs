@@ -9,6 +9,9 @@ public static class CalendarioDiasUteisErrorCodes
     public const string MunicipioIbgeObrigatorioParaMunicipal = "CalendarioDiasUteis.MunicipioIbgeObrigatorioParaMunicipal";
     public const string MunicipioIbgeApenasParaMunicipal = "CalendarioDiasUteis.MunicipioIbgeApenasParaMunicipal";
     public const string MunicipioIbgeFormatoInvalido = "CalendarioDiasUteis.MunicipioIbgeFormatoInvalido";
+    public const string UfObrigatoriaParaEstadual = "CalendarioDiasUteis.UfObrigatoriaParaEstadual";
+    public const string UfApenasParaEstadual = "CalendarioDiasUteis.UfApenasParaEstadual";
+    public const string UfFormatoInvalido = "CalendarioDiasUteis.UfFormatoInvalido";
     public const string DiaNaoUtilNulo = "CalendarioDiasUteis.DiaNaoUtilNulo";
     public const string DescricaoObrigatoria = "CalendarioDiasUteis.DescricaoObrigatoria";
     public const string DescricaoTamanho = "CalendarioDiasUteis.DescricaoTamanho";
