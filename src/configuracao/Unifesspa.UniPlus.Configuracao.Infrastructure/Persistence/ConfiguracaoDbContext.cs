@@ -101,4 +101,9 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     {
         return await SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default)
+    {
+        await Database.ExecuteSqlRawAsync("SET CONSTRAINTS ALL IMMEDIATE", cancellationToken).ConfigureAwait(false);
+    }
 }
