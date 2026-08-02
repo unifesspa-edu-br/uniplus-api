@@ -146,6 +146,29 @@ public sealed class CalendarioDiasUteisTests
         resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DescricaoTamanho);
     }
 
+    [Theory(DisplayName = "Criar com código IBGE do município em formato inválido falha")]
+    [InlineData("123456")]
+    [InlineData("123456789")]
+    [InlineData("150140A")]
+    public void Criar_MunicipioIbgeFormatoInvalido_Falha(string municipioIbge)
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [Municipal(municipioIbge: municipioIbge)]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.MunicipioIbgeFormatoInvalido);
+    }
+
+    [Fact(DisplayName = "Criar com item de dia não útil nulo na lista falha")]
+    public void Criar_DiaNaoUtilNulo_Falha()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [Nacional(), null!]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DiaNaoUtilNulo);
+    }
+
     [Fact(DisplayName = "Criar com mesma data, abrangência e município duplicados falha")]
     public void Criar_DataDuplicadaMesmaAbrangenciaEMunicipio_Falha()
     {

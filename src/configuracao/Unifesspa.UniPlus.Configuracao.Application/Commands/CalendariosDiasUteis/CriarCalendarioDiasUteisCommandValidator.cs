@@ -13,7 +13,14 @@ public sealed class CriarCalendarioDiasUteisCommandValidator : AbstractValidator
         RuleFor(x => x.DiasNaoUteis)
             .NotEmpty().WithMessage("O dataset precisa de ao menos um dia não útil.");
 
-        RuleForEach(x => x.DiasNaoUteis).ChildRules(dia =>
+        // NotNull por item ANTES do ChildRules: sem isso, um elemento nulo (ex. JSON
+        // "diasNaoUteis":[null]) passa incólume pelas regras — RuleForEach roda
+        // ChildRules contra um objeto raiz nulo sem produzir falha — e o handler
+        // desreferencia o item nulo ao montar DiaNaoUtilCriacao (500 em vez de 422).
+        RuleForEach(x => x.DiasNaoUteis)
+            .NotNull().WithMessage("Item de dia não útil não pode ser nulo.");
+
+        RuleForEach(x => x.DiasNaoUteis).Where(d => d is not null).ChildRules(dia =>
         {
             dia.RuleFor(d => d.Abrangencia).NotEmpty().WithMessage("Abrangência é obrigatória.");
             dia.RuleFor(d => d.Descricao)

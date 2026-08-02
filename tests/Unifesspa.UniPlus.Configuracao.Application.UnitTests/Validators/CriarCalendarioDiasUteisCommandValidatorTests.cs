@@ -50,6 +50,19 @@ public sealed class CriarCalendarioDiasUteisCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.PropertyName == nameof(CriarCalendarioDiasUteisCommand.DiasNaoUteis));
     }
 
+    [Fact(DisplayName = "Item nulo na lista de dias não úteis é rejeitado")]
+    public void ItemNulo_Rejeita()
+    {
+        ValidationResult resultado = _validator.Validate(Base() with
+        {
+            DiasNaoUteis = [new DiaNaoUtilCommandItem("NACIONAL", null, new DateOnly(2027, 1, 1), "Válido"), null!],
+        });
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName.StartsWith(
+            nameof(CriarCalendarioDiasUteisCommand.DiasNaoUteis), StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "Item com abrangência vazia é rejeitado")]
     public void ItemComAbrangenciaVazia_Rejeita()
     {
