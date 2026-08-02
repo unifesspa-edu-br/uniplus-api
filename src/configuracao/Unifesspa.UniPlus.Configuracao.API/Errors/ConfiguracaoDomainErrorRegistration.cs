@@ -1214,5 +1214,78 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.oferta_curso.nao_encontrada",
                 "Oferta de curso não encontrada")),
+
+        // ── Calendário de dias úteis (UNI-REQ-0080) ───────────────────────
+        new(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.versao_dataset_obrigatoria",
+                "Versão do dataset é obrigatória")),
+
+        new(CalendarioDiasUteisErrorCodes.VersaoDatasetTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.versao_dataset_tamanho",
+                "Tamanho da versão do dataset inválido")),
+
+        new(CalendarioDiasUteisErrorCodes.SemDiaNaoUtil,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.sem_dia_nao_util",
+                "O dataset precisa de ao menos um dia não útil")),
+
+        new(CalendarioDiasUteisErrorCodes.AbrangenciaInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.abrangencia_invalida",
+                "Abrangência do dia não útil fora do domínio fechado")),
+
+        new(CalendarioDiasUteisErrorCodes.MunicipioIbgeObrigatorioParaMunicipal,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_obrigatorio_para_municipal",
+                "Código IBGE do município é obrigatório para abrangência municipal")),
+
+        new(CalendarioDiasUteisErrorCodes.MunicipioIbgeApenasParaMunicipal,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_apenas_para_municipal",
+                "Código IBGE do município só se aplica a abrangência municipal")),
+
+        new(CalendarioDiasUteisErrorCodes.DescricaoObrigatoria,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.descricao_obrigatoria",
+                "Descrição do dia não útil é obrigatória")),
+
+        new(CalendarioDiasUteisErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.descricao_tamanho",
+                "Tamanho da descrição do dia não útil inválido")),
+
+        new(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.data_duplicada_no_dataset",
+                "Data duplicada no dataset (mesma abrangência e município)")),
+
+        new(CalendarioDiasUteisErrorCodes.JaVigente,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.calendario_dias_uteis.ja_vigente",
+                "Este dataset já é o vigente")),
+
+        new(CalendarioDiasUteisErrorCodes.NaoRemoveVigente,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.calendario_dias_uteis.nao_remove_vigente",
+                "O dataset vigente não pode ser removido")),
+
+        new(CalendarioDiasUteisErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.calendario_dias_uteis.nao_encontrado",
+                "Calendário de dias úteis não encontrado")),
     ];
 }

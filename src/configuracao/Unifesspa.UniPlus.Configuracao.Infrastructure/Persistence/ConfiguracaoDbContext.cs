@@ -55,6 +55,8 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 
     public DbSet<OfertaCurso> OfertasCurso => Set<OfertaCurso>();
 
+    public DbSet<CalendarioDiasUteis> CalendariosDiasUteis => Set<CalendarioDiasUteis>();
+
     /// <summary>
     /// Catálogo seed-governado do vocabulário fechado de fatos do candidato
     /// (UNI-REQ-0077, ADR-0111). Metadado de classificação, sem PII.
