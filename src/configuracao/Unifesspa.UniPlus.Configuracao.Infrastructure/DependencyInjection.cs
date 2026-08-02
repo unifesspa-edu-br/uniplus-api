@@ -47,6 +47,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ICursoRepository, CursoRepository>();
         services.AddScoped<IOfertaCursoRepository, OfertaCursoRepository>();
         services.AddScoped<IPrecedenciaFaseRepository, PrecedenciaFaseRepository>();
+        services.AddScoped<ICalendarioDiasUteisRepository, CalendarioDiasUteisRepository>();
 
         // Readers cross-módulo (ADR-0056).
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
@@ -63,6 +64,7 @@ public static class ConfiguracaoInfrastructureRegistration
         // sem repositório (não há escrita em runtime).
         services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
+        services.AddScoped<ICalendarioVigenteReader, CalendarioVigenteReader>();
 
         return services;
     }
