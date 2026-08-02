@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
@@ -63,5 +66,20 @@ public sealed class RemoverCalendarioDiasUteisCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         _repository.Received(1).Remover(calendario);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Remoção colidindo com ativação concorrente do mesmo dataset (xmin) vira ConflitoDeConcorrencia")]
+    public async Task Handle_ConcorrenciaOtimista_RetornaConflitoDeConcorrencia()
+    {
+        CalendarioDiasUteis calendario = Novo();
+        _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await RemoverCalendarioDiasUteisCommandHandler.Handle(
+            new RemoverCalendarioDiasUteisCommand(calendario.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
     }
 }

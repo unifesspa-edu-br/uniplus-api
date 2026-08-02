@@ -9,8 +9,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Handler do <see cref="MarcarVigenteCalendarioDiasUteisCommand"/>: localiza o
 /// vigente anterior (se houver) e o desmarca antes de marcar o novo — a invariante
-/// "no máximo um vigente" é aplicada aqui (cross-agregado), reforçada pelo índice
-/// único parcial de banco como defesa de última linha.
+/// "no máximo um vigente" é aplicada aqui (cross-agregado), reforçada pela
+/// exclusion constraint de banco como defesa de última linha.
 /// </summary>
 public static class MarcarVigenteCalendarioDiasUteisCommandHandler
 {
@@ -48,7 +48,21 @@ public static class MarcarVigenteCalendarioDiasUteisCommandHandler
             vigenteAnterior.MarcarNaoVigente();
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ExclusionConstraintViolation.IsVigenteConflict(ex) || OptimisticConcurrencyViolation.Is(ex))
+        {
+            // Corrida entre duas ativações concorrentes (exclusion constraint, dois
+            // registros disputando o mesmo "vigente = true") ou entre esta ativação e
+            // uma remoção concorrente do MESMO dataset (xmin) — em ambos os casos o
+            // outro lado já decidiu o estado; o filtro do `when` garante que outras
+            // exceções propagam intactas.
+            return Result.Failure(new DomainError(
+                CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
+                "Outra alteração concorrente já modificou este dataset ou o dataset vigente. Tente novamente."));
+        }
 
         return Result.Success();
     }
