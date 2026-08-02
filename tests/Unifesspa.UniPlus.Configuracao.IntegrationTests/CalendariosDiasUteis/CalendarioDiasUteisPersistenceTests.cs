@@ -1,0 +1,164 @@
+namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.CalendariosDiasUteis;
+
+using System.Diagnostics.CodeAnalysis;
+
+using AwesomeAssertions;
+
+using Microsoft.EntityFrameworkCore;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+
+/// <summary>
+/// Integração ponta-a-ponta do calendário de dias úteis contra Postgres real
+/// (UNI-REQ-0080): persistência do dataset e dos dias não úteis (token de
+/// <c>Abrangencia</c> via <c>AbrangenciaValueConverter</c>), índice único
+/// parcial de vigência, CHECK de coerência de município e soft-delete
+/// preservando os dias não úteis filhos (<c>ClientNoAction</c>).
+/// </summary>
+[Collection(ConfiguracaoDbCollection.Name)]
+[SuppressMessage(
+    "Performance",
+    "CA1515:Consider making public types internal",
+    Justification = "xUnit collection fixture exige tipo de teste público.")]
+public sealed class CalendarioDiasUteisPersistenceTests
+{
+    private const string AdminA = "admin-a";
+    private const string AdminB = "admin-b";
+
+    private readonly ConfiguracaoDbFixture _fixture;
+
+    public CalendarioDiasUteisPersistenceTests(ConfiguracaoDbFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    [Fact(DisplayName = "Persistir com DiasNaoUteis e reler com Include devolve os dias corretos")]
+    public async Task Insert_PersisteDiasNaoUteisComTokenCorreto()
+    {
+        CalendarioDiasUteis calendario = Nova(
+            VersaoUnica(),
+            new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
+            new DiaNaoUtilCriacao("MUNICIPAL", "1501402", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(calendario);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        CalendarioDiasUteis persistido = await readCtx.CalendariosDiasUteis
+            .Include(c => c.DiasNaoUteis)
+            .SingleAsync(c => c.Id == calendario.Id);
+
+        persistido.CreatedBy.Should().Be(AdminA);
+        persistido.Vigente.Should().BeFalse();
+        persistido.DiasNaoUteis.Should().HaveCount(2);
+        persistido.DiasNaoUteis.Should().Contain(d =>
+            d.Abrangencia == Abrangencia.Nacional && d.MunicipioIbge == null && d.Data == new DateOnly(2027, 1, 1));
+        persistido.DiasNaoUteis.Should().Contain(d =>
+            d.Abrangencia == Abrangencia.Municipal
+            && d.MunicipioIbge == "1501402"
+            && d.Data == new DateOnly(2027, 5, 8));
+    }
+
+    [Fact(DisplayName = "Exclusion constraint (vigente) rejeita um segundo dataset vigente")]
+    public async Task ExclusionConstraint_Vigente_RejeitaSegundoVigenteAtivo()
+    {
+        CalendarioDiasUteis primeiro = Nova(VersaoUnica());
+        primeiro.MarcarVigente();
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(primeiro);
+            await ctx.SaveChangesAsync();
+        }
+
+        CalendarioDiasUteis segundo = Nova(VersaoUnica());
+        segundo.MarcarVigente();
+        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        ctx2.CalendariosDiasUteis.Add(segundo);
+
+        Func<Task> act = async () => await ctx2.SaveChangesAsync();
+
+        // ex_calendario_dias_uteis_vigente_unico é DEFERRABLE INITIALLY DEFERRED
+        // (issue #1016 — SaveChangesAsync desmarca o vigente anterior e marca o novo
+        // na mesma transação; um índice não-deferível colidiria por-statement mesmo
+        // quando a transação termina num estado final válido). A checagem só roda no
+        // COMMIT, então a violação chega como PostgresException bruta do
+        // NpgsqlTransaction.Commit — não embrulhada em DbUpdateException, que o EF Core
+        // só produz para falhas durante a execução do batch de comandos.
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.SqlState.Should().Be("23P01");
+        pg.ConstraintName.Should().Be("ex_calendario_dias_uteis_vigente_unico");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita dia não útil municipal sem código IBGE via SQL cru")]
+    public async Task Check_RejeitaMunicipalSemMunicipioIbgeViaSqlCru()
+    {
+        CalendarioDiasUteis pai = Nova(VersaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(pai);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx2.Database.ExecuteSqlAsync(
+            $"""
+             INSERT INTO configuracao.dia_nao_util
+                 (id, calendario_dias_uteis_id, abrangencia, municipio_ibge, data, descricao, created_at)
+             VALUES
+                 ({Guid.CreateVersion7()}, {pai.Id}, {"MUNICIPAL"}, {(string?)null}, {new DateOnly(2027, 1, 1)}, {"Sem município"}, {DateTimeOffset.UtcNow})
+             """);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_dia_nao_util_municipio_coerente exige municipio_ibge quando abrangencia = MUNICIPAL");
+    }
+
+    [Fact(DisplayName = "Soft-delete de dataset não vigente preserva os dias não úteis filhos (ClientNoAction)")]
+    public async Task SoftDelete_PreservaDiasNaoUteisFilhos()
+    {
+        CalendarioDiasUteis calendario = Nova(
+            VersaoUnica(),
+            new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
+            new DiaNaoUtilCriacao("INSTITUCIONAL", null, new DateOnly(2027, 12, 24), "Recesso da Unifesspa"));
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(calendario);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        {
+            CalendarioDiasUteis tracked = await ctx.CalendariosDiasUteis
+                .SingleAsync(c => c.Id == calendario.Id);
+            ctx.CalendariosDiasUteis.Remove(tracked);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        CalendarioDiasUteis excluido = await readCtx.CalendariosDiasUteis
+            .IgnoreQueryFilters()
+            .Include(c => c.DiasNaoUteis)
+            .SingleAsync(c => c.Id == calendario.Id);
+
+        excluido.IsDeleted.Should().BeTrue();
+        excluido.DeletedBy.Should().Be(AdminB);
+        excluido.DiasNaoUteis.Should().HaveCount(2, "os dias não úteis não têm soft-delete próprio e permanecem sob a linha soft-deleted");
+    }
+
+    private static string VersaoUnica() => $"cal-{Guid.NewGuid():N}"[..20];
+
+    private static CalendarioDiasUteis Nova(string versaoDataset, params DiaNaoUtilCriacao[] dias)
+    {
+        DiaNaoUtilCriacao[] diasNaoUteis = dias.Length == 0
+            ? [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal")]
+            : dias;
+        return CalendarioDiasUteis.Criar(versaoDataset, diasNaoUteis).Value!;
+    }
+}
