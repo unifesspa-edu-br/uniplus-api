@@ -30,6 +30,7 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     private const int VersaoDatasetMinLength = 1;
     private const int VersaoDatasetMaxLength = 60;
     private const int DescricaoMaxLength = 200;
+    private const int MunicipioIbgeLength = 7;
 
     private readonly List<DiaNaoUtil> _diasNaoUteis = [];
 
@@ -127,6 +128,11 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
 
         foreach (DiaNaoUtilCriacao dia in diasNaoUteis)
         {
+            if (dia is null)
+            {
+                return Falha(CalendarioDiasUteisErrorCodes.DiaNaoUtilNulo, "Item de dia não útil não pode ser nulo.");
+            }
+
             if (!Abrangencias.TryAnalisar(dia.Abrangencia, out Abrangencia abrangencia))
             {
                 return Falha(
@@ -141,6 +147,15 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
                 return Falha(
                     CalendarioDiasUteisErrorCodes.MunicipioIbgeObrigatorioParaMunicipal,
                     $"Código IBGE do município é obrigatório para a data {dia.Data:yyyy-MM-dd} (abrangência municipal).");
+            }
+
+            if (abrangencia == Abrangencia.Municipal
+                && (dia.MunicipioIbge!.Trim().Length != MunicipioIbgeLength || !dia.MunicipioIbge.Trim().All(char.IsAsciiDigit)))
+            {
+                return Falha(
+                    CalendarioDiasUteisErrorCodes.MunicipioIbgeFormatoInvalido,
+                    $"Código IBGE do município deve ter exatamente {MunicipioIbgeLength} dígitos numéricos "
+                    + $"(data {dia.Data:yyyy-MM-dd}).");
             }
 
             if (abrangencia != Abrangencia.Municipal && temMunicipio)

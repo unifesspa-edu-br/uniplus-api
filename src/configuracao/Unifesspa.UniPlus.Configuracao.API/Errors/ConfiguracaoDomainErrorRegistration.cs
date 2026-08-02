@@ -1252,6 +1252,18 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_apenas_para_municipal",
                 "Código IBGE do município só se aplica a abrangência municipal")),
 
+        new(CalendarioDiasUteisErrorCodes.MunicipioIbgeFormatoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_formato_invalido",
+                "Código IBGE do município em formato inválido")),
+
+        new(CalendarioDiasUteisErrorCodes.DiaNaoUtilNulo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.calendario_dias_uteis.dia_nao_util_nulo",
+                "Item de dia não útil não pode ser nulo")),
+
         new(CalendarioDiasUteisErrorCodes.DescricaoObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
@@ -1287,5 +1299,11 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.calendario_dias_uteis.nao_encontrado",
                 "Calendário de dias úteis não encontrado")),
+
+        new(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
+                "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente")),
     ];
 }

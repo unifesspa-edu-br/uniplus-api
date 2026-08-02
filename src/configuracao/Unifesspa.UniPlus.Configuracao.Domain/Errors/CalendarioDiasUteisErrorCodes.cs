@@ -8,10 +8,13 @@ public static class CalendarioDiasUteisErrorCodes
     public const string AbrangenciaInvalida = "CalendarioDiasUteis.AbrangenciaInvalida";
     public const string MunicipioIbgeObrigatorioParaMunicipal = "CalendarioDiasUteis.MunicipioIbgeObrigatorioParaMunicipal";
     public const string MunicipioIbgeApenasParaMunicipal = "CalendarioDiasUteis.MunicipioIbgeApenasParaMunicipal";
+    public const string MunicipioIbgeFormatoInvalido = "CalendarioDiasUteis.MunicipioIbgeFormatoInvalido";
+    public const string DiaNaoUtilNulo = "CalendarioDiasUteis.DiaNaoUtilNulo";
     public const string DescricaoObrigatoria = "CalendarioDiasUteis.DescricaoObrigatoria";
     public const string DescricaoTamanho = "CalendarioDiasUteis.DescricaoTamanho";
     public const string DataDuplicadaNoDataset = "CalendarioDiasUteis.DataDuplicadaNoDataset";
     public const string JaVigente = "CalendarioDiasUteis.JaVigente";
     public const string NaoRemoveVigente = "CalendarioDiasUteis.NaoRemoveVigente";
     public const string NaoEncontrado = "CalendarioDiasUteis.NaoEncontrado";
+    public const string ConflitoDeConcorrencia = "CalendarioDiasUteis.ConflitoDeConcorrencia";
 }
