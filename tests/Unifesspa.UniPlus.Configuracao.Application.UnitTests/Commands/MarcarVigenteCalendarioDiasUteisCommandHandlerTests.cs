@@ -88,13 +88,17 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Exclusion constraint de vigência colidindo no commit vira ConflitoDeConcorrencia")]
+    [Fact(DisplayName = "Exclusion constraint de vigência colidindo na checagem forçada vira ConflitoDeConcorrencia")]
     public async Task Handle_ColisaoNaExclusionConstraint_RetornaConflitoDeConcorrencia()
     {
+        // A violação surge em ForcarChecagemImediataDeConstraintsAsync (SET CONSTRAINTS
+        // IMMEDIATE), não em SalvarAlteracoesAsync — a constraint é DEFERRABLE INITIALLY
+        // DEFERRED, então SaveChangesAsync sozinho não a checaria (só o faria no commit
+        // externo do outbox do Wolverine, fora do try do handler).
         CalendarioDiasUteis calendario = Novo();
         _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
         _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
-        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+        _unitOfWork.ForcarChecagemImediataDeConstraintsAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(PostgresExceptionFactory.Create("23P01", "ex_calendario_dias_uteis_vigente_unico"));
 
         Result resultado = await MarcarVigenteCalendarioDiasUteisCommandHandler.Handle(

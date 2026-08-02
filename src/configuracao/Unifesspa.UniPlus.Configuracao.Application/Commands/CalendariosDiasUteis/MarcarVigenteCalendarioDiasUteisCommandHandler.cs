@@ -51,6 +51,12 @@ public static class MarcarVigenteCalendarioDiasUteisCommandHandler
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+
+            // A exclusion constraint de vigência é DEFERRABLE INITIALLY DEFERRED — sem
+            // forçar a checagem aqui, ela só rodaria no commit externo que o outbox do
+            // Wolverine executa DEPOIS deste handler retornar (UseEntityFrameworkCoreTransactions
+            // + AutoApplyTransactions, ADR-0004), fora do alcance deste catch.
+            await unitOfWork.ForcarChecagemImediataDeConstraintsAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ExclusionConstraintViolation.IsVigenteConflict(ex) || OptimisticConcurrencyViolation.Is(ex))
         {

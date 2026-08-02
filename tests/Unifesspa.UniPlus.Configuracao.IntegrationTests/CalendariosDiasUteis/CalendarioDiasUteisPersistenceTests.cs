@@ -105,6 +105,49 @@ public sealed class CalendarioDiasUteisPersistenceTests
         await cleanupCtx.SaveChangesAsync();
     }
 
+    [Fact(DisplayName = "Sob transação ambiente, só ForcarChecagemImediataDeConstraints detecta a colisão")]
+    public async Task ExclusionConstraint_SobTransacaoAmbiente_SoDetectaNaChecagemForcada()
+    {
+        CalendarioDiasUteis primeiro = Nova(VersaoUnica());
+        primeiro.MarcarVigente();
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(primeiro);
+            await ctx.SaveChangesAsync();
+        }
+
+        CalendarioDiasUteis segundo = Nova(VersaoUnica());
+        segundo.MarcarVigente();
+        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+
+        // Abre a transação ANTES do SaveChanges — reproduz o outbox do Wolverine
+        // (UseEntityFrameworkCoreTransactions + AutoApplyTransactions, ADR-0004), que
+        // abre a transação ANTES do handler rodar e só comita DEPOIS dele retornar.
+        await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction tx =
+            await ctx2.Database.BeginTransactionAsync();
+        ctx2.CalendariosDiasUteis.Add(segundo);
+
+        // Sob transação já aberta, SaveChangesAsync só executa os comandos — quem
+        // comita é o `using` da transação, não este método. A exclusion constraint
+        // DEFERRED não é checada aqui: exatamente o cenário que fazia o handler
+        // devolver 500 em vez de 409 (o commit real só rodaria no outbox do
+        // Wolverine, fora do try/catch do handler — achado de revisão do Codex).
+        await ctx2.SaveChangesAsync();
+
+        Func<Task> act = async () => await ctx2.ForcarChecagemImediataDeConstraintsAsync();
+
+        Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
+        pg.SqlState.Should().Be("23P01");
+        pg.ConstraintName.Should().Be("ex_calendario_dias_uteis_vigente_unico");
+
+        // "segundo" nunca commitou (a transação nunca chegou a Commit), mas "primeiro"
+        // segue vigente=true na base compartilhada da fixture.
+        await using ConfiguracaoDbContext cleanupCtx = _fixture.CreateDbContext(AdminA);
+        CalendarioDiasUteis primeiroTracked = await cleanupCtx.CalendariosDiasUteis.SingleAsync(c => c.Id == primeiro.Id);
+        primeiroTracked.MarcarNaoVigente();
+        await cleanupCtx.SaveChangesAsync();
+    }
+
     [Fact(DisplayName = "CHECK de banco rejeita dia não útil municipal sem código IBGE via SQL cru")]
     public async Task Check_RejeitaMunicipalSemMunicipioIbgeViaSqlCru()
     {
