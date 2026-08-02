@@ -14,8 +14,8 @@ public sealed class CalendarioDiasUteisTests
     private static DiaNaoUtilCriacao Nacional(DateOnly? data = null) =>
         new("NACIONAL", null, data ?? DataBase, "Confraternização Universal");
 
-    private static DiaNaoUtilCriacao Estadual(DateOnly? data = null) =>
-        new("ESTADUAL", null, data ?? DataBase.AddDays(1), "Data magna do estado");
+    private static DiaNaoUtilCriacao Estadual(DateOnly? data = null, string uf = "PA") =>
+        new("ESTADUAL", null, data ?? DataBase.AddDays(1), "Data magna do estado", uf);
 
     private static DiaNaoUtilCriacao Municipal(DateOnly? data = null, string municipioIbge = "1501402") =>
         new("MUNICIPAL", municipioIbge, data ?? DataBase.AddDays(2), "Aniversário do município");
@@ -60,6 +60,16 @@ public sealed class CalendarioDiasUteisTests
             && d.MunicipioIbge == "1501402"
             && d.Data == DataBase.AddDays(2)
             && d.Descricao == "Aniversário do município");
+    }
+
+    [Fact(DisplayName = "Criar apara o código IBGE e persiste o valor normalizado, não o cru")]
+    public void Criar_MunicipioIbgeComEspacos_PersisteAparado()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [new DiaNaoUtilCriacao("MUNICIPAL", " 1501402 ", DataBase, "Aniversário do município")]);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.DiasNaoUteis.Should().Contain(d => d.MunicipioIbge == "1501402");
     }
 
     [Theory(DisplayName = "Criar com versão do dataset ausente ou em branco falha")]
@@ -122,6 +132,65 @@ public sealed class CalendarioDiasUteisTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.MunicipioIbgeApenasParaMunicipal);
+    }
+
+    [Fact(DisplayName = "Criar com abrangência estadual sem UF falha")]
+    public void Criar_EstadualSemUf_Falha()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [new DiaNaoUtilCriacao("ESTADUAL", null, DataBase, "Data magna do estado")]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual);
+    }
+
+    [Theory(DisplayName = "Criar com UF em formato inválido falha")]
+    [InlineData("P")]
+    [InlineData("PAR")]
+    [InlineData("P1")]
+    public void Criar_UfFormatoInvalido_Falha(string uf)
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [new DiaNaoUtilCriacao("ESTADUAL", null, DataBase, "Data magna do estado", uf)]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.UfFormatoInvalido);
+    }
+
+    [Theory(DisplayName = "Criar com UF fora da abrangência estadual falha")]
+    [InlineData("NACIONAL")]
+    [InlineData("INSTITUCIONAL")]
+    public void Criar_UfForaDeEstadual_Falha(string abrangencia)
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [new DiaNaoUtilCriacao(abrangencia, null, DataBase, "Dia qualquer", "PA")]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.UfApenasParaEstadual);
+    }
+
+    [Fact(DisplayName = "Criar com UF em minúsculas é normalizada para maiúsculas")]
+    public void Criar_UfMinuscula_Normaliza()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [new DiaNaoUtilCriacao("ESTADUAL", null, DataBase, "Data magna do estado", "pa")]);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.DiasNaoUteis.Should().Contain(d => d.Uf == "PA");
+    }
+
+    [Fact(DisplayName = "Criar com mesma data e UFs diferentes não é duplicata")]
+    public void Criar_MesmaDataUfsDiferentes_NaoEDuplicata()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1",
+            [
+                new DiaNaoUtilCriacao("ESTADUAL", null, DataBase, "Feriado do Pará", "PA"),
+                new DiaNaoUtilCriacao("ESTADUAL", null, DataBase, "Feriado de São Paulo", "SP"),
+            ]);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.DiasNaoUteis.Should().HaveCount(2);
     }
 
     [Theory(DisplayName = "Criar com descrição ausente ou em branco falha")]
@@ -190,7 +259,7 @@ public sealed class CalendarioDiasUteisTests
             "2027.1",
             [
                 new DiaNaoUtilCriacao("NACIONAL", null, DataBase, "Feriado nacional"),
-                new DiaNaoUtilCriacao("ESTADUAL", null, DataBase, "Feriado estadual"),
+                new DiaNaoUtilCriacao("ESTADUAL", null, DataBase, "Feriado estadual", "PA"),
             ]);
 
         resultado.IsSuccess.Should().BeTrue();

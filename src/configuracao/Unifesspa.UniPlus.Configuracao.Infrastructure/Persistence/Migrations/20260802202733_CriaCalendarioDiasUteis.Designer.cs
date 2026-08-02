@@ -375,6 +375,11 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(7)")
                         .HasColumnName("municipio_ibge");
 
+                    b.Property<string>("Uf")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("uf");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -388,6 +393,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.ToTable("dia_nao_util", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_dia_nao_util_municipio_coerente", "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_dia_nao_util_uf_coerente", "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
                         });
                 });
 

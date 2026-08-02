@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 internal sealed class DiaNaoUtilConfiguration : IEntityTypeConfiguration<DiaNaoUtil>
 {
     private const int MunicipioIbgeMaxLength = 7;
+    private const int UfMaxLength = 2;
     private const int DescricaoMaxLength = 200;
 
     public void Configure(EntityTypeBuilder<DiaNaoUtil> builder)
@@ -21,9 +22,15 @@ internal sealed class DiaNaoUtilConfiguration : IEntityTypeConfiguration<DiaNaoU
 
         builder.ToTable(
             "dia_nao_util",
-            t => t.HasCheckConstraint(
-                "ck_dia_nao_util_municipio_coerente",
-                "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL)"));
+            t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_dia_nao_util_municipio_coerente",
+                    "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL)");
+                t.HasCheckConstraint(
+                    "ck_dia_nao_util_uf_coerente",
+                    "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
+            });
 
         builder.HasKey(d => d.Id);
 
@@ -35,6 +42,7 @@ internal sealed class DiaNaoUtilConfiguration : IEntityTypeConfiguration<DiaNaoU
             .IsRequired();
 
         builder.Property(d => d.MunicipioIbge).HasMaxLength(MunicipioIbgeMaxLength);
+        builder.Property(d => d.Uf).HasMaxLength(UfMaxLength);
         builder.Property(d => d.Data).IsRequired();
         builder.Property(d => d.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();
 

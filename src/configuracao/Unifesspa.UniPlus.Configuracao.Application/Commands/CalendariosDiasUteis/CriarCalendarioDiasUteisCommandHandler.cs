@@ -25,7 +25,7 @@ public static class CriarCalendarioDiasUteisCommandHandler
 
         Result<CalendarioDiasUteis> calendarioResult = CalendarioDiasUteis.Criar(
             command.VersaoDataset,
-            [.. command.DiasNaoUteis.Select(d => new DiaNaoUtilCriacao(d.Abrangencia, d.MunicipioIbge, d.Data, d.Descricao))]);
+            [.. command.DiasNaoUteis.Select(d => new DiaNaoUtilCriacao(d.Abrangencia, d.MunicipioIbge, d.Data, d.Descricao, d.Uf))]);
 
         if (calendarioResult.IsFailure)
         {

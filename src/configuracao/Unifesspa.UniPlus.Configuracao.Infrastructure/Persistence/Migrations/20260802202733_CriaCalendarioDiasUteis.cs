@@ -41,6 +41,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     calendario_dias_uteis_id = table.Column<Guid>(type: "uuid", nullable: false),
                     abrangencia = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     municipio_ibge = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: true),
+                    uf = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: true),
                     data = table.Column<DateOnly>(type: "date", nullable: false),
                     descricao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -50,6 +51,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("pk_dia_nao_util", x => x.id);
                     table.CheckConstraint("ck_dia_nao_util_municipio_coerente", "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL)");
+                    table.CheckConstraint("ck_dia_nao_util_uf_coerente", "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
                     table.ForeignKey(
                         name: "fk_dia_nao_util_calendarios_dias_uteis_calendario_dias_uteis_id",
                         column: x => x.calendario_dias_uteis_id,

@@ -5,5 +5,6 @@ public sealed record DiaNaoUtilDto(
     Guid Id,
     string Abrangencia,
     string? MunicipioIbge,
+    string? Uf,
     DateOnly Data,
     string Descricao);

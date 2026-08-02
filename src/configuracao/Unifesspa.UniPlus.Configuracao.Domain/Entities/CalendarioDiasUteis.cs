@@ -31,6 +31,7 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
     private const int VersaoDatasetMaxLength = 60;
     private const int DescricaoMaxLength = 200;
     private const int MunicipioIbgeLength = 7;
+    private const int UfLength = 2;
 
     private readonly List<DiaNaoUtil> _diasNaoUteis = [];
 
@@ -73,7 +74,7 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
         foreach (DiaNaoUtilResolvido dia in validacao.Value!)
         {
             calendario._diasNaoUteis.Add(DiaNaoUtil.Abrir(
-                calendario.Id, dia.Abrangencia, dia.MunicipioIbge, dia.Data, dia.Descricao));
+                calendario.Id, dia.Abrangencia, dia.MunicipioIbge, dia.Uf, dia.Data, dia.Descricao));
         }
 
         return Result<CalendarioDiasUteis>.Success(calendario);
@@ -124,7 +125,7 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
         }
 
         var resolvidos = new List<DiaNaoUtilResolvido>(diasNaoUteis.Count);
-        var vistos = new HashSet<(DateOnly Data, Abrangencia Abrangencia, string? Municipio)>();
+        var vistos = new HashSet<(DateOnly Data, Abrangencia Abrangencia, string? Municipio, string? Uf)>();
 
         foreach (DiaNaoUtilCriacao dia in diasNaoUteis)
         {
@@ -142,6 +143,14 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
             }
 
             bool temMunicipio = !string.IsNullOrWhiteSpace(dia.MunicipioIbge);
+            // Normalizado UMA vez e usado daqui em diante (validação, deduplicação em
+            // `vistos` e persistência em DiaNaoUtilResolvido) — manter o valor cru só
+            // para a checagem de formato deixava o valor NÃO aparado (ex. " 1501402 ",
+            // 9 caracteres) chegar ao varchar(7) da coluna, e espaços-em-branco para
+            // abrangência não-municipal seriam persistidos como não-nulos, violando
+            // ck_dia_nao_util_municipio_coerente.
+            string? municipioIbgeNorm = temMunicipio ? dia.MunicipioIbge!.Trim() : null;
+
             if (abrangencia == Abrangencia.Municipal && !temMunicipio)
             {
                 return Falha(
@@ -150,7 +159,7 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
             }
 
             if (abrangencia == Abrangencia.Municipal
-                && (dia.MunicipioIbge!.Trim().Length != MunicipioIbgeLength || !dia.MunicipioIbge.Trim().All(char.IsAsciiDigit)))
+                && (municipioIbgeNorm!.Length != MunicipioIbgeLength || !municipioIbgeNorm.All(char.IsAsciiDigit)))
             {
                 return Falha(
                     CalendarioDiasUteisErrorCodes.MunicipioIbgeFormatoInvalido,
@@ -163,6 +172,32 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
                 return Falha(
                     CalendarioDiasUteisErrorCodes.MunicipioIbgeApenasParaMunicipal,
                     $"Código IBGE do município só se aplica a abrangência municipal (data {dia.Data:yyyy-MM-dd}).");
+            }
+
+            bool temUf = !string.IsNullOrWhiteSpace(dia.Uf);
+            string? ufNorm = temUf ? dia.Uf!.Trim().ToUpperInvariant() : null;
+
+            if (abrangencia == Abrangencia.Estadual && !temUf)
+            {
+                return Falha(
+                    CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual,
+                    $"UF é obrigatória para a data {dia.Data:yyyy-MM-dd} (abrangência estadual) — sem ela, feriados "
+                    + "de estados diferentes seriam indistinguíveis.");
+            }
+
+            if (abrangencia == Abrangencia.Estadual
+                && (ufNorm!.Length != UfLength || !ufNorm.All(char.IsAsciiLetterUpper)))
+            {
+                return Falha(
+                    CalendarioDiasUteisErrorCodes.UfFormatoInvalido,
+                    $"UF deve ter exatamente {UfLength} letras (data {dia.Data:yyyy-MM-dd}).");
+            }
+
+            if (abrangencia != Abrangencia.Estadual && temUf)
+            {
+                return Falha(
+                    CalendarioDiasUteisErrorCodes.UfApenasParaEstadual,
+                    $"UF só se aplica a abrangência estadual (data {dia.Data:yyyy-MM-dd}).");
             }
 
             if (string.IsNullOrWhiteSpace(dia.Descricao))
@@ -180,14 +215,14 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
                     $"Descrição deve ter no máximo {DescricaoMaxLength} caracteres (data {dia.Data:yyyy-MM-dd}).");
             }
 
-            if (!vistos.Add((dia.Data, abrangencia, dia.MunicipioIbge)))
+            if (!vistos.Add((dia.Data, abrangencia, municipioIbgeNorm, ufNorm)))
             {
                 return Falha(
                     CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset,
-                    $"Data {dia.Data:yyyy-MM-dd} duplicada no dataset (mesma abrangência e município).");
+                    $"Data {dia.Data:yyyy-MM-dd} duplicada no dataset (mesma abrangência, município e UF).");
             }
 
-            resolvidos.Add(new DiaNaoUtilResolvido(abrangencia, dia.MunicipioIbge, dia.Data, descricaoNorm));
+            resolvidos.Add(new DiaNaoUtilResolvido(abrangencia, municipioIbgeNorm, ufNorm, dia.Data, descricaoNorm));
         }
 
         return Result<IReadOnlyList<DiaNaoUtilResolvido>>.Success(resolvidos);
@@ -201,8 +236,11 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
 /// Entrada de criação de um <see cref="DiaNaoUtil"/>, usada só por
 /// <see cref="CalendarioDiasUteis.Criar"/>. <c>Abrangencia</c> é o token canônico
 /// UPPER_SNAKE (ex.: <c>NACIONAL</c>, <c>MUNICIPAL</c>), analisado internamente.
+/// <c>Uf</c> é obrigatória para abrangência ESTADUAL — sem ela, feriados de
+/// estados diferentes seriam indistinguíveis para o consumidor cross-módulo.
 /// </summary>
-public sealed record DiaNaoUtilCriacao(string Abrangencia, string? MunicipioIbge, DateOnly Data, string Descricao);
+public sealed record DiaNaoUtilCriacao(
+    string Abrangencia, string? MunicipioIbge, DateOnly Data, string Descricao, string? Uf = null);
 
 /// <summary>Dia não útil já validado e com os campos analisados/normalizados, pronto para <see cref="DiaNaoUtil.Abrir"/>.</summary>
-internal sealed record DiaNaoUtilResolvido(Abrangencia Abrangencia, string? MunicipioIbge, DateOnly Data, string Descricao);
+internal sealed record DiaNaoUtilResolvido(Abrangencia Abrangencia, string? MunicipioIbge, string? Uf, DateOnly Data, string Descricao);
