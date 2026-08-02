@@ -6,9 +6,11 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -93,6 +95,14 @@ public sealed class CalendarioDiasUteisPersistenceTests
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.SqlState.Should().Be("23P01");
         pg.ConstraintName.Should().Be("ex_calendario_dias_uteis_vigente_unico");
+
+        // "segundo" nunca commitou (transação abortada pela exclusion constraint), mas
+        // "primeiro" ficou vigente=true na base compartilhada da fixture — desmarca para
+        // não colidir com outros testes deste arquivo que também marcam vigente.
+        await using ConfiguracaoDbContext cleanupCtx = _fixture.CreateDbContext(AdminA);
+        CalendarioDiasUteis primeiroTracked = await cleanupCtx.CalendariosDiasUteis.SingleAsync(c => c.Id == primeiro.Id);
+        primeiroTracked.MarcarNaoVigente();
+        await cleanupCtx.SaveChangesAsync();
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita dia não útil municipal sem código IBGE via SQL cru")]
@@ -150,6 +160,35 @@ public sealed class CalendarioDiasUteisPersistenceTests
         excluido.IsDeleted.Should().BeTrue();
         excluido.DeletedBy.Should().Be(AdminB);
         excluido.DiasNaoUteis.Should().HaveCount(2, "os dias não úteis não têm soft-delete próprio e permanecem sob a linha soft-deleted");
+    }
+
+    [Fact(DisplayName = "ICalendarioVigenteReader preserva abrangência e município por dia")]
+    public async Task VigenteReader_PreservaAbrangenciaEMunicipioPorDia()
+    {
+        CalendarioDiasUteis calendario = Nova(
+            VersaoUnica(),
+            new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
+            new DiaNaoUtilCriacao("MUNICIPAL", "1501402", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
+        calendario.MarcarVigente();
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(calendario);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        var reader = new CalendarioVigenteReader(readCtx);
+
+        CalendarioVigenteView? vigente = await reader.ObterVigenteAsync();
+
+        vigente.Should().NotBeNull();
+        vigente!.Id.Should().Be(calendario.Id);
+        vigente.DiasNaoUteis.Should().HaveCount(2);
+        vigente.DiasNaoUteis.Should().Contain(d =>
+            d.Data == new DateOnly(2027, 1, 1) && d.Abrangencia == "NACIONAL" && d.MunicipioIbge == null);
+        vigente.DiasNaoUteis.Should().Contain(d =>
+            d.Data == new DateOnly(2027, 5, 8) && d.Abrangencia == "MUNICIPAL" && d.MunicipioIbge == "1501402");
     }
 
     private static string VersaoUnica() => $"cal-{Guid.NewGuid():N}"[..20];

@@ -2,10 +2,14 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -82,5 +86,52 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
         novo.Vigente.Should().BeTrue();
         vigenteAnterior.Vigente.Should().BeFalse();
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Exclusion constraint de vigência colidindo no commit vira ConflitoDeConcorrencia")]
+    public async Task Handle_ColisaoNaExclusionConstraint_RetornaConflitoDeConcorrencia()
+    {
+        CalendarioDiasUteis calendario = Novo();
+        _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
+        _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(PostgresExceptionFactory.Create("23P01", "ex_calendario_dias_uteis_vigente_unico"));
+
+        Result resultado = await MarcarVigenteCalendarioDiasUteisCommandHandler.Handle(
+            new MarcarVigenteCalendarioDiasUteisCommand(calendario.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+    }
+
+    [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) no commit vira ConflitoDeConcorrencia")]
+    public async Task Handle_ConcorrenciaOtimista_RetornaConflitoDeConcorrencia()
+    {
+        CalendarioDiasUteis calendario = Novo();
+        _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
+        _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await MarcarVigenteCalendarioDiasUteisCommandHandler.Handle(
+            new MarcarVigenteCalendarioDiasUteisCommand(calendario.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+    }
+
+    [Fact(DisplayName = "Violação de outra constraint não é engolida — propaga")]
+    public async Task Handle_OutraViolacaoDeConstraint_Propaga()
+    {
+        CalendarioDiasUteis calendario = Novo();
+        _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
+        _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(PostgresExceptionFactory.Create("23505", "outra_constraint_qualquer"));
+
+        Func<Task> act = () => MarcarVigenteCalendarioDiasUteisCommandHandler.Handle(
+            new MarcarVigenteCalendarioDiasUteisCommand(calendario.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>();
     }
 }

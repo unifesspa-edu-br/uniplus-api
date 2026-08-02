@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 
 /// <summary>
@@ -39,7 +40,10 @@ internal sealed class CalendarioVigenteReader : ICalendarioVigenteReader
             return null;
         }
 
-        DateOnly[] datas = [.. calendario.DiasNaoUteis.Select(d => d.Data)];
-        return new CalendarioVigenteView(calendario.Id, calendario.VersaoDataset, datas);
+        DiaNaoUtilView[] dias = [.. calendario.DiasNaoUteis.Select(ParaView)];
+        return new CalendarioVigenteView(calendario.Id, calendario.VersaoDataset, dias);
     }
+
+    private static DiaNaoUtilView ParaView(DiaNaoUtil dia) =>
+        new(dia.Data, Abrangencias.ParaTokenCanonico(dia.Abrangencia), dia.MunicipioIbge);
 }

@@ -23,6 +23,19 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         builder.Property(c => c.VersaoDataset).HasMaxLength(VersaoDatasetMaxLength).IsRequired();
         builder.Property(c => c.Vigente).IsRequired();
 
+        // Token de concorrência otimista mapeado para a coluna de sistema `xmin` do
+        // Postgres (shadow property `uint` + IsRowVersion — convenção do provider
+        // Npgsql, sem coluna/migration própria): MarcarVigenteCalendarioDiasUteisCommandHandler
+        // e RemoverCalendarioDiasUteisCommandHandler podem, em corrida, ler e mutar o
+        // MESMO registro (ex.: ativar um dataset enquanto ele é removido) sem colidir
+        // com a exclusion constraint de vigência, que só cobre a unicidade entre
+        // registros DIFERENTES. Com xmin, quem confirma por último recebe
+        // DbUpdateConcurrencyException em vez de sobrescrever silenciosamente o
+        // resultado do outro.
+        builder.Property<uint>("Version").IsRowVersion();
+
+        // Auditoria (IAuditableEntity)
+
         // Auditoria (IAuditableEntity)
         builder.Property(c => c.CreatedBy).HasMaxLength(255);
         builder.Property(c => c.UpdatedBy).HasMaxLength(255);
