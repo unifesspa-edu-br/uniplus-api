@@ -101,6 +101,17 @@ public static class DefinirCascataRemanejamentoCommandHandler
         List<DestinoRemanejamento> destinos = [];
         foreach (DestinoRemanejamentoInput destinoInput in command.Destinos!)
         {
+            // Defesa em profundidade: o FluentValidation (middleware, antes deste handler) já
+            // recusa um item nulo, mas o handler não deve confiar exclusivamente nisso para
+            // não desreferenciar null — um payload que contornasse a validação de borda não
+            // pode virar 500.
+            if (destinoInput is null)
+            {
+                return Result<MutacaoAceita>.Failure(new DomainError(
+                    "ConfiguracaoCascataRemanejamento.CamposObrigatorios",
+                    "Nenhum item da lista de destinos pode ser nulo."));
+            }
+
             Result<DestinoRemanejamento> destinoResult = DestinoRemanejamento.Criar(
                 destinoInput.ModalidadeOrigemCodigo, destinoInput.Ordem, destinoInput.ModalidadeDestinoCodigo);
             if (destinoResult.IsFailure)
@@ -163,7 +174,12 @@ public static class DefinirCascataRemanejamentoCommandHandler
                 static grupo => grupo.OrderBy(static d => d.Ordem).Select(static d => d.ModalidadeDestinoCodigo).ToList(),
                 StringComparer.Ordinal);
 
-        int origensNoEsquema = 0;
+        // Conjunto de origens já conferidas — não uma contagem. Um esquema_args corrompido
+        // que repita uma origem não pode "cobrir" outra origem por coincidência de contagem
+        // (achado de revisão): a origem repetida é rejeitada explicitamente por Add devolver
+        // false na segunda ocorrência, e a checagem final compara o CONJUNTO de origens
+        // conferidas contra o conjunto exigido pela cascata, não o tamanho de cada um.
+        HashSet<string> origensConferidas = new(StringComparer.Ordinal);
         foreach (JsonElement itemOrigem in ordensElemento.EnumerateArray())
         {
             if (!itemOrigem.TryGetProperty("origem", out JsonElement origemElemento)
@@ -174,7 +190,8 @@ public static class DefinirCascataRemanejamentoCommandHandler
             }
 
             string? origem = origemElemento.GetString();
-            if (origem is null || !destinosPorOrigemNaCascata.TryGetValue(origem, out List<string>? destinosDaCascata))
+            if (origem is null || !origensConferidas.Add(origem)
+                || !destinosPorOrigemNaCascata.TryGetValue(origem, out List<string>? destinosDaCascata))
             {
                 return false;
             }
@@ -185,10 +202,8 @@ public static class DefinirCascataRemanejamentoCommandHandler
             {
                 return false;
             }
-
-            origensNoEsquema++;
         }
 
-        return origensNoEsquema == destinosPorOrigemNaCascata.Count;
+        return origensConferidas.SetEquals(destinosPorOrigemNaCascata.Keys);
     }
 }
