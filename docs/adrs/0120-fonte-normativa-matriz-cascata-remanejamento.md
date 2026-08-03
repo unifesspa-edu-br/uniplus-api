@@ -62,19 +62,33 @@ Anexo ("as vagas restantes serão disponibilizadas aos estudantes da ampla conco
 Conferida linha a linha, célula a célula, contra o `esquema_args` que a #575 semeia em
 `REMANEJ-CASCATA-LEI-12711 v1` — a matriz é idêntica.
 
-## Decisão sobre o alcance institucional
+## Opções consideradas
 
 O Anexo da Portaria 704/2025, no seu texto literal, regula o remanejamento na chamada regular e na
 lista de espera **do Sisu**. A Unifesspa, ao ofertar vagas fora do Sisu sob o mesmo regime de reserva
 da Lei 12.711/2012 (`DISTRIB-VAGAS-LEI-12711`), não está automaticamente obrigada a seguir esse Anexo
-por processos seletivos próprios — mas **decide adotá-lo por prática institucional própria**, pela
-mesma razão que já adota a Portaria Normativa MEC 18/2012 como base do cálculo de distribuição de
-vagas reservadas em processos fora do Sisu: é a mesma lei (12.711/2012) e a mesma lógica de
-agrupamento (art. 3º, §1º) que a matriz do Anexo apenas explicita célula a célula.
+por processos seletivos próprios — a matriz precisa de uma decisão de alcance, não só de fonte.
 
-Não há registro de outra ordem já praticada pela Unifesspa em edital fora do Sisu que divirja desta.
-Não havendo norma institucional própria conflitante, a matriz do Anexo é a fonte para toda oferta que
-usa `DISTRIB-VAGAS-LEI-12711`, dentro ou fora do Sisu — decisão de negócio explícita, não presumida.
+- **A. Restringir a matriz ao Sisu** e deixar processos federais fora do Sisu sem `esquema_args`
+  citável, até que surja norma institucional própria. **Rejeitada:** bloquearia `RN-CASCATA-5` para
+  todo processo de regime federal fora do Sisu (ex.: Educação do Campo) sem necessidade — é a mesma
+  lei (12.711/2012) e a mesma lógica de agrupamento (art. 3º, §1º) que a matriz do Anexo apenas
+  explicita célula a célula; não há motivo jurídico para tratar o regime federal fora do Sisu como
+  uma cascata diferente.
+- **B. Adotar a matriz do Anexo por prática institucional própria, para toda oferta que usa
+  `DISTRIB-VAGAS-LEI-12711`, dentro ou fora do Sisu — a escolha desta ADR.** Mesma razão pela qual a
+  Portaria Normativa MEC 18/2012 já é adotada como base do cálculo de distribuição de vagas
+  reservadas em processos fora do Sisu (`DISTRIB-VAGAS-LEI-12711`, Story #772): a norma nasce no
+  contexto do Sisu, mas a Unifesspa já a usa como referência para o regime federal em geral, por não
+  haver prática institucional divergente.
+
+## Resultado da decisão
+
+**Escolhida: opção B.** Não há registro de outra ordem já praticada pela Unifesspa em edital fora do
+Sisu que divirja desta. Não havendo norma institucional própria conflitante, a matriz do Anexo é a
+fonte para toda oferta que usa `DISTRIB-VAGAS-LEI-12711`, dentro ou fora do Sisu — decisão de negócio
+explícita, não presumida. Se a Unifesspa vier a adotar ordem própria divergente para processos fora
+do Sisu, é decisão de negócio nova, registrada como nova versão da regra — não uma correção desta ADR.
 
 ## Consequências
 
@@ -84,8 +98,6 @@ usa `DISTRIB-VAGAS-LEI-12711`, dentro ou fora do Sisu — decisão de negócio e
   célula contra este `esquema_args`; divergência é recusada, mesmo com a forma da sequência válida.
 - Uma eventual mudança na lei ou no Anexo da Portaria gera **nova versão** da regra (`v2`), nunca
   reescrita da `v1` já congelada em `VersaoConfiguracao` publicada (RN08, append-only).
-- Se a Unifesspa vier a adotar ordem própria divergente para processos fora do Sisu, é decisão de
-  negócio nova, registrada como nova versão da regra — não uma correção desta ADR.
 
 ## Referências
 
