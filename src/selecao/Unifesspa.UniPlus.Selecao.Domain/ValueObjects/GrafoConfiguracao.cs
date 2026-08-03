@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// As <b>seis dimensões</b> da configuração de um <see cref="ProcessoSeletivo"/>,
+/// As dimensões da configuração de um <see cref="ProcessoSeletivo"/>,
 /// reconstruídas a partir de uma <see cref="VersaoConfiguracao"/> congelada
 /// (ADR-0110 D1/D2) e repostas no agregado por
 /// <see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>.
@@ -40,7 +40,10 @@ public sealed class GrafoConfiguracao
         // nem derivação é estado válido, e os muitos grafos de teste que antecedem a fatia não os
         // constroem. O decoder do envelope sempre os passa explicitamente.
         IReadOnlyList<FatoColetado>? fatosColetados = null,
-        IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null)
+        IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null,
+        // Cascata de remanejamento (Story #575) — opcional, mesmo padrão de BonusRegional
+        // (ausência = nenhuma cascata configurada, toggle por presença).
+        ConfiguracaoCascataRemanejamento? cascataRemanejamento = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -67,6 +70,7 @@ public sealed class GrafoConfiguracao
         ReferenciaTemporalFatos = referenciaTemporalFatos;
         FatosColetados = fatosColetados is null ? [] : [.. fatosColetados];
         RegrasDerivacao = regrasDerivacao is null ? [] : [.. regrasDerivacao];
+        CascataRemanejamento = cascataRemanejamento;
     }
 
     public IReadOnlyList<EtapaProcesso> Etapas { get; }
@@ -111,4 +115,11 @@ public sealed class GrafoConfiguracao
     /// envelope e repostas na restauração, mesma garantia de imutabilidade de <see cref="FatosColetados"/>.
     /// </summary>
     public IReadOnlyList<ConfiguracaoDerivacaoFato> RegrasDerivacao { get; }
+
+    /// <summary>
+    /// A cascata de remanejamento das cotas reservadas (Story #575) — congelada no envelope e
+    /// reposta na restauração. Ausência = nenhuma cascata configurada (toggle por presença,
+    /// mesmo padrão de <see cref="BonusRegional"/>).
+    /// </summary>
+    public ConfiguracaoCascataRemanejamento? CascataRemanejamento { get; }
 }
