@@ -79,6 +79,18 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
             ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+
+            // ConfiguracaoEndpointFixture é compartilhado por toda a
+            // ConfiguracaoEndpointCollection — outro teste da mesma collection
+            // (ex.: CalendarioDiasUteisEndpointTests.MarcarVigente_DesmarcaOAnterior)
+            // pode ter deixado um terceiro calendário vigente=true para trás.
+            // Sem desmarcá-lo aqui, o handler de A leria ESSE terceiro registro
+            // como vigenteAnterior e tentaria demarcá-lo dentro da própria
+            // transação — um xmin extra fora do controle deste teste, alheio à
+            // corrida A-vs-B que ele quer provar.
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE configuracao.calendario_dias_uteis SET vigente = false WHERE vigente = true");
+
             CalendarioDiasUteis calendarioA = CalendarioDiasUteis.Criar(
                 $"exc-a-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
