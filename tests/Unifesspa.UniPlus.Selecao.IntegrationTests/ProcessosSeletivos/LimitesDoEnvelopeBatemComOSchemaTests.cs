@@ -69,6 +69,12 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("BaseLegal", LimitesDoEnvelope.BaseLegal, typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Referencia)),
         ("ObservacaoBaseLegal", LimitesDoEnvelope.ObservacaoBaseLegal, typeof(DocumentoExigidoBaseLegal), nameof(DocumentoExigidoBaseLegal.Observacao)),
         ("Fato", LimitesDoEnvelope.Fato, typeof(CondicaoGatilho), nameof(CondicaoGatilho.Fato)),
+
+        // Story #575 — cascata de remanejamento. Códigos de modalidade — mesmo limite de
+        // ModalidadeSelecionada.Codigo, reusado porque são a mesma grandeza.
+        ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(ConfiguracaoCascataRemanejamento), nameof(ConfiguracaoCascataRemanejamento.FallbackCodigo)),
+        ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(DestinoRemanejamento), nameof(DestinoRemanejamento.ModalidadeOrigemCodigo)),
+        ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(DestinoRemanejamento), nameof(DestinoRemanejamento.ModalidadeDestinoCodigo)),
     ];
 
     private static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =
