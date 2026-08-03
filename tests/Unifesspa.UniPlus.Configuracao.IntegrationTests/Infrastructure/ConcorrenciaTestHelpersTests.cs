@@ -82,21 +82,23 @@ public sealed class ConcorrenciaTestHelpersTests
         Task decoyBlockedTask = dbDecoyBlocked.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idDecoy}");
 
-        // Prova de que o decoy está genuinamente bloqueado — pelo holder DELE,
-        // não pelo que a corrida real vai usar.
-        await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
-            api, decoyBlockedTask, [pidDecoyHolder], TimeSpan.FromSeconds(5));
-
-        // Se qualquer asserção abaixo falhar antes de liberar txDecoyHolder,
+        // Se qualquer asserção abaixo — incluindo a própria confirmação de que
+        // o decoy está bloqueado — falhar antes de liberar txDecoyHolder,
         // decoyBlockedTask continua bloqueado quando o `await using` de
         // txDecoyBlocked/scopeDecoyBlocked começar a descartar a conexão —
         // Npgsql não aceita descartar uma conexão com um comando ainda em
         // voo. O finally garante que txDecoyHolder é liberado (destravando
         // decoyBlockedTask) ANTES de qualquer descarte, seja qual for o
-        // caminho de saída (achado do Codex no PR #1036).
+        // caminho de saída (achado do Codex no PR #1036 — a 1ª versão deste
+        // fix ainda deixava a confirmação do decoy fora da proteção).
         bool decoyReleased = false;
         try
         {
+            // Prova de que o decoy está genuinamente bloqueado — pelo holder
+            // DELE, não pelo que a corrida real vai usar.
+            await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
+                api, decoyBlockedTask, [pidDecoyHolder], TimeSpan.FromSeconds(5));
+
             // --- Fase 1: com o decoy já bloqueado, a corrida real (busA) nem
             // começou. Pedir a espera correlacionada ao holder de A (que só vai
             // existir de verdade na Fase 2) não deve ser satisfeita pelo decoy —
