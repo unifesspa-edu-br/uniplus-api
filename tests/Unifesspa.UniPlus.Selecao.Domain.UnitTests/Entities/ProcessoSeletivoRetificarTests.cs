@@ -404,12 +404,6 @@ public sealed class ProcessoSeletivoRetificarTests
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla, composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021", quantidadeDeclarada: 30).Value!;
         // AcaoQuandoIndeferido = RECLASSIFICA_AC: heteroidentificação/cota reprovada
         // reclassifica o candidato para ampla concorrência, nunca elimina (RN, concorrência
         // dupla — Lei 14.723/2023).
@@ -418,16 +412,47 @@ public sealed class ProcessoSeletivoRetificarTests
             naturezaLegal: NaturezaLegalModalidade.CotaReservada, composicaoVagas: ComposicaoVagasModalidade.DentroDoVr,
             composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata,
             remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            criteriosCumulativos: [], acaoQuandoIndeferido: "RECLASSIFICA_AC", baseLegal: "Lei 12.711/2012", quantidadeDeclarada: 10).Value!;
+            criteriosCumulativos: [], acaoQuandoIndeferido: "RECLASSIFICA_AC", baseLegal: "Lei 12.711/2012", quantidadeDeclarada: null).Value!;
+        // As demais 7 modalidades federais (Story #575, RN-CASCATA-2b) — SegueCascata só é
+        // válida no regime federal completo, com cascata legal por trás.
+        List<ModalidadeSelecionada> demaisFederais =
+        [
+            .. ModalidadesFederaisLei12711.Codigos
+                .Where(codigo => codigo != "LB_PPI")
+                .Select(codigo => ModalidadeSelecionada.Criar(
+                    Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
+                    null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, [], null, "Lei 12.711/2012", quantidadeDeclarada: null).Value!),
+        ];
+        ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: null,
+            naturezaLegal: NaturezaLegalModalidade.Ampla, composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            criteriosCumulativos: [], acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021", quantidadeDeclarada: null).Value!;
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(),
             voBase: 40,
-            pr: 1m,
-            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [ac, ppi]).Value!;
+            pr: 0.5m,
+            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo).Value!,
+            regraAjuste: ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo).Value!,
+            referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
+            modalidades: [.. demaisFederais, ppi, ac]).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        List<DestinoRemanejamento> destinosCascata = [];
+        foreach (string origem in ModalidadesFederaisLei12711.Codigos)
+        {
+            string[] ordemDestinos = [.. ModalidadesFederaisLei12711.Codigos.Where(o => o != origem)];
+            for (int i = 0; i < ordemDestinos.Length; i++)
+            {
+                destinosCascata.Add(DestinoRemanejamento.Criar(origem, i + 1, ordemDestinos[i]).Value!);
+            }
+        }
+
+        ReferenciaRegra regraCascata = ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo).Value!;
+        ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
+            regraCascata, ModalidadesFederaisLei12711.Ac, destinosCascata).Value!;
+        processo.DefinirCascataRemanejamento(cascata, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
