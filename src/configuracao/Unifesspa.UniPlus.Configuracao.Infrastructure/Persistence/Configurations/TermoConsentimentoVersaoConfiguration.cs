@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 
 /// <summary>
@@ -26,7 +27,11 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("termo_consentimento_versao");
+        builder.ToTable(
+            "termo_consentimento_versao",
+            t => t.HasCheckConstraint(
+                "ck_termo_consentimento_versao_forma_aceite",
+                $"forma_aceite IN ({TokensSql(FormasAceite.TokensCanonicos)})"));
         builder.HasKey(v => v.Id);
 
         builder.Property(v => v.TermoConsentimentoId).IsRequired();
@@ -53,4 +58,7 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
         builder.HasIndex(v => new { v.TermoConsentimentoId, v.PromovidaEm })
             .HasDatabaseName("ix_termo_consentimento_versao_termo_promovida_em");
     }
+
+    private static string TokensSql(IReadOnlyList<string> tokens) =>
+        string.Join(", ", tokens.Select(token => $"'{token}'"));
 }
