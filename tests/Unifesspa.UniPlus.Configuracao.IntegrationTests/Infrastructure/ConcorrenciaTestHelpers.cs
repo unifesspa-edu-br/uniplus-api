@@ -21,13 +21,7 @@ using Xunit;
 /// query, issue #1031) só é confiável porque a collection que chama este
 /// helper roda com <c>DisableParallelization = true</c> (nenhum outro teste da
 /// mesma suíte roda ao mesmo tempo) e cada módulo usa seu próprio container
-/// Postgres isolado — não porque o método garanta isso por construção. O
-/// chamador ainda precisa enumerar toda conexão que ELE MESMO mantém aberta
-/// deliberadamente (ex.: a transação que segura o lock); qualquer atividade de
-/// fundo do framework (health check, etc.) que por coincidência ficasse
-/// bloqueada permaneceria fora do alcance desta proteção — cenário considerado
-/// extremamente improvável e fora de escopo, assim como já era para o texto de
-/// query antes desta issue.
+/// Postgres isolado — não porque o método garanta isso por construção.
 /// </remarks>
 internal static class ConcorrenciaTestHelpers
 {
@@ -35,42 +29,47 @@ internal static class ConcorrenciaTestHelpers
 
     /// <summary>
     /// Faz poll em <c>pg_stat_activity</c> até observar um backend com
-    /// <c>wait_event_type = 'Lock'</c> cujo PID não está em
-    /// <paramref name="pidsConhecidos"/> nem é o da própria conexão de poll —
-    /// prova direta de que outro backend (o handler real sob teste) está
-    /// bloqueado esperando o lock, sem depender de casar texto de query com o
-    /// nome da tabela. Isso evita o falso positivo de uma query concorrente não
-    /// relacionada que mencione a mesma tabela por coincidência (issue #1031)
-    /// — o problema do casamento por texto não era a possibilidade de haver
-    /// múltiplos backends bloqueados, e sim tratar QUALQUER um deles como prova
-    /// da corrida, mesmo quando o texto batia por acaso com algo alheio.
+    /// <c>wait_event_type = 'Lock'</c> que <c>pg_blocking_pids()</c> confirma
+    /// estar bloqueado especificamente por um dos <paramref name="pidsSeguradoresDoLock"/>
+    /// — prova direta de que outro backend (o handler real sob teste) está
+    /// esperando o lock que o chamador segura, sem depender de casar texto de
+    /// query com o nome da tabela nem de simplesmente excluir PIDs conhecidos.
     /// </summary>
+    /// <remarks>
+    /// Excluir PIDs conhecidos sozinho (versão anterior deste helper) ainda
+    /// arriscava falso positivo: qualquer backend alheio à corrida — atividade
+    /// de fundo do runtime Wolverine, por exemplo — que estivesse esperando
+    /// QUALQUER outro lock, não relacionado, também seria contado como prova.
+    /// Correlacionar via <c>pg_blocking_pids</c> (quem está bloqueando o
+    /// candidato) elimina esse risco: só conta um backend cujo bloqueador
+    /// comprovado é uma das conexões que o chamador sabe que está segurando o
+    /// lock — não bloqueado por QUALQUER OUTRA coisa.
+    /// </remarks>
     /// <param name="api">Factory da API sob teste, usada para abrir a conexão de poll.</param>
     /// <param name="tarefaQueDeveriaBloquear">Tarefa do handler real sob teste — falha cedo se completar antes de bloquear.</param>
-    /// <param name="pidsConhecidos">
-    /// PID de toda conexão que o próprio chamador mantém aberta deliberadamente
-    /// (ex.: a transação que segura o lock de escrita) — capturado via
-    /// <see cref="ObterPidDaConexaoAsync"/> ENQUANTO a conexão está ociosa
-    /// (nunca enquanto ela mesma está executando um comando bloqueado — a
-    /// mesma conexão Npgsql não aceita um novo comando concorrente ao que já
-    /// está em voo). Excluído da checagem, para que só um backend genuinamente
-    /// alheio a essas conexões conhecidas conte como prova de bloqueio.
+    /// <param name="pidsSeguradoresDoLock">
+    /// PID de toda conexão que o próprio chamador mantém aberta segurando o
+    /// lock (ex.: a transação com o <c>UPDATE</c> ainda não commitado) —
+    /// capturado via <see cref="ObterPidDaConexaoAsync"/> ENQUANTO a conexão
+    /// está ociosa (nunca enquanto ela mesma está executando um comando
+    /// bloqueado — a mesma conexão Npgsql não aceita um novo comando
+    /// concorrente ao que já está em voo).
     /// </param>
     /// <param name="prazo">Tempo máximo de espera; usa <see cref="PrazoPadrao"/> quando omitido.</param>
     public static async Task AguardarBackendBloqueadoAsync(
         MonolitoApiFactory api,
         Task tarefaQueDeveriaBloquear,
-        IReadOnlyCollection<int> pidsConhecidos,
+        IReadOnlyCollection<int> pidsSeguradoresDoLock,
         TimeSpan? prazo = null)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(tarefaQueDeveriaBloquear);
-        ArgumentNullException.ThrowIfNull(pidsConhecidos);
+        ArgumentNullException.ThrowIfNull(pidsSeguradoresDoLock);
 
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         int pidDoPoll = await ObterPidDaConexaoAsync(pollDb);
-        int[] pidsExcluidos = [.. pidsConhecidos, pidDoPoll];
+        int[] pidsHolders = [.. pidsSeguradoresDoLock];
 
         DateTimeOffset limite = DateTimeOffset.UtcNow.Add(prazo ?? PrazoPadrao);
         while (DateTimeOffset.UtcNow < limite)
@@ -83,9 +82,13 @@ internal static class ConcorrenciaTestHelpers
             int backendsBloqueados = await pollDb.Database
                 .SqlQuery<int>(
                     $"""
-                    SELECT count(*)::int AS "Value" FROM pg_stat_activity
-                    WHERE wait_event_type = 'Lock'
-                      AND pid <> ALL({pidsExcluidos})
+                    SELECT count(*)::int AS "Value" FROM pg_stat_activity psa
+                    WHERE psa.wait_event_type = 'Lock'
+                      AND psa.pid <> {pidDoPoll}
+                      AND EXISTS (
+                          SELECT 1 FROM unnest(pg_blocking_pids(psa.pid)) AS bloqueador(pid)
+                          WHERE bloqueador.pid = ANY({pidsHolders})
+                      )
                     """)
                 .SingleAsync();
 
@@ -97,7 +100,7 @@ internal static class ConcorrenciaTestHelpers
             await Task.Delay(20);
         }
 
-        Assert.Fail("Nenhum backend alheio às conexões conhecidas ficou bloqueado esperando um lock dentro do prazo — a corrida não foi forçada.");
+        Assert.Fail("Nenhum backend bloqueado especificamente pelos seguradores do lock apareceu dentro do prazo — a corrida não foi forçada.");
     }
 
     /// <summary>

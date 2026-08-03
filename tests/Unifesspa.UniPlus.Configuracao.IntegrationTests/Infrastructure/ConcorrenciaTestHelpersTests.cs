@@ -20,11 +20,11 @@ using IMessageBus = Wolverine.IMessageBus;
 
 /// <summary>
 /// Prova de correção da issue #1031: <see cref="ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync"/>
-/// identifica o backend bloqueado por exclusão de PID, não por texto de query —
-/// imune a uma query concorrente sem relação com a corrida sob teste que
-/// mencione a mesma tabela por coincidência, DESDE QUE o chamador enumere essa
-/// conexão entre as conhecidas (o antigo <c>ILIKE '%tabela%'</c> não tinha
-/// como diferenciar as duas).
+/// identifica o backend bloqueado correlacionando via <c>pg_blocking_pids</c> —
+/// imune tanto a texto de query coincidente quanto a qualquer OUTRO backend
+/// bloqueado por um lock não relacionado ao que o chamador está segurando (o
+/// achado P2 do Codex sobre a primeira versão deste teste, que só excluía PIDs
+/// conhecidos sem confirmar QUEM realmente bloqueava o candidato).
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [Trait("Category", "Integration")]
@@ -42,8 +42,8 @@ public sealed class ConcorrenciaTestHelpersTests
     }
 
     [Fact(DisplayName =
-        "Uma conexão conhecida bloqueada por coincidência de texto não é confundida com o backend real sob teste")]
-    public async Task AguardarBackendBloqueadoAsync_ComConexaoConhecidaBloqueadaPorTextoCoincidente_NaoDaFalsoPositivo()
+        "Um backend bloqueado por um lock alheio (mesma tabela, holder diferente) não é confundido com o backend real sob teste")]
+    public async Task AguardarBackendBloqueadoAsync_ComBackendBloqueadoPorHolderAlheio_NaoDaFalsoPositivo()
     {
         MonolitoApiFactory api = _fixture.Factory;
 
@@ -65,9 +65,10 @@ public sealed class ConcorrenciaTestHelpersTests
         }
 
         // Decoy: uma segunda corrida, TOTALMENTE alheia à corrida sob teste,
-        // sobre uma linha DIFERENTE da mesma tabela — sua query de bloqueio
-        // menciona "calendario_dias_uteis" por coincidência, exatamente o
-        // cenário que o antigo casamento por ILIKE não sabia distinguir.
+        // sobre uma linha DIFERENTE da mesma tabela — um backend genuinamente
+        // bloqueado (wait_event_type='Lock'), com query mencionando
+        // "calendario_dias_uteis" por coincidência, mas bloqueado por um
+        // holder que NÃO é o que a corrida real vai usar.
         await using AsyncServiceScope scopeDecoyHolder = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext dbDecoyHolder = scopeDecoyHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         await using IDbContextTransaction txDecoyHolder = await dbDecoyHolder.Database.BeginTransactionAsync();
@@ -78,21 +79,18 @@ public sealed class ConcorrenciaTestHelpersTests
         await using AsyncServiceScope scopeDecoyBlocked = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext dbDecoyBlocked = scopeDecoyBlocked.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         await using IDbContextTransaction txDecoyBlocked = await dbDecoyBlocked.Database.BeginTransactionAsync();
-
-        // PID capturado ANTES de disparar o comando que vai bloquear — depois
-        // disso a conexão fica ocupada e não aceitaria mais nenhum comando
-        // concorrente (nem SELECT pg_backend_pid()).
-        int pidDecoyBlocked = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbDecoyBlocked);
         Task decoyBlockedTask = dbDecoyBlocked.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idDecoy}");
 
+        // Prova de que o decoy está genuinamente bloqueado — pelo holder DELE,
+        // não pelo que a corrida real vai usar.
         await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
             api, decoyBlockedTask, [pidDecoyHolder], TimeSpan.FromSeconds(5));
 
-        // --- Fase 1: com o decoy já bloqueado (e ainda não excluído da
-        // checagem), a corrida real (busA) nem começou — nada de genuinamente
-        // novo está bloqueado. Se a identificação ainda fosse por texto, o
-        // decoy sozinho já teria satisfeito a espera; com PID, só timeout.
+        // --- Fase 1: com o decoy já bloqueado, a corrida real (busA) nem
+        // começou. Pedir a espera correlacionada ao holder de A (que só vai
+        // existir de verdade na Fase 2) não deve ser satisfeita pelo decoy —
+        // ele está bloqueado por pidDecoyHolder, não por pidAlvoHolder.
         await using AsyncServiceScope scopeAlvoHolder = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext dbAlvoHolder = scopeAlvoHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         await using IDbContextTransaction txAlvoHolder = await dbAlvoHolder.Database.BeginTransactionAsync();
@@ -100,23 +98,22 @@ public sealed class ConcorrenciaTestHelpersTests
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idAlvo}");
         int pidAlvoHolder = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbAlvoHolder);
 
-        int[] pidsConhecidos = [pidDecoyHolder, pidDecoyBlocked, pidAlvoHolder];
         Task tarefaQueNuncaBloqueiaDeVerdade = Task.Delay(TimeSpan.FromMinutes(1));
         Func<Task> aguardarSemBusA = () => ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
-            api, tarefaQueNuncaBloqueiaDeVerdade, pidsConhecidos, TimeSpan.FromMilliseconds(300));
+            api, tarefaQueNuncaBloqueiaDeVerdade, [pidAlvoHolder], TimeSpan.FromMilliseconds(300));
 
         await aguardarSemBusA.Should().ThrowAsync<FailException>(
-            "o decoy e o holder são conhecidos e excluídos — nenhum backend genuinamente novo está bloqueado ainda");
+            "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com pidAlvoHolder");
 
         // --- Fase 2: agora a corrida real (busA) começa e disputa a MESMA
-        // linha que dbAlvoHolder está segurando — seu PID não está na lista de
-        // conhecidos, então é o único capaz de satisfazer a espera.
+        // linha que dbAlvoHolder está segurando — pg_blocking_pids vai
+        // confirmar que o bloqueador de busA é especificamente pidAlvoHolder.
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(idAlvo));
 
         await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
-            api, taskA, pidsConhecidos, TimeSpan.FromSeconds(5));
+            api, taskA, [pidAlvoHolder], TimeSpan.FromSeconds(5));
 
         await txAlvoHolder.CommitAsync();
         await txDecoyHolder.CommitAsync();
