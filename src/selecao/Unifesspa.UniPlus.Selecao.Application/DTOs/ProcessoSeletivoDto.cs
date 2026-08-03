@@ -17,6 +17,7 @@ public sealed record ProcessoSeletivoDto(
     OfertaAtendimentoEspecializadoDto? OfertaAtendimento,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
     ConfiguracaoBonusRegionalDto? BonusRegional,
+    ConfiguracaoCascataRemanejamentoDto? Cascata,
     IReadOnlyList<CriterioDesempateDto> CriteriosDesempate,
     ConfiguracaoClassificacaoDto? Classificacao,
     IReadOnlyList<FaseCronogramaDto> CronogramaFases,

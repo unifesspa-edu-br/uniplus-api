@@ -50,6 +50,14 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<CriterioDesempate> CriteriosDesempate => Set<CriterioDesempate>();
 
     /// <summary>
+    /// Cascata de remanejamento das cotas federais (Story #575, RN-CASCATA-1..5)
+    /// — a sequência que a flag <c>SegueCascata</c> de <see cref="ModalidadeSelecionada"/>
+    /// invoca.
+    /// </summary>
+    public DbSet<ConfiguracaoCascataRemanejamento> ConfiguracoesCascataRemanejamento => Set<ConfiguracaoCascataRemanejamento>();
+    public DbSet<DestinoRemanejamento> DestinosRemanejamento => Set<DestinoRemanejamento>();
+
+    /// <summary>
     /// Classificação (15º bloco canônico, Story #775, modelagem P-B §2.1) —
     /// compõe por referência a fórmula, precisão, eliminação e ordem de
     /// alocação.

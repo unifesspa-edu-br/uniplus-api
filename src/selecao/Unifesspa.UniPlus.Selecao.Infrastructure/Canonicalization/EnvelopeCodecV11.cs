@@ -826,6 +826,80 @@ internal static class EnvelopeCodecV11
         return bonus.IsFailure ? leitor.Propagar<ConfiguracaoBonusRegional>(bonus.Error!) : bonus.Value;
     }
 
+    /// <summary>
+    /// A cascata de remanejamento (Story #575) tem <b>duas formas fechadas</b> — mesmo
+    /// raciocínio de <see cref="LerBonusRegional"/>: <c>{"presente": false}</c> e a completa.
+    /// A forma (RN-CASCATA-4) é reconferida pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
+    /// ao reconstruir — o decoder não a duplica, só extrai os valores tipados.
+    /// </summary>
+    internal static ConfiguracaoCascataRemanejamento? LerCascataRemanejamento(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "cascataRemanejamento", "$");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        bool presente = leitor.Booleano(bloco, "presente", "cascataRemanejamento");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        if (!presente)
+        {
+            leitor.ExigirChaves(bloco, "cascataRemanejamento", "presente");
+            return null;
+        }
+
+        leitor.ExigirChaves(bloco, "cascataRemanejamento", "presente", "regra", "fallbackCodigo", "ordens");
+
+        ReferenciaRegra regra = leitor.Regra(bloco, "regra", "cascataRemanejamento", RegraRemanejamentoCodigo.Cascata);
+        string fallbackCodigo = leitor.Texto(bloco, "fallbackCodigo", "cascataRemanejamento", LimitesDoEnvelope.ModalidadeCodigo);
+        JsonArray ordens = leitor.Array(bloco, "ordens", "cascataRemanejamento");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        List<DestinoRemanejamento> destinos = [];
+        for (int i = 0; i < ordens.Count; i++)
+        {
+            string pathOrigem = $"cascataRemanejamento.ordens[{i}]";
+            JsonObject itemOrigem = leitor.ItemObjeto(ordens, i, "cascataRemanejamento.ordens");
+            leitor.ExigirChaves(itemOrigem, pathOrigem, "origem", "destinos");
+
+            string origem = leitor.Texto(itemOrigem, "origem", pathOrigem, LimitesDoEnvelope.ModalidadeCodigo);
+            // Comprimento do código de destino é responsabilidade da factory de
+            // DestinoRemanejamento (defesa em profundidade, mesmo raciocínio do decoder
+            // ser tão estrito quanto o schema) — Textos() não valida maxLength por si.
+            IReadOnlyList<string> destinosDaOrigem = leitor.Textos(itemOrigem, "destinos", pathOrigem);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            for (int j = 0; j < destinosDaOrigem.Count; j++)
+            {
+                Result<DestinoRemanejamento> destino = DestinoRemanejamento.Criar(origem, j + 1, destinosDaOrigem[j]);
+                if (destino.IsFailure)
+                {
+                    return leitor.Propagar<ConfiguracaoCascataRemanejamento>(destino.Error!);
+                }
+
+                destinos.Add(destino.Value!);
+            }
+        }
+
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        Result<ConfiguracaoCascataRemanejamento> cascata = ConfiguracaoCascataRemanejamento.Criar(regra, fallbackCodigo, destinos);
+        return cascata.IsFailure ? leitor.Propagar<ConfiguracaoCascataRemanejamento>(cascata.Error!) : cascata.Value;
+    }
+
     internal static IReadOnlyList<CriterioDesempate> LerCriteriosDesempate(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonArray array = leitor.Array(payload, "criteriosDesempate", "$");

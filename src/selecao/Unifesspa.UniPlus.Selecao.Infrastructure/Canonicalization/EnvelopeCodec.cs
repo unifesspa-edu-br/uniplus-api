@@ -12,8 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O codec do envelope de congelamento — <b>um só</b>. Enquanto não há produção nem certame
-/// congelado, o sistema emite e lê uma forma canônica corrente (<c>0.0.1</c>) e a evolui
-/// livremente: mudar a forma reescreve a fixture, não gera um encoder congelado ao lado. O
+/// congelado, o sistema emite e lê uma forma canônica corrente (ver <see cref="SchemaVersion"/>)
+/// e a evolui livremente: mudar a forma reescreve a fixture, não gera um encoder congelado ao
+/// lado. O
 /// versionamento forense — um codec por <c>schema_version</c>, encoders aposentados só quando
 /// deixam de ser correntes — volta a valer quando a primeira release de produção fixar a
 /// versão <c>1.0.0</c>.
@@ -30,7 +31,6 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     private static readonly string[] Stubs =
     [
         "formulario",
-        "cascataRemanejamento",
         "divulgacao",
         "identidadesUnidade",
     ];
@@ -44,6 +44,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "ofertas",
         "atendimento",
         "bonusRegional",
+        "cascataRemanejamento",
         "criteriosDesempate",
         "classificacao",
         "hashesEdital",
@@ -121,6 +122,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao = EnvelopeCodecV11.LerDistribuicao(leitor, payload);
         OfertaAtendimentoEspecializado? atendimento = EnvelopeCodecV11.LerAtendimento(leitor, payload);
         ConfiguracaoBonusRegional? bonus = EnvelopeCodecV11.LerBonusRegional(leitor, payload);
+        ConfiguracaoCascataRemanejamento? cascata = EnvelopeCodecV11.LerCascataRemanejamento(leitor, payload);
         IReadOnlyList<CriterioDesempate> desempate = EnvelopeCodecV11.LerCriteriosDesempate(leitor, payload);
         ConfiguracaoClassificacao? classificacao = EnvelopeCodecV11.LerClassificacao(leitor, payload);
         IReadOnlyList<FaseCronograma> cronogramaFases = EnvelopeCodecV11.LerCronogramaFases(leitor, payload, comId: true);
@@ -174,7 +176,8 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 
         GrafoConfiguracao grafo = new(
             etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases,
-            documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao);
+            documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao,
+            cascataRemanejamento: cascata);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao, conformidade, metadadosFatosCongelados));
     }
