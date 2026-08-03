@@ -29,7 +29,6 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     private const int NomeMaxLength = 200;
     private const int TextoMaxLength = 20_000;
     private const int BaseLegalMaxLength = 500;
-    private const char DelimitadorHash = (char)0x1F;
 
     private readonly List<TermoConsentimentoVersao> _versoes = [];
 
@@ -187,17 +186,29 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
 
     /// <summary>
     /// SHA-256 hex do conteúdo semântico da versão (texto + base legal + forma de
-    /// aceite), separado por um caractere de controle (Unit Separator, 0x1F) que
-    /// não aparece em texto digitado — evita colisão de concatenação ambígua
-    /// (ex.: "AB"+"C" vs "A"+"BC") mesmo que um campo contenha espaço ou vírgula.
+    /// aceite). Cada campo entra prefixado pelo próprio tamanho em bytes UTF-8 —
+    /// codificação sem delimitador reservado, então nenhum valor de entrada (por
+    /// mais exótico que seja o conteúdo digitado ou colado pelo usuário) consegue
+    /// produzir uma colisão de concatenação ambígua (ex.: "AB"+"C" vs "A"+"BC") —
+    /// o tamanho gravado antes do conteúdo distingue os dois casos por construção.
     /// Determinístico: o mesmo conteúdo produz o mesmo hash em qualquer runtime.
     /// </summary>
     private static string CalcularHash(string texto, string baseLegal, string formaAceiteToken)
     {
-        string payload = string.Join(DelimitadorHash, texto, baseLegal, formaAceiteToken);
-        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(payload);
-        byte[] hash = System.Security.Cryptography.SHA256.HashData(bytes);
+        using MemoryStream buffer = new();
+        EscreverComPrefixoDeTamanho(buffer, texto);
+        EscreverComPrefixoDeTamanho(buffer, baseLegal);
+        EscreverComPrefixoDeTamanho(buffer, formaAceiteToken);
+
+        byte[] hash = System.Security.Cryptography.SHA256.HashData(buffer.ToArray());
         return Convert.ToHexStringLower(hash);
+    }
+
+    private static void EscreverComPrefixoDeTamanho(MemoryStream buffer, string valor)
+    {
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(valor);
+        buffer.Write(BitConverter.GetBytes(bytes.Length));
+        buffer.Write(bytes);
     }
 
     private static Result<FormaAceite> ValidarCampos(

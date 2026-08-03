@@ -222,6 +222,23 @@ public sealed class TermoConsentimentoTests
         termoA.Versoes[0].Hash.Should().Be(termoB.Versoes[0].Hash);
     }
 
+    [Fact(DisplayName = "Hash distingue splits diferentes que concatenariam para o mesmo texto")]
+    public void Promover_SplitDiferenteMesmaConcatenacao_HashDiferente()
+    {
+        // Codex #1019 P2: sem prefixo de tamanho, ("AB","C") e ("A","BC") produziriam
+        // o mesmo payload concatenado — e por isso o mesmo hash — mesmo sendo
+        // conteúdos legalmente distintos.
+        TermoConsentimento termoA = CriarRevisavel(texto: "AB", baseLegal: "C");
+        termoA.MarcarRevisado("usuario.revisor", Agora);
+        termoA.Promover("usuario.revisor", Agora);
+
+        TermoConsentimento termoB = CriarRevisavel(texto: "A", baseLegal: "BC");
+        termoB.MarcarRevisado("usuario.revisor", Agora);
+        termoB.Promover("usuario.revisor", Agora);
+
+        termoA.Versoes[0].Hash.Should().NotBe(termoB.Versoes[0].Hash);
+    }
+
     [Fact(DisplayName = "Promoção recusa rascunho não revisado")]
     public void Promover_NaoRevisado_Falha()
     {

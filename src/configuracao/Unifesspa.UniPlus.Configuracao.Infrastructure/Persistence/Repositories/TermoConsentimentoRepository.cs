@@ -57,9 +57,18 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
         await _dbContext.TermosConsentimento.AddAsync(termo, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task AdicionarVersaoAsync(TermoConsentimentoVersao versao, CancellationToken cancellationToken)
+    public async Task AdicionarVersaoAsync(TermoConsentimento termo, TermoConsentimentoVersao versao, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(termo);
         ArgumentNullException.ThrowIfNull(versao);
+
+        // Nenhum campo do próprio TermoConsentimento muda ao promover — sem marcar
+        // uma propriedade real como modificada, o EF Core não emite UPDATE nenhum
+        // para essa linha, e o token de concorrência otimista (xmin) nunca é
+        // conferido. RevisadoEm é reescrito com o MESMO valor só para forçar o
+        // UPDATE amarrado ao xmin lido na consulta.
+        _dbContext.Entry(termo).Property(nameof(TermoConsentimento.RevisadoEm)).IsModified = true;
+
         await _dbContext.VersoesTermoConsentimento.AddAsync(versao, cancellationToken).ConfigureAwait(false);
     }
 

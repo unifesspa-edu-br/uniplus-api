@@ -39,6 +39,16 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
         builder.Property(t => t.RevisadoPor).HasMaxLength(RevisadoPorMaxLength);
         builder.Property(t => t.RevisadoEm);
 
+        // Token de concorrência otimista mapeado para a coluna de sistema `xmin` do
+        // Postgres (shadow property `uint` + IsRowVersion — convenção do provider
+        // Npgsql, sem coluna/migration própria, mesmo padrão de
+        // CalendarioDiasUteisConfiguration): promover uma versão não escreve nenhum
+        // campo do próprio rascunho, então sem um write explícito amarrado ao xmin
+        // (ver PromoverVersaoTermoConsentimentoCommandHandler) uma promoção concorrente
+        // com uma edição de rascunho que reverte a revisão não colidiria — a versão
+        // imutável sairia gravada a partir de um rascunho já invalidado.
+        builder.Property<uint>("Version").IsRowVersion();
+
         // Auditoria (IAuditableEntity)
         builder.Property(t => t.CreatedBy).HasMaxLength(255);
         builder.Property(t => t.UpdatedBy).HasMaxLength(255);

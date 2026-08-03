@@ -1384,5 +1384,11 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status404NotFound,
                 "uniplus.configuracao.termo_consentimento.nao_encontrado",
                 "Termo de consentimento não encontrado")),
+
+        new(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
+                "O rascunho foi modificado concorrentemente")),
     ];
 }
