@@ -129,6 +129,15 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
+        // Cascata de remanejamento (RN-CASCATA-1/2/2b/3, Story #575) — cross-dimensão,
+        // fora do agregador genérico acima (o item "Cascata de remanejamento" nunca
+        // entra em PendenciaDeConformidade, só em PendenciaDaCascata). Mesma antecipação
+        // e mesmo motivo das demais (ADR-0109 D5).
+        if (processo.PendenciaDaCascata() is { } pendenciaCascata)
+        {
+            return (Result.Failure(pendenciaCascata), []);
+        }
+
         // Segunda dimensão de conformidade, ao lado da estrutural — mesma antecipação,
         // mesmo motivo (ADR-0109 D5): um processo não conforme não chega a ser projetado.
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal

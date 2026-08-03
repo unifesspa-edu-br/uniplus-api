@@ -148,8 +148,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0117](0117-politica-de-analise-estatica-e-supressao.md) | Política de análise estática e supressão de diagnósticos: `AnalysisLevel=latest-recommended` com opt-in/opt-out nomeado no `.editorconfig` e critério de supressão por alcance | proposed | 2026-07-22 |
 | [0118](0118-identidade-publica-modulos-api-metadado-assembly.md) | Identidade pública de módulos de API via metadado de assembly | proposed | 2026-07-29 |
 | [0119](0119-padrao-concorrencia-otimista-handlers-wolverine.md) | Padrão de conflito de concorrência otimista em handlers Wolverine — propagar sem catch quando o endpoint não é idempotency-protected; mapeamento centralizado no GlobalExceptionMiddleware | accepted | 2026-08-03 |
+| [0120](0120-fonte-normativa-matriz-cascata-remanejamento.md) | Fonte normativa da matriz de remanejamento de cotas (Portaria MEC 704/2025, Anexo — art. 20-A da Portaria Normativa MEC 18/2012) e decisão de alcance institucional além do Sisu | accepted | 2026-08-03 |
 
-> **Nota de numeração:** a sequência de `0001` a `0119` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0120+`.
+> **Nota de numeração:** a sequência de `0001` a `0120` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0121+`.
 
 ## Como adicionar um novo ADR
 

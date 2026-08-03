@@ -167,6 +167,13 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
+        // Cascata de remanejamento (RN-CASCATA-1/2/2b/3, Story #575) — cross-dimensão,
+        // fora do agregador genérico acima. Mesma antecipação da publicação (ADR-0109 D5).
+        if (processo.PendenciaDaCascata() is { } pendenciaCascata)
+        {
+            return (Result.Failure(pendenciaCascata), []);
+        }
+
         Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
             .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.PeriodoInscricaoInicio, cancellationToken)
             .ConfigureAwait(false);

@@ -136,6 +136,10 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // regra), e a substituição por inteiro faria Clear() num backing list vazio, deixando as
             // linhas antigas no banco. O motor produziria conjunto errado ou indeterminado.
             .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes)
+            // Cascata de remanejamento (Story #575) — MESMO raciocínio: sem o Include, a
+            // navegação 0..1 nasce null em todo carregamento novo do agregado, e o canonicalizer
+            // congelaria uma cascata vazia sem nenhum erro (o defeito que esta story fecha).
+            .Include(p => p.Cascata!).ThenInclude(c => c.Destinos)
             // AsSplitQuery obrigatório a partir desta entrega: o produto cartesiano de
             // TODAS as coleções (etapas × condições × recursos × tipos × vagas ×
             // modalidades × desempate × eliminação × fases × bancas) num único JOIN

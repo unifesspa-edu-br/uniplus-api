@@ -38,6 +38,7 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectOfertaAtendimento(processo.OfertaAtendimento),
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],
         ProjectBonusRegional(processo.BonusRegional),
+        ProjectCascata(processo.Cascata),
         [.. processo.CriteriosDesempate.OrderBy(c => c.Ordem).Select(ProjectCriterioDesempate)],
         ProjectClassificacao(processo),
         [.. processo.CronogramaFases.OrderBy(f => f.Ordem).ThenBy(f => f.Id).Select(ProjectFaseCronograma)],
@@ -149,6 +150,23 @@ public static class ObterProcessoSeletivoQueryHandler
             bonus.Teto,
             bonus.MunicipioConvenio,
             bonus.BaseLegal);
+    }
+
+    private static ConfiguracaoCascataRemanejamentoDto? ProjectCascata(ConfiguracaoCascataRemanejamento? cascata)
+    {
+        if (cascata is null)
+        {
+            return null;
+        }
+
+        return new ConfiguracaoCascataRemanejamentoDto(
+            cascata.Id,
+            new ReferenciaRegraDto(cascata.Regra.Codigo, cascata.Regra.Versao, cascata.Regra.Hash),
+            cascata.FallbackCodigo,
+            [.. cascata.Destinos
+                .OrderBy(d => d.ModalidadeOrigemCodigo, StringComparer.Ordinal)
+                .ThenBy(d => d.Ordem)
+                .Select(d => new DestinoRemanejamentoDto(d.Id, d.ModalidadeOrigemCodigo, d.Ordem, d.ModalidadeDestinoCodigo))]);
     }
 
     private static CriterioDesempateDto ProjectCriterioDesempate(CriterioDesempate criterio)

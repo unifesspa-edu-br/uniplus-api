@@ -44,7 +44,7 @@ public static class RegraCatalogoSeed
     private static Guid SeedId(int n) =>
         Guid.Parse($"d0a00000-0000-7000-8000-{n:D12}");
 
-    /// <summary>As 18 regras <c>v1</c> do catálogo, na ordem canônica.</summary>
+    /// <summary>As 19 regras <c>v1</c> do catálogo, na ordem canônica.</summary>
     public static IReadOnlyList<RegraCatalogoSeedItem> Itens { get; } =
     [
         // regra_calculo — fórmula da nota final
@@ -164,6 +164,23 @@ public static class RegraCatalogoSeed
             ["o Uni+ gere apenas a 1ª instância — o julgamento em instância superior (administrativa ou judicial) corre FORA do sistema; a sua existência e o seu desfecho são REGISTRADOS como ato publicado","a suspensividade é configurável por fase e por grau: null = a pendência não bloqueia atos irreversíveis","a janela de suspensividade fecha no julgamento OU no fim do prazo, o que vier primeiro — recurso nunca julgado não trava o certame para sempre","interposição só é aceita com a janela da fase de recurso aberta","não cabe recurso contra resultado definitivo","prazo ancorado no instante de publicação do ato âncora: se o ato atrasa, o prazo desliza junto, sem retificação","a âncora nunca é um tipo de ato que congela configuração","DIAS_UTEIS é recusado na INTERPOSIÇÃO enquanto não houver calendário — nunca aproximado em silêncio","append-only: julgamento e retificação são NOVO fato, não sobrescrevem o passado"]
             """,
             "Lei 9.784/1999 art. 56 (cabimento do recurso administrativo) e art. 61 (efeito suspensivo por decisão fundamentada); prazo configurável por edital"),
+
+        // criterio_remanejamento — sequência legal de redirecionamento das cotas federais
+        new(SeedId(19), "REMANEJ-CASCATA-LEI-12711", VersaoV1, TipoRegra.CriterioRemanejamento,
+            """
+            {"fallbackCodigo":"AC","ordens":[
+              {"origem":"LB_PPI","destinos":["LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP"]},
+              {"origem":"LB_Q","destinos":["LB_PPI","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP"]},
+              {"origem":"LB_PCD","destinos":["LB_PPI","LB_Q","LB_EP","LI_PPI","LI_Q","LI_PCD","LI_EP"]},
+              {"origem":"LB_EP","destinos":["LB_PPI","LB_Q","LB_PCD","LI_PPI","LI_Q","LI_PCD","LI_EP"]},
+              {"origem":"LI_PPI","destinos":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_Q","LI_PCD","LI_EP"]},
+              {"origem":"LI_Q","destinos":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_PCD","LI_EP"]},
+              {"origem":"LI_PCD","destinos":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_EP"]},
+              {"origem":"LI_EP","destinos":["LB_PPI","LB_Q","LB_PCD","LB_EP","LI_PPI","LI_Q","LI_PCD"]}
+            ]}
+            """,
+            """["oito origens federais, ordem fixa por origem, terminal sempre AC — matriz não recalculada, só aplicada"]""",
+            "ADR-0120; Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 20-A e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 18/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)"),
     ];
 }
 

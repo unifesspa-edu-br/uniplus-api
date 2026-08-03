@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
 /// ADR-0109). Projeta a configuração viva do agregado num payload de 23 chaves
-/// — <b>19 blocos reais + 4 stubs</b> <c>{"status":"nao_construido"}</c> para as
+/// — <b>20 blocos reais + 3 stubs</b> <c>{"status":"nao_construido"}</c> para as
 /// dimensões que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
 /// devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) é um dos 14: já carrega
@@ -69,13 +69,21 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonicalizer
 {
     /// <summary>
-    /// Versão da <b>forma</b> do envelope (ADR-0109 D1). Sobe a cada mudança de
-    /// forma — chave nova, ou um stub virando conteúdo real. Não há CHECK de
-    /// <c>schema_version</c> no banco: o bump é livre e não pede migration. Toda
-    /// versão aqui declarada tem de ter a sua golden fixture correspondente —
-    /// um teste de política falha o build se não tiver.
+    /// Versão da <b>forma</b> do envelope (ADR-0109 D1). Não há CHECK de
+    /// <c>schema_version</c> no banco, nem produção nem certame congelado ainda:
+    /// o codec pré-produção é <b>um só</b> (não um por versão), reescrito no
+    /// lugar sob a mesma versão corrente quando a forma muda — bump livre,
+    /// sem migration, mas também sem obrigação de bump a cada mudança. O
+    /// versionamento forense (um bump por chave nova ou por stub virando
+    /// conteúdo real, com encoder anterior aposentado) começa a valer só a
+    /// partir da primeira release de produção. Toda versão aqui declarada tem
+    /// de ter a sua golden fixture correspondente — um teste de política falha
+    /// o build se não tiver.
     /// </summary>
     /// <remarks>
+    /// Story #575: <c>cascataRemanejamento</c> sai de stub para bloco real
+    /// (RN-CASCATA-1..5) sob a MESMA <c>0.0.2</c> — reescrita no lugar, sem
+    /// bump, pelo regime pré-produção descrito acima.
     /// Story #919 (RN08): <c>documentosExigidos</c> ganha a sub-chave
     /// <c>metadadosFatos</c> (<see cref="SerializarMetadadosFatos"/>). O bump para
     /// <c>1.3</c> também é o primeiro <c>schema_version</c> a refletir corretamente
@@ -145,7 +153,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.MetadadosFatosCongelados),
             ["arvoreSatisfacao"] = SerializarArvoreSatisfacao(processo),
             ["formulario"] = NaoConstruido.DeepClone(),
-            ["cascataRemanejamento"] = NaoConstruido.DeepClone(),
+            ["cascataRemanejamento"] = SerializarCascataRemanejamento(processo),
             ["divulgacao"] = NaoConstruido.DeepClone(),
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
             ["identidadesUnidade"] = NaoConstruido.DeepClone(),
@@ -382,6 +390,46 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["teto"] = bonus.Teto is { } teto ? HashCanonicalComputer.SerializeDecimalCanonical(teto, EscalaPadrao) : null,
             ["municipioConvenio"] = bonus.MunicipioConvenio is { } municipio ? HashCanonicalComputer.NormalizeNfc(municipio) : null,
             ["baseLegal"] = bonus.BaseLegal is { } baseLegal ? HashCanonicalComputer.NormalizeNfc(baseLegal) : null,
+        };
+    }
+
+    /// <summary>
+    /// Serializa a cascata de remanejamento (Story #575) — mesma semântica de
+    /// <see cref="SerializarBonusRegional"/>: ausência congela <c>{"presente": false}</c>, nunca
+    /// o stub <c>nao_construido</c>. Ordenação determinística (ADR-0100): origens por
+    /// <see cref="StringComparer.Ordinal"/>, destinos por <c>Ordem</c> dentro de cada origem.
+    /// </summary>
+    private static JsonObject SerializarCascataRemanejamento(ProcessoSeletivo processo)
+    {
+        if (processo.Cascata is not { } cascata)
+        {
+            return new JsonObject { ["presente"] = false };
+        }
+
+        JsonArray ordens = [];
+        foreach (string origem in cascata.Destinos.Select(static d => d.ModalidadeOrigemCodigo).Distinct(StringComparer.Ordinal).OrderBy(static o => o, StringComparer.Ordinal))
+        {
+            JsonArray destinos = [];
+            foreach (DestinoRemanejamento destino in cascata.Destinos
+                .Where(d => string.Equals(d.ModalidadeOrigemCodigo, origem, StringComparison.Ordinal))
+                .OrderBy(static d => d.Ordem))
+            {
+                destinos.Add(HashCanonicalComputer.NormalizeNfc(destino.ModalidadeDestinoCodigo));
+            }
+
+            ordens.Add(new JsonObject
+            {
+                ["origem"] = HashCanonicalComputer.NormalizeNfc(origem),
+                ["destinos"] = destinos,
+            });
+        }
+
+        return new JsonObject
+        {
+            ["presente"] = true,
+            ["regra"] = SerializarReferenciaRegra(cascata.Regra),
+            ["fallbackCodigo"] = HashCanonicalComputer.NormalizeNfc(cascata.FallbackCodigo),
+            ["ordens"] = ordens,
         };
     }
 
