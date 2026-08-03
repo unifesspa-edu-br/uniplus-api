@@ -67,6 +67,40 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
         segunda.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.VigenciaSobreposta);
     }
 
+    [Fact(DisplayName =
+        "Após o conflito capturado, descartar o rastreamento evita a segunda exceção do SaveChanges do outbox")]
+    public async Task Handle_AposConflito_DescartarRastreamentoEvitaSegundaExcecao()
+    {
+        // Reproduz o mesmo achado da ADR-0119 (issue #1027/PR #1019), agora para a
+        // exclusion constraint de vigência de Publicações: o outbox do Wolverine
+        // (AutoApplyTransactions, ADR-0004) chama SaveChangesAsync no MESMO
+        // DbContext DEPOIS que o handler retorna. Se o handler capturar a
+        // violação e devolver a falha sem descartar o rastreamento da entidade
+        // Added da tentativa fracassada, essa segunda chamada tenta gravar a
+        // MESMA entidade de novo e a mesma exceção estoura fora do catch do
+        // handler — 500 em vez do DomainError já traduzido.
+        string codigo = CodigoUnico();
+
+        await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin");
+        var real = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
+        (await CriarTipoAtoPublicadoCommandHandler.Handle(Comando(codigo), real, ctx, CancellationToken.None))
+            .IsSuccess.Should().BeTrue();
+
+        await using PublicacoesDbContext ctx2 = _fixture.CreateDbContext("admin");
+        var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(ctx2, TimeProvider.System));
+
+        Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
+            Comando(codigo), cego, ctx2, CancellationToken.None);
+        segunda.IsFailure.Should().BeTrue();
+
+        // O handler (via unitOfWork.DescartarAlteracoesNaoSalvas() no catch) já
+        // limpou o rastreamento de ctx2 — o SaveChangesAsync automático do
+        // outbox, chamado DEPOIS que o handler já retornou a falha, é um no-op
+        // e não relança a exceção.
+        Func<Task> segundoSave = async () => await ctx2.SaveChangesAsync();
+        await segundoSave.Should().NotThrowAsync();
+    }
+
     [Fact(DisplayName = "Sem corrida, a consulta prévia recusa antes de tocar o banco")]
     public async Task Handle_ComSobreposicaoConhecida_RecusaPelaConsultaPrevia()
     {

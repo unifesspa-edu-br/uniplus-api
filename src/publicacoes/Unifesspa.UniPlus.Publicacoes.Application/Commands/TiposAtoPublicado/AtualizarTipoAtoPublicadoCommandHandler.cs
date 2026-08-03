@@ -64,6 +64,15 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
         catch (Exception ex) when (ExclusionConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && ExclusionConstraintViolation.IsVigenciaConflict(constraint))
         {
+            // A exclusion constraint é DEFERRABLE INITIALLY IMMEDIATE — checada
+            // dentro do próprio SalvarAlteracoesAsync acima, não num commit
+            // externo (diferente de constraints INITIALLY DEFERRED). Descarta o
+            // rastreamento do agregado Modified ANTES de devolver a falha: o
+            // SaveChangesAsync automático do outbox do Wolverine
+            // (AutoApplyTransactions, ADR-0004) roda de novo depois que este
+            // handler retorna, e sem isso a mesma exceção estouraria de novo
+            // fora deste catch, virando 500 em vez do DomainError já traduzido.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(CriarTipoAtoPublicadoCommandHandler.VigenciaSobrepostaErro(command.Codigo));
         }
 

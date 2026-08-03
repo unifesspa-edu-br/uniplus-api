@@ -73,4 +73,9 @@ public sealed class PublicacoesDbContext : DbContext, IPublicacoesUnitOfWork
     {
         return await SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public void DescartarAlteracoesNaoSalvas()
+    {
+        ChangeTracker.Clear();
+    }
 }

@@ -4,11 +4,15 @@ using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
+using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -86,6 +90,25 @@ public sealed class CriarTipoAtoPublicadoCommandHandlerTests
 
         await _repository.Received(1).ExisteSobreposicaoDeVigenciaAsync(
             "EDITAL_ABERTURA", Inicio, fim, null, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Violação da exclusion constraint de vigência descarta o rastreamento antes de devolver o conflito")]
+    public async Task Handle_ColisaoNaExclusionConstraint_DescartaRastreamentoERetornaConflito()
+    {
+        _repository.ExisteSobreposicaoDeVigenciaAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "conflito sintético de teste",
+                PostgresExceptionFactory.Create("23P01", "ex_tipo_ato_publicado_codigo_vigencia")));
+
+        Result<Guid> resultado = await CriarTipoAtoPublicadoCommandHandler.Handle(
+            Comando(), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.VigenciaSobreposta);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     private static CriarTipoAtoPublicadoCommand Comando() =>

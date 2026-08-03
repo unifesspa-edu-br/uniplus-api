@@ -11,4 +11,16 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </summary>
 public interface IPublicacoesUnitOfWork : IUnitOfWork
 {
+    /// <summary>
+    /// Descarta o rastreamento de entidades Added/Modified de uma tentativa de
+    /// <see cref="IUnitOfWork.SalvarAlteracoesAsync"/> que falhou. Necessário
+    /// no catch de handlers que traduzem exceção de conflito (exclusion
+    /// constraint, concorrência otimista) em <c>DomainError</c>: sem isso, o
+    /// <c>SaveChangesAsync</c> automático do outbox do Wolverine
+    /// (<c>AutoApplyTransactions</c>, ADR-0004) tenta gravar as mesmas
+    /// entidades de novo depois que o handler retorna, e a mesma exceção
+    /// estoura fora de qualquer catch — 500 em vez do <c>DomainError</c> já
+    /// traduzido.
+    /// </summary>
+    void DescartarAlteracoesNaoSalvas();
 }
