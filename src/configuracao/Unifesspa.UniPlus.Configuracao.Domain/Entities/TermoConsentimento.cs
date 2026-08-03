@@ -207,7 +207,14 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     private static void EscreverComPrefixoDeTamanho(MemoryStream buffer, string valor)
     {
         byte[] bytes = System.Text.Encoding.UTF8.GetBytes(valor);
-        buffer.Write(BitConverter.GetBytes(bytes.Length));
+
+        // Big-endian explícito (não BitConverter.GetBytes, cuja ordem de bytes
+        // segue a endianness do host): o hash precisa ser reproduzível por
+        // qualquer runtime/arquitetura que verifique o conteúdo depois, não só
+        // pelo processo que promoveu a versão.
+        Span<byte> tamanho = stackalloc byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(tamanho, bytes.Length);
+        buffer.Write(tamanho);
         buffer.Write(bytes);
     }
 

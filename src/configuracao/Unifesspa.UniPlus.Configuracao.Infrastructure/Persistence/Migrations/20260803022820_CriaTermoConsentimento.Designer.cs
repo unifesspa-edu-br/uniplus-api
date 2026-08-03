@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    [Migration("20260803020229_CriaTermoConsentimento")]
+    [Migration("20260803022820_CriaTermoConsentimento")]
     partial class CriaTermoConsentimento
     {
         /// <inheritdoc />
@@ -1922,7 +1922,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_termo_consentimento_nome")
                         .HasFilter("is_deleted = false");
 
-                    b.ToTable("termo_consentimento", "configuracao");
+                    b.ToTable("termo_consentimento", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_termo_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TermoConsentimentoVersao", b =>
@@ -1975,7 +1978,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.HasIndex("TermoConsentimentoId", "PromovidaEm")
                         .HasDatabaseName("ix_termo_consentimento_versao_termo_promovida_em");
 
-                    b.ToTable("termo_consentimento_versao", "configuracao");
+                    b.ToTable("termo_consentimento_versao", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_termo_consentimento_versao_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoBanca", b =>

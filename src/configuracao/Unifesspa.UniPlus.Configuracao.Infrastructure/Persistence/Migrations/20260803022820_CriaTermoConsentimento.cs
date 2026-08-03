@@ -35,6 +35,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_termo_consentimento", x => x.id);
+                    table.CheckConstraint("ck_termo_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                 });
 
             migrationBuilder.CreateTable(
@@ -54,6 +55,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_termo_consentimento_versao", x => x.id);
+                    table.CheckConstraint("ck_termo_consentimento_versao_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                     table.ForeignKey(
                         name: "fk_termo_consentimento_versao_termo_consentimento_termo_consen",
                         column: x => x.termo_consentimento_id,
