@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
@@ -47,8 +50,24 @@ public sealed class PromoverVersaoTermoConsentimentoCommandHandlerTests
         termo.Versoes.Should().HaveCount(1);
         termo.Versoes[0].PromovidaPor.Should().Be("usuario.revisor");
         await _repository.Received(1).AdicionarVersaoAsync(
-            Arg.Is<TermoConsentimentoVersao>(v => v.PromovidaPor == "usuario.revisor"), Arg.Any<CancellationToken>());
+            termo, Arg.Is<TermoConsentimentoVersao>(v => v.PromovidaPor == "usuario.revisor"), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Conflito de concorrência (xmin) no commit vira ConflitoDeConcorrencia")]
+    public async Task Handle_ConcorrenciaOtimista_RetornaConflitoDeConcorrencia()
+    {
+        TermoConsentimento termo = TermoRevisado();
+        _repository.ObterPorIdAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await PromoverVersaoTermoConsentimentoCommandHandler.Handle(
+            new PromoverVersaoTermoConsentimentoCommand(termo.Id),
+            _repository, _unitOfWork, UsuarioAutenticado(), new RelogioFixo(Agora), CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia);
     }
 
     [Fact(DisplayName = "Termo inexistente falha sem persistir")]

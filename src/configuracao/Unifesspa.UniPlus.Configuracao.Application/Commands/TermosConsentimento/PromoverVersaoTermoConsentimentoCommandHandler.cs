@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentiment
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -42,9 +43,25 @@ public static class PromoverVersaoTermoConsentimentoCommandHandler
 
         // Adiciona explicitamente ao DbSet — o EF Core não detecta como Added uma
         // entidade só inserida na coleção em memória de um agregado já rastreado
-        // (recarregado do banco); ver TermoConsentimento.Promover.
-        await repository.AdicionarVersaoAsync(promoverResult.Value!, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        // (recarregado do banco); ver TermoConsentimento.Promover. Também força um
+        // UPDATE do termo amarrado ao xmin lido na consulta.
+        await repository.AdicionarVersaoAsync(termo, promoverResult.Value!, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // Corrida com uma edição concorrente do MESMO rascunho (ex.: outra
+            // requisição alterou texto/base legal entre a leitura e este commit,
+            // revertendo a revisão) — sem o xmin, a versão sairia gravada a partir
+            // de conteúdo já invalidado. O filtro do `when` garante que outras
+            // exceções propagam intactas.
+            return Result.Failure(new DomainError(
+                TermoConsentimentoErrorCodes.ConflitoDeConcorrencia,
+                "O rascunho foi modificado concorrentemente. Revise e promova novamente."));
+        }
 
         return Result.Success();
     }

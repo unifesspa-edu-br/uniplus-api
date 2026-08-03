@@ -33,9 +33,13 @@ public interface ITermoConsentimentoRepository
     /// Adiciona explicitamente a versão promovida ao <c>DbSet</c> — o EF Core não
     /// detecta como <c>Added</c> uma entidade só inserida na coleção em memória
     /// de um agregado já rastreado (recarregado do banco); ver
-    /// <see cref="TermoConsentimento.Promover"/>.
+    /// <see cref="TermoConsentimento.Promover"/>. Também força um <c>UPDATE</c> do
+    /// <paramref name="termo"/> amarrado ao token de concorrência otimista lido na
+    /// consulta — sem esse write explícito, uma promoção concorrente com uma
+    /// edição de rascunho que reverte a revisão não colidiria, e a versão imutável
+    /// sairia gravada a partir de um rascunho já invalidado.
     /// </summary>
-    Task AdicionarVersaoAsync(TermoConsentimentoVersao versao, CancellationToken cancellationToken);
+    Task AdicionarVersaoAsync(TermoConsentimento termo, TermoConsentimentoVersao versao, CancellationToken cancellationToken);
 
     /// <summary>
     /// Marca o termo para remoção; o <c>SoftDeleteInterceptor</c> converte em

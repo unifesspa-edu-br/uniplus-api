@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    [Migration("20260803014703_CriaTermoConsentimento")]
+    [Migration("20260803020229_CriaTermoConsentimento")]
     partial class CriaTermoConsentimento
     {
         /// <inheritdoc />
@@ -1908,6 +1908,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id")
                         .HasName("pk_termo_consentimento");

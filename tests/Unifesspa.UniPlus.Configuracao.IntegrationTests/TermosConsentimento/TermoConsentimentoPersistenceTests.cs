@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -82,12 +83,11 @@ public sealed class TermoConsentimentoPersistenceTests
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
-            TermoConsentimento reloaded = await ctx.TermosConsentimento
-                .Include(t => t.Versoes)
-                .SingleAsync(t => t.Id == termo.Id);
+            TermoConsentimentoRepository repository = new(ctx);
+            TermoConsentimento reloaded = (await repository.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
 
             TermoConsentimentoVersao versao = reloaded.Promover("usuario.revisor", Agora).Value!;
-            await ctx.VersoesTermoConsentimento.AddAsync(versao);
+            await repository.AdicionarVersaoAsync(reloaded, versao, CancellationToken.None);
             await ctx.SaveChangesAsync();
         }
 
@@ -107,6 +107,43 @@ public sealed class TermoConsentimentoPersistenceTests
         // O rascunho permanece intacto após a promoção.
         persistido.TextoRascunho.Should().Be("Texto do termo");
         persistido.Revisado.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Promover concorrente com edição que reverte a revisão falha por concorrência (xmin)")]
+    public async Task Promover_ConcorrenteComEdicaoQueReverteRevisao_FalhaPorConcorrencia()
+    {
+        // Reproduz o achado do Codex (PR #1019, P1): request A lê o termo revisado
+        // (fica com uma cópia rastreada nesse estado); antes de A promover, request B
+        // carrega o MESMO termo, edita o rascunho (o que reverte Revisado para false)
+        // e comita. Sem o xmin amarrado a um write real no commit de A, a promoção
+        // de A sairia gravada a partir de um rascunho já invalidado.
+        TermoConsentimento termo = TermoConsentimento.Criar(
+            "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
+        termo.MarcarRevisado("usuario.revisor", Agora);
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.TermosConsentimento.Add(termo);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext ctxA = _fixture.CreateDbContext(AdminA);
+        TermoConsentimentoRepository repositoryA = new(ctxA);
+        TermoConsentimento termoA = (await repositoryA.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
+        TermoConsentimentoVersao versaoA = termoA.Promover("usuario.revisor", Agora).Value!;
+
+        await using (ConfiguracaoDbContext ctxB = _fixture.CreateDbContext(AdminA))
+        {
+            TermoConsentimento termoB = await ctxB.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
+            termoB.EditarRascunho("Texto ajustado por outra requisição", "Lei 13.709/2018", null);
+            await ctxB.SaveChangesAsync();
+        }
+
+        await repositoryA.AdicionarVersaoAsync(termoA, versaoA, CancellationToken.None);
+
+        Func<Task> act = async () => await ctxA.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
     }
 
     [Fact(DisplayName = "Soft-delete de termo sem versões marca IsDeleted/DeletedBy")]
@@ -151,11 +188,10 @@ public sealed class TermoConsentimentoPersistenceTests
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
-            TermoConsentimento reloaded = await ctx.TermosConsentimento
-                .Include(t => t.Versoes)
-                .SingleAsync(t => t.Id == termo.Id);
+            TermoConsentimentoRepository repository = new(ctx);
+            TermoConsentimento reloaded = (await repository.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
             TermoConsentimentoVersao versao = reloaded.Promover("usuario.revisor", Agora).Value!;
-            await ctx.VersoesTermoConsentimento.AddAsync(versao);
+            await repository.AdicionarVersaoAsync(reloaded, versao, CancellationToken.None);
             await ctx.SaveChangesAsync();
         }
 
