@@ -10,6 +10,15 @@ informed:
 
 # ADR-0093: Rate-limiting de endpoints públicos de reference data na borda, não no app
 
+> **Nota (ADR-0099):** o Geo foi extraído para o repositório dedicado
+> [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). O `CepController` e
+> os demais controllers anônimos do Geo citados abaixo residiam neste
+> repositório no momento desta decisão; hoje vivem naquele repositório, com
+> sua própria política de rate-limiting na borda. A política aqui descrita
+> permanece válida para os endpoints `[AllowAnonymous]` de reference data dos
+> módulos que ainda são internos a este repositório.
+
 ## Contexto e enunciado do problema
 
 O módulo `Geo` ([ADR-0090](0090-modulo-geo-localidades.md)) expõe endpoints de consulta de reference data marcados `[AllowAnonymous]` — lookup de CEP (`GET /api/cep/{cep}`), listagens de estados/cidades, hierarquia/autocomplete e proximidade. São dados públicos (IBGE/DNE), sem autenticação, e o lookup de CEP em particular tem um **caminho frio** (cache miss / Redis fora) que encadeia consultas sobre as tabelas de faixa.

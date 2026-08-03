@@ -38,7 +38,7 @@ Uni+ usa um **banco único `uniplus`** com **schema por módulo** ([ADR-0097](ad
 | `publicacoes` | `PublicacoesDbContext` | Registro central dos atos normativos ([ADR-0105](adrs/0105-modulo-publicacoes-registro-central-dos-atos.md)). Nasce vazio |
 | `wolverine` | — | Outbox/envelopes/dead-letters, uma única instância ([ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md)) |
 
-**Geo** (`uniplus_geo`, com PostGIS) e **Portal** (`uniplus_portal`) permanecem deployables autônomos, com banco próprio.
+**Geo** (repositório dedicado, `uniplus_geo` com PostGIS) e **Portal** (`uniplus_portal`) permanecem deployables autônomos, com banco próprio.
 
 > ⚠️ **A ausência de chave estrangeira cross-módulo deixou de ser física.** Com bancos separados, uma chave estrangeira não atravessava banco — o motor garantia o isolamento. Com schema por módulo, `REFERENCES selecao.processos_seletivos(id)` a partir de outro schema **funciona**. A referência cross-módulo continua sendo **por valor** ([ADR-0061](adrs/0061-referencia-cross-modulo-via-snapshot-copy.md)), mas agora quem a defende é o modelo, não o PostgreSQL. O teste de integração `IsolamentoCrossSchemaTests` planta um canário — cria a chave estrangeira cross-schema, exige que a consulta de detecção a encontre, remove-a — e só então assere que nenhuma existe.
 

@@ -11,6 +11,16 @@ informed:
 
 # ADR-0097: Topologia de deploy em 3 APIs — módulos internos como libraries co-hospedadas
 
+> **Nota (ADR-0099):** no mesmo dia desta decisão, o Geo foi extraído para o
+> repositório dedicado [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). A topologia vigente é
+> **2 APIs executáveis internas** (Portal e UniPlus) **+ Geo como serviço externo**
+> consumido por contrato — não mais um dos 3 deployables construídos a partir
+> deste repositório. As seções abaixo descrevem a topologia decidida neste
+> momento, quando o Geo ainda era um dos 3 executáveis co-localizados nesta
+> solution; a parte referente a Portal e ao co-hosting dos 4 módulos internos na
+> API UniPlus permanece válida como está.
+
 ## Contexto e enunciado do problema
 
 O [ADR-0001](0001-monolito-modular-como-estilo-arquitetural.md) escolheu o **monolito

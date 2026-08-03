@@ -14,7 +14,7 @@ informed:
 
 A ordenação keyset multi-coluna ([ADR-0094](0094-keyset-ordenado-via-mr-sob-cursor-opaco.md)) usa uma chave de ordenação (ex.: `nome_normalizado`) seguida do `Id` de desempate. O seek monta um `WHERE` que compara a chave com a âncora da página anterior.
 
-`NULL` é um valor especial no banco: não se compara a ele (`coluna > NULL` é desconhecido, invalidando a cláusula e devolvendo **zero resultados**). Uma coluna nullable na chave de keyset quebra o seek de forma silenciosa. No `Geo`, `nome_normalizado` é derivado do `Nome` (não-nulo), mas está tipado como `string?` no domínio e pode, em teoria, ser nulo (ex.: nome só com caracteres não normalizáveis).
+`NULL` é um valor especial no banco: não se compara a ele (`coluna > NULL` é desconhecido, invalidando a cláusula e devolvendo **zero resultados**). Uma coluna nullable na chave de keyset quebra o seek de forma silenciosa. No Geo (hoje serviço externo, [ADR-0099](0099-geo-como-repositorio-dedicado.md)), `nome_normalizado` é derivado do `Nome` (não-nulo), mas está tipado como `string?` no domínio e pode, em teoria, ser nulo (ex.: nome só com caracteres não normalizáveis).
 
 A pergunta é como garantir que a chave de ordenação seja sempre não-nula para o seek, sem perder linhas de eventual chave nula e sem degradar a promessa pública de ordenação alfabética por nome. Coalescer `nome_normalizado` para `''` preserva linhas, mas coloca municípios/UFs válidos sem normalização antes de todos os nomes; isso é estável, porém não é alfabeticamente correto.
 

@@ -10,6 +10,16 @@ informed: []
 
 # ADR-0098: Política de service location do codegen Wolverine (`NotAllowed` + allow-list por tipo)
 
+> **Nota (ADR-0099):** no mesmo dia desta decisão, o Geo foi extraído para o
+> repositório dedicado [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). Os readers do Geo
+> citados abaixo (`EstadoReader`, `CidadeReader`, `DistritoReader`,
+> `BairroReader`, `LogradouroReader`, `GeoProximidadeReader`, `CepResolver`,
+> `CepReader`), o host Geo e o namespace `Unifesspa.UniPlus.Geo.IntegrationTests`
+> passaram a residir naquele repositório — não existem mais aqui. A política
+> `NotAllowed`, o root fix de tipos concretos e os opt-ins do monólito (UoW dos
+> módulos internos) e do Portal permanecem válidos como descrito.
+
 ## Contexto e enunciado do problema
 
 O Wolverine gera, em tempo de compilação (codegen), o adaptador de cada chain de

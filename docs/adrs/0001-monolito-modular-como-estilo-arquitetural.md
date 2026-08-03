@@ -15,6 +15,12 @@ decision-makers:
 > passam a ser **class libraries co-hospedadas** na API UniPlus (deploy em 3 APIs:
 > Geo, Portal, UniPlus). O **estilo** monolito modular e as fronteiras de módulo
 > permanecem; muda apenas a granularidade de processo.
+>
+> **Nota (ADR-0099):** no mesmo dia da atualização acima, o Geo foi extraído
+> para o repositório dedicado [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). A topologia vigente é
+> **2 APIs executáveis internas** (Portal e UniPlus) **+ Geo como serviço
+> externo**, não mais uma das 3 APIs construídas a partir deste repositório.
 
 ## Contexto e enunciado do problema
 

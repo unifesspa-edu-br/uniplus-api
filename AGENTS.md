@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 Uni+ API is a .NET 10 / C# 14 modular monolith. Production code lives under
-`src/`: each module, such as `selecao`, `ingresso`, `geo`, `configuracao`, and
+`src/`: each module, such as `selecao`, `ingresso`, `configuracao`, and
 `organizacao-institucional`, follows `Domain`, `Application`, `Infrastructure`,
 and `API` projects. `src/shared` contains cross-cutting kernel, infrastructure,
 and authorization code; `src/host` composes the monolith. Tests live in

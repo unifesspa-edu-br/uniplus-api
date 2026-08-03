@@ -140,11 +140,13 @@ Regra prática ao escrever infraestrutura consumida por handlers:
   de cada módulo (Clean Arch — `Infrastructure.Core` não referencia a Application dos
   módulos). Cada módulo/host é dono do seu opt-in (OCP/SRP).
 
-> **Guarda automática.** `ServiceLocationGuardTests` (host monólito e host Geo) sobe o
+> **Guarda automática.** `ServiceLocationGuardTests` (host monólito) sobe o
 > host sob `NotAllowed` e força a geração de toda chain CQRS, falhando e **nomeando o
 > tipo ofensor** se alguma exigir service location sem opt-in. Adicionou uma dependência
 > opaca num handler e o teste quebrou? Corrija na raiz (torne o concreto público) ou,
 > se a opacidade for obrigatória, declare o opt-in no `*CodegenRegistration` do módulo.
+> O Geo teve sua própria guarda equivalente antes de ser extraído para repositório
+> dedicado ([ADR-0099](adrs/0099-geo-como-repositorio-dedicado.md)); hoje ela vive lá.
 
 ## Fitness test ArchUnitNET
 
