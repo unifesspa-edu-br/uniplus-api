@@ -101,10 +101,12 @@ do `Infrastructure.Core` é cabeado uma única vez, no `Program.cs` do host. Smo
 contra o host exercita o **wiring real de produção**, sem o risco antigo de drift
 entre Programs por módulo (que deixaram de existir).
 
-Geo e Portal permanecem deployables autônomos com `Program.cs` próprio. A
-paridade do middleware shared entre os 3 executáveis (UniPlus/Geo/Portal),
-quando o custo do drift aparecer, é melhor coberta por um arch test em
-`Unifesspa.UniPlus.ArchTests` do que por uma matriz de fixtures aqui.
+Portal permanece deployable autônomo com `Program.cs` próprio. A paridade do
+middleware shared entre os 2 executáveis internos (UniPlus/Portal), quando o
+custo do drift aparecer, é melhor coberta por um arch test em
+`Unifesspa.UniPlus.ArchTests` do que por uma matriz de fixtures aqui. O Geo
+seguia a mesma topologia até ser extraído para repositório dedicado
+(ADR-0099); hoje não é mais buildado nem testado a partir deste monorepo.
 
 ## Performance esperada
 

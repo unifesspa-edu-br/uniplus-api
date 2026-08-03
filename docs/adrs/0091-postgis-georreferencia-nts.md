@@ -10,6 +10,14 @@ informed:
 
 # ADR-0091: PostGIS e NetTopologySuite como mecanismo de georreferência
 
+> **Nota (ADR-0099):** o Geo foi extraído para o repositório dedicado
+> [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). `GeoDbContext` e
+> `AddGeoInfrastructure`, citados abaixo, residiam neste repositório no momento
+> desta decisão e hoje fazem parte do código daquele repositório dedicado — a
+> decisão de modelagem (PostGIS + NetTopologySuite para coordenadas) permanece
+> válida para o domínio do Geo.
+
 ## Contexto e enunciado do problema
 
 O módulo `Geo` ([ADR-0090](0090-modulo-geo-localidades.md)) evoluirá para guardar coordenadas geográficas (campi, locais de prova, pontos de referência) e, eventualmente, consultas espaciais (proximidade, contenção). Coordenadas precisam de um tipo de dado que represente latitude/longitude com sistema de referência espacial (SRID) e de índices que tornem buscas espaciais viáveis.

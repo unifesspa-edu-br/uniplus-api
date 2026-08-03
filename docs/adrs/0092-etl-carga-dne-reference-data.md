@@ -10,6 +10,13 @@ informed:
 
 # ADR-0092: Reference data do Geo sem soft-delete, recarregado por upsert
 
+> **Nota (ADR-0099):** o Geo foi extraído para o repositório dedicado
+> [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). O fitness test
+> `SoftDeleteOptInConventionTests` e o `GeoDbContext` citados abaixo hoje vivem
+> naquele repositório — a decisão de modelagem (reference data sem soft-delete,
+> recarregada por upsert) permanece válida para o domínio do Geo.
+
 ## Contexto e enunciado do problema
 
 As entidades de localidade do módulo `Geo` ([ADR-0090](0090-modulo-geo-localidades.md)) são **reference data** de origem externa: o catálogo de municípios/UFs vem do IBGE e o endereçamento, do DNE (Diretório Nacional de Endereços, Correios). Esses dados não são criados nem editados por usuários do Uni+ — são **carregados por ETL** a partir de uma versão datada do dataset oficial e **recarregados** quando uma nova versão é publicada.

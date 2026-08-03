@@ -12,7 +12,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-As entidades institucionais que possuem localização física — `Campus` e `LocalOferta` (módulo Configuração) e `Instituicao` (módulo Organização Institucional) — guardam o endereço como **texto livre** (`Endereco`/`EnderecoSede`, `string?` de até 500 caracteres). Apenas o `Campus` acrescenta hoje um `Cep` solto + coordenadas (`latitude`/`longitude`); `LocalOferta` e `Instituicao` têm **só** o texto livre — **sem CEP nem coordenadas**. Em contraste, a **cidade** das três já é uma **referência estruturada ao módulo Geo** (`cidade_codigo_ibge` + display cache), adotada pelo ADR-0090 sob o padrão de composição no cliente.
+As entidades institucionais que possuem localização física — `Campus` e `LocalOferta` (módulo Configuração) e `Instituicao` (módulo Organização Institucional) — guardam o endereço como **texto livre** (`Endereco`/`EnderecoSede`, `string?` de até 500 caracteres). Apenas o `Campus` acrescenta hoje um `Cep` solto + coordenadas (`latitude`/`longitude`); `LocalOferta` e `Instituicao` têm **só** o texto livre — **sem CEP nem coordenadas**. Em contraste, a **cidade** das três já é uma **referência estruturada ao Geo** (hoje serviço externo, [ADR-0099](0099-geo-como-repositorio-dedicado.md); `cidade_codigo_ibge` + display cache), adotada pelo ADR-0090 sob o padrão de composição no cliente.
 
 Agravante na `Instituicao`: o comentário de domínio justifica o texto livre afirmando que *"o Geo não modela endereço pontual"* — premissa **factualmente superada** por #676 (lookup de CEP) e #707 (busca de logradouro), que entregaram exatamente essa modelagem. A justificativa errada está cristalizada no código e deve ser corrigida junto.
 
@@ -22,7 +22,7 @@ Essa assimetria interna gera três problemas:
 2. **Redundância e risco de incoerência** — `cidade_*` e `cep` são blocos independentes, mas no DNE dos Correios **o CEP já determina a cidade**; nada garante hoje que ambos sejam coerentes.
 3. **Contrato HTTP achatado** — o DTO expõe o bloco de cidade e o endereço como campos soltos no nível raiz, sem agrupamento semântico.
 
-O módulo Geo **já expõe** endereço estruturado completo via `GET /api/cep/{cep}` (`CepResolvidoDto`: cep, tipo, logradouro, complemento, bairro, distrito, cidade, codigoIbge, uf, latitude, longitude, `nivelResolucao`, `origem`), carregado a partir do DNE dos Correios (ADR-0092). O insumo existe; falta o modelo consumi-lo.
+O Geo (hoje serviço externo, [ADR-0099](0099-geo-como-repositorio-dedicado.md)) **já expõe** endereço estruturado completo via `GET /api/cep/{cep}` (`CepResolvidoDto`: cep, tipo, logradouro, complemento, bairro, distrito, cidade, codigoIbge, uf, latitude, longitude, `nivelResolucao`, `origem`), carregado a partir do DNE dos Correios (ADR-0092). O insumo existe; falta o modelo consumi-lo.
 
 ## Drivers da decisão
 

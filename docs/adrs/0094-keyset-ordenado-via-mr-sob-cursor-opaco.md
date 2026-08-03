@@ -14,7 +14,7 @@ informed:
 
 A paginação por cursor do Uni+ usa keyset bidirecional sobre `Id` ([ADR-0089](0089-navegacao-bidirecional-cursor-keyset-reverso.md)) embrulhado num cursor opaco AES-GCM ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md)). A ordem por `Id` (Guid v7) é total e estável, mas arbitrária para apresentação.
 
-Os endpoints de reference data de estados/cidades do `Geo` ([ADR-0090](0090-modulo-geo-localidades.md)) precisam alimentar combos (`select` de UF e cidade) em ordem **alfabética por nome**, não por `Id`. Ordenar no cliente não dá ordem global correta sob paginação (cada página é reordenada isoladamente). É preciso um keyset **multi-coluna** — chave de ordenação (nome) + `Id` de desempate — preservando a estabilidade do cursor.
+Os endpoints de reference data de estados/cidades do Geo (hoje serviço externo, [ADR-0099](0099-geo-como-repositorio-dedicado.md); modelagem de domínio em [ADR-0090](0090-modulo-geo-localidades.md)) precisam alimentar combos (`select` de UF e cidade) em ordem **alfabética por nome**, não por `Id`. Ordenar no cliente não dá ordem global correta sob paginação (cada página é reordenada isoladamente). É preciso um keyset **multi-coluna** — chave de ordenação (nome) + `Id` de desempate — preservando a estabilidade do cursor.
 
 A pergunta é **construir** o seek SQL multi-coluna à mão (estender o `CursorKeyset` por-`Id`) ou **adotar** uma biblioteca de keyset como motor, mantendo a nossa camada de cursor.
 
