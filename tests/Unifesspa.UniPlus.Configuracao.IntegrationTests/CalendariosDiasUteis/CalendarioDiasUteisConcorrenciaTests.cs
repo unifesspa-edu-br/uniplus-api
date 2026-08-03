@@ -36,11 +36,14 @@ using Wolverine;
 /// teste força a corrida de forma determinística: uma transação explícita
 /// (<c>ctxB</c>) segura o lock de linha do Postgres depois de já ter lido a
 /// entidade; o handler real (<c>busA</c>) começa, lê a mesma linha (ainda sem
-/// bloqueio de leitura) e bloqueia só na hora de escrever; ao liberar
-/// <c>ctxB</c> com um UPDATE que já bate o xmin, o <c>busA</c> desbloqueia
-/// contra um xmin obsoleto — conflito garantido, não uma aposta de tempo.
+/// bloqueio de leitura) e bloqueia só na hora de escrever. Em vez de apostar
+/// num prazo fixo, o teste faz poll em <c>pg_locks</c> até observar o backend
+/// de <c>busA</c> realmente esperando pelo lock da linha — prova direta de
+/// que ele já leu o xmin antigo e chegou à escrita, não uma inferência de
+/// tempo. Só então libera <c>ctxB</c> com um UPDATE que já bate o xmin.
 /// </remarks>
 [Collection(ConfiguracaoEndpointCollection.Name)]
+[Trait("Category", "Integration")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -86,17 +89,11 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(id));
 
-        // O handler real (busA) lê a linha normalmente (ainda não bloqueada
-        // para leitura) e só bloqueia ao tentar escrever — este WhenAny só prova
-        // que taskA não TERMINOU dentro do prazo, não que já chegou ao lock; se
-        // taskA ainda não tivesse nem lido a linha quando txB commita, ela leria
-        // o xmin já atualizado e sucederia sem conflito — o que faria a asserção
-        // final (DbUpdateConcurrencyException) falhar de forma visível, não
-        // passar silenciosamente errada. O prazo generoso (bem acima do
-        // round-trip local ao Postgres) é para não tornar o teste sensível a
-        // variação normal de agendamento, mesmo assim.
-        Task tarefaConcluidaCedo = await Task.WhenAny(taskA, Task.Delay(TimeSpan.FromSeconds(1)));
-        tarefaConcluidaCedo.Should().NotBe(taskA, "o handler deveria estar bloqueado esperando o lock de txB");
+        // Prova direta (não uma aposta de tempo) de que busA já leu o xmin
+        // antigo e está bloqueado tentando escrever: poll em pg_locks até
+        // aparecer um lock NÃO concedido na tabela — só existe se alguém além
+        // de txB está esperando a linha.
+        await ConcorrenciaTestHelpers.AguardarLockPendenteAsync(api, "calendario_dias_uteis", taskA);
 
         await txB.CommitAsync();
 
