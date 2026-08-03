@@ -64,6 +64,43 @@ public sealed class RestauradorDeConfiguracaoTests
     }
 
     /// <summary>
+    /// Story #575: o corpus rico (<see cref="CorpusEnvelope.ProcessoRico"/>) tem a cascata
+    /// de remanejamento configurada (as 8 federais de <c>DistribuicaoLei12711</c> são
+    /// <c>SegueCascata</c>, INV-12), então <see cref="Restaurar_ReporEProvar"/> já a exercita
+    /// no round-trip de descarte — mas só implicitamente, via a comparação de bytes. Este
+    /// teste é a prova EXPLÍCITA: a cascata reposta na raiz VIVA é a mesma que a versão
+    /// congelou, não uma sombra vazia que só coincide nos bytes agregados.
+    /// </summary>
+    [Fact(DisplayName = "Restaurar repõe a cascata de remanejamento na raiz viva — não só nos bytes recanonicalizados")]
+    public void Restaurar_ComCascataCongelada_RepoeNaRaizViva()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        processo.Cascata.Should().NotBeNull("pré-condição: o corpus rico tem a cascata configurada");
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        // A sessão editorial descaracterizou a configuração viva — GrafoPobre não tem
+        // cascata nenhuma. É o que o descarte tem de desfazer.
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+        processo.Cascata.Should().BeNull("pré-condição: a sessão editorial removeu a cascata da raiz viva");
+
+        RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        processo.RestaurarConfiguracaoCongelada(versao, resultado.Value!).IsSuccess.Should().BeTrue();
+
+        processo.Cascata.Should().NotBeNull(
+            "a cascata voltou à raiz VIVA, não só aos bytes recanonicalizados — é isso que o comando de " +
+            "definição de cascata (e qualquer leitura seguinte da configuração viva) vai enxergar");
+        processo.Cascata!.FallbackCodigo.Should().Be("AC");
+        processo.Cascata.Destinos.Should().HaveCount(56, "a matriz legal completa do corpus rico tem 8 origens × 7 destinos");
+    }
+
+    /// <summary>
     /// Regressão: <c>Restaurar</c> montava a <see cref="EntradaCanonicalizacao"/> da prova
     /// SEM repassar <see cref="EnvelopeReidratado.Conformidade"/> — o canonicalizador recebia
     /// <see langword="null"/> e emitia <c>obrigatoriedades: []</c>, divergindo dos bytes
