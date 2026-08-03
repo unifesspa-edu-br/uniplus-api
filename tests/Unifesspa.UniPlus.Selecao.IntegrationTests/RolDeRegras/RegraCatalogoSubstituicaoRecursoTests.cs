@@ -22,6 +22,13 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
     private const string CodigoNovo = "RECURSO-PRAZO-ANCORADO-EM-ATO";
 
     /// <summary>
+    /// A regra da cascata de remanejamento (Story #575, seed posterior a este
+    /// pacote de #854) não integra o dicionário congelado das 17 originais —
+    /// ela prova a própria presença em <c>RegraCatalogoSeedTests</c>, não aqui.
+    /// </summary>
+    private const string CodigoCascataNova = "REMANEJ-CASCATA-LEI-12711";
+
+    /// <summary>
     /// Hash da regra 18 no seed original (migration <c>AddRolDeRegras</c>), antes
     /// da substituição — a contraprova de que o hash da regra nova mudou.
     /// </summary>
@@ -151,10 +158,10 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
     {
         IReadOnlyList<RegraCatalogoSeedItem> itens = RegraCatalogoSeed.Itens;
 
-        itens.Should().HaveCount(18, "o catálogo continua com 18 linhas (CA-05)");
+        itens.Should().HaveCount(19, "o catálogo tem as 18 linhas de CA-05 mais a cascata de remanejamento (#575)");
         itens.Select(i => (i.Codigo, i.Versao)).Should().OnlyHaveUniqueItems("(codigo, versao) é único (CA-05)");
 
-        foreach (RegraCatalogoSeedItem item in itens.Where(i => i.Codigo != CodigoNovo))
+        foreach (RegraCatalogoSeedItem item in itens.Where(i => i.Codigo != CodigoNovo && i.Codigo != CodigoCascataNova))
         {
             HashesOriginaisDasDemais.Should().ContainKey(
                 item.Codigo,
