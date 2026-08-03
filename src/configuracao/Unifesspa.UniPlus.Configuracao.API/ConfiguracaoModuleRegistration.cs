@@ -63,6 +63,8 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<PrecedenciaFaseDto>, PrecedenciaFaseLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<CalendarioDiasUteisDto>, CalendarioDiasUteisLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<CalendarioDiasUteisResumoDto>, CalendarioDiasUteisResumoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoDto>, TermoConsentimentoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoResumoDto>, TermoConsentimentoResumoLinksBuilder>();
 
         // Idempotency-Key (ADR-0027) sobre o DbContext do módulo.
         services.AddIdempotency<ConfiguracaoDbContext, ConfiguracaoApiAssemblyMarker>(configuration);
