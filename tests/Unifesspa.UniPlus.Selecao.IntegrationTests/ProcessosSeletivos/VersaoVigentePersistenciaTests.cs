@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text.Json.Nodes;
+
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -430,6 +432,112 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
 
         (await repository.ObterVersaoVigenteAsync(Guid.CreateVersion7(), T0.AddDays(5), CancellationToken.None))
             .Should().BeNull();
+    }
+
+    // ── Story #575 — a cascata de remanejamento segue a mesma regra de vigência ──
+
+    /// <summary>Mesma forma de <c>RetificacaoPersistenciaTests.CascataDeUmDestinoPorOrigem</c> — uma cascata VÁLIDA, distinguível pela contagem de destinos.</summary>
+    private static ConfiguracaoCascataRemanejamento CascataDeUmDestinoPorOrigem()
+    {
+        (string Origem, string Destino)[] pares =
+        [
+            ("LB_PPI", "LB_Q"), ("LB_Q", "LB_PPI"), ("LB_PCD", "LI_PCD"), ("LB_EP", "LI_EP"),
+            ("LI_PPI", "LB_PPI"), ("LI_Q", "LB_Q"), ("LI_PCD", "LB_PCD"), ("LI_EP", "LB_EP"),
+        ];
+        List<DestinoRemanejamento> destinos = [.. pares.Select(p => DestinoRemanejamento.Criar(p.Origem, 1, p.Destino).Value!)];
+
+        return ConfiguracaoCascataRemanejamento.Criar(
+            ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", new string('9', 64)).Value!,
+            "AC",
+            destinos).Value!;
+    }
+
+    [Fact(DisplayName = "Seletor resolve a cascata vigente no instante certo — mesma regra das demais dimensões (ADR-0075/0076), sem caminho especial")]
+    public async Task ObterVersaoVigente_ResolveACascataVigenteNoInstanteCerto()
+    {
+        RelogioManual clock = new(T0);
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(
+            nameof(ObterVersaoVigente_ResolveACascataVigenteNoInstanteCerto));
+
+        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
+            docAbertura.HashSha256!, "integration-test-user", clock);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+
+        Guid processoId = processo.Id;
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        clock.Avancar(TimeSpan.FromDays(1));
+
+        // A cascata MUDA entre as duas versões — é o que este teste prova: o seletor de
+        // vigente devolve a cascata do INSTANTE, não sempre a mais recente. Mudar a
+        // configuração VIVA de um processo publicado exige a sessão editorial —
+        // DefinirCascataRemanejamento recusa (MutacaoPosPublicacaoBloqueada) sem um
+        // Rascunho aberto, mesmo com PrecondicaoIfMatch.Curinga; o atalho atômico
+        // Retificar só re-canonicaliza a configuração como está, sem editá-la.
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivo carregado = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+            VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processoId, CancellationToken.None))!;
+
+            Result<RascunhoRetificacao> abertura = carregado.AbrirRetificacao(
+                "Correção da ordem legal de remanejamento", versaoAtual, "integration-test-user", clock.GetUtcNow());
+            abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
+
+            carregado.DefinirCascataRemanejamento(CascataDeUmDestinoPorOrigem(), PrecondicaoIfMatch.Curinga)
+                .IsSuccess.Should().BeTrue();
+
+            DocumentoEdital docRetificacao = DocumentoConfirmado(processoId);
+            DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
+            SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
+                new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!));
+
+            Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
+                dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
+                canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
+                PrecondicaoIfMatch.Curinga, clock);
+            fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
+
+            await writeContext.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(fechar.Value!, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository leitura = new(context, TimeProvider.System);
+
+        // No instante T0 (antes da retificação) a vigente é a versão 1 — a matriz legal completa (8×7).
+        VersaoConfiguracao? vigenteEmT0 = await leitura.ObterVersaoVigenteAsync(processoId, T0, CancellationToken.None);
+        vigenteEmT0.Should().NotBeNull();
+        JsonObject cascataEmT0 = JsonNode.Parse(vigenteEmT0!.ConfiguracaoCongelada)!["cascataRemanejamento"]!.AsObject();
+        cascataEmT0["ordens"]![0]!["destinos"]!.AsArray().Should().HaveCount(7,
+            "no instante T0 a vigente é a versão 1, com a matriz legal completa semeada por NovoProcessoComOfertaFederalECascata");
+
+        // Depois da retificação (T0+2d) a vigente é a versão 2 — a cascata EDITADA.
+        VersaoConfiguracao? vigenteApos = await leitura.ObterVersaoVigenteAsync(processoId, T0.AddDays(2), CancellationToken.None);
+        vigenteApos.Should().NotBeNull();
+        JsonObject cascataApos = JsonNode.Parse(vigenteApos!.ConfiguracaoCongelada)!["cascataRemanejamento"]!.AsObject();
+        cascataApos["ordens"]![0]!["destinos"]!.AsArray().Should().HaveCount(1,
+            "depois da retificação a vigente é a versão 2, com a cascata editada — um destino por origem");
+
+        // Antes da primeira publicação, nenhuma versão vige — a cascata não tem caminho
+        // especial: segue a MESMA regra de ausência que as demais dimensões (ADR-0076).
+        VersaoConfiguracao? antesDaPrimeiraPublicacao = await leitura
+            .ObterVersaoVigenteAsync(processoId, T0.AddSeconds(-1), CancellationToken.None);
+        antesDaPrimeiraPublicacao.Should().BeNull(
+            "antes da primeira publicação não há configuração vigente — vale para a cascata como vale para " +
+            "qualquer outra dimensão, sem gate especial no seletor");
     }
 
     /// <summary>Captura o SQL emitido — prova mecânica de que o seletor não toca em <c>editais</c>.</summary>
