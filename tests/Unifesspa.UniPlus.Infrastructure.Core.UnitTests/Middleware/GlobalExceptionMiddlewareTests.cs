@@ -9,6 +9,7 @@ using FluentValidation;
 using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using NSubstitute;
@@ -111,6 +112,52 @@ public sealed class GlobalExceptionMiddlewareTests
         string? instance = doc.RootElement.GetProperty("instance").GetString();
         instance.Should().StartWith("urn:uuid:");
         Guid.TryParse(instance!["urn:uuid:".Length..], out _).Should().BeTrue();
+    }
+
+    // ─── DbUpdateConcurrencyException → 409 (ADR-0119) ────────────────────
+
+    [Fact]
+    public async Task InvokeAsync_ComDbUpdateConcurrencyException_DeveRetornar409()
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ComDbUpdateConcurrencyException_ContentTypeDeveSerApplicationProblemJson()
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.ContentType.Should().Contain("application/problem+json");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ComDbUpdateConcurrencyException_DeveConterExtensionsRfc9457()
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+            throw new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        await middleware.InvokeAsync(context);
+
+        using JsonDocument doc = await LerBodyAsync(context);
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.concorrencia.conflito");
+        doc.RootElement.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status409Conflict);
+        doc.RootElement.GetProperty("detail").GetString().Should().NotBeNullOrWhiteSpace();
+        doc.RootElement.GetProperty("instance").GetString().Should().StartWith("urn:uuid:");
+
+        string? traceId = doc.RootElement.GetProperty("traceId").GetString();
+        traceId.Should().HaveLength(32);
+        Regex.IsMatch(traceId!, "^[0-9a-f]{32}$").Should().BeTrue();
     }
 
     // ─── Exception genérica → 500 ─────────────────────────────────────────

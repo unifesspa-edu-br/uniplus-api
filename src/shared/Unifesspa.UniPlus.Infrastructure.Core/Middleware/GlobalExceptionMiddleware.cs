@@ -9,6 +9,7 @@ using Errors;
 using FluentValidation;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 public sealed partial class GlobalExceptionMiddleware
@@ -43,6 +44,11 @@ public sealed partial class GlobalExceptionMiddleware
             LogValidationError(_logger, context.Request.Path, ex);
             await EscreverRespostaValidacao(context, ex).ConfigureAwait(false);
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            LogConflitoDeConcorrencia(_logger, context.Request.Path, ex);
+            await EscreverRespostaConflitoDeConcorrencia(context).ConfigureAwait(false);
+        }
         catch (Exception ex)
         {
             LogUnhandledError(_logger, context.Request.Path, ex);
@@ -74,6 +80,26 @@ public sealed partial class GlobalExceptionMiddleware
             .ConfigureAwait(false);
     }
 
+    private static async Task EscreverRespostaConflitoDeConcorrencia(HttpContext context)
+    {
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+
+        Dictionary<string, object?> body = new()
+        {
+            ["type"] = ProblemDetailsConstants.ErrorsBaseUri + "uniplus.concorrencia.conflito",
+            ["title"] = "Conflito de concorrência",
+            ["status"] = StatusCodes.Status409Conflict,
+            ["detail"] = "Este recurso foi modificado por outra operação concorrente. Recarregue os dados e tente novamente.",
+            ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
+            ["code"] = "uniplus.concorrencia.conflito",
+            ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
+        };
+
+        await context.Response
+            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
+            .ConfigureAwait(false);
+    }
+
     private static async Task EscreverRespostaErro(HttpContext context)
     {
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -96,6 +122,9 @@ public sealed partial class GlobalExceptionMiddleware
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Erro de validação no request {Path}")]
     private static partial void LogValidationError(ILogger logger, PathString path, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Conflito de concorrência otimista no request {Path}")]
+    private static partial void LogConflitoDeConcorrencia(ILogger logger, PathString path, Exception ex);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Erro não tratado no request {Path}")]
     private static partial void LogUnhandledError(ILogger logger, PathString path, Exception ex);
