@@ -87,11 +87,16 @@ public sealed class ConcorrenciaTestHelpersTests
         // decoyBlockedTask continua bloqueado quando o `await using` de
         // txDecoyBlocked/scopeDecoyBlocked começar a descartar a conexão —
         // Npgsql não aceita descartar uma conexão com um comando ainda em
-        // voo. O finally garante que txDecoyHolder é liberado (destravando
-        // decoyBlockedTask) ANTES de qualquer descarte, seja qual for o
-        // caminho de saída (achado do Codex no PR #1036 — a 1ª versão deste
-        // fix ainda deixava a confirmação do decoy fora da proteção).
-        bool decoyReleased = false;
+        // voo. Dois flags distintos (achado do Codex no PR #1036, 4ª rodada):
+        // "o holder commitou" (não pode mais ser revertido por rollback) é
+        // diferente de "o decoy foi de fato aguardado e descartado" — commitar
+        // txDecoyHolder libera o lock do LADO DO SERVIDOR, mas não garante que
+        // o comando Npgsql bloqueado do LADO DO CLIENTE já retornou; se a
+        // asserção final (linha ~135) falhar depois do commit mas antes do
+        // await de decoyBlockedTask, o finally ainda precisa aguardá-lo e
+        // descartar txDecoyBlocked antes do `await using` de disposal.
+        bool decoyHolderCommitted = false;
+        bool decoyBlockedCleanedUp = false;
         try
         {
             // Prova de que o decoy está genuinamente bloqueado — pelo holder
@@ -129,7 +134,7 @@ public sealed class ConcorrenciaTestHelpersTests
 
             await txAlvoHolder.CommitAsync();
             await txDecoyHolder.CommitAsync();
-            decoyReleased = true;
+            decoyHolderCommitted = true;
 
             Func<Task> act = async () => await taskA;
             await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
@@ -137,12 +142,21 @@ public sealed class ConcorrenciaTestHelpersTests
 
             await decoyBlockedTask;
             await txDecoyBlocked.RollbackAsync();
+            decoyBlockedCleanedUp = true;
         }
         finally
         {
-            if (!decoyReleased)
+            // txDecoyHolder só aceita Rollback se ainda não foi commitado.
+            if (!decoyHolderCommitted)
             {
                 await txDecoyHolder.RollbackAsync();
+            }
+
+            // decoyBlockedTask só é seguro aguardar/descartar depois que o
+            // lock que o prendia foi liberado — seja pelo commit acima, seja
+            // pelo rollback que acabou de rodar.
+            if (!decoyBlockedCleanedUp)
+            {
                 await decoyBlockedTask;
                 await txDecoyBlocked.RollbackAsync();
             }
