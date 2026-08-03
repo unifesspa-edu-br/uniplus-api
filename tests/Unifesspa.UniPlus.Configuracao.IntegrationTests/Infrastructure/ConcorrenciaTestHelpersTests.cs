@@ -87,42 +87,63 @@ public sealed class ConcorrenciaTestHelpersTests
         await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
             api, decoyBlockedTask, [pidDecoyHolder], TimeSpan.FromSeconds(5));
 
-        // --- Fase 1: com o decoy já bloqueado, a corrida real (busA) nem
-        // começou. Pedir a espera correlacionada ao holder de A (que só vai
-        // existir de verdade na Fase 2) não deve ser satisfeita pelo decoy —
-        // ele está bloqueado por pidDecoyHolder, não por pidAlvoHolder.
-        await using AsyncServiceScope scopeAlvoHolder = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbAlvoHolder = scopeAlvoHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
-        await using IDbContextTransaction txAlvoHolder = await dbAlvoHolder.Database.BeginTransactionAsync();
-        await dbAlvoHolder.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idAlvo}");
-        int pidAlvoHolder = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbAlvoHolder);
+        // Se qualquer asserção abaixo falhar antes de liberar txDecoyHolder,
+        // decoyBlockedTask continua bloqueado quando o `await using` de
+        // txDecoyBlocked/scopeDecoyBlocked começar a descartar a conexão —
+        // Npgsql não aceita descartar uma conexão com um comando ainda em
+        // voo. O finally garante que txDecoyHolder é liberado (destravando
+        // decoyBlockedTask) ANTES de qualquer descarte, seja qual for o
+        // caminho de saída (achado do Codex no PR #1036).
+        bool decoyReleased = false;
+        try
+        {
+            // --- Fase 1: com o decoy já bloqueado, a corrida real (busA) nem
+            // começou. Pedir a espera correlacionada ao holder de A (que só vai
+            // existir de verdade na Fase 2) não deve ser satisfeita pelo decoy —
+            // ele está bloqueado por pidDecoyHolder, não por pidAlvoHolder.
+            await using AsyncServiceScope scopeAlvoHolder = api.Services.CreateAsyncScope();
+            ConfiguracaoDbContext dbAlvoHolder = scopeAlvoHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            await using IDbContextTransaction txAlvoHolder = await dbAlvoHolder.Database.BeginTransactionAsync();
+            await dbAlvoHolder.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idAlvo}");
+            int pidAlvoHolder = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbAlvoHolder);
 
-        Task tarefaQueNuncaBloqueiaDeVerdade = Task.Delay(TimeSpan.FromMinutes(1));
-        Func<Task> aguardarSemBusA = () => ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
-            api, tarefaQueNuncaBloqueiaDeVerdade, [pidAlvoHolder], TimeSpan.FromMilliseconds(300));
+            Task tarefaQueNuncaBloqueiaDeVerdade = Task.Delay(TimeSpan.FromMinutes(1));
+            Func<Task> aguardarSemBusA = () => ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
+                api, tarefaQueNuncaBloqueiaDeVerdade, [pidAlvoHolder], TimeSpan.FromMilliseconds(300));
 
-        await aguardarSemBusA.Should().ThrowAsync<FailException>(
-            "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com pidAlvoHolder");
+            await aguardarSemBusA.Should().ThrowAsync<FailException>(
+                "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com pidAlvoHolder");
 
-        // --- Fase 2: agora a corrida real (busA) começa e disputa a MESMA
-        // linha que dbAlvoHolder está segurando — pg_blocking_pids vai
-        // confirmar que o bloqueador de busA é especificamente pidAlvoHolder.
-        await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
-        IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
-        Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(idAlvo));
+            // --- Fase 2: agora a corrida real (busA) começa e disputa a MESMA
+            // linha que dbAlvoHolder está segurando — pg_blocking_pids vai
+            // confirmar que o bloqueador de busA é especificamente pidAlvoHolder.
+            await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
+            IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
+            Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(idAlvo));
 
-        await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
-            api, taskA, [pidAlvoHolder], TimeSpan.FromSeconds(5));
+            await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
+                api, taskA, [pidAlvoHolder], TimeSpan.FromSeconds(5));
 
-        await txAlvoHolder.CommitAsync();
-        await txDecoyHolder.CommitAsync();
+            await txAlvoHolder.CommitAsync();
+            await txDecoyHolder.CommitAsync();
+            decoyReleased = true;
 
-        Func<Task> act = async () => await taskA;
-        await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
-            "o xmin lido por busA ficou obsoleto assim que dbAlvoHolder commitou a própria escrita na mesma linha (ADR-0119 — RemoverCalendarioDiasUteisCommandHandler propaga sem catch)");
+            Func<Task> act = async () => await taskA;
+            await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
+                "o xmin lido por busA ficou obsoleto assim que dbAlvoHolder commitou a própria escrita na mesma linha (ADR-0119 — RemoverCalendarioDiasUteisCommandHandler propaga sem catch)");
 
-        await decoyBlockedTask;
-        await txDecoyBlocked.RollbackAsync();
+            await decoyBlockedTask;
+            await txDecoyBlocked.RollbackAsync();
+        }
+        finally
+        {
+            if (!decoyReleased)
+            {
+                await txDecoyHolder.RollbackAsync();
+                await decoyBlockedTask;
+                await txDecoyBlocked.RollbackAsync();
+            }
+        }
     }
 }
