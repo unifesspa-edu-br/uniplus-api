@@ -205,6 +205,30 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             ResourceExecutedContext executed = await next().ConfigureAwait(false);
             handlerCompleted = true;
 
+            // Exceção não tratada por nenhum filtro/action mais interno: o
+            // ResourceInvoker do ASP.NET Core MVC não relança sincronamente do
+            // próprio `next()` — ele popula `executed.Exception` e devolve o
+            // context normalmente para este filtro, só relançando DEPOIS que
+            // todos os resource filters retornarem sem marcar
+            // `ExceptionHandled`. Sem esta checagem, o código abaixo trataria
+            // isso como sucesso: nenhum IActionResult executou, então
+            // `httpContext.Response.StatusCode` ainda está no valor default
+            // (não é >= 500), e a resposta cacheada seria um 200 com corpo
+            // vazio — um replay subsequente da mesma Idempotency-Key devolveria
+            // esse sucesso fabricado em vez do erro real que o
+            // GlobalExceptionMiddleware está prestes a produzir (a exceção
+            // continua propagando normalmente depois deste `return`, já que
+            // `ExceptionHandled` não é tocado aqui).
+            if (executed.Exception is not null && !executed.ExceptionHandled)
+            {
+                await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
+                    .ConfigureAwait(false);
+                reservationStillValid = false;
+                captureStream.Position = 0;
+                await captureStream.CopyToAsync(originalBody, httpContext.RequestAborted).ConfigureAwait(false);
+                return;
+            }
+
             int status = httpContext.Response.StatusCode;
 
             // 5xx nunca é cacheado (ADR-0027 §"Status codes em cache" + draft
