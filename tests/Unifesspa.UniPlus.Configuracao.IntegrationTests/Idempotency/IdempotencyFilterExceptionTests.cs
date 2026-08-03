@@ -56,6 +56,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// reexecução da mutação.</para>
 /// </remarks>
 [Collection(ConfiguracaoEndpointCollection.Name)]
+[Trait("Category", "Integration")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -71,7 +72,7 @@ public sealed class IdempotencyFilterExceptionTests
 
     [Fact(DisplayName =
         "Exceção pendente e não tratada no next() não é cacheada como sucesso — reservation fica em Processing, não é liberada")]
-    public async Task OnResourceExecutionAsync_ComExcecaoPendente_NaoCachearEMantemProcessing()
+    public async Task OnResourceExecutionAsync_WithPendingException_DoesNotCacheAndKeepsProcessing()
     {
         MonolitoApiFactory api = _fixture.Factory;
         string idempotencyKey = Guid.NewGuid().ToString();
@@ -93,11 +94,11 @@ public sealed class IdempotencyFilterExceptionTests
 
         IdempotencyFilter<ConfiguracaoDbContext> filter = new(store, encryption, errorMapper, time, userContext, options);
 
-        MethodInfo metodoIdempotente = typeof(TermosConsentimentoController)
+        MethodInfo idempotentMethod = typeof(TermosConsentimentoController)
             .GetMethod(nameof(TermosConsentimentoController.MarcarRevisado))!;
         ControllerActionDescriptor actionDescriptor = new()
         {
-            MethodInfo = metodoIdempotente,
+            MethodInfo = idempotentMethod,
             ControllerTypeInfo = typeof(TermosConsentimentoController).GetTypeInfo(),
         };
 
@@ -108,13 +109,13 @@ public sealed class IdempotencyFilterExceptionTests
         httpContext.Request.Method = "POST";
         httpContext.Request.Path = "/api/configuracao/admin/termos-consentimento/00000000-0000-0000-0000-000000000001/revisar";
         httpContext.Request.Headers["Idempotency-Key"] = idempotencyKey;
-        byte[] corpo = Encoding.UTF8.GetBytes("""{"texto":"corpo de teste"}""");
-        httpContext.Request.Body = new MemoryStream(corpo);
-        httpContext.Request.ContentLength = corpo.Length;
+        byte[] body = Encoding.UTF8.GetBytes("""{"texto":"corpo de teste"}""");
+        httpContext.Request.Body = new MemoryStream(body);
+        httpContext.Request.ContentLength = body.Length;
         httpContext.Response.Body = new MemoryStream();
 
         ActionContext actionContext = new(httpContext, new RouteData(), actionDescriptor);
-        List<IFilterMetadata> filtros = [];
+        List<IFilterMetadata> filters = [];
 
         // --- Primeira chamada: next() simula uma exceção não tratada por
         // nenhum filtro mais interno (o cenário real que o ResourceInvoker
@@ -122,8 +123,8 @@ public sealed class IdempotencyFilterExceptionTests
         // lança sem que ninguém marque ExceptionHandled). A chamada ao filtro
         // em si NÃO relança (isso é responsabilidade do ResourceInvoker
         // externo, não simulado aqui): o filtro só decide se cacheia ou não.
-        ResourceExecutingContext executingContext = new(actionContext, filtros, []);
-        static Task<ResourceExecutedContext> NextComExcecaoPendente(ActionContext ctx, IList<IFilterMetadata> f)
+        ResourceExecutingContext executingContext = new(actionContext, filters, []);
+        static Task<ResourceExecutedContext> NextWithPendingException(ActionContext ctx, IList<IFilterMetadata> f)
         {
             ResourceExecutedContext executed = new(ctx, f)
             {
@@ -135,17 +136,17 @@ public sealed class IdempotencyFilterExceptionTests
 
         await filter.OnResourceExecutionAsync(
             executingContext,
-            () => NextComExcecaoPendente(actionContext, filtros));
+            () => NextWithPendingException(actionContext, filters));
 
         // O bodyHash do lookup precisa bater com o mesmo corpo — o filtro já
         // reposicionou o stream do request para 0 internamente.
-        string bodyHash = ComputarBodyHash(corpo);
-        string scopeChave = "user:idempotency-filter-exception-test-user";
+        string bodyHash = ComputeBodyHash(body);
+        string idempotencyScope = "user:idempotency-filter-exception-test-user";
 
-        IdempotencyLookupResult lookupAposExcecao = await store.LookupAsync(
-            scopeChave, endpoint, idempotencyKey, bodyHash, CancellationToken.None);
+        IdempotencyLookupResult lookupAfterException = await store.LookupAsync(
+            idempotencyScope, endpoint, idempotencyKey, bodyHash, CancellationToken.None);
 
-        lookupAposExcecao.Outcome.Should().Be(
+        lookupAfterException.Outcome.Should().Be(
             IdempotencyOutcome.Processing,
             "uma exceção pendente e não tratada não deve deixar entrada Completed (200 fabricado) nem ser apagada — "
             + "apagar arriscaria reexecutar uma mutação que já pode ter persistido antes da exceção");
@@ -159,29 +160,29 @@ public sealed class IdempotencyFilterExceptionTests
         httpContext2.Request.Method = "POST";
         httpContext2.Request.Path = "/api/configuracao/admin/termos-consentimento/00000000-0000-0000-0000-000000000001/revisar";
         httpContext2.Request.Headers["Idempotency-Key"] = idempotencyKey;
-        httpContext2.Request.Body = new MemoryStream(corpo);
-        httpContext2.Request.ContentLength = corpo.Length;
+        httpContext2.Request.Body = new MemoryStream(body);
+        httpContext2.Request.ContentLength = body.Length;
         httpContext2.Response.Body = new MemoryStream();
 
         ActionContext actionContext2 = new(httpContext2, new RouteData(), actionDescriptor);
-        ResourceExecutingContext executingContext2 = new(actionContext2, filtros, []);
+        ResourceExecutingContext executingContext2 = new(actionContext2, filters, []);
 
-        bool nextChamado = false;
-        Task<ResourceExecutedContext> NextNuncaDeveriaRodar()
+        bool nextInvoked = false;
+        Task<ResourceExecutedContext> NextShouldNeverRun()
         {
-            nextChamado = true;
-            return Task.FromResult(new ResourceExecutedContext(actionContext2, filtros));
+            nextInvoked = true;
+            return Task.FromResult(new ResourceExecutedContext(actionContext2, filters));
         }
 
-        await filter.OnResourceExecutionAsync(executingContext2, NextNuncaDeveriaRodar);
+        await filter.OnResourceExecutionAsync(executingContext2, NextShouldNeverRun);
 
-        nextChamado.Should().BeFalse(
+        nextInvoked.Should().BeFalse(
             "o retry imediato deve ser rejeitado pelo lookup de Processing, sem nunca chegar a invocar a action de novo");
         executingContext2.Result.Should().NotBeNull(
             "o filtro deve ter produzido a resposta 409 ProcessingConflict via short-circuit");
     }
 
-    private static string ComputarBodyHash(byte[] bytes)
+    private static string ComputeBodyHash(byte[] bytes)
     {
         Span<byte> hash = stackalloc byte[32];
         System.Security.Cryptography.SHA256.HashData(bytes, hash);
