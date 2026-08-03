@@ -104,6 +104,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Bônus regional (RN05) — ausência = sem bônus (toggle por presença, INV-B5).</summary>
     public ConfiguracaoBonusRegional? BonusRegional { get; private set; }
 
+    /// <summary>
+    /// A cascata de remanejamento das cotas reservadas (Story #575, RN-CASCATA-1..5) —
+    /// ausência = nenhuma cascata configurada (toggle por presença, mesmo padrão de
+    /// <see cref="BonusRegional"/>). Uma só por processo, nunca por oferta de curso
+    /// (§2.2 da story) — a cobertura por oferta é validada em <see cref="PendenciaDaCascata"/>.
+    /// </summary>
+    public ConfiguracaoCascataRemanejamento? Cascata { get; private set; }
+
     private readonly List<CriterioDesempate> _criteriosDesempate = [];
     public IReadOnlyCollection<CriterioDesempate> CriteriosDesempate => _criteriosDesempate.AsReadOnly();
 
@@ -365,6 +373,35 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         bonus.VincularProcesso(Id);
         BonusRegional = bonus;
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Define (ou remove) a cascata de remanejamento do processo (Story #575).
+    /// Passar <see langword="null"/> remove a cascata — a ausência da entidade já
+    /// é o toggle "sem cascata configurada", mesmo padrão de <see cref="DefinirBonusRegional"/>.
+    /// A forma (RN-CASCATA-4) e o vínculo com a regra versionada (RN-CASCATA-5) já
+    /// foram validados antes de chegar aqui — pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
+    /// e pelo handler da Application, respectivamente; este método só aplica a mutação
+    /// protegida pela sessão editorial.
+    /// </summary>
+    public Result DefinirCascataRemanejamento(ConfiguracaoCascataRemanejamento? cascata, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (cascata is null)
+        {
+            Cascata = null;
+            Rascunho?.IncrementarRevisao();
+            return Result.Success();
+        }
+
+        cascata.VincularProcesso(Id);
+        Cascata = cascata;
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
@@ -1239,7 +1276,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// ser maior que zero. Sob <see cref="RegraCalculoCodigo.ClassificacaoImportada"/>, a
     /// classificação dispensa etapa, fórmula e precisão locais — nenhum item aqui.
     /// </remarks>
-    public IReadOnlyList<ItemConformidade> AvaliarConformidade()
+    /// <summary>
+    /// Os itens estruturais de conformidade — a fonte que <see cref="PendenciaDeConformidade"/>
+    /// agrega no <c>DomainError</c> genérico. Extraído de <see cref="AvaliarConformidade"/> na
+    /// Story #575 (achado de revisão de plano): a cascata de remanejamento tem erro NOMEADO
+    /// próprio (<see cref="PendenciaDaCascata"/>) e não pode entrar nesta lista, senão o
+    /// agregador genérico intercepta o erro específico antes que ele seja alcançado.
+    /// </summary>
+    private List<ItemConformidade> ItensEstruturaisDeConformidade()
     {
         List<ItemConformidade> itens =
         [
@@ -1266,6 +1310,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return itens;
     }
 
+    /// <summary>
+    /// O checklist completo que <c>GET /conformidade</c> exibe — itens estruturais mais o item
+    /// de exibição da cascata de remanejamento (Story #575). O item da cascata NUNCA alimenta
+    /// <see cref="PendenciaDeConformidade"/>: o erro específico, nomeando oferta e modalidade,
+    /// só existe via <see cref="PendenciaDaCascata"/>.
+    /// </summary>
+    public IReadOnlyList<ItemConformidade> AvaliarConformidade() =>
+        [.. ItensEstruturaisDeConformidade(), new ItemConformidade("Cascata de remanejamento", PendenciaDaCascata() is null)];
+
     /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria (Story #920) — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
     private bool GruposComConsequenciaTemBaseLegalResolvida() =>
         _nosExigencia
@@ -1287,7 +1340,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     public DomainError? PendenciaDeConformidade()
     {
-        IReadOnlyList<ItemConformidade> pendencias = [.. AvaliarConformidade().Where(static item => !item.Ok)];
+        // Story #575: só os itens ESTRUTURAIS entram no agregador genérico — a cascata de
+        // remanejamento tem erro nomeado próprio (PendenciaDaCascata) e nunca passa por aqui.
+        IReadOnlyList<ItemConformidade> pendencias = [.. ItensEstruturaisDeConformidade().Where(static item => !item.Ok)];
         if (pendencias.Count == 0)
         {
             return null;
@@ -1296,6 +1351,128 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return new DomainError(
             "ProcessoSeletivo.ConformidadeInsuficiente",
             $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Item))}.");
+    }
+
+    /// <summary>
+    /// Pendência de cobertura da cascata de remanejamento (Story #575, RN-CASCATA-1/2/2b/3) —
+    /// erro NOMEADO, público (chamado tanto pela raiz quanto pelos handlers da Application,
+    /// que estão em outro assembly). Chamado por <see cref="Publicar"/> e <see cref="SucederVersao"/>
+    /// na mesma posição de <see cref="PendenciaDoCronograma"/>.
+    /// </summary>
+    /// <remarks>
+    /// A ordenação é determinística em todos os níveis — ofertas por <c>OfertaCursoOrigemId</c>
+    /// (comparação direta de <see cref="Guid"/>), modalidades de cada oferta por <c>Codigo</c>
+    /// (<see cref="StringComparer.Ordinal"/>), origens da cascata por <c>ModalidadeOrigemCodigo</c>
+    /// (ordinal) e destinos por <c>Ordem</c> — para que o primeiro erro nunca varie conforme a
+    /// ordem física de retorno do Postgres (os <c>Include</c> de <c>ComConfiguracao</c> não
+    /// aplicam ordem às coleções).
+    /// </remarks>
+    public DomainError? PendenciaDaCascata()
+    {
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> ofertas = [.. _distribuicaoVagas.OrderBy(static o => o.OfertaCursoOrigemId)];
+
+        foreach (ConfiguracaoDistribuicaoVagas oferta in ofertas)
+        {
+            IReadOnlyList<ModalidadeSelecionada> modalidadesSegueCascata = [.. oferta.Modalidades
+                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
+                .OrderBy(static m => m.Codigo, StringComparer.Ordinal)];
+
+            if (modalidadesSegueCascata.Count == 0)
+            {
+                continue;
+            }
+
+            // RN-CASCATA-2b: SegueCascata só é coberta pela cascata única do processo quando a
+            // oferta usa o regime federal — fora dele, a cascata não tem o que validar.
+            if (oferta.RegraDistribuicao.Codigo != RegraDistribuicaoVagasCodigo.Lei12711)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.CascataForaDoRegimeFederal",
+                    $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidadesSegueCascata[0].Codigo}\" com SegueCascata, mas não usa a regra de distribuição {RegraDistribuicaoVagasCodigo.Lei12711}.");
+            }
+
+            if (Cascata is null)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.CascataOrigemAusente",
+                    $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidadesSegueCascata[0].Codigo}\" com SegueCascata, mas o processo não tem cascata de remanejamento configurada.");
+            }
+
+            HashSet<string> codigosDaOferta = new(oferta.Modalidades.Select(static m => m.Codigo), StringComparer.Ordinal);
+
+            if (!codigosDaOferta.Contains(Cascata.FallbackCodigo))
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
+                    $"O fallback \"{Cascata.FallbackCodigo}\" da cascata não é uma modalidade selecionada na oferta {oferta.OfertaCursoOrigemId}.");
+            }
+
+            foreach (ModalidadeSelecionada modalidade in modalidadesSegueCascata)
+            {
+                bool temDestinoResolvivelNaOferta = Cascata.Destinos
+                    .Where(d => string.Equals(d.ModalidadeOrigemCodigo, modalidade.Codigo, StringComparison.Ordinal))
+                    .OrderBy(static d => d.Ordem)
+                    .Any(d => codigosDaOferta.Contains(d.ModalidadeDestinoCodigo));
+
+                bool origemDeclaradaNaCascata = Cascata.Destinos
+                    .Any(d => string.Equals(d.ModalidadeOrigemCodigo, modalidade.Codigo, StringComparison.Ordinal));
+
+                if (!origemDeclaradaNaCascata)
+                {
+                    return new DomainError(
+                        "ProcessoSeletivo.CascataOrigemAusente",
+                        $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidade.Codigo}\" com SegueCascata, mas a cascata não declara nenhum destino para ela.");
+                }
+
+                if (!temDestinoResolvivelNaOferta)
+                {
+                    return new DomainError(
+                        "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
+                        $"Nenhum destino da origem \"{modalidade.Codigo}\" na cascata é uma modalidade selecionada na oferta {oferta.OfertaCursoOrigemId}.");
+                }
+            }
+        }
+
+        if (Cascata is null)
+        {
+            return null;
+        }
+
+        HashSet<string> todosOsCodigosOfertados = new(
+            ofertas.SelectMany(static o => o.Modalidades).Select(static m => m.Codigo),
+            StringComparer.Ordinal);
+        HashSet<string> todasAsOrigensSegueCascata = new(
+            ofertas.SelectMany(static o => o.Modalidades)
+                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
+                .Select(static m => m.Codigo),
+            StringComparer.Ordinal);
+
+        IReadOnlyList<DestinoRemanejamento> origensDaCascataEmOrdem = [.. Cascata.Destinos
+            .Select(static d => d.ModalidadeOrigemCodigo)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(static o => o, StringComparer.Ordinal)
+            .SelectMany(origem => Cascata.Destinos
+                .Where(d => string.Equals(d.ModalidadeOrigemCodigo, origem, StringComparison.Ordinal))
+                .OrderBy(static d => d.Ordem))];
+
+        foreach (DestinoRemanejamento destino in origensDaCascataEmOrdem)
+        {
+            if (!todasAsOrigensSegueCascata.Contains(destino.ModalidadeOrigemCodigo))
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.CascataOrigemNaoSegueCascata",
+                    $"A cascata declara a origem \"{destino.ModalidadeOrigemCodigo}\", mas nenhuma oferta do processo a marca como SegueCascata.");
+            }
+
+            if (!todosOsCodigosOfertados.Contains(destino.ModalidadeDestinoCodigo))
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.CascataDestinoDesconhecido",
+                    $"A cascata declara o destino \"{destino.ModalidadeDestinoCodigo}\", que não é modalidade selecionada em nenhuma oferta do processo.");
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -1874,6 +2051,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
 
+        if (PendenciaDaCascata() is { } pendenciaCascata)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCascata);
+        }
+
         if (PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
@@ -2194,6 +2376,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
         }
 
+        if (PendenciaDaCascata() is { } pendenciaCascata)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaCascata);
+        }
+
         if (PendenciaPreCanonicalizacao() is { } pendenciaPreCanonicalizacao)
         {
             return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
@@ -2291,7 +2478,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </para>
     /// </remarks>
     /// <param name="versao">Versão congelada de onde o grafo foi reconstruído — deste processo, e a que o handler elegeu como vigente.</param>
-    /// <param name="grafo">As seis dimensões reconstruídas pelo codec do envelope (ADR-0110 D1).</param>
+    /// <param name="grafo">As dimensões reconstruídas pelo codec do envelope (ADR-0110 D1).</param>
     public Result RestaurarConfiguracaoCongelada(VersaoConfiguracao versao, GrafoConfiguracao grafo)
     {
         ArgumentNullException.ThrowIfNull(versao);
@@ -2778,6 +2965,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         grafo.BonusRegional?.VincularProcesso(Id);
         BonusRegional = grafo.BonusRegional;
+
+        grafo.CascataRemanejamento?.VincularProcesso(Id);
+        Cascata = grafo.CascataRemanejamento;
 
         _criteriosDesempate.Clear();
         foreach (CriterioDesempate criterio in grafo.CriteriosDesempate)
