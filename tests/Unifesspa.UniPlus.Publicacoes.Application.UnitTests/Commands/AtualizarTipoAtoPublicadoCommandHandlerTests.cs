@@ -4,11 +4,15 @@ using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
+using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -115,6 +119,28 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NomeTamanho);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Violação da exclusion constraint de vigência descarta o rastreamento antes de devolver o conflito")]
+    public async Task Handle_ColisaoNaExclusionConstraint_DescartaRastreamentoERetornaConflito()
+    {
+        TipoAtoPublicado existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _repository.ExisteSobreposicaoDeVigenciaAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "conflito sintético de teste",
+                PostgresExceptionFactory.Create("23P01", "ex_tipo_ato_publicado_codigo_vigencia")));
+
+        Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
+            Comando(existente.Id) with { VigenciaInicio = Inicio.AddMonths(2) },
+            _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.VigenciaSobreposta);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     private static TipoAtoPublicado Existente() =>
