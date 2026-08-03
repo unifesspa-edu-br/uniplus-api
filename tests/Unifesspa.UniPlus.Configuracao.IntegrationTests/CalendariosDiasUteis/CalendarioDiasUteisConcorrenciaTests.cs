@@ -84,7 +84,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         // aqui até txB liberar.
         await dbB.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {id}");
-        int pidDbB = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbB);
+        int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
 
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
@@ -95,7 +95,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         // até aparecer um backend em wait_event_type='Lock' que não é nem a
         // conexão de poll nem dbB (issue #1031 — identificação por PID, não
         // por texto de query).
-        await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(api, taskA, [pidDbB]);
+        await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(api, taskA, [pidDbB]);
 
         await txB.CommitAsync();
 

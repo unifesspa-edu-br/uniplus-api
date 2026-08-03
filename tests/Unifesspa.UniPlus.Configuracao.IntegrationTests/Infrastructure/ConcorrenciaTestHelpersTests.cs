@@ -19,7 +19,7 @@ using Xunit.Sdk;
 using IMessageBus = Wolverine.IMessageBus;
 
 /// <summary>
-/// Prova de correção da issue #1031: <see cref="ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync"/>
+/// Prova de correção da issue #1031: <see cref="ConcorrenciaTestHelpers.WaitForBlockedBackendAsync"/>
 /// identifica o backend bloqueado correlacionando via <c>pg_blocking_pids</c> —
 /// imune tanto a texto de query coincidente quanto a qualquer OUTRO backend
 /// bloqueado por um lock não relacionado ao que o chamador está segurando (o
@@ -43,7 +43,7 @@ public sealed class ConcorrenciaTestHelpersTests
 
     [Fact(DisplayName =
         "Um backend bloqueado por um lock alheio (mesma tabela, holder diferente) não é confundido com o backend real sob teste")]
-    public async Task AguardarBackendBloqueadoAsync_ComBackendBloqueadoPorHolderAlheio_NaoDaFalsoPositivo()
+    public async Task WaitForBlockedBackendAsync_WithBackendBlockedByUnrelatedHolder_DoesNotFalsePositive()
     {
         MonolitoApiFactory api = _fixture.Factory;
 
@@ -74,7 +74,7 @@ public sealed class ConcorrenciaTestHelpersTests
         await using IDbContextTransaction txDecoyHolder = await dbDecoyHolder.Database.BeginTransactionAsync();
         await dbDecoyHolder.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idDecoy}");
-        int pidDecoyHolder = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbDecoyHolder);
+        int pidDecoyHolder = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbDecoyHolder);
 
         await using AsyncServiceScope scopeDecoyBlocked = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext dbDecoyBlocked = scopeDecoyBlocked.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
@@ -101,7 +101,7 @@ public sealed class ConcorrenciaTestHelpersTests
         {
             // Prova de que o decoy está genuinamente bloqueado — pelo holder
             // DELE, não pelo que a corrida real vai usar.
-            await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
+            await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
                 api, decoyBlockedTask, [pidDecoyHolder], TimeSpan.FromSeconds(5));
 
             // --- Fase 1: com o decoy já bloqueado, a corrida real (busA) nem
@@ -113,13 +113,13 @@ public sealed class ConcorrenciaTestHelpersTests
             await using IDbContextTransaction txAlvoHolder = await dbAlvoHolder.Database.BeginTransactionAsync();
             await dbAlvoHolder.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idAlvo}");
-            int pidAlvoHolder = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbAlvoHolder);
+            int pidAlvoHolder = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbAlvoHolder);
 
-            Task tarefaQueNuncaBloqueiaDeVerdade = Task.Delay(TimeSpan.FromMinutes(1));
-            Func<Task> aguardarSemBusA = () => ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
-                api, tarefaQueNuncaBloqueiaDeVerdade, [pidAlvoHolder], TimeSpan.FromMilliseconds(300));
+            Task taskThatNeverActuallyBlocks = Task.Delay(TimeSpan.FromMinutes(1));
+            Func<Task> waitWithoutBusA = () => ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
+                api, taskThatNeverActuallyBlocks, [pidAlvoHolder], TimeSpan.FromMilliseconds(300));
 
-            await aguardarSemBusA.Should().ThrowAsync<FailException>(
+            await waitWithoutBusA.Should().ThrowAsync<FailException>(
                 "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com pidAlvoHolder");
 
             // --- Fase 2: agora a corrida real (busA) começa e disputa a MESMA
@@ -129,7 +129,7 @@ public sealed class ConcorrenciaTestHelpersTests
             IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
             Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(idAlvo));
 
-            await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(
+            await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
                 api, taskA, [pidAlvoHolder], TimeSpan.FromSeconds(5));
 
             await txAlvoHolder.CommitAsync();

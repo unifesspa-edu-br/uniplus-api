@@ -25,12 +25,12 @@ using Xunit;
 /// </remarks>
 internal static class ConcorrenciaTestHelpers
 {
-    private static readonly TimeSpan PrazoPadrao = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// Faz poll em <c>pg_stat_activity</c> até observar um backend com
     /// <c>wait_event_type = 'Lock'</c> que <c>pg_blocking_pids()</c> confirma
-    /// estar bloqueado especificamente por um dos <paramref name="pidsSeguradoresDoLock"/>
+    /// estar bloqueado especificamente por um dos <paramref name="lockHolderPids"/>
     /// — prova direta de que outro backend (o handler real sob teste) está
     /// esperando o lock que o chamador segura, sem depender de casar texto de
     /// query com o nome da tabela nem de simplesmente excluir PIDs conhecidos.
@@ -46,34 +46,34 @@ internal static class ConcorrenciaTestHelpers
     /// lock — não bloqueado por QUALQUER OUTRA coisa.
     /// </remarks>
     /// <param name="api">Factory da API sob teste, usada para abrir a conexão de poll.</param>
-    /// <param name="tarefaQueDeveriaBloquear">Tarefa do handler real sob teste — falha cedo se completar antes de bloquear.</param>
-    /// <param name="pidsSeguradoresDoLock">
+    /// <param name="taskExpectedToBlock">Tarefa do handler real sob teste — falha cedo se completar antes de bloquear.</param>
+    /// <param name="lockHolderPids">
     /// PID de toda conexão que o próprio chamador mantém aberta segurando o
     /// lock (ex.: a transação com o <c>UPDATE</c> ainda não commitado) —
-    /// capturado via <see cref="ObterPidDaConexaoAsync"/> ENQUANTO a conexão
+    /// capturado via <see cref="GetConnectionPidAsync"/> ENQUANTO a conexão
     /// está ociosa (nunca enquanto ela mesma está executando um comando
     /// bloqueado — a mesma conexão Npgsql não aceita um novo comando
     /// concorrente ao que já está em voo).
     /// </param>
-    /// <param name="prazo">Tempo máximo de espera; usa <see cref="PrazoPadrao"/> quando omitido.</param>
-    public static async Task AguardarBackendBloqueadoAsync(
+    /// <param name="timeout">Tempo máximo de espera; usa <see cref="DefaultTimeout"/> quando omitido.</param>
+    public static async Task WaitForBlockedBackendAsync(
         MonolitoApiFactory api,
-        Task tarefaQueDeveriaBloquear,
-        IReadOnlyCollection<int> pidsSeguradoresDoLock,
-        TimeSpan? prazo = null)
+        Task taskExpectedToBlock,
+        IReadOnlyCollection<int> lockHolderPids,
+        TimeSpan? timeout = null)
     {
         ArgumentNullException.ThrowIfNull(api);
-        ArgumentNullException.ThrowIfNull(tarefaQueDeveriaBloquear);
-        ArgumentNullException.ThrowIfNull(pidsSeguradoresDoLock);
+        ArgumentNullException.ThrowIfNull(taskExpectedToBlock);
+        ArgumentNullException.ThrowIfNull(lockHolderPids);
 
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
-        int[] pidsHolders = [.. pidsSeguradoresDoLock];
+        int[] holderPids = [.. lockHolderPids];
 
-        DateTimeOffset limite = DateTimeOffset.UtcNow.Add(prazo ?? PrazoPadrao);
-        while (DateTimeOffset.UtcNow < limite)
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(timeout ?? DefaultTimeout);
+        while (DateTimeOffset.UtcNow < deadline)
         {
-            if (tarefaQueDeveriaBloquear.IsCompleted)
+            if (taskExpectedToBlock.IsCompleted)
             {
                 Assert.Fail("A tarefa completou antes de bloquear no lock — a corrida não foi forçada como esperado.");
             }
@@ -87,19 +87,19 @@ internal static class ConcorrenciaTestHelpers
             // já ter voltado ao pool do Npgsql e sido reaproveitado pelo
             // PRÓPRIO handler sob teste, excluindo exatamente o backend que
             // este método deveria encontrar (achado do Codex no PR #1036).
-            int backendsBloqueados = await pollDb.Database
+            int blockedBackends = await pollDb.Database
                 .SqlQuery<int>(
                     $"""
                     SELECT count(*)::int AS "Value" FROM pg_stat_activity psa
                     WHERE psa.wait_event_type = 'Lock'
                       AND EXISTS (
-                          SELECT 1 FROM unnest(pg_blocking_pids(psa.pid)) AS bloqueador(pid)
-                          WHERE bloqueador.pid = ANY({pidsHolders})
+                          SELECT 1 FROM unnest(pg_blocking_pids(psa.pid)) AS blocker(pid)
+                          WHERE blocker.pid = ANY({holderPids})
                       )
                     """)
                 .SingleAsync();
 
-            if (backendsBloqueados > 0)
+            if (blockedBackends > 0)
             {
                 return;
             }
@@ -111,16 +111,16 @@ internal static class ConcorrenciaTestHelpers
     }
 
     /// <summary>
-    /// PID real da conexão Postgres por trás de <paramref name="conexao"/>.
+    /// PID real da conexão Postgres por trás de <paramref name="connection"/>.
     /// Só é seguro chamar enquanto a conexão está ociosa — nunca enquanto ela
     /// mesma está executando um comando ainda em voo (ex.: bloqueada esperando
     /// um lock): o protocolo do Npgsql não aceita um novo comando concorrente
     /// ao que já está em andamento na mesma conexão.
     /// </summary>
-    public static async Task<int> ObterPidDaConexaoAsync(ConfiguracaoDbContext conexao)
+    public static async Task<int> GetConnectionPidAsync(ConfiguracaoDbContext connection)
     {
-        ArgumentNullException.ThrowIfNull(conexao);
-        return await conexao.Database
+        ArgumentNullException.ThrowIfNull(connection);
+        return await connection.Database
             .SqlQuery<int>($"""SELECT pg_backend_pid() AS "Value" """)
             .SingleAsync();
     }
