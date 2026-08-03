@@ -32,11 +32,11 @@ using IMessageBus = Wolverine.IMessageBus;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit collection fixture exige tipo de teste público.")]
-public sealed class ConcorrenciaTestHelpersTests
+public sealed class ConcurrencyTestHelpersTests
 {
     private readonly ConfiguracaoEndpointFixture _fixture;
 
-    public ConcorrenciaTestHelpersTests(ConfiguracaoEndpointFixture fixture)
+    public ConcurrencyTestHelpersTests(ConfiguracaoEndpointFixture fixture)
     {
         _fixture = fixture;
     }
@@ -47,21 +47,21 @@ public sealed class ConcorrenciaTestHelpersTests
     {
         MonolitoApiFactory api = _fixture.Factory;
 
-        Guid idAlvo;
-        Guid idDecoy;
+        Guid targetId;
+        Guid decoyId;
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
             ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
-            CalendarioDiasUteis alvo = CalendarioDiasUteis.Criar(
-                $"pid-alvo-{Guid.NewGuid():N}"[..20],
+            CalendarioDiasUteis target = CalendarioDiasUteis.Criar(
+                $"pid-target-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "x")]).Value!;
             CalendarioDiasUteis decoy = CalendarioDiasUteis.Criar(
                 $"pid-decoy-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "x")]).Value!;
-            db.CalendariosDiasUteis.AddRange(alvo, decoy);
+            db.CalendariosDiasUteis.AddRange(target, decoy);
             await db.SaveChangesAsync();
-            idAlvo = alvo.Id;
-            idDecoy = decoy.Id;
+            targetId = target.Id;
+            decoyId = decoy.Id;
         }
 
         // Decoy: uma segunda corrida, TOTALMENTE alheia à corrida sob teste,
@@ -73,14 +73,14 @@ public sealed class ConcorrenciaTestHelpersTests
         ConfiguracaoDbContext dbDecoyHolder = scopeDecoyHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         await using IDbContextTransaction txDecoyHolder = await dbDecoyHolder.Database.BeginTransactionAsync();
         await dbDecoyHolder.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idDecoy}");
-        int pidDecoyHolder = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbDecoyHolder);
+            $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {decoyId}");
+        int pdecoyIdHolder = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbDecoyHolder);
 
         await using AsyncServiceScope scopeDecoyBlocked = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext dbDecoyBlocked = scopeDecoyBlocked.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
         await using IDbContextTransaction txDecoyBlocked = await dbDecoyBlocked.Database.BeginTransactionAsync();
         Task decoyBlockedTask = dbDecoyBlocked.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idDecoy}");
+            $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {decoyId}");
 
         // Se qualquer asserção abaixo — incluindo a própria confirmação de que
         // o decoy está bloqueado — falhar antes de liberar txDecoyHolder,
@@ -102,43 +102,43 @@ public sealed class ConcorrenciaTestHelpersTests
             // Prova de que o decoy está genuinamente bloqueado — pelo holder
             // DELE, não pelo que a corrida real vai usar.
             await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
-                api, decoyBlockedTask, [pidDecoyHolder], TimeSpan.FromSeconds(5));
+                api, decoyBlockedTask, [pdecoyIdHolder], TimeSpan.FromSeconds(5));
 
             // --- Fase 1: com o decoy já bloqueado, a corrida real (busA) nem
             // começou. Pedir a espera correlacionada ao holder de A (que só vai
             // existir de verdade na Fase 2) não deve ser satisfeita pelo decoy —
-            // ele está bloqueado por pidDecoyHolder, não por pidAlvoHolder.
-            await using AsyncServiceScope scopeAlvoHolder = api.Services.CreateAsyncScope();
-            ConfiguracaoDbContext dbAlvoHolder = scopeAlvoHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
-            await using IDbContextTransaction txAlvoHolder = await dbAlvoHolder.Database.BeginTransactionAsync();
-            await dbAlvoHolder.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {idAlvo}");
-            int pidAlvoHolder = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbAlvoHolder);
+            // ele está bloqueado por pdecoyIdHolder, não por targetHolderPid.
+            await using AsyncServiceScope scopeTargetHolder = api.Services.CreateAsyncScope();
+            ConfiguracaoDbContext dbTargetHolder = scopeTargetHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            await using IDbContextTransaction txTargetHolder = await dbTargetHolder.Database.BeginTransactionAsync();
+            await dbTargetHolder.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {targetId}");
+            int targetHolderPid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbTargetHolder);
 
             Task taskThatNeverActuallyBlocks = Task.Delay(TimeSpan.FromMinutes(1));
             Func<Task> waitWithoutBusA = () => ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
-                api, taskThatNeverActuallyBlocks, [pidAlvoHolder], TimeSpan.FromMilliseconds(300));
+                api, taskThatNeverActuallyBlocks, [targetHolderPid], TimeSpan.FromMilliseconds(300));
 
             await waitWithoutBusA.Should().ThrowAsync<FailException>(
-                "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com pidAlvoHolder");
+                "o decoy está bloqueado por outro holder — pg_blocking_pids não o correlaciona com targetHolderPid");
 
             // --- Fase 2: agora a corrida real (busA) começa e disputa a MESMA
-            // linha que dbAlvoHolder está segurando — pg_blocking_pids vai
-            // confirmar que o bloqueador de busA é especificamente pidAlvoHolder.
+            // linha que dbTargetHolder está segurando — pg_blocking_pids vai
+            // confirmar que o bloqueador de busA é especificamente targetHolderPid.
             await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
             IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
-            Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(idAlvo));
+            Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(targetId));
 
             await ConcorrenciaTestHelpers.WaitForBlockedBackendAsync(
-                api, taskA, [pidAlvoHolder], TimeSpan.FromSeconds(5));
+                api, taskA, [targetHolderPid], TimeSpan.FromSeconds(5));
 
-            await txAlvoHolder.CommitAsync();
+            await txTargetHolder.CommitAsync();
             await txDecoyHolder.CommitAsync();
             decoyHolderCommitted = true;
 
             Func<Task> act = async () => await taskA;
             await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
-                "o xmin lido por busA ficou obsoleto assim que dbAlvoHolder commitou a própria escrita na mesma linha (ADR-0119 — RemoverCalendarioDiasUteisCommandHandler propaga sem catch)");
+                "o xmin lido por busA ficou obsoleto assim que dbTargetHolder commitou a própria escrita na mesma linha (ADR-0119 — RemoverCalendarioDiasUteisCommandHandler propaga sem catch)");
 
             await decoyBlockedTask;
             await txDecoyBlocked.RollbackAsync();
