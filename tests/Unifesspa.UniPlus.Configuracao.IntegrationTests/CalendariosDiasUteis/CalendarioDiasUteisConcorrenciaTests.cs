@@ -84,16 +84,18 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         // aqui até txB liberar.
         await dbB.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {id}");
+        int pidDbB = await ConcorrenciaTestHelpers.ObterPidDaConexaoAsync(dbB);
 
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverCalendarioDiasUteisCommand(id));
 
         // Prova direta (não uma aposta de tempo) de que busA já leu o xmin
-        // antigo e está bloqueado tentando escrever: poll em pg_locks até
-        // aparecer um lock NÃO concedido na tabela — só existe se alguém além
-        // de txB está esperando a linha.
-        await ConcorrenciaTestHelpers.AguardarLockPendenteAsync(api, "calendario_dias_uteis", taskA);
+        // antigo e está bloqueado tentando escrever: poll em pg_stat_activity
+        // até aparecer um backend em wait_event_type='Lock' que não é nem a
+        // conexão de poll nem dbB (issue #1031 — identificação por PID, não
+        // por texto de query).
+        await ConcorrenciaTestHelpers.AguardarBackendBloqueadoAsync(api, taskA, [pidDbB]);
 
         await txB.CommitAsync();
 
