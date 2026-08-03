@@ -268,6 +268,37 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Define (ou remove) a cascata de remanejamento do processo
+    /// (RN-CASCATA-1..5, Story #575). <c>RegraCodigo</c> nulo remove a
+    /// cascata — a ausência já é o toggle "sem cascata".
+    /// </summary>
+    [HttpPut("{id:guid}/cascata-remanejamento")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirCascataRemanejamento(
+        Guid id,
+        [FromBody] DefinirCascataRemanejamentoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirCascataRemanejamentoCommand(id, request.RegraCodigo, request.RegraVersao, request.FallbackCodigo, request.Destinos, precondicao),
+            cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Substitui integralmente a configuração de classificação do processo
     /// (Story #775, modelagem P-B §2.1) — o 15º bloco canônico, que compõe
     /// por referência a fórmula da nota, a precisão, a lista de eliminação e
