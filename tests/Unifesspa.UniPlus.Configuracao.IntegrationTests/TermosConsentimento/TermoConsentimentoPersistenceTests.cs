@@ -104,9 +104,10 @@ public sealed class TermoConsentimentoPersistenceTests
         versaoPersistida.PromovidaPor.Should().Be("usuario.revisor");
         versaoPersistida.Hash.Should().HaveLength(64, "hash é SHA-256 hex (64 caracteres)");
 
-        // O rascunho permanece intacto após a promoção.
+        // O texto/base legal do rascunho permanecem intactos após a promoção; só a
+        // revisão é consumida (status volta a EM_ELABORACAO).
         persistido.TextoRascunho.Should().Be("Texto do termo");
-        persistido.Revisado.Should().BeTrue();
+        persistido.Revisado.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Promover concorrente com edição que reverte a revisão falha por concorrência (xmin)")]

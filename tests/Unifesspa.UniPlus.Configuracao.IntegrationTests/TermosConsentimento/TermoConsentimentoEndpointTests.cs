@@ -150,8 +150,14 @@ public sealed class TermoConsentimentoEndpointTests
         JsonElement versoes = doc.RootElement.GetProperty("versoes");
         versoes.GetArrayLength().Should().Be(1);
 
-        // O rascunho permanece intacto (Revisado ainda true — nenhuma edição posterior).
-        doc.RootElement.GetProperty("revisado").GetBoolean().Should().BeTrue();
+        // A revisão é consumida pela promoção — status volta a EM_ELABORACAO mesmo
+        // sem nenhuma edição posterior do rascunho.
+        doc.RootElement.GetProperty("revisado").GetBoolean().Should().BeFalse();
+
+        // Identificador de autenticação do operador nunca sai na representação
+        // pública (endpoint anônimo) — nem no termo, nem na versão promovida.
+        doc.RootElement.TryGetProperty("revisadoPor", out _).Should().BeFalse();
+        versoes[0].TryGetProperty("promovidaPor", out _).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Editar rascunho já revisado reverte o status para EM_ELABORACAO")]

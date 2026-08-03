@@ -206,6 +206,28 @@ public sealed class TermoConsentimentoTests
         // Rascunho permanece intacto — pode gerar a PRÓXIMA versão no futuro.
         termo.TextoRascunho.Should().Be("Texto do termo");
         termo.BaseLegalRascunho.Should().Be("Lei 13.709/2018");
+
+        // A revisão é consumida pela promoção — cada versão exige seu próprio sinal.
+        termo.Revisado.Should().BeFalse();
+        termo.RevisadoPor.Should().BeNull();
+        termo.RevisadoEm.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Promover duas vezes sem revisar de novo recusa a segunda promoção")]
+    public void Promover_DuasVezesSemRevisarDeNovo_RecusaSegunda()
+    {
+        // Codex #1019 P2: sem consumir a revisão, um retry acidental da promoção
+        // (outra Idempotency-Key, duplo clique) anexaria uma segunda versão
+        // idêntica ao histórico forense a partir do MESMO conteúdo já revisado.
+        TermoConsentimento termo = CriarRevisavel();
+        termo.MarcarRevisado("usuario.revisor", Agora);
+        termo.Promover("usuario.revisor", Agora).IsSuccess.Should().BeTrue();
+
+        Result<TermoConsentimentoVersao> segunda = termo.Promover("usuario.revisor", Agora);
+
+        segunda.IsFailure.Should().BeTrue();
+        segunda.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.PromocaoSemRevisao);
+        termo.Versoes.Should().HaveCount(1, "a segunda tentativa não deve anexar outra versão");
     }
 
     [Fact(DisplayName = "Duas promoções do mesmo conteúdo produzem o mesmo hash")]

@@ -16,7 +16,6 @@ public static class TermoConsentimentoMapping
             termo.BaseLegalRascunho,
             FormasAceite.ParaTokenCanonico(termo.FormaAceiteRascunho),
             termo.Revisado,
-            termo.RevisadoPor,
             termo.RevisadoEm,
             [.. termo.Versoes.Select(ToDto)],
             termo.CreatedAt);
@@ -40,6 +39,5 @@ public static class TermoConsentimentoMapping
             versao.BaseLegal,
             FormasAceite.ParaTokenCanonico(versao.FormaAceite),
             versao.Hash,
-            versao.PromovidaPor,
             versao.PromovidaEm);
 }

@@ -37,8 +37,13 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
     {
     }
 
-    /// <summary>Promove um rascunho revisado a versão imutável. Chamado só pelo agregado.</summary>
-    internal static TermoConsentimentoVersao Promover(
+    /// <summary>
+    /// Promove um rascunho revisado a versão imutável. Chamado pelo agregado
+    /// <see cref="TermoConsentimento"/> — pública por convenção de factory forense
+    /// (ADR-0063, <c>ForensicEntityConventionsTests</c> exige factory estática
+    /// pública em vez de construtor público), não porque seja uma API de uso geral.
+    /// </summary>
+    public static TermoConsentimentoVersao Promover(
         Guid termoConsentimentoId,
         string texto,
         string baseLegal,
