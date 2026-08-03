@@ -147,9 +147,7 @@ public sealed class PublicacaoConcorrenciaTests
     /// só <c>DefinirEtapas</c> pode perder a corrida. Aqui a assimetria é inversa: o
     /// processo é semeado com a oferta federal completa (8 modalidades <c>SegueCascata</c>)
     /// mas <b>sem</b> cascata — <c>PendenciaDaCascata</c> a exige, então <c>Publicar</c> só
-    /// sucede se <c>DefinirCascataRemanejamento</c> já tiver comitado. Sob o lock pessimista
-    /// (<c>SELECT ... FOR UPDATE</c> em <c>ObterParaMutacaoAsync</c>, usado pelos dois
-    /// handlers) as duas transações serializam por completo, então só dois desfechos são
+    /// sucede se <c>DefinirCascataRemanejamento</c> já tiver comitado. Só dois desfechos são
     /// alcançáveis — nunca um terceiro em que <c>Publicar</c> sucede sem a cascata:
     /// </para>
     /// <list type="bullet">
@@ -164,7 +162,15 @@ public sealed class PublicacaoConcorrenciaTests
     /// </list>
     /// <para>
     /// Em nenhum dos dois um snapshot é publicado SEM a cascata que a oferta exige — a
-    /// prova de ausência de divergência, não "exatamente uma operação vence".
+    /// prova de ausência de divergência, não "exatamente uma operação vence". <b>Achado de
+    /// revisão:</b> ao contrário do teste-irmão acima (onde o <c>SELECT ... FOR UPDATE</c> de
+    /// <c>ObterParaMutacaoAsync</c> é o que impede um lost update em <c>Etapas</c>, campo que
+    /// os dois lados escrevem), aqui a invariante não depende do lock: <c>Publicar</c> nunca
+    /// escreve na tabela da cascata, e a checagem de <c>PendenciaDaCascata</c> roda sobre o
+    /// que a própria transação de <c>Publicar</c> leu — um <c>Publicar</c> sem a cascata
+    /// commitada sempre falha por construção, com ou sem lock. O <c>FOR UPDATE</c> ainda
+    /// importa para outras invariantes do agregado (a etapa acima, por exemplo); só não é o
+    /// que este teste especificamente exercita.
     /// </para>
     /// </remarks>
     [Fact(DisplayName =
