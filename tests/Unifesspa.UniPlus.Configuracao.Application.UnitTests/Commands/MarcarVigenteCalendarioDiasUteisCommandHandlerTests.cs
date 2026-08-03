@@ -106,11 +106,15 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
     }
 
-    [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) no commit vira ConflitoDeConcorrencia")]
-    public async Task Handle_ConcorrenciaOtimista_RetornaConflitoDeConcorrencia()
+    [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) no commit descarta o rastreamento antes de devolver 409")]
+    public async Task Handle_ConcorrenciaOtimista_DescartaRastreamentoERetornaConflito()
     {
+        // Endpoint tem [RequiresIdempotencyKey] (ADR-0119): a exceção não pode
+        // propagar sem catch — IdempotencyFilter não verifica
+        // ResourceExecutedContext.Exception antes de cachear a resposta (#1028).
         CalendarioDiasUteis calendario = Novo();
         _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
         _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
@@ -122,6 +126,7 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Violação de outra constraint não é engolida — propaga")]

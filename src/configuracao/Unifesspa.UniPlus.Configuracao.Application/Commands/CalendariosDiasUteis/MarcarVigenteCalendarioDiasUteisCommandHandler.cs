@@ -58,16 +58,36 @@ public static class MarcarVigenteCalendarioDiasUteisCommandHandler
             // + AutoApplyTransactions, ADR-0004), fora do alcance deste catch.
             await unitOfWork.ForcarChecagemImediataDeConstraintsAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ExclusionConstraintViolation.IsVigenteConflict(ex) || OptimisticConcurrencyViolation.Is(ex))
+        catch (Exception ex) when (ExclusionConstraintViolation.IsVigenteConflict(ex))
         {
-            // Corrida entre duas ativações concorrentes (exclusion constraint, dois
-            // registros disputando o mesmo "vigente = true") ou entre esta ativação e
-            // uma remoção concorrente do MESMO dataset (xmin) — em ambos os casos o
-            // outro lado já decidiu o estado; o filtro do `when` garante que outras
-            // exceções propagam intactas.
+            // Corrida entre duas ativações concorrentes: exclusion constraint,
+            // dois registros disputando o mesmo "vigente = true". Diferente de
+            // DbUpdateConcurrencyException (xmin, tratado no catch abaixo), essa
+            // violação chega DEFERRED, no COMMIT que o outbox do Wolverine
+            // executa fora deste handler (ADR-0004) — mecanismo não coberto pela
+            // investigação empírica da ADR-0119, então este branch mantém o
+            // catch local sem `ChangeTracker.Clear()` como débito pré-existente
+            // rastreado à parte (a checagem imediata acima só antecipa QUANDO a
+            // violação aparece, não muda o mecanismo em si).
             return Result.Failure(new DomainError(
                 CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
-                "Outra alteração concorrente já modificou este dataset ou o dataset vigente. Tente novamente."));
+                "Outra alteração concorrente já marcou um dataset como vigente. Tente novamente."));
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        {
+            // Corrida entre esta ativação e uma remoção concorrente do MESMO
+            // dataset (xmin) — padrão canônico da ADR-0119: como o endpoint tem
+            // [RequiresIdempotencyKey], a exceção não pode propagar sem catch
+            // (IdempotencyFilter não verifica ResourceExecutedContext.Exception
+            // antes de cachear a resposta — issue #1028). Descarta o
+            // rastreamento ANTES de devolver: o SaveChangesAsync automático do
+            // outbox roda de novo depois que este handler retorna, e sem isso a
+            // mesma exceção estouraria de novo fora deste catch, virando 500 em
+            // vez de 409.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(new DomainError(
+                CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
+                "Este dataset foi modificado concorrentemente (possivelmente removido). Tente novamente."));
         }
 
         return Result.Success();
