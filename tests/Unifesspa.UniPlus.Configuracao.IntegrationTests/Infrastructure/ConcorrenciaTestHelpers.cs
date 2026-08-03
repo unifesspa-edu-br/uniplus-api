@@ -31,6 +31,15 @@ internal static class ConcorrenciaTestHelpers
     /// correto, não um join com <c>pg_class</c>. Usa uma conexão própria (não
     /// a de quem segura o lock, que está ocupada dentro da própria transação).
     /// </summary>
+    /// <remarks>
+    /// Identifica o backend bloqueado por texto da query (<c>ILIKE</c>), não
+    /// pelo PID real da conexão — seguro hoje porque a collection que chama
+    /// este helper roda com <c>DisableParallelization = true</c> (nenhum outro
+    /// teste da mesma suíte roda ao mesmo tempo) e cada módulo usa seu próprio
+    /// container Postgres isolado, não porque o método garanta isso por
+    /// construção. Tornar a identificação por PID é o objeto de acompanhamento
+    /// futuro.
+    /// </remarks>
     public static async Task AguardarLockPendenteAsync(MonolitoApiFactory api, string tabela, Task tarefaQueDeveriaBloquear)
     {
         ArgumentNullException.ThrowIfNull(api);
