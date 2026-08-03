@@ -211,21 +211,27 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // context normalmente para este filtro, só relançando DEPOIS que
             // todos os resource filters retornarem sem marcar
             // `ExceptionHandled`. Sem esta checagem, o código abaixo trataria
-            // isso como sucesso: nenhum IActionResult executou, então
-            // `httpContext.Response.StatusCode` ainda está no valor default
-            // (não é >= 500), e a resposta cacheada seria um 200 com corpo
-            // vazio — um replay subsequente da mesma Idempotency-Key devolveria
-            // esse sucesso fabricado em vez do erro real que o
-            // GlobalExceptionMiddleware está prestes a produzir (a exceção
-            // continua propagando normalmente depois deste `return`, já que
-            // `ExceptionHandled` não é tocado aqui).
+            // isso como sucesso: nenhum IActionResult produziu um status
+            // conhecido, e a resposta cacheada seria um 200 com corpo vazio.
+            //
+            // Deliberadamente NÃO deleta a reservation aqui (diferente do
+            // branch de >= 500 abaixo, que sabe que a action *completou* e
+            // decidiu 500 deliberadamente): `next()` cobre tanto a execução da
+            // action quanto a execução/serialização do `IActionResult`
+            // devolvido — uma exceção pendente pode ter surgido DEPOIS que o
+            // comando já persistiu (ex.: falha ao serializar a resposta). Sem
+            // saber em qual etapa a exceção nasceu, apagar a reservation
+            // permitiria que um retry do cliente com a mesma chave reexecutasse
+            // uma mutação já aplicada — a mesma preocupação que a política
+            // conservadora do catch mais abaixo já trata para exceções que
+            // propagam sincronamente do próprio `next()` (ali distinguida por
+            // `handlerCompleted`; aqui `handlerCompleted` já é sempre `true`,
+            // então a política equivalente é nunca apagar). A entrada fica em
+            // Processing até o TTL (ADR-0027 §"Atomicidade parcial" já aceita
+            // essa janela); a exceção continua propagando normalmente depois
+            // deste `return`, já que `ExceptionHandled` não é tocado aqui.
             if (executed.Exception is not null && !executed.ExceptionHandled)
             {
-                await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
-                    .ConfigureAwait(false);
-                reservationStillValid = false;
-                captureStream.Position = 0;
-                await captureStream.CopyToAsync(originalBody, httpContext.RequestAborted).ConfigureAwait(false);
                 return;
             }
 
