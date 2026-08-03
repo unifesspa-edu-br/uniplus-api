@@ -185,7 +185,31 @@ internal static class CorpusEnvelope
             ]).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Cascata de remanejamento (Story #575): as 8 modalidades federais de
+        // DistribuicaoLei12711 já são SegueCascata (INV-12) — sem uma cascata que as cubra,
+        // Publicar() recusa com ProcessoSeletivo.CascataOrigemAusente (PendenciaDaCascata).
+        // A matriz legal completa (8×7, fallback AC) é o que mantém este corpus PUBLICÁVEL.
+        processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         return processo;
+    }
+
+    /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
+    private static ConfiguracaoCascataRemanejamento CascataLegalCompleta()
+    {
+        IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
+        List<DestinoRemanejamento> destinos = [];
+        foreach (string origem in origens)
+        {
+            string[] destinosDaOrigem = [.. origens.Where(o => o != origem)];
+            for (int i = 0; i < destinosDaOrigem.Length; i++)
+            {
+                destinos.Add(DestinoRemanejamento.Criar(origem, i + 1, destinosDaOrigem[i]).Value!);
+            }
+        }
+
+        return ConfiguracaoCascataRemanejamento.Criar(
+            Regra(RegraRemanejamentoCodigo.Cascata, '1'), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
     /// <summary>Fase 1: coleta inscrição, sem ato produzido — a origem é InscricaoPropria.</summary>

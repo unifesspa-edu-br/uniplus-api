@@ -99,6 +99,60 @@ public sealed class EnvelopeCodecRoundTripTests
         AssertRoundTrip(processo, versao, congelado);
     }
 
+    // ── Story #575 — cascataRemanejamento reidrata nos dois estados (presente/ausente) ──
+
+    /// <summary>
+    /// O corpus rico (<see cref="CorpusEnvelope.ProcessoRico"/>) tem as 8 modalidades
+    /// federais de <c>DistribuicaoLei12711</c> como <c>SegueCascata</c> (INV-12) e, desde a
+    /// Story #575, carrega a cascata que as cobre (sem ela <c>Publicar</c> recusaria com
+    /// <c>ProcessoSeletivo.CascataOrigemAusente</c>) — é por isso que este teste, como todos
+    /// os outros desta classe que publicam o corpus rico, já exercita o estado
+    /// <c>presente:true</c> do bloco. Esta asserção é a prova EXPLÍCITA disso, em vez de
+    /// deixá-la implícita no round-trip byte-a-byte genérico.
+    /// </summary>
+    [Fact(DisplayName = "Reidratar um envelope com cascataRemanejamento presente reconstrói ConfiguracaoCascataRemanejamento com a matriz legal completa")]
+    public void RoundTrip_ComCascataPresente_ReconstroiConfiguracaoCascataRemanejamento()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
+
+        envelope.Grafo.CascataRemanejamento.Should().NotBeNull(
+            "o corpus rico tem a cascata configurada (INV-12: as 8 federais de DistribuicaoLei12711 são " +
+            "SegueCascata) — a reidratação tem de reconstruí-la, não perdê-la");
+        envelope.Grafo.CascataRemanejamento!.FallbackCodigo.Should().Be("AC");
+        envelope.Grafo.CascataRemanejamento.Destinos.Should().HaveCount(56,
+            "a matriz legal completa tem 8 origens × 7 destinos");
+    }
+
+    /// <summary>
+    /// O outro estado do bloco: um processo SEM nenhuma modalidade <c>SegueCascata</c> (só
+    /// ampla concorrência institucional) não precisa de cascata — <c>PendenciaDaCascata</c>
+    /// não a exige — e o envelope congela <c>{"presente":false}</c>. O decoder tem de
+    /// reconstruir <see langword="null"/>, não um objeto vazio nem lançar.
+    /// </summary>
+    [Fact(DisplayName = "Reidratar um envelope com cascataRemanejamento ausente ({\"presente\":false}) reconstrói CascataRemanejamento como null")]
+    public void RoundTrip_SemCascata_ReconstroiCascataRemanejamentoComoNull()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme("PS Sem Cascata");
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            CorpusEnvelope.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(publicacao.Value!);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        reidratado.Value!.Grafo.CascataRemanejamento.Should().BeNull(
+            "o processo publicado não tinha nenhuma modalidade SegueCascata — a reidratação não pode inventar uma cascata");
+    }
+
     [Fact(DisplayName = "O round-trip preserva obrigatoriedades[] com Conformidade não vazia, ordenada por RegraId mesmo com regras fora de ordem na entrada")]
     public void RoundTrip_ComConformidadeLegalCongelada_PreservaObrigatoriedadesOrdenadasPorRegraId()
     {

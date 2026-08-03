@@ -225,6 +225,9 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("atendimento.tiposDeficiencia.0")]
     [InlineData("bonusRegional.regra")]
     [InlineData("vagas.0")]
+    [InlineData("cascataRemanejamento")]
+    [InlineData("cascataRemanejamento.regra")]
+    [InlineData("cascataRemanejamento.ordens.0")]
     public void ChaveDesconhecida_Recusa(string caminho)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -258,6 +261,30 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.IsFailure.Should().BeTrue(
             "um bônus 'ausente' que ainda carrega args é envelope contraditório. Lê-lo como 'sem bônus' descartaria " +
             "o bônus regional (RN05) de um certame publicado, e ninguém veria.");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    /// <summary>
+    /// Mesmo raciocínio de <see cref="BonusPresenteFalsoComArgs_Recusa"/>, agora para a
+    /// cascata (Story #575): um leitor que só olhasse <c>presente</c> leria
+    /// <c>{"presente":false,"regra":{...},...}</c> como "sem cascata" e descartaria a
+    /// sequência legal de remanejamento (RN-CASCATA-1) de um certame publicado, sem
+    /// deixar rastro — exatamente o modo de falha que <c>ExigirChaves</c> torna impossível.
+    /// </summary>
+    [Fact(DisplayName = "O caso crítico: {presente:false} com args de cascata é RECUSADO, não lido como 'sem cascata'")]
+    public void CascataPresenteFalsoComArgs_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject cascata = envelope["cascataRemanejamento"]!.AsObject();
+            cascata["presente"] = false;
+            // Sobra `regra`, `fallbackCodigo` e `ordens` — a forma "ausente" só admite `presente`.
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "uma cascata 'ausente' que ainda carrega regra/fallback/ordens é envelope contraditório. Lê-la como " +
+            "'sem cascata' descartaria a sequência legal de remanejamento (RN-CASCATA-1) de um certame publicado, " +
+            "e ninguém veria.");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
@@ -355,6 +382,7 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("bonusRegional.regra", "BONUS-XPTO")]
     [InlineData("criteriosDesempate.0.regra", "DESEMPATE-XPTO")]
     [InlineData("classificacao.regrasEliminacao.0.regra", "ELIM-XPTO")]
+    [InlineData("cascataRemanejamento.regra", "REMANEJ-XPTO")]
     public void CodigoDeRegraForaDoRol_Recusa(string caminho, string codigo)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
