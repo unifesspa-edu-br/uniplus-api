@@ -57,6 +57,16 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 
     public DbSet<CalendarioDiasUteis> CalendariosDiasUteis => Set<CalendarioDiasUteis>();
 
+    public DbSet<TermoConsentimento> TermosConsentimento => Set<TermoConsentimento>();
+
+    /// <summary>
+    /// DbSet dedicado da versão promovida — o handler de promoção adiciona por
+    /// aqui explicitamente (<c>ITermoConsentimentoRepository.AdicionarVersaoAsync</c>),
+    /// não via a coleção em memória de um <see cref="TermoConsentimento"/> já
+    /// rastreado (mesmo padrão de <c>SelecaoDbContext.VersoesConfiguracao</c>).
+    /// </summary>
+    public DbSet<TermoConsentimentoVersao> VersoesTermoConsentimento => Set<TermoConsentimentoVersao>();
+
     /// <summary>
     /// Catálogo seed-governado do vocabulário fechado de fatos do candidato
     /// (UNI-REQ-0077, ADR-0111). Metadado de classificação, sem PII.
