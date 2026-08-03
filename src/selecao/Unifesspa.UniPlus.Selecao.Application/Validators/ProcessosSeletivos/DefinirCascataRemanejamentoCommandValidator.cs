@@ -58,11 +58,18 @@ public sealed partial class DefinirCascataRemanejamentoCommandValidator : Abstra
             .When(x => x.RegraCodigo is not null);
 
         RuleFor(x => x.Destinos)
+            // Um item nulo (JSON "destinos":[null,...]) não pode chegar aos Musts abaixo nem
+            // ao ChildRules em seguida — os dois desreferenciam o item sem checar nulidade.
+            .Must(static destinos => destinos!.All(static d => d is not null))
+            .WithMessage("Nenhum item da lista de destinos pode ser nulo.")
             .Must(static destinos => destinos!.Count <= MaxDestinos)
             .WithMessage($"A cascata não pode declarar mais de {MaxDestinos} destinos.")
-            .Must(static destinos => destinos!.Select(static d => d.ModalidadeOrigemCodigo).Distinct(StringComparer.Ordinal).Count() <= MaxOrigens)
+            .Must(static destinos => destinos!.Where(static d => d is not null).Select(static d => d.ModalidadeOrigemCodigo).Distinct(StringComparer.Ordinal).Count() <= MaxOrigens)
             .WithMessage($"A cascata não pode declarar mais de {MaxOrigens} origens.")
             .When(x => x.Destinos is { Count: > 0 });
+
+        RuleForEach(x => x.Destinos).NotNull()
+            .WithMessage("Nenhum item da lista de destinos pode ser nulo.");
 
         RuleForEach(x => x.Destinos).ChildRules(item =>
         {
