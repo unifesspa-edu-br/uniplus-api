@@ -62,13 +62,24 @@ public static class MarcarVigenteCalendarioDiasUteisCommandHandler
         {
             // Corrida entre duas ativações concorrentes: exclusion constraint,
             // dois registros disputando o mesmo "vigente = true". Diferente de
-            // DbUpdateConcurrencyException (xmin, tratado no catch abaixo), essa
-            // violação chega DEFERRED, no COMMIT que o outbox do Wolverine
-            // executa fora deste handler (ADR-0004) — mecanismo não coberto pela
-            // investigação empírica da ADR-0119, então este branch mantém o
-            // catch local sem `ChangeTracker.Clear()` como débito pré-existente
-            // rastreado à parte (a checagem imediata acima só antecipa QUANDO a
-            // violação aparece, não muda o mecanismo em si).
+            // DbUpdateConcurrencyException (xmin, tratado no catch abaixo), a
+            // violação aqui acontece no ExecuteSqlRawAsync da checagem forçada
+            // acima, DEPOIS que SalvarAlteracoesAsync já teve sucesso e o
+            // ChangeTracker já foi resetado — não sobra entidade Added/Modified
+            // pendente para o SaveChangesAsync automático do outbox reprocessar,
+            // então ChangeTracker.Clear() seria um no-op aqui (investigação
+            // empírica da emenda à ADR-0119, issue #1032). O que evita o
+            // vazamento fora deste catch é a transação Postgres ter sido deixada
+            // abortada pelo comando que falhou: o único comando que o outbox
+            // ainda precisa emitir depois que este handler retorna (este
+            // handler não emite domain events em nenhum branch) é o COMMIT da
+            // transação ambiente, e um COMMIT contra transação já abortada é
+            // tratado pelo protocolo Postgres como ROLLBACK implícito, sem erro
+            // adicional — descarta a escrita não commitada junto com o resto.
+            // Se este handler um dia passar a emitir domain events também no
+            // caminho de falha, essa proteção deixa de bastar (o outbox
+            // precisaria inserir um envelope DENTRO da transação abortada, o
+            // que falharia com 25P02 fora de qualquer catch).
             return Result.Failure(new DomainError(
                 CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
                 "Outra alteração concorrente já marcou um dataset como vigente. Tente novamente."));
