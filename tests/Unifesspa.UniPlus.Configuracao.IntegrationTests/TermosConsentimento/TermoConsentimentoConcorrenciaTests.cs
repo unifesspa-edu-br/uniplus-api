@@ -28,11 +28,13 @@ using Wolverine;
 /// </summary>
 /// <remarks>
 /// Mesma técnica determinística de <c>CalendarioDiasUteisConcorrenciaTests</c>
-/// (lock de linha explícito via transação segurada) — <c>Task.WhenAll</c> sem
+/// (lock de linha explícito via transação segurada, com <c>pg_locks</c>
+/// provando o bloqueio em vez de um prazo fixo) — <c>Task.WhenAll</c> sem
 /// sincronização não reproduz a corrida de forma confiável sob carga da suíte
 /// completa (verificado empiricamente).
 /// </remarks>
 [Collection(ConfiguracaoEndpointCollection.Name)]
+[Trait("Category", "Integration")]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
@@ -76,17 +78,11 @@ public sealed class TermoConsentimentoConcorrenciaTests
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();
         Task<Result> taskA = busA.InvokeAsync<Result>(new RemoverTermoConsentimentoCommand(id));
 
-        // O handler real (busA) lê a linha normalmente (ainda não bloqueada
-        // para leitura) e só bloqueia ao tentar escrever — este WhenAny só prova
-        // que taskA não TERMINOU dentro do prazo, não que já chegou ao lock; se
-        // taskA ainda não tivesse nem lido a linha quando txB commita, ela leria
-        // o xmin já atualizado e sucederia sem conflito — o que faria a asserção
-        // final (DbUpdateConcurrencyException) falhar de forma visível, não
-        // passar silenciosamente errada. O prazo generoso (bem acima do
-        // round-trip local ao Postgres) é para não tornar o teste sensível a
-        // variação normal de agendamento, mesmo assim.
-        Task tarefaConcluidaCedo = await Task.WhenAny(taskA, Task.Delay(TimeSpan.FromSeconds(1)));
-        tarefaConcluidaCedo.Should().NotBe(taskA, "o handler deveria estar bloqueado esperando o lock de txB");
+        // Prova direta (não uma aposta de tempo) de que busA já leu o xmin
+        // antigo e está bloqueado tentando escrever: poll em pg_locks até
+        // aparecer um lock NÃO concedido na tabela — só existe se alguém além
+        // de txB está esperando a linha.
+        await ConcorrenciaTestHelpers.AguardarLockPendenteAsync(api, "termo_consentimento", taskA);
 
         await txB.CommitAsync();
 
