@@ -1323,5 +1323,66 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia",
                 "Outra alteração concorrente modificou o mesmo dataset ou o dataset vigente")),
+
+        // ── Termo de consentimento (UNI-REQ-0086/RN-COL-05) ───────────────
+        new(TermoConsentimentoErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.nome_obrigatorio",
+                "Nome do termo de consentimento é obrigatório")),
+
+        new(TermoConsentimentoErrorCodes.NomeTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.nome_tamanho",
+                "Tamanho do nome do termo de consentimento inválido")),
+
+        new(TermoConsentimentoErrorCodes.FormaAceiteInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.forma_aceite_invalida",
+                "Forma de aceite do termo fora do domínio fechado")),
+
+        new(TermoConsentimentoErrorCodes.TextoTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.texto_tamanho",
+                "Tamanho do texto do rascunho inválido")),
+
+        new(TermoConsentimentoErrorCodes.BaseLegalTamanho,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.base_legal_tamanho",
+                "Tamanho da base legal do rascunho inválido")),
+
+        new(TermoConsentimentoErrorCodes.RevisaoSemTexto,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.revisao_sem_texto",
+                "Rascunho sem texto não pode ser marcado como revisado nem promovido")),
+
+        new(TermoConsentimentoErrorCodes.RevisaoSemBaseLegal,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.revisao_sem_base_legal",
+                "Rascunho sem base legal não pode ser marcado como revisado nem promovido")),
+
+        new(TermoConsentimentoErrorCodes.PromocaoSemRevisao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.termo_consentimento.promocao_sem_revisao",
+                "Só um rascunho marcado como revisado pode ser promovido a versão")),
+
+        new(TermoConsentimentoErrorCodes.RemocaoBloqueadaComVersaoPromovida,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.termo_consentimento.remocao_bloqueada_com_versao_promovida",
+                "Termo com ao menos uma versão promovida não pode ser removido")),
+
+        new(TermoConsentimentoErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(
+                StatusCodes.Status404NotFound,
+                "uniplus.configuracao.termo_consentimento.nao_encontrado",
+                "Termo de consentimento não encontrado")),
     ];
 }
