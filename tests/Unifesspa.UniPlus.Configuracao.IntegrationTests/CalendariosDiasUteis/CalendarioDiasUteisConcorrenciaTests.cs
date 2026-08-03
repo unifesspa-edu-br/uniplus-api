@@ -97,17 +97,9 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
 
         await txB.CommitAsync();
 
-        Exception? excecaoObservada = null;
-        try
-        {
-            await taskA;
-        }
-        catch (Exception ex)
-        {
-            excecaoObservada = ex;
-        }
+        Func<Task> act = async () => await taskA;
 
-        excecaoObservada.Should().BeOfType<DbUpdateConcurrencyException>(
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
             "o xmin lido pelo handler ficou obsoleto assim que txB commitou a própria escrita na mesma linha");
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
