@@ -181,11 +181,8 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
                 "Rascunho sem base legal não pode ser promovido."));
         }
 
-        string formaAceiteToken = FormasAceite.ParaTokenCanonico(FormaAceiteRascunho);
-        string hash = CalcularHash(TextoRascunho, BaseLegalRascunho, formaAceiteToken);
-
         TermoConsentimentoVersao versao = TermoConsentimentoVersao.Promover(
-            Id, TextoRascunho, BaseLegalRascunho, FormaAceiteRascunho, hash, agora, promovidoPor);
+            Id, TextoRascunho, BaseLegalRascunho, FormaAceiteRascunho, agora, promovidoPor);
         _versoes.Add(versao);
 
         // A revisão é CONSUMIDA pela promoção — cada versão exige seu próprio sinal
@@ -199,40 +196,6 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
         RevisadoEm = null;
 
         return Result<TermoConsentimentoVersao>.Success(versao);
-    }
-
-    /// <summary>
-    /// SHA-256 hex do conteúdo semântico da versão (texto + base legal + forma de
-    /// aceite). Cada campo entra prefixado pelo próprio tamanho em bytes UTF-8 —
-    /// codificação sem delimitador reservado, então nenhum valor de entrada (por
-    /// mais exótico que seja o conteúdo digitado ou colado pelo usuário) consegue
-    /// produzir uma colisão de concatenação ambígua (ex.: "AB"+"C" vs "A"+"BC") —
-    /// o tamanho gravado antes do conteúdo distingue os dois casos por construção.
-    /// Determinístico: o mesmo conteúdo produz o mesmo hash em qualquer runtime.
-    /// </summary>
-    private static string CalcularHash(string texto, string baseLegal, string formaAceiteToken)
-    {
-        using MemoryStream buffer = new();
-        EscreverComPrefixoDeTamanho(buffer, texto);
-        EscreverComPrefixoDeTamanho(buffer, baseLegal);
-        EscreverComPrefixoDeTamanho(buffer, formaAceiteToken);
-
-        byte[] hash = System.Security.Cryptography.SHA256.HashData(buffer.ToArray());
-        return Convert.ToHexStringLower(hash);
-    }
-
-    private static void EscreverComPrefixoDeTamanho(MemoryStream buffer, string valor)
-    {
-        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(valor);
-
-        // Big-endian explícito (não BitConverter.GetBytes, cuja ordem de bytes
-        // segue a endianness do host): o hash precisa ser reproduzível por
-        // qualquer runtime/arquitetura que verifique o conteúdo depois, não só
-        // pelo processo que promoveu a versão.
-        Span<byte> tamanho = stackalloc byte[4];
-        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(tamanho, bytes.Length);
-        buffer.Write(tamanho);
-        buffer.Write(bytes);
     }
 
     private static Result<FormaAceite> ValidarCampos(

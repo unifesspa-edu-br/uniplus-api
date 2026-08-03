@@ -43,15 +43,28 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
     /// (ADR-0063, <c>ForensicEntityConventionsTests</c> exige factory estática
     /// pública em vez de construtor público), não porque seja uma API de uso geral.
     /// </summary>
+    /// <remarks>
+    /// O hash é calculado AQUI DENTRO, a partir do próprio conteúdo recebido —
+    /// nunca aceito como parâmetro do chamador. Sendo a factory pública (exigência
+    /// do fitness test de entidades forenses), um hash passado por fora seria um
+    /// convite a gravar uma versão cujo SHA-256 anunciado não corresponde ao
+    /// conteúdo real, corrompendo o registro forense sem erro nenhum.
+    /// </remarks>
     public static TermoConsentimentoVersao Promover(
         Guid termoConsentimentoId,
         string texto,
         string baseLegal,
         FormaAceite formaAceite,
-        string hash,
         DateTimeOffset promovidaEm,
         string promovidaPor)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(texto);
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
+        ArgumentException.ThrowIfNullOrWhiteSpace(promovidaPor);
+
+        string formaAceiteToken = FormasAceite.ParaTokenCanonico(formaAceite);
+        string hash = CalcularHash(texto, baseLegal, formaAceiteToken);
+
         return new TermoConsentimentoVersao
         {
             TermoConsentimentoId = termoConsentimentoId,
@@ -62,5 +75,35 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
             PromovidaEm = promovidaEm,
             PromovidaPor = promovidaPor,
         };
+    }
+
+    /// <summary>
+    /// SHA-256 hex do conteúdo semântico da versão (texto + base legal + forma de
+    /// aceite). Cada campo entra prefixado pelo próprio tamanho em bytes UTF-8,
+    /// em ordem de bytes big-endian explícita — codificação sem delimitador
+    /// reservado e sem dependência da endianness do host, então nenhum conteúdo de
+    /// entrada consegue produzir uma colisão de concatenação ambígua nem um hash
+    /// diferente conforme a arquitetura de quem promoveu ou verificou depois.
+    /// Determinístico: o mesmo conteúdo produz o mesmo hash em qualquer runtime.
+    /// </summary>
+    private static string CalcularHash(string texto, string baseLegal, string formaAceiteToken)
+    {
+        using MemoryStream buffer = new();
+        EscreverComPrefixoDeTamanho(buffer, texto);
+        EscreverComPrefixoDeTamanho(buffer, baseLegal);
+        EscreverComPrefixoDeTamanho(buffer, formaAceiteToken);
+
+        byte[] hash = System.Security.Cryptography.SHA256.HashData(buffer.ToArray());
+        return Convert.ToHexStringLower(hash);
+    }
+
+    private static void EscreverComPrefixoDeTamanho(MemoryStream buffer, string valor)
+    {
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(valor);
+
+        Span<byte> tamanho = stackalloc byte[4];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(tamanho, bytes.Length);
+        buffer.Write(tamanho);
+        buffer.Write(bytes);
     }
 }
