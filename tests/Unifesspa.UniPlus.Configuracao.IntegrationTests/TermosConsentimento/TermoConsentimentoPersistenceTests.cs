@@ -146,6 +146,54 @@ public sealed class TermoConsentimentoPersistenceTests
         await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
     }
 
+    [Fact(DisplayName = "Após o conflito capturado, descartar o rastreamento evita a segunda exceção do SaveChanges do outbox")]
+    public async Task ConflitoDeConcorrencia_AposDescartarRastreamento_SegundoSaveChangesNaoLancaDeNovo()
+    {
+        // Reproduz o achado do Codex (PR #1019, P2): o outbox do Wolverine
+        // (AutoApplyTransactions, ADR-0004) chama SaveChangesAsync no MESMO
+        // DbContext DEPOIS que o handler retorna. Se o handler capturar a
+        // DbUpdateConcurrencyException e devolver a falha sem descartar o
+        // rastreamento das entidades Added/Modified da tentativa fracassada, essa
+        // segunda chamada tenta gravar as MESMAS entidades de novo e a mesma
+        // exceção estoura fora do catch do handler — 500 em vez de 409.
+        TermoConsentimento termo = TermoConsentimento.Criar(
+            "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
+        termo.MarcarRevisado("usuario.revisor", Agora);
+
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.TermosConsentimento.Add(termo);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext ctxA = _fixture.CreateDbContext(AdminA);
+        TermoConsentimentoRepository repositoryA = new(ctxA);
+        TermoConsentimento termoA = (await repositoryA.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
+        TermoConsentimentoVersao versaoA = termoA.Promover("usuario.revisor", Agora).Value!;
+
+        await using (ConfiguracaoDbContext ctxB = _fixture.CreateDbContext(AdminA))
+        {
+            TermoConsentimento termoB = await ctxB.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
+            termoB.EditarRascunho("Texto ajustado por outra requisição", "Lei 13.709/2018", null);
+            await ctxB.SaveChangesAsync();
+        }
+
+        await repositoryA.AdicionarVersaoAsync(termoA, versaoA, CancellationToken.None);
+
+        // Simula exatamente o que o handler faz: tenta salvar, captura a
+        // concorrência, descarta o rastreamento (equivalente a
+        // IConfiguracaoUnitOfWork.DescartarAlteracoesNaoSalvas).
+        Func<Task> primeiroSave = async () => await ctxA.SaveChangesAsync();
+        await primeiroSave.Should().ThrowAsync<DbUpdateConcurrencyException>();
+        ctxA.ChangeTracker.Clear();
+
+        // O SaveChangesAsync automático do outbox do Wolverine, chamado DEPOIS que
+        // o handler já retornou a falha — sem entidades sujas rastreadas, é um
+        // no-op e não relança a exceção.
+        Func<Task> segundoSave = async () => await ctxA.SaveChangesAsync();
+        await segundoSave.Should().NotThrowAsync();
+    }
+
     [Fact(DisplayName = "Soft-delete de termo sem versões marca IsDeleted/DeletedBy")]
     public async Task SoftDelete_SemVersoes_MarcaExcluido()
     {

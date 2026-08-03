@@ -58,6 +58,13 @@ public static class PromoverVersaoTermoConsentimentoCommandHandler
             // revertendo a revisão) — sem o xmin, a versão sairia gravada a partir
             // de conteúdo já invalidado. O filtro do `when` garante que outras
             // exceções propagam intactas.
+            //
+            // Descarta o rastreamento da versão Added e do termo Modified ANTES de
+            // devolver a falha: o outbox do Wolverine chama SaveChangesAsync de novo
+            // depois que este handler retorna (ADR-0004), e sem isso a mesma
+            // DbUpdateConcurrencyException estouraria de novo fora deste catch,
+            // virando 500 em vez do 409 que acabamos de traduzir.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 TermoConsentimentoErrorCodes.ConflitoDeConcorrencia,
                 "O rascunho foi modificado concorrentemente. Revise e promova novamente."));

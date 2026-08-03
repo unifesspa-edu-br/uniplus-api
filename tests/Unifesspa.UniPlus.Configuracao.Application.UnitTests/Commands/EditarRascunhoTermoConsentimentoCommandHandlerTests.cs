@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
@@ -34,6 +37,24 @@ public sealed class EditarRascunhoTermoConsentimentoCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         termo.TextoRascunho.Should().Be("Novo texto");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Conflito de concorrência (xmin) descarta o rastreamento antes de devolver 409")]
+    public async Task Handle_ConcorrenciaOtimista_DescartaRastreamentoERetornaConflito()
+    {
+        TermoConsentimento termo = TermoExistente();
+        _repository.ObterPorIdAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        EditarRascunhoTermoConsentimentoCommand comando = new(termo.Id, "Texto", "Base legal", null);
+
+        Result resultado = await EditarRascunhoTermoConsentimentoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Termo inexistente falha sem persistir")]

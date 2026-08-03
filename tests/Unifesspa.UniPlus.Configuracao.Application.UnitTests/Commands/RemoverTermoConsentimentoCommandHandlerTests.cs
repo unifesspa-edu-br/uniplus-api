@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
@@ -47,6 +50,22 @@ public sealed class RemoverTermoConsentimentoCommandHandlerTests
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.RemocaoBloqueadaComVersaoPromovida);
         _repository.DidNotReceive().Remover(Arg.Any<TermoConsentimento>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Conflito de concorrência (xmin) descarta o rastreamento antes de devolver 409")]
+    public async Task Handle_ConcorrenciaOtimista_DescartaRastreamentoERetornaConflito()
+    {
+        TermoConsentimento termo = TermoConsentimento.Criar("Termo LGPD", null, null, null).Value!;
+        _repository.ObterPorIdAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await RemoverTermoConsentimentoCommandHandler.Handle(
+            new RemoverTermoConsentimentoCommand(termo.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Termo inexistente falha sem persistir")]

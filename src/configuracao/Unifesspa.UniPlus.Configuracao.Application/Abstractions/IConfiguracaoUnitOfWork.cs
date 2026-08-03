@@ -27,4 +27,25 @@ public interface IConfiguracaoUnitOfWork : IUnitOfWork
     /// do Wolverine.
     /// </remarks>
     Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Descarta o rastreamento de qualquer entidade com alteração ainda não
+    /// salva (equivalente a <c>ChangeTracker.Clear()</c>).
+    /// </summary>
+    /// <remarks>
+    /// O outbox transacional do Wolverine (<c>AutoApplyTransactions</c>, ADR-0004)
+    /// chama <c>SaveChangesAsync</c> nele mesmo DEPOIS que o handler retorna, para
+    /// persistir os envelopes de mensagem — independente de o handler ter
+    /// devolvido sucesso ou um <c>Result</c> de falha. Se um
+    /// handler capturar uma <c>DbUpdateConcurrencyException</c> (ou qualquer outra
+    /// falha) do seu próprio <see cref="IUnitOfWork.SalvarAlteracoesAsync"/> e
+    /// devolver a falha SEM chamar este método antes, as entidades Added/Modified
+    /// da tentativa que falhou continuam rastreadas — o <c>SaveChangesAsync</c>
+    /// automático do Wolverine tenta gravá-las de novo, a mesma exceção estoura de
+    /// novo, mas agora FORA de qualquer <c>try/catch</c> do handler, e vaza como
+    /// 500 em vez do <c>DomainError</c> que o handler já tinha traduzido. Chamar
+    /// este método dentro do <c>catch</c>, antes de devolver a falha, evita a
+    /// segunda tentativa.
+    /// </remarks>
+    void DescartarAlteracoesNaoSalvas();
 }
