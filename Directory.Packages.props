@@ -7,7 +7,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
 
     <!-- OpenAPI -->
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <!-- Usado diretamente pelos OpenAPI transformers (Infrastructure.Core/OpenApi), que o declaram
          como PackageReference. Pin ≥2.7.5 obrigatório: Microsoft.AspNetCore.OpenApi 10.0.7 traz
          transitivamente a 2.0.0, vulnerável a CVE-2026-49451 (HIGH — referência circular de schema
