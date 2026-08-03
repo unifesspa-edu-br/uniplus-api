@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -142,58 +143,62 @@ public sealed class CalendarioDiasUteis : SoftDeletableEntity, IAuditableEntity
                     + string.Join(", ", Abrangencias.TokensCanonicos) + ".");
             }
 
-            bool temMunicipio = !string.IsNullOrWhiteSpace(dia.MunicipioIbge);
             // Normalizado UMA vez e usado daqui em diante (validação, deduplicação em
             // `vistos` e persistência em DiaNaoUtilResolvido) — manter o valor cru só
             // para a checagem de formato deixava o valor NÃO aparado (ex. " 1501402 ",
             // 9 caracteres) chegar ao varchar(7) da coluna, e espaços-em-branco para
             // abrangência não-municipal seriam persistidos como não-nulos, violando
-            // ck_dia_nao_util_municipio_coerente.
-            string? municipioIbgeNorm = temMunicipio ? dia.MunicipioIbge!.Trim() : null;
+            // ck_dia_nao_util_municipio_coerente. O null-check aninhado (em vez de uma
+            // guarda combinada com `&&`) é o que deixa o compilador (e o CodeQL)
+            // provarem `municipioIbgeNorm` não-nulo daqui em diante, sem `!`.
+            string? municipioIbgeNorm = string.IsNullOrWhiteSpace(dia.MunicipioIbge) ? null : dia.MunicipioIbge.Trim();
 
-            if (abrangencia == Abrangencia.Municipal && !temMunicipio)
+            if (abrangencia == Abrangencia.Municipal)
             {
-                return Falha(
-                    CalendarioDiasUteisErrorCodes.MunicipioIbgeObrigatorioParaMunicipal,
-                    $"Código IBGE do município é obrigatório para a data {dia.Data:yyyy-MM-dd} (abrangência municipal).");
-            }
+                if (municipioIbgeNorm is null)
+                {
+                    return Falha(
+                        CalendarioDiasUteisErrorCodes.MunicipioIbgeObrigatorioParaMunicipal,
+                        $"Código IBGE do município é obrigatório para a data {dia.Data:yyyy-MM-dd} (abrangência municipal).");
+                }
 
-            if (abrangencia == Abrangencia.Municipal
-                && (municipioIbgeNorm!.Length != MunicipioIbgeLength || !municipioIbgeNorm.All(char.IsAsciiDigit)))
-            {
-                return Falha(
-                    CalendarioDiasUteisErrorCodes.MunicipioIbgeFormatoInvalido,
-                    $"Código IBGE do município deve ter exatamente {MunicipioIbgeLength} dígitos numéricos "
-                    + $"(data {dia.Data:yyyy-MM-dd}).");
+                if (municipioIbgeNorm.Length != MunicipioIbgeLength
+                    || !municipioIbgeNorm.All(char.IsAsciiDigit)
+                    || !ReferenciaCidadeGeo.TemPrefixoDeUfValido(municipioIbgeNorm))
+                {
+                    return Falha(
+                        CalendarioDiasUteisErrorCodes.MunicipioIbgeFormatoInvalido,
+                        $"Código IBGE do município deve ter exatamente {MunicipioIbgeLength} dígitos numéricos, "
+                        + $"com prefixo de UF válido (data {dia.Data:yyyy-MM-dd}).");
+                }
             }
-
-            if (abrangencia != Abrangencia.Municipal && temMunicipio)
+            else if (municipioIbgeNorm is not null)
             {
                 return Falha(
                     CalendarioDiasUteisErrorCodes.MunicipioIbgeApenasParaMunicipal,
                     $"Código IBGE do município só se aplica a abrangência municipal (data {dia.Data:yyyy-MM-dd}).");
             }
 
-            bool temUf = !string.IsNullOrWhiteSpace(dia.Uf);
-            string? ufNorm = temUf ? dia.Uf!.Trim().ToUpperInvariant() : null;
+            string? ufNorm = string.IsNullOrWhiteSpace(dia.Uf) ? null : dia.Uf.Trim().ToUpperInvariant();
 
-            if (abrangencia == Abrangencia.Estadual && !temUf)
+            if (abrangencia == Abrangencia.Estadual)
             {
-                return Falha(
-                    CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual,
-                    $"UF é obrigatória para a data {dia.Data:yyyy-MM-dd} (abrangência estadual) — sem ela, feriados "
-                    + "de estados diferentes seriam indistinguíveis.");
-            }
+                if (ufNorm is null)
+                {
+                    return Falha(
+                        CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual,
+                        $"UF é obrigatória para a data {dia.Data:yyyy-MM-dd} (abrangência estadual) — sem ela, "
+                        + "feriados de estados diferentes seriam indistinguíveis.");
+                }
 
-            if (abrangencia == Abrangencia.Estadual
-                && (ufNorm!.Length != UfLength || !ufNorm.All(char.IsAsciiLetterUpper)))
-            {
-                return Falha(
-                    CalendarioDiasUteisErrorCodes.UfFormatoInvalido,
-                    $"UF deve ter exatamente {UfLength} letras (data {dia.Data:yyyy-MM-dd}).");
+                if (ufNorm.Length != UfLength || !ReferenciaCidadeGeo.EhUfValida(ufNorm))
+                {
+                    return Falha(
+                        CalendarioDiasUteisErrorCodes.UfFormatoInvalido,
+                        $"UF deve ser uma das 27 siglas válidas (data {dia.Data:yyyy-MM-dd}).");
+                }
             }
-
-            if (abrangencia != Abrangencia.Estadual && temUf)
+            else if (ufNorm is not null)
             {
                 return Falha(
                     CalendarioDiasUteisErrorCodes.UfApenasParaEstadual,

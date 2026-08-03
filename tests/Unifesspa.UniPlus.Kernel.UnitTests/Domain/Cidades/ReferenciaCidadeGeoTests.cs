@@ -108,4 +108,33 @@ public sealed class ReferenciaCidadeGeoTests
         ReferenciaCidadeGeo.EhValida("1504208", "Marabá", "PA").Should().BeTrue();
         ReferenciaCidadeGeo.EhValida("150420", "Marabá", "PA").Should().BeFalse();
     }
+
+    [Theory(DisplayName = "TemPrefixoDeUfValido aceita prefixos de UF reais")]
+    [InlineData("1504208")]
+    [InlineData("3550308")]
+    public void TemPrefixoDeUfValido_PrefixoReal_Aceita(string codigoIbge)
+    {
+        ReferenciaCidadeGeo.TemPrefixoDeUfValido(codigoIbge).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "TemPrefixoDeUfValido rejeita prefixo fora do mapa de UF (lacuna 17-21)")]
+    public void TemPrefixoDeUfValido_PrefixoInexistente_Rejeita()
+    {
+        ReferenciaCidadeGeo.TemPrefixoDeUfValido("2012345").Should().BeFalse();
+    }
+
+    [Theory(DisplayName = "EhUfValida aceita as 27 siglas de UF do Brasil")]
+    [InlineData("PA")]
+    [InlineData("SP")]
+    [InlineData("DF")]
+    public void EhUfValida_UfReal_Aceita(string uf)
+    {
+        ReferenciaCidadeGeo.EhUfValida(uf).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "EhUfValida rejeita sigla que não corresponde a nenhuma UF")]
+    public void EhUfValida_UfInexistente_Rejeita()
+    {
+        ReferenciaCidadeGeo.EhUfValida("ZZ").Should().BeFalse();
+    }
 }

@@ -77,6 +77,34 @@ public static class ReferenciaCidadeGeo
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>
+    /// As 27 siglas de UF válidas (unidades federativas do Brasil), derivadas dos
+    /// valores de <see cref="UfPorPrefixo"/> — mesma fonte de verdade, sem
+    /// duplicar a lista.
+    /// </summary>
+    private static readonly FrozenSet<string> UfsValidas =
+        UfPorPrefixo.Values.ToFrozenSet(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Indica se os dois primeiros dígitos de <paramref name="codigoIbge"/>
+    /// (assumido já validado como 7 dígitos numéricos) correspondem a um prefixo
+    /// de UF real. Útil para consumidores que só têm o código IBGE, sem
+    /// <c>cidadeUf</c> declarada para cruzar coerência (ex.: cadastros que
+    /// referenciam um município sem exibir nome/UF).
+    /// </summary>
+    public static bool TemPrefixoDeUfValido(string codigoIbge)
+    {
+        ArgumentNullException.ThrowIfNull(codigoIbge);
+        return codigoIbge.Length >= 2 && UfPorPrefixo.ContainsKey(codigoIbge[..2]);
+    }
+
+    /// <summary>Indica se <paramref name="uf"/> é uma das 27 siglas de UF válidas (comparação exata, case-sensitive).</summary>
+    public static bool EhUfValida(string uf)
+    {
+        ArgumentNullException.ThrowIfNull(uf);
+        return UfsValidas.Contains(uf);
+    }
+
+    /// <summary>
     /// Valida a referência de cidade (formato + coerência de UF). Retorna
     /// <see cref="Result.Success"/> quando o código tem 7 dígitos numéricos com
     /// prefixo de UF coerente com <paramref name="cidadeUf"/> e

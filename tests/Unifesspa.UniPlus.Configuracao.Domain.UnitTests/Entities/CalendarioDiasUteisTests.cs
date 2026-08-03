@@ -148,6 +148,7 @@ public sealed class CalendarioDiasUteisTests
     [InlineData("P")]
     [InlineData("PAR")]
     [InlineData("P1")]
+    [InlineData("ZZ")]
     public void Criar_UfFormatoInvalido_Falha(string uf)
     {
         Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
@@ -219,6 +220,7 @@ public sealed class CalendarioDiasUteisTests
     [InlineData("123456")]
     [InlineData("123456789")]
     [InlineData("150140A")]
+    [InlineData("0000000")]
     public void Criar_MunicipioIbgeFormatoInvalido_Falha(string municipioIbge)
     {
         Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
