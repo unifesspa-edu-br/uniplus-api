@@ -91,16 +91,16 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
             await db.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE configuracao.calendario_dias_uteis SET vigente = false WHERE vigente = true");
 
-            CalendarioDiasUteis calendarioA = CalendarioDiasUteis.Criar(
+            CalendarioDiasUteis calendarA = CalendarioDiasUteis.Criar(
                 $"exc-a-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
-            CalendarioDiasUteis calendarioB = CalendarioDiasUteis.Criar(
+            CalendarioDiasUteis calendarB = CalendarioDiasUteis.Criar(
                 $"exc-b-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
-            db.CalendariosDiasUteis.AddRange(calendarioA, calendarioB);
+            db.CalendariosDiasUteis.AddRange(calendarA, calendarB);
             await db.SaveChangesAsync();
-            idA = calendarioA.Id;
-            idB = calendarioB.Id;
+            idA = calendarA.Id;
+            idB = calendarB.Id;
         }
 
         // txB: marca B como vigente via UPDATE cru, sem commitar — nenhum calendário
@@ -121,15 +121,15 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         // tempo. Diferente do teste de xmin, o texto da query bloqueada não contém o
         // nome da tabela (é o comando SET CONSTRAINTS em si), por isso o filtro é por
         // esse texto, não pela tabela.
-        await AguardarChecagemDeConstraintBloqueadaAsync(api, taskA);
+        await WaitForConstraintCheckToBlockAsync(api, taskA);
 
         await txB.CommitAsync();
 
-        Result resultado = await taskA;
+        Result result = await taskA;
 
         // Registra o resultado observado para orientar a decisão de fix — o valor
         // desta asserção é DOCUMENTAR o comportamento real, não presumi-lo.
-        resultado.IsFailure.Should().BeTrue(
+        result.IsFailure.Should().BeTrue(
             "as duas linhas (A e B) ficaram vigente=true simultaneamente assim que txB commitou — " +
             "a exclusion constraint deve ter estourado dentro do próprio catch do handler");
 
@@ -144,29 +144,29 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         // não relançou.
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
-        CalendarioDiasUteis persistidoA = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == idA);
-        CalendarioDiasUteis persistidoB = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == idB);
+        CalendarioDiasUteis persistedA = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == idA);
+        CalendarioDiasUteis persistedB = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == idB);
 
-        persistidoA.Vigente.Should().BeFalse(
+        persistedA.Vigente.Should().BeFalse(
             "a transação do handler de A abortou na checagem da constraint — nada dela deveria ter persistido");
-        persistidoB.Vigente.Should().BeTrue(
+        persistedB.Vigente.Should().BeTrue(
             "txB commitou isolada da corrida de A e deve refletir exatamente o que ela escreveu");
     }
 
-    private static async Task AguardarChecagemDeConstraintBloqueadaAsync(MonolitoApiFactory api, Task tarefaQueDeveriaBloquear)
+    private static async Task WaitForConstraintCheckToBlockAsync(MonolitoApiFactory api, Task taskExpectedToBlock)
     {
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
 
-        DateTimeOffset prazo = DateTimeOffset.UtcNow.AddSeconds(5);
-        while (DateTimeOffset.UtcNow < prazo)
+        DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow < deadline)
         {
-            if (tarefaQueDeveriaBloquear.IsCompleted)
+            if (taskExpectedToBlock.IsCompleted)
             {
                 Assert.Fail("A tarefa completou antes de bloquear na checagem da constraint — a corrida não foi forçada como esperado.");
             }
 
-            int backendsBloqueados = await pollDb.Database
+            int blockedBackends = await pollDb.Database
                 .SqlQuery<int>(
                     $"""
                     SELECT count(*)::int AS "Value" FROM pg_stat_activity
@@ -174,7 +174,7 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
                     """)
                 .SingleAsync();
 
-            if (backendsBloqueados > 0)
+            if (blockedBackends > 0)
             {
                 return;
             }
