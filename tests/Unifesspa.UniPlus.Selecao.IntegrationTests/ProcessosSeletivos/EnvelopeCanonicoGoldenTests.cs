@@ -310,6 +310,42 @@ public sealed class EnvelopeCanonicoGoldenTests
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
 
+    /// <summary>
+    /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) —
+    /// a matriz legal completa (8×7, fallback AC). A oferta de referência é institucional
+    /// (não federal): a canonicalização é pura (ADR-0109 D6) e não valida
+    /// <c>PendenciaDaCascata</c>, então este agregado não precisa ser publicável — ele só
+    /// existe para congelar a forma <c>presente:true</c> do bloco <c>cascataRemanejamento</c>.
+    /// </summary>
+    private static ProcessoSeletivo ProcessoDeReferenciaComCascata()
+    {
+        ProcessoSeletivo processo = ProcessoDeReferencia();
+        processo.DefinirCascataRemanejamento(CascataDeReferencia(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
+    private static ConfiguracaoCascataRemanejamento CascataDeReferencia()
+    {
+        IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
+        List<DestinoRemanejamento> destinos = [];
+        foreach (string origem in origens)
+        {
+            string[] destinosDaOrigem = [.. origens.Where(o => o != origem)];
+            for (int i = 0; i < destinosDaOrigem.Length; i++)
+            {
+                destinos.Add(DestinoRemanejamento.Criar(origem, i + 1, destinosDaOrigem[i]).Value!);
+            }
+        }
+
+        return ConfiguracaoCascataRemanejamento.Criar(
+            Regra(RegraRemanejamentoCodigo.Cascata, "1"), ModalidadesFederaisLei12711.Ac, destinos).Value!;
+    }
+
+    private static SnapshotCanonico CanonicalizarReferenciaComCascata() =>
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+            ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
+
     // ── CA-03 — política: toda schema_version declarada tem a sua fixture ──
 
     [Fact(DisplayName = "SchemaVersion_TemFixtureCorrespondente — bumpar a versão sem criar a fixture quebra o build")]
@@ -345,6 +381,29 @@ public sealed class EnvelopeCanonicoGoldenTests
         atual.Should().Be(LerFixture(canonico.SchemaVersion),
             "o envelope mudou de forma sem que a golden fixture fosse atualizada. Se a mudança é intencional, " +
             "bumpe a schema_version e congele a forma nova numa fixture própria.");
+    }
+
+    /// <summary>
+    /// Story #575: o bloco <c>cascataRemanejamento</c> saiu de stub (<c>nao_construido</c>) para
+    /// bloco real com dois estados — <c>Envelope_BateGoldenFixture</c> acima já cobre a ausência
+    /// (<c>{"presente":false}</c>, a forma do processo de referência); esta fixture congela a
+    /// presença (<c>{"presente":true,...}</c>, matriz legal completa) byte a byte.
+    /// </summary>
+    [Fact(DisplayName = "Envelope_ComCascata_BateGoldenFixture — o envelope com cascata presente é byte-idêntico à fixture congelada")]
+    public void Envelope_ComCascata_BateGoldenFixture()
+    {
+        SnapshotCanonico canonico = CanonicalizarReferenciaComCascata();
+        string atual = NormalizarIds(canonico.Bytes);
+
+        if (Environment.GetEnvironmentVariable("UPDATE_ENVELOPE_FIXTURE") == "1")
+        {
+            string destino = CaminhoDaFixtureCascataNoFonte();
+            Directory.CreateDirectory(Path.GetDirectoryName(destino)!);
+            File.WriteAllText(destino, atual + Environment.NewLine);
+        }
+
+        atual.Should().Be(LerFixtureCascata(),
+            "o envelope com cascata presente mudou de forma sem que a golden fixture fosse atualizada.");
     }
 
     // ── CA-04 (canários) — a fixture PROTEGE de fato ──
@@ -580,4 +639,22 @@ public sealed class EnvelopeCanonicoGoldenTests
         Path.GetDirectoryName(origem)!,
         "Fixtures",
         NomeDaFixture(schemaVersion));
+
+    // ── Fixture da variante COM cascata (Story #575) — nome próprio, fora da chave por
+    // schema_version: é uma segunda fixture da MESMA versão de schema, não uma versão nova. ──
+
+    private const string NomeDaFixtureCascata = "envelope-0.0.2-cascata.json";
+
+    private static string CaminhoDaFixtureCascata() => Path.Combine(
+        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
+        "ProcessosSeletivos",
+        "Fixtures",
+        NomeDaFixtureCascata);
+
+    private static string CaminhoDaFixtureCascataNoFonte([CallerFilePath] string origem = "") => Path.Combine(
+        Path.GetDirectoryName(origem)!,
+        "Fixtures",
+        NomeDaFixtureCascata);
+
+    private static string LerFixtureCascata() => File.ReadAllText(CaminhoDaFixtureCascata()).Trim();
 }
