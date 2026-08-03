@@ -90,6 +90,7 @@ public sealed class ForensicEntityConventionsTests
             // referenciado de cada um.
             typeof(Selecao.Domain.Entities.ObrigatoriedadeLegal).Assembly,
             typeof(Publicacoes.Domain.Entities.AtoNormativo).Assembly,
+            typeof(Configuracao.Domain.Entities.TermoConsentimentoVersao).Assembly,
         ];
 
         return [.. assemblies

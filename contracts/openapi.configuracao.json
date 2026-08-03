@@ -10876,7 +10876,6 @@
           "baseLegalRascunho",
           "formaAceiteRascunho",
           "revisado",
-          "revisadoPor",
           "revisadoEm",
           "versoes",
           "criadoEm"
@@ -10907,12 +10906,6 @@
           },
           "revisado": {
             "type": "boolean"
-          },
-          "revisadoPor": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "revisadoEm": {
             "type": [
@@ -10987,7 +10980,6 @@
           "baseLegal",
           "formaAceite",
           "hash",
-          "promovidaPor",
           "promovidaEm"
         ],
         "type": "object",
@@ -11006,9 +10998,6 @@
             "type": "string"
           },
           "hash": {
-            "type": "string"
-          },
-          "promovidaPor": {
             "type": "string"
           },
           "promovidaEm": {

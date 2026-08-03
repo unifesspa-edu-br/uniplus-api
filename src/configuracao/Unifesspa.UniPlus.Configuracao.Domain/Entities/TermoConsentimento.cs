@@ -14,11 +14,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// <para>Ciclo de vida do rascunho: <c>EM_ELABORACAO</c> (mutável) → <see cref="MarcarRevisado"/>
 /// (<c>REVISADO</c>, grava o ator explícito) → <see cref="Promover"/> (gera uma
-/// <see cref="TermoConsentimentoVersao"/> imutável). Editar texto ou base legal de
-/// um rascunho já revisado (<see cref="EditarRascunho"/>) devolve automaticamente
-/// o status a <c>EM_ELABORACAO</c> e limpa a marca — a revisão sempre se refere ao
-/// conteúdo exato promovido depois dela, nunca a uma edição posterior às suas
-/// costas.</para>
+/// <see cref="TermoConsentimentoVersao"/> imutável e CONSOME a revisão, devolvendo
+/// o status a <c>EM_ELABORACAO</c>). Editar texto ou base legal de um rascunho já
+/// revisado (<see cref="EditarRascunho"/>) também devolve automaticamente o status
+/// a <c>EM_ELABORACAO</c> — a revisão sempre se refere ao conteúdo exato promovido
+/// depois dela, nunca a uma edição posterior às suas costas, e cada versão exige seu
+/// próprio sinal de revisão, mesmo promovendo o mesmo conteúdo duas vezes.</para>
 /// <para>Escopo desta issue é só o cadastro: exigir o termo numa fase do Processo
 /// Seletivo, congelar no snapshot de publicação (segunda metade de UNI-REQ-0086) e
 /// o fluxo de aceite do candidato em runtime (UNI-REQ-0091) ficam fora.</para>
@@ -136,18 +137,24 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Promove o rascunho revisado a uma nova <see cref="TermoConsentimentoVersao"/>
     /// imutável. Recusa rascunho não revisado, sem texto ou sem base legal. O
-    /// rascunho permanece intacto após a promoção — pode ser editado de novo,
-    /// gerando a próxima versão no futuro.
+    /// texto e a base legal do rascunho permanecem intactos após a promoção — só a
+    /// marca de revisão é consumida (status volta a <c>EM_ELABORACAO</c>); o
+    /// rascunho pode ser editado de novo, gerando a próxima versão no futuro.
     /// </summary>
     /// <remarks>
-    /// Devolve a versão criada (em vez de só <see cref="Result"/>) para o handler
+    /// <para>Devolve a versão criada (em vez de só <see cref="Result"/>) para o handler
     /// adicioná-la explicitamente via <c>ITermoConsentimentoRepository.AdicionarVersaoAsync</c>
     /// — o EF Core não detecta como <c>Added</c> uma entidade só inserida na coleção
     /// em memória de um agregado JÁ rastreado (recarregado do banco): o Id gerado
     /// client-side (Guid v7) parece "já existente" para a heurística de
     /// <c>DetectChanges</c>, e a instrução vira um <c>UPDATE</c> que não afeta linha
     /// nenhuma. Mesmo padrão de <c>ProcessoSeletivo.Publicar</c> devolvendo
-    /// <c>VersaoConfiguracao</c> para <c>AdicionarVersaoConfiguracaoAsync</c>.
+    /// <c>VersaoConfiguracao</c> para <c>AdicionarVersaoConfiguracaoAsync</c>.</para>
+    /// <para>A revisão é consumida (não só o rascunho preservado) para que um
+    /// retry acidental da promoção — outra <c>Idempotency-Key</c>, um segundo
+    /// clique — não anexe mais uma versão idêntica ao histórico forense: a segunda
+    /// chamada encontra <see cref="Revisado"/> já <see langword="false"/> e falha
+    /// com <c>PromocaoSemRevisao</c> em vez de duplicar a versão.</para>
     /// </remarks>
     public Result<TermoConsentimentoVersao> Promover(string promovidoPor, DateTimeOffset agora)
     {
@@ -180,6 +187,16 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
         TermoConsentimentoVersao versao = TermoConsentimentoVersao.Promover(
             Id, TextoRascunho, BaseLegalRascunho, FormaAceiteRascunho, hash, agora, promovidoPor);
         _versoes.Add(versao);
+
+        // A revisão é CONSUMIDA pela promoção — cada versão exige seu próprio sinal
+        // de revisão, mesmo sem edição do rascunho entre uma promoção e outra. Sem
+        // isso, uma segunda chamada de promoção (retry acidental com outra
+        // Idempotency-Key, ou um segundo clique) anexaria mais uma versão idêntica
+        // ao histórico forense a partir do MESMO conteúdo já revisado — a segunda
+        // agora falha com PromocaoSemRevisao até o operador confirmar de novo.
+        Revisado = false;
+        RevisadoPor = null;
+        RevisadoEm = null;
 
         return Result<TermoConsentimentoVersao>.Success(versao);
     }
