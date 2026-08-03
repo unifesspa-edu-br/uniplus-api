@@ -116,4 +116,9 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     {
         await Database.ExecuteSqlRawAsync("SET CONSTRAINTS ALL IMMEDIATE", cancellationToken).ConfigureAwait(false);
     }
+
+    public void DescartarAlteracoesNaoSalvas()
+    {
+        ChangeTracker.Clear();
+    }
 }
