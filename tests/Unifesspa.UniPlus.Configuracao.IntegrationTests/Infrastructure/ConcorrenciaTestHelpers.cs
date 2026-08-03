@@ -68,7 +68,6 @@ internal static class ConcorrenciaTestHelpers
 
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
         ConfiguracaoDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
-        int pidDoPoll = await ObterPidDaConexaoAsync(pollDb);
         int[] pidsHolders = [.. pidsSeguradoresDoLock];
 
         DateTimeOffset limite = DateTimeOffset.UtcNow.Add(prazo ?? PrazoPadrao);
@@ -79,12 +78,20 @@ internal static class ConcorrenciaTestHelpers
                 Assert.Fail("A tarefa completou antes de bloquear no lock — a corrida não foi forçada como esperado.");
             }
 
+            // Sem exclusão de PID da própria conexão de poll: o backend que
+            // está executando ESTA query não pode estar simultaneamente em
+            // wait_event_type='Lock' (ele está rodando, não esperando), então
+            // a exclusão seria redundante — e, pior, arriscada: o EF Core não
+            // mantém a conexão física aberta entre comandos fora de uma
+            // transação explícita, então o PID capturado antes do loop podia
+            // já ter voltado ao pool do Npgsql e sido reaproveitado pelo
+            // PRÓPRIO handler sob teste, excluindo exatamente o backend que
+            // este método deveria encontrar (achado do Codex no PR #1036).
             int backendsBloqueados = await pollDb.Database
                 .SqlQuery<int>(
                     $"""
                     SELECT count(*)::int AS "Value" FROM pg_stat_activity psa
                     WHERE psa.wait_event_type = 'Lock'
-                      AND psa.pid <> {pidDoPoll}
                       AND EXISTS (
                           SELECT 1 FROM unnest(pg_blocking_pids(psa.pid)) AS bloqueador(pid)
                           WHERE bloqueador.pid = ANY({pidsHolders})
