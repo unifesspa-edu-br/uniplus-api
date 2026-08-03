@@ -635,13 +635,48 @@ public sealed class ProcessoSeletivoPublicarTests
             criteriosCumulativos: [],
             acaoQuandoIndeferido: acaoQuandoIndeferido,
             baseLegal: "Lei 12.711/2012",
-            quantidadeDeclarada: 10).Value!;
+            // Story #575: sob o regime federal (Lei 12.711), a quantidade de uma modalidade
+            // DentroDoVr/ResidualDoVo é CALCULADA pela fórmula — informá-la é recusado
+            // (ConfiguracaoDistribuicaoVagas.QuantidadeCalculadaNaoInformavel). Só natureza
+            // Suplementar (regime institucional, quantidade fixada pelo edital) precisa do 10.
+            quantidadeDeclarada: naturezaLegal == NaturezaLegalModalidade.Suplementar ? 10 : null).Value!;
+
+    /// <summary>
+    /// A matriz legal 8×7 completa, fallback AC (Story #575) — usada por
+    /// <see cref="NovoProcessoComModalidade"/> sempre que a modalidade do chamador é
+    /// <see cref="NaturezaLegalModalidade.CotaReservada"/>: desde a #575, RN-CASCATA-2b
+    /// recusa <c>SegueCascata</c> fora do regime federal, então uma cota reservada só
+    /// publica com uma cascata legítima por trás.
+    /// </summary>
+    private static ConfiguracaoCascataRemanejamento CascataLegalCompleta()
+    {
+        List<DestinoRemanejamento> destinos = [];
+        foreach (string origem in ModalidadesFederaisLei12711.Codigos)
+        {
+            string[] ordemDestinos = [.. ModalidadesFederaisLei12711.Codigos.Where(o => o != origem)];
+            for (int i = 0; i < ordemDestinos.Length; i++)
+            {
+                destinos.Add(DestinoRemanejamento.Criar(origem, i + 1, ordemDestinos[i]).Value!);
+            }
+        }
+
+        ReferenciaRegra regraCascata = ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo).Value!;
+        return ConfiguracaoCascataRemanejamento.Criar(regraCascata, ModalidadesFederaisLei12711.Ac, destinos).Value!;
+    }
 
     /// <summary>
     /// Variante de <see cref="NovoProcessoConforme"/> com UMA modalidade escolhida pelo
     /// chamador (Story #554, PR #903, CA-05) — para exercitar a coerência consequência↔ação
     /// da vaga contra uma natureza/ação específica, não a "AC" fixa do helper padrão.
     /// </summary>
+    /// <remarks>
+    /// Quando a modalidade do chamador é <see cref="NaturezaLegalModalidade.CotaReservada"/>
+    /// (sempre <c>SegueCascata</c>, invariante de <c>ModalidadeSelecionada.Criar</c>), a oferta
+    /// precisa ser Lei 12.711 completa (as 8 federais + AC, demografia, regra de ajuste) com
+    /// uma cascata legal por trás — RN-CASCATA-2b (Story #575) recusa <c>SegueCascata</c> fora
+    /// do regime federal. As demais naturezas (ampla, suplementar) continuam no ramo
+    /// institucional simples de antes, com a única modalidade do chamador.
+    /// </remarks>
     private static ProcessoSeletivo NovoProcessoComModalidade(ModalidadeSelecionada modalidade)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
@@ -653,15 +688,44 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ConfiguracaoDistribuicaoVagas distribuicao;
+        if (modalidade.NaturezaLegal == NaturezaLegalModalidade.CotaReservada)
+        {
+            List<ModalidadeSelecionada> modalidadesFederais =
+            [
+                .. ModalidadesFederaisLei12711.Codigos
+                    .Where(codigo => codigo != modalidade.Codigo)
+                    .Select(codigo => ModalidadeSelecionada.Criar(
+                        Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
+                        null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, [], null, "Lei 12.711/2012", quantidadeDeclarada: null).Value!),
+                modalidade,
+                ModalidadeSelecionada.Criar(
+                    Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+                    null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null, "base legal", quantidadeDeclarada: null).Value!,
+            ];
+            distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+                ofertaCursoOrigemId: Guid.CreateVersion7(),
+                voBase: 40,
+                pr: 0.5m,
+                regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo).Value!,
+                regraAjuste: ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo).Value!,
+                referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
+                modalidades: modalidadesFederais).Value!;
+            processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }
+        else
+        {
+            distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+                ofertaCursoOrigemId: Guid.CreateVersion7(),
+                voBase: 40,
+                pr: 1m,
+                regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+                regraAjuste: null,
+                referenciaDemografica: null,
+                modalidades: [modalidade]).Value!;
+            processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
