@@ -68,18 +68,18 @@ public sealed class RemoverCalendarioDiasUteisCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Remoção colidindo com ativação concorrente do mesmo dataset (xmin) vira ConflitoDeConcorrencia")]
-    public async Task Handle_ConcorrenciaOtimista_RetornaConflitoDeConcorrencia()
+    [Fact(DisplayName = "Remoção colidindo com ativação concorrente do mesmo dataset (xmin) propaga sem catch local (ADR-0119)")]
+    public async Task Handle_ConcorrenciaOtimista_PropagaSemCatchLocal()
     {
         CalendarioDiasUteis calendario = Novo();
         _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
 
-        Result resultado = await RemoverCalendarioDiasUteisCommandHandler.Handle(
+        Func<Task> act = async () => await RemoverCalendarioDiasUteisCommandHandler.Handle(
             new RemoverCalendarioDiasUteisCommand(calendario.Id), _repository, _unitOfWork, CancellationToken.None);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
+            "o GlobalExceptionMiddleware mapeia a exceção para 409 centralmente (ADR-0119) — endpoint DELETE não é idempotency-protected");
     }
 }

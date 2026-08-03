@@ -52,20 +52,19 @@ public sealed class RemoverTermoConsentimentoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Conflito de concorrência (xmin) descarta o rastreamento antes de devolver 409")]
-    public async Task Handle_ConcorrenciaOtimista_DescartaRastreamentoERetornaConflito()
+    [Fact(DisplayName = "Conflito de concorrência (xmin) propaga sem catch local (ADR-0119) — endpoint DELETE não é idempotency-protected")]
+    public async Task Handle_ConcorrenciaOtimista_PropagaSemCatchLocal()
     {
         TermoConsentimento termo = TermoConsentimento.Criar("Termo LGPD", null, null, null).Value!;
         _repository.ObterPorIdAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
 
-        Result resultado = await RemoverTermoConsentimentoCommandHandler.Handle(
+        Func<Task> act = async () => await RemoverTermoConsentimentoCommandHandler.Handle(
             new RemoverTermoConsentimentoCommand(termo.Id), _repository, _unitOfWork, CancellationToken.None);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia);
-        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>(
+            "o GlobalExceptionMiddleware mapeia a exceção para 409 centralmente (ADR-0119) — o handler não a captura");
     }
 
     [Fact(DisplayName = "Termo inexistente falha sem persistir")]

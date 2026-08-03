@@ -45,23 +45,17 @@ public static class RemoverCalendarioDiasUteisCommandHandler
 
         repository.Remover(calendario);
 
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
-        {
-            // Corrida com uma ativação concorrente do MESMO dataset (xmin, ver
-            // CalendarioDiasUteisConfiguration): a checagem acima leu Vigente=false,
-            // mas MarcarVigenteCalendarioDiasUteisCommandHandler pode ter marcado este
-            // dataset como o vigente entre a leitura e este commit — sem o token de
-            // concorrência, o resultado seria remover silenciosamente o dataset que
-            // acabou de virar vigente, deixando nenhum vigente visível. O filtro do
-            // `when` garante que outras exceções propagam intactas.
-            return Result.Failure(new DomainError(
-                CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia,
-                "Este dataset foi modificado concorrentemente (possivelmente marcado vigente). Tente novamente."));
-        }
+        // Corrida com uma ativação concorrente do MESMO dataset (xmin, ver
+        // CalendarioDiasUteisConfiguration): a checagem acima leu Vigente=false, mas
+        // MarcarVigenteCalendarioDiasUteisCommandHandler pode ter marcado este
+        // dataset como o vigente entre a leitura e este commit — sem o token de
+        // concorrência, o resultado seria remover silenciosamente o dataset que
+        // acabou de virar vigente, deixando nenhum vigente visível.
+        // DbUpdateConcurrencyException propaga sem catch local: o
+        // GlobalExceptionMiddleware mapeia para 409 (ADR-0119) — deixar propagar
+        // evita que o SaveChangesAsync automático do outbox (ADR-0004) tente rodar
+        // de novo sobre entidades ainda sujas.
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result.Success();
     }
