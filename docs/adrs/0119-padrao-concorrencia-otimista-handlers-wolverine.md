@@ -79,7 +79,7 @@ desse achado — issue #1027).
 - **Endpoint SEM `[RequiresIdempotencyKey]`** (ex.: `DELETE`, naturalmente idempotente por semântica HTTP, como os dois handlers `Remover` migrados nesta ADR): o handler **não captura** `DbUpdateConcurrencyException` — deixa propagar. O `GlobalExceptionMiddleware` (`Infrastructure.Core/Middleware/GlobalExceptionMiddleware.cs`) mapeia centralmente para `409 Conflict`, `code=uniplus.concorrencia.conflito`, um único branch para todo o monólito modular.
 - **Endpoint COM `[RequiresIdempotencyKey]`**: o handler **continua capturando** `DbUpdateConcurrencyException` localmente e chamando `unitOfWork.DescartarAlteracoesNaoSalvas()` (`ChangeTracker.Clear()`) antes de devolver `Result.Failure` — o padrão do PR #1019, mantido explicitamente enquanto o gap do `IdempotencyFilter` não for corrigido.
 - **Escopo restrito ao caminho síncrono HTTP request/reply.** Um handler Wolverine invocado por consumidor durável/background (sem `HttpContext`, fora do `GlobalExceptionMiddleware`) segue as políticas de retry/dead-letter do próprio Wolverine quando lança — comportamento correto para esse contexto, não coberto por esta ADR.
-- **Fora do escopo desta ADR:** a exclusion constraint `DEFERRABLE INITIALLY DEFERRED` de `MarcarVigenteCalendarioDiasUteisCommandHandler` (`ex_calendario_dias_uteis_vigente_unico`). Diferente de `DbUpdateConcurrencyException`, essa violação chega como `Npgsql.PostgresException` bruta no `COMMIT` externo do outbox — mecanismo distinto (transação Postgres abortada, não apenas `ChangeTracker` desatualizado) que não foi empiricamente verificado nesta investigação. Esse handler mantém o catch local sem `ChangeTracker.Clear()` (débito pré-existente, não deste PR) até investigação própria — rastreado em `uniplus-api#1032`.
+- **Investigado por emenda (issue #1032):** a exclusion constraint `DEFERRABLE INITIALLY DEFERRED` de `MarcarVigenteCalendarioDiasUteisCommandHandler` (`ex_calendario_dias_uteis_vigente_unico`) — ver "Emenda (issue #1032)" abaixo. Conclusão: nenhuma mudança de código foi necessária para esse handler no shape atual.
 
 Handlers migrados nesta ADR: `RemoverTermoConsentimentoCommandHandler` e
 `RemoverCalendarioDiasUteisCommandHandler` — ambos atrás de endpoints `DELETE` sem
@@ -155,6 +155,49 @@ código — ver nota nos arquivos de teste):
 - Bom, porque não introduz a regressão de B nem mantém 100% do débito de A.
 - Ruim, porque exige que quem escreve o handler saiba qual padrão usar — mitigado por
   documentação no `CLAUDE.md`.
+
+## Emenda (issue #1032)
+
+Investigação empírica, via teste de corrida real contra Postgres
+(`MarcarVigenteExclusionConstraintConcorrenciaTests`), do mecanismo deixado em
+aberto acima: duas ativações concorrentes de `MarcarVigenteCalendarioDiasUteisCommand`
+para calendários **diferentes** (sem xmin em comum — nenhuma das duas toca a mesma
+linha, já que nenhum calendário está vigente no estado committado quando as duas
+começam) forçadas a colidir na exclusion constraint via `SET CONSTRAINTS ALL IMMEDIATE`
+(`ForcarChecagemImediataDeConstraintsAsync`).
+
+**Achado:** diferente do caso `xmin`, aqui a violação NÃO acontece dentro do
+`SaveChangesAsync()` do handler — acontece num comando separado
+(`ExecuteSqlRawAsync("SET CONSTRAINTS ALL IMMEDIATE")`) executado DEPOIS que
+`SalvarAlteracoesAsync()` já teve sucesso e o EF Core já resetou o `ChangeTracker`
+para `Unchanged`. Não sobra, portanto, nenhuma entidade `Added`/`Modified` pendente
+para o `SaveChangesAsync` automático do outbox reprocessar — a causa raiz que o
+`ChangeTracker.Clear()` resolve no caso `xmin` (entidades ainda rastreadas de uma
+tentativa fracassada) simplesmente não existe aqui; `ChangeTracker.Clear()` seria um
+no-op neste ponto.
+
+O comando que falha (`SET CONSTRAINTS ALL IMMEDIATE`) deixa a transação Postgres
+subjacente em estado abortado — mas esse handler não emite domain events/mensagens
+cascateadas em nenhum branch (`Task<Result>` puro, nunca `Task<(Result,
+IEnumerable<object>)>`), então o único comando que o outbox do Wolverine ainda
+precisa emitir depois que o handler retorna é o `COMMIT` da transação ambiente —
+sem nenhum `INSERT` de envelope pelo meio. Um `COMMIT` contra uma transação Postgres
+já abortada é tratado pelo próprio protocolo como um `ROLLBACK` implícito, sem erro
+adicional (comportamento documentado do Postgres, não específico deste código) — é
+esse mecanismo, não `ChangeTracker.Clear()`, que evita o vazamento fora do catch:
+o `Result.Failure` do handler chega limpo ao chamador, e a escrita não commitada de
+`SalvarAlteracoesAsync()` é descartada junto com o resto da transação abortada.
+
+**Conclusão:** nenhuma mudança de código foi necessária em
+`MarcarVigenteCalendarioDiasUteisCommandHandler` — o catch atual, mesmo sem
+`ChangeTracker.Clear()`, já produz o resultado correto para este handler no shape
+atual. **Risco condicional documentado:** se este handler (ou qualquer handler que
+use o padrão `ForcarChecagemImediataDeConstraintsAsync`) passar a emitir domain
+events também no caminho de falha, a proteção do "`COMMIT` vira `ROLLBACK`" deixa de
+bastar — o outbox precisaria fazer um `INSERT` de envelope dentro da transação já
+abortada, o que falharia com `25P02` fora de qualquer `catch` do handler. Nesse caso,
+o handler precisaria descartar a transação explicitamente antes de retornar, não só
+o `ChangeTracker`.
 
 ## Mais informações
 
