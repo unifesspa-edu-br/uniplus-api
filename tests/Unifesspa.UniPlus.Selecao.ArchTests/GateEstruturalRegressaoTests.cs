@@ -29,6 +29,39 @@ public sealed class GateEstruturalRegressaoTests
         chamadasNoFecharHandler.Should().Be(1, "FecharRetificacao antecipa a mesma recusa que o Domain reconferiria");
     }
 
+    /// <summary>
+    /// Story #575 (achado R4-2): a topologia de <c>PendenciaDaCascata()</c> tem os
+    /// mesmos cinco call sites de <c>PendenciaDeConformidade()</c>, mas em posições
+    /// diferentes por camada — <c>PendenciaDoCronograma()</c> (privada) só é chamada
+    /// pela raiz; os handlers da Application nunca a antecipam e não devem passar a
+    /// fazê-lo só por esta story. A cascata sempre precede
+    /// <c>PendenciaPreCanonicalizacao()</c>/canonicalização, nunca depois.
+    /// </summary>
+    [Fact(DisplayName = "PendenciaDaCascata() é chamada nos 5 call sites — 2 no Domain, 3 nos handlers que canonicalizam — sempre antes da canonicalização")]
+    public void PendenciaDaCascata_AtravessaOsCincoCallSites()
+    {
+        // O padrão `is { }` (destructuring) isola os call sites de GATE (Publicar,
+        // SucederVersao, os três handlers) do uso em AvaliarConformidade(), que testa
+        // `PendenciaDaCascata() is null` só para exibição — mesma chamada, propósito
+        // diferente, não é um sexto call site de bloqueio.
+        int chamadasNoDomain = ContarChamadasDeGate(CaminhoProcessoSeletivo());
+        chamadasNoDomain.Should().Be(2, "Publicar() e SucederVersao() são os dois pontos de defesa no Domain");
+
+        int chamadasNoPublicarHandler = ContarChamadasDeGate(CaminhoHandler("PublicarProcessoSeletivoCommandHandler.cs"));
+        int chamadasNoRetificarHandler = ContarChamadasDeGate(CaminhoHandler("RetificarProcessoSeletivoCommandHandler.cs"));
+        int chamadasNoFecharHandler = ContarChamadasDeGate(CaminhoHandler("FecharRetificacaoCommandHandler.cs"));
+
+        chamadasNoPublicarHandler.Should().Be(1, "Publicar antecipa a mesma recusa que o Domain reconferiria");
+        chamadasNoRetificarHandler.Should().Be(1, "Retificar antecipa a mesma recusa que o Domain reconferiria");
+        chamadasNoFecharHandler.Should().Be(1, "FecharRetificacao antecipa a mesma recusa que o Domain reconferiria");
+    }
+
+    private static int ContarChamadasDeGate(string caminho)
+    {
+        string fonte = File.ReadAllText(caminho);
+        return Regex.Count(fonte, @"PendenciaDaCascata\(\)\s+is\s+\{");
+    }
+
     private static int ContarChamadas(string caminho)
     {
         // Casa só o SITE DE CHAMADA (`PendenciaDeConformidade() is`), não a declaração do

@@ -89,6 +89,15 @@ public sealed class ManifestoDoEnvelopeTests
             ["Regra", "Fator", "Teto", "MunicipioConvenio", "BaseLegal"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
+        // Story #575 — a cascata de remanejamento das cotas federais (RN-CASCATA-1..5).
+        [typeof(ConfiguracaoCascataRemanejamento)] = (
+            ["Regra", "FallbackCodigo", "Destinos"],
+            [("ProcessoSeletivoId", "FK interna.")]),
+
+        [typeof(DestinoRemanejamento)] = (
+            ["ModalidadeOrigemCodigo", "Ordem", "ModalidadeDestinoCodigo"],
+            [("ConfiguracaoCascataRemanejamentoId", "FK interna.")]),
+
         [typeof(CriterioDesempate)] = (
             ["Ordem", "Regra", "Args"],
             [("ProcessoSeletivoId", "FK interna.")]),
