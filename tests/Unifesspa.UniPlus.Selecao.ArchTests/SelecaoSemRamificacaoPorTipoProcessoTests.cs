@@ -119,17 +119,10 @@ public sealed partial class SelecaoSemRamificacaoPorTipoProcessoTests
             "sentinela Nenhum (validação de campo obrigatório)");
     }
 
-    private static IEnumerable<string> MembrosViolados(string codigo)
-    {
-        foreach (Match match in RamificacaoPorTipoProcesso().Matches(codigo))
-        {
-            string membro = match.Groups["m"].Value;
-            if (!string.Equals(membro, Sentinela, StringComparison.Ordinal))
-            {
-                yield return membro;
-            }
-        }
-    }
+    private static IEnumerable<string> MembrosViolados(string codigo) =>
+        RamificacaoPorTipoProcesso().Matches(codigo)
+            .Select(static match => match.Groups["m"].Value)
+            .Where(static membro => !string.Equals(membro, Sentinela, StringComparison.Ordinal));
 
     private static IReadOnlyList<string> Violacoes(string codigo) => [.. MembrosViolados(SemComentarios(codigo))];
 
