@@ -44,5 +44,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerUnidadeAdministradoraTests
 
         dto.Should().NotBeNull();
         dto!.UnidadeAdministradora.OrigemId.Should().Be(unidadeId);
+        dto.UnidadeAdministradora.Sigla.Should().Be("CEPS");
+        dto.UnidadeAdministradora.Slug.Should().Be("ceps");
+        dto.UnidadeAdministradora.Nome.Should().Be("Centro de Processos Seletivos");
+        dto.UnidadeAdministradora.Tipo.Should().Be("ADMINISTRATIVA");
     }
 }
