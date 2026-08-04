@@ -26,8 +26,10 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// depois da migration (rótulo vazio e <c>TipoRenderizacao.Nenhuma</c> são ambos recusados). O
 /// backfill promove, para os dois códigos do vocabulário fechado observados em dado real
 /// (<c>COR_RACA</c>, <c>BAIXA_RENDA</c>), o rótulo do catálogo e o tipo de renderização coerente
-/// com o domínio/cardinalidade do fato. Um código fora dessa lista permanece no estado
-/// pré-migration — limite documentado do backfill, não uma omissão silenciosa.
+/// com o domínio/cardinalidade do fato. Um código fora dessa lista não é promovido — e a
+/// migration FALHA em vez de deixar a linha inconsistente: sem o gate, o processo dono dela
+/// quebraria em 500 na primeira leitura administrativa ou publicação (TipoRenderizacao.Nenhuma
+/// não tem código canônico), silenciosamente, só quando alguém tentasse.
 /// </remarks>
 [SuppressMessage(
     "Security",
@@ -56,14 +58,16 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync().ConfigureAwait(false);
 
-    [Fact(DisplayName = "A migration promove Rotulo/TipoRenderizacao coerentes para COR_RACA e BAIXA_RENDA legados, e não toca em código fora do vocabulário conhecido")]
+    [Fact(DisplayName = "A migration promove Rotulo/TipoRenderizacao coerentes para COR_RACA e BAIXA_RENDA legados")]
     public async Task Migration_PromoveApresentacaoConformeOVocabularioFechado()
     {
         await using (SelecaoDbContext contextoLegado = CriarContexto())
         {
             IMigrator migrator = contextoLegado.GetService<IMigrator>();
             await migrator.MigrateAsync(MigrationAnterior);
-            await SemearFatoColetadoLegadoAsync();
+            await SemearFatoColetadoLegadoAsync(
+                (CorRacaId, "COR_RACA", 0),
+                (BaixaRendaId, "BAIXA_RENDA", 1));
         }
 
         await using (SelecaoDbContext contextoNovo = CriarContexto())
@@ -86,11 +90,23 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
         baixaRenda.TipoRenderizacao.Should().Be(
             Unifesspa.UniPlus.Selecao.Domain.Enums.TipoRenderizacao.Booleano,
             "BAIXA_RENDA é BOOLEANO no catálogo — o tipo coerente é booleano");
+    }
 
-        FatoColetado outroFato = await leitura.Set<FatoColetado>().AsNoTracking().SingleAsync(f => f.Id == OutroFatoId, CancellationToken.None);
-        outroFato.Rotulo.Should().BeEmpty(
-            "um código fora do vocabulário fechado observado em dado real não é promovido pelo backfill — limite " +
-            "documentado, não uma omissão silenciosa");
+    [Fact(DisplayName = "A migration FALHA (não deixa a linha inconsistente) quando existe fato_codigo fora do backfill conhecido")]
+    public async Task Migration_FalhaSeHouverCodigoForaDoBackfillConhecido()
+    {
+        await using SelecaoDbContext contextoLegado = CriarContexto();
+        IMigrator migrator = contextoLegado.GetService<IMigrator>();
+        await migrator.MigrateAsync(MigrationAnterior);
+        await SemearFatoColetadoLegadoAsync((OutroFatoId, "OUTRO_FATO_QUALQUER", 0));
+
+        await using SelecaoDbContext contextoNovo = CriarContexto();
+        Func<Task> aplicar = () => contextoNovo.Database.MigrateAsync();
+
+        await aplicar.Should().ThrowAsync<PostgresException>(
+            "um fato_codigo fora do backfill conhecido (COR_RACA/BAIXA_RENDA) sairia com rotulo='' e " +
+            "TipoRenderizacao.Nenhuma — estado que quebraria em 500 na primeira leitura administrativa ou " +
+            "publicação daquele processo; a migration tem de falhar alto em vez de deixá-lo silenciosamente");
     }
 
     private SelecaoDbContext CriarContexto()
@@ -104,12 +120,12 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Semeia, em SQL cru, um processo e três fatos coletados como o modelo ANTIGO gravava — sem
-    /// as colunas <c>rotulo</c>/<c>tipo_renderizacao</c>/<c>obrigatorio</c>, que só a migration
-    /// desta story cria (o <c>AddColumn</c> as preenche com <c>''</c>/<c>0</c>/<c>false</c> antes
-    /// do backfill rodar).
+    /// Semeia, em SQL cru, um processo e os fatos coletados informados como o modelo ANTIGO
+    /// gravava — sem as colunas <c>rotulo</c>/<c>tipo_renderizacao</c>/<c>obrigatorio</c>, que só
+    /// a migration desta story cria (o <c>AddColumn</c> as preenche com <c>''</c>/<c>0</c>/
+    /// <c>false</c> antes do backfill rodar).
     /// </summary>
-    private async Task SemearFatoColetadoLegadoAsync()
+    private async Task SemearFatoColetadoLegadoAsync(params (Guid Id, string FatoCodigo, int Ordem)[] fatos)
     {
         await using NpgsqlConnection conexao = new(_postgres.GetConnectionString());
         await conexao.OpenAsync();
@@ -117,13 +133,15 @@ public sealed class BackfillFormularioInscricaoTests : IAsyncLifetime
         await ExecutarAsync(conexao, $$"""
             INSERT INTO selecao.processos_seletivos (id, nome, tipo, status, created_at, is_deleted)
             VALUES ('{{ProcessoId}}', 'PS legado', 1, 1, now(), false);
-
-            INSERT INTO selecao.fatos_coletados (id, processo_seletivo_id, fato_codigo, ordem, created_at)
-            VALUES
-                ('{{CorRacaId}}', '{{ProcessoId}}', 'COR_RACA', 0, now()),
-                ('{{BaixaRendaId}}', '{{ProcessoId}}', 'BAIXA_RENDA', 1, now()),
-                ('{{OutroFatoId}}', '{{ProcessoId}}', 'OUTRO_FATO_QUALQUER', 2, now());
             """);
+
+        foreach ((Guid id, string fatoCodigo, int ordem) in fatos)
+        {
+            await ExecutarAsync(conexao, $$"""
+                INSERT INTO selecao.fatos_coletados (id, processo_seletivo_id, fato_codigo, ordem, created_at)
+                VALUES ('{{id}}', '{{ProcessoId}}', '{{fatoCodigo}}', {{ordem}}, now());
+                """);
+        }
     }
 
     private static async Task ExecutarAsync(NpgsqlConnection conexao, string sql)
