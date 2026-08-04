@@ -49,6 +49,11 @@ rode uma vez `docker compose -f docker/docker-compose.yml -f docker/docker-compo
 
 #### Manter a infra local do Geo em dia
 
+> O Geo é um serviço externo desde a [ADR-0099](docs/adrs/0099-geo-como-repositorio-dedicado.md).
+> Para saber quais referências ao Geo são legítimas neste repositório (infra
+> local, snapshots consumidores da ADR-0096, registro histórico) e quais seriam
+> resíduo da extração, ver [`docs/geo-servico-externo.md`](docs/geo-servico-externo.md).
+
 O repositório `unifesspa-geo-api` não publica tag `latest` — a versão consumida
 localmente fica fixada em `GEO_IMAGE_TAG` (`docker/.env`). Como `docker/.env` e
 `docker/docker-compose.override.yml` são **locais e gitignored**, um `git pull`
