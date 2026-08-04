@@ -96,13 +96,12 @@ Use o `CorrelationIdMiddlewareSmokeTests` como template literal: 3 cenários
 
 Com a topologia atual — 2 APIs executáveis internas (UniPlus/Portal) + Geo
 como serviço externo ([ADR-0099](../../../docs/adrs/0099-geo-como-repositorio-dedicado.md)) —
-os 5 módulos de negócio (Selecao,
-Ingresso, Configuracao, OrganizacaoInstitucional, Publicacoes) viraram class
-libraries sem `Program.cs` próprio — só executam dentro da **API UniPlus**
-(composition root). O middleware do `Infrastructure.Core` é cabeado uma única
-vez, no `Program.cs` do host. Smoke contra o host exercita o
-**wiring real de produção**, sem o risco antigo de drift
-entre Programs por módulo (que deixaram de existir).
+os módulos de negócio (Selecao, Ingresso, Configuracao,
+OrganizacaoInstitucional, Publicacoes e Discentes) viraram class libraries sem
+`Program.cs` próprio — só executam dentro da **API UniPlus** (composition root).
+O middleware do `Infrastructure.Core` é cabeado uma única vez, no `Program.cs`
+do host. Smoke contra o host exercita o **wiring real de produção**, sem o risco
+antigo de drift entre Programs por módulo (que deixaram de existir).
 
 Portal permanece deployable autônomo com `Program.cs` próprio. A paridade do
 middleware shared entre os 2 executáveis internos (UniPlus/Portal), quando o

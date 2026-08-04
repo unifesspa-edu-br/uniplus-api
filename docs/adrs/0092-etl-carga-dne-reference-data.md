@@ -12,10 +12,12 @@ informed:
 
 > **Nota (ADR-0099):** o Geo foi extraído para o repositório dedicado
 > [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
-> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). O fitness test
-> `SoftDeleteOptInConventionTests` e o `GeoDbContext` citados abaixo hoje vivem
-> naquele repositório — a decisão de modelagem (reference data sem soft-delete,
-> recarregada por upsert) permanece válida para o domínio do Geo.
+> (ver [ADR-0099](0099-geo-como-repositorio-dedicado.md)). O `GeoDbContext`
+> citado abaixo hoje vive naquele repositório; o fitness test
+> `SoftDeleteOptInConventionTests` **permanece aqui**, cobrindo os DbContexts dos
+> módulos internos — o que migrou foi a cobertura do Geo, não o teste. A decisão
+> de modelagem (reference data sem soft-delete, recarregada por upsert) permanece
+> válida para o domínio do Geo.
 
 ## Contexto e enunciado do problema
 
