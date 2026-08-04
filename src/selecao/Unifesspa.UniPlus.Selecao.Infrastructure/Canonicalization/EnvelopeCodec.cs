@@ -32,7 +32,6 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     [
         "formulario",
         "divulgacao",
-        "identidadesUnidade",
     ];
 
     private static readonly string[] BlocosReais =
@@ -52,6 +51,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "documentosExigidos",
         "vagas",
         "arvoreSatisfacao",
+        "identidadesUnidade",
         "fatosColetados",
         "regrasDerivacao",
         "grafoDependencia",
@@ -61,7 +61,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.2";
+    public string SchemaVersion => "0.0.3";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -126,6 +126,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         IReadOnlyList<CriterioDesempate> desempate = EnvelopeCodecV11.LerCriteriosDesempate(leitor, payload);
         ConfiguracaoClassificacao? classificacao = EnvelopeCodecV11.LerClassificacao(leitor, payload);
         IReadOnlyList<FaseCronograma> cronogramaFases = EnvelopeCodecV11.LerCronogramaFases(leitor, payload, comId: true);
+        EnvelopeCodecV11.LerIdentidadesUnidade(leitor, payload);
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos,
             IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) = EnvelopeCodecV13.LerDocumentosExigidos(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;

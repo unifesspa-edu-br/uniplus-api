@@ -100,7 +100,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// folha da árvore referencia sua exigência pelo mesmo <c>exigenciaId</c> já congelado
     /// em <c>documentosExigidos.exigencias[].exigenciaId</c>, sem duplicar conteúdo.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.2";
+    internal const string SchemaVersionAtual = "0.0.3";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -114,14 +114,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private const int EscalaPercentual = 2;
 
     /// <summary>
-    /// Os 4 blocos que ainda não têm dono (ADR-0109 D8): <c>formulario</c>,
-    /// <c>cascataRemanejamento</c>, <c>divulgacao</c>, <c>identidadesUnidade</c>
-    /// — mais a sub-chave <c>exigencias</c> dentro de <c>documentosExigidos</c>
-    /// (#554). <c>vagas</c> saiu daqui na issue #848 — virou bloco real, sempre
-    /// materializado junto da configuração (ADR-0115). Um bloco de topo
-    /// <b>real</b> nunca emite este literal na raiz: se a dimensão é
-    /// obrigatória, a ausência é pendência de conformidade e o gate recusa
-    /// antes de canonicalizar.
+    /// Os 2 blocos que ainda não têm dono (ADR-0109 D8): <c>formulario</c>,
+    /// <c>divulgacao</c> — mais a sub-chave <c>exigencias</c> dentro de
+    /// <c>documentosExigidos</c> (#554). <c>vagas</c> saiu daqui na issue #848,
+    /// <c>cascataRemanejamento</c> na Story #575 e <c>identidadesUnidade</c> na
+    /// issue #849 — viraram blocos reais. Um bloco de topo <b>real</b> nunca
+    /// emite este literal na raiz: se a dimensão é obrigatória, a ausência é
+    /// pendência de conformidade e o gate recusa antes de canonicalizar.
     /// </summary>
     private static readonly JsonObject NaoConstruido = new() { ["status"] = "nao_construido" };
 
@@ -156,7 +155,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["cascataRemanejamento"] = SerializarCascataRemanejamento(processo),
             ["divulgacao"] = NaoConstruido.DeepClone(),
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
-            ["identidadesUnidade"] = NaoConstruido.DeepClone(),
+            ["identidadesUnidade"] = SerializarIdentidadesUnidade(processo),
             ["fatosColetados"] = SerializarFatosColetados(processo.FatosColetados),
             ["regrasDerivacao"] = SerializarRegrasDerivacao(processo.RegrasDerivacao),
             ["grafoDependencia"] = SerializarGrafoDependencia(processo),
@@ -432,6 +431,24 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["ordens"] = ordens,
         };
     }
+
+    /// <summary>
+    /// Serializa a identidade da Unidade administradora (issue #849, CA-04 da Feature #40) —
+    /// sempre presente, NOT NULL desde a criação do processo (diferente de
+    /// <see cref="SerializarCascataRemanejamento"/>/<see cref="SerializarBonusRegional"/>, que
+    /// alternam presença/ausência): não há toggle <c>"presente"</c> aqui.
+    /// </summary>
+    private static JsonObject SerializarIdentidadesUnidade(ProcessoSeletivo processo) => new()
+    {
+        ["administradora"] = new JsonObject
+        {
+            ["origemId"] = processo.UnidadeAdministradoraOrigemId,
+            ["sigla"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Sigla),
+            ["slug"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Slug),
+            ["nome"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Nome),
+            ["tipo"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Tipo),
+        },
+    };
 
     private static JsonArray SerializarCriteriosDesempate(ProcessoSeletivo processo)
     {
