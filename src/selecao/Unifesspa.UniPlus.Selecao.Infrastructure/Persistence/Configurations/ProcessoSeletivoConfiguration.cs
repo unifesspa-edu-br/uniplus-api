@@ -29,6 +29,26 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         // Story #851 §3.4: NOT NULL, exigido na criação — sem produção, migration direta.
         builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();
 
+        // Issue #849 (CA-04 da Feature #40): quem responde pelo certame — NOT NULL, exigido
+        // na criação, imutável depois. Escalar de topo sem FK cross-schema (ADR-0061) + owned
+        // type snapshot-copy, maxlengths espelhando UnidadeConfiguration.
+        builder.Property(p => p.UnidadeAdministradoraOrigemId)
+            .IsRequired()
+            .HasComment("Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema) — congelado na criação, imutável.");
+
+        builder.OwnsOne(p => p.UnidadeAdministradora, u =>
+        {
+            u.Property(x => x.Sigla).HasColumnName("unidade_administradora_sigla").HasMaxLength(50).IsRequired()
+                .HasComment("Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+            u.Property(x => x.Slug).HasColumnName("unidade_administradora_slug").HasMaxLength(64).IsRequired()
+                .HasComment("Snapshot-copy do slug da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+            u.Property(x => x.Nome).HasColumnName("unidade_administradora_nome").HasMaxLength(250).IsRequired()
+                .HasComment("Snapshot-copy do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+            u.Property(x => x.Tipo).HasColumnName("unidade_administradora_tipo").HasMaxLength(30).IsRequired()
+                .HasComment("Snapshot-copy do tipo organizacional da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+        });
+        builder.Navigation(p => p.UnidadeAdministradora).IsRequired();
+
         // Coleções filhas do agregado: entidades próprias com FK para a raiz
         // (nunca owned types).
         builder.HasMany(p => p.Etapas)

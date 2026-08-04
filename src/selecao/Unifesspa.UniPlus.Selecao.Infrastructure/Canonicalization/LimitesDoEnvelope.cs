@@ -87,4 +87,17 @@ public static class LimitesDoEnvelope
 
     /// <summary>Precisão de <c>ArgsRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
     public const int PrecisaoPrazo = 18;
+
+    // Issue #849 (CA-04 da Feature #40) — identidadesUnidade real.
+    /// <summary><c>UnidadeAdministradoraSnapshot.Sigla</c> — espelha <c>UnidadeConfiguration.Sigla</c>.</summary>
+    public const int UnidadeAdministradoraSigla = 50;
+
+    /// <summary><c>UnidadeAdministradoraSnapshot.Slug</c> — espelha <c>UnidadeConfiguration.Slug</c>.</summary>
+    public const int UnidadeAdministradoraSlug = 64;
+
+    /// <summary><c>UnidadeAdministradoraSnapshot.Nome</c> — espelha <c>UnidadeConfiguration.Nome</c>.</summary>
+    public const int UnidadeAdministradoraNome = 250;
+
+    /// <summary><c>UnidadeAdministradoraSnapshot.Tipo</c> — espelha <c>UnidadeConfiguration.Tipo</c>.</summary>
+    public const int UnidadeAdministradoraTipo = 30;
 }

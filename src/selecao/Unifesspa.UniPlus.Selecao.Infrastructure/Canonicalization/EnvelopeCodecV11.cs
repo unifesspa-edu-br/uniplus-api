@@ -1191,6 +1191,39 @@ internal static class EnvelopeCodecV11
     }
 
     /// <summary>
+    /// A identidade da Unidade administradora (issue #849, CA-04 da Feature #40): lida e
+    /// validada para fechar a gramática, mas <b>não é propagada</b> — mesmo raciocínio de
+    /// <c>origemCandidatos</c> em <see cref="LerCronogramaFases"/>. É atributo de raiz do
+    /// agregado (<c>ProcessoSeletivo.UnidadeAdministradoraOrigemId</c>/<c>UnidadeAdministradora</c>),
+    /// imutável após a criação (nenhum <c>Definir*</c> a altera, não há operação de re-bind) — a
+    /// prova de fidelidade do round-trip vem de <c>ProcessoSeletivo.SombraParaVerificacao()</c>,
+    /// que já copia os dois campos direto da raiz viva, nunca do envelope decodificado.
+    /// </summary>
+    internal static void LerIdentidadesUnidade(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "identidadesUnidade", "$");
+        if (leitor.Falhou)
+        {
+            return;
+        }
+
+        leitor.ExigirChaves(bloco, "identidadesUnidade", "administradora");
+        JsonObject administradora = leitor.Objeto(bloco, "administradora", "identidadesUnidade");
+        if (leitor.Falhou)
+        {
+            return;
+        }
+
+        leitor.ExigirChaves(administradora, "identidadesUnidade.administradora", "origemId", "sigla", "slug", "nome", "tipo");
+
+        leitor.Identificador(administradora, "origemId", "identidadesUnidade.administradora");
+        leitor.TextoNaoVazio(administradora, "sigla", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraSigla);
+        leitor.TextoNaoVazio(administradora, "slug", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraSlug);
+        leitor.TextoNaoVazio(administradora, "nome", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraNome);
+        leitor.TextoNaoVazio(administradora, "tipo", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraTipo);
+    }
+
+    /// <summary>
     /// O cronograma de fases (Story #851): <c>origemCandidatos</c> é lido e validado para
     /// fechar a gramática, mas <b>não é propagado</b> — é atributo de raiz do agregado
     /// (<c>ProcessoSeletivo.OrigemCandidatos</c>), imutável após a criação (nenhum
