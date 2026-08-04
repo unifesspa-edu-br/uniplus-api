@@ -18,7 +18,7 @@ informed:
 > consumido por contrato — não mais um dos 3 deployables construídos a partir
 > deste repositório. As seções abaixo descrevem a topologia decidida neste
 > momento, quando o Geo ainda era um dos 3 executáveis co-localizados nesta
-> solution; a parte referente a Portal e ao co-hosting dos 4 módulos internos na
+> solution; a parte referente a Portal e ao co-hosting dos 5 módulos internos na
 > API UniPlus permanece válida como está.
 
 ## Contexto e enunciado do problema
