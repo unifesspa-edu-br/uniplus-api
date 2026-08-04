@@ -16,7 +16,7 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ToTable("vinculo_discente", t => t.HasComment(
-            "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0119) — " +
+            "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — " +
             "snapshot desnormalizado, sem referência viva a outras tabelas."));
 
         builder.HasKey(v => v.Id);
@@ -37,7 +37,7 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
         builder.Property(v => v.CpfCiphertext)
             .HasColumnType("bytea")
             .IsRequired()
-            .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0119) — envelope autenticado (nonce + tag + dado); nunca texto claro.");
+            .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado (nonce + tag + dado); nunca texto claro.");
 
         builder.Property(v => v.Nome)
             .HasMaxLength(250)

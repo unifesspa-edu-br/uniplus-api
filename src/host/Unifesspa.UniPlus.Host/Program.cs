@@ -21,10 +21,10 @@ using Unifesspa.UniPlus.Selecao.API;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 
-// Composition root do monólito modular. Compõe os 5 módulos internos
-// (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional e Publicações) num processo único,
-// apontando todos para o banco `uniplus` (schema-por-módulo). Portal segue
-// deploy separado. Este assembly é o único que depende de múltiplos módulos
+// Composition root do monólito modular. Compõe os 6 módulos internos
+// (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional, Publicacoes e Discentes)
+// num processo único, apontando todos para o banco `uniplus` (schema-por-módulo). Portal
+// segue deploy separado. Este assembly é o único que depende de múltiplos módulos
 // (composition root) — isento do fitness R8.
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
