@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ProcessoSeletivoCronogramaTests
 {
     private static ProcessoSeletivo NovoProcesso(OrigemCandidatos origem = OrigemCandidatos.ImportacaoExterna) =>
-        ProcessoSeletivo.Criar("PS Cronograma", TipoProcesso.SiSU, origem);
+        ProcessoSeletivo.Criar("PS Cronograma", TipoProcesso.SiSU, origem, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
     private static Result<FaseCronograma> Fase(
         int ordem,
