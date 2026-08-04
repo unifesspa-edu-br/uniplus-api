@@ -37,7 +37,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         Guid recursoOrigemId = Guid.CreateVersion7();
         Guid tipoDeficienciaOrigemId = Guid.CreateVersion7();
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         Result etapasResult = processo.DefinirEtapas(
         [
@@ -79,6 +79,61 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.OfertaAtendimento.TiposDeficiencia.Single().TipoDeficienciaOrigemId.Should().Be(tipoDeficienciaOrigemId);
     }
 
+    [Fact(DisplayName = "Persiste e recarrega a Unidade administradora sem perda (issue #849, CA-05)")]
+    public async Task PersisteERecarrega_UnidadeAdministradora()
+    {
+        Guid unidadeId = Guid.NewGuid();
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
+            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
+
+        recarregado.Should().NotBeNull();
+        recarregado!.UnidadeAdministradoraOrigemId.Should().Be(unidadeId);
+        recarregado.UnidadeAdministradora.Sigla.Should().Be("CEPS");
+        recarregado.UnidadeAdministradora.Slug.Should().Be("ceps");
+        recarregado.UnidadeAdministradora.Nome.Should().Be("Centro de Processos Seletivos");
+        recarregado.UnidadeAdministradora.Tipo.Should().Be("ADMINISTRATIVA");
+    }
+
+    [Fact(DisplayName = "Inserir sem Unidade administradora viola a constraint NOT NULL da coluna (issue #849, CA-05)")]
+    public async Task Inserir_SemUnidadeAdministradora_ViolaNotNull()
+    {
+        Guid processoId = Guid.CreateVersion7();
+
+        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+
+        // A coluna é passada EXPLICITAMENTE como NULL, não omitida — `AddColumn(defaultValue: "")`
+        // da migration inicial deixa um DEFAULT '' na coluna (formalidade do EF para o ALTER TABLE
+        // em bases com linhas pré-existentes, que este projeto pré-produção não tem); omitir a
+        // coluna do INSERT cairia nesse default em vez de provar a constraint NOT NULL.
+        Func<Task> act = async () => await writeContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO selecao.processos_seletivos (
+                id, nome, tipo, status, origem_candidatos, unidade_administradora_origem_id,
+                unidade_administradora_sigla, unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
+                created_at, is_deleted)
+            VALUES (
+                {processoId}, 'PS sem unidade', 1, 1, 1, {Guid.NewGuid()},
+                NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
+                now(), false)
+            """,
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<Exception>(
+            "unidade_administradora_sigla é NOT NULL desde a migration inicial — sem produção, sem estratégia em duas fases");
+    }
+
     [Fact(DisplayName = "Reconfigurar etapas sobre o agregado carregado (tracked) insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarEtapasSobreAgregadoTracked_InsereFilhos()
     {
@@ -87,7 +142,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         // substitui a coleção de etapas por filhos com Guid v7 já preenchido e
         // salva. Sem a correção, DbSet.Update marcaria os filhos novos como
         // Modified e o SaveChanges emitiria UPDATE de linhas nunca inseridas.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -127,7 +182,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis, reconstruindo o value object do motor")]
     public async Task PersisteEReidrata_RegraDerivacao()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
         [
@@ -163,7 +218,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Redefinir a regra de derivação sobre o agregado carregado apaga a árvore antiga inteira (cascade órfão nos três níveis)")]
     public async Task RedefinirRegraDerivacao_SobreAgregadoTracked_ApagaArvoreAntiga()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Redefinição", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Redefinição", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         processo.DefinirRegrasDerivacao(
         [
             ConfiguracaoDerivacaoFato.Criar("MODALIDADE",

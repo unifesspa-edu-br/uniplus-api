@@ -185,6 +185,22 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             argsPrazoRecurso.FindProperty(campoPrazo)!.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo}");
         }
+
+        // Issue #849 — Unidade administradora (identidadesUnidade).
+        IEntityType unidadeAdministradora = contexto.Model
+            .FindEntityType(typeof(ProcessoSeletivo))!
+            .GetNavigations()
+            .Single(n => n.Name == nameof(ProcessoSeletivo.UnidadeAdministradora))
+            .TargetEntityType;
+
+        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Sigla))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraSigla, "LimitesDoEnvelope.UnidadeAdministradoraSigla espelha a coluna de Sigla");
+        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Slug))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraSlug, "LimitesDoEnvelope.UnidadeAdministradoraSlug espelha a coluna de Slug");
+        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Nome))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraNome, "LimitesDoEnvelope.UnidadeAdministradoraNome espelha a coluna de Nome");
+        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Tipo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraTipo, "LimitesDoEnvelope.UnidadeAdministradoraTipo espelha a coluna de Tipo");
     }
 
     /// <summary>
@@ -206,6 +222,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             .. Precisoes.Select(static p => p.Nome),
             // Exercidas em OwnedTypes_BatemComOSchema.
             "RegraCodigo", "RegraVersao", "CensoReferencia", "PrecisaoPercentual", "PrecisaoPrazo",
+            "UnidadeAdministradoraSigla", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
 
             // NumeroDoAto não é coluna do agregado — os DadosEdital são do ato, não da
             // configuração. O limite vem dos validators de publicar e de retificar (60), e é
