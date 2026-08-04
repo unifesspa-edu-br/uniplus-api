@@ -50,17 +50,18 @@ internal static class ConferenciaDeColetabilidadeDeFatos
         Dictionary<string, FatoCandidatoView> porCodigo = catalogo
             .ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
 
-        foreach (FatoColetado fatoColetado in processo.FatosColetados.OrderBy(static f => f.Ordem))
+        FatoColetado? naoColetavel = processo.FatosColetados
+            .OrderBy(static f => f.Ordem)
+            .FirstOrDefault(f => !porCodigo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
+                || !ColetabilidadeDeFato.EhColetavel(fato));
+
+        if (naoColetavel is not null)
         {
-            if (!porCodigo.TryGetValue(fatoColetado.FatoCodigo, out FatoCandidatoView? fato)
-                || !ColetabilidadeDeFato.EhColetavel(fato))
-            {
-                return Result.Failure(new DomainError(
-                    FatoColetadoNaoMaisDeclarado,
-                    $"O fato coletado '{fatoColetado.FatoCodigo}' não é mais declarado/vinculado a campo de " +
-                    "inscrição no catálogo de fatos do candidato — o catálogo mudou depois que este fato foi " +
-                    "vinculado ao formulário, e o congelamento não persiste um vínculo que já não é coletável."));
-            }
+            return Result.Failure(new DomainError(
+                FatoColetadoNaoMaisDeclarado,
+                $"O fato coletado '{naoColetavel.FatoCodigo}' não é mais declarado/vinculado a campo de " +
+                "inscrição no catálogo de fatos do candidato — o catálogo mudou depois que este fato foi " +
+                "vinculado ao formulário, e o congelamento não persiste um vínculo que já não é coletável."));
         }
 
         return Result.Success();
