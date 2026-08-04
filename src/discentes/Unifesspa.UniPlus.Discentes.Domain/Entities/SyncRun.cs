@@ -1,10 +1,10 @@
-using Unifesspa.UniPlus.Discentes.Domain.Enums;
-
 namespace Unifesspa.UniPlus.Discentes.Domain.Entities;
 
-public class SyncRun
+using Unifesspa.UniPlus.Discentes.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
+
+public sealed class SyncRun : EntityBase
 {
-    public Guid Id { get; private set; } = Guid.CreateVersion7();
     public SyncRunStatus Status { get; private set; }
     public int TotalItems { get; private set; }
     public int ProcessedItems { get; private set; }
@@ -15,26 +15,33 @@ public class SyncRun
 
     private SyncRun() { }
 
+    private SyncRun(int totalItems, DateTime startedAt)
+    {
+        Status = SyncRunStatus.Running;
+        TotalItems = totalItems;
+        StartedAt = startedAt;
+    }
+
     /// <param name="clock">
     /// Fonte de "agora" para <c>StartedAt</c>. Obrigatório (sem default
     /// <see cref="TimeProvider.System"/>): a convenção de relógio exige que o
     /// <see cref="TimeProvider"/> seja sempre injetado. Testes passam um
     /// <see cref="TimeProvider"/> fake para isolar o cenário do relógio.
     /// </param>
-    public SyncRun(Guid id, int totalItems, TimeProvider clock)
+    public static SyncRun Criar(int totalItems, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentOutOfRangeException.ThrowIfNegative(totalItems);
-        if (id == Guid.Empty)
-            throw new ArgumentException("O identificador não pode ser vazio.", nameof(id));
 
-        Id = id;
-        Status = SyncRunStatus.Running;
-        TotalItems = totalItems;
-        StartedAt = clock.GetUtcNow().UtcDateTime;
+        return new SyncRun(totalItems, clock.GetUtcNow().UtcDateTime);
     }
+
     public void AtualizarProgresso(int processedItems, int successCount, int errorCount)
     {
+        if (Status != SyncRunStatus.Running)
+            throw new InvalidOperationException(
+                $"Não é possível atualizar o progresso de um SyncRun no estado '{Status}'.");
+
         ArgumentOutOfRangeException.ThrowIfNegative(processedItems);
         ArgumentOutOfRangeException.ThrowIfNegative(successCount);
         ArgumentOutOfRangeException.ThrowIfNegative(errorCount);
@@ -52,6 +59,7 @@ public class SyncRun
         SuccessCount = successCount;
         ErrorCount = errorCount;
     }
+
     public void Concluir(SyncRunStatus finalStatus, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(clock);

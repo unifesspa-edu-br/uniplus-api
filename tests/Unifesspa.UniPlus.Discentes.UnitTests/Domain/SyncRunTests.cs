@@ -14,29 +14,24 @@ public class SyncRunTests
     {
         _clock = new FakeTimeProvider(_agoraFixado);
     }
-    [Fact(DisplayName = "SyncRun.Construtor Deve Lançar ArgumentException - Quando Guid For Vazio")]
-    public void Construtor_DeveLancarArgumentException_QuandoGuidForVazio()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new SyncRun(Guid.Empty, 10, _clock));
-    }
-    [Fact(DisplayName = "SyncRun.Construtor Deve Lançar ArgumentOutOfRangeException - Quando TotalItems For Negativo")]
-    public void Construtor_DeveLancarArgumentOutOfRangeException_QuandoTotalItemsForNegativo()
+    [Fact(DisplayName = "SyncRun.Criar Deve Lançar ArgumentOutOfRangeException - Quando TotalItems For Negativo")]
+    public void Criar_DeveLancarArgumentOutOfRangeException_QuandoTotalItemsForNegativo()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new SyncRun(Guid.NewGuid(), -1, _clock));
+            SyncRun.Criar(-1, _clock));
     }
-    [Fact(DisplayName = "SyncRun.Construtor Deve Lancar ArgumentNullException - Quando Clock for Nulo")]
-    public void Construtor_DeveLancarArgumentNullException_QuandoClockForNulo()
+    [Fact(DisplayName = "SyncRun.Criar Deve Lancar ArgumentNullException - Quando Clock for Nulo")]
+    public void Criar_DeveLancarArgumentNullException_QuandoClockForNulo()
     {
-        Assert.Throws<ArgumentNullException>(() => new SyncRun(Guid.NewGuid(), totalItems: 10, clock: null!));
+        Assert.Throws<ArgumentNullException>(() => SyncRun.Criar(totalItems: 10, clock: null!));
     }
 
-    [Fact(DisplayName = "SyncRun.Construtor Deve Inicializar com Sucesso - Atribuir Data Inicio do Clock")]
-    public void Construtor_DeveInicializarComSucesso_EAtribuirDataInicioDoClock()
+    [Fact(DisplayName = "SyncRun.Criar Deve Gerar Id e Inicializar com Sucesso - Atribuir Data Inicio do Clock")]
+    public void Criar_DeveGerarId_EInicializarComSucesso_EAtribuirDataInicioDoClock()
     {
-        SyncRun syncRun = new SyncRun(Guid.NewGuid(), totalItems: 100, _clock);
+        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
 
+        Assert.NotEqual(Guid.Empty, syncRun.Id);
         Assert.Equal(SyncRunStatus.Running, syncRun.Status);
         Assert.Equal(100, syncRun.TotalItems);
         Assert.Equal(_agoraFixado.UtcDateTime, syncRun.StartedAt);
@@ -46,7 +41,7 @@ public class SyncRunTests
     [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Atualizar Contadores Corretamente")]
     public void AtualizarProgresso_DeveAtualizarContadoresCorretamente()
     {
-        SyncRun syncRun = new SyncRun(Guid.NewGuid(), totalItems: 10, _clock);
+        SyncRun syncRun = SyncRun.Criar(totalItems: 10, _clock);
 
         syncRun.AtualizarProgresso(processedItems: 10, successCount: 8, errorCount: 2);
 
@@ -57,7 +52,7 @@ public class SyncRunTests
     [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Lançar Exceção - Quando Processados For Maior Que Total")]
     public void AtualizarProgresso_DeveLancarException_QuandoProcessadosMaiorQueTotal()
     {
-        var syncRun = new SyncRun(Guid.NewGuid(), 100, _clock);
+        SyncRun syncRun = SyncRun.Criar(100, _clock);
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             syncRun.AtualizarProgresso(
@@ -69,7 +64,7 @@ public class SyncRunTests
     [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Lançar Exceção - Quando Soma Dos Contadores For Inválida")]
     public void AtualizarProgresso_DeveLancarException_QuandoSomaDosContadoresForInvalida()
     {
-        var syncRun = new SyncRun(Guid.NewGuid(), 100, _clock);
+        SyncRun syncRun = SyncRun.Criar(100, _clock);
 
         Assert.Throws<ArgumentException>(() =>
             syncRun.AtualizarProgresso(
@@ -78,13 +73,23 @@ public class SyncRunTests
                 errorCount: 20));
     }
 
+    [Fact(DisplayName = "SyncRun.AtualizarProgresso Deve Lançar InvalidOperationException - Quando SyncRun Ja Concluido")]
+    public void AtualizarProgresso_DeveLancarInvalidOperationException_QuandoSyncRunJaConcluido()
+    {
+        SyncRun syncRun = SyncRun.Criar(100, _clock);
+        syncRun.Concluir(SyncRunStatus.Completed, _clock);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            syncRun.AtualizarProgresso(processedItems: 10, successCount: 10, errorCount: 0));
+    }
+
     [Theory]
     [InlineData(SyncRunStatus.Completed)]
     [InlineData(SyncRunStatus.Partial)]
     [InlineData(SyncRunStatus.Failed)]
     public void Concluir_DeveTransicionarComSucesso_QuandoStatusForTerminal(SyncRunStatus statusTerminal)
     {
-        SyncRun syncRun = new SyncRun(Guid.NewGuid(), totalItems: 100, _clock);
+        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
 
         syncRun.Concluir(statusTerminal, _clock);
 
@@ -96,7 +101,7 @@ public class SyncRunTests
     [InlineData(SyncRunStatus.Running)]
     public void Concluir_DeveLancarArgumentException_QuandoStatusNaoForTerminal(SyncRunStatus statusInvalido)
     {
-        SyncRun syncRun = new SyncRun(Guid.NewGuid(), totalItems: 100, _clock);
+        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
 
         ArgumentException exception = Assert.Throws<ArgumentException>(() => syncRun.Concluir(statusInvalido, _clock));
         Assert.Contains("não é um estado terminal válido", exception.Message);
@@ -105,7 +110,7 @@ public class SyncRunTests
     [Fact(DisplayName = "SyncRun.Concluir Deve Lancar ArgumentNullException - Quando Clock for Nulo")]
     public void Concluir_DeveLancarArgumentNullException_QuandoClockForNulo()
     {
-        SyncRun syncRun = new SyncRun(Guid.NewGuid(), totalItems: 100, _clock);
+        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
 
         Assert.Throws<ArgumentNullException>(() => syncRun.Concluir(SyncRunStatus.Completed, clock: null!));
     }
@@ -113,7 +118,7 @@ public class SyncRunTests
     [Fact(DisplayName = "SyncRun.Concluir Deve Lancar InvalidOperationException - Quando Tentar Reconcluir")]
     public void Concluir_DeveLancarInvalidOperationException_QuandoTentarReconcluir()
     {
-        var syncRun = new SyncRun(Guid.NewGuid(), totalItems: 100, _clock);
+        SyncRun syncRun = SyncRun.Criar(totalItems: 100, _clock);
         syncRun.Concluir(SyncRunStatus.Completed, _clock);
 
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => syncRun.Concluir(SyncRunStatus.Failed, _clock));
