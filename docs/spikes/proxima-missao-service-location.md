@@ -2,6 +2,14 @@
 
 > Brief de trabalho para sessão nova (após `/clear`). Branch: `spike/monolito-modular`.
 > Artefato de spike — remover no rollout/squash final junto com o checkpoint.
+>
+> **Nota (ADR-0099):** o Geo foi extraído para o repositório dedicado
+> [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](../adrs/0099-geo-como-repositorio-dedicado.md)). Os caminhos
+> `src/geo/...`, os tipos `IGeoImportacaoService` / `IGeoImportacaoExecutor` e o
+> host Geo standalone citados abaixo **não existem mais neste repositório** — o
+> inventário de service location vale hoje apenas para o host UniPlus e o Portal.
+> O texto abaixo é registro histórico do brief, não descrição do estado atual.
 
 Tornar o `uniplus-api` forward-compat com o `ServiceLocationPolicy.NotAllowed` do
 Wolverine 6.0: eliminar (ou opt-in explicitamente, conforme recomendação do time do

@@ -3,6 +3,13 @@
 > Artefato de trabalho da branch `spike/monolito-modular`. Não é ADR. Documenta o
 > estado da validação para retomada. Após validado, vira a base do ADR; este
 > arquivo é removido no rollout.
+>
+> **Nota (ADR-0099):** "Geo permanece deploy separado", registrado abaixo como
+> decisão travada, evoluiu para separação **de repositório**: o Geo foi extraído
+> para [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](../adrs/0099-geo-como-repositorio-dedicado.md)) e não é mais
+> buildado, testado nem publicado a partir deste repositório. O consumo por
+> composição-no-cliente continua valendo, agora contra um serviço externo.
 
 ## Objetivo e método
 
