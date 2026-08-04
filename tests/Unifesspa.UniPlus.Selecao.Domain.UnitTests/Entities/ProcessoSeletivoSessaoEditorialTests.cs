@@ -589,7 +589,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             casasArredondamento: null,
             regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!;
+            regrasEliminacao: [], baseadoEmEnem: false).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 

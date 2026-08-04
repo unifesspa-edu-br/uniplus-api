@@ -99,8 +99,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// TOPOLOGIA (grupos E/OU, cardinalidade de grupo, repetição por entidade) — cada
     /// folha da árvore referencia sua exigência pelo mesmo <c>exigenciaId</c> já congelado
     /// em <c>documentosExigidos.exigencias[].exigenciaId</c>, sem duplicar conteúdo.
+    /// Story #850: o bump para <c>0.0.4</c> acrescenta <c>baseadoEmEnem</c> ao bloco
+    /// <c>classificacao</c> — o sinal explícito que substitui a ramificação por
+    /// <see cref="Domain.Entities.ProcessoSeletivo.Tipo"/> na aceitação de
+    /// <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c>.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.3";
+    internal const string SchemaVersionAtual = "0.0.4";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -501,6 +505,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["casasArredondamento"] = classificacao.CasasArredondamento,
             ["regraOrdemAlocacao"] = SerializarReferenciaRegra(classificacao.RegraOrdemAlocacao),
             ["nOpcoesAlocacao"] = classificacao.NOpcoesAlocacao,
+            ["baseadoEmEnem"] = classificacao.BaseadoEmEnem,
             // RegrasEliminacao não tem chave de negócio única (cardinalidade
             // múltipla: duas ELIM-NOTA-MINIMA-ETAPA distintas são válidas, ex. PS
             // Convênios). Ordenar por `Id` era determinístico entre leituras da

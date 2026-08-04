@@ -1078,7 +1078,8 @@ internal static class EnvelopeCodecV11
             "casasArredondamento",
             "regraOrdemAlocacao",
             "nOpcoesAlocacao",
-            "regrasEliminacao");
+            "regrasEliminacao",
+            "baseadoEmEnem");
 
         ReferenciaRegra regraCalculo = leitor.Regra(
             bloco,
@@ -1099,6 +1100,7 @@ internal static class EnvelopeCodecV11
             "classificacao",
             RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04);
         int nOpcoes = leitor.Inteiro(bloco, "nOpcoesAlocacao", "classificacao");
+        bool baseadoEmEnem = leitor.Booleano(bloco, "baseadoEmEnem", "classificacao");
 
         JsonArray array = leitor.Array(bloco, "regrasEliminacao", "classificacao");
         if (leitor.Falhou)
@@ -1142,7 +1144,7 @@ internal static class EnvelopeCodecV11
         }
 
         Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casas, regraOrdem, nOpcoes, eliminacoes);
+            regraCalculo, regraArredondamento, casas, regraOrdem, nOpcoes, eliminacoes, baseadoEmEnem);
 
         return classificacao.IsFailure
             ? leitor.Propagar<ConfiguracaoClassificacao>(classificacao.Error!)

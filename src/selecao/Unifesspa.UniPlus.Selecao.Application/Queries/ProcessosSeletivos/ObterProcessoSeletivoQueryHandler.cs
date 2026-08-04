@@ -220,7 +220,8 @@ public static class ObterProcessoSeletivoQueryHandler
             new ReferenciaRegraDto(classificacao.RegraOrdemAlocacao.Codigo, classificacao.RegraOrdemAlocacao.Versao, classificacao.RegraOrdemAlocacao.Hash),
             classificacao.NOpcoesAlocacao,
             [.. classificacao.RegrasEliminacao.Select(ProjectRegraEliminacao)],
-            processo.ConcorrenciaDuplaAplicavel());
+            processo.ConcorrenciaDuplaAplicavel(),
+            classificacao.BaseadoEmEnem);
     }
 
     private static RegraEliminacaoDto ProjectRegraEliminacao(RegraEliminacao regra)

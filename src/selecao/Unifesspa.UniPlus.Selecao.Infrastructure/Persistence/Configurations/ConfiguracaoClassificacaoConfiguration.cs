@@ -59,6 +59,14 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
 
         builder.Property(c => c.NOpcoesAlocacao).IsRequired();
 
+        builder.Property(c => c.BaseadoEmEnem)
+            .HasColumnName("baseado_em_enem")
+            .IsRequired()
+            .HasComment(
+                "A classificação usa a estrutura de pontuação por área do ENEM — sinal " +
+                "explícito (Story #850) do qual ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA dependem, " +
+                "substituindo a ramificação por TipoProcesso.");
+
         // Coleção filha: entidade própria com FK para a raiz (nunca owned types).
         builder.HasMany(c => c.RegrasEliminacao)
             .WithOne()

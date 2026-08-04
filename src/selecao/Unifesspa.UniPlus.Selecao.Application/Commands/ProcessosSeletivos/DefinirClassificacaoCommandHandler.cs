@@ -13,9 +13,11 @@ using Kernel.Results;
 /// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775): resolve
 /// cada regra no catálogo <c>rol_de_regras</c>
 /// (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args tipados de
-/// cada regra de eliminação conforme o código e congela as referências — as
-/// invariantes que dependem de outras dimensões do agregado (INV-B4, ENEM-only)
-/// são garantidas pela raiz (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
+/// cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
+/// congela as referências — a invariante ENEM×eliminação é validada por
+/// <see cref="ConfiguracaoClassificacao.Criar"/>; a que depende de OUTRA
+/// dimensão do agregado (INV-B4) é garantida pela raiz
+/// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
 /// </summary>
 public static class DefinirClassificacaoCommandHandler
 {
@@ -115,7 +117,8 @@ public static class DefinirClassificacaoCommandHandler
             command.CasasArredondamento,
             regraOrdemAlocacaoResult.Value!,
             command.NOpcoesAlocacao,
-            regrasEliminacao);
+            regrasEliminacao,
+            command.BaseadoEmEnem);
         if (configuracaoResult.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(configuracaoResult.Error!);

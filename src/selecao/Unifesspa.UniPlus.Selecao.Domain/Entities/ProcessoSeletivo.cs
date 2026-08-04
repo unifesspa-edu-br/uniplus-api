@@ -484,13 +484,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Define (ou substitui) a configuração de classificação do processo
-    /// (Story #775, modelagem P-B §2.1). Valida as invariantes que dependem
-    /// de OUTRAS dimensões do agregado: INV-B4 (todo <c>etapa_ref</c> de uma
+    /// (Story #775, modelagem P-B §2.1). Valida a invariante que depende de
+    /// OUTRA dimensão do agregado: INV-B4 (todo <c>etapa_ref</c> de uma
     /// <c>ELIM-NOTA-MINIMA-ETAPA</c> deve existir entre as etapas do
-    /// processo) e a restrição de que <c>ELIM-CORTE-REDACAO</c>/
-    /// <c>ELIM-ZERO-EM-AREA</c> só se aplicam a processo baseado em ENEM
-    /// (INV-B13 parcial — SiSU/PSVR). As invariantes internas da própria
-    /// configuração (INV-B8, limites de <c>NOpcoesAlocacao</c>) já foram
+    /// processo). As invariantes internas da própria configuração (INV-B8,
+    /// limites de <c>NOpcoesAlocacao</c>, e a restrição de que
+    /// <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c> exigem
+    /// <see cref="ConfiguracaoClassificacao.BaseadoEmEnem"/>) já foram
     /// validadas em <see cref="ConfiguracaoClassificacao.Criar"/>.
     /// </summary>
     public Result DefinirClassificacao(ConfiguracaoClassificacao classificacao, PrecondicaoIfMatch precondicao)
@@ -502,8 +502,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        bool baseadoEmEnem = Tipo is TipoProcesso.SiSU or TipoProcesso.PSVR;
-
         foreach (RegraEliminacao regra in classificacao.RegrasEliminacao)
         {
             if (regra.Args is ArgsElimNotaMinimaEtapa notaMinima && !_etapas.Any(e => e.Id == notaMinima.EtapaRef))
@@ -511,14 +509,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return Result.Failure(new DomainError(
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
                     $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe neste processo (INV-B4)."));
-            }
-
-            bool somenteEnem = regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea;
-            if (somenteEnem && !baseadoEmEnem)
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
-                    $"A regra {regra.Regra.Codigo} só se aplica a processo baseado em ENEM (SiSU/PSVR)."));
             }
         }
 
@@ -2584,7 +2574,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .GroupBy(static m => m.Codigo, StringComparer.Ordinal)
             .Any(static grupo => grupo.Select(static m => m.AcaoQuandoIndeferido).Distinct().Count() > 1);
 
-    private DomainError? ValidarGrafo(GrafoConfiguracao grafo)
+    private static DomainError? ValidarGrafo(GrafoConfiguracao grafo)
     {
         // Story #851 §3.5: lista de etapas vazia é estado válido (processo sem prova,
         // ex. SiSU) — a antiga recusa incondicional foi removida também aqui, espelhando
@@ -2673,7 +2663,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        bool baseadoEmEnem = Tipo is TipoProcesso.SiSU or TipoProcesso.PSVR;
+        // A checagem ENEM×eliminação NÃO se repete aqui: grafo.Classificacao chega
+        // já construído por ConfiguracaoClassificacao.Criar (via
+        // EnvelopeCodecV11.LerClassificacao) — se o envelope violasse a invariante,
+        // a decodificação já teria falhado antes de ValidarGrafo ser chamado.
         foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)
         {
             // INV-B4 — mesma proteção do INV-B6, para a eliminação por nota mínima.
@@ -2682,13 +2675,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return new DomainError(
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
                     $"A regra de eliminação referencia a etapa {notaMinima.EtapaRef}, que não existe na configuração restaurada (INV-B4).");
-            }
-
-            if (regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea && !baseadoEmEnem)
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
-                    $"A regra {regra.Regra.Codigo} só se aplica a processo baseado em ENEM (SiSU/PSVR).");
             }
         }
 

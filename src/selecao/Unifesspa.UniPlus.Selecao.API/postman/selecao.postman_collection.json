@@ -1576,7 +1576,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4108,7 +4108,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4637,7 +4637,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5172,7 +5172,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5700,7 +5700,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6232,7 +6232,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": []\n}",
+              "raw": "{\n  \"regraCalculoCodigo\": \"CLASSIFICACAO-IMPORTADA\",\n  \"regraCalculoVersao\": \"v1\",\n  \"regraArredondamentoCodigo\": null,\n  \"regraArredondamentoVersao\": null,\n  \"casasArredondamento\": null,\n  \"regraOrdemAlocacaoCodigo\": \"ALOCACAO-OPCOES-RN04\",\n  \"regraOrdemAlocacaoVersao\": \"v1\",\n  \"nOpcoesAlocacao\": 1,\n  \"regrasEliminacao\": [],\n  \"baseadoEmEnem\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"

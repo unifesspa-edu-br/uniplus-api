@@ -224,7 +224,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
                 casasArredondamento: null,
                 regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
                 nOpcoesAlocacao: 1,
-                regrasEliminacao: []).Value!,
+                regrasEliminacao: [], baseadoEmEnem: false).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseConforme = FaseCronograma.Criar(

@@ -5,7 +5,9 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -271,5 +273,128 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         ProcessoSeletivoRepository readRepo = new(readContext, TimeProvider.System);
         ProcessoSeletivo recarregado = (await readRepo.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
         recarregado.RegrasDerivacao.Single().Regras.Should().ContainSingle(r => r.Contribui == "AC");
+    }
+
+    /// <summary>
+    /// Prova mecânica (issue #850, §3.4/CA-05) de que <c>ObterComConfiguracaoAsync</c> emite
+    /// <b>mais de um</b> <c>SELECT</c> para o grafo de <c>Include</c> — o comportamento que
+    /// <c>.AsSplitQuery()</c> já produz em <c>ComConfiguracao</c> (adicionado na story do
+    /// cronograma de fases, 15/07). Sem esta prova, remover o <c>.AsSplitQuery()</c> ou
+    /// acrescentar uma nova coleção sem ele voltaria a arriscar o produto cartesiano de
+    /// TODAS as coleções irmãs (etapas × modalidades × eliminação × fases × bancas…) num
+    /// único <c>JOIN</c> — o defeito que a guarda de fitness test (ArchTests) impede em
+    /// texto, e que este teste prova em runtime.
+    /// </summary>
+    [Fact(DisplayName = "ObterComConfiguracaoAsync com AsSplitQuery emite mais de um SELECT (#850, CA-05)")]
+    public async Task ObterComConfiguracaoAsync_ComAsSplitQuery_EmiteMultiplosSelects()
+    {
+        Guid condicaoOrigemId = Guid.CreateVersion7();
+        Guid recursoOrigemId = Guid.CreateVersion7();
+        Guid modalidadeOrigemId = Guid.CreateVersion7();
+
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS 2026 — AsSplitQuery", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
+            condicoes: [OfertaCondicao.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
+            recursos: [OfertaRecurso.Criar(recursoOrigemId, "Ledor")],
+            tiposDeficiencia: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixoTeste).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId, "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, [], null,
+            "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            Guid.CreateVersion7(), voBase: 40, pr: 1m, regraDistribuicao, regraAjuste: null,
+            referenciaDemografica: null, [modalidade]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", HashFixoTeste).Value!,
+            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
+            ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixoTeste).Value!,
+            ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixoTeste).Value!,
+            2,
+            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixoTeste).Value!,
+            1, [eliminacao], baseadoEmEnem: false).Value!;
+        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_PRELIMINAR",
+            donoInstitucional: "CEPS", origemData: OrigemDataFase.Propria, agrupaEtapas: true,
+            permiteComplementacao: false, produzResultado: true, resultadoDefinitivo: false, coletaInscricao: false,
+            inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "RESULTADO_PRELIMINAR", atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL")],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        CapturadorDeSql capturador = new();
+        DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
+            .UseNpgsql(_fixture.ConnectionString)
+            .UseSnakeCaseNamingConvention()
+            .AddInterceptors(
+                new SoftDeleteInterceptor(TimeProvider.System, userContext: null),
+                new AuditableInterceptor(TimeProvider.System, userContext: null),
+                capturador)
+            .Options;
+
+        await using SelecaoDbContext context = new(options);
+        ProcessoSeletivoRepository leitura = new(context, TimeProvider.System);
+
+        ProcessoSeletivo? recarregado = await leitura.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None);
+
+        recarregado.Should().NotBeNull();
+        capturador.Comandos.Where(c => c.Contains("SELECT", StringComparison.OrdinalIgnoreCase)).Should()
+            .HaveCountGreaterThan(1,
+                "AsSplitQuery() emite uma consulta própria por coleção incluída — um único SELECT indicaria que " +
+                "a flag foi removida e o carregamento voltou a produzir o produto cartesiano num JOIN só");
+
+        // Contagens materializadas batem com o fixture — cada navegação afirmada tem ao
+        // menos 1 item (um fixture todo vazio não distingue "coleção carregada" de
+        // "coleção omitida por engano").
+        recarregado!.Etapas.Should().ContainSingle();
+        recarregado.OfertaAtendimento!.Condicoes.Should().ContainSingle().Which.CondicaoOrigemId.Should().Be(condicaoOrigemId);
+        recarregado.OfertaAtendimento.Recursos.Should().ContainSingle().Which.RecursoOrigemId.Should().Be(recursoOrigemId);
+        recarregado.DistribuicaoVagas.Should().ContainSingle();
+        recarregado.DistribuicaoVagas.Single().Modalidades.Should().ContainSingle()
+            .Which.ModalidadeOrigemId.Should().Be(modalidadeOrigemId);
+        recarregado.Classificacao!.RegrasEliminacao.Should().ContainSingle();
+        recarregado.CronogramaFases.Should().ContainSingle();
+        recarregado.CronogramaFases.Single().BancasRequeridas.Should().ContainSingle();
+    }
+
+    private const string HashFixoTeste = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    /// <summary>Captura o SQL emitido — mesmo padrão de <c>VersaoVigentePersistenciaTests.CapturadorDeSql</c>.</summary>
+    private sealed class CapturadorDeSql : DbCommandInterceptor
+    {
+        public List<string> Comandos { get; } = [];
+
+        public override ValueTask<InterceptionResult<System.Data.Common.DbDataReader>> ReaderExecutingAsync(
+            System.Data.Common.DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<System.Data.Common.DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(command);
+            Comandos.Add(command.CommandText);
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
     }
 }

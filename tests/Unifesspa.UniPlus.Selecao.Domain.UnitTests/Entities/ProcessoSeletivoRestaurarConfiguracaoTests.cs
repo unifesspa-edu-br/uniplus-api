@@ -27,35 +27,79 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     private static readonly Guid EtapaOriginal = new("aaaa0000-0000-4000-8000-000000000001");
     private static readonly Guid EtapaCongelada = new("aaaa0000-0000-4000-8000-000000000002");
 
-    [Fact(DisplayName = "Uma restauração que falha na ÚLTIMA validação não altera NADA")]
+    [Fact(DisplayName = "Uma restauração que falha numa validação TARDIA não altera NADA")]
     public void RestauracaoQueFalha_NaoAlteraEstado()
     {
-        // A falha é TARDIA de propósito: a classificação é a última dimensão validada.
-        // Um caso trivial (etapas vazias) passaria mesmo numa implementação que aplicasse
-        // etapas e distribuição antes de chegar à classificação — e não testaria nada.
+        // A falha é TARDIA de propósito: a checagem de classificação (INV-B4, EtapaRef de
+        // eliminação) só roda depois de etapas/distribuição/desempate já terem sido
+        // percorridos em ValidarGrafo. Um caso trivial (etapas vazias) passaria mesmo numa
+        // implementação que aplicasse etapas e distribuição antes de chegar à classificação
+        // — e não testaria nada. Desde #850, a invariante ENEM×eliminação não serve mais
+        // para esta prova: ela é validada dentro de ConfiguracaoClassificacao.Criar, ANTES
+        // de o grafo sequer existir — usar um EtapaRef órfão é o que sobrevive na raiz
+        // (depende de _etapas, fora do alcance da configuração isolada).
         ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         Estado antes = Estado.De(processo);
 
-        // PSIQ não é baseado em ENEM — ELIM-CORTE-REDACAO não se aplica (INV-B13).
         GrafoConfiguracao invalido = Grafo(
             etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
             eliminacoes: [
                 RegraEliminacao.Criar(
-                    Regra(RegraEliminacaoCodigo.ElimCorteRedacao, 'e'),
-                    new ArgsElimCorteRedacao(400m)).Value!,
+                    Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'e'),
+                    new ArgsElimNotaMinimaEtapa(Guid.NewGuid(), 4m)).Value!,
             ]);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
 
         Estado.De(processo).Should().BeEquivalentTo(antes,
             "a validação acontece INTEIRA antes de qualquer escrita. Se a reposição aplicasse dimensão a dimensão, " +
             "este grafo já teria trocado etapas e distribuição antes de falhar na classificação — e o certame " +
             "ficaria numa configuração que nunca existiu.");
+    }
+
+    [Fact(DisplayName = "RestaurarConfiguracaoCongelada produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
+    public void RestaurarConfiguracaoCongelada_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
+    {
+        ProcessoSeletivo psiq = ProcessoPublicado(TipoProcesso.PSIQ);
+        ProcessoSeletivo sisu = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versaoPsiq = VersaoDo(psiq);
+        VersaoConfiguracao versaoSisu = VersaoDo(sisu);
+
+        RegraEliminacao EliminacaoEnem() => RegraEliminacao.Criar(
+            Regra(RegraEliminacaoCodigo.ElimCorteRedacao, 'a'), new ArgsElimCorteRedacao(400m)).Value!;
+
+        ConfiguracaoClassificacao ClassificacaoEnemValida() => ConfiguracaoClassificacao.Criar(
+            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
+            casasArredondamento: 2,
+            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'd'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [EliminacaoEnem()],
+            baseadoEmEnem: true).Value!;
+
+        GrafoConfiguracao GrafoComClassificacaoEnem() => new(
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            distribuicaoVagas: [Distribuicao()],
+            bonusRegional: null,
+            criteriosDesempate: [],
+            classificacao: ClassificacaoEnemValida(),
+            cronogramaFases: [FaseConforme()],
+            documentosExigidos: [],
+            nosExigencia: [],
+            referenciaTemporalFatos: null);
+
+        Result resultadoPsiq = psiq.RestaurarConfiguracaoCongelada(versaoPsiq, GrafoComClassificacaoEnem());
+        Result resultadoSisu = sisu.RestaurarConfiguracaoCongelada(versaoSisu, GrafoComClassificacaoEnem());
+
+        resultadoPsiq.IsSuccess.Should().BeTrue(resultadoPsiq.Error?.Message);
+        resultadoSisu.IsSuccess.Should().Be(resultadoPsiq.IsSuccess,
+            "o rótulo TipoProcesso não pode decidir o resultado da restauração — só BaseadoEmEnem, dado igual nos dois processos");
     }
 
     [Fact(DisplayName = "EtapaRef órfão também falha sem tocar no estado")]
@@ -815,7 +859,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'd'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: eliminacoes).Value!;
+            regrasEliminacao: eliminacoes,
+            baseadoEmEnem: false).Value!;
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026",

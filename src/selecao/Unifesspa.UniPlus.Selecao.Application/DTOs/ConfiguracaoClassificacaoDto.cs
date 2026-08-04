@@ -21,4 +21,5 @@ public sealed record ConfiguracaoClassificacaoDto(
     ReferenciaRegraDto RegraOrdemAlocacao,
     int NOpcoesAlocacao,
     IReadOnlyList<RegraEliminacaoDto> RegrasEliminacao,
-    bool ConcorrenciaDuplaAplicavel);
+    bool ConcorrenciaDuplaAplicavel,
+    bool BaseadoEmEnem);
