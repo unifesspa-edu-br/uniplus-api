@@ -25,7 +25,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         CondicaoPrecondicaoFato.Criar(0, fato, Operador.Igual, Sim).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
-        FatoColetado.Criar(codigo, ordem, [.. cita.Select(Cond)]).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, obrigatorio: false, [.. cita.Select(Cond)]).Value!;
 
     [Fact(DisplayName = "Grafo válido é aceito: cada pré-condição cita apenas fatos anteriores")]
     public void GrafoValido_Aceito()
@@ -109,7 +109,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
     public void Autorreferencia_Recusada()
     {
-        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, [Cond("PCD")]);
+        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [Cond("PCD")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoAutorreferente);

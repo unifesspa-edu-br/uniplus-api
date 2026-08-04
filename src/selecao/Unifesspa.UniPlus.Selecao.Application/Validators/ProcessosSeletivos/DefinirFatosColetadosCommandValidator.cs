@@ -32,6 +32,14 @@ public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<De
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("A ordem de coleta não pode ser negativa.");
 
+            // Alinhado a FatoColetadoConfiguration (varchar(300)) — sem o limite aqui, um valor
+            // mais longo passa a validação e só falha em SaveChanges com erro de banco em vez de
+            // 422 (mesmo achado já corrigido em DefinirBonusRegionalCommandValidator).
+            fato.RuleFor(f => f.Rotulo)
+                .NotEmpty()
+                .MaximumLength(300)
+                .WithMessage("O rótulo do fato coletado é obrigatório e deve ter no máximo 300 caracteres.");
+
             // Ausência de pré-condição é null, nunca []. Uma lista externa vazia, uma cláusula
             // interna vazia ou uma condição nula deixariam a semântica DNF ambígua (um predicado
             // sem cláusula, ou uma cláusula sem condição, avaliaria falso — o oposto de "sem

@@ -43,8 +43,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         // BAIXA_RENDA na ordem 0 (sem pré-condição); COR_RACA na ordem 1 com pré-condição citando o anterior.
-        FatoColetado baixaRenda = FatoColetado.Criar("BAIXA_RENDA", 0, null).Value!;
-        FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1,
+        FatoColetado baixaRenda = FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, obrigatorio: true, null).Value!;
+        FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: false,
             [Precondicao(0, "BAIXA_RENDA", Operador.Igual, true)]).Value!;
         // Passa fora de ordem de propósito — a projeção é quem ordena.
         processo.DefinirFatosColetados([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -52,6 +52,9 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 
         dto.FatosColetados.Select(f => f.FatoCodigo).Should().ContainInOrder("BAIXA_RENDA", "COR_RACA");
+        dto.FatosColetados[0].Rotulo.Should().Be("Baixa renda");
+        dto.FatosColetados[0].TipoRenderizacao.Should().Be("BOOLEANO", "o wire de leitura usa o mesmo código canônico do wire de escrita");
+        dto.FatosColetados[0].Obrigatorio.Should().BeTrue();
         dto.FatosColetados[0].Precondicao.Should().BeNull("fato sem pré-condição projeta null, nunca lista vazia");
 
         IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao = dto.FatosColetados[1].Precondicao;

@@ -23,7 +23,7 @@ public sealed class GrafoDependenciaConjuntaTests
         CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
-        FatoColetado.Criar(codigo, ordem, [.. citados.Select(Precond)]).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, obrigatorio: false, [.. citados.Select(Precond)]).Value!;
 
     private static ConfiguracaoDerivacaoFato Derivado(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,

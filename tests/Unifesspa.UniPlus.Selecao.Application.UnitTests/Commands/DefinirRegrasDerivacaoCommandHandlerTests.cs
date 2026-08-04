@@ -61,7 +61,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoBase();
 
-        processo.DefinirFatosColetados([FatoColetado.Criar("COR_RACA", 0, null).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirFatosColetados([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(

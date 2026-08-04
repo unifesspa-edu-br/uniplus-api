@@ -100,4 +100,12 @@ public static class LimitesDoEnvelope
 
     /// <summary><c>UnidadeAdministradoraSnapshot.Tipo</c> — espelha <c>UnidadeConfiguration.Tipo</c>.</summary>
     public const int UnidadeAdministradoraTipo = 30;
+
+    // Story #559 — formulário de inscrição.
+    /// <summary>
+    /// Texto do termo de aceite do formulário de inscrição (<c>ProcessoSeletivo.FormularioTermoAceiteTexto</c>) —
+    /// grandeza própria, maior que <see cref="ObservacaoBaseLegal"/>: é o texto legal completo
+    /// apresentado ao candidato, não uma observação interna.
+    /// </summary>
+    public const int TermoDeAceite = 4000;
 }

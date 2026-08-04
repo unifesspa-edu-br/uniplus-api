@@ -30,7 +30,6 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 {
     private static readonly string[] Stubs =
     [
-        "formulario",
         "divulgacao",
     ];
 
@@ -51,6 +50,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "documentosExigidos",
         "vagas",
         "arvoreSatisfacao",
+        "formulario",
         "identidadesUnidade",
         "fatosColetados",
         "regrasDerivacao",
@@ -61,7 +61,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.4";
+    public string SchemaVersion => "0.0.5";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -129,6 +129,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         EnvelopeCodecV11.LerIdentidadesUnidade(leitor, payload);
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos,
             IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) = EnvelopeCodecV13.LerDocumentosExigidos(leitor, payload);
+        (string? formularioTitulo, string? formularioTermoAceiteTexto) = LerFormulario(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -178,7 +179,9 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         GrafoConfiguracao grafo = new(
             etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases,
             documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao,
-            cascataRemanejamento: cascata);
+            cascataRemanejamento: cascata,
+            formularioTitulo: formularioTitulo,
+            formularioTermoAceiteTexto: formularioTermoAceiteTexto);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao, conformidade, metadadosFatosCongelados));
     }
@@ -440,10 +443,13 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         {
             string path = $"fatosColetados[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "fatosColetados");
-            leitor.ExigirChaves(item, path, "fatoCodigo", "ordem", "precondicao");
+            leitor.ExigirChaves(item, path, "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "precondicao");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             int ordem = leitor.Inteiro(item, "ordem", path);
+            string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
+            string tipoRenderizacaoCodigo = leitor.TextoNaoVazio(item, "tipoRenderizacao", path);
+            bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
             if (leitor.Falhou)
             {
                 return [];
@@ -468,7 +474,8 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                 precondicoes.Add(condicao.Value!);
             }
 
-            Result<FatoColetado> fatoColetado = FatoColetado.Criar(fatoCodigo, ordem, precondicoes);
+            Result<FatoColetado> fatoColetado = FatoColetado.Criar(
+                fatoCodigo, ordem, rotulo, TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacaoCodigo), obrigatorio, precondicoes);
             if (fatoColetado.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [];
@@ -478,6 +485,27 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         }
 
         return fatos;
+    }
+
+    /// <summary>
+    /// Título e termo de aceite do formulário de inscrição (Story #559) — forma fechada mesmo
+    /// quando os dois campos são nulos, mesmo raciocínio de <see cref="LerDadosEdital"/> para
+    /// campos individualmente opcionais (não um toggle por presença como
+    /// <see cref="EnvelopeCodecV11.LerBonusRegional"/>).
+    /// </summary>
+    private static (string? Titulo, string? TermoAceiteTexto) LerFormulario(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "formulario", "$");
+        if (leitor.Falhou)
+        {
+            return (null, null);
+        }
+
+        leitor.ExigirChaves(bloco, "formulario", "titulo", "termoAceiteTexto");
+
+        string? titulo = leitor.TextoOpcional(bloco, "titulo", "formulario", LimitesDoEnvelope.NomeDeCadastro);
+        string? termoAceiteTexto = leitor.TextoOpcional(bloco, "termoAceiteTexto", "formulario", LimitesDoEnvelope.TermoDeAceite);
+        return leitor.Falhou ? (null, null) : (titulo, termoAceiteTexto);
     }
 
     /// <summary>

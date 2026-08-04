@@ -11,13 +11,17 @@ using System.Text.Json;
 public sealed record CondicaoPrecondicaoDto(string Fato, string Operador, JsonElement Valor);
 
 /// <summary>
-/// DTO de leitura de um fato coletado (Story #987). A <see cref="Precondicao"/> é o predicado na
-/// forma normal disjuntiva — o OU de cláusulas, cada cláusula o E de condições —, ou
-/// <see langword="null"/> quando o fato é coletado incondicionalmente (nunca uma lista vazia).
+/// DTO de leitura de um fato coletado (Story #987; apresentação — Rotulo/TipoRenderizacao/
+/// Obrigatorio — Story #559). A <see cref="Precondicao"/> é o predicado na forma normal
+/// disjuntiva — o OU de cláusulas, cada cláusula o E de condições —, ou <see langword="null"/>
+/// quando o fato é coletado incondicionalmente (nunca uma lista vazia).
 /// </summary>
 public sealed record FatoColetadoDto(
     string FatoCodigo,
     int Ordem,
+    string Rotulo,
+    string TipoRenderizacao,
+    bool Obrigatorio,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoDto>>? Precondicao);
 
 /// <summary>

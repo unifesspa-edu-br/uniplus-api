@@ -6,13 +6,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 /// <summary>
-/// Configuração EF Core de <see cref="FatoColetado"/> (Story #926) — entidade filha de
+/// Configuração EF Core de <see cref="FatoColetado"/> (Story #926; apresentação —
+/// Rotulo/TipoRenderizacao/Obrigatorio — Story #559) — entidade filha de
 /// <c>ProcessoSeletivo</c>, <c>EntityBase</c> puro (sem soft-delete). Substituível por inteiro
 /// junto com o processo, mesmo padrão de <c>DocumentoExigido</c>.
 /// </summary>
 public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoColetado>
 {
     private const int FatoCodigoMaxLength = 60;
+
+    // Mesma grandeza de LimitesDoEnvelope.NomeDeCadastro (o decoder do envelope aplica o mesmo
+    // limite ao reidratar) — um rótulo de campo de formulário é a mesma grandeza de um nome de
+    // cadastro curto.
+    private const int RotuloMaxLength = 300;
 
     public void Configure(EntityTypeBuilder<FatoColetado> builder)
     {
@@ -24,6 +30,9 @@ public sealed class FatoColetadoConfiguration : IEntityTypeConfiguration<FatoCol
 
         builder.Property(f => f.FatoCodigo).HasMaxLength(FatoCodigoMaxLength).IsRequired();
         builder.Property(f => f.Ordem).IsRequired();
+        builder.Property(f => f.Rotulo).HasMaxLength(RotuloMaxLength).IsRequired();
+        builder.Property(f => f.TipoRenderizacao).HasConversion<int>().IsRequired();
+        builder.Property(f => f.Obrigatorio).IsRequired();
 
         // As duas unicidades são invariantes do agregado, feitas cumprir em
         // DefinirFatosColetados; os índices as garantem também contra escrita concorrente e

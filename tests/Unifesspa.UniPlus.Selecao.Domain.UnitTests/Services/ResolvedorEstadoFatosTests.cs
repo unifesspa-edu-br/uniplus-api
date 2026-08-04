@@ -26,7 +26,7 @@ public sealed class ResolvedorEstadoFatosTests
         CondicaoPrecondicaoFato.Criar(0, fato, operador, valor).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, params CondicaoPrecondicaoFato[] precondicoes) =>
-        FatoColetado.Criar(codigo, ordem, precondicoes).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, obrigatorio: false, precondicoes).Value!;
 
     /// <summary>
     /// A tabela normativa de coleta. O gate de escola pública abre as subcotas; a dimensão PcD é a

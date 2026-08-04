@@ -164,11 +164,19 @@ internal static class CorpusEnvelope
         // snapshot, as arestas de produção, pré-condição e derivação, com predicado DNF de duas
         // condições numa cláusula. Ambos os códigos contribuídos (AC, LB_PPI) são ofertados.
         processo.DefinirFatosColetados(Ordem([
-            FatoColetado.Criar("COR_RACA", 0, null).Value!,
-            FatoColetado.Criar("RENDA", 1, [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Formulário de inscrição (Story #559): título e termo de aceite não-default — o
+        // decoder tem de reconstruir os dois escalares a partir do bloco "formulario", que deixou
+        // de ser stub nesta Story.
+        processo.DefinirFormulario(
+            "Formulário de Inscrição — PS Rico 2026",
+            "Declaro que as informações prestadas são verdadeiras, sob pena de eliminação do certame.",
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao(Ordem([
             ConfiguracaoDerivacaoFato.Criar("MODALIDADE", Ordem([

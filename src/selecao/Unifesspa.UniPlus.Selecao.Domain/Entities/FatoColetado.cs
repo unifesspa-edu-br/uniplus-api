@@ -1,18 +1,23 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using Enums;
+
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Um fato do vocabulário que <b>este</b> processo seletivo coleta do candidato, com a sua
-/// posição na ordem de coleta e a pré-condição que decide se o campo produtor é apresentado
-/// (Story #926).
+/// posição na ordem de coleta, a pré-condição que decide se o campo produtor é apresentado
+/// (Story #926) e a apresentação do campo no formulário de inscrição — rótulo, tipo de
+/// renderização e obrigatoriedade (Story #559).
 /// </summary>
 /// <remarks>
 /// <para>
 /// A pré-condição é <b>aresta do grafo por processo, não propriedade do catálogo</b>: o mesmo
 /// fato pode ser coletado sem gate nenhum em outro processo. Por isso vive aqui, na configuração
 /// do certame, e não em <c>FatoCandidato</c> — que é catálogo global e seed-governado (ADR-0111).
+/// A apresentação é pelo mesmo motivo: o mesmo fato pode ter rótulo e obrigatoriedade diferentes
+/// em processos diferentes.
 /// </para>
 /// <para>
 /// Fato <b>sem</b> pré-condição é coletado sempre — é o caso das autodeclarações de abertura, que
@@ -37,6 +42,19 @@ public sealed class FatoColetado : EntityBase
     /// </summary>
     public int Ordem { get; private set; }
 
+    /// <summary>Rótulo do campo no formulário de inscrição.</summary>
+    public string Rotulo { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Como o campo é renderizado. A coerência contra o <c>Dominio</c> do fato no catálogo (ex.:
+    /// domínio <c>BOOLEANO</c> só aceita <see cref="TipoRenderizacao.Booleano"/>) é validada na
+    /// Application, que tem acesso ao vocabulário cross-módulo — o Domain não alcança o catálogo.
+    /// </summary>
+    public TipoRenderizacao TipoRenderizacao { get; private set; }
+
+    /// <summary>Se o candidato é obrigado a preencher o campo para prosseguir com a inscrição.</summary>
+    public bool Obrigatorio { get; private set; }
+
     public IReadOnlyCollection<CondicaoPrecondicaoFato> Precondicoes => _precondicoes.AsReadOnly();
 
     private FatoColetado() { }
@@ -44,6 +62,9 @@ public sealed class FatoColetado : EntityBase
     public static Result<FatoColetado> Criar(
         string fatoCodigo,
         int ordem,
+        string rotulo,
+        TipoRenderizacao tipoRenderizacao,
+        bool obrigatorio,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes)
     {
         if (string.IsNullOrWhiteSpace(fatoCodigo))
@@ -58,6 +79,20 @@ public sealed class FatoColetado : EntityBase
             return Result<FatoColetado>.Failure(new DomainError(
                 FatoColetadoErrorCodes.OrdemInvalida,
                 "A ordem de coleta não pode ser negativa."));
+        }
+
+        if (string.IsNullOrWhiteSpace(rotulo))
+        {
+            return Result<FatoColetado>.Failure(new DomainError(
+                FatoColetadoErrorCodes.RotuloObrigatorio,
+                "O rótulo do fato coletado é obrigatório."));
+        }
+
+        if (tipoRenderizacao == TipoRenderizacao.Nenhuma)
+        {
+            return Result<FatoColetado>.Failure(new DomainError(
+                FatoColetadoErrorCodes.TipoRenderizacaoObrigatorio,
+                "O tipo de renderização do fato coletado é obrigatório."));
         }
 
         string codigo = fatoCodigo.Trim();
@@ -78,7 +113,14 @@ public sealed class FatoColetado : EntityBase
             }
         }
 
-        FatoColetado fato = new() { FatoCodigo = codigo, Ordem = ordem };
+        FatoColetado fato = new()
+        {
+            FatoCodigo = codigo,
+            Ordem = ordem,
+            Rotulo = rotulo.Trim(),
+            TipoRenderizacao = tipoRenderizacao,
+            Obrigatorio = obrigatorio,
+        };
         foreach (CondicaoPrecondicaoFato precondicao in condicoes)
         {
             precondicao.VincularFatoColetado(fato.Id);
@@ -116,6 +158,8 @@ public static class FatoColetadoErrorCodes
 {
     public const string FatoCodigoObrigatorio = "FatoColetado.FatoCodigoObrigatorio";
     public const string OrdemInvalida = "FatoColetado.OrdemInvalida";
+    public const string RotuloObrigatorio = "FatoColetado.RotuloObrigatorio";
+    public const string TipoRenderizacaoObrigatorio = "FatoColetado.TipoRenderizacaoObrigatorio";
     public const string PrecondicaoAutorreferente = "FatoColetado.PrecondicaoAutorreferente";
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string OrdemDuplicada = "FatoColetado.OrdemDuplicada";

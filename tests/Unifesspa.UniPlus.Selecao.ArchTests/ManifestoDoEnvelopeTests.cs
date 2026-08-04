@@ -262,8 +262,10 @@ public sealed class ManifestoDoEnvelopeTests
 
         // Coleta de fatos + derivação (Story #928, §7.4) — congeladas nos blocos de topo
         // `fatosColetados`/`regrasDerivacao` e testemunhadas no grafo conjunto (`grafoDependencia`).
+        // Rotulo/TipoRenderizacao/Obrigatorio (Story #559) — a apresentação do campo no
+        // formulário de inscrição, congelada junto do fato no mesmo bloco `fatosColetados`.
         [typeof(FatoColetado)] = (
-            ["FatoCodigo", "Ordem", "Precondicoes"],
+            ["FatoCodigo", "Ordem", "Rotulo", "TipoRenderizacao", "Obrigatorio", "Precondicoes"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("SemPrecondicao", "Derivada de Precondicoes — congelá-la duplicaria a fonte de verdade."),

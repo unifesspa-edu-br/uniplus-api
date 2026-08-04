@@ -200,11 +200,19 @@ public sealed class EnvelopeCanonicoGoldenTests
         // pré-condição (COR_RACA gata RENDA), derivação (RENDA→MODALIDADE) e gatilho
         // (MODALIDADE→exigência). MODALIDADE só contribui AC, a única modalidade ofertada.
         processo.DefinirFatosColetados([
-            FatoColetado.Criar("COR_RACA", 0, null).Value!,
-            FatoColetado.Criar("RENDA", 1, [
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ]).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Formulário de inscrição (Story #559): título e termo de aceite presentes — o bloco
+        // "formulario" deixou de ser stub nesta Story, e a fixture precisa congelar a forma real,
+        // não só o caso degenerado dos dois campos nulos.
+        processo.DefinirFormulario(
+            "Formulário de Inscrição",
+            "Declaro que as informações prestadas são verdadeiras.",
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([
             ConfiguracaoDerivacaoFato.Criar("MODALIDADE", [
@@ -643,7 +651,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     // ── Fixture da variante COM cascata (Story #575) — nome próprio, fora da chave por
     // schema_version: é uma segunda fixture da MESMA versão de schema, não uma versão nova. ──
 
-    private const string NomeDaFixtureCascata = "envelope-0.0.4-cascata.json";
+    private const string NomeDaFixtureCascata = "envelope-0.0.5-cascata.json";
 
     private static string CaminhoDaFixtureCascata() => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
