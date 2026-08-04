@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed class ConformidadeLegalGateTests
 {
-    private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
+    private static readonly string HashFixo = ProcessoSeletivoConformeBuilder.HashFixo;
     private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
     private static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
@@ -265,76 +265,8 @@ public sealed class ConformidadeLegalGateTests
         return (processo, versao);
     }
 
-    private static ProcessoSeletivo NovoProcessoConforme()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
-
-        processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            criteriosCumulativos: [],
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-
-        processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: Guid.CreateVersion7(),
-                voBase: 40,
-                pr: 1m,
-                regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
-                regraAjuste: null,
-                referenciaDemografica: null,
-                modalidades: [modalidade]).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
-                regraArredondamento: null,
-                casasArredondamento: null,
-                regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", HashFixo).Value!,
-                nOpcoesAlocacao: 1,
-                regrasEliminacao: [], baseadoEmEnem: false).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma faseConforme = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            produzResultado: true,
-            resultadoDefinitivo: true,
-            coletaInscricao: true,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL",
-            atoProduzidoEfeitoIrreversivel: false,
-            bancasRequeridas: [],
-            regraRecurso: null).Value!;
-        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        return processo;
-    }
+    private static ProcessoSeletivo NovoProcessoConforme() =>
+        ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
 
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {

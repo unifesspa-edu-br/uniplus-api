@@ -146,75 +146,14 @@ public sealed class PublicarProcessoSeletivoGateTests
     /// <summary>Processo conforme (etapas, oferta, distribuição, classificação, cronograma) — o mínimo para passar pelos dois primeiros gates do handler.</summary>
     private static ProcessoSeletivo NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out Guid faseId)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate D5", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
-
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        string hashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            criteriosCumulativos: [],
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", hashFixo).Value!,
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade]).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo).Value!,
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", hashFixo).Value!,
-            nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            donoInstitucional: "CEPS",
-            origemData: OrigemDataFase.Propria,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            produzResultado: true,
-            resultadoDefinitivo: true,
-            coletaInscricao: true,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            atoProduzidoCodigo: "RESULTADO_FINAL",
-            atoProduzidoEfeitoIrreversivel: false,
-            bancasRequeridas: [],
-            regraRecurso: null).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        faseId = fase.Id;
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Gate D5", out faseId);
 
         CondicaoGatilho condicao = CondicaoGatilho.Criar(
             0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
             "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
-            fase.Id,
+            faseId,
             tipoDocumentoOrigemId: Guid.CreateVersion7(),
             tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
             tipoDocumentoNome: "Declaração de maioridade",
