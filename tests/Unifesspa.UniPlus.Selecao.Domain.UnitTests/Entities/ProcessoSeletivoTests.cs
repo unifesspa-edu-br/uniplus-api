@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ProcessoSeletivoTests
 {
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
     [Fact(DisplayName = "Criar inicia o processo em rascunho (CA-01)")]
     public void CriarProcesso_IniciaEmRascunho()
@@ -35,7 +35,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem tipo lanca ArgumentException")]
     public void Criar_SemTipo_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria);
+        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         act.Should().Throw<ArgumentException>().WithParameterName("tipo");
     }
@@ -43,9 +43,44 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (Story #851 §3.4)")]
     public void Criar_SemOrigemCandidatos_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.Nenhuma);
+        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.Nenhuma, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         act.Should().Throw<ArgumentException>().WithParameterName("origemCandidatos");
+    }
+
+    [Fact(DisplayName = "Criar sem unidade administradora (Guid.Empty) lanca ArgumentException (issue #849, CA-04)")]
+    public void Criar_SemUnidadeAdministradoraOrigemId_Lanca()
+    {
+        Action act = () => ProcessoSeletivo.Criar(
+            "PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.Empty,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        act.Should().Throw<ArgumentException>().WithParameterName("unidadeAdministradoraOrigemId");
+    }
+
+    [Fact(DisplayName = "Criar congela a identidade da unidade administradora (issue #849, CA-03)")]
+    public void CriarProcesso_CongelaUnidadeAdministradora()
+    {
+        Guid unidadeId = Guid.NewGuid();
+        UnidadeAdministradoraSnapshot snapshot = UnidadeAdministradoraSnapshot
+            .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!;
+
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId, snapshot);
+
+        processo.UnidadeAdministradoraOrigemId.Should().Be(unidadeId);
+        processo.UnidadeAdministradora.Should().BeSameAs(snapshot);
+    }
+
+    [Fact(DisplayName = "SombraParaVerificacao copia a unidade administradora da raiz viva (issue #849)")]
+    public void SombraParaVerificacao_CopiaUnidadeAdministradora()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+
+        ProcessoSeletivo sombra = processo.SombraParaVerificacao();
+
+        sombra.UnidadeAdministradoraOrigemId.Should().Be(processo.UnidadeAdministradoraOrigemId);
+        sombra.UnidadeAdministradora.Should().BeSameAs(processo.UnidadeAdministradora);
     }
 
     [Fact(DisplayName = "Etapa classificatoria ou ambas com peso compõe o divisor da media (CA-02)")]
@@ -518,7 +553,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO fora de processo ENEM é recusado")]
     public void DefinirClassificacao_EliminacaoEnemForaDeProcessoEnem_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
@@ -533,7 +568,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO em processo PSVR (baseado em ENEM) tem sucesso")]
     public void DefinirClassificacao_EliminacaoEnemEmProcessoEnem_Sucesso()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSVR 2026", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSVR 2026", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
