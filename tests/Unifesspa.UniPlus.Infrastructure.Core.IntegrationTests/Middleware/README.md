@@ -94,11 +94,14 @@ Use o `CorrelationIdMiddlewareSmokeTests` como template literal: 3 cenários
 
 ## Por que via host UniPlus
 
-Com a topologia de 3 APIs, os 5 módulos de negócio (Selecao, Ingresso,
-Configuracao, OrganizacaoInstitucional) viraram class libraries sem `Program.cs`
-próprio — só executam dentro da **API UniPlus** (composition root). O middleware
-do `Infrastructure.Core` é cabeado uma única vez, no `Program.cs` do host. Smoke
-contra o host exercita o **wiring real de produção**, sem o risco antigo de drift
+Com a topologia atual — 2 APIs executáveis internas (UniPlus/Portal) + Geo
+como serviço externo ([ADR-0099](../../../docs/adrs/0099-geo-como-repositorio-dedicado.md)) —
+os 5 módulos de negócio (Selecao,
+Ingresso, Configuracao, OrganizacaoInstitucional, Publicacoes) viraram class
+libraries sem `Program.cs` próprio — só executam dentro da **API UniPlus**
+(composition root). O middleware do `Infrastructure.Core` é cabeado uma única
+vez, no `Program.cs` do host. Smoke contra o host exercita o
+**wiring real de produção**, sem o risco antigo de drift
 entre Programs por módulo (que deixaram de existir).
 
 Portal permanece deployable autônomo com `Program.cs` próprio. A paridade do
@@ -106,7 +109,8 @@ middleware shared entre os 2 executáveis internos (UniPlus/Portal), quando o
 custo do drift aparecer, é melhor coberta por um arch test em
 `Unifesspa.UniPlus.ArchTests` do que por uma matriz de fixtures aqui. O Geo
 seguia a mesma topologia até ser extraído para repositório dedicado
-(ADR-0099); hoje não é mais buildado nem testado a partir deste monorepo.
+([ADR-0099](../../../docs/adrs/0099-geo-como-repositorio-dedicado.md));
+hoje não é mais buildado nem testado a partir deste monorepo.
 
 ## Performance esperada
 
