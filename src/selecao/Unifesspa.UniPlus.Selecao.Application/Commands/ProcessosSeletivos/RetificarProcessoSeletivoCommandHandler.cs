@@ -192,6 +192,18 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
+        // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
+        // DERIVADO) — uma retificação também pode congelar um vínculo que deixou de ser
+        // coletável desde a publicação de abertura.
+        Result coletabilidadeDosFatos = await ConferenciaDeColetabilidadeDeFatos
+            .ConferirAsync(processo, fatoCandidatoReader, cancellationToken)
+            .ConfigureAwait(false);
+        if (coletabilidadeDosFatos.IsFailure)
+        {
+            return (Result.Failure(coletabilidadeDosFatos.Error!), []);
+        }
+
         // Story #919 (RN08): mesmo congelamento de metadado de fato que a publicação de
         // abertura já faz — uma retificação também pode conter gatilho de documento vivo, e
         // congelar sem este bloco deixaria o metadado incompleto (vazio) para esta versão.
