@@ -17,7 +17,7 @@ public sealed class ObterObrigatoriedadesAplicaveisQueryHandlerTests
     public async Task Handle_DataExplicita_DelegadaAoRepositorio()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
+            "PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         DateOnly dataReferencia = new(2026, 6, 15);
         ObrigatoriedadeLegal universal = NovaRegra("*", "UNIVERSAL");
         ObrigatoriedadeLegal especifica = NovaRegra("PSIQ", "PSIQ");
@@ -62,7 +62,7 @@ public sealed class ObterObrigatoriedadesAplicaveisQueryHandlerTests
     public async Task Handle_DatasDiferentes_DevolveConjuntosDiferentes()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria);
+            "PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         DateOnly duranteVigencia = new(2026, 6, 15);
         DateOnly aposVigencia = new(2026, 7, 5);
         ObrigatoriedadeLegal regra = NovaRegra("PSIQ", "PSIQ_VIGENTE");

@@ -19,7 +19,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     private static JsonElement Sim => JsonSerializer.SerializeToElement(true);
 
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Coleta de Fatos", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo.Criar("PS Coleta de Fatos", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
     private static CondicaoPrecondicaoFato Cond(string fato) =>
         CondicaoPrecondicaoFato.Criar(0, fato, Operador.Igual, Sim).Value!;

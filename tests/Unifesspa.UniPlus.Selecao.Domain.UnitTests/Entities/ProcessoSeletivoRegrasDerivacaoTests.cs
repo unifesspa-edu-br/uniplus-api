@@ -21,7 +21,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         RegrasDerivacaoModalidadeLei12711.DominioCanonico;
 
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Derivação", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo.Criar("PS Derivação", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
     private static CondicaoRegraDerivacao Cond(string fato, bool valor) =>
         CondicaoRegraDerivacao.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!;

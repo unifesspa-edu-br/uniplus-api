@@ -27,7 +27,7 @@ public sealed class GateDeConformidadeTests
 
     private static ProcessoSeletivo ProcessoConforme()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -119,7 +119,7 @@ public sealed class GateDeConformidadeTests
     [Fact(DisplayName = "PendenciaDeConformidade_ProcessoIncompleto — nomeia as dimensões faltantes")]
     public void PendenciaDeConformidade_ProcessoIncompleto()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         DomainError? pendencia = processo.PendenciaDeConformidade();
 
@@ -184,7 +184,7 @@ public sealed class GateDeConformidadeTests
     [Fact(DisplayName = "Publicar_ProcessoNaoConforme_Recusa — o gate da publicação continua valendo")]
     public void Publicar_ProcessoNaoConforme_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             Dados(),

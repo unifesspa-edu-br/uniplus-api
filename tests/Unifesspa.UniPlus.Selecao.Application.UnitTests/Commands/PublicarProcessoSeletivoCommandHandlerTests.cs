@@ -30,7 +30,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
 
     private static ProcessoSeletivo NovoProcessoConforme(out Guid faseId)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Metadado de Fato", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Metadado de Fato", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)],

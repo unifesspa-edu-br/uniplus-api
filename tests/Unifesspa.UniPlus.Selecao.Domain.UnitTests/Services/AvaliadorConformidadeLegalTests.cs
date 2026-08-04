@@ -22,7 +22,7 @@ public sealed class AvaliadorConformidadeLegalTests
     private const string TipoProcessoAvaliado = "SiSU";
 
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Avaliador 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo.Criar("PS Avaliador 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
     private static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
         ObrigatoriedadeLegal.Criar(

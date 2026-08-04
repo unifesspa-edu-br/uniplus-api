@@ -101,7 +101,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
     [Fact(DisplayName = "Handle com FaseCanonicaId que não resolve no cadastro retorna FaseCronograma.FaseCanonicaNaoEncontrada")]
     public async Task Handle_FaseCanonicaNaoEncontrada_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.FaseCanonicaReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((FaseCanonicaView?)null);
@@ -118,7 +118,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
     [Fact(DisplayName = "Handle com o ato produzido sem versão vigente no catálogo de Publicações retorna FaseCronograma.AtoProduzidoNaoEncontradoNoCatalogo")]
     public async Task Handle_AtoProduzidoSemVersaoVigente_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
@@ -138,7 +138,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
     [Fact(DisplayName = "CA-02/D9: referenciar uma regra de OUTRO TipoRegra em RegraRecurso é recusado com RegraRecursoFase.RegraCatalogoInvalida")]
     public async Task Handle_RegraRecursoDeTipoIncompativel_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
@@ -176,7 +176,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
     [Fact(DisplayName = "CA-18: âncora cujo tipo de ato CONGELA configuração é recusada com RegraRecursoFase.AncoraEmAtoCongelante")]
     public async Task Handle_AncoraEmAtoCongelante_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid faseCanonicaId = Guid.CreateVersion7();
         mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
@@ -217,7 +217,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
     [Fact(DisplayName = "Handle com fase conforme resolve e persiste — devolve o ETag da sessão (ou null em rascunho)")]
     public async Task Handle_FaseConforme_PersisteERetornaSucesso()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         Mocks mocks = NovosMocks(processo, processo.Id);

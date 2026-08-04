@@ -51,7 +51,7 @@ public sealed class PublicarProcessoSeletivoGateTests
     public async Task Publicar_ProcessoNaoConforme_NaoCanonicaliza()
     {
         // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(
             processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));
@@ -146,7 +146,7 @@ public sealed class PublicarProcessoSeletivoGateTests
     /// <summary>Processo conforme (etapas, oferta, distribuição, classificação, cronograma) — o mínimo para passar pelos dois primeiros gates do handler.</summary>
     private static ProcessoSeletivo NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out Guid faseId)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate D5", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate D5", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
