@@ -34,6 +34,7 @@ public sealed partial class DominioNaoUsaGuidNewGuidTests
         string[] domainSourceRoots =
         [
             Path.Combine(solutionRoot, "src", "shared", "Unifesspa.UniPlus.Kernel"),
+            Path.Combine(solutionRoot, "src", "discentes", "Unifesspa.UniPlus.Discentes.Domain"),
             Path.Combine(solutionRoot, "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain"),
             Path.Combine(solutionRoot, "src", "ingresso", "Unifesspa.UniPlus.Ingresso.Domain"),
             Path.Combine(solutionRoot, "src", "portal", "Unifesspa.UniPlus.Portal.Domain"),
