@@ -206,6 +206,18 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
+        // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
+        // DERIVADO) — a configuração EDITADA pela sessão pode conter um vínculo (novo ou
+        // preexistente) que deixou de ser coletável.
+        Result coletabilidadeDosFatos = await ConferenciaDeColetabilidadeDeFatos
+            .ConferirAsync(processo, fatoCandidatoReader, cancellationToken)
+            .ConfigureAwait(false);
+        if (coletabilidadeDosFatos.IsFailure)
+        {
+            return (Result.Failure(coletabilidadeDosFatos.Error!), []);
+        }
+
         // Story #919 (RN08): mesmo congelamento de metadado de fato que a publicação de
         // abertura já faz — a configuração EDITADA pela sessão pode conter gatilho de
         // documento vivo (novo ou alterado), e congelar sem este bloco deixaria o metadado

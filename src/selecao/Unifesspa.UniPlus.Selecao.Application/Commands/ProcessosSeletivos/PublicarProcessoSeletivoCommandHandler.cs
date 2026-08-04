@@ -158,6 +158,18 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
+        // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
+        // DERIVADO) — sem esta reconferência, um vínculo morto seria congelado numa versão
+        // append-only e, pela doutrina do agregado, irreparável depois.
+        Result coletabilidadeDosFatos = await ConferenciaDeColetabilidadeDeFatos
+            .ConferirAsync(processo, fatoCandidatoReader, cancellationToken)
+            .ConfigureAwait(false);
+        if (coletabilidadeDosFatos.IsFailure)
+        {
+            return (Result.Failure(coletabilidadeDosFatos.Error!), []);
+        }
+
         // Story #919 (RN08): congela o metadado de cada fato citado em alguma condição de
         // gatilho, ao lado da condição bruta {fato, operador, valor} já congelada desde a
         // 1.2 — I/O resolvido só quando existe ao menos uma condição (mesmo princípio de
