@@ -43,7 +43,12 @@ public sealed class GrafoConfiguracao
         IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null,
         // Cascata de remanejamento (Story #575) — opcional, mesmo padrão de BonusRegional
         // (ausência = nenhuma cascata configurada, toggle por presença).
-        ConfiguracaoCascataRemanejamento? cascataRemanejamento = null)
+        ConfiguracaoCascataRemanejamento? cascataRemanejamento = null,
+        // Formulário de inscrição (Story #559) — escalares simples, ausência = sem
+        // título/termo configurado (não um toggle por presença; os dois campos são
+        // independentemente nuláveis).
+        string? formularioTitulo = null,
+        string? formularioTermoAceiteTexto = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -71,6 +76,8 @@ public sealed class GrafoConfiguracao
         FatosColetados = fatosColetados is null ? [] : [.. fatosColetados];
         RegrasDerivacao = regrasDerivacao is null ? [] : [.. regrasDerivacao];
         CascataRemanejamento = cascataRemanejamento;
+        FormularioTitulo = formularioTitulo;
+        FormularioTermoAceiteTexto = formularioTermoAceiteTexto;
     }
 
     public IReadOnlyList<EtapaProcesso> Etapas { get; }
@@ -122,4 +129,10 @@ public sealed class GrafoConfiguracao
     /// mesmo padrão de <see cref="BonusRegional"/>).
     /// </summary>
     public ConfiguracaoCascataRemanejamento? CascataRemanejamento { get; }
+
+    /// <summary>Título do formulário de inscrição (Story #559) — ausência = sem título configurado.</summary>
+    public string? FormularioTitulo { get; }
+
+    /// <summary>Texto do termo de aceite do formulário de inscrição (Story #559) — ausência = sem termo configurado.</summary>
+    public string? FormularioTermoAceiteTexto { get; }
 }

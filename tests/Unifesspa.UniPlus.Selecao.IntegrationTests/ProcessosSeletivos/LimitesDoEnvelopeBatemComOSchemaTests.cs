@@ -75,6 +75,12 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(ConfiguracaoCascataRemanejamento), nameof(ConfiguracaoCascataRemanejamento.FallbackCodigo)),
         ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(DestinoRemanejamento), nameof(DestinoRemanejamento.ModalidadeOrigemCodigo)),
         ("ModalidadeCodigo", LimitesDoEnvelope.ModalidadeCodigo, typeof(DestinoRemanejamento), nameof(DestinoRemanejamento.ModalidadeDestinoCodigo)),
+
+        // Story #559 — formulário de inscrição. Rotulo/FormularioTitulo reusam
+        // NomeDeCadastro (mesma grandeza: rótulo curto legível).
+        ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(FatoColetado), nameof(FatoColetado.Rotulo)),
+        ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.FormularioTitulo)),
+        ("TermoDeAceite", LimitesDoEnvelope.TermoDeAceite, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.FormularioTermoAceiteTexto)),
     ];
 
     private static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =

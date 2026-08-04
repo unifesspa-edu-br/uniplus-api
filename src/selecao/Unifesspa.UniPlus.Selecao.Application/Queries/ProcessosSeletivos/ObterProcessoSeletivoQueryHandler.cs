@@ -53,11 +53,16 @@ public static class ObterProcessoSeletivoQueryHandler
         ProjectReferenciaTemporalFatos(processo.ReferenciaTemporalFatos),
         [.. processo.FatosColetados.OrderBy(f => f.Ordem).Select(ProjectFatoColetado)],
         [.. processo.RegrasDerivacao.OrderBy(c => c.CodigoFato, StringComparer.Ordinal).Select(ProjectConfiguracaoDerivacao)],
+        processo.FormularioTitulo,
+        processo.FormularioTermoAceiteTexto,
         processo.CreatedAt);
 
     private static FatoColetadoDto ProjectFatoColetado(FatoColetado fato) => new(
         fato.FatoCodigo,
         fato.Ordem,
+        fato.Rotulo,
+        fato.TipoRenderizacao.ToCodigo(),
+        fato.Obrigatorio,
         ProjectPredicado(fato.Precondicoes, static c => (c.Clausula, c.Fato, c.Operador, c.Valor),
             static (f, o, v) => new CondicaoPrecondicaoDto(f, o, v)));
 

@@ -31,15 +31,15 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
 
     private static readonly object[] FatosOriginais =
     [
-        new { fatoCodigo = "COR_RACA", ordem = 0, precondicao = (object?)null },
-        new { fatoCodigo = "BAIXA_RENDA", ordem = 1, precondicao = (object?)null },
+        new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null },
+        new { fatoCodigo = "BAIXA_RENDA", ordem = 1, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatorio = false, precondicao = (object?)null },
     ];
 
     // Mesmas duas coletas, ORDENS TROCADAS — o que a sessão edita e o descarte tem de desfazer.
     private static readonly object[] FatosTrocados =
     [
-        new { fatoCodigo = "BAIXA_RENDA", ordem = 0, precondicao = (object?)null },
-        new { fatoCodigo = "COR_RACA", ordem = 1, precondicao = (object?)null },
+        new { fatoCodigo = "BAIXA_RENDA", ordem = 0, rotulo = "Baixa renda", tipoRenderizacao = "BOOLEANO", obrigatorio = false, precondicao = (object?)null },
+        new { fatoCodigo = "COR_RACA", ordem = 1, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null },
     ];
 
     private static readonly object[] RegrasOriginais =

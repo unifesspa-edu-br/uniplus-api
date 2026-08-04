@@ -18,16 +18,29 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 public sealed record CondicaoPrecondicaoInput(string Fato, string Operador, JsonElement Valor);
 
 /// <summary>
-/// Um fato que o processo coleta do candidato, com a sua posição na ordem de coleta e a
-/// pré-condição opcional que decide se o campo produtor é apresentado. A
-/// <see cref="Precondicao"/> é um predicado na forma normal disjuntiva — a lista externa é o
-/// <b>OU</b> de cláusulas, cada cláusula interna é o <b>E</b> de condições. Ausência de
-/// pré-condição é representada por <see langword="null"/>, nunca por uma lista vazia (fato sem
-/// gate é coletado sempre; um predicado sem cláusula avaliaria falso, que é o oposto).
+/// Um fato que o processo coleta do candidato, com a sua posição na ordem de coleta, a
+/// apresentação do campo no formulário de inscrição e a pré-condição opcional que decide se o
+/// campo produtor é apresentado. A <see cref="Precondicao"/> é um predicado na forma normal
+/// disjuntiva — a lista externa é o <b>OU</b> de cláusulas, cada cláusula interna é o <b>E</b>
+/// de condições. Ausência de pré-condição é representada por <see langword="null"/>, nunca por
+/// uma lista vazia (fato sem gate é coletado sempre; um predicado sem cláusula avaliaria falso,
+/// que é o oposto).
 /// </summary>
+/// <remarks>
+/// <see cref="TipoRenderizacao"/> é o código canônico UPPER_SNAKE de
+/// <see cref="Domain.Enums.TipoRenderizacaoCodigo"/> — mesmo tratamento de
+/// <see cref="CondicaoPrecondicaoInput.Operador"/>: um código ausente ou não reconhecido
+/// resolve para o sentinela <see cref="Domain.Enums.TipoRenderizacao.Nenhuma"/>, que
+/// <see cref="Domain.Entities.FatoColetado.Criar"/> já rejeita com um erro de domínio (422)
+/// claro — dispensa anotação de "campo obrigatório" no contrato, porque não existe um valor de
+/// wire ausente que resolva silenciosamente para um tipo de renderização válido.
+/// </remarks>
 public sealed record FatoColetadoInput(
     string FatoCodigo,
     int Ordem,
+    string Rotulo,
+    string TipoRenderizacao,
+    bool Obrigatorio,
     IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Precondicao);
 
 /// <summary>

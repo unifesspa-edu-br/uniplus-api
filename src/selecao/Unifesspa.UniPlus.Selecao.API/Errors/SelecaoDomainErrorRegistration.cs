@@ -234,6 +234,10 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // constantes e escapam do fitness test — registrados aqui à mão para não caírem em 500.
         new("FatoColetado.FatoCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_codigo_obrigatorio", "O código do fato coletado é obrigatório")),
         new("FatoColetado.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.ordem_invalida", "A ordem de coleta não pode ser negativa")),
+        // Apresentação do campo no formulário de inscrição (Story #559).
+        new("FatoColetado.RotuloObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.rotulo_obrigatorio", "O rótulo do fato coletado é obrigatório")),
+        new("FatoColetado.TipoRenderizacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.tipo_renderizacao_obrigatorio", "O tipo de renderização do fato coletado é obrigatório")),
+        new("FatoColetado.TipoRenderizacaoIncoerenteComDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.tipo_renderizacao_incoerente_com_dominio", "O tipo de renderização não é coerente com o domínio/cardinalidade do fato no catálogo")),
         new("FatoColetado.PrecondicaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_autorreferente", "A pré-condição de um fato cita o próprio fato")),
         new("FatoColetado.FatoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_duplicado", "Um fato aparece mais de uma vez na coleta")),
         new("FatoColetado.OrdemDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.ordem_duplicada", "A ordem de coleta precisa ser total — sem empate entre fatos")),
@@ -280,6 +284,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Seletor de snapshot vigente (T6 #787, ADR-0075/0076): não há publicação
         // vigente ≤ o instante consultado — 422, nunca retorno silencioso.
         new("Snapshot.VigenteAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.snapshot.vigente_ausente", "Nenhuma publicação vigente para o instante")),
+        // Renderização pública do formulário de inscrição (Story #559) contra uma versão vigente
+        // congelada antes de a apresentação existir no envelope.
+        new("FormularioInscricao.VersaoSemApresentacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_inscricao.versao_sem_apresentacao", "A versão publicada vigente não tem apresentação de formulário")),
         // Reposição da configuração congelada (Story #859, ADR-0110 D2). Todos 422: são
         // regras de negócio, e o operador que dispara um descarte precisa saber por que ele
         // foi recusado — reidratar mal é pior do que não reidratar.

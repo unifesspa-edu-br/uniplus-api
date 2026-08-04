@@ -373,7 +373,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             tracked.Cascata!.Destinos.Should().HaveCount(8,
                 "pré-condição: a sessão editorial trocou a matriz legal completa (56 destinos) por um destino por origem (8)");
 
-            // O DESCARTE — com a prova de round-trip, exatamente como em produção
+            // O DESCARTE — com a prova de fidelidade, exatamente como em produção
             // (RestauradorDeConfiguracao só repõe DEPOIS de provar byte a byte).
             Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope()).Restaurar(tracked, versaoAbertura);
             prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
@@ -400,5 +400,69 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         List<VersaoConfiguracao> versoes = await readContext.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId).ToListAsync(CancellationToken.None);
         versoes.Should().ContainSingle("descartar não cria versão nova — só a abertura persiste");
+    }
+
+    [Theory(DisplayName = "Descartar a retificação após editar o formulário de inscrição restaura exatamente o título/termo da versão anterior (Story #559)")]
+    [InlineData("Formulário publicado", "Termo publicado", "Formulário editado", "Termo editado")]
+    [InlineData(null, null, "Formulário editado", "Termo editado")]
+    public async Task Retificacao_DescartadaAposEditarFormulario_RestauraFormularioDaVersaoAnterior(
+        string? tituloPublicado, string? termoPublicado, string tituloEditado, string termoEditado)
+    {
+        string nome = $"{nameof(Retificacao_DescartadaAposEditarFormulario_RestauraFormularioDaVersaoAnterior)}-{Guid.CreateVersion7()}";
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome);
+        processo.DefinirFormulario(tituloPublicado, termoPublicado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        VersaoConfiguracao versaoAbertura = publicar.Value!;
+
+        Guid processoId = processo.Id;
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
+            ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+
+            Result<RascunhoRetificacao> abertura = tracked.AbrirRetificacao(
+                "Testar edição e descarte do formulário", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+            abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
+
+            tracked.DefinirFormulario(tituloEditado, termoEditado, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            tracked.FormularioTitulo.Should().Be(tituloEditado, "pré-condição: a sessão editorial trocou o título");
+
+            // O DESCARTE — com a prova de fidelidade, exatamente como em produção.
+            Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope()).Restaurar(tracked, versaoAbertura);
+            prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
+
+            tracked.LimparColetaEDerivacaoParaRestauracao();
+            await sessao.SaveChangesAsync(CancellationToken.None);
+
+            tracked.RestaurarConfiguracaoCongelada(versaoAbertura, prova.Value!).IsSuccess.Should().BeTrue();
+            tracked.DescartarRetificacao(PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            await sessao.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
+        ProcessoSeletivo relido = (await leitura.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+
+        relido.Rascunho.Should().BeNull("a sessão foi descartada — não há mais retificação em curso");
+        relido.FormularioTitulo.Should().Be(
+            tituloPublicado, "o descarte restaurou o título que a versão N congelou — não o título editado na sessão abandonada");
+        relido.FormularioTermoAceiteTexto.Should().Be(
+            termoPublicado, "o descarte restaurou o termo que a versão N congelou — não o termo editado na sessão abandonada");
     }
 }

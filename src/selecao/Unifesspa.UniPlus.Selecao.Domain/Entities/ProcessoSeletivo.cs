@@ -63,6 +63,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Snapshot-copy (ADR-0061) da Unidade administradora, congelado na criação — ver <see cref="UnidadeAdministradoraOrigemId"/>.</summary>
     public UnidadeAdministradoraSnapshot UnidadeAdministradora { get; private set; } = null!;
 
+    /// <summary>Título do formulário de inscrição apresentado ao candidato (Story #559). Ausência = sem título configurado.</summary>
+    public string? FormularioTitulo { get; private set; }
+
+    /// <summary>Texto do termo de aceite do formulário de inscrição (Story #559). Ausência = sem termo configurado.</summary>
+    public string? FormularioTermoAceiteTexto { get; private set; }
+
     private readonly List<EtapaProcesso> _etapas = [];
     public IReadOnlyCollection<EtapaProcesso> Etapas => _etapas.AsReadOnly();
 
@@ -514,6 +520,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         classificacao.VincularProcesso(Id);
         Classificacao = classificacao;
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Define (ou substitui) o título e o texto do termo de aceite do formulário de inscrição
+    /// (Story #559) — mesmo padrão dos demais <c>Definir*</c>: <see cref="MutacaoBloqueada"/>
+    /// primeiro, <see cref="Result"/> nunca exceção. Sem invariante cruzando outra dimensão do
+    /// agregado: os dois campos só se relacionam com a apresentação, nunca com a estrutura do
+    /// processo.
+    /// </summary>
+    public Result DefinirFormulario(string? titulo, string? termoAceiteTexto, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        FormularioTitulo = string.IsNullOrWhiteSpace(titulo) ? null : titulo.Trim();
+        FormularioTermoAceiteTexto = string.IsNullOrWhiteSpace(termoAceiteTexto) ? null : termoAceiteTexto.Trim();
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
@@ -2991,6 +3017,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         grafo.Classificacao.VincularProcesso(Id);
         Classificacao = grafo.Classificacao;
+
+        // Formulário de inscrição (Story #559): escalares simples da própria raiz, sem
+        // reconciliação — reatribuídos direto, mesmo padrão de BonusRegional/Cascata acima. Sem
+        // isso, editar o título durante uma sessão de retificação e depois descartar deixaria o
+        // valor editado na configuração viva, driblando RN08 exatamente pelos dois campos que
+        // esta reposição cobre.
+        FormularioTitulo = grafo.FormularioTitulo;
+        FormularioTermoAceiteTexto = grafo.FormularioTermoAceiteTexto;
 
         // Cronograma de fases (Story #851): nenhuma referência externa aponta para
         // FaseCronograma.Id (diferente das etapas) — o Id não é congelado no envelope

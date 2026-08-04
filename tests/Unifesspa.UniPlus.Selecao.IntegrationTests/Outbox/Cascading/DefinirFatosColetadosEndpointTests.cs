@@ -37,11 +37,14 @@ public sealed class DefinirFatosColetadosEndpointTests
 
         object[] corpo =
         [
-            new { fatoCodigo = "COR_RACA", ordem = 0, precondicao = (object?)null },
+            new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null },
             new
             {
                 fatoCodigo = "BAIXA_RENDA",
                 ordem = 1,
+                rotulo = "Baixa renda",
+                tipoRenderizacao = "BOOLEANO",
+                obrigatorio = false,
                 precondicao = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
             },
         ];
@@ -64,7 +67,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoDesconhecido_422));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "V", ordem = 0, precondicao = (object?)null }]);
+            [new { fatoCodigo = "V", ordem = 0, rotulo = "V", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null }]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -75,7 +78,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_FatoDerivado_422));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "MODALIDADE", ordem = 0, precondicao = (object?)null }]);
+            [new { fatoCodigo = "MODALIDADE", ordem = 0, rotulo = "Modalidade", tipoRenderizacao = "SELECAO_MULTIPLA", obrigatorio = false, precondicao = (object?)null }]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -87,7 +90,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         await ctx.PublicarAsync();
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "COR_RACA", ordem = 0, precondicao = (object?)null }]);
+            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null }]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -96,7 +99,7 @@ public sealed class DefinirFatosColetadosEndpointTests
     public async Task Rascunho_ReplayIdempotente_204()
     {
         Contexto ctx = await SemearRascunhoAsync(nameof(Rascunho_ReplayIdempotente_204));
-        object[] corpo = [new { fatoCodigo = "COR_RACA", ordem = 0, precondicao = (object?)null }];
+        object[] corpo = [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null }];
         string chave = MakeIdempotencyKey();
 
         (await ctx.PutFatosAsync(corpo, idempotencyKey: chave)).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -112,7 +115,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemAutenticacao_401));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "COR_RACA", ordem = 0, precondicao = (object?)null }], autenticar: Autenticacao.Nenhuma);
+            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null }], autenticar: Autenticacao.Nenhuma);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -123,7 +126,7 @@ public sealed class DefinirFatosColetadosEndpointTests
         Contexto ctx = await SemearRascunhoAsync(nameof(SemPapel_403));
 
         HttpResponseMessage resposta = await ctx.PutFatosAsync(
-            [new { fatoCodigo = "COR_RACA", ordem = 0, precondicao = (object?)null }], autenticar: Autenticacao.PapelErrado);
+            [new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = false, precondicao = (object?)null }], autenticar: Autenticacao.PapelErrado);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

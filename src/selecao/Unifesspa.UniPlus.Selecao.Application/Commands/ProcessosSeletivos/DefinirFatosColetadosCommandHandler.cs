@@ -117,6 +117,12 @@ public static class DefinirFatosColetadosCommandHandler
                 + "inscrição, pode ser coletado (derivados e computados não)."));
         }
 
+        TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao);
+        if (CoerenciaDeRenderizacao.Validar(tipoRenderizacao, view) is { } incoerencia)
+        {
+            return Result<FatoColetado>.Failure(incoerencia);
+        }
+
         Result<IReadOnlyList<CondicaoPrecondicaoFato>?> precondicoesResult =
             ResolverPrecondicao(input.Precondicao, vocabulario, dominiosDinamicos);
         if (precondicoesResult.IsFailure)
@@ -124,7 +130,8 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<FatoColetado>.Failure(precondicoesResult.Error!);
         }
 
-        return FatoColetado.Criar(input.FatoCodigo, input.Ordem, precondicoesResult.Value);
+        return FatoColetado.Criar(
+            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, input.Obrigatorio, precondicoesResult.Value);
     }
 
     /// <summary>
@@ -275,5 +282,42 @@ internal static class ColetabilidadeDeFato
         return string.Equals(fato.Origem, OrigemDeclarado, StringComparison.Ordinal)
             && fato.Binding.StartsWith(PrefixoBindingCampoInscricao, StringComparison.Ordinal)
             && fato.Binding.Length > PrefixoBindingCampoInscricao.Length;
+    }
+}
+
+/// <summary>
+/// Coerência entre <see cref="TipoRenderizacao"/> e o <c>Dominio</c>/<c>Cardinalidade</c> do
+/// fato no catálogo (Story #559) — semântica cross-módulo resolvida na Application, mesmo
+/// motivo de <see cref="ColetabilidadeDeFato"/> viver aqui e não no Domain.
+/// </summary>
+internal static class CoerenciaDeRenderizacao
+{
+    public const string TipoRenderizacaoIncoerenteComDominio = "FatoColetado.TipoRenderizacaoIncoerenteComDominio";
+
+    private const string DominioBooleano = "BOOLEANO";
+    private const string DominioNumerico = "NUMERICO";
+    private const string DominioCategorico = "CATEGORICO";
+    private const string CardinalidadeMultivalorado = "MULTIVALORADO";
+
+    public static DomainError? Validar(TipoRenderizacao tipoRenderizacao, FatoCandidatoView fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+
+        bool coerente = fato.Dominio switch
+        {
+            DominioBooleano => tipoRenderizacao == TipoRenderizacao.Booleano,
+            DominioNumerico => tipoRenderizacao == TipoRenderizacao.Numero,
+            DominioCategorico => tipoRenderizacao == (string.Equals(fato.Cardinalidade, CardinalidadeMultivalorado, StringComparison.Ordinal)
+                ? TipoRenderizacao.SelecaoMultipla
+                : TipoRenderizacao.SelecaoUnica),
+            _ => false,
+        };
+
+        return coerente
+            ? null
+            : new DomainError(
+                TipoRenderizacaoIncoerenteComDominio,
+                $"O tipo de renderização '{tipoRenderizacao}' não é coerente com o domínio "
+                + $"'{fato.Dominio}'/cardinalidade '{fato.Cardinalidade}' do fato '{fato.Codigo}'.");
     }
 }

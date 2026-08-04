@@ -40,11 +40,14 @@ public sealed class LeituraTipadaColetaEndpointTests
         // Coleta: COR_RACA (ordem 0, sem pré-condição); BAIXA_RENDA (ordem 1, com pré-condição citando o anterior).
         (await ctx.PutFatosAsync(
         [
-            new { fatoCodigo = "COR_RACA", ordem = 0, precondicao = (object?)null },
+            new { fatoCodigo = "COR_RACA", ordem = 0, rotulo = "Cor ou raça", tipoRenderizacao = "SELECAO_UNICA", obrigatorio = true, precondicao = (object?)null },
             new
             {
                 fatoCodigo = "BAIXA_RENDA",
                 ordem = 1,
+                rotulo = "Baixa renda",
+                tipoRenderizacao = "BOOLEANO",
+                obrigatorio = false,
                 precondicao = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
             },
         ])).StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -77,6 +80,9 @@ public sealed class LeituraTipadaColetaEndpointTests
 
         JsonElement corRaca = fatos[0];
         corRaca.GetProperty("fatoCodigo").GetString().Should().Be("COR_RACA");
+        corRaca.GetProperty("rotulo").GetString().Should().Be("Cor ou raça");
+        corRaca.GetProperty("tipoRenderizacao").GetString().Should().Be("SELECAO_UNICA");
+        corRaca.GetProperty("obrigatorio").GetBoolean().Should().BeTrue();
         corRaca.GetProperty("precondicao").ValueKind.Should().Be(JsonValueKind.Null, "fato sem pré-condição é null, nunca []");
 
         JsonElement baixaRenda = fatos[1];

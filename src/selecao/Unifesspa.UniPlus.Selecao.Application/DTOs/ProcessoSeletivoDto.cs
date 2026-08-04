@@ -27,6 +27,11 @@ public sealed record ProcessoSeletivoDto(
     ReferenciaTemporalFatosDto? ReferenciaTemporalFatos,
     IReadOnlyList<FatoColetadoDto> FatosColetados,
     IReadOnlyList<ConfiguracaoDerivacaoDto> RegrasDerivacao,
+    // Formulário de inscrição (Story #559): read-back administrativo do que foi salvo antes da
+    // publicação — o GET público (FormularioInscricaoController) projeta só da VersaoConfiguracao
+    // vigente e devolve 422 para processo em rascunho, então não serve para reler a tela de edição.
+    string? FormularioTitulo,
+    string? FormularioTermoAceiteTexto,
     DateTimeOffset CriadoEm)
 {
     /// <summary>
