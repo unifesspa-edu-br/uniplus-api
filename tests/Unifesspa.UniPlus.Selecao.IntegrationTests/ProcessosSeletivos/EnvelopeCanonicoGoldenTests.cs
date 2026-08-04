@@ -148,7 +148,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     /// </remarks>
     internal static ProcessoSeletivo ProcessoDeReferencia()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Referencia 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -561,7 +561,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     private static byte[] CanonicalizarComEliminacoes(bool corteRedacaoPrimeiro)
     {
         // SiSU é baseado em ENEM — é o que admite as duas regras abaixo.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Ordem", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Ordem", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -643,7 +643,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     // ── Fixture da variante COM cascata (Story #575) — nome próprio, fora da chave por
     // schema_version: é uma segunda fixture da MESMA versão de schema, não uma versão nova. ──
 
-    private const string NomeDaFixtureCascata = "envelope-0.0.2-cascata.json";
+    private const string NomeDaFixtureCascata = "envelope-0.0.3-cascata.json";
 
     private static string CaminhoDaFixtureCascata() => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,

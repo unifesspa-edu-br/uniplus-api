@@ -101,6 +101,44 @@ public sealed class RestauradorDeConfiguracaoTests
     }
 
     /// <summary>
+    /// Issue #849: <c>SombraParaVerificacao()</c> copia <c>UnidadeAdministradoraOrigemId</c>/
+    /// <c>UnidadeAdministradora</c> da raiz viva — sem essa cópia, a recanonicalização do bloco
+    /// <c>identidadesUnidade</c> a partir da sombra (vazia) nunca bateria com o congelado, e TODA
+    /// restauração de TODO processo criado com Unidade falharia com
+    /// <see cref="RestauradorDeConfiguracao.RoundTripDivergente"/>. Este teste prova o round-trip
+    /// de ponta a ponta e que a raiz viva preserva a identidade da Unidade — diferente da cascata,
+    /// não há "GrafoPobre" que a zere: ela nunca faz parte do <see cref="GrafoConfiguracao"/>
+    /// (imutável desde a criação, sem operação de re-bind).
+    /// </summary>
+    [Fact(DisplayName = "Restaurar prova o round-trip com Unidade administradora — a sombra reproduz a identidade congelada (issue #849)")]
+    public void Restaurar_ComUnidadeAdministradora_ProvaRoundTrip()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        Guid unidadeOrigemId = processo.UnidadeAdministradoraOrigemId;
+        string siglaOriginal = processo.UnidadeAdministradora.Sigla;
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+
+        RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
+
+        resultado.IsSuccess.Should().BeTrue(
+            $"se SombraParaVerificacao() não copiasse a Unidade administradora, a recanonicalização de " +
+            $"'identidadesUnidade' nunca bateria com o congelado — {resultado.Error?.Message}");
+
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        processo.RestaurarConfiguracaoCongelada(versao, resultado.Value!).IsSuccess.Should().BeTrue();
+
+        processo.UnidadeAdministradoraOrigemId.Should().Be(unidadeOrigemId,
+            "a identidade da Unidade administradora na raiz viva nunca sai de sincronia — é imutável desde a criação");
+        processo.UnidadeAdministradora.Sigla.Should().Be(siglaOriginal);
+    }
+
+    /// <summary>
     /// Regressão: <c>Restaurar</c> montava a <see cref="EntradaCanonicalizacao"/> da prova
     /// SEM repassar <see cref="EnvelopeReidratado.Conformidade"/> — o canonicalizador recebia
     /// <see langword="null"/> e emitia <c>obrigatoriedades: []</c>, divergindo dos bytes
@@ -253,7 +291,7 @@ public sealed class RestauradorDeConfiguracaoTests
     [Fact(DisplayName = "Story #554 (PR #903): Restaurar sobre uma sombra vazia resolve dataReferenciaFatos com gatilho FAIXA_ETARIA ancorado em FIM_FASE")]
     public void Restaurar_ComGatilhoFaixaEtariaAncoradoEmFimFase_ReporEProvar()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restaurador FAIXA_ETARIA", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restaurador FAIXA_ETARIA", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -428,7 +466,7 @@ public sealed class RestauradorDeConfiguracaoTests
         DadosEdital dados = CorpusEnvelope.DadosRicos();
         EntradaCanonicalizacao entrada = new(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.2", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.3", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

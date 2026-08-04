@@ -23,11 +23,12 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 23 blocos — 20
-/// reais + 3 stubs <c>nao_construido</c> na raiz — estão presentes). Story
-/// #575 promoveu <c>cascataRemanejamento</c> de stub a bloco real: cobertura
-/// de persistência EF da entidade filha (sobrevivência a reload, substituição
-/// sem órfãos, remoção, constraints do banco) na segunda metade do arquivo.
+/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 23 blocos — 21
+/// reais + 2 stubs <c>nao_construido</c> na raiz — estão presentes). Story
+/// #575 promoveu <c>cascataRemanejamento</c> de stub a bloco real; issue #849
+/// promoveu <c>identidadesUnidade</c>: cobertura de persistência EF da
+/// entidade filha (sobrevivência a reload, substituição sem órfãos, remoção,
+/// constraints do banco) na segunda metade do arquivo.
 /// </summary>
 [SuppressMessage(
     "Security",
@@ -50,7 +51,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
     private static ProcessoSeletivo NovoProcessoConforme(string nome)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
@@ -168,7 +169,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 23 blocos (20 reais + 3 stubs na raiz) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 23 blocos (21 reais + 2 stubs na raiz) estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -212,12 +213,13 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
         stubs.Should().BeEquivalentTo(
             [
-                "divulgacao", "formulario", "identidadesUnidade",
+                "divulgacao", "formulario",
             ],
-            "são exatamente as 3 dimensões da Feature #40 ainda sem dono — os outros 20 blocos são reais " +
+            "são exatamente as 2 dimensões da Feature #40 ainda sem dono — os outros 21 blocos são reais " +
             "(Story #851 promoveu cronogramaFases; Story #853 promoveu documentosExigidos; issue #848 " +
-            "promoveu vagas; Story #575 promoveu cascataRemanejamento; os demais sempre foram reais), " +
-            "mesmo que documentosExigidos ainda carregue a sub-chave 'exigencias' (#554) como stub aninhado");
+            "promoveu vagas; Story #575 promoveu cascataRemanejamento; issue #849 promoveu " +
+            "identidadesUnidade; os demais sempre foram reais), mesmo que documentosExigidos ainda " +
+            "carregue a sub-chave 'exigencias' (#554) como stub aninhado");
 
         // Nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
@@ -230,6 +232,9 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         objeto["cronogramaFases"]!.AsObject().Should().NotContainKey("status");
         objeto["vagas"]!.AsArray().Should().NotBeEmpty("issue #848: o quadro de vagas é sempre materializado junto da configuração");
         objeto["documentosExigidos"]!.AsObject().Should().NotContainKey("status");
+        // issue #849: identidadesUnidade é bloco real desde a criação — nunca stub na raiz.
+        objeto["identidadesUnidade"]!.AsObject().Should().NotContainKey("status");
+        objeto["identidadesUnidade"]!.AsObject()["administradora"]!.AsObject().Should().ContainKey("sigla");
         objeto["documentosExigidos"]!["exigencias"]!.AsArray().Should().BeEmpty(
             "nenhum DocumentoExigido foi configurado para este processo neste teste");
         objeto["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Should().BeEmpty(

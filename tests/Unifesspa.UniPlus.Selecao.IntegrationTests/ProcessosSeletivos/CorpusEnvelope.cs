@@ -62,6 +62,7 @@ internal static class CorpusEnvelope
 
     private static readonly Guid Documento = new("cccc0000-0000-4000-8000-000000000001");
     private static readonly Guid ReferenciaDemografica = new("dddd0000-0000-4000-8000-000000000001");
+    private static readonly Guid UnidadeAdministradora = new("eeee0000-0000-4000-8000-000000000001");
 
     /// <summary>Sub do publicador — evidência forense, não input de negócio.</summary>
     internal const string Ator = "corpus-tests";
@@ -95,7 +96,9 @@ internal static class CorpusEnvelope
         Guid entrevista = EtapaId(3, variante);
 
         // SiSU é baseado em ENEM — é o que admite ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Rico 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Rico 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
             EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),
