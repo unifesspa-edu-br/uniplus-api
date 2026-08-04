@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// da ADR-0121 para o CPF do módulo Discentes: coluna <c>bytea</c>, nunca texto claro,
 /// envelopes diferentes por linha (nonce aleatório) e round-trip via repositório.
 /// </summary>
+[Trait("Category", "Integration")]
 public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDiscenteDbFixture>
 {
     private const string CpfValido = "52998224725";
