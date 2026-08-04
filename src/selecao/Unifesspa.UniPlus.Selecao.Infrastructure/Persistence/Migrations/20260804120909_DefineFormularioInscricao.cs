@@ -71,6 +71,28 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 SET rotulo = 'Renda familiar per capita igual ou inferior a um salário mínimo', tipo_renderizacao = 2
                 WHERE fato_codigo = 'BAIXA_RENDA' AND rotulo = '';
                 """);
+
+            // Gate: o backfill acima só cobre os dois códigos observados no banco compartilhado
+            // de desenvolvimento. Um ambiente com fatos_coletados de OUTRO código legado (ex.:
+            // PCD, QUILOMBOLA) sairia daqui com rotulo='' e tipo_renderizacao=0
+            // (TipoRenderizacao.Nenhuma) — um estado que FatoColetado.Criar nunca aceitaria
+            // construir, e que TipoRenderizacao.ToCodigo() lança ao tentar serializar (a leitura
+            // administrativa e a publicação do processo quebrariam em 500 para esse processo,
+            // silenciosamente, só na primeira vez que alguém tentasse). Falhar a migration aqui —
+            // em vez de deixar a linha inconsistente — obriga a estender o backfill acima para o
+            // código adicional antes de aplicá-la naquele ambiente.
+            migrationBuilder.Sql(
+                """
+                DO $$
+                DECLARE
+                    restantes INTEGER;
+                BEGIN
+                    SELECT COUNT(*) INTO restantes FROM selecao.fatos_coletados WHERE rotulo = '';
+                    IF restantes > 0 THEN
+                        RAISE EXCEPTION 'Migration DefineFormularioInscricao: % linha(s) de fatos_coletados com fato_codigo fora do backfill conhecido (COR_RACA, BAIXA_RENDA) — estenda o backfill desta migration para cobrir os códigos adicionais antes de aplicá-la neste ambiente.', restantes;
+                    END IF;
+                END $$;
+                """);
         }
 
         /// <inheritdoc />
