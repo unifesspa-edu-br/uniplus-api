@@ -5315,7 +5315,8 @@
         "required": [
           "nome",
           "tipo",
-          "origemCandidatos"
+          "origemCandidatos",
+          "unidadeAdministradoraOrigemId"
         ],
         "type": "object",
         "properties": {
@@ -5327,6 +5328,10 @@
           },
           "origemCandidatos": {
             "$ref": "#/components/schemas/OrigemCandidatos"
+          },
+          "unidadeAdministradoraOrigemId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -7137,6 +7142,7 @@
           "tipo",
           "status",
           "origemCandidatos",
+          "unidadeAdministradora",
           "etapas",
           "ofertaAtendimento",
           "distribuicaoVagas",
@@ -7169,6 +7175,9 @@
           },
           "origemCandidatos": {
             "type": "string"
+          },
+          "unidadeAdministradora": {
+            "$ref": "#/components/schemas/UnidadeAdministradoraSnapshotDto"
           },
           "etapas": {
             "type": "array",
@@ -7928,6 +7937,34 @@
           "reopcao"
         ],
         "type": "string"
+      },
+      "UnidadeAdministradoraSnapshotDto": {
+        "required": [
+          "origemId",
+          "sigla",
+          "slug",
+          "nome",
+          "tipo"
+        ],
+        "type": "object",
+        "properties": {
+          "origemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sigla": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          }
+        }
       },
       "UnidadePrazo": {
         "enum": [
