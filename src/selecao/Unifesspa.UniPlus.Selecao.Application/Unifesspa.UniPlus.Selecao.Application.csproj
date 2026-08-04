@@ -3,6 +3,10 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <!-- WolverineFx: necessário por Wolverine.Attributes ([NonTransactional]) em
+         CriarProcessoSeletivoCommandHandler — issue #849, mesmo motivo de
+         Configuracao.Application (CriarOfertaCursoCommandHandler). -->
+    <PackageReference Include="WolverineFx" />
     <ProjectReference Include="..\..\publicacoes\Unifesspa.UniPlus.Publicacoes.Contracts\Unifesspa.UniPlus.Publicacoes.Contracts.csproj" />
   </ItemGroup>
 
@@ -14,6 +18,10 @@
          de outro módulo. Usado por DefinirVagasCommandHandler/DefinirOfertaAtendimentoCommandHandler
          para snapshot-copy (ADR-0061) de OfertaCurso/Modalidade/atendimento. -->
     <ProjectReference Include="..\..\configuracao\Unifesspa.UniPlus.Configuracao.Contracts\Unifesspa.UniPlus.Configuracao.Contracts.csproj" />
+    <!-- Leitura cross-módulo (ADR-0056/R8) de Organização Institucional. Usado por
+         CriarProcessoSeletivoCommandHandler para snapshot-copy (ADR-0061) da
+         Unidade administradora (issue #849, CA-04 da Feature #40). -->
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

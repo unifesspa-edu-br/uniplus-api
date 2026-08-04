@@ -13,6 +13,7 @@ public sealed record ProcessoSeletivoDto(
     string Tipo,
     string Status,
     string OrigemCandidatos,
+    UnidadeAdministradoraSnapshotDto UnidadeAdministradora,
     IReadOnlyList<EtapaProcessoDto> Etapas,
     OfertaAtendimentoEspecializadoDto? OfertaAtendimento,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
@@ -44,3 +45,11 @@ public sealed record ProcessoSeletivoDto(
 /// <see langword="null"/> é o estado válido "nenhuma política configurada".
 /// </summary>
 public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Guid? FaseId);
+
+/// <summary>
+/// DTO de leitura de <see cref="Domain.ValueObjects.UnidadeAdministradoraSnapshot"/>
+/// (issue #849, CA-04 da Feature #40). Sempre presente — a Unidade administradora
+/// é NOT NULL desde a criação do processo.
+/// </summary>
+public sealed record UnidadeAdministradoraSnapshotDto(
+    Guid OrigemId, string Sigla, string Slug, string Nome, string Tipo);
