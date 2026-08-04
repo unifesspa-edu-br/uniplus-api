@@ -26,7 +26,9 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                     success_count = table.Column<int>(type: "integer", nullable: false),
                     error_count = table.Column<int>(type: "integer", nullable: false),
                     started_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    finished_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    finished_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {

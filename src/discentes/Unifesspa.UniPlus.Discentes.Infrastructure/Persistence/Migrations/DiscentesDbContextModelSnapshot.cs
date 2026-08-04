@@ -30,6 +30,10 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.Property<int>("ErrorCount")
                         .HasColumnType("integer")
                         .HasColumnName("error_count");
@@ -57,6 +61,10 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                     b.Property<int>("TotalItems")
                         .HasColumnType("integer")
                         .HasColumnName("total_items");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id")
                         .HasName("pk_sync_run");
