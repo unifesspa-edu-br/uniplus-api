@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
@@ -37,7 +38,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         _encryption = encryption;
     }
 
-    public async Task<VinculoDiscente?> ObterVinculoDiscenteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<VinculoDiscente?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         VinculoDiscenteRecord? record = await _dbContext.VinculosDiscentes
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken)
@@ -46,7 +47,7 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<VinculoDiscente?> ObterComIdSigaaAsync(long idDiscenteSigaa, CancellationToken cancellationToken = default)
+    public async Task<VinculoDiscente?> ObterPorIdSigaaAsync(long idDiscenteSigaa, CancellationToken cancellationToken = default)
     {
         VinculoDiscenteRecord? record = await _dbContext.VinculosDiscentes
             .FirstOrDefaultAsync(r => r.IdDiscenteSigaa == idDiscenteSigaa, cancellationToken)
@@ -55,15 +56,15 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         return record is null ? null : await ParaDominioAsync(record, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task AdicionarVinculoDiscenteAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
+    public async Task AdicionarAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
         VinculoDiscenteRecord record = await ParaRegistroNovoAsync(entity, cancellationToken).ConfigureAwait(false);
-        await _dbContext.VinculosDiscentes.AddAsync(record, cancellationToken).ConfigureAwait(false);
+        _dbContext.VinculosDiscentes.Add(record);
     }
 
-    public async Task AtualizarVinculoDiscenteAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
+    public async Task AtualizarAsync(VinculoDiscente entity, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
@@ -82,22 +83,22 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
 
         Cpf cpf = ReidratarCpf(cpfPlano);
 
-        return VinculoDiscente.Criar(
-            record.IdDiscenteSigaa,
-            record.Matricula,
-            cpf,
-            record.Nome,
-            record.Nivel,
-            record.CursoId,
-            record.CursoNome,
-            record.CursoCodigoEmec,
-            record.CursoUnidadeId,
-            record.CursoUnidadeNome,
-            record.SituacaoId,
-            record.SituacaoDescricao,
-            record.SituacaoVinculo,
-            record.AnoIngresso,
-            record.PeriodoIngresso);
+        CursoSigaaSnapshot curso = CursoSigaaSnapshot.Criar(
+                record.CursoId, record.CursoNome, record.CursoCodigoEmec, record.CursoUnidadeId, record.CursoUnidadeNome)
+            .Match(c => c, erro => throw new InvalidOperationException($"Curso corrompido no registro persistido ({erro.Code})."));
+
+        SituacaoAcademicaSnapshot situacao = SituacaoAcademicaSnapshot.Criar(
+                record.SituacaoId, record.SituacaoDescricao, record.SituacaoVinculo)
+            .Match(s => s, erro => throw new InvalidOperationException($"Situação corrompida no registro persistido ({erro.Code})."));
+
+        PeriodoIngresso ingresso = PeriodoIngresso.Criar(record.AnoIngresso, record.PeriodoIngresso)
+            .Match(p => p, erro => throw new InvalidOperationException($"Período corrompido no registro persistido ({erro.Code})."));
+
+        VinculoDiscenteSnapshot snapshot = VinculoDiscenteSnapshot.Criar(
+                record.IdDiscenteSigaa, record.Matricula, cpf, record.Nome, record.Nivel, curso, situacao, ingresso)
+            .Match(s => s, erro => throw new InvalidOperationException($"Snapshot corrompido no registro persistido ({erro.Code})."));
+
+        return VinculoDiscente.Reidratar(record.Id, snapshot);
     }
 
     private async Task<VinculoDiscenteRecord> ParaRegistroNovoAsync(VinculoDiscente entity, CancellationToken cancellationToken)
@@ -115,23 +116,23 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         // permanece intocado — nunca fica com IdDiscenteSigaa/Matricula novos e o
         // CpfCiphertext antigo, uma mutação parcial que um SaveChangesAsync posterior
         // (das linhas que tiveram sucesso) persistiria por engano.
-        byte[] cpfCiphertext = await CifrarCpfAsync(entity.Cpf, cancellationToken).ConfigureAwait(false);
+        byte[] cpfCiphertext = await CifrarCpfAsync(entity.Snapshot.Cpf, cancellationToken).ConfigureAwait(false);
 
-        record.IdDiscenteSigaa = entity.IdDiscenteSigaa;
-        record.Matricula = entity.Matricula;
+        record.IdDiscenteSigaa = entity.Snapshot.IdDiscenteSigaa;
+        record.Matricula = entity.Snapshot.Matricula;
         record.CpfCiphertext = cpfCiphertext;
-        record.Nome = entity.Nome;
-        record.Nivel = entity.Nivel;
-        record.CursoId = entity.CursoId;
-        record.CursoNome = entity.CursoNome;
-        record.CursoCodigoEmec = entity.CursoCodigoEmec;
-        record.CursoUnidadeId = entity.CursoUnidadeId;
-        record.CursoUnidadeNome = entity.CursoUnidadeNome;
-        record.SituacaoId = entity.SituacaoId;
-        record.SituacaoDescricao = entity.SituacaoDescricao;
-        record.SituacaoVinculo = entity.SituacaoVinculo;
-        record.AnoIngresso = entity.AnoIngresso;
-        record.PeriodoIngresso = entity.PeriodoIngresso;
+        record.Nome = entity.Snapshot.Nome;
+        record.Nivel = entity.Snapshot.Nivel;
+        record.CursoId = entity.Snapshot.Curso.Id;
+        record.CursoNome = entity.Snapshot.Curso.Nome;
+        record.CursoCodigoEmec = entity.Snapshot.Curso.CodigoEmec;
+        record.CursoUnidadeId = entity.Snapshot.Curso.UnidadeId;
+        record.CursoUnidadeNome = entity.Snapshot.Curso.UnidadeNome;
+        record.SituacaoId = entity.Snapshot.Situacao.Id;
+        record.SituacaoDescricao = entity.Snapshot.Situacao.Descricao;
+        record.SituacaoVinculo = entity.Snapshot.Situacao.Vinculo;
+        record.AnoIngresso = entity.Snapshot.Ingresso.Ano;
+        record.PeriodoIngresso = entity.Snapshot.Ingresso.Periodo;
     }
 
     private Task<byte[]> CifrarCpfAsync(Cpf cpf, CancellationToken cancellationToken) =>

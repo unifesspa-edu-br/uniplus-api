@@ -1,163 +1,40 @@
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-
 namespace Unifesspa.UniPlus.Discentes.Domain.Entities;
 
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 
-public class VinculoDiscente
+public sealed class VinculoDiscente
 {
     public Guid Id { get; private set; }
-    public long IdDiscenteSigaa { get; private set; }
-    public string Matricula { get; private set; } = null!;
-    public Cpf Cpf { get; private set; } = null!;
-    public string Nome { get; private set; } = null!;
-    public string Nivel { get; private set; } = null!;
+    public VinculoDiscenteSnapshot Snapshot { get; private set; }
 
-    // Dados do Curso
-    public int CursoId { get; private set; }
-    public string CursoNome { get; private set; } = null!;
-    public string? CursoCodigoEmec { get; private set; }
-    public int CursoUnidadeId { get; private set; }
-    public string CursoUnidadeNome { get; private set; } = null!;
-
-    // Dados da Situação
-    public int SituacaoId { get; private set; }
-    public string SituacaoDescricao { get; private set; } = null!;
-    public string? SituacaoVinculo { get; private set; }
-
-    // Período
-    public int AnoIngresso { get; private set; }
-    public int PeriodoIngresso { get; private set; }
-
-    private VinculoDiscente() { }
-
-    private VinculoDiscente(
-        Guid id,
-        long idDiscenteSigaa,
-        string matricula,
-        Cpf cpf,
-        string nome,
-        string nivel,
-        int cursoId,
-        string cursoNome,
-        string? cursoCodigoEmec,
-        int cursoUnidadeId,
-        string cursoUnidadeNome,
-        int situacaoId,
-        string situacaoDescricao,
-        string? situacaoVinculo,
-        int anoIngresso,
-        int periodoIngresso)
+    private VinculoDiscente(Guid id, VinculoDiscenteSnapshot snapshot)
     {
-
         if (id == Guid.Empty)
             throw new ArgumentException("O identificador não pode ser vazio.", nameof(id));
 
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(idDiscenteSigaa);
-
-        ArgumentException.ThrowIfNullOrWhiteSpace(matricula);
-        ArgumentNullException.ThrowIfNull(cpf);
-        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
-        ArgumentException.ThrowIfNullOrWhiteSpace(nivel);
-
-        ArgumentException.ThrowIfNullOrWhiteSpace(cursoNome);
-        ArgumentException.ThrowIfNullOrWhiteSpace(cursoUnidadeNome);
-        ArgumentException.ThrowIfNullOrWhiteSpace(situacaoDescricao);
+        ArgumentNullException.ThrowIfNull(snapshot);
 
         Id = id;
-        IdDiscenteSigaa = idDiscenteSigaa;
-        Matricula = matricula;
-        Cpf = cpf;
-        Nome = nome;
-        Nivel = nivel;
-        CursoId = cursoId;
-        CursoNome = cursoNome;
-        CursoCodigoEmec = cursoCodigoEmec;
-        CursoUnidadeId = cursoUnidadeId;
-        CursoUnidadeNome = cursoUnidadeNome;
-        SituacaoId = situacaoId;
-        SituacaoDescricao = situacaoDescricao;
-        SituacaoVinculo = situacaoVinculo;
-        AnoIngresso = anoIngresso;
-        PeriodoIngresso = periodoIngresso;
+        Snapshot = snapshot;
     }
-    /// <summary>
-    /// Factory Method para criação de novos vínculos discentes com garantia de UUIDv7.
-    /// </summary>
-    public static VinculoDiscente Criar(
-        long idDiscenteSigaa,
-        string matricula,
-        Cpf cpf,
-        string nome,
-        string nivel,
-        int cursoId,
-        string cursoNome,
-        string? cursoCodigoEmec,
-        int cursoUnidadeId,
-        string cursoUnidadeNome,
-        int situacaoId,
-        string situacaoDescricao,
-        string? situacaoVinculo,
-        int anoIngresso,
-        int periodoIngresso)
-    {
-        Guid id = Guid.CreateVersion7();
 
-        return new VinculoDiscente(
-            id,
-            idDiscenteSigaa,
-            matricula,
-            cpf,
-            nome,
-            nivel,
-            cursoId,
-            cursoNome,
-            cursoCodigoEmec,
-            cursoUnidadeId,
-            cursoUnidadeNome,
-            situacaoId,
-            situacaoDescricao,
-            situacaoVinculo,
-            anoIngresso,
-            periodoIngresso);
-    }
-    internal static VinculoDiscente Reidratar(
-    Guid id,
-    long idDiscenteSigaa,
-    string matricula,
-    Cpf cpf,
-    string nome,
-    string nivel,
-    int cursoId,
-    string cursoNome,
-    string? cursoCodigoEmec,
-    int cursoUnidadeId,
-    string cursoUnidadeNome,
-    int situacaoId,
-    string situacaoDescricao,
-    string? situacaoVinculo,
-    int anoIngresso,
-    int periodoIngresso)
-    {
-        return new VinculoDiscente(
-            id,
-            idDiscenteSigaa,
-            matricula,
-            cpf,
-            nome,
-            nivel,
-            cursoId,
-            cursoNome,
-            cursoCodigoEmec,
-            cursoUnidadeId,
-            cursoUnidadeNome,
-            situacaoId,
-            situacaoDescricao,
-            situacaoVinculo,
-            anoIngresso,
-            periodoIngresso);
-    }
+    /// <summary>
+    /// Cria um novo vínculo discente com identificador UUIDv7 gerado aqui — nunca
+    /// fornecido de fora.
+    /// </summary>
+    public static VinculoDiscente Criar(VinculoDiscenteSnapshot snapshot) =>
+        new(Guid.CreateVersion7(), snapshot);
+
+    /// <summary>
+    /// Reidratar não é criar: reconstrói o vínculo a partir do estado já persistido,
+    /// preservando o <paramref name="id"/> do banco. As guardas do construtor são a
+    /// última linha de defesa contra dado corrompido na leitura.
+    /// </summary>
+    public static VinculoDiscente Reidratar(Guid id, VinculoDiscenteSnapshot snapshot) =>
+        new(id, snapshot);
+
     /// <summary>
     /// Retorna uma representação técnica e opaca sem exposição de PII (Nome, Matrícula, CPF).
     /// </summary>
-    public override string ToString() => $"[VinculoDiscente Id={Id}, IdDiscenteSigaa={IdDiscenteSigaa}]";
+    public override string ToString() => $"[VinculoDiscente Id={Id}, IdDiscenteSigaa={Snapshot.IdDiscenteSigaa}]";
 }
