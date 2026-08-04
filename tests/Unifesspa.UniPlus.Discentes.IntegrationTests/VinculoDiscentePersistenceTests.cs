@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
+using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
@@ -32,21 +33,27 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
 
     private static VinculoDiscente NovoVinculo(long idSigaa, string cpfValor) =>
         VinculoDiscente.Criar(
-            idSigaa,
-            matricula: idSigaa.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            cpf: Cpf.Criar(cpfValor).Match(cpf => cpf, erro => throw new InvalidOperationException(erro.Code)),
-            nome: "Discente de Teste",
-            nivel: "G",
-            cursoId: 1,
-            cursoNome: "Ciência da Computação",
-            cursoCodigoEmec: null,
-            cursoUnidadeId: 1,
-            cursoUnidadeNome: "Instituto de Ciências Exatas",
-            situacaoId: 1,
-            situacaoDescricao: "Matriculado",
-            situacaoVinculo: null,
-            anoIngresso: 2026,
-            periodoIngresso: 1);
+            VinculoDiscenteSnapshot.Criar(
+                idSigaa,
+                matricula: idSigaa.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                cpf: Cpf.Criar(cpfValor).Match(cpf => cpf, erro => throw new InvalidOperationException(erro.Code)),
+                nome: "Discente de Teste",
+                nivel: "G",
+                curso: CursoSigaaSnapshot.Criar(
+                    id: 1,
+                    nome: "Ciência da Computação",
+                    codigoEmec: null,
+                    unidadeId: 1,
+                    unidadeNome: "Instituto de Ciências Exatas")
+                    .Match(c => c, erro => throw new InvalidOperationException(erro.Code)),
+                situacao: SituacaoAcademicaSnapshot.Criar(
+                    id: 1,
+                    descricao: "Matriculado",
+                    vinculo: null)
+                    .Match(s => s, erro => throw new InvalidOperationException(erro.Code)),
+                ingresso: PeriodoIngresso.Criar(ano: 2026, periodo: 1)
+                    .Match(p => p, erro => throw new InvalidOperationException(erro.Code)))
+                .Match(s => s, erro => throw new InvalidOperationException(erro.Code)));
 
     [Fact]
     public async Task Persistir_E_Ler_Faz_RoundTrip_Do_Cpf_Via_Repositorio()
@@ -55,17 +62,18 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         VinculoDiscenteRepository writeRepository = new(writeContext, _fixture.Encryption);
 
         VinculoDiscente original = NovoVinculo(idSigaa: 1001, CpfValido);
-        await writeRepository.AdicionarVinculoDiscenteAsync(original);
+        await writeRepository.AdicionarAsync(original);
         await writeContext.SaveChangesAsync();
 
         await using DiscentesDbContext readContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository readRepository = new(readContext, _fixture.Encryption);
 
-        VinculoDiscente? lido = await readRepository.ObterComIdSigaaAsync(1001);
+        VinculoDiscente? lido = await readRepository.ObterPorIdSigaaAsync(1001);
 
         lido.Should().NotBeNull();
-        lido!.Cpf.Valor.Should().Be(CpfValido);
-        lido.Nome.Should().Be(original.Nome);
+        lido!.Id.Should().Be(original.Id);
+        lido.Snapshot.Cpf.Valor.Should().Be(CpfValido);
+        lido.Snapshot.Nome.Should().Be(original.Snapshot.Nome);
     }
 
     [Fact]
@@ -74,7 +82,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         await using DiscentesDbContext writeContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository repository = new(writeContext, _fixture.Encryption);
 
-        await repository.AdicionarVinculoDiscenteAsync(NovoVinculo(idSigaa: 1002, CpfValido));
+        await repository.AdicionarAsync(NovoVinculo(idSigaa: 1002, CpfValido));
         await writeContext.SaveChangesAsync();
 
         await using NpgsqlConnection connection = new(_fixture.ConnectionString);
@@ -100,8 +108,8 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         await using DiscentesDbContext writeContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository repository = new(writeContext, _fixture.Encryption);
 
-        await repository.AdicionarVinculoDiscenteAsync(NovoVinculo(idSigaa: 1003, CpfValido));
-        await repository.AdicionarVinculoDiscenteAsync(NovoVinculo(idSigaa: 1004, CpfValido));
+        await repository.AdicionarAsync(NovoVinculo(idSigaa: 1003, CpfValido));
+        await repository.AdicionarAsync(NovoVinculo(idSigaa: 1004, CpfValido));
         await writeContext.SaveChangesAsync();
 
         await using DiscentesDbContext readContext = _fixture.CreateDbContext();
@@ -127,40 +135,24 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
 
         VinculoDiscente original = NovoVinculo(idSigaa: 1005, CpfValido);
 
-        await writeRepository.AdicionarVinculoDiscenteAsync(original);
+        await writeRepository.AdicionarAsync(original);
         await writeContext.SaveChangesAsync();
 
         await using DiscentesDbContext updateContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository updateRepository = new(updateContext, _fixture.Encryption);
 
         VinculoDiscente atualizado = NovoVinculo(idSigaa: 1005, OutroCpfValido);
-        VinculoDiscente comIdOriginal = VinculoDiscente.Reidratar(
-            original.Id,
-            atualizado.IdDiscenteSigaa,
-            atualizado.Matricula,
-            atualizado.Cpf,
-            atualizado.Nome,
-            atualizado.Nivel,
-            atualizado.CursoId,
-            atualizado.CursoNome,
-            atualizado.CursoCodigoEmec,
-            atualizado.CursoUnidadeId,
-            atualizado.CursoUnidadeNome,
-            atualizado.SituacaoId,
-            atualizado.SituacaoDescricao,
-            atualizado.SituacaoVinculo,
-            atualizado.AnoIngresso,
-            atualizado.PeriodoIngresso);
+        VinculoDiscente comIdOriginal = VinculoDiscente.Reidratar(original.Id, atualizado.Snapshot);
 
-        await updateRepository.AtualizarVinculoDiscenteAsync(comIdOriginal);
+        await updateRepository.AtualizarAsync(comIdOriginal);
         await updateContext.SaveChangesAsync();
 
         await using DiscentesDbContext readContext = _fixture.CreateDbContext();
         VinculoDiscenteRepository readRepository = new(readContext, _fixture.Encryption);
 
-        VinculoDiscente? lido = await readRepository.ObterVinculoDiscenteAsync(original.Id);
+        VinculoDiscente? lido = await readRepository.ObterPorIdAsync(original.Id);
 
         lido.Should().NotBeNull();
-        lido!.Cpf.Valor.Should().Be(OutroCpfValido);
+        lido!.Snapshot.Cpf.Valor.Should().Be(OutroCpfValido);
     }
 }
