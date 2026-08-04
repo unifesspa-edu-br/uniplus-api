@@ -44,7 +44,7 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador interno (UUIDv7) do registro — não confundir com id_discente_sigaa, a chave natural do SIGAA."),
                     id_discente_sigaa = table.Column<long>(type: "bigint", nullable: false, comment: "Identificador do discente no SIGAA (chave natural do módulo) — usado para localizar e fazer upsert durante a sincronização."),
                     matricula = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Matrícula do discente na instituição."),
-                    cpf_ciphertext = table.Column<byte[]>(type: "bytea", nullable: false, comment: "CPF cifrado em repouso (AES-GCM, ADR-0119) — envelope autenticado (nonce + tag + dado); nunca texto claro."),
+                    cpf_ciphertext = table.Column<byte[]>(type: "bytea", nullable: false, comment: "CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado (nonce + tag + dado); nunca texto claro."),
                     nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false, comment: "Nome do discente."),
                     nivel = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false, comment: "Nível de ensino do vínculo (ex.: G para graduação) — vocabulário do SIGAA."),
                     curso_id = table.Column<int>(type: "integer", nullable: false, comment: "Identificador do curso no SIGAA."),
@@ -62,7 +62,7 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("pk_vinculo_discente", x => x.id);
                 },
-                comment: "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0119) — snapshot desnormalizado, sem referência viva a outras tabelas.");
+                comment: "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — snapshot desnormalizado, sem referência viva a outras tabelas.");
 
             migrationBuilder.CreateIndex(
                 name: "ix_sync_run_started_at",

@@ -105,7 +105,7 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("bytea")
                         .HasColumnName("cpf_ciphertext")
-                        .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0119) — envelope autenticado (nonce + tag + dado); nunca texto claro.");
+                        .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado (nonce + tag + dado); nunca texto claro.");
 
                     b.Property<string>("CursoCodigoEmec")
                         .HasMaxLength(20)
@@ -195,7 +195,7 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
 
                     b.ToTable("vinculo_discente", "discentes", t =>
                         {
-                            t.HasComment("Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0119) — snapshot desnormalizado, sem referência viva a outras tabelas.");
+                            t.HasComment("Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — snapshot desnormalizado, sem referência viva a outras tabelas.");
                         });
                 });
 #pragma warning restore 612, 618
