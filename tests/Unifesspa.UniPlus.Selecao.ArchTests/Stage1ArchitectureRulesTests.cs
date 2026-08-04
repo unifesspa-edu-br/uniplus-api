@@ -34,14 +34,26 @@ public sealed class Stage1ArchitectureRulesTests
         rule.Check(ModuleArchitecture);
     }
 
-    [Fact(DisplayName = "R2: Application.Abstractions, Selecao.Application e Selecao.Domain nao dependem de Wolverine")]
+    /// <summary>
+    /// R2: exceção estreita para <c>Wolverine.Attributes</c> (ADR-0003, emenda 2026-08-04) —
+    /// só o namespace dos marcadores (<c>[NonTransactional]</c> etc.), lidos pelo codegen em
+    /// build-time, zero acoplamento a <c>IMessageBus</c>/dispatch (confirmado por reflection:
+    /// <c>NonTransactionalAttribute</c> deriva só de <c>System.Attribute</c>). Necessário para
+    /// handlers que injetam reader cross-módulo com <c>DbContext</c> diferente da própria
+    /// UnitOfWork (ex.: <c>IUnidadeReader</c> em <c>CriarProcessoSeletivoCommandHandler</c>,
+    /// issue #849) — <c>[NonTransactional]</c> é o único mecanismo que o Wolverine expõe para
+    /// excusar o handler do detector de transação (<c>AutoApplyTransactions</c>, ADR-0004); não
+    /// há alternativa fluente registrável fora do atributo. O resto de <c>Wolverine.*</c> (bus,
+    /// runtime, EF Core middleware) continua proibido.
+    /// </summary>
+    [Fact(DisplayName = "R2: Application.Abstractions, Selecao.Application e Selecao.Domain nao dependem de Wolverine (exceto Wolverine.Attributes)")]
     public void ApplicationEDomain_NaoDependemDeWolverine()
     {
         IArchRule rule = Types()
             .Should()
             .NotDependOnAnyTypesThat()
-            .ResideInNamespaceMatching(@"^Wolverine(\.|$)")
-            .Because("ADR-0003 limita Wolverine a Infrastructure.Core; Application e Domain dependem apenas das abstracoes do projeto.");
+            .ResideInNamespaceMatching(@"^Wolverine(?!\.Attributes(\.|$))(\.|$)")
+            .Because("ADR-0003 limita Wolverine a Infrastructure.Core; Application e Domain dependem apenas das abstracoes do projeto (exceção estreita a Wolverine.Attributes, emenda 2026-08-04).");
 
         rule.Check(WolverineGuardArchitecture);
     }
