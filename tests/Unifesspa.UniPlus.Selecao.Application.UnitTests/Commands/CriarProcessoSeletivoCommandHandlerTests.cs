@@ -28,11 +28,16 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
         CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId);
+        ProcessoSeletivo? processoPersistido = null;
+        repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
+            .Do(ci => processoPersistido = ci.Arg<ProcessoSeletivo>());
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, unidadeReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
+        processoPersistido.Should().NotBeNull();
+        result.Value.Should().Be(processoPersistido!.Id, "o id devolvido tem de ser o do processo efetivamente persistido");
         await repository.Received(1).AdicionarAsync(
             Arg.Is<ProcessoSeletivo>(p =>
                 p.Nome == "PS 2026 — SiSU"
