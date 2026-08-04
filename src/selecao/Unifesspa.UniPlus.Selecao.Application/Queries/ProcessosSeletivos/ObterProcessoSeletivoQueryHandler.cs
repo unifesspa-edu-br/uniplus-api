@@ -32,6 +32,12 @@ public static class ObterProcessoSeletivoQueryHandler
         processo.Tipo.ToString(),
         processo.Status.ToString(),
         processo.OrigemCandidatos.ToString(),
+        new UnidadeAdministradoraSnapshotDto(
+            processo.UnidadeAdministradoraOrigemId,
+            processo.UnidadeAdministradora.Sigla,
+            processo.UnidadeAdministradora.Slug,
+            processo.UnidadeAdministradora.Nome,
+            processo.UnidadeAdministradora.Tipo),
         [.. processo.Etapas
             .OrderBy(e => e.Ordem)
             .Select(e => new EtapaProcessoDto(e.Id, e.Nome, e.Carater.ToString(), e.Peso, e.NotaMinima, e.Ordem))],

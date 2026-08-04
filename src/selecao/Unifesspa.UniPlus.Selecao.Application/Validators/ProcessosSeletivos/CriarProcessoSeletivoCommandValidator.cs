@@ -29,5 +29,11 @@ public sealed class CriarProcessoSeletivoCommandValidator : AbstractValidator<Cr
             .WithMessage("Origem dos candidatos é obrigatória.")
             .IsInEnum()
             .WithMessage("Origem dos candidatos inválida.");
+
+        // Issue #849, CA-01: quem administra o certame (CA-04 da Feature #40) — NOT NULL,
+        // exigido na criação, resolvido via IUnidadeReader no handler.
+        RuleFor(x => x.UnidadeAdministradoraOrigemId)
+            .NotEmpty()
+            .WithMessage("Unidade administradora do processo seletivo é obrigatória.");
     }
 }
