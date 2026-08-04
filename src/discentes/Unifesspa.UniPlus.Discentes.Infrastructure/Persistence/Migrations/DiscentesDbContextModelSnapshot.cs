@@ -28,43 +28,53 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador interno (UUIDv7) da execução.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
                     b.Property<int>("ErrorCount")
                         .HasColumnType("integer")
-                        .HasColumnName("error_count");
+                        .HasColumnName("error_count")
+                        .HasComment("Quantidade de itens que falharam durante o processamento.");
 
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("finished_at");
+                        .HasColumnName("finished_at")
+                        .HasComment("Instante de conclusão da execução — nulo enquanto o status é Running.");
 
                     b.Property<int>("ProcessedItems")
                         .HasColumnType("integer")
-                        .HasColumnName("processed_items");
+                        .HasColumnName("processed_items")
+                        .HasComment("Quantidade de itens já processados.");
 
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("started_at");
+                        .HasColumnName("started_at")
+                        .HasComment("Instante de início da execução.");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
-                        .HasColumnName("status");
+                        .HasColumnName("status")
+                        .HasComment("Estado da execução (Running/Completed/Partial/Failed).");
 
                     b.Property<int>("SuccessCount")
                         .HasColumnType("integer")
-                        .HasColumnName("success_count");
+                        .HasColumnName("success_count")
+                        .HasComment("Quantidade de itens processados com sucesso.");
 
                     b.Property<int>("TotalItems")
                         .HasColumnType("integer")
-                        .HasColumnName("total_items");
+                        .HasColumnName("total_items")
+                        .HasComment("Quantidade total de itens previstos para esta execução.");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
                     b.HasKey("Id")
                         .HasName("pk_sync_run");
@@ -72,7 +82,10 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                     b.HasIndex("StartedAt")
                         .HasDatabaseName("ix_sync_run_started_at");
 
-                    b.ToTable("sync_run", "discentes");
+                    b.ToTable("sync_run", "discentes", t =>
+                        {
+                            t.HasComment("Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records.VinculoDiscenteRecord", b =>
@@ -80,82 +93,98 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador interno (UUIDv7) do registro — não confundir com id_discente_sigaa, a chave natural do SIGAA.");
 
                     b.Property<int>("AnoIngresso")
                         .HasColumnType("integer")
-                        .HasColumnName("ano_ingresso");
+                        .HasColumnName("ano_ingresso")
+                        .HasComment("Ano de ingresso do discente no curso.");
 
                     b.Property<byte[]>("CpfCiphertext")
                         .IsRequired()
                         .HasColumnType("bytea")
-                        .HasColumnName("cpf_ciphertext");
+                        .HasColumnName("cpf_ciphertext")
+                        .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0119) — envelope autenticado (nonce + tag + dado); nunca texto claro.");
 
                     b.Property<string>("CursoCodigoEmec")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("curso_codigo_emec");
+                        .HasColumnName("curso_codigo_emec")
+                        .HasComment("Código e-MEC do curso, quando disponível.");
 
                     b.Property<int>("CursoId")
                         .HasColumnType("integer")
-                        .HasColumnName("curso_id");
+                        .HasColumnName("curso_id")
+                        .HasComment("Identificador do curso no SIGAA.");
 
                     b.Property<string>("CursoNome")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
-                        .HasColumnName("curso_nome");
+                        .HasColumnName("curso_nome")
+                        .HasComment("Nome do curso.");
 
                     b.Property<int>("CursoUnidadeId")
                         .HasColumnType("integer")
-                        .HasColumnName("curso_unidade_id");
+                        .HasColumnName("curso_unidade_id")
+                        .HasComment("Identificador da unidade acadêmica responsável pelo curso, no SIGAA.");
 
                     b.Property<string>("CursoUnidadeNome")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
-                        .HasColumnName("curso_unidade_nome");
+                        .HasColumnName("curso_unidade_nome")
+                        .HasComment("Nome da unidade acadêmica responsável pelo curso.");
 
                     b.Property<long>("IdDiscenteSigaa")
                         .HasColumnType("bigint")
-                        .HasColumnName("id_discente_sigaa");
+                        .HasColumnName("id_discente_sigaa")
+                        .HasComment("Identificador do discente no SIGAA (chave natural do módulo) — usado para localizar e fazer upsert durante a sincronização.");
 
                     b.Property<string>("Matricula")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("matricula");
+                        .HasColumnName("matricula")
+                        .HasComment("Matrícula do discente na instituição.");
 
                     b.Property<string>("Nivel")
                         .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)")
-                        .HasColumnName("nivel");
+                        .HasColumnName("nivel")
+                        .HasComment("Nível de ensino do vínculo (ex.: G para graduação) — vocabulário do SIGAA.");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
-                        .HasColumnName("nome");
+                        .HasColumnName("nome")
+                        .HasComment("Nome do discente.");
 
                     b.Property<int>("PeriodoIngresso")
                         .HasColumnType("integer")
-                        .HasColumnName("periodo_ingresso");
+                        .HasColumnName("periodo_ingresso")
+                        .HasComment("Período letivo de ingresso do discente no curso.");
 
                     b.Property<string>("SituacaoDescricao")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)")
-                        .HasColumnName("situacao_descricao");
+                        .HasColumnName("situacao_descricao")
+                        .HasComment("Descrição da situação acadêmica (ex.: Matriculado, Concluído).");
 
                     b.Property<int>("SituacaoId")
                         .HasColumnType("integer")
-                        .HasColumnName("situacao_id");
+                        .HasColumnName("situacao_id")
+                        .HasComment("Identificador da situação acadêmica do discente no SIGAA.");
 
                     b.Property<string>("SituacaoVinculo")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("situacao_vinculo");
+                        .HasColumnName("situacao_vinculo")
+                        .HasComment("Qualificador de vínculo associado à situação, no vocabulário do SIGAA.");
 
                     b.HasKey("Id")
                         .HasName("pk_vinculo_discente");
@@ -164,7 +193,10 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_vinculo_discente_id_discente_sigaa");
 
-                    b.ToTable("vinculo_discente", "discentes");
+                    b.ToTable("vinculo_discente", "discentes", t =>
+                        {
+                            t.HasComment("Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0119) — snapshot desnormalizado, sem referência viva a outras tabelas.");
+                        });
                 });
 #pragma warning restore 612, 618
         }
