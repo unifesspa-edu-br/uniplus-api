@@ -12,7 +12,7 @@ public sealed class DefinirClassificacaoCommandValidatorTests
 {
     private static DefinirClassificacaoCommand ComandoValido(IReadOnlyList<RegraEliminacaoInput> regrasEliminacao) => new(
         Guid.CreateVersion7(), "FORMULA-MEDIA-PONDERADA", "v1", "PRECISAO-TRUNCAR", "v1", 2,
-        "ALOCACAO-OPCOES-RN04", "v1", 1, regrasEliminacao, PrecondicaoIfMatch.Ausente);
+        "ALOCACAO-OPCOES-RN04", "v1", 1, regrasEliminacao, false, PrecondicaoIfMatch.Ausente);
 
     [Fact(DisplayName = "Validator passa com comando válido e lista de eliminação vazia")]
     public void Aceita_ComandoValido()

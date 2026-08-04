@@ -66,7 +66,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             .IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"), 1, []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"), 1, [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }

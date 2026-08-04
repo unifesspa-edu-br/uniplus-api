@@ -55,7 +55,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "f"),
             1,
-            [notaMinima, corteRedacao, zeroEmArea]);
+            [notaMinima, corteRedacao, zeroEmArea],
+            baseadoEmEnem: true);
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -106,7 +107,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             casasArredondamento: null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "2"),
             2,
-            []);
+            [],
+            baseadoEmEnem: false);
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -144,7 +146,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
             1,
-            []).Value!;
+            [],
+            baseadoEmEnem: false).Value!;
         processo.DefinirClassificacao(original, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -168,7 +171,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
                 4,
                 Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
                 2,
-                [eliminacao]).Value!;
+                [eliminacao],
+                baseadoEmEnem: true).Value!;
 
             Result result = carregado.DefinirClassificacao(nova, PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
@@ -203,7 +207,8 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
             2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "d"),
             1,
-            [eliminacao]).Value!;
+            [eliminacao],
+            baseadoEmEnem: false).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
@@ -244,5 +249,43 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         RegraEliminacao eliminacaoRecarregada = recarregado.Classificacao!.RegrasEliminacao.Single();
         ((ArgsElimNotaMinimaEtapa)eliminacaoRecarregada.Args).EtapaRef.Should().Be(etapa.Id);
+    }
+
+    [Theory(DisplayName = "Persiste e recarrega BaseadoEmEnem — true e false (#850)")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PersisteERecarrega_BaseadoEmEnem(bool baseadoEmEnem)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — BaseadoEmEnem", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        processo.DefinirEtapas(
+            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
+
+        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
+            Regra(RegraCalculoCodigo.FormulaMediaPonderada, "1"),
+            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "2"),
+            2,
+            Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "3"),
+            1,
+            [],
+            baseadoEmEnem: baseadoEmEnem);
+        configResult.IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
+            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
+            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
+
+        recarregado.Should().NotBeNull();
+        recarregado!.Classificacao!.BaseadoEmEnem.Should().Be(baseadoEmEnem,
+            "o valor persistido e recarregado do banco precisa sobreviver ao ciclo EF — o rótulo TipoProcesso " +
+            "(PSIQ) não decide o valor");
     }
 }

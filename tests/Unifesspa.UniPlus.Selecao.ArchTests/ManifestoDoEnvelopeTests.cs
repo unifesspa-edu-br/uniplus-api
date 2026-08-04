@@ -105,7 +105,7 @@ public sealed class ManifestoDoEnvelopeTests
         [typeof(ConfiguracaoClassificacao)] = (
             [
                 "RegraCalculo", "RegraArredondamento", "CasasArredondamento",
-                "RegraOrdemAlocacao", "NOpcoesAlocacao", "RegrasEliminacao",
+                "RegraOrdemAlocacao", "NOpcoesAlocacao", "RegrasEliminacao", "BaseadoEmEnem",
             ],
             [("ProcessoSeletivoId", "FK interna.")]),
 

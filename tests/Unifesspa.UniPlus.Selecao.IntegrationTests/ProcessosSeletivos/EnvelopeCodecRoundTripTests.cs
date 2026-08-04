@@ -518,12 +518,12 @@ public sealed class EnvelopeCodecRoundTripTests
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        "envelope-0.0.3-rico.json"));
+        "envelope-0.0.4-rico.json"));
 
     private static string CaminhoNoFonte([CallerFilePath] string origem = "") => Path.Join(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        "envelope-0.0.3-rico.json");
+        "envelope-0.0.4-rico.json");
 
     // ── Round-trip 1.3 com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
 
@@ -567,7 +567,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
         // EnvelopeCodecV13 já documenta para si).
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.3", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
+        congelado.SchemaVersion.Should().Be("0.0.4", "pré-condição: esta suíte prova o EnvelopeCodecV13, não uma versão congelada anterior");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -652,7 +652,7 @@ public sealed class EnvelopeCodecRoundTripTests
             casasArredondamento: null,
             regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1,
@@ -707,7 +707,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
             new EntradaCanonicalizacao(processo, dados, hashDocumento));
-        congelado.SchemaVersion.Should().Be("0.0.3", "pré-condição: esta suíte prova o bloco arvoreSatisfacao, novo na 1.4");
+        congelado.SchemaVersion.Should().Be("0.0.4", "pré-condição: esta suíte prova o bloco arvoreSatisfacao, novo na 1.4");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -789,8 +789,128 @@ public sealed class EnvelopeCodecRoundTripTests
         objeto[chave] = ValorComoNo(objeto[chave]!, valorNovo);
     }
 
-    private static JsonValue ValorComoNo(JsonNode original, string valor) =>
-        original.GetValueKind() == System.Text.Json.JsonValueKind.Number
-            ? JsonValue.Create(int.Parse(valor, CultureInfo.InvariantCulture))
-            : JsonValue.Create(valor);
+    /// <summary>
+    /// <c>baseadoEmEnem</c> é o único campo booleano mutado por este helper — sem o ramo
+    /// <c>True</c>/<c>False</c>, <c>"true"</c>/<c>"false"</c> virariam string JSON e seriam
+    /// recusadas por <see cref="LeitorEnvelope.Booleano"/>, que só aceita
+    /// <c>JsonValueKind.True</c>/<c>False</c>.
+    /// </summary>
+    private static JsonValue ValorComoNo(JsonNode original, string valor) => original.GetValueKind() switch
+    {
+        System.Text.Json.JsonValueKind.Number => JsonValue.Create(int.Parse(valor, CultureInfo.InvariantCulture)),
+        System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False =>
+            JsonValue.Create(bool.Parse(valor)),
+        _ => JsonValue.Create(valor),
+    };
+
+    // ── Round-trip dedicado de baseadoEmEnem — corpus SEM eliminação ENEM (#850) ──
+
+    /// <summary>
+    /// Não reaproveita <see cref="MutarEReidratar"/>: o corpus rico (<see cref="CorpusEnvelope.ProcessoRico"/>)
+    /// já tem <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c> (<c>baseadoEmEnem: true</c>) —
+    /// mutar o campo para <c>false</c> sobre esse corpus faria o decoder CORRETAMENTE recusar a
+    /// reidratação (a invariante ENEM×eliminação é validada dentro de
+    /// <see cref="ConfiguracaoClassificacao.Criar"/>), o que quebraria a prova de round-trip em
+    /// vez de exercitá-la. Aqui o corpus não tem eliminação ENEM nenhuma, então os dois valores
+    /// continuam válidos nos dois sentidos — e cada caso do <see cref="Theory"/> muta para o
+    /// valor OPOSTO ao do corpus-base, garantindo bytes diferentes nos dois <see cref="InlineData"/>.
+    /// </summary>
+    [Theory(DisplayName = "O decoder não perde baseadoEmEnem — corpus sem eliminação ENEM, mutação booleano-consciente")]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void Decoder_NaoPerdeCampo_BaseadoEmEnem(bool valorBase, bool valorMutado)
+    {
+        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(valorBase);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+
+        JsonObject mutado = Envelope(congelado);
+        Mutar(mutado, "classificacao.baseadoEmEnem", valorMutado.ToString(CultureInfo.InvariantCulture));
+
+        byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
+        bytesMutados.Should().NotEqual(congelado.Bytes, "pré-condição: mutar baseadoEmEnem tem de mudar os bytes");
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, bytesMutados);
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        Result reposicao = processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo);
+        reposicao.IsSuccess.Should().BeTrue(reposicao.Error?.Message);
+
+        byte[] recodificados = CorpusEnvelope.Registro.Recodificar(
+            versao.SchemaVersion,
+            new EntradaCanonicalizacao(
+                processo,
+                reidratado.Value.Dados,
+                reidratado.Value.HashDocumento,
+                reidratado.Value.Retificacao,
+                reidratado.Value.Conformidade)).Value!.Bytes;
+
+        recodificados.Should().NotEqual(congelado.Bytes,
+            "o decoder tem de LER 'classificacao.baseadoEmEnem' — se o ignorasse, a recodificação traria o valor " +
+            "original de volta");
+        recodificados.Should().Equal(bytesMutados,
+            "baseadoEmEnem não é chave de ordenação — o resto do envelope reidratado reproduz o mutado inteiro");
+    }
+
+    /// <summary>Corpus mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
+    private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS BaseadoEmEnem", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: CorpusEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, '1'),
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [
+                ModalidadeSelecionada.Criar(
+                    Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
+                    ComposicaoVagasModalidade.ResidualDoVo, null, RegraRemanejamentoModalidade.Nenhuma,
+                    null, null, null, [], null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+            ]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
+            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
+            regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
+            casasArredondamento: 2,
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '4'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [],
+            baseadoEmEnem: baseadoEmEnem).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirCronogramaFases([
+            FaseCronograma.Criar(
+                ordem: 1,
+                faseCanonicaOrigemId: Guid.CreateVersion7(),
+                codigo: "RESULTADO_FINAL",
+                donoInstitucional: "CEPS",
+                origemData: OrigemDataFase.Propria,
+                agrupaEtapas: true,
+                permiteComplementacao: false,
+                produzResultado: true,
+                resultadoDefinitivo: true,
+                coletaInscricao: true,
+                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+                atoProduzidoCodigo: "RESULTADO_FINAL",
+                atoProduzidoEfeitoIrreversivel: false,
+                bancasRequeridas: [],
+                regraRecurso: null).Value!,
+        ], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
 }

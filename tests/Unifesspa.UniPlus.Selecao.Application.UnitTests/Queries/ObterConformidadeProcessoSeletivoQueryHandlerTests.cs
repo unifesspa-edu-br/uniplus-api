@@ -69,7 +69,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             2,
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('d', 64)).Value!,
             1,
-            []).Value!;
+            [], baseadoEmEnem: false).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
 
         FaseCronograma faseConforme = FaseCronograma.Criar(

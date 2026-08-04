@@ -165,7 +165,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             ordem: 1,
@@ -601,7 +601,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             casasArredondamento: 2,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: eliminacoes);
+            regrasEliminacao: eliminacoes, baseadoEmEnem: true);
         classificacao.IsSuccess.Should().BeTrue(classificacao.Error?.Message);
 
         processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -643,7 +643,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     // ── Fixture da variante COM cascata (Story #575) — nome próprio, fora da chave por
     // schema_version: é uma segunda fixture da MESMA versão de schema, não uma versão nova. ──
 
-    private const string NomeDaFixtureCascata = "envelope-0.0.3-cascata.json";
+    private const string NomeDaFixtureCascata = "envelope-0.0.4-cascata.json";
 
     private static string CaminhoDaFixtureCascata() => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,

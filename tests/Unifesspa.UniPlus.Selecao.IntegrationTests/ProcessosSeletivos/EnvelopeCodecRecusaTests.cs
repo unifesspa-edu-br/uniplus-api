@@ -643,7 +643,7 @@ public sealed class EnvelopeCodecRecusaTests
             regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
             regraArredondamento: null, casasArredondamento: null,
             regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
-            nOpcoesAlocacao: 1, regrasEliminacao: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            nOpcoesAlocacao: 1, regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Propria,

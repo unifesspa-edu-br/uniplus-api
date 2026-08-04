@@ -461,14 +461,16 @@ public sealed class ProcessoSeletivoTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    private static ConfiguracaoClassificacao NovaClassificacao(IReadOnlyList<RegraEliminacao>? regrasEliminacao = null) =>
+    private static ConfiguracaoClassificacao NovaClassificacao(
+        IReadOnlyList<RegraEliminacao>? regrasEliminacao = null, bool baseadoEmEnem = false) =>
         ConfiguracaoClassificacao.Criar(
             ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
             ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
             2,
             ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "v1", new string('c', 64)).Value!,
             1,
-            regrasEliminacao ?? []).Value!;
+            regrasEliminacao ?? [],
+            baseadoEmEnem).Value!;
 
     [Fact(DisplayName = "DefinirClassificacao vincula a configuração à raiz")]
     public void DefinirClassificacao_Vincula()
@@ -550,33 +552,31 @@ public sealed class ProcessoSeletivoTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
     }
 
-    [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO fora de processo ENEM é recusado")]
-    public void DefinirClassificacao_EliminacaoEnemForaDeProcessoEnem_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+    // A recusa/aceite de ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA por BaseadoEmEnem migrou
+    // para ConfiguracaoClassificacaoTests (#850): depois que Criar passou a validar essa
+    // invariante, não é mais possível construir uma ConfiguracaoClassificacao ENEM-inválida
+    // para passar a DefinirClassificacao — a factory já falha antes. O que permanece aqui é
+    // a prova de indistinguibilidade entre Tipos e a atomicidade tardia via EtapaRef órfão
+    // (INV-B4), que continuam na raiz porque dependem de _etapas.
 
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
+    [Fact(DisplayName = "DefinirClassificacao produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
+    public void DefinirClassificacao_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
+    {
+        ProcessoSeletivo psiq = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo sisu = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        RegraEliminacao EliminacaoEnem() => RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
             new ArgsElimCorteRedacao(400m)).Value!;
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
+        Result resultadoPsiq = psiq.DefinirClassificacao(
+            NovaClassificacao([EliminacaoEnem()], baseadoEmEnem: true), PrecondicaoIfMatch.Ausente);
+        Result resultadoSisu = sisu.DefinirClassificacao(
+            NovaClassificacao([EliminacaoEnem()], baseadoEmEnem: true), PrecondicaoIfMatch.Ausente);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem");
-    }
-
-    [Fact(DisplayName = "DefinirClassificacao com ELIM-CORTE-REDACAO em processo PSVR (baseado em ENEM) tem sucesso")]
-    public void DefinirClassificacao_EliminacaoEnemEmProcessoEnem_Sucesso()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSVR 2026", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
-
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
-            new ArgsElimCorteRedacao(400m)).Value!;
-
-        Result result = processo.DefinirClassificacao(NovaClassificacao([eliminacao]), PrecondicaoIfMatch.Ausente);
-
-        result.IsSuccess.Should().BeTrue();
+        resultadoPsiq.IsSuccess.Should().BeTrue(resultadoPsiq.Error?.Message);
+        resultadoSisu.IsSuccess.Should().Be(resultadoPsiq.IsSuccess,
+            "o rótulo TipoProcesso não pode decidir o resultado — só BaseadoEmEnem, dado igual nos dois processos");
     }
 
     [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é falsa sem distribuição de vagas com cota reservada")]

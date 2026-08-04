@@ -4925,7 +4925,8 @@
           "regraOrdemAlocacao",
           "nOpcoesAlocacao",
           "regrasEliminacao",
-          "concorrenciaDuplaAplicavel"
+          "concorrenciaDuplaAplicavel",
+          "baseadoEmEnem"
         ],
         "type": "object",
         "properties": {
@@ -4973,6 +4974,9 @@
             }
           },
           "concorrenciaDuplaAplicavel": {
+            "type": "boolean"
+          },
+          "baseadoEmEnem": {
             "type": "boolean"
           }
         }
@@ -5602,7 +5606,8 @@
           "regraOrdemAlocacaoCodigo",
           "regraOrdemAlocacaoVersao",
           "nOpcoesAlocacao",
-          "regrasEliminacao"
+          "regrasEliminacao",
+          "baseadoEmEnem"
         ],
         "type": "object",
         "properties": {
@@ -5652,6 +5657,9 @@
             "items": {
               "$ref": "#/components/schemas/RegraEliminacaoInput"
             }
+          },
+          "baseadoEmEnem": {
+            "type": "boolean"
           }
         }
       },

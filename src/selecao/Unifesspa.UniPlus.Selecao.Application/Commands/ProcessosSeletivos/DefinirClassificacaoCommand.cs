@@ -41,4 +41,5 @@ public sealed record DefinirClassificacaoCommand(
     string RegraOrdemAlocacaoVersao,
     int NOpcoesAlocacao,
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
+    bool BaseadoEmEnem,
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;

@@ -191,7 +191,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
             casasArredondamento: null,
             regraOrdemAlocacao: regraOrdemAlocacao,
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!;
+            regrasEliminacao: [], baseadoEmEnem: false).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseConforme = FaseCronograma.Criar(

@@ -187,7 +187,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RegraEliminacao.EtapaRefENotaMinimaObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios", "EtapaRef e NotaMinima são obrigatórios para a regra ELIM-NOTA-MINIMA-ETAPA")),
         new("RegraEliminacao.MinimoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.minimo_obrigatorio", "Minimo é obrigatório para a regra ELIM-CORTE-REDACAO")),
         new("ProcessoSeletivo.EtapaRefEliminacaoInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_ref_eliminacao_inexistente", "A regra de eliminação referencia uma etapa que não existe neste processo")),
-        new("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.eliminacao_enem_fora_de_processo_enem", "A regra de eliminação só se aplica a processo baseado em ENEM (SiSU/PSVR)")),
+        new("ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.eliminacao_enem_fora_de_processo_enem", "A regra de eliminação só se aplica quando a classificação está configurada como baseada em ENEM")),
         // Documento do Edital — upload direto via URL pre-assinada (Story #759, T3
         // #784). ObjetoNaoEncontrado/TamanhoExcedido/ContentTypeInvalido/AssinaturaInvalida
         // são recusas de validação da confirmação (422); NaoEncontrado é 404

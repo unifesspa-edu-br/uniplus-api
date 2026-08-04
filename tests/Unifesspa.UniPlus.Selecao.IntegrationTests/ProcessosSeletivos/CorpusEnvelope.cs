@@ -152,7 +152,8 @@ internal static class CorpusEnvelope
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(redacao, 30.5000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteRedacao, '5'), new ArgsElimCorteRedacao(400.0000m)).Value!,
                 RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
-            ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ],
+            baseadoEmEnem: true).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante)], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -465,7 +466,7 @@ internal static class CorpusEnvelope
                 casasArredondamento: null,
                 regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
                 nOpcoesAlocacao: 1,
-                regrasEliminacao: []).Value!,
+                regrasEliminacao: [], baseadoEmEnem: false).Value!,
             cronogramaFases: [FaseCronogramaConforme(variante)],
             documentosExigidos: [],
             nosExigencia: [],
@@ -487,7 +488,7 @@ internal static class CorpusEnvelope
             casasArredondamento: null,
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, '3'),
             nOpcoesAlocacao: 1,
-            regrasEliminacao: []).Value!,
+            regrasEliminacao: [], baseadoEmEnem: false).Value!,
         cronogramaFases: [FaseCronogramaConforme(variante)],
         documentosExigidos: [],
         nosExigencia: [],

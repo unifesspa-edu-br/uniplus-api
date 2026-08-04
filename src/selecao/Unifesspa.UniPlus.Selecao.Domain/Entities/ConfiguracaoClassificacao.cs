@@ -67,6 +67,15 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// <summary>Quantas opções de curso o processo aceita (1 ou 2 — RN04).</summary>
     public int NOpcoesAlocacao { get; private set; }
 
+    /// <summary>
+    /// A classificação usa a estrutura de pontuação por área do ENEM — o
+    /// sinal explícito (Story #850) do qual <c>ELIM-CORTE-REDACAO</c> e
+    /// <c>ELIM-ZERO-EM-AREA</c> dependem. Deixou de ser calculado a partir de
+    /// <see cref="ProcessoSeletivo.Tipo"/>: o rótulo do processo não decide
+    /// comportamento, só a configuração declarada decide.
+    /// </summary>
+    public bool BaseadoEmEnem { get; private set; }
+
     private readonly List<RegraEliminacao> _regrasEliminacao = [];
     public IReadOnlyCollection<RegraEliminacao> RegrasEliminacao => _regrasEliminacao.AsReadOnly();
 
@@ -74,11 +83,14 @@ public sealed class ConfiguracaoClassificacao : EntityBase
 
     /// <summary>
     /// Cria a configuração de classificação, validando INV-B8 (coerência
-    /// entre <see cref="RegraCalculo"/> e <see cref="RegraArredondamento"/>) e
-    /// os limites de <see cref="NOpcoesAlocacao"/>. As invariantes que
-    /// dependem de OUTRAS dimensões do agregado (INV-B4: <c>etapa_ref</c> de
-    /// eliminação existe no processo; ENEM-only de certos cortes) são
-    /// validadas pela raiz, que tem acesso a elas
+    /// entre <see cref="RegraCalculo"/> e <see cref="RegraArredondamento"/>),
+    /// os limites de <see cref="NOpcoesAlocacao"/> e que
+    /// <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c> só entrem quando
+    /// <paramref name="baseadoEmEnem"/> é <see langword="true"/> — a única
+    /// dependência da estrutura de pontuação por área do ENEM, e por isso a
+    /// única invariante que precisa do sinal. A invariante que depende de
+    /// OUTRA dimensão do agregado (INV-B4: <c>etapa_ref</c> de eliminação
+    /// existe no processo) continua validada pela raiz, que tem acesso a ela
     /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
     /// </summary>
     public static Result<ConfiguracaoClassificacao> Criar(
@@ -87,7 +99,8 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         int? casasArredondamento,
         ReferenciaRegra regraOrdemAlocacao,
         int nOpcoesAlocacao,
-        IReadOnlyList<RegraEliminacao> regrasEliminacao)
+        IReadOnlyList<RegraEliminacao> regrasEliminacao,
+        bool baseadoEmEnem)
     {
         ArgumentNullException.ThrowIfNull(regraCalculo);
         ArgumentNullException.ThrowIfNull(regraOrdemAlocacao);
@@ -133,6 +146,22 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             }
         }
 
+        // A única dependência real da estrutura de pontuação por área do ENEM —
+        // eixo ortogonal a RegraCalculo (que só distingue cálculo local de
+        // classificação importada, INV-B8). Quando a classificação é importada, o
+        // gate acima já recusou qualquer regrasEliminacao não-vazia, então este
+        // laço só encontra itens no caminho de cálculo local.
+        foreach (RegraEliminacao regra in regrasEliminacao)
+        {
+            bool somenteEnem = regra.Args is ArgsElimCorteRedacao or ArgsElimZeroEmArea;
+            if (somenteEnem && !baseadoEmEnem)
+            {
+                return Result<ConfiguracaoClassificacao>.Failure(new DomainError(
+                    "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
+                    $"A regra {regra.Regra.Codigo} só se aplica quando a classificação está configurada como baseada em ENEM."));
+            }
+        }
+
         ConfiguracaoClassificacao configuracao = new()
         {
             RegraCalculo = regraCalculo,
@@ -140,6 +169,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
             CasasArredondamento = casasArredondamento,
             RegraOrdemAlocacao = regraOrdemAlocacao,
             NOpcoesAlocacao = nOpcoesAlocacao,
+            BaseadoEmEnem = baseadoEmEnem,
         };
 
         foreach (RegraEliminacao regra in regrasEliminacao)
