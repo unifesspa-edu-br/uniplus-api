@@ -3,6 +3,18 @@
 > Artefato de trabalho da branch `spike/monolito-modular`. Execução autônoma.
 > Atualizado entre cada fase para permitir retomada. Removido no rollout junto
 > com o checkpoint do spike.
+>
+> **Nota (ADR-0099):** este checkpoint registra a topologia como ela era quando o
+> spike rodou — **3 APIs executáveis**, uma delas o Geo. Depois disso o Geo foi
+> extraído para o repositório dedicado
+> [`unifesspa-geo-api`](https://github.com/unifesspa-edu-br/unifesspa-geo-api)
+> (ver [ADR-0099](../adrs/0099-geo-como-repositorio-dedicado.md)): o
+> `Dockerfile.geo`, o serviço `geo-api` construído a partir deste repositório e a
+> guarda de service location do host Geo, citados abaixo, não existem mais aqui —
+> o `geo-api` do compose local hoje consome a **imagem publicada** do repositório
+> dedicado. A topologia vigente é **2 APIs executáveis internas** (UniPlus e
+> Portal) **+ Geo como serviço externo**. O texto abaixo é registro histórico do
+> spike, não descrição do estado atual.
 
 ## Objetivo
 
