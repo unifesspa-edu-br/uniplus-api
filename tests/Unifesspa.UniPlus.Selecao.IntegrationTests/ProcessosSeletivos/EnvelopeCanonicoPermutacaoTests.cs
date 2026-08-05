@@ -50,6 +50,36 @@ public sealed class EnvelopeCanonicoPermutacaoTests
                 "bytes idênticos ⟹ hash idêntico");
     }
 
+    /// <summary>
+    /// Issue #1059 (UNI-REQ-0072): a mesma invariância vale para as LISTAS de valores
+    /// selecionáveis dentro do dicionário — permutar a ordem de entrada de cada lista, sem mudar
+    /// o conteúdo, não pode mudar um único byte. O encoder ordena por <c>Ordem</c>/<c>Codigo</c>
+    /// (D2); esta é a prova de que ele não depende da ordem em que o resolvedor os entregou.
+    /// </summary>
+    [Fact(DisplayName = "Permutar a ordem de entrada de valoresSelecionaveis produz bytes canônicos idênticos")]
+    public void PermutacaoDeValoresSelecionaveis_ProduzMesmosBytes()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> direto =
+            CorpusEnvelope.ValoresSelecionaveisRicos(permutarValores: false);
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> permutado =
+            CorpusEnvelope.ValoresSelecionaveisRicos(permutarValores: true);
+
+        direto["COR_RACA"]!.Select(static v => v.Codigo).Should().NotEqual(
+            permutado["COR_RACA"]!.Select(static v => v.Codigo),
+            "pré-condição: a permutação tem de inverter a ordem de entrada da lista de valores selecionáveis");
+
+        SnapshotCanonico bytesDireto = CorpusEnvelope.Codec.Codificar(
+            CorpusEnvelope.Entrada(processo, permutarValoresSelecionaveis: false));
+        SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(
+            CorpusEnvelope.Entrada(processo, permutarValoresSelecionaveis: true));
+
+        bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
+            "valoresSelecionaveis[] é ordenado pelo encoder por Ordem/Codigo (D2) — a ordem de entrada da lista " +
+            "recebida do resolvedor não pode vazar para os bytes");
+    }
+
     [Fact(DisplayName = "Recanonicalizar a mesma configuração sem alteração reproduz o mesmo hash")]
     public void Recanonicalizacao_SemAlteracao_MesmoHash()
     {

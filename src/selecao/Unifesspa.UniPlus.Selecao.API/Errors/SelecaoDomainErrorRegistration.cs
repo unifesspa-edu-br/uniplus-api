@@ -285,6 +285,16 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Origem de um fato depois que ele já virou FatoColetado (ex.: a migration que
         // reclassificou MODALIDADE de DECLARADO para DERIVADO).
         new("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_coletado_nao_mais_declarado", "Fato coletado deixou de ser declarado/vinculado a campo de inscrição no catálogo de fatos do candidato")),
+        // Valores selecionáveis do fato coletado (issue #1059, UNI-REQ-0072): um fato coletado
+        // categórico estático com valor inativo no catálogo, ou um predicado do processo que cite
+        // valor inativo de um fato categórico estático, recusa o congelamento — o vocabulário
+        // inteiro do fato vai para o seletor do formulário público, nunca uma versão filtrada.
+        new("ProcessoSeletivo.ValorDeDominioInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.valor_de_dominio_inativo", "Valor inativo do domínio declarado de um fato categórico estático")),
+        // Um fato coletado vinculado como seleção (SELECAO_UNICA/SELECAO_MULTIPLA) cujo catálogo
+        // não declara valores de domínio nem é um dos categóricos de escopo-processo conhecidos —
+        // alcançável se o catálogo crescer um categórico DECLARADO novo antes de o resolvedor de
+        // valores selecionáveis aprender a origem dele.
+        new("ProcessoSeletivo.FatoDeSelecaoSemOrigemDeValores", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_de_selecao_sem_origem_de_valores", "Fato de seleção sem origem conhecida de valores selecionáveis")),
         // Seletor de snapshot vigente (T6 #787, ADR-0075/0076): não há publicação
         // vigente ≤ o instante consultado — 422, nunca retorno silencioso.
         new("Snapshot.VigenteAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.snapshot.vigente_ausente", "Nenhuma publicação vigente para o instante")),

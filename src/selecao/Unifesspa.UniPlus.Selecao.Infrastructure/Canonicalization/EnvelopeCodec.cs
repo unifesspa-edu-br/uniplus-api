@@ -149,7 +149,9 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             return leitor.Falha<EnvelopeReidratado>();
         }
 
-        IReadOnlyList<FatoColetado> fatosColetados = LerFatosColetados(leitor, payload);
+        (IReadOnlyList<FatoColetado> Fatos, IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
+            fatosColetadosLidos = LerFatosColetados(leitor, payload);
+        IReadOnlyList<FatoColetado> fatosColetados = fatosColetadosLidos.Fatos;
         IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao = LerRegrasDerivacao(leitor, payload);
         string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
         IReadOnlyList<string> modalidadesOfertadas = leitor.Textos(payload, "modalidadesOfertadas", "$");
@@ -183,7 +185,9 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             formularioTitulo: formularioTitulo,
             formularioTermoAceiteTexto: formularioTermoAceiteTexto);
         return Result<EnvelopeReidratado>.Success(
-            new EnvelopeReidratado(grafo, dados!, hashDocumento, retificacao, conformidade, metadadosFatosCongelados));
+            new EnvelopeReidratado(
+                grafo, dados!, hashDocumento, retificacao, conformidade,
+                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis));
     }
 
     /// <summary>
@@ -429,13 +433,22 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// Os fatos coletados (Story #928, §7.4) — reconstruídos por <see cref="FatoColetado.Criar"/>
     /// (que revalida a forma: código, ordem, auto-referência), Ids novos (não são congelados no
     /// envelope, diferente de <c>etapa.Id</c>). A pré-condição é a mesma forma DNF do gatilho.
+    /// <c>ValoresSelecionaveis</c> (issue #1059, UNI-REQ-0072) é o dicionário reidratado —
+    /// completo, uma entrada por fato coletado (array para os de seleção, <see langword="null"/>
+    /// para os demais) — que <see cref="Application.Services.RestauradorDeConfiguracao"/> repassa
+    /// intacto para recanonicalizar, sem reconsultar o catálogo vivo.
     /// </summary>
-    private static IReadOnlyList<FatoColetado> LerFatosColetados(LeitorEnvelope leitor, JsonObject payload)
+    private static (
+        IReadOnlyList<FatoColetado> Fatos,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
+        LerFatosColetados(LeitorEnvelope leitor, JsonObject payload)
     {
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = new(StringComparer.Ordinal);
+
         JsonArray array = leitor.Array(payload, "fatosColetados", "$");
         if (leitor.Falhou)
         {
-            return [];
+            return ([], valoresSelecionaveis);
         }
 
         List<FatoColetado> fatos = [];
@@ -443,7 +456,9 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         {
             string path = $"fatosColetados[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "fatosColetados");
-            leitor.ExigirChaves(item, path, "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "precondicao");
+            leitor.ExigirChaves(
+                item, path,
+                "fatoCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatorio", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             int ordem = leitor.Inteiro(item, "ordem", path);
@@ -452,14 +467,16 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             bool obrigatorio = leitor.Booleano(item, "obrigatorio", path);
             if (leitor.Falhou)
             {
-                return [];
+                return ([], valoresSelecionaveis);
             }
+
+            TipoRenderizacao tipoRenderizacao = TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacaoCodigo);
 
             IReadOnlyList<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> condicoes =
                 LerDnf(leitor, item, "precondicao", path);
             if (leitor.Falhou)
             {
-                return [];
+                return ([], valoresSelecionaveis);
             }
 
             List<CondicaoPrecondicaoFato> precondicoes = [];
@@ -468,23 +485,111 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
                 Result<CondicaoPrecondicaoFato> condicao = CondicaoPrecondicaoFato.Criar(clausula, fato, operador, valor);
                 if (condicao.IsFailure)
                 {
-                    return leitor.Propagar<IReadOnlyList<FatoColetado>>(condicao.Error!) ?? [];
+                    return (leitor.Propagar<IReadOnlyList<FatoColetado>>(condicao.Error!) ?? [], valoresSelecionaveis);
                 }
 
                 precondicoes.Add(condicao.Value!);
             }
 
+            IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato =
+                LerValoresSelecionaveis(leitor, item, path, tipoRenderizacao);
+            if (leitor.Falhou)
+            {
+                return ([], valoresSelecionaveis);
+            }
+
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacaoCodigo), obrigatorio, precondicoes);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicoes);
             if (fatoColetado.IsFailure)
             {
-                return leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [];
+                return (leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [], valoresSelecionaveis);
             }
 
             fatos.Add(fatoColetado.Value!);
+
+            // A unicidade de fatoCodigo é reconferida por ValidarBlocoDeFatosEDerivacao, mais
+            // adiante — um envelope adulterado com fato duplicado sobrescreve a entrada aqui
+            // (last-wins) e é recusado como malformado lá, não aqui.
+            valoresSelecionaveis[fatoCodigo] = valoresDoFato;
         }
 
-        return fatos;
+        return (fatos, valoresSelecionaveis);
+    }
+
+    /// <summary>
+    /// Os valores selecionáveis de um fato coletado (issue #1059, UNI-REQ-0072) — bicondicional
+    /// com <paramref name="tipoRenderizacao"/> (D1-bis do plano da issue): <c>SELECAO_UNICA</c>/
+    /// <c>SELECAO_MULTIPLA</c> exige array (possivelmente vazio); <c>BOOLEANO</c>/<c>NUMERO</c>
+    /// exige <see langword="null"/>. Um envelope que descumpra a bicondicional em qualquer
+    /// sentido — seletor mudo (<c>null</c> onde deveria ter array) ou vocabulário pendurado num
+    /// campo booleano/numérico — é malformado. Cada item exige <c>ordem</c> não negativa e
+    /// <c>valorCodigo</c> sem repetição, mesma disciplina que
+    /// <c>EnvelopeCodecV13.LerValoresDominioDeclarados</c> aplica a <c>valoresDominioDeclarados</c>.
+    /// </summary>
+    private static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerValoresSelecionaveis(
+        LeitorEnvelope leitor, JsonObject item, string pathPai, TipoRenderizacao tipoRenderizacao)
+    {
+        string path = $"{pathPai}.valoresSelecionaveis";
+        bool ehFatoDeSelecao = tipoRenderizacao is TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla;
+
+        if (item["valoresSelecionaveis"] is not JsonNode node)
+        {
+            if (ehFatoDeSelecao)
+            {
+                return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}' é null, mas o tipo de renderização é de seleção — a bicondicional exige um array."));
+            }
+
+            return null;
+        }
+
+        if (node is not JsonArray array)
+        {
+            return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}' deveria ser um array ou null."));
+        }
+
+        if (!ehFatoDeSelecao)
+        {
+            return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'{path}' é um array, mas o tipo de renderização '{tipoRenderizacao}' não é de seleção — " +
+                "a bicondicional exige null."));
+        }
+
+        List<ValorDominioDeclaradoCongelado> valores = [];
+        HashSet<string> codigos = new(StringComparer.Ordinal);
+        for (int i = 0; i < array.Count; i++)
+        {
+            string itemPath = $"{path}[{i}]";
+            JsonObject valorItem = leitor.ItemObjeto(array, i, path);
+            leitor.ExigirChaves(valorItem, itemPath, "valorCodigo", "descricao", "ordem");
+
+            string valorCodigo = leitor.TextoNaoVazio(valorItem, "valorCodigo", itemPath);
+            string? descricao = leitor.TextoOpcional(valorItem, "descricao", itemPath);
+            int ordem = leitor.Inteiro(valorItem, "ordem", itemPath);
+            if (leitor.Falhou)
+            {
+                return null;
+            }
+
+            if (ordem < 0)
+            {
+                return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{itemPath}.ordem' não pode ser negativa."));
+            }
+
+            if (!codigos.Add(valorCodigo))
+            {
+                return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}': o valor '{valorCodigo}' aparece mais de uma vez."));
+            }
+
+            valores.Add(new ValorDominioDeclaradoCongelado(valorCodigo, descricao, ordem));
+        }
+
+        return valores;
     }
 
     /// <summary>

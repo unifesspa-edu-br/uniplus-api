@@ -464,7 +464,12 @@ public sealed class RestauradorDeConfiguracaoTests
         // sobre `metadadosFatos` (chave inalterada desde a 1.3), não sobre `arvoreSatisfacao`
         // (nova na 1.4), então a fonte é o codec 1.3 CONGELADO, não o vivo.
         DadosEdital dados = CorpusEnvelope.DadosRicos();
-        EntradaCanonicalizacao entrada = new(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos);
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =
+            CorpusEnvelope.ValoresSelecionaveisRicos();
+        EntradaCanonicalizacao entrada = new(
+            processo, dados, CorpusEnvelope.HashDocumento,
+            MetadadosFatosCongelados: metadadosFatos,
+            ValoresSelecionaveisCongelados: valoresSelecionaveis);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
         congelado.SchemaVersion.Should().Be("0.0.5", "pré-condição: o codec corrente emite a forma única");
 
@@ -489,7 +494,98 @@ public sealed class RestauradorDeConfiguracaoTests
         // incluindo o bloco metadadosFatos, que só sobreviveu porque veio inteiro dentro do
         // envelope decodificado (EnvelopeReidratado.MetadadosFatosCongelados), nunca porque
         // foi reconsultado.
-        new EnvelopeCodec().Codificar(new EntradaCanonicalizacao(processo, dados, CorpusEnvelope.HashDocumento, MetadadosFatosCongelados: metadadosFatos)).Bytes
+        new EnvelopeCodec().Codificar(new EntradaCanonicalizacao(
+            processo, dados, CorpusEnvelope.HashDocumento,
+            MetadadosFatosCongelados: metadadosFatos,
+            ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes
+            .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
+    }
+
+    /// <summary>
+    /// Issue #1059 (UNI-REQ-0072): a fidelidade do dicionário de valores selecionáveis, com os
+    /// <b>dois</b> tipos de categórico coletado — estático (COR_RACA, valores do catálogo) e de
+    /// escopo-processo (CONDICAO_ATENDIMENTO, valores da oferta do próprio processo) — na MESMA
+    /// versão. A asserção é sobre o <b>conteúdo</b> do dicionário reidratado
+    /// (<see cref="EnvelopeReidratado.ValoresSelecionaveisCongelados"/>), não só sobre os bytes:
+    /// é o que distingue "o campo sobreviveu" de "os bytes coincidem por acaso" (D5 do plano da
+    /// issue — o dicionário é o ponto mais provável de se perder na travessia decoder →
+    /// restaurador → encoder).
+    /// </summary>
+    [Fact(DisplayName = "Restaurar reproduz o dicionário de valores selecionáveis com os dois tipos de categórico (estático e escopo-processo)")]
+    public void Restaurar_ComValoresSelecionaveisDosDoisTipos_ReporEProvarConteudoDoDicionario()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+
+        // Substitui a coleta pelo mesmo par {COR_RACA, RENDA} do corpus rico — SEM a
+        // pré-condição de RENDA, irrelevante para esta prova — acrescido de
+        // CONDICAO_ATENDIMENTO (escopo-processo, SELECAO_MULTIPLA).
+        processo.DefinirFatosColetados([
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null).Value!,
+            FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, obrigatorio: false, null).Value!,
+        ], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =
+            new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(CorpusEnvelope.ValoresSelecionaveisRicos())
+            {
+                // Escopo-processo: os códigos batem com a oferta de atendimento do corpus rico
+                // (Pcd, LACTANTE), ordenados por CondicaoCodigo — "LACTANTE" antes de "PCD".
+                ["CONDICAO_ATENDIMENTO"] =
+                [
+                    new ValorDominioDeclaradoCongelado("LACTANTE", "Lactante", 0),
+                    new ValorDominioDeclaradoCongelado(OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1),
+                ],
+            };
+
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
+            new EntradaCanonicalizacao(processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento,
+                ValoresSelecionaveisCongelados: valoresSelecionaveis));
+
+        // Publica DIRETAMENTE com os bytes já codificados acima — CorpusEnvelope.Publicar(...)
+        // recodificaria com CorpusEnvelope.ValoresSelecionaveisRicos() (sem CONDICAO_ATENDIMENTO)
+        // e produziria um envelope diferente do que este teste está provando.
+        processo.Publicar(
+            CorpusEnvelope.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System).IsSuccess.Should().BeTrue();
+        processo.ClearDomainEvents();
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? dicionarioReidratado =
+            reidratado.Value!.ValoresSelecionaveisCongelados;
+        dicionarioReidratado.Should().NotBeNull();
+
+        // A afirmação do CONTEÚDO — não só que os bytes batem no final.
+        dicionarioReidratado.Should().ContainKey("COR_RACA");
+        dicionarioReidratado!["COR_RACA"].Should().NotBeNull("COR_RACA é estático, SELECAO_UNICA");
+        dicionarioReidratado["COR_RACA"]!.Select(static v => v.Codigo).Should().Equal(["BRANCA", "PRETA", "PARDA"]);
+        dicionarioReidratado["COR_RACA"]!.Select(static v => v.Descricao).Should().Equal([
+            "Autodeclaração de cor/raça branca.", "Autodeclaração de cor/raça preta.", "Autodeclaração de cor/raça parda.",
+        ]);
+
+        dicionarioReidratado.Should().ContainKey("CONDICAO_ATENDIMENTO");
+        dicionarioReidratado["CONDICAO_ATENDIMENTO"].Should().NotBeNull("CONDICAO_ATENDIMENTO é escopo-processo, SELECAO_MULTIPLA");
+        dicionarioReidratado["CONDICAO_ATENDIMENTO"]!.Select(static v => v.Codigo).Should().Equal(
+            ["LACTANTE", OfertaAtendimentoEspecializado.CodigoCondicaoPcd]);
+
+        // As entradas de fatos não-seleção (RENDA continua SELECAO_UNICA no corpus rico — o
+        // dicionário completo tem todas) sobrevivem também.
+        dicionarioReidratado.Should().ContainKey("RENDA");
+
+        // A prova final: repor e recanonicalizar reproduz os MESMOS bytes.
+        RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
+        Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+
+        processo.LimparColetaEDerivacaoParaRestauracao();
+        processo.RestaurarConfiguracaoCongelada(versao, resultado.Value!).IsSuccess.Should().BeTrue();
+
+        CorpusEnvelope.Codec.Codificar(new EntradaCanonicalizacao(
+                processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento,
+                ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
     }
 

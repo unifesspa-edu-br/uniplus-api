@@ -22,12 +22,20 @@ public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 /// <summary>
 /// Um valor do conjunto fechado de um fato categórico estático, congelado junto do
 /// metadado do fato (ADR-0116) — a descrição que orienta a escolha do candidato para
-/// aquele código. <c>Ordem</c>/<c>Ativo</c> são metadado de apresentação de formulário,
-/// fora do que RN08 exige congelar para o gatilho: deliberadamente ausentes aqui.
+/// aquele código, e a ordem de apresentação que UNI-REQ-0072 exige preservar. Serve aos
+/// DOIS blocos que congelam vocabulário de fato: <c>documentosExigidos.metadadosFatos</c>
+/// (evidência do gatilho) e <c>fatosColetados[].valoresSelecionaveis</c> (as opções do
+/// seletor do formulário público) — um segundo record quase idêntico produziria duas
+/// verdades sobre o mesmo dado.
 /// </summary>
 /// <param name="Codigo">Código do valor (ex.: "PRETA").</param>
 /// <param name="Descricao">Descrição do valor — obrigatória quando o fato pai é DECLARADO.</param>
-public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descricao);
+/// <param name="Ordem">
+/// Ordem de apresentação (<see cref="Domain.Entities.FatoValorDominio.Ordem"/> quando o valor
+/// vem do catálogo). <c>Ativo</c> continua fora daqui — o gate de valor inativo do congelamento
+/// garante que só valor ativo na publicação chega a ser congelado.
+/// </param>
+public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descricao, int Ordem);
 
 /// <summary>
 /// Metadado de um fato do candidato (ADR-0111) congelado no envelope de publicação
@@ -41,7 +49,7 @@ public sealed record ValorDominioDeclaradoCongelado(string Codigo, string? Descr
 /// </summary>
 /// <remarks>
 /// Sem <c>Nome</c> deliberadamente: é rótulo de apresentação, não dado que RN08 exige
-/// congelar para o gatilho — o mesmo raciocínio que exclui <c>Ordem</c>/<c>Ativo</c> de
+/// congelar para o gatilho — o mesmo raciocínio que exclui <c>Ativo</c> de
 /// <see cref="ValorDominioDeclaradoCongelado"/>.
 /// </remarks>
 public sealed record MetadadoFatoCongelado(
@@ -93,18 +101,30 @@ public sealed record MetadadoFatoCongelado(
 /// <see cref="Domain.Entities.ProcessoSeletivo.DocumentosExigidos"/> (mesmo tratamento
 /// que <paramref name="Conformidade"/> já recebe).
 /// </param>
+/// <param name="ValoresSelecionaveisCongelados">
+/// Os valores que o candidato pode escolher para cada <see cref="Domain.Entities.FatoColetado"/>
+/// do processo, por <c>FatoCodigo</c> — montado pelo handler via <c>IFatoCandidatoReader</c> e
+/// pela oferta de atendimento do próprio processo (o canonicalizador não injeta reader nem lê
+/// I/O, ADR-0042). Toda entrada é <c>IReadOnlyList</c> quando o fato é de seleção
+/// (<c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c>) — array possivelmente vazio, nunca ausente — e
+/// <see langword="null"/> quando não é; o handler garante essa totalidade ANTES de
+/// canonicalizar, e o canonicalizador LANÇA se um fato de seleção não tiver entrada (defesa em
+/// profundidade contra um handler que esqueceu de passar o valor, nunca publicando um seletor
+/// vazio por omissão).
+/// </param>
 public sealed record EntradaCanonicalizacao(
     ProcessoSeletivo Processo,
     DadosEdital Dados,
     string HashDocumento,
     RetificacaoInfo? Retificacao = null,
     ResultadoConformidade? Conformidade = null,
-    IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados = null);
+    IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados = null,
+    IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados = null);
 
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>23 chaves</b> — <b>19 blocos reais + 4 stubs</b>
+/// <b>23 chaves</b> — <b>22 blocos reais + 1 stub</b>
 /// <c>{"status":"nao_construido"}</c> para as dimensões que a Feature #40 ainda
 /// não implementou — e devolve os bytes que <c>VersaoConfiguracao.Abrir</c>
 /// persiste como base do hash. Quando a entrada carrega

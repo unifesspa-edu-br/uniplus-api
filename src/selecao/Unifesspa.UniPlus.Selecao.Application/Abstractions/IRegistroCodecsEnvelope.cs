@@ -25,7 +25,8 @@ public sealed class EnvelopeReidratado
         string hashDocumento,
         RetificacaoInfo? retificacao,
         ResultadoConformidade? conformidade,
-        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null)
+        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null)
     {
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
@@ -37,6 +38,7 @@ public sealed class EnvelopeReidratado
         Retificacao = retificacao;
         Conformidade = conformidade;
         MetadadosFatosCongelados = metadadosFatosCongelados;
+        ValoresSelecionaveisCongelados = valoresSelecionaveisCongelados;
     }
 
     public GrafoConfiguracao Grafo { get; }
@@ -66,6 +68,17 @@ public sealed class EnvelopeReidratado
     /// a prova estrutural de que a restauração nunca reconsulta o catálogo vivo.
     /// </summary>
     public IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados { get; }
+
+    /// <summary>
+    /// Os valores selecionáveis de cada fato coletado congelado, por <c>FatoCodigo</c> — fora de
+    /// <see cref="GrafoConfiguracao"/> pela MESMA razão que <see cref="MetadadosFatosCongelados"/>:
+    /// os valores são dado de CATÁLOGO (ou da oferta do processo), não configuração persistida no
+    /// agregado vivo — <see cref="Domain.Entities.FatoColetado"/> não ganha propriedade por isso,
+    /// e este dicionário sobrevive só para alimentar a recanonicalização em
+    /// <see cref="Application.Services.RestauradorDeConfiguracao"/>, a prova estrutural de que a
+    /// restauração nunca reconsulta o catálogo vivo.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados { get; }
 }
 
 /// <summary>

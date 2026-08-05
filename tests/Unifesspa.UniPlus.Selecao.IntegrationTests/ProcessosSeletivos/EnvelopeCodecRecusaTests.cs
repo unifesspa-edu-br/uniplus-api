@@ -690,6 +690,161 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    // ── Issue #1059 (UNI-REQ-0072) — recusas do decoder nos dois blocos de valores selecionáveis,
+    // e a bicondicional de fatosColetados[].valoresSelecionaveis com tipoRenderizacao nos dois sentidos ──
+
+    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis ausente é recusado — omitir a chave não é o mesmo que declará-la null")]
+    public void ValoresSelecionaveis_ChaveAusente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "COR_RACA").Remove("valoresSelecionaveis"));
+
+        resultado.IsFailure.Should().BeTrue(
+            "a gramática de cada item de fatosColetados fecha em 'valoresSelecionaveis' — o encoder sempre a " +
+            "emite, presente e explícita (array ou null), nunca omitida");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis de tipo errado (nem array nem null) é recusado")]
+    public void ValoresSelecionaveis_TipoErrado_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"] = "BRANCA");
+
+        resultado.IsFailure.Should().BeTrue(
+            "um escalar no lugar do array (ou de null) é forma que o encoder nunca produz para este campo");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis[].valorCodigo duplicado é recusado")]
+    public void ValoresSelecionaveis_ValorCodigoDuplicado_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonArray valores = FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"]!.AsArray();
+            valores[1] = valores[0]!.DeepClone();
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "o encoder nunca emite duas entradas para o mesmo valorCodigo dentro do mesmo fato — a " +
+            "repetição só é alcançável por adulteração dos bytes");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis[].ordem ausente é recusado")]
+    public void ValoresSelecionaveis_OrdemAusente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"]!.AsArray()[0]!.AsObject().Remove("ordem"));
+
+        resultado.IsFailure.Should().BeTrue(
+            "'ordem' fecha a gramática de cada item de valoresSelecionaveis — o encoder sempre a emite, " +
+            "e é dela que o formulário público deriva a posição de exibição da opção");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "fatosColetados[].valoresSelecionaveis[].ordem negativa é recusada")]
+    public void ValoresSelecionaveis_OrdemNegativa_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"]!.AsArray()[0]!["ordem"] = -1);
+
+        resultado.IsFailure.Should().BeTrue(
+            "uma ordem negativa não corresponde a posição alguma de exibição — o encoder só emite índices " +
+            "canônicos, sempre a partir de zero");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    /// <summary>
+    /// Bicondicional D1-bis: um fato de <b>seleção</b> (SELECAO_UNICA/SELECAO_MULTIPLA) sem
+    /// array de valores é um seletor <b>mudo</b> — o candidato veria o campo, mas nenhuma opção
+    /// para escolher. É o mesmo modo de falha que <see cref="ObterFormularioRenderizavelQueryHandlerTests"/>
+    /// exercita no handler de leitura pública; aqui a guarda é a do próprio DECODER.
+    /// </summary>
+    [Fact(DisplayName = "Bicondicional: valoresSelecionaveis null num fato de SELEÇÃO é recusado — seletor mudo")]
+    public void ValoresSelecionaveis_NuloEmFatoDeSelecao_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"] = null);
+
+        resultado.IsFailure.Should().BeTrue(
+            "COR_RACA é SELECAO_UNICA — a bicondicional exige array. Restaurar null aqui publicaria um " +
+            "campo de seleção sem as opções que o candidato precisa escolher");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "Bicondicional: valoresSelecionaveis com array num fato que NÃO é de seleção é recusado — vocabulário pendurado")]
+    public void ValoresSelecionaveis_ArrayEmFatoNaoDeSelecao_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["tipoRenderizacao"] = "BOOLEANO");
+
+        resultado.IsFailure.Should().BeTrue(
+            "trocar o tipo de renderização para BOOLEANO sem esvaziar 'valoresSelecionaveis' deixa um " +
+            "vocabulário de seleção pendurado num campo que a bicondicional proíbe de tê-lo");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados ausente é recusado")]
+    public void ValoresDominioDeclarados_ChaveAusente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+            MetadadoFatoPorCodigo(envelope, "COR_RACA").Remove("valoresDominioDeclarados"));
+
+        resultado.IsFailure.Should().BeTrue(
+            "a gramática de cada item de metadadosFatos fecha em 'valoresDominioDeclarados' — o encoder " +
+            "sempre a emite, presente e explícita, nunca omitida");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados de tipo errado (nem array nem null) é recusado")]
+    public void ValoresDominioDeclarados_TipoErrado_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+            MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"] = "BRANCA");
+
+        resultado.IsFailure.Should().BeTrue(
+            "um escalar no lugar do array (ou de null) é forma que o encoder nunca produz para este campo");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados[].valorCodigo duplicado é recusado")]
+    public void ValoresDominioDeclarados_ValorCodigoDuplicado_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+        {
+            JsonArray valores = MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"]!.AsArray();
+            valores[1] = valores[0]!.DeepClone();
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "o encoder nunca emite duas entradas para o mesmo valorCodigo dentro do metadado do mesmo fato");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados[].ordem ausente é recusado")]
+    public void ValoresDominioDeclarados_OrdemAusente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+            MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"]!.AsArray()[0]!.AsObject().Remove("ordem"));
+
+        resultado.IsFailure.Should().BeTrue(
+            "'ordem' fecha a gramática de cada item de valoresDominioDeclarados — o encoder sempre a emite");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados[].ordem negativa é recusada")]
+    public void ValoresDominioDeclarados_OrdemNegativa_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+            MetadadoFatoPorCodigo(envelope, "COR_RACA")["valoresDominioDeclarados"]!.AsArray()[0]!["ordem"] = -1);
+
+        resultado.IsFailure.Should().BeTrue(
+            "uma ordem negativa não corresponde a posição alguma de exibição — o encoder só emite índices " +
+            "canônicos, sempre a partir de zero");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     // ── Infraestrutura dos testes ──
 
     // ── Coleta de fatos / derivação / grafo conjunto (Story #928, §7.4) ──
@@ -806,6 +961,44 @@ public sealed class EnvelopeCodecRecusaTests
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, adulterados);
         return CorpusEnvelope.Registro.Reidratar(versao);
     }
+
+    /// <summary>
+    /// Mesmo raciocínio de <see cref="ReidratarComEnvelopeAdulterado"/>, mas sobre o processo de
+    /// referência da golden fixture (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>) —
+    /// é ele, não <see cref="CorpusEnvelope.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
+    /// populado, e por isso <c>metadadosFatos[].valoresDominioDeclarados</c> só existe aqui.
+    /// </summary>
+    private static Result<EnvelopeReidratado> ReidratarComEnvelopeDeReferenciaAdulterado(Action<JsonObject> adulterar)
+    {
+        ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
+        DadosEdital dados = EnvelopeCanonicoGoldenTests.DadosDeReferencia();
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(new EntradaCanonicalizacao(
+            processo, dados, EnvelopeCanonicoGoldenTests.HashFixo,
+            MetadadosFatosCongelados: EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia(),
+            ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia()));
+
+        JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
+        adulterar(envelope);
+
+        byte[] adulterados = PerfilCanonicoV1.Instancia.Serializar(envelope);
+        adulterados.Should().NotEqual(congelado.Bytes, "pré-condição: a adulteração tem de mudar os bytes");
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, adulterados, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            EnvelopeCanonicoGoldenTests.HashFixo, CorpusEnvelope.Ator, TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        processo.ClearDomainEvents();
+
+        return CorpusEnvelope.Registro.Reidratar(publicacao.Value!);
+    }
+
+    private static JsonObject FatoColetadoPorCodigo(JsonObject envelope, string codigo) =>
+        envelope["fatosColetados"]!.AsArray()
+            .Single(fato => fato!["fatoCodigo"]!.GetValue<string>() == codigo)!.AsObject();
+
+    private static JsonObject MetadadoFatoPorCodigo(JsonObject envelope, string codigo) =>
+        envelope["documentosExigidos"]!["metadadosFatos"]!.AsArray()
+            .Single(metadado => metadado!["fatoCodigo"]!.GetValue<string>() == codigo)!.AsObject();
 
     private static JsonObject Navegar(JsonObject raiz, string caminho)
     {

@@ -132,7 +132,9 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         //     decimal arredondado pela coluna, nem um enum, nem a ordem de um array.
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
-            new EntradaCanonicalizacao(reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento));
+            new EntradaCanonicalizacao(
+                reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento,
+                ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos()));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
             "o agregado que voltou do Postgres tem de recanonicalizar nos MESMOS bytes que o ato congelou — é a " +
