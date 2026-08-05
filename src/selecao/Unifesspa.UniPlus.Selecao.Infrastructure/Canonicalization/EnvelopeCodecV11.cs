@@ -564,9 +564,11 @@ internal static class EnvelopeCodecV11
         string? par = leitor.TextoOpcional(item, "remanejamentoPar", path, LimitesDoEnvelope.ModalidadeCodigo);
         string? fallback = leitor.TextoOpcional(item, "remanejamentoFallback", path, LimitesDoEnvelope.ModalidadeCodigo);
 
-        // A ordem de `criteriosCumulativos` é a de ENTRADA — o encoder não a reordena
-        // (é array de escalares, sem chave de conteúdo). Reordenar aqui produziria bytes
-        // distintos dos congelados, e o round-trip acusaria.
+        // A ordem de `criteriosCumulativos` no envelope é a CANÔNICA (issue #1067, ADR-0109
+        // D9) — o array é um conjunto sem posição própria entre os critérios, e o encoder o
+        // ordena pela chave de conteúdo de cada item, não pela ordem de entrada. O decoder não
+        // reordena nada aqui: lê a sequência tal como está no JSON, que já é a canônica, e é
+        // essa mesma sequência que a recanonicalização tem de reproduzir byte a byte.
         IReadOnlyList<string> criterios = leitor.Textos(item, "criteriosCumulativos", path);
         string? acaoQuandoIndeferido = leitor.TextoOpcional(item, "acaoQuandoIndeferido", path, LimitesDoEnvelope.Token);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegal);

@@ -14,8 +14,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// A forma, tal como é:
 /// </para>
 /// <list type="number">
-///   <item>chaves de todo objeto reordenadas recursivamente por comparação ordinal; arrays
-///   preservam a ordem, que é semântica;</item>
+///   <item>chaves de todo objeto reordenadas recursivamente por comparação ordinal; o perfil
+///   em si <b>não reordena arrays</b> — a ordem que ele recebe é a ordem que emite. Quem
+///   decide, ANTES de chegar aqui, se um array carrega ordem semântica (preservada tal qual)
+///   ou é um conjunto sem posição própria entre os itens (reduzido à ordem canônica pela
+///   chave de conteúdo, ADR-0109 D9) é a projeção que monta o payload — nunca o perfil;</item>
 ///   <item>chaves reordenadas por comparação ordinal (não são normalizadas em NFC — as chaves
 ///   estruturais são ASCII; a normalização de chaves de bloco opaco fica para quando a válvula
 ///   de escape deixar de ser exceção);</item>
@@ -63,8 +66,35 @@ public sealed class PerfilCanonicoV1 : IPerfilCanonico
     public byte[] Serializar(JsonObject payload)
     {
         ArgumentNullException.ThrowIfNull(payload);
+        return SerializarChave(payload);
+    }
 
-        JsonNode canonico = Canonicalizar(payload);
+    public string HashHex(byte[] bytes) => HashCanonicalComputer.ComputeSha256Hex(bytes);
+
+    /// <summary>
+    /// Serializa um nó QUALQUER — não só o payload inteiro — pelas mesmas regras de bytes do
+    /// perfil (mesmo <see cref="Canonicalizar(JsonNode)"/>, mesmas <see cref="OpcoesEscrita"/>
+    /// que <see cref="Serializar"/> usa, que passa a delegar aqui). Interna ao tipo concreto —
+    /// não entra em <see cref="IPerfilCanonico"/> porque a operação não é "serializar o
+    /// envelope", é "serializar QUALQUER item pelas regras do envelope", uma primitiva mais
+    /// larga que a porta pública não precisa expor.
+    /// </summary>
+    /// <remarks>
+    /// Existe para quem ordena um CONJUNTO — um array sem posição própria entre os itens —
+    /// pela sua CHAVE DE CONTEÚDO (ADR-0109 D9): os bytes canônicos do próprio item, não o
+    /// texto cru. Se a chave de ordenação serializasse um <see cref="System.Text.Json.Nodes.JsonValue"/>
+    /// fora daqui, ela ordenaria pela forma de texto que chegou à projeção — que pode ser a
+    /// forma NFD (decomposta) — enquanto <see cref="Serializar"/> grava a forma NFC
+    /// (<see cref="CanonicalizarValor"/> normaliza toda string na emissão final). A mesma
+    /// configuração ordenaria diferente da que os bytes emitidos realmente usam. Passar pela
+    /// mesma <see cref="Canonicalizar(JsonNode)"/> fecha esse furo por construção: a chave é o
+    /// item já canonicalizado, não o item cru.
+    /// </remarks>
+    internal static byte[] SerializarChave(JsonNode valor)
+    {
+        ArgumentNullException.ThrowIfNull(valor);
+
+        JsonNode canonico = Canonicalizar(valor);
 
         using MemoryStream buffer = new();
         using (Utf8JsonWriter writer = new(buffer, OpcoesEscrita))
@@ -74,8 +104,6 @@ public sealed class PerfilCanonicoV1 : IPerfilCanonico
 
         return buffer.ToArray();
     }
-
-    public string HashHex(byte[] bytes) => HashCanonicalComputer.ComputeSha256Hex(bytes);
 
     /// <summary>
     /// Reescreve a árvore na forma canônica: objetos com chaves ordenadas, strings em NFC,
