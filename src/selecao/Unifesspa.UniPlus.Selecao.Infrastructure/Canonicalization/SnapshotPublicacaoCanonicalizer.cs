@@ -500,7 +500,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         {
             ["fato"] = HashCanonicalComputer.NormalizeNfc(predicadoFato.Condicao.Fato),
             ["operador"] = predicadoFato.Condicao.Operador.ToCodigo(),
-            ["valor"] = JsonNode.Parse(predicadoFato.Condicao.Valor.GetRawText()),
+            ["valor"] = SerializarValorDeAtomo(predicadoFato.Condicao.Operador, predicadoFato.Condicao.Valor),
         },
         _ => throw new InvalidOperationException($"Variante de {nameof(ArgsCriterioDesempate)} não reconhecida: {args.GetType()}."),
     };
@@ -789,32 +789,16 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     };
 
     /// <summary>
-    /// O predicado DNF (PR #896, ADR-0111): OU de cláusulas, E de condições dentro de cada
-    /// uma. Cláusulas ordenadas por <c>Clausula</c> (ordinal semântico — o mesmo que
-    /// <see cref="ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas"/> usa para agrupar);
-    /// condições dentro da MESMA cláusula não têm ordinal próprio, então usam a chave de
-    /// conteúdo (D9), igual às demais coleções sem chave natural.
+    /// O predicado DNF do gatilho de uma exigência (PR #896, ADR-0111) — a mesma forma
+    /// OU-de-cláusulas/E-de-condições de <see cref="SerializarDnf"/>, para a coleção TIPADA
+    /// de <see cref="CondicaoGatilho"/>. Delega direto, projetando os quatro campos para a
+    /// mesma tupla que os demais chamadores (pré-condição de fato, regra de derivação) já
+    /// montam — uma regra de ordenação, um lugar só (issue #1068): antes desta consolidação
+    /// o método tinha a mesma lógica copiada, e corrigir só um dos dois teria deixado a
+    /// outra metade divergente.
     /// </summary>
-    private static JsonArray? SerializarCondicaoGatilho(IReadOnlyCollection<CondicaoGatilho> condicoes)
-    {
-        if (condicoes.Count == 0)
-        {
-            return null;
-        }
-
-        JsonArray clausulas = [];
-        foreach (IGrouping<int, CondicaoGatilho> clausula in condicoes.GroupBy(static c => c.Clausula).OrderBy(static g => g.Key))
-        {
-            clausulas.Add(OrdenarPorConteudo(clausula.Select(static c => new JsonObject
-            {
-                ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
-                ["operador"] = c.Operador.ToCodigo(),
-                ["valor"] = JsonNode.Parse(c.Valor.GetRawText()),
-            })));
-        }
-
-        return clausulas;
-    }
+    private static JsonArray? SerializarCondicaoGatilho(IReadOnlyCollection<CondicaoGatilho> condicoes) =>
+        SerializarDnf(condicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, c.Valor)));
 
     /// <summary>
     /// Só bases legais <c>RESOLVIDO</c> (PR #898, issue #549) — uma <c>PENDENTE</c> não é
@@ -1031,19 +1015,22 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// A mesma chave de conteúdo (ADR-0109 D9) para os cinco conjuntos que são arrays de
+    /// A mesma chave de conteúdo (ADR-0109 D9) para os seis conjuntos que são arrays de
     /// TEXTO puro — <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>,
-    /// <c>valoresDominio</c> e os dois <c>args</c> de predicado de obrigatoriedade
-    /// (<c>codigos</c>, <c>necessidades</c>). <see cref="PerfilCanonicoV1.SerializarChave"/>
-    /// aceita <see cref="JsonNode"/>, não só <see cref="JsonObject"/> — é o que permite
-    /// ordenar o escalar pelos MESMOS bytes canônicos (NFC incluído) que a emissão final grava,
-    /// sem duplicar a normalização aqui.
+    /// <c>valoresDominio</c>, os dois <c>args</c> de predicado de obrigatoriedade
+    /// (<c>codigos</c>, <c>necessidades</c>) e as alternativas de um átomo sob operador de
+    /// pertencimento (<see cref="SerializarValorDeAtomo"/>, issue #1068).
+    /// <see cref="PerfilCanonicoV1.SerializarChave"/> aceita <see cref="JsonNode"/>, não só
+    /// <see cref="JsonObject"/> — é o que permite ordenar o escalar pelos MESMOS bytes
+    /// canônicos (NFC incluído) que a emissão final grava, sem duplicar a normalização aqui.
     /// </summary>
     /// <remarks>
-    /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos cinco vocabulários
+    /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos seis vocabulários
     /// admite <c>null</c> como elemento — <see cref="LeitorEnvelope.Textos"/> já o recusa na
-    /// leitura, e um envelope que o emitisse produziria um documento que o próprio decoder da
-    /// mesma versão rejeitaria. Falha alto aqui, com mensagem própria, em vez de deixar o
+    /// leitura para os cinco primeiros, e <see cref="Services.PredicadoDnfValidador"/> já
+    /// recusa alternativa não-string (logo nunca nula) antes da publicação para o sexto. Um
+    /// envelope que o emitisse produziria um documento que o próprio decoder da mesma versão
+    /// rejeitaria. Falha alto aqui, com mensagem própria, em vez de deixar o
     /// <see langword="null"/> estourar mais adiante dentro da serialização com uma
     /// <see cref="NullReferenceException"/> sem contexto.
     /// </remarks>
@@ -1057,7 +1044,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 throw new InvalidOperationException(
                     "Um array de texto do envelope recebeu um elemento nulo antes da ordenação — nenhum dos " +
                     "conjuntos de texto simples (criteriosCumulativos, ocorrenciasEsperadas, valoresDominio, " +
-                    "codigos, necessidades) admite null como item.");
+                    "codigos, necessidades, alternativas de átomo EM/NAO_EM) admite null como item.");
             }
 
             lista.Add(item);
@@ -1068,6 +1055,86 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ComparadorLexicograficoDeBytes.Instancia);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
+    }
+
+    /// <summary>
+    /// Ordena um array de <b>cláusulas já canonicalizadas</b> pela chave de conteúdo de cada
+    /// cláusula inteira — os bytes canônicos do array de átomos, não de um átomo isolado
+    /// (issue #1068, D2). É o nível externo do predicado DNF: o <c>GroupBy</c> por
+    /// <c>Clausula</c> em <see cref="SerializarDnf"/> decide QUAIS átomos formam a mesma
+    /// conjunção (permanece intocado — é semântico, não ordem); esta sobrecarga só decide EM
+    /// QUE ORDEM as cláusulas resultantes aparecem no array externo, pelo mesmo critério de
+    /// bytes que todo o resto do envelope usa para conjuntos sem chave natural.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Os átomos de cada cláusula têm de estar na ordem canônica ANTES de chegar aqui — a
+    /// chave de uma cláusula só é estável se o conteúdo dela já estiver na forma final.
+    /// Ordenar cláusulas cujos átomos ainda estão na ordem de entrada produziria uma chave
+    /// que depende da ordem em que o cliente enviou os átomos, o mesmo problema que esta
+    /// correção existe para eliminar — só um nível acima.
+    /// </para>
+    /// <para>
+    /// Assinatura explícita para <see cref="JsonArray"/>, não um <see cref="JsonNode"/>
+    /// genérico — a mesma disciplina da sobrecarga escalar acima, que aceita só
+    /// <see cref="JsonValue"/>: ampliar a política de ordenação por acidente para qualquer
+    /// nó não é o objetivo desta correção.
+    /// </para>
+    /// <para>
+    /// O chamador acumula as cláusulas num <see cref="List{T}"/> — nunca num
+    /// <see cref="JsonArray"/> provisório: <c>System.Text.Json.Nodes</c> recusa anexar um nó
+    /// que já tem pai, e um array provisório atribuiria pai a cada cláusula antes da
+    /// ordenação, impedindo a reinserção delas no array final.
+    /// </para>
+    /// </remarks>
+    private static JsonArray OrdenarPorConteudo(IEnumerable<JsonArray> clausulas)
+    {
+        IOrderedEnumerable<JsonArray> ordenadas = clausulas.OrderBy(
+            static clausula => PerfilCanonicoV1.SerializarChave(clausula),
+            ComparadorLexicograficoDeBytes.Instancia);
+
+        return new JsonArray([.. ordenadas.Select(static clausula => (JsonNode)clausula)]);
+    }
+
+    /// <summary>
+    /// O valor de um átomo <c>{fato, operador, valor}</c>, decidido PELO OPERADOR, não pela
+    /// forma do JSON recebido (issue #1068, D3): só <see cref="Operador.Em"/> e
+    /// <see cref="Operador.NaoEm"/> carregam um conjunto de alternativas sem posição própria
+    /// entre elas; qualquer outro operador carrega um escalar, preservado tal como chegou. Um
+    /// array sob outro operador não tem garantia de ser conjunto e não é tocado — a decisão
+    /// não pode vir da forma do valor (um array também seria a forma de um escalar JSON
+    /// opaco em outro contexto), só da matriz operador × domínio que
+    /// <see cref="ValueObjects.CondicaoDnf"/> já valida.
+    /// </summary>
+    /// <remarks>
+    /// Cada alternativa é analisada isoladamente, a partir do <see cref="JsonElement"/> bruto
+    /// de origem — nunca via <c>JsonNode.Parse(valor.GetRawText()).AsArray()</c>: os filhos
+    /// que aquele array devolveria já pertenceriam a ELE, e <c>System.Text.Json.Nodes</c>
+    /// recusa reatribuir um nó com pai a outro container (aqui, o array ordenado). Analisar
+    /// cada <see cref="JsonElement"/> item por item, isoladamente, produz nós novos e sem pai,
+    /// aptos a entrar em <see cref="OrdenarPorConteudo(IEnumerable{JsonValue})"/>.
+    /// </remarks>
+    private static JsonNode? SerializarValorDeAtomo(Operador operador, JsonElement valor)
+    {
+        if (operador is not (Operador.Em or Operador.NaoEm))
+        {
+            return JsonNode.Parse(valor.GetRawText());
+        }
+
+        List<JsonValue> alternativas = [];
+        foreach (JsonElement item in valor.EnumerateArray())
+        {
+            if (JsonNode.Parse(item.GetRawText()) is not JsonValue alternativa)
+            {
+                throw new InvalidOperationException(
+                    $"O operador {operador.ToCodigo()} carrega uma alternativa que não é um valor escalar — " +
+                    "PredicadoDnfValidador já deveria ter recusado a condição antes da publicação.");
+            }
+
+            alternativas.Add(alternativa);
+        }
+
+        return OrdenarPorConteudo(alternativas);
     }
 
     private static JsonObject SerializarReferenciaRegra(ReferenciaRegra regra) => new()
@@ -1182,10 +1249,16 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// Um predicado DNF <c>{fato, operador, valor}</c> na mesma forma que
-    /// <see cref="SerializarCondicaoGatilho"/> — OU de cláusulas, E de condições dentro de cada uma:
-    /// cláusulas ordenadas por <c>Clausula</c>, condições dentro da cláusula pela chave de conteúdo
-    /// (não têm ordinal próprio). <see langword="null"/> quando não há condição nenhuma.
+    /// Um predicado DNF <c>{fato, operador, valor}</c> — OU de cláusulas, E de condições
+    /// dentro de cada uma. <c>Clausula</c> é o ordinal que AGRUPA os átomos na mesma
+    /// conjunção (é o que o <c>GroupBy</c> abaixo usa, e é o único papel dele) — não é chave
+    /// de ordenação: quem envia a configuração escolhe o ordinal livremente, então o mesmo
+    /// predicado enviado com ordinais diferentes não pode produzir bytes diferentes (issue
+    /// #1068). As cláusulas resultantes são ordenadas pela CHAVE DE CONTEÚDO do array de
+    /// átomos já canonicalizado (D9, mesmo critério do resto do envelope para conjuntos sem
+    /// chave natural); as condições dentro de cada cláusula, que tampouco têm ordinal
+    /// próprio, usam a mesma chave um nível abaixo. <see langword="null"/> quando não há
+    /// condição nenhuma.
     /// </summary>
     private static JsonArray? SerializarDnf(
         IEnumerable<(int Clausula, string Fato, Operador Operador, JsonElement Valor)> condicoes)
@@ -1196,19 +1269,22 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             return null;
         }
 
-        JsonArray clausulas = [];
+        // Acumulador em List<JsonArray>, não em JsonArray provisório: um array provisório
+        // atribuiria pai a cada cláusula assim que ela fosse adicionada, e a sobrecarga de
+        // ordenação abaixo recusaria reinseri-las no array externo final.
+        List<JsonArray> clausulas = [];
         foreach (IGrouping<int, (int Clausula, string Fato, Operador Operador, JsonElement Valor)> clausula
-            in lista.GroupBy(static c => c.Clausula).OrderBy(static g => g.Key))
+            in lista.GroupBy(static c => c.Clausula))
         {
             clausulas.Add(OrdenarPorConteudo(clausula.Select(static c => new JsonObject
             {
                 ["fato"] = HashCanonicalComputer.NormalizeNfc(c.Fato),
                 ["operador"] = c.Operador.ToCodigo(),
-                ["valor"] = JsonNode.Parse(c.Valor.GetRawText()),
+                ["valor"] = SerializarValorDeAtomo(c.Operador, c.Valor),
             })));
         }
 
-        return clausulas;
+        return OrdenarPorConteudo(clausulas);
     }
 
     /// <summary>

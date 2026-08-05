@@ -55,9 +55,11 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     /// do perfil — usado para comparar dois fragmentos byte a byte sem depender dos Guids
     /// aleatórios do resto do envelope em que cada um está embutido (<see cref="MontarProcesso"/>
     /// não fixa ids: dois processos distintos nunca têm o envelope INTEIRO byte-idêntico, mas o
-    /// fragmento sob teste tem de ser).
+    /// fragmento sob teste tem de ser). <c>internal</c>: reaproveitado por
+    /// <c>PredicadoDnfOrdenacaoCanonicaTests</c> (issue #1068), mesma necessidade de comparar
+    /// fragmento em vez de envelope inteiro.
     /// </summary>
-    private static byte[] BytesDoFragmento(JsonNode fragmento) =>
+    internal static byte[] BytesDoFragmento(JsonNode fragmento) =>
         PerfilCanonicoV1.Instancia.Serializar(new JsonObject { ["x"] = fragmento.DeepClone() });
 
     /// <summary>
