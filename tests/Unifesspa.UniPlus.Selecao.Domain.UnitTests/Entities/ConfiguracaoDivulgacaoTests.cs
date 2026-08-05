@@ -1,0 +1,152 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+
+public sealed class ConfiguracaoDivulgacaoTests
+{
+    [Theory(DisplayName = "Criar aceita os três tokens do vocabulário fechado")]
+    [InlineData(new[] { "numero_inscricao" }, null)]
+    [InlineData(new[] { "numero_inscricao", "nome_abreviado" }, null)]
+    [InlineData(new[] { "numero_inscricao", "nome" }, "Ampliação para dar transparência ao resultado.")]
+    public void Criar_TresTokensDoVocabulario_Sucesso(string[] camposPublicos, string? justificativa)
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(camposPublicos, justificativa);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Criar com lista vazia falha — CamposPublicosVazio")]
+    public void Criar_ListaVazia_Falha()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar([], null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.CamposPublicosVazio");
+    }
+
+    [Fact(DisplayName = "Criar com campo fora do vocabulário falha — CampoNaoPermitido")]
+    public void Criar_CampoNaoPermitido_Falha()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "cpf"], null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.CampoNaoPermitido");
+    }
+
+    [Fact(DisplayName = "Criar sem numero_inscricao falha — NumeroInscricaoObrigatorio")]
+    public void Criar_SemNumeroInscricao_Falha()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["nome_abreviado"], null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio");
+    }
+
+    [Fact(DisplayName = "Criar com nome_abreviado e nome juntos falha — FormasDeIdentificacaoExcludentes")]
+    public void Criar_NomeENomeAbreviadoJuntos_Falha()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
+            ["numero_inscricao", "nome_abreviado", "nome"], "Justificativa qualquer.");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes");
+    }
+
+    [Fact(DisplayName = "Criar com nome sem justificativa falha — JustificativaObrigatoria")]
+    public void Criar_NomeSemJustificativa_Falha()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaObrigatoria");
+    }
+
+    [Fact(DisplayName = "Criar com justificativa só de espaços é tratado como ausente — JustificativaObrigatoria")]
+    public void Criar_NomeComJustificativaEmBranco_Falha()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], "   ");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaObrigatoria");
+    }
+
+    [Fact(DisplayName = "Criar com justificativa acima do limite falha — JustificativaMuitoLonga")]
+    public void Criar_JustificativaMuitoLonga_Falha()
+    {
+        string justificativaMuitoLonga = new('a', ConfiguracaoDivulgacao.JustificativaMaxLength + 1);
+
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], justificativaMuitoLonga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaMuitoLonga");
+    }
+
+    [Fact(DisplayName = "Criar com justificativa contendo o caractere nulo falha — JustificativaComCaractereNulo")]
+    public void Criar_JustificativaComCaractereNulo_Falha()
+    {
+        // U+0000 sobrevive a IsNullOrWhiteSpace, Trim e NormalizeNfc — nenhum dos três o
+        // reconhece nem o remove. Sem este guard o valor chegaria ao SaveChanges e o
+        // PostgreSQL recusaria o byte zero em coluna de texto (500 em vez de erro de domínio).
+        string justificativaComCaractereNulo = $"Justificativa com {(char)0} no meio.";
+
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
+            ["numero_inscricao", "nome"], justificativaComCaractereNulo);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaComCaractereNulo");
+    }
+
+    [Fact(DisplayName = "A ordem dos guards importa: violar vocabulário e piso ao mesmo tempo devolve o erro de vocabulário")]
+    public void Criar_OrdemDosGuards_VocabularioPrecedeOPiso()
+    {
+        // "cpf" não pertence ao vocabulário E a lista não contém numero_inscricao — as duas
+        // invariantes estão violadas ao mesmo tempo; o guard 2 (vocabulário) roda antes do 3 (piso).
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["cpf"], null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.CampoNaoPermitido");
+    }
+
+    [Fact(DisplayName = "O conjunto é deduplicado e guardado na ordem canônica, não na ordem de entrada")]
+    public void Criar_DeduplicaEOrdenaCanonicamente()
+    {
+        Result<ConfiguracaoDivulgacao> ordemA = ConfiguracaoDivulgacao.Criar(["nome_abreviado", "numero_inscricao"], null);
+        Result<ConfiguracaoDivulgacao> ordemB = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado", "numero_inscricao"], null);
+
+        ordemA.IsSuccess.Should().BeTrue();
+        ordemB.IsSuccess.Should().BeTrue();
+
+        // Duas entradas semanticamente iguais (mesmo conjunto, ordem/repetição diferentes na
+        // requisição) produzem a MESMA coleção persistida — é o que evita um UPDATE espúrio do
+        // ValueComparer sequencial do jsonb a cada requisição equivalente.
+        ordemA.Value!.CamposPublicos.Should().Equal(ordemB.Value!.CamposPublicos);
+        // Ordem ordinal (ASCII): "nome_abreviado" < "numero_inscricao" ('o' < 'u' na segunda posição).
+        ordemA.Value!.CamposPublicos.Should().Equal("nome_abreviado", "numero_inscricao");
+    }
+
+    [Fact(DisplayName = "Justificativa é normalizada (Trim + NFC) na criação")]
+    public void Criar_NormalizaJustificativa()
+    {
+        // "e" + combinante agudo (U+0301, NFD) — a forma pré-composta ("é", NFC) é o que o
+        // canonicalizador do envelope emitiria; a entidade tem de guardar a mesma forma, senão o
+        // valor persistido divergiria do que a publicação congela.
+        string decombinada = "  Justificativa com é acentuado nas bordas  ";
+
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], decombinada);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Justificativa.Should().Be("Justificativa com é acentuado nas bordas");
+    }
+
+    [Theory(DisplayName = "EhDefaultMinimizado só reconhece a forma exata do default")]
+    [InlineData(new[] { "numero_inscricao" }, null, true)]
+    [InlineData(new[] { "numero_inscricao" }, "algo", false)]
+    [InlineData(new[] { "numero_inscricao", "nome_abreviado" }, null, false)]
+    public void EhDefaultMinimizado_ReconheceApenasAFormaExata(string[] camposPublicos, string? justificativa, bool esperado)
+    {
+        ConfiguracaoDivulgacao.EhDefaultMinimizado(camposPublicos, justificativa).Should().Be(esperado);
+    }
+}

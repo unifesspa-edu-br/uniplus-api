@@ -80,6 +80,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey<ConfiguracaoBonusRegional>(b => b.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Divulgação pública (UNI-REQ-0050, issue #563) — 1:1, mesmo padrão de BonusRegional
+        // acima. Ausência = default minimizado, não escolha administrativa pendente.
+        builder.HasOne(p => p.ConfiguracaoDivulgacao)
+            .WithOne()
+            .HasForeignKey<ConfiguracaoDivulgacao>(c => c.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany(p => p.CriteriosDesempate)
             .WithOne()
             .HasForeignKey(c => c.ProcessoSeletivoId)

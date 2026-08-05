@@ -5,6 +5,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
+using Application.DTOs;
+
 using AwesomeAssertions;
 
 using Domain.Entities;
@@ -96,6 +98,37 @@ public sealed class SessaoEditorialEndpointTests
         HttpResponseMessage resposta = await ctx.PutEtapasAsync(ifMatch: null);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // CA-15 (issue #563) — o endpoint de divulgação pública participa do MESMO
+    // contrato de sessão editorial que /etapas já prova acima; aqui só se prova que a
+    // ROTA NOVA está corretamente ligada a ele (428/412/ETag e o valor persistido).
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    [Fact(DisplayName = "CA-15: PUT /divulgacao SEM If-Match devolve 428; com If-Match DEFASADO devolve 412; aceito devolve ETag novo e persiste")]
+    public async Task Definir_Divulgacao_ComSessao_Precondicao()
+    {
+        Contexto ctx = await PublicarAsync(nameof(Definir_Divulgacao_ComSessao_Precondicao));
+
+        HttpResponseMessage abertura = await ctx.AbrirAsync("Ampliar a divulgação pública");
+        string etagInicial = LerETag(abertura);
+
+        HttpResponseMessage semIfMatch = await ctx.PutDivulgacaoAsync(["numero_inscricao", "nome_abreviado"], null, ifMatch: null);
+        semIfMatch.StatusCode.Should().Be(HttpStatusCode.PreconditionRequired);
+
+        HttpResponseMessage aceito = await ctx.PutDivulgacaoAsync(["numero_inscricao", "nome_abreviado"], null, ifMatch: etagInicial);
+        aceito.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        string etagNovo = LerETag(aceito);
+        etagNovo.Should().NotBe(etagInicial, "toda mutação aceita incrementa a revisão da sessão");
+
+        HttpResponseMessage defasado = await ctx.PutDivulgacaoAsync(["numero_inscricao"], null, ifMatch: etagInicial);
+        defasado.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+
+        ProcessoSeletivoDto processo = await ctx.ObterProcessoAsync();
+        processo.ConfiguracaoDivulgacao.Should().NotBeNull(
+            "a mutação aceita persistiu — o read-back administrativo tem de refletir o que foi salvo");
+        processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("nome_abreviado", "numero_inscricao");
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -444,6 +477,36 @@ public sealed class SessaoEditorialEndpointTests
             }
 
             return await Client.SendAsync(request).ConfigureAwait(false);
+        }
+
+        /// <summary>PUT /divulgacao (issue #563) — CamposPublicos nulo remove a configuração explícita.</summary>
+        public async Task<HttpResponseMessage> PutDivulgacaoAsync(IReadOnlyList<string>? camposPublicos, string? justificativa, string? ifMatch)
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Put,
+                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/divulgacao", UriKind.Relative))
+            {
+                Content = JsonContent.Create(new { camposPublicos, justificativa }),
+            };
+            AppendTestAuth(request);
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", MakeIdempotencyKey());
+            if (ifMatch is not null)
+            {
+                request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+            }
+
+            return await Client.SendAsync(request).ConfigureAwait(false);
+        }
+
+        public async Task<ProcessoSeletivoDto> ObterProcessoAsync()
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Get,
+                new Uri($"/api/selecao/processos-seletivos/{ProcessoId}", UriKind.Relative));
+            AppendTestAuth(request);
+            HttpResponseMessage resposta = await Client.SendAsync(request).ConfigureAwait(false);
+            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+            return (await resposta.Content.ReadFromJsonAsync<ProcessoSeletivoDto>())!;
         }
 
         public async Task<HttpResponseMessage> PostAtalhoRetificacaoAsync(Guid documentoId, string motivo)

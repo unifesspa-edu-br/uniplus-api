@@ -525,5 +525,17 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("UnidadeAdministradoraSnapshot.SlugObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.slug_obrigatorio", "Slug da unidade administradora é obrigatório")),
         new("UnidadeAdministradoraSnapshot.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.nome_obrigatorio", "Nome da unidade administradora é obrigatório")),
         new("UnidadeAdministradoraSnapshot.TipoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.tipo_obrigatorio", "Tipo da unidade administradora é obrigatório")),
+        // Divulgação pública do Processo Seletivo (UNI-REQ-0050, issue #563) — ausência já é o
+        // default minimizado (só o número de inscrição), toggle por presença mesmo padrão de
+        // ConfiguracaoBonusRegional acima.
+        new("ConfiguracaoDivulgacao.CamposPublicosVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.campos_publicos_vazio", "A lista de campos públicos não pode ser vazia")),
+        new("ConfiguracaoDivulgacao.CampoNaoPermitido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.campo_nao_permitido", "Campo fora do vocabulário de divulgação pública")),
+        new("ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.numero_inscricao_obrigatorio", "O número de inscrição é o piso da divulgação pública e não pode ser removido")),
+        new("ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.formas_de_identificacao_excludentes", "nome_abreviado e nome não podem ser publicados ao mesmo tempo")),
+        new("ConfiguracaoDivulgacao.JustificativaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.justificativa_obrigatoria", "Publicar o nome integral exige justificativa")),
+        new("ConfiguracaoDivulgacao.JustificativaMuitoLonga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.justificativa_muito_longa", "A justificativa excede o limite de caracteres")),
+        new("ConfiguracaoDivulgacao.JustificativaComCaractereNulo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.justificativa_com_caractere_nulo", "A justificativa contém o caractere nulo (U+0000), que a coluna de texto não admite")),
+        new("RegrasDeNomeAbreviado.IdentificadorDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_de_nome_abreviado.identificador_desconhecido", "O identificador de regra de abreviação não é conhecido")),
+        new("RegrasDeNomeAbreviado.NomeEmBranco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_de_nome_abreviado.nome_em_branco", "O nome a abreviar não pode ser vazio ou só espaços")),
     ];
 }

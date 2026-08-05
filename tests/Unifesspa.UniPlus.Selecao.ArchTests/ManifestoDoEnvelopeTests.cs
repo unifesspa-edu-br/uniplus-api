@@ -89,6 +89,15 @@ public sealed class ManifestoDoEnvelopeTests
             ["Regra", "Fator", "Teto", "MunicipioConvenio", "BaseLegal"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
+        // Divulgação pública (UNI-REQ-0050, issue #563) — a última dimensão provisória do
+        // envelope. A regra de abreviação (regraNomeAbreviado) NÃO é propriedade desta
+        // entidade — é derivada no congelamento a partir de RegrasDeNomeAbreviado.Vigente
+        // (ADR-0109 D6, decisão D3 do plano da issue), então não aparece aqui como campo
+        // excluído: não existe para o manifesto excluir.
+        [typeof(ConfiguracaoDivulgacao)] = (
+            ["CamposPublicos", "Justificativa"],
+            [("ProcessoSeletivoId", "FK interna.")]),
+
         // Story #575 — a cascata de remanejamento das cotas federais (RN-CASCATA-1..5).
         [typeof(ConfiguracaoCascataRemanejamento)] = (
             ["Regra", "FallbackCodigo", "Destinos"],
