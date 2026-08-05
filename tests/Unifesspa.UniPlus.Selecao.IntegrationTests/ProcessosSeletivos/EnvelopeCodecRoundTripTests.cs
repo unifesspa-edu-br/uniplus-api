@@ -155,29 +155,31 @@ public sealed class EnvelopeCodecRoundTripTests
             "o processo publicado não tinha nenhuma modalidade SegueCascata — a reidratação não pode inventar uma cascata");
     }
 
-    [Fact(DisplayName = "O round-trip preserva obrigatoriedades[] com Conformidade não vazia, ordenada por RegraId mesmo com regras fora de ordem na entrada")]
-    public void RoundTrip_ComConformidadeLegalCongelada_PreservaObrigatoriedadesOrdenadasPorRegraId()
+    /// <summary>
+    /// O discriminante da issue #1067: <c>obrigatoriedades[]</c> ordena pela CHAVE DE CONTEÚDO
+    /// dos objetos completos, não pelo <c>RegraId</c> — mesmo num caso em que ordenar por
+    /// <c>RegraId</c> daria o resultado OPOSTO. Um caso com Guids <c>aaaa…</c>/<c>bbbb…</c> não
+    /// discriminaria nada aqui: se o Guid crescente coincidir com a ordem de conteúdo, o teste
+    /// passa igual com a política antiga (por <c>RegraId</c>) e com a nova (por conteúdo) —
+    /// ele não prova qual das duas está de fato em vigor. Por isso <c>regraA</c> recebe
+    /// deliberadamente o Guid MAIOR e <c>regraB</c> o MENOR: ordenar por <c>RegraId</c> dá
+    /// <c>[REGRA-B, REGRA-A]</c>; ordenar por conteúdo dá <c>[REGRA-A, REGRA-B]</c> — as duas
+    /// políticas divergem, e só uma delas sobrevive à asserção final.
+    /// </summary>
+    [Fact(DisplayName = "O round-trip preserva obrigatoriedades[] ordenada pela chave de conteúdo — mesmo quando ordenar por RegraId daria o resultado oposto")]
+    public void RoundTrip_ComConformidadeLegalCongelada_PreservaObrigatoriedadesOrdenadasPorConteudo()
     {
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
 
-        RegraAvaliada regraMaisRecente = new(
-            RegraId: new Guid("aaaaaaaa-0000-7000-8000-000000000002"),
-            RegraCodigo: "REGRA-B",
-            Categoria: CategoriaObrigatoriedade.Outros,
-            TipoProcessoCodigoAvaliado: "SiSU",
-            Predicado: new EtapaObrigatoria("Prova Objetiva"),
-            Aprovada: true,
-            Motivo: null,
-            BaseLegal: "Lei de teste B",
-            AtoNormativoUrl: null,
-            PortariaInterna: null,
-            DescricaoHumana: "Regra B",
-            VigenciaInicio: new DateOnly(2020, 1, 1),
-            VigenciaFim: null,
-            Hash: new string('b', 64));
-
-        RegraAvaliada regraMaisAntiga = new(
-            RegraId: new Guid("aaaaaaaa-0000-7000-8000-000000000001"),
+        // regraA e regraB só divergem em `atoNormativoUrl`/`portariaInterna`/`baseLegal`/
+        // `descricaoHumana`/`vigenciaInicio`/`vigenciaFim`/`hash`/`predicado`/`regraCodigo` — e
+        // em `RegraId`, invertido de propósito (ver o <c>summary</c> acima). `aprovada` é IGUAL
+        // (true) nos dois: a primeira chave em que os bytes canônicos divergem é
+        // `atoNormativoUrl` — string em regraA, null em regraB — e uma string entre aspas
+        // (`"` = 0x22) precede o literal `null` (`n` = 0x6E) byte a byte, o que já basta para
+        // decidir a ordem de conteúdo a favor de regraA, antes mesmo de chegar a `regraCodigo`.
+        RegraAvaliada regraA = new(
+            RegraId: new Guid("aaaaaaaa-0000-7000-8000-000000000099"),
             RegraCodigo: "REGRA-A",
             Categoria: CategoriaObrigatoriedade.Outros,
             TipoProcessoCodigoAvaliado: "SiSU",
@@ -192,12 +194,70 @@ public sealed class EnvelopeCodecRoundTripTests
             VigenciaFim: new DateOnly(2030, 1, 1),
             Hash: new string('a', 64));
 
-        // Deliberadamente fora de ordem: regraMaisRecente (id maior) vem PRIMEIRO na lista de
-        // entrada — se o encoder não ordenasse por RegraId, o array congelado sairia nesta
-        // mesma ordem "errada", e esta regressão (round-trip perdendo Conformidade no
-        // restaurador) não seria pega por nenhum outro teste desta suíte, que nunca
-        // exercitava uma Conformidade não vazia.
-        ResultadoConformidade conformidade = new([regraMaisRecente, regraMaisAntiga], []);
+        RegraAvaliada regraB = new(
+            RegraId: new Guid("aaaaaaaa-0000-7000-8000-000000000001"),
+            RegraCodigo: "REGRA-B",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            TipoProcessoCodigoAvaliado: "SiSU",
+            Predicado: new EtapaObrigatoria("Prova Objetiva"),
+            Aprovada: true,
+            Motivo: null,
+            BaseLegal: "Lei de teste B",
+            AtoNormativoUrl: null,
+            PortariaInterna: null,
+            DescricaoHumana: "Regra B",
+            VigenciaInicio: new DateOnly(2020, 1, 1),
+            VigenciaFim: null,
+            Hash: new string('b', 64));
+
+        // ── Pré-condição 1: a entrada NÃO vem na ordem esperada (conteúdo: A, B). ──
+        List<RegraAvaliada> entrada = [regraB, regraA];
+        entrada.Select(static r => r.RegraCodigo).Should().NotEqual(["REGRA-A", "REGRA-B"],
+            "pré-condição do discriminante: a lista de entrada precisa vir fora da ordem de conteúdo esperada");
+
+        // ── Pré-condição 2: ordenar por RegraId (a política ANTIGA) dá B, A — o OPOSTO do conteúdo. ──
+        entrada.OrderBy(static r => r.RegraId).Select(static r => r.RegraCodigo).Should().Equal(
+            ["REGRA-B", "REGRA-A"],
+            "pré-condição do discriminante: regraB tem o RegraId MENOR — ordenar por RegraId dá B antes de A");
+
+        // ── Pré-condição 3: os bytes canônicos dos objetos COMPLETOS ordenam A, B. ──
+        // Reconstrução independente da forma que `obrigatoriedades[]` emite — mesmos 13 campos,
+        // mesma tradução de predicado para {tipo, args} que a variante de cada um já usa em
+        // produção — para canonicalizar e comparar os bytes SEM chamar o método privado que
+        // monta o array (que é o próprio alvo desta prova).
+        JsonObject ComoJson(RegraAvaliada regra) => new()
+        {
+            ["regraId"] = regra.RegraId,
+            ["regraCodigo"] = regra.RegraCodigo,
+            ["categoria"] = regra.Categoria.ToString(),
+            ["tipoProcessoCodigoAvaliado"] = regra.TipoProcessoCodigoAvaliado,
+            ["predicado"] = regra.Predicado switch
+            {
+                ConcorrenciaDuplaObrigatoria => new JsonObject { ["tipo"] = "concorrenciaDuplaObrigatoria", ["args"] = new JsonObject() },
+                EtapaObrigatoria p => new JsonObject
+                {
+                    ["tipo"] = "etapaObrigatoria",
+                    ["args"] = new JsonObject { ["tipoEtapaCodigo"] = p.TipoEtapaCodigo },
+                },
+                _ => throw new NotSupportedException("Oráculo do teste só cobre as duas variantes usadas aqui."),
+            },
+            ["aprovada"] = regra.Aprovada,
+            ["baseLegal"] = regra.BaseLegal,
+            ["atoNormativoUrl"] = regra.AtoNormativoUrl,
+            ["portariaInterna"] = regra.PortariaInterna,
+            ["descricaoHumana"] = regra.DescricaoHumana,
+            ["vigenciaInicio"] = regra.VigenciaInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["vigenciaFim"] = regra.VigenciaFim?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["hash"] = regra.Hash,
+        };
+
+        byte[] bytesA = PerfilCanonicoV1.Instancia.Serializar(ComoJson(regraA));
+        byte[] bytesB = PerfilCanonicoV1.Instancia.Serializar(ComoJson(regraB));
+        ComparadorLexicograficoDeBytes.Instancia.Compare(bytesA, bytesB).Should().BeLessThan(0,
+            "pré-condição do discriminante: os bytes canônicos do objeto completo de regraA precedem os de regraB");
+
+        // ── O discriminante em si: o encoder segue o CONTEÚDO, não o RegraId. ──
+        ResultadoConformidade conformidade = new(entrada, []);
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
             CorpusEnvelope.Entrada(processo, conformidade: conformidade));
@@ -207,13 +267,17 @@ public sealed class EnvelopeCodecRoundTripTests
 
         EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
 
-        envelope.Conformidade.Should().NotBeNull(
-            "a fonte da regressão: o restaurador tem de repassar Conformidade adiante na recanonicalização");
-        envelope.Conformidade!.Regras.Select(r => r.RegraCodigo).Should().Equal(["REGRA-A", "REGRA-B"],
-            "o encoder ordena obrigatoriedades[] por RegraId, ascendente, mesmo que a entrada não venha ordenada (CA-13)");
-
         JsonArray obrigatoriedadesJson = Envelope(congelado)["documentosExigidos"]!["obrigatoriedades"]!.AsArray();
-        obrigatoriedadesJson.Select(o => o!["regraCodigo"]!.GetValue<string>()).Should().Equal(["REGRA-A", "REGRA-B"]);
+        obrigatoriedadesJson.Select(o => o!["regraCodigo"]!.GetValue<string>()).Should().Equal(
+            ["REGRA-A", "REGRA-B"],
+            "o envelope congelado ordena obrigatoriedades[] pela chave de conteúdo — REGRA-A antes de REGRA-B — " +
+            "mesmo regraB tendo o RegraId menor");
+
+        envelope.Conformidade.Should().NotBeNull(
+            "o restaurador tem de repassar Conformidade adiante na recanonicalização");
+        envelope.Conformidade!.Regras.Select(r => r.RegraCodigo).Should().Equal(["REGRA-A", "REGRA-B"],
+            "o valor DECODIFICADO também preserva a ordem de conteúdo — não é só o JSON bruto que bate, é a " +
+            "sequência que o decoder de fato devolve");
     }
 
     /// <summary>
@@ -332,8 +396,9 @@ public sealed class EnvelopeCodecRoundTripTests
     /// <para>
     /// A igualdade com o JSON mutado é a asserção <b>secundária</b>, mais forte, e só vale
     /// enquanto os paths abaixo ficarem <b>fora das chaves de ordenação</b> (o que é o caso:
-    /// nenhum deles muta <c>ordem</c>, <c>id</c>, <c>codigo</c>, <c>ofertaCursoOrigemId</c>
-    /// nem o interior de <c>regrasEliminacao</c>, que ordena por chave de conteúdo). Os
+    /// nenhum deles muta <c>ordem</c>, <c>id</c>, <c>codigo</c>, <c>ofertaCursoOrigemId</c>,
+    /// o interior de <c>regrasEliminacao</c>, nem um elemento de <c>criteriosCumulativos</c>
+    /// ou dos demais conjuntos ordenados por chave de conteúdo, issue #1067). Os
     /// campos que <b>são</b> chave de ordenação estão no teste seguinte, com a asserção
     /// primária apenas.
     /// </para>
@@ -352,7 +417,6 @@ public sealed class EnvelopeCodecRoundTripTests
     [InlineData("modalidades.0.baseLegal", "Outra base legal inteiramente diversa")]
     [InlineData("modalidades.0.descricao", "Outra descrição")]
     [InlineData("modalidades.1.acaoQuandoIndeferido", "RECLASSIFICAR_REGRA_EDITAL")]
-    [InlineData("modalidades.1.criteriosCumulativos.0", "renda_per_capita_ate_meio_sm")]
     [InlineData("bonusRegional.fator", "1.9900")]
     [InlineData("bonusRegional.teto", "42.5000")]
     [InlineData("bonusRegional.municipioConvenio", "Parauapebas")]
@@ -381,11 +445,20 @@ public sealed class EnvelopeCodecRoundTripTests
     /// no array recodificado (ADR-0109 D9). Aqui só cabe a asserção primária: comparar com
     /// o “JSON mutado no lugar” reprovaria a implementação correta.
     /// </summary>
+    /// <remarks>
+    /// <c>modalidades.1.criteriosCumulativos.0</c> entrou aqui pela mesma razão de
+    /// <c>regrasEliminacao</c> (issue #1067): desde que <c>criteriosCumulativos</c> passou a
+    /// ser ordenado pela chave de conteúdo, mutar o valor de UM critério pode mudar a posição
+    /// dele entre os dois — a modalidade <c>LB_EP</c> (índice 1 do array) tem exatamente dois
+    /// critérios (<see cref="CorpusEnvelope.ProcessoRico"/>), o mínimo para a reordenação ser
+    /// observável.
+    /// </remarks>
     [Theory(DisplayName = "O decoder lê também os campos que são chave de ordenação")]
     [InlineData("etapas.0.ordem", "9")]
     [InlineData("criteriosDesempate.0.ordem", "9")]
     [InlineData("classificacao.regrasEliminacao.0.args.notaMinima", "88.7500")]
     [InlineData("classificacao.regrasEliminacao.2.args.minimo", "555.0000")]
+    [InlineData("modalidades.1.criteriosCumulativos.0", "renda_per_capita_ate_meio_sm")]
     public void Decoder_NaoPerdeCampoDeOrdenacao(string caminho, string valorNovo)
     {
         (byte[] originais, byte[] _, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);
@@ -751,6 +824,224 @@ public sealed class EnvelopeCodecRoundTripTests
         folhaRendaRecarregada.RepetePorEntidade.Should().Be(TipoEntidade.MembroNucleoFamiliar);
         folhaRendaRecarregada.DocumentoExigido.Should().NotBeNull();
         folhaRendaRecarregada.DocumentoExigido!.TipoDocumentoCodigo.Should().Be("COMPROVANTE_RENDA");
+    }
+
+    // ── issue #1067 — os sete conjuntos ordenados por conteúdo, povoados no mesmo envelope ──
+
+    /// <summary>
+    /// Prova que o decoder NÃO reordena (ADR-0109 D9) com os sete arrays da issue #1067
+    /// povoados ao mesmo tempo: <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>,
+    /// <c>documentosExigidos.exigencias[].formatosPermitidos.lista</c>,
+    /// <c>documentosExigidos.obrigatoriedades</c>, os dois <c>predicado.args</c>
+    /// (<c>codigos</c>/<c>necessidades</c>) e <c>documentosExigidos.metadadosFatos[].valoresDominio</c>.
+    /// </summary>
+    /// <remarks>
+    /// A sequência esperada aqui NÃO é um oráculo escrito à mão — essa prova já existe à parte,
+    /// por array, no canonicalizador puro. O que só este teste prova é o risco descrito em D2: um
+    /// decoder que lesse um destes arrays num dicionário ou conjunto e devolvesse os valores JÁ
+    /// reordenados pela MESMA chave que o encoder usa produziria bytes idênticos na
+    /// recodificação — passaria pela asserção de bytes sozinha. Por isso a sequência esperada é
+    /// extraída do PRÓPRIO JSON congelado e comparada contra o valor <b>imediatamente</b>
+    /// decodificado, antes de qualquer recodificação: só um decoder que preserva a ordem lida
+    /// (um laço sequencial para <c>List&lt;T&gt;</c>, nunca um dicionário) bate as duas.
+    /// </remarks>
+    [Fact(DisplayName = "Round-trip com os sete conjuntos da issue #1067 povoados — bytes idênticos e a sequência imediatamente decodificada bate com o JSON")]
+    public void RoundTrip_SeteConjuntosDaIssue1067Povoados_PreservaSequenciaImediatamenteDecodificada()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Sete Conjuntos", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(),
+            codigo: "AC",
+            descricao: null,
+            naturezaLegal: NaturezaLegalModalidade.Ampla,
+            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoOrigemCodigo: null,
+            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null,
+            remanejamentoPar: null,
+            remanejamentoFallback: null,
+            criteriosCumulativos: ["zzz_criterio", "aaa_criterio"],
+            acaoQuandoIndeferido: null,
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
+
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: CorpusEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [modalidade]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
+            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            regraArredondamento: null,
+            casasArredondamento: null,
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "INSCRICAO",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: true,
+            permiteComplementacao: true,
+            produzResultado: true,
+            resultadoDefinitivo: true,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "INSCRICAO",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FormatosPermitidos formatosPermitidos = FormatosPermitidos.Criar(
+            qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!;
+        DocumentoExigido documento = DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
+            [], [], null, formatosPermitidos, null).Value!;
+        NoExigencia folha = NoExigencia.CriarFolha(
+            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
+            ocorrenciasEsperadas: ["ocorrencia_zeta", "ocorrencia_alfa"]).Value!;
+        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        RegraAvaliada regraModalidadesMinimas = new(
+            RegraId: Guid.CreateVersion7(),
+            RegraCodigo: "REGRA-MODALIDADES-MINIMAS",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            TipoProcessoCodigoAvaliado: "SiSU",
+            Predicado: new ModalidadesMinimas(["QUI", "AC", "LB_PPI"]),
+            Aprovada: true,
+            Motivo: null,
+            BaseLegal: "Lei de teste",
+            AtoNormativoUrl: null,
+            PortariaInterna: null,
+            DescricaoHumana: "Regra de modalidades mínimas",
+            VigenciaInicio: new DateOnly(2020, 1, 1),
+            VigenciaFim: null,
+            Hash: new string('m', 64));
+
+        RegraAvaliada regraAtendimentoDisponivel = new(
+            RegraId: Guid.CreateVersion7(),
+            RegraCodigo: "REGRA-ATENDIMENTO-DISPONIVEL",
+            Categoria: CategoriaObrigatoriedade.Outros,
+            TipoProcessoCodigoAvaliado: "SiSU",
+            Predicado: new AtendimentoDisponivel(["VISUAL", "AUDITIVA", "FISICA"]),
+            Aprovada: true,
+            Motivo: null,
+            BaseLegal: "Lei de teste",
+            AtoNormativoUrl: null,
+            PortariaInterna: null,
+            DescricaoHumana: "Regra de atendimento disponível",
+            VigenciaInicio: new DateOnly(2020, 1, 1),
+            VigenciaFim: null,
+            Hash: new string('n', 64));
+
+        ResultadoConformidade conformidade = new([regraModalidadesMinimas, regraAtendimentoDisponivel], []);
+
+        Dictionary<string, MetadadoFatoCongelado> metadadosFatos = new(StringComparer.Ordinal)
+        {
+            ["COR_RACA"] = new MetadadoFatoCongelado(
+                Codigo: "COR_RACA",
+                Dominio: "CATEGORICO",
+                Origem: "DECLARADO",
+                Cardinalidade: "ESCALAR",
+                PontoResolucao: "INSCRICAO",
+                Binding: "CAMPO_INSCRICAO:COR_RACA",
+                ValoresDominio: ["ZETA_VALOR", "ALFA_VALOR"],
+                ValoresDominioDeclarados: null),
+        };
+
+        DadosEdital dados = DadosEdital.Criar(
+            numero: "099/2026",
+            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
+            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            documentoEditalId: Guid.CreateVersion7()).Value!;
+        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
+
+        EntradaCanonicalizacao entrada = new(
+            processo, dados, hashDocumento, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
+        congelado.SchemaVersion.Should().Be("0.0.5", "pré-condição: o codec corrente emite a forma única");
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            hashDocumento, "user-sub-sete-conjuntos", TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        VersaoConfiguracao v1 = publicacao.Value!;
+
+        JsonObject envelopeJson = Envelope(congelado);
+        IReadOnlyList<string> criteriosNoJson =
+            [.. envelopeJson["modalidades"]![0]!["criteriosCumulativos"]!.AsArray().Select(static c => c!.GetValue<string>())];
+        IReadOnlyList<string> ocorrenciasNoJson =
+            [.. envelopeJson["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray().Select(static o => o!.GetValue<string>())];
+        IReadOnlyList<string> formatosNoJson =
+            [.. envelopeJson["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray()
+                .Select(static f => f!["formato"]!.GetValue<string>())];
+        IReadOnlyList<string> regraCodigosNoJson =
+            [.. envelopeJson["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Select(static r => r!["regraCodigo"]!.GetValue<string>())];
+        IReadOnlyList<string> valoresDominioNoJson =
+            [.. envelopeJson["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray().Select(static v => v!.GetValue<string>())];
+        IReadOnlyList<string> codigosNoJson =
+            [.. envelopeJson["documentosExigidos"]!["obrigatoriedades"]!.AsArray()
+                .Single(static r => r!["regraCodigo"]!.GetValue<string>() == "REGRA-MODALIDADES-MINIMAS")!
+                ["predicado"]!["args"]!["codigos"]!.AsArray().Select(static c => c!.GetValue<string>())];
+        IReadOnlyList<string> necessidadesNoJson =
+            [.. envelopeJson["documentosExigidos"]!["obrigatoriedades"]!.AsArray()
+                .Single(static r => r!["regraCodigo"]!.GetValue<string>() == "REGRA-ATENDIMENTO-DISPONIVEL")!
+                ["predicado"]!["args"]!["necessidades"]!.AsArray().Select(static n => n!.GetValue<string>())];
+
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+        EnvelopeReidratado envelope = reidratado.Value!;
+
+        // ── A sequência IMEDIATAMENTE decodificada — antes de qualquer recodificação. ──
+        envelope.Grafo.DistribuicaoVagas.Single().Modalidades.Single().CriteriosCumulativos.Should().Equal(
+            criteriosNoJson, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
+        envelope.Grafo.NosExigencia.Single().OcorrenciasEsperadas.Should().Equal(ocorrenciasNoJson);
+        envelope.Grafo.DocumentosExigidos.Single().FormatosPermitidos.Lista!
+            .Select(static f => f.Formato.ToCodigo()).Should().Equal(formatosNoJson);
+        envelope.Conformidade!.Regras.Select(static r => r.RegraCodigo).Should().Equal(regraCodigosNoJson);
+        envelope.MetadadosFatosCongelados!["COR_RACA"].ValoresDominio.Should().Equal(valoresDominioNoJson);
+
+        RegraAvaliada modalidadesMinimasDecodificada = envelope.Conformidade.Regras
+            .Single(static r => r.RegraCodigo == "REGRA-MODALIDADES-MINIMAS");
+        ((ModalidadesMinimas)modalidadesMinimasDecodificada.Predicado).Codigos.Should().Equal(codigosNoJson);
+
+        RegraAvaliada atendimentoDisponivelDecodificada = envelope.Conformidade.Regras
+            .Single(static r => r.RegraCodigo == "REGRA-ATENDIMENTO-DISPONIVEL");
+        ((AtendimentoDisponivel)atendimentoDisponivelDecodificada.Predicado).Necessidades.Should().Equal(necessidadesNoJson);
+
+        // ── E os bytes recodificados batem, byte a byte, com os congelados. ──
+        processo.RestaurarConfiguracaoCongelada(v1, envelope.Grafo).IsSuccess.Should().BeTrue();
+
+        byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
+            v1.SchemaVersion,
+            new EntradaCanonicalizacao(
+                processo, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade,
+                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados)).Value!.Bytes;
+
+        recodificado.Should().Equal(congelado.Bytes,
+            "reidratar e recanonicalizar os sete conjuntos da issue #1067, todos povoados ao mesmo tempo, tem de " +
+            "reproduzir os bytes congelados inteiros");
     }
 
     internal static JsonObject Envelope(SnapshotCanonico snapshot) =>

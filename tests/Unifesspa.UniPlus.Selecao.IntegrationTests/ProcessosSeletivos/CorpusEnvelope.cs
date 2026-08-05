@@ -318,9 +318,13 @@ internal static class CorpusEnvelope
                 null,
                 null,
                 null,
-                // Dois critérios, EM ORDEM — o encoder não reordena este array (é escalar,
-                // sem chave de conteúdo). Um decoder que o reordenasse produziria bytes
-                // distintos dos congelados (follow-up #863).
+                // Dois critérios FORA da ordem alfabética de propósito (issue #1067): o
+                // encoder ordena este array pela chave de conteúdo — é um conjunto, sem
+                // posição própria entre os critérios — então o envelope sai com
+                // "egresso_escola_publica" antes de "renda_per_capita_ate_1sm",
+                // independente da ordem declarada aqui. Um decoder que preservasse esta
+                // ordem de ENTRADA em vez de ler a canônica já gravada produziria bytes
+                // distintos dos congelados.
                 criteriosCumulativos: codigo.StartsWith("LB", StringComparison.Ordinal)
                     ? ["renda_per_capita_ate_1sm", "egresso_escola_publica"]
                     : ["egresso_escola_publica"],

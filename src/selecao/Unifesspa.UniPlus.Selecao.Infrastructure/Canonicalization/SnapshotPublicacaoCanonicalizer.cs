@@ -330,7 +330,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                     ["remanejamentoDestino"] = modalidade.RemanejamentoDestino,
                     ["remanejamentoPar"] = modalidade.RemanejamentoPar,
                     ["remanejamentoFallback"] = modalidade.RemanejamentoFallback,
-                    ["criteriosCumulativos"] = new JsonArray([.. modalidade.CriteriosCumulativos.Select(static c => (JsonNode?)JsonValue.Create(c))]),
+                    ["criteriosCumulativos"] = OrdenarPorConteudo(modalidade.CriteriosCumulativos.Select(static c => JsonValue.Create(c)!)),
                     ["acaoQuandoIndeferido"] = modalidade.AcaoQuandoIndeferido,
                     ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(modalidade.BaseLegal),
                     ["quantidadeDeclarada"] = modalidade.QuantidadeDeclarada,
@@ -641,7 +641,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["pontoResolucao"] = HashCanonicalComputer.NormalizeNfc(metadado.PontoResolucao),
                 ["binding"] = HashCanonicalComputer.NormalizeNfc(metadado.Binding),
                 ["valoresDominio"] = metadado.ValoresDominio is { } valores
-                    ? new JsonArray([.. valores.Select(static v => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(v)))])
+                    ? OrdenarPorConteudo(valores.Select(static v => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(v))!))
                     : null,
                 ["valoresDominioDeclarados"] = metadado.ValoresDominioDeclarados is { } declarados
                     ? new JsonArray([.. declarados
@@ -693,7 +693,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["chaveDistincao"] = no.ChaveDistincao?.ToCodigo(),
         ["dataReferencia"] = no.DataReferencia?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         ["ocorrenciasEsperadas"] = no.OcorrenciasEsperadas is { } ocorrencias
-            ? new JsonArray([.. ocorrencias.Select(static o => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(o)))])
+            ? OrdenarPorConteudo(ocorrencias.Select(static o => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(o))!))
             : null,
         ["repetePorEntidade"] = no.RepetePorEntidade?.ToCodigo(),
         ["filhos"] = new JsonArray([.. no.Filhos.OrderBy(static f => f.Ordem).Select(static f => (JsonNode)SerializarNo(f))]),
@@ -780,11 +780,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         ["qualquer"] = formatosPermitidos.Qualquer,
         ["lista"] = formatosPermitidos.Lista is { } lista
-            ? new JsonArray([.. lista.Select(static e => new JsonObject
+            ? OrdenarPorConteudo(lista.Select(static e => new JsonObject
             {
                 ["formato"] = e.Formato.ToCodigo(),
                 ["tamanhoMaximoBytesMax"] = e.TamanhoMaximoBytesMax,
-            })])
+            }))
             : null,
     };
 
@@ -849,41 +849,38 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     };
 
     /// <summary>
-    /// Ordenação determinística por <c>RegraId</c> (Guid v7, cronológico) — mesma convenção
-    /// de chave estável já usada para coleções sem ordem semântica própria. Só regras
-    /// aprovadas chegam aqui: o gate já recusou a transição antes de canonicalizar se
-    /// qualquer uma reprovasse (§3.4) — o campo <c>aprovada</c> é mantido por paridade
-    /// estrutural, não porque possa vir falso num snapshot real.
+    /// Ordenação determinística pela CHAVE DE CONTEÚDO (ADR-0109 D9) — os bytes canônicos do
+    /// item inteiro, <b>não</b> o <c>RegraId</c> (Guid v7, cronológico). Ordenar pelo Guid era
+    /// exatamente o vazamento que a chave de conteúdo existe para impedir: duas avaliações que
+    /// aprovam o mesmo conjunto de regras, feitas em execuções distintas (Guids v7 novos a cada
+    /// avaliação), produziriam envelopes diferentes para a mesma configuração. Só regras
+    /// aprovadas chegam aqui: o gate já recusou a transição antes de canonicalizar se qualquer
+    /// uma reprovasse (§3.4) — o campo <c>aprovada</c> é mantido por paridade estrutural, não
+    /// porque possa vir falso num snapshot real.
     /// </summary>
     private static JsonArray SerializarObrigatoriedades(ResultadoConformidade? conformidade)
     {
-        JsonArray array = [];
         if (conformidade is null)
         {
-            return array;
+            return [];
         }
 
-        foreach (RegraAvaliada regra in conformidade.Regras.OrderBy(static r => r.RegraId))
+        return OrdenarPorConteudo(conformidade.Regras.Select(static regra => new JsonObject
         {
-            array.Add(new JsonObject
-            {
-                ["regraId"] = regra.RegraId,
-                ["regraCodigo"] = HashCanonicalComputer.NormalizeNfc(regra.RegraCodigo),
-                ["categoria"] = regra.Categoria.ToString(),
-                ["tipoProcessoCodigoAvaliado"] = HashCanonicalComputer.NormalizeNfc(regra.TipoProcessoCodigoAvaliado),
-                ["predicado"] = SerializarPredicadoObrigatoriedade(regra.Predicado),
-                ["aprovada"] = regra.Aprovada,
-                ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(regra.BaseLegal),
-                ["atoNormativoUrl"] = regra.AtoNormativoUrl is { } url ? HashCanonicalComputer.NormalizeNfc(url) : null,
-                ["portariaInterna"] = regra.PortariaInterna is { } portaria ? HashCanonicalComputer.NormalizeNfc(portaria) : null,
-                ["descricaoHumana"] = HashCanonicalComputer.NormalizeNfc(regra.DescricaoHumana),
-                ["vigenciaInicio"] = regra.VigenciaInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                ["vigenciaFim"] = regra.VigenciaFim?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                ["hash"] = regra.Hash,
-            });
-        }
-
-        return array;
+            ["regraId"] = regra.RegraId,
+            ["regraCodigo"] = HashCanonicalComputer.NormalizeNfc(regra.RegraCodigo),
+            ["categoria"] = regra.Categoria.ToString(),
+            ["tipoProcessoCodigoAvaliado"] = HashCanonicalComputer.NormalizeNfc(regra.TipoProcessoCodigoAvaliado),
+            ["predicado"] = SerializarPredicadoObrigatoriedade(regra.Predicado),
+            ["aprovada"] = regra.Aprovada,
+            ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(regra.BaseLegal),
+            ["atoNormativoUrl"] = regra.AtoNormativoUrl is { } url ? HashCanonicalComputer.NormalizeNfc(url) : null,
+            ["portariaInterna"] = regra.PortariaInterna is { } portaria ? HashCanonicalComputer.NormalizeNfc(portaria) : null,
+            ["descricaoHumana"] = HashCanonicalComputer.NormalizeNfc(regra.DescricaoHumana),
+            ["vigenciaInicio"] = regra.VigenciaInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["vigenciaFim"] = regra.VigenciaFim?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["hash"] = regra.Hash,
+        }));
     }
 
     /// <summary>
@@ -901,7 +898,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             }),
             ModalidadesMinimas p => ("modalidadesMinimas", new JsonObject
             {
-                ["codigos"] = new JsonArray([.. p.Codigos.Select(static c => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(c)))]),
+                ["codigos"] = OrdenarPorConteudo(p.Codigos.Select(static c => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(c))!)),
             }),
             DesempateDeveIncluir p => ("desempateDeveIncluir", new JsonObject
             {
@@ -914,7 +911,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             }),
             AtendimentoDisponivel p => ("atendimentoDisponivel", new JsonObject
             {
-                ["necessidades"] = new JsonArray([.. p.Necessidades.Select(static n => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(n)))]),
+                ["necessidades"] = OrdenarPorConteudo(p.Necessidades.Select(static n => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(n))!)),
             }),
             ConcorrenciaDuplaObrigatoria => ("concorrenciaDuplaObrigatoria", []),
             Customizado p => ("customizado", new JsonObject
@@ -1028,6 +1025,46 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         IOrderedEnumerable<JsonObject> ordenados = itens.OrderBy(
             static item => PerfilAtual.Serializar(item),
+            ComparadorLexicograficoDeBytes.Instancia);
+
+        return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
+    }
+
+    /// <summary>
+    /// A mesma chave de conteúdo (ADR-0109 D9) para os cinco conjuntos que são arrays de
+    /// TEXTO puro — <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>,
+    /// <c>valoresDominio</c> e os dois <c>args</c> de predicado de obrigatoriedade
+    /// (<c>codigos</c>, <c>necessidades</c>). <see cref="PerfilCanonicoV1.SerializarChave"/>
+    /// aceita <see cref="JsonNode"/>, não só <see cref="JsonObject"/> — é o que permite
+    /// ordenar o escalar pelos MESMOS bytes canônicos (NFC incluído) que a emissão final grava,
+    /// sem duplicar a normalização aqui.
+    /// </summary>
+    /// <remarks>
+    /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos cinco vocabulários
+    /// admite <c>null</c> como elemento — <see cref="LeitorEnvelope.Textos"/> já o recusa na
+    /// leitura, e um envelope que o emitisse produziria um documento que o próprio decoder da
+    /// mesma versão rejeitaria. Falha alto aqui, com mensagem própria, em vez de deixar o
+    /// <see langword="null"/> estourar mais adiante dentro da serialização com uma
+    /// <see cref="NullReferenceException"/> sem contexto.
+    /// </remarks>
+    private static JsonArray OrdenarPorConteudo(IEnumerable<JsonValue> itens)
+    {
+        List<JsonValue> lista = [];
+        foreach (JsonValue? item in itens)
+        {
+            if (item is null)
+            {
+                throw new InvalidOperationException(
+                    "Um array de texto do envelope recebeu um elemento nulo antes da ordenação — nenhum dos " +
+                    "conjuntos de texto simples (criteriosCumulativos, ocorrenciasEsperadas, valoresDominio, " +
+                    "codigos, necessidades) admite null como item.");
+            }
+
+            lista.Add(item);
+        }
+
+        IOrderedEnumerable<JsonValue> ordenados = lista.OrderBy(
+            static item => PerfilCanonicoV1.SerializarChave(item),
             ComparadorLexicograficoDeBytes.Instancia);
 
         return new JsonArray([.. ordenados.Select(static item => (JsonNode)item)]);
