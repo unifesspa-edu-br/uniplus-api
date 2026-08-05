@@ -4,6 +4,13 @@
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Serilog.AspNetCore" />
+    <!--
+      Startup project do `dotnet ef` para o PortalDbContext, pelo mesmo motivo do
+      host do monólito: a referência direta faz a versão central valer para o
+      assembly de design-time. PrivateAssets impede que ele atravesse para
+      runtime e publish.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

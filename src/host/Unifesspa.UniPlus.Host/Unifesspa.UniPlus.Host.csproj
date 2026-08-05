@@ -5,6 +5,15 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="WolverineFx.Postgresql" />
+    <!--
+      Startup project obrigatório do `dotnet ef` (os .Infrastructure dos módulos
+      internos são class libraries sem runtimeconfig). A referência direta faz a
+      versão central valer para o assembly de design-time; sem ela o pacote só
+      chegava como transitiva do WolverineFx.EntityFrameworkCore, presa numa
+      versão anterior à do runtime EF Core. PrivateAssets impede que ele
+      atravesse para runtime e publish.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
 
   <!--
