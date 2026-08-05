@@ -158,35 +158,60 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // Story #1059 (UNI-REQ-0072): uma leitura só do catálogo (D4-bis), compartilhada pelo
+        // gate de valor inativo, pela reconferência de coletabilidade abaixo e pelos dois
+        // resolvedores que congelam vocabulário de fato — duas leituras abririam janela para o
+        // gate aprovar sobre um catálogo e um resolvedor congelar sobre outro, publicando o valor
+        // inativo que o gate acabou de recusar.
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader
+            .ListarAsync(cancellationToken)
+            .ConfigureAwait(false);
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo =
+            catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+
+        // Nenhum fato coletado categórico estático pode ter valor inativo no vocabulário
+        // declarado, e nenhum predicado do processo pode citar valor inativo — mesmo de um fato
+        // que este processo não coleta.
+        Result valoresDeDominioAtivos = ConferenciaDeValoresDeDominioAtivos.Conferir(processo, catalogoPorCodigo);
+        if (valoresDeDominioAtivos.IsFailure)
+        {
+            return (Result.Failure(valoresDeDominioAtivos.Error!), []);
+        }
+
         // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
         // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
         // DERIVADO) — sem esta reconferência, um vínculo morto seria congelado numa versão
         // append-only e, pela doutrina do agregado, irreparável depois.
-        Result coletabilidadeDosFatos = await ConferenciaDeColetabilidadeDeFatos
-            .ConferirAsync(processo, fatoCandidatoReader, cancellationToken)
-            .ConfigureAwait(false);
+        Result coletabilidadeDosFatos = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogoPorCodigo);
         if (coletabilidadeDosFatos.IsFailure)
         {
             return (Result.Failure(coletabilidadeDosFatos.Error!), []);
         }
 
         // Story #919 (RN08): congela o metadado de cada fato citado em alguma condição de
-        // gatilho, ao lado da condição bruta {fato, operador, valor} já congelada desde a
-        // 1.2 — I/O resolvido só quando existe ao menos uma condição (mesmo princípio de
-        // "resolve I/O só quando precisa" de DefinirDocumentosExigidosCommandHandler).
+        // gatilho, ao lado da condição bruta {fato, operador, valor} já congelada desde a 1.2.
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
-            await ResolvedorMetadadosFatosCongelados.ResolverAsync(processo, fatoCandidatoReader, cancellationToken)
-                .ConfigureAwait(false);
+            ResolvedorMetadadosFatosCongelados.Resolver(processo, catalogoPorCodigo);
         if (metadadosFatosResult.IsFailure)
         {
             return (Result.Failure(metadadosFatosResult.Error!), []);
+        }
+
+        // Story #1059 (UNI-REQ-0072): os valores que o candidato pode escolher para cada fato de
+        // seleção coletado — do domínio estático do catálogo ou da oferta do próprio processo.
+        Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> valoresSelecionaveisResult =
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogoPorCodigo);
+        if (valoresSelecionaveisResult.IsFailure)
+        {
+            return (Result.Failure(valoresSelecionaveisResult.Error!), []);
         }
 
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
                 processo, dados, documento.HashSha256!,
                 Conformidade: conformidadeLegal.Value,
-                MetadadosFatosCongelados: metadadosFatosResult.Value));
+                MetadadosFatosCongelados: metadadosFatosResult.Value,
+                ValoresSelecionaveisCongelados: valoresSelecionaveisResult.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

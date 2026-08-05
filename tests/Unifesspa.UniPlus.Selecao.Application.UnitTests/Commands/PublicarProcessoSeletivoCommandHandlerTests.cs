@@ -19,11 +19,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura do congelamento de metadado de fato (Story #919, RN08) em
-/// <see cref="PublicarProcessoSeletivoCommandHandler"/>: <see cref="IFatoCandidatoReader"/>
-/// só é consultado quando existe ao menos uma condição de gatilho, o resultado alimenta
+/// <see cref="PublicarProcessoSeletivoCommandHandler"/>: o resultado da resolução alimenta
 /// <see cref="EntradaCanonicalizacao.MetadadosFatosCongelados"/>, e um código de fato que não
-/// resolve aborta a publicação com um erro nomeado ANTES de canonicalizar.
+/// resolve no catálogo aborta a publicação com um erro nomeado ANTES de canonicalizar.
 /// </summary>
+/// <remarks>
+/// Desde a issue #1059 (D4-bis), <see cref="IFatoCandidatoReader.ListarAsync"/> é consultado
+/// UMA vez por congelamento, sempre — mesmo sem condição de gatilho — porque o gate de valor
+/// inativo do domínio precisa do catálogo inteiro independente de o processo ter fato coletado
+/// ou gatilho. É esse catálogo compartilhado, não mais <c>ObterPorCodigoAsync</c> por código,
+/// que <see cref="ResolvedorMetadadosFatosCongelados"/> agora consulta.
+/// </remarks>
 public sealed class PublicarProcessoSeletivoCommandHandlerTests
 {
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
@@ -132,8 +138,8 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             CancellationToken.None);
     }
 
-    [Fact(DisplayName = "Sem condição de gatilho, MetadadosFatosCongelados é null e IFatoCandidatoReader não é consultado")]
-    public async Task Handle_SemCondicaoDeGatilho_NaoConsultaReaderEMetadadosENulo()
+    [Fact(DisplayName = "Sem condição de gatilho, MetadadosFatosCongelados é null mesmo com o catálogo consultado")]
+    public async Task Handle_SemCondicaoDeGatilho_MetadadosENulo()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
 
@@ -145,8 +151,9 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         entradaCapturada.Should().NotBeNull();
         entradaCapturada!.MetadadosFatosCongelados.Should().BeNull(
-            "nenhuma condição de gatilho existe no processo — nada a congelar");
-        _ = await mocks.FatoCandidatoReader.DidNotReceive().ObterPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+            "nenhuma condição de gatilho existe no processo — nada a congelar, mesmo o catálogo tendo sido lido " +
+            "para o gate de valor inativo (D4-bis)");
+        _ = await mocks.FatoCandidatoReader.Received(1).ListarAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Com condição de gatilho resolvida, MetadadosFatosCongelados carrega o metadado do fato citado")]
@@ -158,8 +165,8 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
 
         EntradaCanonicalizacao? entradaCapturada = null;
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo, e => entradaCapturada = e);
-        mocks.FatoCandidatoReader.ObterPorCodigoAsync("MODALIDADE", Arg.Any<CancellationToken>())
-            .Returns(FatoModalidade());
+        mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<FatoCandidatoView>)[FatoModalidade()]);
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento);
 
@@ -183,9 +190,10 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "FATO_INEXISTENTE"), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
+        // O catálogo (D4-bis) não conhece "FATO_INEXISTENTE" — a mesma lista vazia que
+        // NovosMocks já produz por padrão (IFatoCandidatoReader substituto sem ListarAsync
+        // configurado devolve coleção vazia).
         (Mocks mocks, DocumentoEdital documento) = NovosMocks(processo);
-        mocks.FatoCandidatoReader.ObterPorCodigoAsync("FATO_INEXISTENTE", Arg.Any<CancellationToken>())
-            .Returns((FatoCandidatoView?)null);
 
         (Result resposta, IEnumerable<object> eventos) = await HandleAsync(mocks, processo, documento);
 

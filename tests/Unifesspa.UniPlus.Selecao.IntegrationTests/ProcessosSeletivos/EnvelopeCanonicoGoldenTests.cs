@@ -233,10 +233,19 @@ public sealed class EnvelopeCanonicoGoldenTests
     /// item. <c>FormatosPermitidos</c> (Story #918) traz DOIS itens — um com teto por
     /// formato, outro sem — para exercitar as duas variantes da lista na mesma fixture.
     /// </summary>
+    /// <remarks>
+    /// O gatilho cita DOIS fatos na mesma cláusula (AND): <c>MODALIDADE</c> (categórico
+    /// derivado/escopo-processo — <c>valoresDominioDeclarados</c> nulo em
+    /// <c>documentosExigidos.metadadosFatos</c>) e <c>COR_RACA</c> (categórico ESTÁTICO —
+    /// <c>valoresDominioDeclarados</c> populado). Sem o segundo, a variante populada daquele
+    /// bloco não teria cobertura alguma na golden fixture (achado 8).
+    /// </remarks>
     private static DocumentoExigido DocumentoExigidoDeReferencia(Guid exigidoNaFaseId)
     {
-        CondicaoGatilho condicao = CondicaoGatilho.Criar(
+        CondicaoGatilho condicaoModalidade = CondicaoGatilho.Criar(
             0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement("AC")).Value!;
+        CondicaoGatilho condicaoCorRaca = CondicaoGatilho.Criar(
+            0, "COR_RACA", Operador.Em, JsonSerializer.SerializeToElement(new[] { "PRETA", "PARDA" })).Value!;
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
             "Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, "Norma interna do certame").Value!;
         IdadeMaximaEmissao idadeMaximaEmissao = IdadeMaximaEmissao.Criar(
@@ -254,7 +263,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: "ELIMINA",
-            condicoes: [condicao],
+            condicoes: [condicaoModalidade, condicaoCorRaca],
             basesLegais: [baseLegal],
             idadeMaximaEmissao: idadeMaximaEmissao,
             formatosPermitidos: formatosPermitidos,
@@ -294,13 +303,16 @@ public sealed class EnvelopeCanonicoGoldenTests
         documentoEditalId: DocumentoFixo).Value!;
 
     /// <summary>
-    /// Metadado do fato "MODALIDADE" (Story #919, RN08) citado na condição de gatilho de
-    /// <see cref="DocumentoExigidoDeReferencia"/> — exercita <c>metadadosFatos</c> com um item
-    /// real na golden fixture. MODALIDADE é derivado e de escopo-processo (ADR-0116): seus valores
-    /// vêm da oferta congelada, então <c>valoresDominio</c> e <c>valoresDominioDeclarados</c> são
-    /// nulos — o bloco exercita a variante nula.
+    /// Metadado dos fatos citados na condição de gatilho de <see cref="DocumentoExigidoDeReferencia"/>
+    /// (Story #919, RN08) — exercita <c>metadadosFatos</c> com DOIS itens reais na golden fixture.
+    /// MODALIDADE é derivado e de escopo-processo (ADR-0116): seus valores vêm da oferta congelada,
+    /// então <c>valoresDominio</c> e <c>valoresDominioDeclarados</c> são nulos. COR_RACA é categórico
+    /// ESTÁTICO: <c>valoresDominioDeclarados</c> é populado — a variante que, sem este fato no
+    /// gatilho, não teria cobertura alguma na golden fixture (achado 8). A inserção fora de ordem
+    /// (PRETA antes de BRANCA) e a ordem não-zero de PRETA/PARDA provam que é o ENCODER — não a
+    /// ordem de inserção neste dicionário de teste — quem ordena por <c>Ordem</c>/<c>Codigo</c>.
     /// </summary>
-    private static Dictionary<string, MetadadoFatoCongelado> MetadadosFatosDeReferencia() =>
+    internal static Dictionary<string, MetadadoFatoCongelado> MetadadosFatosDeReferencia() =>
         new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal)
         {
             ["MODALIDADE"] = new MetadadoFatoCongelado(
@@ -312,11 +324,46 @@ public sealed class EnvelopeCanonicoGoldenTests
                 Binding: "REGRA_DERIVACAO:MODALIDADE",
                 ValoresDominio: null,
                 ValoresDominioDeclarados: null),
+            ["COR_RACA"] = new MetadadoFatoCongelado(
+                Codigo: "COR_RACA",
+                Dominio: "CATEGORICO",
+                Origem: "DECLARADO",
+                Cardinalidade: "ESCALAR",
+                PontoResolucao: "INSCRICAO",
+                Binding: "CAMPO_INSCRICAO:COR_RACA",
+                ValoresDominio: ["BRANCA", "PRETA", "PARDA"],
+                ValoresDominioDeclarados: [
+                    new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
+                    new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
+                    new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
+                ]),
+        };
+
+    /// <summary>
+    /// Os valores selecionáveis dos dois fatos coletados de <see cref="ProcessoDeReferencia"/>
+    /// (COR_RACA, RENDA — ambos <c>SELECAO_UNICA</c>, issue #1059) — totalidade exigida pelo
+    /// encoder (D1-ter). COR_RACA reusa o MESMO vocabulário de <see cref="MetadadosFatosDeReferencia"/>
+    /// — é o mesmo fato do catálogo, congelado nos dois blocos.
+    /// </summary>
+    internal static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveisDeReferencia() =>
+        new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+        {
+            ["COR_RACA"] = [
+                new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
+                new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
+                new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
+            ],
+            ["RENDA"] = [
+                new ValorDominioDeclaradoCongelado("ATE_1_SM", "Renda familiar per capita de até 1 salário mínimo.", 0),
+                new ValorDominioDeclaradoCongelado("ACIMA_1_SM", "Renda familiar per capita acima de 1 salário mínimo.", 1),
+            ],
         };
 
     internal static SnapshotCanonico CanonicalizarReferencia() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
+            ProcessoDeReferencia(), DadosDeReferencia(), HashFixo,
+            MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
+            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia()));
 
     /// <summary>
     /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) —
@@ -352,7 +399,9 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     private static SnapshotCanonico CanonicalizarReferenciaComCascata() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
+            ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo,
+            MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
+            ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia()));
 
     // ── CA-03 — política: toda schema_version declarada tem a sua fixture ──
 
@@ -482,11 +531,95 @@ public sealed class EnvelopeCanonicoGoldenTests
     {
         ProcessoSeletivo processo = ProcessoDeReferencia();
         DadosEdital dados = DadosDeReferencia();
+        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadados = MetadadosFatosDeReferencia();
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = ValoresSelecionaveisDeReferencia();
 
-        byte[] primeira = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, HashFixo)).Bytes;
-        byte[] segunda = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, HashFixo)).Bytes;
+        byte[] primeira = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+            processo, dados, HashFixo, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
+        byte[] segunda = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+            processo, dados, HashFixo, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
 
         segunda.Should().Equal(primeira, "a projeção é pura — mesma entrada, mesmos bytes");
+    }
+
+    // ── Issue #1059 (UNI-REQ-0072) — totalidade: o encoder LANÇA quando falta entrada para um fato de seleção ──
+
+    [Fact(DisplayName = "SerializarFatosColetados lança quando um fato de seleção coletado não tem entrada no dicionário de valores selecionáveis")]
+    public void SerializarFatosColetados_SemEntradaParaFatoDeSelecao_Lanca()
+    {
+        // O processo de referência coleta COR_RACA e RENDA, ambos SELECAO_UNICA — canonicalizar
+        // SEM passar ValoresSelecionaveisCongelados (dicionário nulo) tem de LANÇAR, nunca emitir
+        // "valoresSelecionaveis": [] por omissão. É a contraprova de D1-ter: sem esta guarda, um
+        // handler que esquecesse de resolver o dicionário publicaria um seletor MUDO, e a prova
+        // de round-trip passaria mesmo assim — o round-trip prova preservação do que foi emitido,
+        // não completude do que devia ser.
+        ProcessoSeletivo processo = ProcessoDeReferencia();
+        DadosEdital dados = DadosDeReferencia();
+
+        Action canonicalizarSemDicionario = () => Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(processo, dados, HashFixo, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
+
+        canonicalizarSemDicionario.Should().Throw<InvalidOperationException>()
+            .WithMessage("*COR_RACA*",
+                "COR_RACA é o primeiro fato de seleção coletado (Ordem 0) — a ausência de entrada para ele é o " +
+                "primeiro erro de programação que o encoder encontra");
+    }
+
+    // ── Issue #1059 (UNI-REQ-0072) — ordem: bate com a origem, é canônica e desempata por código ──
+
+    [Fact(DisplayName = "valoresSelecionaveis[].ordem e metadadosFatos[].valoresDominioDeclarados[].ordem batem com a Ordem de origem, ordenados por Ordem/Codigo — independente da ordem de inserção no dicionário")]
+    public void Ordem_BateComAOrigemEEhCanonica_NosDoisBlocos()
+    {
+        JsonObject envelope = EnvelopeComoObjeto();
+
+        JsonObject fatoCorRaca = envelope["fatosColetados"]!.AsArray()
+            .Single(f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!.AsObject();
+        JsonArray valoresSelecionaveisCorRaca = fatoCorRaca["valoresSelecionaveis"]!.AsArray();
+
+        // A entrada de teste insere PRETA (ordem 1) ANTES de BRANCA (ordem 0) — se o encoder
+        // dependesse da ordem de inserção do dicionário, o array sairia [PRETA, BRANCA]. Ele sai
+        // [BRANCA, PRETA, PARDA]: por Ordem ascendente, não por ordem de chegada.
+        valoresSelecionaveisCorRaca.Select(v => v!["valorCodigo"]!.GetValue<string>())
+            .Should().Equal(["BRANCA", "PRETA", "PARDA"]);
+        valoresSelecionaveisCorRaca.Select(v => v!["ordem"]!.GetValue<int>())
+            .Should().Equal([0, 1, 2], "ordem bate com a Ordem de origem de cada valor — 0 para BRANCA, 1 para PRETA, 2 para PARDA");
+
+        JsonObject metadadoCorRaca = envelope["documentosExigidos"]!["metadadosFatos"]!.AsArray()
+            .Single(m => m!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!.AsObject();
+        JsonArray declaradosCorRaca = metadadoCorRaca["valoresDominioDeclarados"]!.AsArray();
+
+        declaradosCorRaca.Select(v => v!["valorCodigo"]!.GetValue<string>())
+            .Should().Equal(["BRANCA", "PRETA", "PARDA"],
+                "o mesmo vocabulário do MESMO fato do catálogo, congelado nos DOIS blocos, na MESMA ordem canônica");
+        declaradosCorRaca.Select(v => v!["ordem"]!.GetValue<int>()).Should().Equal([0, 1, 2]);
+    }
+
+    [Fact(DisplayName = "Dois valores com a MESMA Ordem desempatam por Codigo de forma determinística — nos dois blocos")]
+    public void Ordem_ComEmpate_DesempataPorCodigoDeFormaDeterministica()
+    {
+        IReadOnlyList<ValorDominioDeclaradoCongelado> empatados =
+        [
+            new ValorDominioDeclaradoCongelado("ZETA", "Zeta.", 0),
+            new ValorDominioDeclaradoCongelado("ALFA", "Alfa.", 0),
+        ];
+
+        ProcessoSeletivo processo = ProcessoDeReferencia();
+        DadosEdital dados = DadosDeReferencia();
+        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadados = MetadadosFatosDeReferencia();
+
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =
+            new(ValoresSelecionaveisDeReferencia()) { ["COR_RACA"] = empatados };
+
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+            processo, dados, HashFixo, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis));
+
+        JsonArray valoresCorRaca = EnvelopeCodecRoundTripTests.Envelope(canonico)["fatosColetados"]!.AsArray()
+            .Single(f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["valoresSelecionaveis"]!.AsArray();
+
+        valoresCorRaca.Select(v => v!["valorCodigo"]!.GetValue<string>()).Should().Equal(
+            ["ALFA", "ZETA"],
+            "empate de Ordem (ambos 0) desempata por Codigo ordinal — 'ALFA' antes de 'ZETA', " +
+            "independente da ordem em que os dois entraram na lista");
     }
 
     // ── CA-12 — toda referência a regra é a tripla {codigo, versao, hash} ──

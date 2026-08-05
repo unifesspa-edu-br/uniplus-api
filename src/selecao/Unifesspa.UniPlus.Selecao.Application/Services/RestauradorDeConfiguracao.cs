@@ -59,7 +59,7 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
                 sombra, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade,
-                envelope.MetadadosFatosCongelados));
+                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados));
 
         if (recodificado.IsFailure)
         {

@@ -41,6 +41,18 @@ public sealed class ColetabilidadeDeFatosGateTests
         Binding: "REGRA_DERIVACAO:MODALIDADE",
         ValoresDominioDeclarados: null);
 
+    // Story #1059 (UNI-REQ-0072): categórico ESTÁTICO — os valores selecionáveis do fato
+    // coletado vêm de ValoresDominioDeclarados (FatoValorDominio no catálogo real), nunca do
+    // array legado ValoresDominio; todos ativos, para não disparar o gate de valor inativo.
+    private static readonly IReadOnlyList<FatoValorDominioViewItem> ValoresCorRaca =
+    [
+        new("BRANCA", "Autodeclaração de cor/raça branca.", 0, true),
+        new("PRETA", "Autodeclaração de cor/raça preta.", 1, true),
+        new("PARDA", "Autodeclaração de cor/raça parda.", 2, true),
+        new("AMARELA", "Autodeclaração de cor/raça amarela.", 3, true),
+        new("INDIGENA", "Autodeclaração de povo indígena.", 4, true),
+    ];
+
     private static FatoCandidatoView FatoCorRacaAindaDeclarado() => new(
         Id: Guid.CreateVersion7(),
         Codigo: "COR_RACA",
@@ -49,10 +61,10 @@ public sealed class ColetabilidadeDeFatosGateTests
         Dominio: "CATEGORICO",
         Origem: "DECLARADO",
         Cardinalidade: "ESCALAR",
-        ValoresDominio: ["BRANCA", "PRETA", "PARDA", "AMARELA", "INDIGENA"],
+        ValoresDominio: [.. ValoresCorRaca.Select(static v => v.Codigo)],
         PontoResolucao: "INSCRICAO",
         Binding: "CAMPO_INSCRICAO:COR_RACA",
-        ValoresDominioDeclarados: null);
+        ValoresDominioDeclarados: ValoresCorRaca);
 
     private static FatoColetado FatoColetadoModalidade() =>
         FatoColetado.Criar("MODALIDADE", 0, "Modalidade", TipoRenderizacao.SelecaoUnica, obrigatorio: true, null).Value!;

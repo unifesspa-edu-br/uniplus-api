@@ -238,7 +238,8 @@ public sealed class EnvelopeCodecRoundTripTests
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
-                processo, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade));
+                processo, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade,
+                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
@@ -441,7 +442,9 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.Dados,
                 reidratado.Value.HashDocumento,
                 reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade)).Value!.Bytes;
+                reidratado.Value.Conformidade,
+                reidratado.Value.MetadadosFatosCongelados,
+                reidratado.Value.ValoresSelecionaveisCongelados)).Value!.Bytes;
 
         return (congelado.Bytes, bytesMutados, recodificados);
     }
@@ -491,7 +494,8 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.HashDocumento,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
-                reidratado.Value.MetadadosFatosCongelados)).Value!.Bytes;
+                reidratado.Value.MetadadosFatosCongelados,
+                reidratado.Value.ValoresSelecionaveisCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(fixture,
             "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +
@@ -549,21 +553,13 @@ public sealed class EnvelopeCodecRoundTripTests
     public void RoundTrip13_ProcessoDeReferenciaComExigenciaDocumentalRica()
     {
         ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
-        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadadosFatos = new Dictionary<string, MetadadoFatoCongelado>(StringComparer.Ordinal)
-        {
-            ["MODALIDADE"] = new MetadadoFatoCongelado(
-                Codigo: "MODALIDADE",
-                Dominio: "CATEGORICO",
-                Origem: "DERIVADO",
-                Cardinalidade: "MULTIVALORADO",
-                PontoResolucao: "INSCRICAO",
-                Binding: "REGRA_DERIVACAO:MODALIDADE",
-                ValoresDominio: null,
-                ValoresDominioDeclarados: null),
-        };
+        IReadOnlyDictionary<string, MetadadoFatoCongelado> metadadosFatos = EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia();
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =
+            EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia();
         EntradaCanonicalizacao entrada = new(
             processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo,
-            MetadadosFatosCongelados: metadadosFatos);
+            MetadadosFatosCongelados: metadadosFatos,
+            ValoresSelecionaveisCongelados: valoresSelecionaveis);
         // Story #923 (bump 1.4): o canonicalizador VIVO passou a emitir 1.4 — esta suíte prova
         // especificamente o EnvelopeCodecV13 (o encoder 1.3 AGORA CONGELADO), não a versão
         // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
@@ -590,12 +586,13 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.HashDocumento,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
-                reidratado.Value.MetadadosFatosCongelados)).Value!.Bytes;
+                reidratado.Value.MetadadosFatosCongelados,
+                reidratado.Value.ValoresSelecionaveisCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
-            "idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes, metadadosFatos) tem de reproduzir os bytes " +
-            "congelados inteiros — qualquer campo perdido pelo decoder do bloco documentosExigidos sai daqui como divergência");
+            "idadeMaximaEmissao, formatoPermitido, tamanhoMaximoBytes, metadadosFatos, valoresSelecionaveis) tem de " +
+            "reproduzir os bytes congelados inteiros — qualquer campo perdido pelo decoder sai daqui como divergência");
     }
 
     // ── Round-trip 1.4 — o bloco novo, arvoreSatisfacao (Story #923) ──

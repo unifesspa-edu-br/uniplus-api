@@ -135,7 +135,10 @@ internal static class EnvelopeCodecV13
     /// Simétrico de <c>SnapshotPublicacaoCanonicalizer.SerializarMetadadosFatos</c>: array
     /// ordenado por <c>codigo</c> (o encoder já ordena — este leitor não reordena, só
     /// decodifica item a item), chaves fechadas por item. Código duplicado no array é
-    /// envelope malformado (o encoder nunca emite duas entradas para o mesmo fato).
+    /// envelope malformado (o encoder nunca emite duas entradas para o mesmo fato). Dentro de
+    /// cada item, <c>valoresDominioDeclarados[]</c> (quando presente) recebe a mesma disciplina:
+    /// <c>ordem</c> obrigatória e não negativa, <c>valorCodigo</c> sem repetição
+    /// (<see cref="LerValoresDominioDeclarados"/>).
     /// </summary>
     private static Dictionary<string, MetadadoFatoCongelado> LerMetadadosFatos(LeitorEnvelope leitor, JsonObject bloco)
     {
@@ -215,7 +218,11 @@ internal static class EnvelopeCodecV13
         return leitor.Textos(item, "valoresDominio", pathPai);
     }
 
-    /// <summary>Mesma técnica de <see cref="LerValoresDominio"/> para o campo nulo-ou-array.</summary>
+    /// <summary>
+    /// Mesma técnica de <see cref="LerValoresDominio"/> para o campo nulo-ou-array. Cada item
+    /// exige <c>ordem</c> (issue #1059, UNI-REQ-0072) — não negativa — e <c>valorCodigo</c> não
+    /// pode se repetir dentro do array: o encoder nunca emite duas entradas para o mesmo valor.
+    /// </summary>
     private static IReadOnlyList<ValorDominioDeclaradoCongelado>? LerValoresDominioDeclarados(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
         string path = $"{pathPai}.valoresDominioDeclarados";
@@ -231,20 +238,35 @@ internal static class EnvelopeCodecV13
         }
 
         List<ValorDominioDeclaradoCongelado> valores = [];
+        HashSet<string> codigos = new(StringComparer.Ordinal);
         for (int i = 0; i < array.Count; i++)
         {
             string itemPath = $"{path}[{i}]";
             JsonObject valorItem = leitor.ItemObjeto(array, i, path);
-            leitor.ExigirChaves(valorItem, itemPath, "valorCodigo", "descricao");
+            leitor.ExigirChaves(valorItem, itemPath, "valorCodigo", "descricao", "ordem");
 
             string codigoValor = leitor.TextoNaoVazio(valorItem, "valorCodigo", itemPath);
             string? descricao = leitor.TextoOpcional(valorItem, "descricao", itemPath);
+            int ordem = leitor.Inteiro(valorItem, "ordem", itemPath);
             if (leitor.Falhou)
             {
                 return null;
             }
 
-            valores.Add(new ValorDominioDeclaradoCongelado(codigoValor, descricao));
+            if (ordem < 0)
+            {
+                return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{itemPath}.ordem' não pode ser negativa."));
+            }
+
+            if (!codigos.Add(codigoValor))
+            {
+                return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado,
+                    $"'{path}': o valor '{codigoValor}' aparece mais de uma vez."));
+            }
+
+            valores.Add(new ValorDominioDeclaradoCongelado(codigoValor, descricao, ordem));
         }
 
         return valores;

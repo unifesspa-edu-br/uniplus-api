@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 
 using Kernel.Results;
@@ -20,39 +18,30 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 /// <remarks>
 /// Espelha <see cref="ResolvedorMetadadosFatosCongelados"/> em estilo: helper estático
-/// compartilhado pelos três handlers que congelam. Usa
-/// <see cref="IFatoCandidatoReader.ListarAsync"/> (o catálogo inteiro, baixo volume) em vez de
-/// uma consulta por código — todo <see cref="FatoColetado"/> do processo precisa ser revisitado,
-/// ao contrário do congelamento de metadado, que só revisita os poucos fatos citados em gatilho
-/// de documento.
+/// compartilhado pelos três handlers que congelam. Não faz I/O próprio — recebe o catálogo
+/// inteiro (baixo volume) já lido UMA vez pelo handler, compartilhado com o gate de valor
+/// inativo e os dois resolvedores: duas leituras abririam janela para um gate aprovar sobre um
+/// catálogo e outro passo congelar sobre outro.
 /// </remarks>
 internal static class ConferenciaDeColetabilidadeDeFatos
 {
     public const string FatoColetadoNaoMaisDeclarado = "ProcessoSeletivo.FatoColetadoNaoMaisDeclarado";
 
-    public static async Task<Result> ConferirAsync(
+    public static Result Conferir(
         ProcessoSeletivo processo,
-        IFatoCandidatoReader fatoCandidatoReader,
-        CancellationToken cancellationToken)
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
+        ArgumentNullException.ThrowIfNull(catalogo);
 
         if (processo.FatosColetados.Count == 0)
         {
             return Result.Success();
         }
 
-        IReadOnlyList<FatoCandidatoView> catalogo = await fatoCandidatoReader
-            .ListarAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<string, FatoCandidatoView> porCodigo = catalogo
-            .ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-
         FatoColetado? naoColetavel = processo.FatosColetados
             .OrderBy(static f => f.Ordem)
-            .FirstOrDefault(f => !porCodigo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
+            .FirstOrDefault(f => !catalogo.TryGetValue(f.FatoCodigo, out FatoCandidatoView? fato)
                 || !ColetabilidadeDeFato.EhColetavel(fato));
 
         if (naoColetavel is not null)

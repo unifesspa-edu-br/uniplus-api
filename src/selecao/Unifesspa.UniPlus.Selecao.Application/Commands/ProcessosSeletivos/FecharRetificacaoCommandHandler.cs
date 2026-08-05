@@ -206,13 +206,31 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
+        // Story #1059 (UNI-REQ-0072): uma leitura só do catálogo (D4-bis), compartilhada pelo
+        // gate de valor inativo, pela reconferência de coletabilidade abaixo e pelos dois
+        // resolvedores que congelam vocabulário de fato — duas leituras abririam janela para o
+        // gate aprovar sobre um catálogo e um resolvedor congelar sobre outro, publicando o valor
+        // inativo que o gate acabou de recusar.
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader
+            .ListarAsync(cancellationToken)
+            .ConfigureAwait(false);
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo =
+            catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
+
+        // Nenhum fato coletado categórico estático pode ter valor inativo no vocabulário
+        // declarado, e nenhum predicado do processo pode citar valor inativo — mesmo de um fato
+        // que este processo não coleta.
+        Result valoresDeDominioAtivos = ConferenciaDeValoresDeDominioAtivos.Conferir(processo, catalogoPorCodigo);
+        if (valoresDeDominioAtivos.IsFailure)
+        {
+            return (Result.Failure(valoresDeDominioAtivos.Error!), []);
+        }
+
         // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
         // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
         // DERIVADO) — a configuração EDITADA pela sessão pode conter um vínculo (novo ou
         // preexistente) que deixou de ser coletável.
-        Result coletabilidadeDosFatos = await ConferenciaDeColetabilidadeDeFatos
-            .ConferirAsync(processo, fatoCandidatoReader, cancellationToken)
-            .ConfigureAwait(false);
+        Result coletabilidadeDosFatos = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogoPorCodigo);
         if (coletabilidadeDosFatos.IsFailure)
         {
             return (Result.Failure(coletabilidadeDosFatos.Error!), []);
@@ -223,11 +241,19 @@ public static class FecharRetificacaoCommandHandler
         // documento vivo (novo ou alterado), e congelar sem este bloco deixaria o metadado
         // incompleto (vazio) para esta versão.
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
-            await ResolvedorMetadadosFatosCongelados.ResolverAsync(processo, fatoCandidatoReader, cancellationToken)
-                .ConfigureAwait(false);
+            ResolvedorMetadadosFatosCongelados.Resolver(processo, catalogoPorCodigo);
         if (metadadosFatosResult.IsFailure)
         {
             return (Result.Failure(metadadosFatosResult.Error!), []);
+        }
+
+        // Story #1059 (UNI-REQ-0072): os valores que o candidato pode escolher para cada fato de
+        // seleção coletado — a configuração EDITADA pela sessão pode ter alterado a coleta.
+        Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> valoresSelecionaveisResult =
+            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogoPorCodigo);
+        if (valoresSelecionaveisResult.IsFailure)
+        {
+            return (Result.Failure(valoresSelecionaveisResult.Error!), []);
         }
 
         // A configuração canonicalizada é a VIVA — que é, agora, a EDITADA pela sessão. É a
@@ -240,7 +266,8 @@ public static class FecharRetificacaoCommandHandler
                 documento.HashSha256!,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
                 conformidadeLegal.Value,
-                metadadosFatosResult.Value));
+                metadadosFatosResult.Value,
+                valoresSelecionaveisResult.Value));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

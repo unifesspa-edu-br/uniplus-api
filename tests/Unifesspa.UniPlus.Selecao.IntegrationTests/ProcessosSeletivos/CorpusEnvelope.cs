@@ -387,9 +387,54 @@ internal static class CorpusEnvelope
         periodoInscricaoFim: new DateOnly(2026, 4, 15),
         documentoEditalId: Documento).Value!;
 
+    /// <summary>
+    /// Os valores selecionáveis dos dois fatos coletados de <see cref="ProcessoRico"/>
+    /// (COR_RACA, RENDA — ambos <c>SELECAO_UNICA</c>, UNI-REQ-0072): totalidade exigida pelo
+    /// encoder (D1-ter) desde que qualquer processo colete um fato de seleção. Ordens não-zero
+    /// e fora de ordem de código de propósito — a ordenação canônica (Ordem, depois Codigo) é
+    /// responsabilidade do ENCODER, não de quem monta este dicionário.
+    /// </summary>
+    /// <param name="permutarValores">
+    /// Inverte a ordem de inserção de cada lista sem mudar o conteúdo — a prova de que os
+    /// bytes finais dependem só do <c>Ordem</c>/<c>Codigo</c> de cada valor, nunca da ordem em
+    /// que a lista chegou ao encoder.
+    /// </param>
+    internal static IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveisRicos(
+        bool permutarValores = false)
+    {
+        List<ValorDominioDeclaradoCongelado> corRaca =
+        [
+            new ValorDominioDeclaradoCongelado("BRANCA", "Autodeclaração de cor/raça branca.", 0),
+            new ValorDominioDeclaradoCongelado("PRETA", "Autodeclaração de cor/raça preta.", 1),
+            new ValorDominioDeclaradoCongelado("PARDA", "Autodeclaração de cor/raça parda.", 2),
+        ];
+        List<ValorDominioDeclaradoCongelado> renda =
+        [
+            new ValorDominioDeclaradoCongelado("ATE_1_SM", "Renda familiar per capita de até 1 salário mínimo.", 0),
+            new ValorDominioDeclaradoCongelado("ACIMA_1_SM", "Renda familiar per capita acima de 1 salário mínimo.", 1),
+        ];
+
+        if (permutarValores)
+        {
+            corRaca.Reverse();
+            renda.Reverse();
+        }
+
+        return new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
+        {
+            ["COR_RACA"] = corRaca,
+            ["RENDA"] = renda,
+        };
+    }
+
     internal static EntradaCanonicalizacao Entrada(
-        ProcessoSeletivo processo, RetificacaoInfo? retificacao = null, ResultadoConformidade? conformidade = null) =>
-        new(processo, DadosRicos(), HashDocumento, retificacao, conformidade);
+        ProcessoSeletivo processo,
+        RetificacaoInfo? retificacao = null,
+        ResultadoConformidade? conformidade = null,
+        bool permutarValoresSelecionaveis = false) =>
+        new(
+            processo, DadosRicos(), HashDocumento, retificacao, conformidade,
+            ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis));
 
     /// <summary>
     /// Uma <see cref="VersaoConfiguracao"/> montada com <b>ids de ato fixos</b>, para que

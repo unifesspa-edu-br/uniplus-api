@@ -21,25 +21,28 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// em estilo: helper estático compartilhado pelos três handlers que congelam
 /// (<c>Publicar</c>, <c>Retificar</c>, <c>FecharRetificacao</c>) — os três precisam do
 /// mesmo metadado congelado, pela mesma razão (qualquer um deles pode congelar uma versão
-/// com gatilho de documento vivo).
+/// com gatilho de documento vivo). Não faz I/O próprio: recebe o catálogo já lido pelo
+/// handler (uma leitura só por congelamento, compartilhada com a conferência de
+/// coletabilidade, o gate de valor inativo e o resolvedor de valores selecionáveis) — duas
+/// leituras abririam janela para o gate aprovar sobre um catálogo e este resolvedor congelar
+/// sobre outro.
 /// </remarks>
 internal static class ResolvedorMetadadosFatosCongelados
 {
     /// <summary>
-    /// <see langword="null"/> quando o processo não tem nenhuma condição de gatilho — nenhum
-    /// I/O é disparado nesse caso. Quando existe ao menos uma, todo código referenciado tem
-    /// de resolver: o vocabulário de fatos é fechado e append-only (ADR-0111), então um
-    /// código que não resolve é defesa em profundidade — nunca deveria acontecer, mas aborta
-    /// o congelamento com um erro nomeado em vez de deixar o canonicalizador congelar um
+    /// <see langword="null"/> quando o processo não tem nenhuma condição de gatilho. Quando
+    /// existe ao menos uma, todo código referenciado tem de resolver contra
+    /// <paramref name="catalogo"/>: o vocabulário de fatos é fechado e append-only (ADR-0111),
+    /// então um código que não resolve é defesa em profundidade — nunca deveria acontecer, mas
+    /// aborta o congelamento com um erro nomeado em vez de deixar o canonicalizador congelar um
     /// metadado incompleto em silêncio.
     /// </summary>
-    public static async Task<Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>> ResolverAsync(
+    public static Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> Resolver(
         ProcessoSeletivo processo,
-        IFatoCandidatoReader fatoCandidatoReader,
-        CancellationToken cancellationToken)
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
+        ArgumentNullException.ThrowIfNull(catalogo);
 
         IReadOnlyList<string> codigos = [.. processo.DocumentosExigidos
             .SelectMany(static d => d.Condicoes)
@@ -54,10 +57,7 @@ internal static class ResolvedorMetadadosFatosCongelados
         Dictionary<string, MetadadoFatoCongelado> metadados = new(StringComparer.Ordinal);
         foreach (string codigo in codigos)
         {
-            FatoCandidatoView? fato = await fatoCandidatoReader
-                .ObterPorCodigoAsync(codigo, cancellationToken)
-                .ConfigureAwait(false);
-            if (fato is null)
+            if (!catalogo.TryGetValue(codigo, out FatoCandidatoView? fato))
             {
                 return Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Failure(new DomainError(
                     "ProcessoSeletivo.FatoCongeladoNaoEncontrado",
@@ -74,7 +74,7 @@ internal static class ResolvedorMetadadosFatosCongelados
                 fato.Binding,
                 fato.ValoresDominio,
                 fato.ValoresDominioDeclarados?.Count > 0
-                    ? [.. fato.ValoresDominioDeclarados.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao))]
+                    ? [.. fato.ValoresDominioDeclarados.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))]
                     : null);
         }
 

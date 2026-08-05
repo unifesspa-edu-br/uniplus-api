@@ -39,12 +39,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// que chegasse até ele produziria bytes distintos dos da forma pré-composta.
 /// </para>
 /// <para>
-/// <strong>Leitura do bloco "vagas" vs. "distribuição" (ADR-0100 item 10):</strong>
-/// o modelo atual não tem um motor de cálculo de vagas — <c>ConfiguracaoDistribuicaoVagas</c>
-/// já é o conjunto de INPUTS (voBase, PR, regra, modalidades); o
-/// <c>QuadroDeVagas</c> (quantidade por modalidade) é output derivado de um
-/// motor futuro. Por isso "vagas" serializa como stub
-/// <c>nao_construido</c> e "distribuição" carrega os inputs reais.
+/// <strong>Leitura do bloco "vagas" vs. "distribuição" (ADR-0100 item 10, issue #848/ADR-0115):</strong>
+/// <c>ConfiguracaoDistribuicaoVagas</c> é o conjunto de INPUTS (voBase, PR, regra, modalidades);
+/// "vagas" é o <c>QuadroDeVagas</c> — a quantidade por modalidade, calculada no ramo federal
+/// (Lei 12.711) ou fixada no institucional — sempre materializado junto da configuração, não
+/// mais stub. Congelar o insumo ("distribuição") ao lado do output derivado ("vagas") é o que
+/// torna a prova de reprodutibilidade não-tautológica: reidratar recompõe o insumo, o agregado
+/// recalcula o quadro a partir dele, e o round-trip compara os bytes dos dois blocos.
 /// </para>
 /// <para>
 /// <strong>Ordenação determinística das coleções (ADR-0109 D9):</strong>
@@ -107,6 +108,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// (título, termo de aceite) e acrescenta <c>rotulo</c>/<c>tipoRenderizacao</c>/
     /// <c>obrigatorio</c> a cada item de <c>fatosColetados</c> — a apresentação do campo no
     /// formulário de inscrição.
+    /// Issue #1059 (UNI-REQ-0072): sob a MESMA <c>0.0.5</c> (regime pré-produção, reescrita no
+    /// lugar), cada item de <c>fatosColetados</c> ganha <c>valoresSelecionaveis</c> — as opções
+    /// que o candidato pode escolher, quando o tipo de renderização é de seleção — e
+    /// <c>documentosExigidos.metadadosFatos[].valoresDominioDeclarados[]</c> ganha <c>ordem</c>,
+    /// que até aqui era descartada no congelamento.
     /// </remarks>
     internal const string SchemaVersionAtual = "0.0.5";
 
@@ -163,7 +169,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["divulgacao"] = NaoConstruido.DeepClone(),
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
             ["identidadesUnidade"] = SerializarIdentidadesUnidade(processo),
-            ["fatosColetados"] = SerializarFatosColetados(processo.FatosColetados),
+            ["fatosColetados"] = SerializarFatosColetados(processo.FatosColetados, entrada.ValoresSelecionaveisCongelados),
             ["regrasDerivacao"] = SerializarRegrasDerivacao(processo.RegrasDerivacao),
             ["grafoDependencia"] = SerializarGrafoDependencia(processo),
             ["versaoInterpretador"] = MotorDerivacao.VersaoSemantica,
@@ -638,11 +644,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                     ? new JsonArray([.. valores.Select(static v => JsonValue.Create(HashCanonicalComputer.NormalizeNfc(v)))])
                     : null,
                 ["valoresDominioDeclarados"] = metadado.ValoresDominioDeclarados is { } declarados
-                    ? new JsonArray([.. declarados.Select(static d => (JsonNode)new JsonObject
-                    {
-                        ["valorCodigo"] = HashCanonicalComputer.NormalizeNfc(d.Codigo),
-                        ["descricao"] = d.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
-                    })])
+                    ? new JsonArray([.. declarados
+                        .OrderBy(static d => d.Ordem)
+                        .ThenBy(static d => d.Codigo, StringComparer.Ordinal)
+                        .Select(static d => (JsonNode)new JsonObject
+                        {
+                            ["valorCodigo"] = HashCanonicalComputer.NormalizeNfc(d.Codigo),
+                            ["descricao"] = d.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
+                            ["ordem"] = d.Ordem,
+                        })])
                     : null,
             });
         }
@@ -1035,13 +1045,46 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// de coleta (total e única — a mesma que dá sentido a "fato anterior"). A pré-condição de cada
     /// fato é a mesma forma DNF de <see cref="SerializarCondicaoGatilho"/> — <c>null</c> quando o
     /// fato é coletado incondicionalmente. <c>rotulo</c>/<c>tipoRenderizacao</c>/<c>obrigatorio</c>
-    /// são a apresentação do campo no formulário de inscrição (Story #559).
+    /// são a apresentação do campo no formulário de inscrição (Story #559); <c>valoresSelecionaveis</c>
+    /// (issue #1059, UNI-REQ-0072) são as opções que o candidato pode escolher.
     /// </summary>
-    internal static JsonArray SerializarFatosColetados(IEnumerable<FatoColetado> fatos)
+    /// <remarks>
+    /// <c>valoresSelecionaveis</c> obedece a bicondicional com <c>tipoRenderizacao</c>:
+    /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> ⟺ array (possivelmente vazio);
+    /// <c>BOOLEANO</c>/<c>NUMERO</c> ⟺ <see langword="null"/>. <paramref name="valoresSelecionaveisCongelados"/>
+    /// não é revalidado contra o catálogo — quem garante que ele tem uma entrada para todo fato de
+    /// seleção, ANTES de canonicalizar, é o handler (<c>ResolvedorValoresSelecionaveisCongelados</c>);
+    /// a ausência de entrada para um fato de seleção é erro de PROGRAMAÇÃO, não lista vazia — este
+    /// método LANÇA nesse caso, nunca emite <c>[]</c> por omissão (sem isso, um handler que
+    /// esquecesse de passar o dicionário publicaria um seletor vazio e a prova de round-trip
+    /// passaria mesmo assim).
+    /// </remarks>
+    internal static JsonArray SerializarFatosColetados(
+        IEnumerable<FatoColetado> fatos,
+        IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados)
     {
         JsonArray array = [];
         foreach (FatoColetado fato in fatos.OrderBy(static f => f.Ordem))
         {
+            bool ehFatoDeSelecao = fato.TipoRenderizacao is TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla;
+            IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato = null;
+            bool temEntrada = valoresSelecionaveisCongelados?.TryGetValue(fato.FatoCodigo, out valoresDoFato) ?? false;
+
+            if (ehFatoDeSelecao && (!temEntrada || valoresDoFato is null))
+            {
+                throw new InvalidOperationException(
+                    $"O fato coletado '{fato.FatoCodigo}' é de seleção ({fato.TipoRenderizacao}), mas o dicionário " +
+                    "de valores selecionáveis recebido pelo canonicalizador não tem entrada para ele — a ausência é " +
+                    "erro de programação do handler, nunca lista vazia por omissão.");
+            }
+
+            if (!ehFatoDeSelecao && temEntrada && valoresDoFato is not null)
+            {
+                throw new InvalidOperationException(
+                    $"O fato coletado '{fato.FatoCodigo}' não é de seleção ({fato.TipoRenderizacao}), mas o " +
+                    "dicionário de valores selecionáveis traz um array para ele — a bicondicional exige null.");
+            }
+
             array.Add(new JsonObject
             {
                 ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
@@ -1051,6 +1094,17 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["obrigatorio"] = fato.Obrigatorio,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(
                     static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
+                ["valoresSelecionaveis"] = ehFatoDeSelecao
+                    ? new JsonArray([.. valoresDoFato!
+                        .OrderBy(static v => v.Ordem)
+                        .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
+                        .Select(static v => (JsonNode)new JsonObject
+                        {
+                            ["valorCodigo"] = HashCanonicalComputer.NormalizeNfc(v.Codigo),
+                            ["descricao"] = v.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
+                            ["ordem"] = v.Ordem,
+                        })])
+                    : null,
             });
         }
 
