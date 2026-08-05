@@ -48,7 +48,11 @@ public sealed class GrafoConfiguracao
         // título/termo configurado (não um toggle por presença; os dois campos são
         // independentemente nuláveis).
         string? formularioTitulo = null,
-        string? formularioTermoAceiteTexto = null)
+        string? formularioTermoAceiteTexto = null,
+        // Divulgação pública (UNI-REQ-0050, issue #563) — opcional, ausência = default
+        // minimizado (só o número de inscrição), mesmo padrão de BonusRegional/CascataRemanejamento
+        // (toggle por presença — D5 do congelamento).
+        ConfiguracaoDivulgacao? configuracaoDivulgacao = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -78,6 +82,7 @@ public sealed class GrafoConfiguracao
         CascataRemanejamento = cascataRemanejamento;
         FormularioTitulo = formularioTitulo;
         FormularioTermoAceiteTexto = formularioTermoAceiteTexto;
+        ConfiguracaoDivulgacao = configuracaoDivulgacao;
     }
 
     public IReadOnlyList<EtapaProcesso> Etapas { get; }
@@ -135,4 +140,11 @@ public sealed class GrafoConfiguracao
 
     /// <summary>Texto do termo de aceite do formulário de inscrição (Story #559) — ausência = sem termo configurado.</summary>
     public string? FormularioTermoAceiteTexto { get; }
+
+    /// <summary>
+    /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — congelada no envelope e
+    /// reposta na restauração. Ausência = default minimizado (só o número de inscrição),
+    /// toggle por presença, mesmo padrão de <see cref="BonusRegional"/>.
+    /// </summary>
+    public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; }
 }

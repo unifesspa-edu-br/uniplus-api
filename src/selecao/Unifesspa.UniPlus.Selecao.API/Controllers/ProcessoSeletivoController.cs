@@ -268,6 +268,37 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Define (ou remove) a divulgação pública do processo (UNI-REQ-0050, issue #563).
+    /// <c>CamposPublicos</c> nulo remove a configuração explícita — o processo volta ao
+    /// default minimizado (só o número de inscrição).
+    /// </summary>
+    [HttpPut("{id:guid}/divulgacao")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirConfiguracaoDivulgacao(
+        Guid id,
+        [FromBody] DefinirConfiguracaoDivulgacaoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirConfiguracaoDivulgacaoCommand(id, request.CamposPublicos, request.Justificativa, precondicao),
+            cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Define (ou remove) a cascata de remanejamento do processo
     /// (RN-CASCATA-1..5, Story #575). <c>RegraCodigo</c> nulo remove a
     /// cascata — a ausência já é o toggle "sem cascata".

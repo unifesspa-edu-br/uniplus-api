@@ -136,6 +136,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public ConfiguracaoClassificacao? Classificacao { get; private set; }
 
     /// <summary>
+    /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — ausência já é o default
+    /// minimizado (só o número de inscrição), não uma escolha administrativa pendente
+    /// (mesmo padrão de toggle por presença de <see cref="BonusRegional"/>).
+    /// </summary>
+    public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; private set; }
+
+    /// <summary>
     /// A sessão editorial aberta sobre a configuração — o <b>portador</b> da retificação
     /// (ADR-0110 D3). <see langword="null"/> quando não há retificação em curso.
     /// </summary>
@@ -404,6 +411,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         bonus.VincularProcesso(Id);
         BonusRegional = bonus;
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Define (ou remove) a configuração de divulgação pública do processo (UNI-REQ-0050,
+    /// issue #563). Passar <see langword="null"/> remove a configuração explícita — o
+    /// processo volta ao default minimizado, mesmo padrão de <see cref="DefinirBonusRegional"/>.
+    /// </summary>
+    public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (configuracao is null)
+        {
+            ConfiguracaoDivulgacao = null;
+            Rascunho?.IncrementarRevisao();
+            return Result.Success();
+        }
+
+        configuracao.VincularProcesso(Id);
+        ConfiguracaoDivulgacao = configuracao;
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
@@ -3025,6 +3057,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // esta reposição cobre.
         FormularioTitulo = grafo.FormularioTitulo;
         FormularioTermoAceiteTexto = grafo.FormularioTermoAceiteTexto;
+
+        // Divulgação pública (UNI-REQ-0050, issue #563): mesmo padrão de BonusRegional/Cascata
+        // acima — reatribuição direta (toggle por presença). Sem esta reposição, editar a
+        // divulgação durante uma sessão de retificação e depois descartar deixaria o valor
+        // editado na configuração viva, o mesmo defeito que a reposição de BonusRegional evita.
+        grafo.ConfiguracaoDivulgacao?.VincularProcesso(Id);
+        ConfiguracaoDivulgacao = grafo.ConfiguracaoDivulgacao;
 
         // Cronograma de fases (Story #851): nenhuma referência externa aponta para
         // FaseCronograma.Id (diferente das etapas) — o Id não é congelado no envelope

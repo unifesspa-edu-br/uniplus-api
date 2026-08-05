@@ -55,6 +55,7 @@ public static class ObterProcessoSeletivoQueryHandler
         [.. processo.RegrasDerivacao.OrderBy(c => c.CodigoFato, StringComparer.Ordinal).Select(ProjectConfiguracaoDerivacao)],
         processo.FormularioTitulo,
         processo.FormularioTermoAceiteTexto,
+        ProjectConfiguracaoDivulgacao(processo.ConfiguracaoDivulgacao),
         processo.CreatedAt);
 
     private static FatoColetadoDto ProjectFatoColetado(FatoColetado fato) => new(
@@ -162,6 +163,9 @@ public static class ObterProcessoSeletivoQueryHandler
             bonus.MunicipioConvenio,
             bonus.BaseLegal);
     }
+
+    private static ConfiguracaoDivulgacaoDto? ProjectConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao) =>
+        configuracao is null ? null : new ConfiguracaoDivulgacaoDto(configuracao.CamposPublicos, configuracao.Justificativa);
 
     private static ConfiguracaoCascataRemanejamentoDto? ProjectCascata(ConfiguracaoCascataRemanejamento? cascata)
     {

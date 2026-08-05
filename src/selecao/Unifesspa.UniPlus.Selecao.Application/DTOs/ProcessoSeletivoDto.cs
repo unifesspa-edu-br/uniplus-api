@@ -32,6 +32,11 @@ public sealed record ProcessoSeletivoDto(
     // vigente e devolve 422 para processo em rascunho, então não serve para reler a tela de edição.
     string? FormularioTitulo,
     string? FormularioTermoAceiteTexto,
+    // Divulgação pública (UNI-REQ-0050, issue #563): read-back administrativo pelo mesmo motivo
+    // do formulário acima — sem ele, a tela de edição (uniplus-web#504) não conseguiria reler a
+    // configuração salva e poderia sobrescrevê-la com o default ao reenviar. A regra de
+    // abreviação não entra aqui: não é configuração viva, só existe congelada no envelope.
+    ConfiguracaoDivulgacaoDto? ConfiguracaoDivulgacao,
     DateTimeOffset CriadoEm)
 {
     /// <summary>
@@ -58,3 +63,11 @@ public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Gui
 /// </summary>
 public sealed record UnidadeAdministradoraSnapshotDto(
     Guid OrigemId, string Sigla, string Slug, string Nome, string Tipo);
+
+/// <summary>
+/// Projeção de leitura da divulgação pública (UNI-REQ-0050, issue #563). <see langword="null"/>
+/// é o estado válido "sem configuração explícita" (default minimizado — só o número de
+/// inscrição). Não carrega a regra de abreviação: ela não é configuração viva, e só existe
+/// congelada no envelope de publicação.
+/// </summary>
+public sealed record ConfiguracaoDivulgacaoDto(IReadOnlyList<string> CamposPublicos, string? Justificativa);

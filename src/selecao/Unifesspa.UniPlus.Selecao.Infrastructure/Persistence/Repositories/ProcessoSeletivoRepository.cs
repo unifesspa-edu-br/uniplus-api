@@ -96,6 +96,10 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.VagasOfertadas)
             .Include(p => p.BonusRegional)
+            // Divulgação pública (UNI-REQ-0050, issue #563) — MESMO raciocínio de BonusRegional
+            // acima: sem o Include, a navegação 0..1 nasce null em todo carregamento novo do
+            // agregado, e o read-back administrativo (ProcessoSeletivoDto) sempre veria ausência.
+            .Include(p => p.ConfiguracaoDivulgacao)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
             // Cronograma de fases (Story #851) — 2 coleções novas (bancas requeridas,
