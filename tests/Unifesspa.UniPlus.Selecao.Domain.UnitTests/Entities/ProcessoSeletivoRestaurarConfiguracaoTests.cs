@@ -639,6 +639,58 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             "repor a ausência, não preservar o que a sessão descartada editou");
     }
 
+    // ── issue #563 — CA-13: AplicarGrafo repõe ConfiguracaoDivulgacao campo a campo (bloco
+    // ampliado) ou como ausência (bloco default, D5) — nunca preserva o que a sessão editou. ──
+
+    [Fact(DisplayName = "issue #563 (CA-13, bloco ampliado): restaurar repõe ConfiguracaoDivulgacao campo a campo, substituindo o que a sessão editorial gravou")]
+    public void Restauracao_RepoeConfiguracaoDivulgacaoAmpliadaCampoACampo()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        // A sessão editorial grava OUTRA configuração — é o estado que a restauração tem de
+        // substituir, não preservar.
+        processo.AbrirRetificacao("Editar a divulgação", versao, "testes", DateTimeOffset.UnixEpoch)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirConfiguracaoDivulgacao(
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao"], null).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+        ConfiguracaoDivulgacao congelada = ConfiguracaoDivulgacao.Criar(
+            ["numero_inscricao", "nome"], "Justificativa da versão congelada.").Value!;
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, Grafo(configuracaoDivulgacao: congelada));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.ConfiguracaoDivulgacao.Should().NotBeNull();
+        processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal(congelada.CamposPublicos);
+        processo.ConfiguracaoDivulgacao.Justificativa.Should().Be("Justificativa da versão congelada.");
+        processo.ConfiguracaoDivulgacao.ProcessoSeletivoId.Should().Be(processo.Id);
+    }
+
+    [Fact(DisplayName = "issue #563 (CA-13, bloco default/D5): restaurar repõe ausência mesmo que a sessão editorial tenha gravado uma configuração explícita")]
+    public void Restauracao_RepoeAusenciaDeConfiguracaoDivulgacaoQuandoOGrafoCongeladoENulo()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        VersaoConfiguracao versao = VersaoDo(processo);
+
+        processo.AbrirRetificacao("Editar a divulgação", versao, "testes", DateTimeOffset.UnixEpoch)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirConfiguracaoDivulgacao(
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+        processo.ConfiguracaoDivulgacao.Should().NotBeNull("pré-condição: a sessão editorial gravou uma configuração explícita");
+
+        // O grafo congelado não traz configuração alguma (D5: o certame nunca configurou
+        // divulgação, ou configurou exatamente o default) — a restauração não fabrica entidade.
+        Result resultado = processo.RestaurarConfiguracaoCongelada(versao, Grafo(configuracaoDivulgacao: null));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.ConfiguracaoDivulgacao.Should().BeNull(
+            "D5: a ausência no grafo congelado é o efetivo default — repor precisa devolver o processo a essa " +
+            "ausência, não preservar a configuração explícita que a sessão descartada editou");
+    }
+
     [Fact(DisplayName = "Story #554, PR #903 (achado de revisão P2) — restaurar remapeia ExigidoNaFaseId/ReferenciaTemporalFatos.FaseId para a fase VIVA quando a sessão editorial trocou a fase da mesma Ordem")]
     public void Restauracao_RemapeiaReferenciasDeFaseParaAInstanciaViva()
     {
@@ -782,7 +834,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         IReadOnlyList<EtapaProcesso>? etapas = null,
         IReadOnlyList<CriterioDesempate>? criterios = null,
         IReadOnlyList<RegraEliminacao>? eliminacoes = null,
-        IReadOnlyList<FaseCronograma>? cronogramaFases = null) => new(
+        IReadOnlyList<FaseCronograma>? cronogramaFases = null,
+        ConfiguracaoDivulgacao? configuracaoDivulgacao = null) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
@@ -792,7 +845,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             cronogramaFases: cronogramaFases ?? [FaseConforme()],
             documentosExigidos: [],
             nosExigencia: [],
-            referenciaTemporalFatos: null);
+            referenciaTemporalFatos: null,
+            configuracaoDivulgacao: configuracaoDivulgacao);
 
     /// <summary>
     /// Mesmo grafo de <see cref="Grafo"/>, com <c>documentosExigidos</c>/<c>nosExigencia</c>

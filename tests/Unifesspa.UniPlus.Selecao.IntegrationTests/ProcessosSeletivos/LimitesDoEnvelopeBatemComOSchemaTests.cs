@@ -81,6 +81,9 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(FatoColetado), nameof(FatoColetado.Rotulo)),
         ("NomeDeCadastro", LimitesDoEnvelope.NomeDeCadastro, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.FormularioTitulo)),
         ("TermoDeAceite", LimitesDoEnvelope.TermoDeAceite, typeof(ProcessoSeletivo), nameof(ProcessoSeletivo.FormularioTermoAceiteTexto)),
+
+        // Issue #563 — divulgação pública.
+        ("Justificativa", LimitesDoEnvelope.Justificativa, typeof(ConfiguracaoDivulgacao), nameof(ConfiguracaoDivulgacao.Justificativa)),
     ];
 
     private static readonly (string Nome, int PrecisaoNoCodec, int EscalaNoCodec, Type Entidade, string Propriedade)[] Precisoes =

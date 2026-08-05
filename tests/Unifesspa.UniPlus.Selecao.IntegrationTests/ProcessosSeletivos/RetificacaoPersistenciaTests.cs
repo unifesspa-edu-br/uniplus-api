@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -464,5 +465,165 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             tituloPublicado, "o descarte restaurou o título que a versão N congelou — não o título editado na sessão abandonada");
         relido.FormularioTermoAceiteTexto.Should().Be(
             termoPublicado, "o descarte restaurou o termo que a versão N congelou — não o termo editado na sessão abandonada");
+    }
+
+    // ── issue #563 — a regra de abreviação de nome é DERIVADA no congelamento, não uma
+    // configuração viva. A matriz precisa das três direções: publicação, fechamento e
+    // descarte não podem ser a mesma prova disfarçada de três formas. ──
+
+    [Fact(DisplayName =
+        "issue #563: publicar com nome_abreviado congela a regra vigente; fechar a retificação após removê-lo grava regraNomeAbreviado null na versão nova, sem tocar a versão anterior")]
+    public async Task Retificacao_ComRemocaoDeNomeAbreviado_FechamentoGravaRegraNula()
+    {
+        string nome = nameof(Retificacao_ComRemocaoDeNomeAbreviado_FechamentoGravaRegraNula);
+        ProcessoSeletivo processo = NovoProcessoConforme(nome);
+        processo.DefinirConfiguracaoDivulgacao(
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        VersaoConfiguracao versaoAbertura = publicar.Value!;
+
+        JsonObject divulgacaoNaAbertura = JsonNode.Parse(versaoAbertura.ConfiguracaoCongelada)!["divulgacao"]!.AsObject();
+        divulgacaoNaAbertura["regraNomeAbreviado"]!.GetValue<string>().Should().Be(
+            RegrasDeNomeAbreviado.Vigente, "publicar com nome_abreviado no conjunto congela o identificador da regra vigente");
+
+        Guid processoId = processo.Id;
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        VersaoConfiguracao versaoRetificacao;
+        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
+            ProcessoSeletivo carregado = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+
+            Result<RascunhoRetificacao> abertura = carregado.AbrirRetificacao(
+                "Remover a divulgação do nome abreviado", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+            abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
+
+            // A EDIÇÃO durante a sessão: remove nome_abreviado — só o piso sobrevive.
+            carregado.DefinirConfiguracaoDivulgacao(
+                ConfiguracaoDivulgacao.Criar(["numero_inscricao"], null).Value!, PrecondicaoIfMatch.Curinga)
+                .IsSuccess.Should().BeTrue();
+
+            DocumentoEdital docRetificacao = DocumentoConfirmado(processoId);
+            await sessao.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
+            DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
+            SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
+                new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!));
+
+            Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
+                dadosRetificacao, versaoAbertura, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
+                canonicoRetificacao.AlgoritmoHash, docRetificacao.HashSha256!, "integration-test-user",
+                PrecondicaoIfMatch.Curinga, TimeProvider.System);
+            fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
+            versaoRetificacao = fechar.Value!;
+
+            await repository.AdicionarVersaoConfiguracaoAsync(versaoRetificacao, CancellationToken.None);
+            await sessao.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao
+            .AsNoTracking().FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
+        VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao
+            .AsNoTracking().FirstAsync(v => v.Id == versaoRetificacao.Id, CancellationToken.None);
+
+        // A versão N permanece byte-a-byte intacta — a edição da sessão nunca a alcança.
+        aberturaLida.ConfiguracaoCongeladaCanonica.Should().Equal(versaoAbertura.ConfiguracaoCongeladaCanonica);
+
+        JsonObject divulgacaoNaRetificacao = JsonNode.Parse(retificacaoLida.ConfiguracaoCongelada)!["divulgacao"]!.AsObject();
+        divulgacaoNaRetificacao["camposPublicos"]!.AsArray().Select(static n => n!.GetValue<string>())
+            .Should().Equal("numero_inscricao");
+        divulgacaoNaRetificacao["regraNomeAbreviado"].Should().BeNull(
+            "o fechamento congela a configuração viva EDITADA (sem nome_abreviado) — a regra derivada tem de zerar " +
+            "junto, não carregar o valor da versão anterior");
+    }
+
+    [Fact(DisplayName =
+        "issue #563: descartar a retificação após remover nome_abreviado restaura o conjunto abreviado e recodifica com o identificador congelado")]
+    public async Task Retificacao_DescartadaAposRemoverNomeAbreviado_RestauraConjuntoERegraCongelados()
+    {
+        string nome = nameof(Retificacao_DescartadaAposRemoverNomeAbreviado_RestauraConjuntoERegraCongelados);
+        ProcessoSeletivo processo = NovoProcessoConforme(nome);
+        processo.DefinirConfiguracaoDivulgacao(
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
+        DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
+            docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
+        publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
+        VersaoConfiguracao versaoAbertura = publicar.Value!;
+
+        Guid processoId = processo.Id;
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.DocumentosEdital.AddAsync(docAbertura, CancellationToken.None);
+            await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
+            ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+
+            Result<RascunhoRetificacao> abertura = tracked.AbrirRetificacao(
+                "Testar edição e descarte da divulgação", versaoAbertura, "integration-test-user", TimeProvider.System.GetUtcNow());
+            abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
+
+            tracked.DefinirConfiguracaoDivulgacao(
+                ConfiguracaoDivulgacao.Criar(["numero_inscricao"], null).Value!, PrecondicaoIfMatch.Curinga)
+                .IsSuccess.Should().BeTrue();
+            tracked.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal(
+                ["numero_inscricao"], "pré-condição: a sessão editorial removeu nome_abreviado");
+
+            // O DESCARTE — com a prova de fidelidade: RestauradorDeConfiguracao só repõe DEPOIS
+            // de recanonicalizar e comparar byte a byte com a versão N. Se a regra derivada não
+            // reproduzisse 'iniciais_mais_ultimo_sobrenome' para o conjunto restaurado, a prova
+            // falharia aqui — antes de qualquer escrita.
+            Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope()).Restaurar(tracked, versaoAbertura);
+            prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
+
+            tracked.LimparColetaEDerivacaoParaRestauracao();
+            await sessao.SaveChangesAsync(CancellationToken.None);
+
+            tracked.RestaurarConfiguracaoCongelada(versaoAbertura, prova.Value!).IsSuccess.Should().BeTrue();
+            tracked.DescartarRetificacao(PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            await sessao.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
+        ProcessoSeletivo relido = (await leitura.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
+
+        relido.Rascunho.Should().BeNull("a sessão foi descartada — não há mais retificação em curso");
+        relido.ConfiguracaoDivulgacao.Should().NotBeNull();
+        relido.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal(
+            ["nome_abreviado", "numero_inscricao"],
+            "o descarte restaurou o conjunto AMPLIADO que a versão N congelou — não o conjunto reduzido editado na sessão abandonada");
+
+        List<VersaoConfiguracao> versoes = await readContext.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId).ToListAsync(CancellationToken.None);
+        versoes.Should().ContainSingle("descartar não cria versão nova — só a abertura persiste");
     }
 }

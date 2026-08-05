@@ -124,12 +124,11 @@ public sealed record EntradaCanonicalizacao(
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>23 chaves</b> — <b>22 blocos reais + 1 stub</b>
-/// <c>{"status":"nao_construido"}</c> para as dimensões que a Feature #40 ainda
-/// não implementou — e devolve os bytes que <c>VersaoConfiguracao.Abrir</c>
-/// persiste como base do hash. Quando a entrada carrega
-/// <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 24º bloco
-/// <c>retificacao</c> preservando os 23 anteriores intactos (ADR-0103).
+/// <b>23 blocos reais</b> — a Feature #40 fechou a última dimensão provisória
+/// (<c>divulgacao</c>, UNI-REQ-0050, issue #563) — e devolve os bytes que
+/// <c>VersaoConfiguracao.Abrir</c> persiste como base do hash. Quando a entrada
+/// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 24º
+/// bloco <c>retificacao</c> preservando os 23 anteriores intactos (ADR-0103).
 /// </summary>
 /// <remarks>
 /// A assinatura recebe <b>um único</b> parâmetro por decisão (ADR-0109 D6):
