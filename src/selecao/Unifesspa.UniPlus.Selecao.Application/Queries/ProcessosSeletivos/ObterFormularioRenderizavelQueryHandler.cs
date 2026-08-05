@@ -11,10 +11,11 @@ using DTOs;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (Story #559, RN08): resolve a
-/// versão vigente da configuração e projeta os blocos <c>formulario</c>/<c>fatosColetados</c> do
-/// envelope congelado. Distingue 404 (processo inexistente) de 422 (<c>Snapshot.VigenteAusente</c>)
-/// — mesmo contrato de erro de <see cref="ObterSnapshotVigenteQueryHandler"/>.
+/// Handler do <see cref="ObterFormularioRenderizavelQuery"/> (Story #559/#1059, RN08, UNI-REQ-0072):
+/// resolve a versão vigente da configuração e projeta os blocos <c>formulario</c>/
+/// <c>fatosColetados</c> (incluindo <c>valoresSelecionaveis</c>) do envelope congelado. Distingue
+/// 404 (processo inexistente) de 422 (<c>Snapshot.VigenteAusente</c>) — mesmo contrato de erro de
+/// <see cref="ObterSnapshotVigenteQueryHandler"/>.
 /// </summary>
 public static class ObterFormularioRenderizavelQueryHandler
 {
@@ -56,14 +57,16 @@ public static class ObterFormularioRenderizavelQueryHandler
     }
 
     /// <summary>
-    /// Projeta os blocos <c>formulario</c>/<c>fatosColetados</c> do envelope congelado. Guardado
-    /// contra QUALQUER forma que não seja exatamente a esperada — versão vigente congelada ANTES
-    /// desta Story (sem as chaves novas), ou um valor de tipo/nulidade incoerente (só alcançável
-    /// por uma linha adulterada diretamente no banco, nunca pelo caminho normal de escrita, que
-    /// sempre passa pelo encoder). Nenhum <c>Decodificar</c>/<c>LeitorEnvelope</c> disponível aqui
-    /// (a Application não alcança a Infrastructure, dona do codec) — a leitura tipada abaixo é o
-    /// substituto local, mesma disciplina: toda extração checa presença, tipo e nulidade antes de
-    /// usar o valor, nunca um cast bruto sobre entrada que não passou pelo encoder confiável.
+    /// Projeta os blocos <c>formulario</c>/<c>fatosColetados</c> (incluindo
+    /// <c>valoresSelecionaveis</c>, issue #1059) do envelope congelado. Guardado contra QUALQUER
+    /// forma que não seja exatamente a esperada — versão vigente congelada ANTES de a
+    /// apresentação existir no envelope (sem as chaves novas), ou um valor de tipo/nulidade
+    /// incoerente (só alcançável por uma linha adulterada diretamente no banco, nunca pelo
+    /// caminho normal de escrita, que sempre passa pelo encoder). Nenhum
+    /// <c>Decodificar</c>/<c>LeitorEnvelope</c> disponível aqui (a Application não alcança a
+    /// Infrastructure, dona do codec) — a leitura tipada abaixo é o substituto local, mesma
+    /// disciplina: toda extração checa presença, tipo e nulidade antes de usar o valor, nunca um
+    /// cast bruto sobre entrada que não passou pelo encoder confiável.
     /// </summary>
     private static Result<FormularioRenderizavelDto> Projetar(JsonObject envelope)
     {
@@ -79,7 +82,7 @@ public static class ObterFormularioRenderizavelQueryHandler
             return VersaoSemApresentacao();
         }
 
-        List<FatoColetadoDto> fatos = [];
+        List<FatoFormularioRenderizavelDto> fatos = [];
         foreach (JsonNode? item in fatosColetados)
         {
             if (item is not JsonObject fato
@@ -88,12 +91,14 @@ public static class ObterFormularioRenderizavelQueryHandler
                 || !TentarString(fato, "rotulo", out string rotulo)
                 || !TentarString(fato, "tipoRenderizacao", out string tipoRenderizacao)
                 || !TentarBool(fato, "obrigatorio", out bool obrigatorio)
-                || !TentarPrecondicao(fato, out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao))
+                || !TentarPrecondicao(fato, out List<IReadOnlyList<CondicaoPrecondicaoDto>>? precondicao)
+                || !TentarValoresSelecionaveis(fato, tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis))
             {
                 return VersaoSemApresentacao();
             }
 
-            fatos.Add(new FatoColetadoDto(fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao));
+            fatos.Add(new FatoFormularioRenderizavelDto(
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatorio, precondicao, valoresSelecionaveis));
         }
 
         return Result<FormularioRenderizavelDto>.Success(new FormularioRenderizavelDto(titulo, termoAceiteTexto, fatos));
@@ -189,6 +194,72 @@ public static class ObterFormularioRenderizavelQueryHandler
         }
 
         precondicao = clausulas;
+        return true;
+    }
+
+    /// <summary>
+    /// Chave presente e coerente com a bicondicional (issue #1059, UNI-REQ-0072):
+    /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> exige um array (possivelmente vazio);
+    /// <c>BOOLEANO</c>/<c>NUMERO</c> exige <c>null</c> explícito. <paramref name="tipoRenderizacao"/>
+    /// fora dos QUATRO tokens fechados falha aqui — sem isso, um token desconhecido cairia no
+    /// ramo "não é seleção" por omissão e aceitaria <c>valoresSelecionaveis: null</c> em silêncio,
+    /// a mesma forma que <c>EnvelopeCodec.LerFatosColetados</c> recusa (o decoder converte um
+    /// token não reconhecido em <c>TipoRenderizacao.Nenhuma</c>, que <c>FatoColetado.Criar</c>
+    /// rejeita). Cada item do array exige <c>ordem</c> não negativa e <c>valorCodigo</c> sem
+    /// repetição — mesmas recusas do decoder. Chave ausente, forma incoerente com a bicondicional,
+    /// ou item malformado dentro do array: falha — nunca convertida silenciosamente em "sem
+    /// valores selecionáveis".
+    /// </summary>
+    private static bool TentarValoresSelecionaveis(
+        JsonObject fato, string tipoRenderizacao, out List<ValorSelecionavelDto>? valoresSelecionaveis)
+    {
+        valoresSelecionaveis = null;
+
+        bool? ehFatoDeSelecao = tipoRenderizacao switch
+        {
+            "SELECAO_UNICA" or "SELECAO_MULTIPLA" => true,
+            "BOOLEANO" or "NUMERO" => false,
+            _ => null,
+        };
+
+        if (ehFatoDeSelecao is not { } fatoDeSelecao)
+        {
+            return false;
+        }
+
+        if (!fato.TryGetPropertyValue("valoresSelecionaveis", out JsonNode? node))
+        {
+            return false;
+        }
+
+        if (node is null)
+        {
+            return !fatoDeSelecao;
+        }
+
+        if (node is not JsonArray array || !fatoDeSelecao)
+        {
+            return false;
+        }
+
+        List<ValorSelecionavelDto> valores = [];
+        HashSet<string> codigos = new(StringComparer.Ordinal);
+        foreach (JsonNode? item in array)
+        {
+            if (item is not JsonObject valorItem
+                || !TentarString(valorItem, "valorCodigo", out string valorCodigo)
+                || !TentarStringOpcional(valorItem, "descricao", out string? descricao)
+                || !TentarInt(valorItem, "ordem", out int ordem)
+                || ordem < 0
+                || !codigos.Add(valorCodigo))
+            {
+                return false;
+            }
+
+            valores.Add(new ValorSelecionavelDto(valorCodigo, descricao, ordem));
+        }
+
+        valoresSelecionaveis = valores;
         return true;
     }
 }

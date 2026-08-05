@@ -6522,6 +6522,61 @@
           }
         }
       },
+      "FatoFormularioRenderizavelDto": {
+        "required": [
+          "fatoCodigo",
+          "ordem",
+          "rotulo",
+          "tipoRenderizacao",
+          "obrigatorio",
+          "precondicao",
+          "valoresSelecionaveis"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "tipoRenderizacao": {
+            "type": "string"
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "precondicao": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CondicaoPrecondicaoDto"
+              }
+            }
+          },
+          "valoresSelecionaveis": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ValorSelecionavelDto"
+            }
+          }
+        }
+      },
       "FecharRetificacaoRequest": {
         "required": [
           "numero",
@@ -6578,7 +6633,7 @@
           "fatosColetados": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FatoColetadoDto"
+              "$ref": "#/components/schemas/FatoFormularioRenderizavelDto"
             }
           }
         }
@@ -8378,6 +8433,33 @@
             "type": "string"
           },
           "quantidade": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ValorSelecionavelDto": {
+        "required": [
+          "codigo",
+          "descricao",
+          "ordem"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ordem": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
