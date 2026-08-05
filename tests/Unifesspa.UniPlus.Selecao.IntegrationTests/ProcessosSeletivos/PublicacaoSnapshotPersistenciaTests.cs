@@ -23,13 +23,14 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 23 blocos — 22
-/// reais + 1 stub <c>nao_construido</c> na raiz — estão presentes). Story
-/// #575 promoveu <c>cascataRemanejamento</c> de stub a bloco real; issue #849
-/// promoveu <c>identidadesUnidade</c>; Story #559 promoveu <c>formulario</c>:
-/// cobertura de persistência EF da entidade filha (sobrevivência a reload,
-/// substituição sem órfãos, remoção, constraints do banco) na segunda metade
-/// do arquivo.
+/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 23 blocos — todos
+/// reais — estão presentes). Story #575 promoveu <c>cascataRemanejamento</c>
+/// de stub a bloco real; issue #849 promoveu <c>identidadesUnidade</c>;
+/// Story #559 promoveu <c>formulario</c>; issue #563 promoveu <c>divulgacao</c>
+/// de stub a bloco real — a última dimensão provisória da Feature #40, agora
+/// fechada: cobertura de persistência EF da entidade filha (sobrevivência a
+/// reload, substituição sem órfãos, remoção, constraints do banco) na segunda
+/// metade do arquivo.
 /// </summary>
 [SuppressMessage(
     "Security",
@@ -170,7 +171,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 23 blocos (22 reais + 1 stub na raiz) estão presentes")]
+    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 23 blocos, todos reais, estão presentes")]
     public async Task Snapshot_ContemBlocosCanonicos()
     {
         (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
@@ -212,14 +213,11 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             .Select(static kvp => kvp.Key)
             .Order(StringComparer.Ordinal)];
 
-        stubs.Should().BeEquivalentTo(
-            [
-                "divulgacao",
-            ],
-            "é a única dimensão da Feature #40 ainda sem dono — os outros 22 blocos são reais " +
-            "(Story #851 promoveu cronogramaFases; Story #853 promoveu documentosExigidos; issue #848 " +
-            "promoveu vagas; Story #575 promoveu cascataRemanejamento; issue #849 promoveu " +
-            "identidadesUnidade; Story #559 promoveu formulario; os demais sempre foram reais)");
+        stubs.Should().BeEmpty(
+            "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real. Os 23 " +
+            "blocos são todos reais agora (Story #851 promoveu cronogramaFases; Story #853 promoveu " +
+            "documentosExigidos; issue #848 promoveu vagas; Story #575 promoveu cascataRemanejamento; issue #849 " +
+            "promoveu identidadesUnidade; Story #559 promoveu formulario; os demais sempre foram reais)");
 
         // Nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é
@@ -235,6 +233,11 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         // issue #849: identidadesUnidade é bloco real desde a criação — nunca stub na raiz.
         objeto["identidadesUnidade"]!.AsObject().Should().NotContainKey("status");
         objeto["identidadesUnidade"]!.AsObject()["administradora"]!.AsObject().Should().ContainKey("sigla");
+        // issue #563: divulgacao é bloco real — o default minimizado (só o número de inscrição),
+        // porque este teste não configura divulgação nenhuma.
+        objeto["divulgacao"]!.AsObject().Should().NotContainKey("status");
+        objeto["divulgacao"]!.AsObject()["camposPublicos"]!.AsArray().Should().ContainSingle()
+            .Which!.GetValue<string>().Should().Be("numero_inscricao");
         objeto["documentosExigidos"]!["exigencias"]!.AsArray().Should().BeEmpty(
             "nenhum DocumentoExigido foi configurado para este processo neste teste");
         objeto["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Should().BeEmpty(

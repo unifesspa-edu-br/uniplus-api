@@ -76,33 +76,6 @@ internal sealed class LeitorEnvelope
         }
     }
 
-    /// <summary>
-    /// Um bloco (ou sub-chave) que ainda não tem dono — tem de ser exatamente
-    /// <c>{"status":"nao_construido"}</c>. Um stub que virou objeto rico é envelope de
-    /// outra <b>forma</b>, e forma nova é bump de versão (ADR-0109 D1), não leitura
-    /// tolerante.
-    /// </summary>
-    public void ExigirStub(JsonObject topo, string chave)
-    {
-        if (Falhou)
-        {
-            return;
-        }
-
-        JsonObject stub = Objeto(topo, chave, chave);
-        if (Falhou)
-        {
-            return;
-        }
-
-        ExigirChaves(stub, chave, "status");
-        string status = Texto(stub, "status", chave);
-        if (!Falhou && status != "nao_construido")
-        {
-            Malformado<object>($"{chave}.status", $"esperado 'nao_construido', encontrado '{status}'.");
-        }
-    }
-
     public JsonObject Objeto(JsonObject pai, string chave, string path)
     {
         if (Falhou)

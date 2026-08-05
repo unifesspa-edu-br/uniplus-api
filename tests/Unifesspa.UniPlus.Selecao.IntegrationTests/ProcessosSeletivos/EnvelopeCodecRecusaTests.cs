@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -230,6 +231,7 @@ public sealed class EnvelopeCodecRecusaTests
     [InlineData("cascataRemanejamento.ordens.0")]
     [InlineData("identidadesUnidade")]
     [InlineData("identidadesUnidade.administradora")]
+    [InlineData("divulgacao")]
     public void ChaveDesconhecida_Recusa(string caminho)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -344,14 +346,14 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
-    [Theory(DisplayName = "Stub que virou objeto rico é forma NOVA — e forma nova é bump de versão, não leitura tolerante")]
+    [Theory(DisplayName = "Bloco real com chaves de um formato de stub extinto é forma intrusa — recusado, não tolerado")]
     [InlineData("vagas")]
     [InlineData("documentosExigidos")]
     [InlineData("cascataRemanejamento")]
-    public void StubViraObjeto_Recusa(string stub)
+    public void BlocoRealComFormaDeStubExtinto_Recusa(string bloco)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            envelope[stub] = new JsonObject { ["status"] = "construido", ["itens"] = new JsonArray() });
+            envelope[bloco] = new JsonObject { ["status"] = "construido", ["itens"] = new JsonArray() });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
@@ -364,6 +366,228 @@ public sealed class EnvelopeCodecRecusaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    // ── issue #563 — CA-12: o bloco divulgacao promovido de stub a real precisa de um decoder
+    // tão estrito quanto o encoder. Round-trip verde prova que o que foi emitido sobrevive; não
+    // prova que o decoder recusa o que não deveria aceitar. Cada linha adultera UM aspecto do
+    // bloco default (CorpusEnvelope.ProcessoRico não configura divulgação) e assere o código E o
+    // caminho ofensivos (via trecho da mensagem) — nunca apenas IsFailure, que passaria por
+    // qualquer outro motivo, nem apenas o código, que um mesmo EnvelopeMalformado genérico
+    // compartilha entre guards diferentes. ──
+
+    public static IEnumerable<object[]> MutacoesDeDivulgacao()
+    {
+        static JsonObject Bloco(JsonObject envelope) => envelope["divulgacao"]!.AsObject();
+
+        yield return
+        [
+            "token estranho em camposPublicos (vocabulário fechado)",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["camposPublicos"] =
+                new JsonArray(JsonValue.Create("cpf"), JsonValue.Create("numero_inscricao"))),
+            "ConfiguracaoDivulgacao.CampoNaoPermitido",
+            "'cpf'",
+        ];
+        yield return
+        [
+            "token repetido (sem repetição)",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["camposPublicos"] =
+                new JsonArray(JsonValue.Create("numero_inscricao"), JsonValue.Create("numero_inscricao"))),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.camposPublicos",
+        ];
+        yield return
+        [
+            "array fora da ordem canônica (a ordenação faz parte dos bytes)",
+            (Action<JsonObject>)(envelope =>
+            {
+                JsonObject bloco = Bloco(envelope);
+                bloco["camposPublicos"] = new JsonArray(JsonValue.Create("numero_inscricao"), JsonValue.Create("nome_abreviado"));
+                bloco["regraNomeAbreviado"] = RegrasDeNomeAbreviado.Vigente;
+            }),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.camposPublicos",
+        ];
+        yield return
+        [
+            "sem numero_inscricao (o piso)",
+            (Action<JsonObject>)(envelope =>
+            {
+                JsonObject bloco = Bloco(envelope);
+                bloco["camposPublicos"] = new JsonArray(JsonValue.Create("nome_abreviado"));
+                bloco["regraNomeAbreviado"] = RegrasDeNomeAbreviado.Vigente;
+            }),
+            "ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio",
+            "numero_inscricao",
+        ];
+        yield return
+        [
+            "nome e nome_abreviado juntos (formas excludentes)",
+            (Action<JsonObject>)(envelope =>
+            {
+                JsonObject bloco = Bloco(envelope);
+                bloco["camposPublicos"] = new JsonArray(
+                    JsonValue.Create("nome"), JsonValue.Create("nome_abreviado"), JsonValue.Create("numero_inscricao"));
+                bloco["regraNomeAbreviado"] = RegrasDeNomeAbreviado.Vigente;
+                bloco["justificativa"] = "Justificativa qualquer.";
+            }),
+            "ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes",
+            "ao mesmo tempo",
+        ];
+        yield return
+        [
+            "regraNomeAbreviado preenchido sem nome_abreviado (regra sem abreviação)",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["regraNomeAbreviado"] = RegrasDeNomeAbreviado.Vigente),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.regraNomeAbreviado",
+        ];
+        yield return
+        [
+            "nome_abreviado sem regraNomeAbreviado (abreviação sem regra)",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["camposPublicos"] =
+                new JsonArray(JsonValue.Create("nome_abreviado"), JsonValue.Create("numero_inscricao"))),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.regraNomeAbreviado",
+        ];
+        yield return
+        [
+            "regra com identificador desconhecido (despacho por identificador conhecido)",
+            (Action<JsonObject>)(envelope =>
+            {
+                JsonObject bloco = Bloco(envelope);
+                bloco["camposPublicos"] = new JsonArray(JsonValue.Create("nome_abreviado"), JsonValue.Create("numero_inscricao"));
+                bloco["regraNomeAbreviado"] = "regra_do_futuro";
+            }),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "regra_do_futuro",
+        ];
+        yield return
+        [
+            "chave do bloco ausente (forma fechada)",
+            (Action<JsonObject>)(envelope => Bloco(envelope).Remove("justificativa")),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "'justificativa' está ausente",
+        ];
+        yield return
+        [
+            "chave intrusa no bloco (forma fechada)",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["chaveIntrusa"] = "x"),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "chaveIntrusa",
+        ];
+        yield return
+        [
+            "tipo errado — camposPublicos como objeto, não array",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["camposPublicos"] = new JsonObject()),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.camposPublicos",
+        ];
+        yield return
+        [
+            "forma provisória antiga {\"status\":\"nao_construido\"} — o stub deixou de existir",
+            (Action<JsonObject>)(envelope => envelope["divulgacao"] = new JsonObject { ["status"] = "nao_construido" }),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "'camposPublicos' está ausente",
+        ];
+        // As linhas abaixo substituem um único caso anterior que se dizia "decombinada e com
+        // espaço nas bordas", mas usava "ç"/"ã" PRÉ-COMPOSTOS (NFC) — os espaços nas bordas já
+        // bastavam para a recusa, e a guarda de normalização nunca era exercitada de fato. Cada
+        // aspecto agora é um caso independente. O caso de NFD real (combinantes de verdade) NÃO
+        // está aqui: PerfilCanonicoV1.Serializar, que ReidratarComEnvelopeAdulterado usa para
+        // produzir os bytes finais, aplica NFC a toda string de negócio — "curaria" a própria
+        // adulteração antes de o decoder vê-la, e o teste nunca observaria a recusa. É
+        // Divulgacao_JustificativaEmNfdReal_Recusa, logo abaixo desta teoria, com um
+        // serializador que não recanonicaliza — e por isso mesmo é pego pelo gate universal de
+        // forma canônica (IntegridadeViolada), não pelo guard de LerDivulgacao (EnvelopeMalformado):
+        // decomposição genuína nunca sobrevive para chegar ao decoder específico da versão.
+        yield return
+        [
+            "justificativa já em NFC com espaço nas bordas — só o trim falha",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["justificativa"] = "  Divulgação com espaço nas bordas.  "),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.justificativa",
+        ];
+        yield return
+        [
+            "justificativa vazia — o codificador nunca emite essa forma, só null",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["justificativa"] = ""),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.justificativa",
+        ];
+        yield return
+        [
+            "justificativa acima do limite de 1000 caracteres da coluna",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["justificativa"] = new string('a', LimitesDoEnvelope.Justificativa + 1)),
+            ErrosCodecEnvelope.EnvelopeMalformado,
+            "divulgacao.justificativa",
+        ];
+        yield return
+        [
+            "justificativa contém o caractere nulo (U+0000) — sobrevive a trim, NFC e ao limite de comprimento",
+            (Action<JsonObject>)(envelope => Bloco(envelope)["justificativa"] = $"Divulgação com {(char)0} no meio."),
+            "ConfiguracaoDivulgacao.JustificativaComCaractereNulo",
+            "caractere nulo",
+        ];
+    }
+
+    [Theory(DisplayName = "issue #563 (CA-12): cada mutação do bloco divulgacao ataca UMA invariante e é recusada com o código e o caminho esperados")]
+    [MemberData(nameof(MutacoesDeDivulgacao))]
+    public void Divulgacao_CadaMutacaoAtacaUmaInvariante_Recusa(
+        string descricao, Action<JsonObject> mutar, string codigoEsperado, string trechoEsperado)
+    {
+        ArgumentNullException.ThrowIfNull(mutar);
+
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(mutar);
+
+        resultado.IsFailure.Should().BeTrue($"a mutação '{descricao}' tem de ser recusada");
+        resultado.Error!.Code.Should().Be(codigoEsperado, $"a mutação '{descricao}' tem de recusar com o código específico da invariante que ela ataca, não com 'IsFailure' por qualquer outro motivo");
+        resultado.Error!.Message.Should().Contain(trechoEsperado, $"a mutação '{descricao}' tem de apontar para o campo ofensivo, não só recusar pelo código genérico");
+    }
+
+    /// <summary>
+    /// O par do primeiro caso da teoria de recusa acima ("justificativa já em NFC com espaço
+    /// nas bordas"): aqui a adulteração é NFD de verdade — "c" + combinante cedilha (U+0327) e
+    /// "a" + combinante til (U+0303), sem espaço nas bordas.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>O código esperado é <see cref="ErrosCodecEnvelope.IntegridadeViolada"/>, não
+    /// <see cref="ErrosCodecEnvelope.EnvelopeMalformado"/></b> — e essa é a prova em si, não um
+    /// acidente de teste. Decomposição Unicode genuína em QUALQUER string do envelope já é
+    /// recusada por <c>RegistroCodecsEnvelope.VerificarFormaCanonica</c>, o gate universal que
+    /// roda ANTES do decoder específico da versão: reserializar o payload inteiro pelo perfil
+    /// canônico aplica NFC a toda string de negócio, produz bytes diferentes dos que chegaram, e
+    /// o gate recusa por integridade — o decoder nem chega a rodar. O guard de forma canônica
+    /// dentro de <c>LerDivulgacao</c> só é alcançável pelo caso de espaço nas bordas (acima): NFC
+    /// não mexe em espaço, então esse caso passa incólume pelo gate universal e só é pego pelo
+    /// guard específico do bloco <c>divulgacao</c>.
+    /// </para>
+    /// <para>
+    /// Não usa <see cref="ReidratarComEnvelopeAdulterado"/>: aquele helper produz os bytes finais
+    /// com <see cref="PerfilCanonicoV1.Serializar"/>, que "curaria" a decomposição antes mesmo de
+    /// os bytes existirem — o teste nunca conseguiria observar o gate rejeitando nada. Aqui os
+    /// bytes são escritos por um serializador comum, preservando os combinantes tal como foram
+    /// escritos.
+    /// </para>
+    /// </remarks>
+    [Fact(DisplayName = "issue #563 (CA-12): justificativa em NFD real é recusada pelo gate universal de forma canônica, antes de o decoder da versão rodar")]
+    public void Divulgacao_JustificativaEmNfdReal_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado();
+        byte[] originais = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico())).Bytes;
+
+        JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(originais))!.AsObject();
+        envelope["divulgacao"]!.AsObject()["justificativa"] = $"Divulgac{(char)0x0327}a{(char)0x0303}o real";
+
+        byte[] adulterados = Encoding.UTF8.GetBytes(envelope.ToJsonString());
+        adulterados.Should().NotEqual(originais, "pré-condição: a adulteração tem de mudar os bytes");
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, adulterados);
+        Result<EnvelopeReidratado> resultado = CorpusEnvelope.Registro.Reidratar(versao);
+
+        resultado.IsFailure.Should().BeTrue("a justificativa decomposta (NFD) não está na forma canônica que o gate universal exige");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.IntegridadeViolada);
+        resultado.Error!.Message.Should().Contain("forma canônica");
     }
 
     // ── Vocabulário fechado: as factories do domínio NÃO o fecham ──

@@ -108,4 +108,8 @@ public static class LimitesDoEnvelope
     /// apresentado ao candidato, não uma observação interna.
     /// </summary>
     public const int TermoDeAceite = 4000;
+
+    // Issue #563 — divulgação pública.
+    /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — mesma grandeza de <c>RascunhoRetificacao.MotivoMaxLength</c>: texto de negócio livre, não um rótulo curto.</summary>
+    public const int Justificativa = 1000;
 }

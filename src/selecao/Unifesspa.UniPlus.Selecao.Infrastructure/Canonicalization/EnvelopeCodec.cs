@@ -28,11 +28,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class EnvelopeCodec : IEnvelopeCodec
 {
-    private static readonly string[] Stubs =
-    [
-        "divulgacao",
-    ];
-
     private static readonly string[] BlocosReais =
     [
         "periodo",
@@ -51,6 +46,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "vagas",
         "arvoreSatisfacao",
         "formulario",
+        "divulgacao",
         "identidadesUnidade",
         "fatosColetados",
         "regrasDerivacao",
@@ -108,14 +104,10 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 
         bool temRetificacao = payload.ContainsKey("retificacao");
         string[] chavesEsperadas = temRetificacao
-            ? [.. BlocosReais, .. Stubs, "retificacao"]
-            : [.. BlocosReais, .. Stubs];
+            ? [.. BlocosReais, "retificacao"]
+            : BlocosReais;
 
         leitor.ExigirChaves(payload, "$", chavesEsperadas);
-        foreach (string stub in Stubs)
-        {
-            leitor.ExigirStub(payload, stub);
-        }
 
         DadosEdital? dados = EnvelopeCodecV11.LerDadosEdital(leitor, payload, out string hashDocumento);
         IReadOnlyList<EtapaProcesso> etapas = EnvelopeCodecV11.LerEtapas(leitor, payload);
@@ -130,6 +122,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos,
             IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) = EnvelopeCodecV13.LerDocumentosExigidos(leitor, payload);
         (string? formularioTitulo, string? formularioTermoAceiteTexto) = LerFormulario(leitor, payload);
+        ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -183,7 +176,8 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao,
             cascataRemanejamento: cascata,
             formularioTitulo: formularioTitulo,
-            formularioTermoAceiteTexto: formularioTermoAceiteTexto);
+            formularioTermoAceiteTexto: formularioTermoAceiteTexto,
+            configuracaoDivulgacao: configuracaoDivulgacao);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, retificacao, conformidade,
@@ -611,6 +605,108 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         string? titulo = leitor.TextoOpcional(bloco, "titulo", "formulario", LimitesDoEnvelope.NomeDeCadastro);
         string? termoAceiteTexto = leitor.TextoOpcional(bloco, "termoAceiteTexto", "formulario", LimitesDoEnvelope.TermoDeAceite);
         return leitor.Falhou ? (null, null) : (titulo, termoAceiteTexto);
+    }
+
+    /// <summary>
+    /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — forma fechada, no molde de
+    /// <see cref="LerFormulario"/>. <see cref="LeitorEnvelope.ExigirChaves"/> roda ANTES de
+    /// qualquer retorno antecipado: é o que fecha a gramática do bloco agora que a guarda global
+    /// de stub saiu — o antigo <c>{"status":"nao_construido"}</c> é recusado exatamente aqui, por
+    /// faltarem as três chaves e sobrar <c>status</c>.
+    /// </summary>
+    /// <remarks>
+    /// O decodificador é tão estrito quanto o encoder: vocabulário fechado, piso
+    /// <c>numero_inscricao</c> sempre presente e <c>nome</c>/<c>nome_abreviado</c> nunca juntos
+    /// são reconferidos por <see cref="ConfiguracaoDivulgacao.Criar"/>, que este método chama
+    /// como fonte única daquelas invariantes. O que só a LEITURA pode conferir — porque o
+    /// congelamento nunca as violaria pelo caminho normal de escrita — fica aqui: repetição,
+    /// ordem canônica (pela MESMA política do encoder,
+    /// <see cref="SnapshotPublicacaoCanonicalizer.OrdenarPorConteudo(IEnumerable{JsonValue})"/>,
+    /// nunca um <see cref="StringComparer.Ordinal"/> reimplementado), a bicondicional entre
+    /// <c>nome_abreviado</c> e <c>regraNomeAbreviado</c>, o identificador de regra conhecido, e a
+    /// forma canônica (Trim + NFC) da justificativa. Um bloco cujo conteúdo é exatamente o
+    /// default minimizado (D5) reidrata como <see langword="null"/> — a restauração não fabrica
+    /// entidade para um processo que nunca configurou divulgação.
+    /// </remarks>
+    private static ConfiguracaoDivulgacao? LerDivulgacao(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "divulgacao", "$");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        leitor.ExigirChaves(bloco, "divulgacao", "camposPublicos", "regraNomeAbreviado", "justificativa");
+
+        IReadOnlyList<string> camposPublicos = leitor.Textos(bloco, "camposPublicos", "divulgacao");
+        string? regraNomeAbreviado = leitor.TextoOpcional(bloco, "regraNomeAbreviado", "divulgacao");
+        string? justificativa = leitor.TextoOpcional(bloco, "justificativa", "divulgacao", LimitesDoEnvelope.Justificativa);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        if (camposPublicos.Distinct(StringComparer.Ordinal).Count() != camposPublicos.Count)
+        {
+            return leitor.Propagar<ConfiguracaoDivulgacao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, "'divulgacao.camposPublicos' tem token repetido."));
+        }
+
+        // A MESMA política do encoder (ADR-0109 D9) — nunca um comparador próprio, que
+        // coincidiria hoje (três tokens ASCII) e divergiria no dia em que o vocabulário crescesse
+        // com um token não-ASCII. Não reordena: fora de ordem é malformado.
+        IReadOnlyList<string> naOrdemCanonica = [.. SnapshotPublicacaoCanonicalizer
+            .OrdenarPorConteudo(camposPublicos.Select(static c => JsonValue.Create(c)!))
+            .Select(static n => n!.GetValue<string>())];
+        if (!naOrdemCanonica.SequenceEqual(camposPublicos, StringComparer.Ordinal))
+        {
+            return leitor.Propagar<ConfiguracaoDivulgacao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, "'divulgacao.camposPublicos' não está na ordem canônica."));
+        }
+
+        bool temNomeAbreviado = camposPublicos.Contains(ConfiguracaoDivulgacao.NomeAbreviado, StringComparer.Ordinal);
+        if (temNomeAbreviado != (regraNomeAbreviado is not null))
+        {
+            return leitor.Propagar<ConfiguracaoDivulgacao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'divulgacao.regraNomeAbreviado' tem de estar presente se, e somente se, 'camposPublicos' contém 'nome_abreviado'."));
+        }
+
+        if (regraNomeAbreviado is not null && !RegrasDeNomeAbreviado.EhConhecida(regraNomeAbreviado))
+        {
+            return leitor.Propagar<ConfiguracaoDivulgacao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'divulgacao.regraNomeAbreviado' não é uma regra conhecida: '{regraNomeAbreviado}'."));
+        }
+
+        // O codificador NUNCA emite justificativa vazia nem só-espaços — quando não há
+        // justificativa, ele emite null (D5). Uma string vazia/em branco só chega aqui por
+        // adulteração, e tem de ser recusada ANTES da conferência de Trim/NFC abaixo: uma
+        // string vazia já é, trivialmente, a sua própria forma Trim+NFC, então a conferência
+        // seguinte não a pegaria, e o teste de default (mais abaixo) também não — ele só
+        // reconhece justificativa null, e uma string vazia não é null.
+        if (justificativa is not null && string.IsNullOrWhiteSpace(justificativa))
+        {
+            return leitor.Propagar<ConfiguracaoDivulgacao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'divulgacao.justificativa' não pode ser vazia nem só espaços — o codificador nunca emite essa forma, só null."));
+        }
+
+        if (justificativa is not null
+            && !string.Equals(HashCanonicalComputer.NormalizeNfc(justificativa.Trim()), justificativa, StringComparison.Ordinal))
+        {
+            return leitor.Propagar<ConfiguracaoDivulgacao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'divulgacao.justificativa' não está na forma canônica (sem espaço nas bordas, em NFC)."));
+        }
+
+        if (ConfiguracaoDivulgacao.EhDefaultMinimizado(camposPublicos, justificativa))
+        {
+            return null;
+        }
+
+        Result<ConfiguracaoDivulgacao> configuracao = ConfiguracaoDivulgacao.Criar(camposPublicos, justificativa);
+        return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoDivulgacao>(configuracao.Error!) : configuracao.Value;
     }
 
     /// <summary>

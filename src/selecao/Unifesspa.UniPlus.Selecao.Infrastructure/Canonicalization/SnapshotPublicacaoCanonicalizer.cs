@@ -14,17 +14,18 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de 23 chaves
-/// — <b>22 blocos reais + 1 stub</b> (<c>divulgacao</c>) <c>{"status":"nao_construido"}</c>
-/// para a dimensão que a Feature #40 ainda não implementou (ADR-0100 item 10) — e
-/// devolve os bytes via <see cref="PerfilCanonicoV1"/>. <c>documentosExigidos</c>
-/// (Story #853) já carrega <c>obrigatoriedades[]</c> e <c>exigencias[]</c> (#554)
-/// reais. <c>vagas</c> (issue #848/ADR-0115) é outro: o quadro por oferta, calculado
-/// no ramo federal ou fixado no institucional, sempre materializado junto da
-/// configuração. <c>arvoreSatisfacao</c> (Story #923): a topologia da árvore de
-/// satisfação de <c>documentosExigidos</c>, sempre materializada (0..* raízes).
-/// <c>formulario</c> (Story #559) é o mais novo: título, termo de aceite do
-/// formulário de inscrição — forma fechada mesmo quando os dois campos são nulos.
+/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>23 blocos
+/// reais</b> — e devolve os bytes via <see cref="PerfilCanonicoV1"/>.
+/// <c>documentosExigidos</c> (Story #853) já carrega <c>obrigatoriedades[]</c> e
+/// <c>exigencias[]</c> (#554) reais. <c>vagas</c> (issue #848/ADR-0115) é outro: o
+/// quadro por oferta, calculado no ramo federal ou fixado no institucional, sempre
+/// materializado junto da configuração. <c>arvoreSatisfacao</c> (Story #923): a
+/// topologia da árvore de satisfação de <c>documentosExigidos</c>, sempre
+/// materializada (0..* raízes). <c>formulario</c> (Story #559): título, termo de
+/// aceite do formulário de inscrição — forma fechada mesmo quando os dois campos
+/// são nulos. <c>divulgacao</c> (UNI-REQ-0050, issue #563) é o mais novo: os campos
+/// publicados nas listas de resultado, a regra de abreviação derivada e a
+/// justificativa — forma fechada, default minimizado quando não configurada.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -127,16 +128,6 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private const int EscalaPadrao = 4;
     private const int EscalaPercentual = 2;
 
-    /// <summary>
-    /// O único bloco que ainda não tem dono (ADR-0109 D8): <c>divulgacao</c>. <c>vagas</c>
-    /// saiu daqui na issue #848, <c>cascataRemanejamento</c> na Story #575,
-    /// <c>identidadesUnidade</c> na issue #849 e <c>formulario</c> na Story #559 —
-    /// viraram blocos reais. Um bloco de topo <b>real</b> nunca emite este literal na
-    /// raiz: se a dimensão é obrigatória, a ausência é pendência de conformidade e o
-    /// gate recusa antes de canonicalizar.
-    /// </summary>
-    private static readonly JsonObject NaoConstruido = new() { ["status"] = "nao_construido" };
-
     public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
     {
         ArgumentNullException.ThrowIfNull(entrada);
@@ -166,7 +157,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["arvoreSatisfacao"] = SerializarArvoreSatisfacao(processo),
             ["formulario"] = SerializarFormulario(processo),
             ["cascataRemanejamento"] = SerializarCascataRemanejamento(processo),
-            ["divulgacao"] = NaoConstruido.DeepClone(),
+            ["divulgacao"] = SerializarDivulgacao(processo),
             ["cronogramaFases"] = SerializarCronogramaFases(processo),
             ["identidadesUnidade"] = SerializarIdentidadesUnidade(processo),
             ["fatosColetados"] = SerializarFatosColetados(processo.FatosColetados, entrada.ValoresSelecionaveisCongelados),
@@ -454,6 +445,37 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["regra"] = SerializarReferenciaRegra(cascata.Regra),
             ["fallbackCodigo"] = HashCanonicalComputer.NormalizeNfc(cascata.FallbackCodigo),
             ["ordens"] = ordens,
+        };
+    }
+
+    /// <summary>
+    /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — forma fechada, no molde de
+    /// <see cref="SerializarFormulario"/>: as três chaves existem sempre, com
+    /// <see langword="null"/> explícito quando ausentes. A ausência de
+    /// <see cref="ProcessoSeletivo.ConfiguracaoDivulgacao"/> materializa o EFETIVO — o default
+    /// minimizado que o certame já divulga —, e não a ausência de escolha administrativa: é
+    /// diferente do toggle <c>"presente"</c> de <see cref="SerializarBonusRegional"/>/
+    /// <see cref="SerializarCascataRemanejamento"/>. Um leitor do documento precisa ler os
+    /// campos publicados, não inferir o default a partir de uma ausência.
+    /// </summary>
+    /// <remarks>
+    /// <c>regraNomeAbreviado</c> é DERIVADO da regra vigente no instante do congelamento — não
+    /// existe campo "regra de abreviação" no agregado. Enquanto
+    /// <see cref="RegrasDeNomeAbreviado"/> conhecer uma única regra, derivar a vigente aqui é
+    /// indistinguível de reinjetar uma regra congelada; o fitness test da regra única trava essa
+    /// premissa e fala no dia em que ela deixar de valer.
+    /// </remarks>
+    private static JsonObject SerializarDivulgacao(ProcessoSeletivo processo)
+    {
+        ConfiguracaoDivulgacao? divulgacao = processo.ConfiguracaoDivulgacao;
+        IReadOnlyList<string> camposPublicos = divulgacao?.CamposPublicos ?? [ConfiguracaoDivulgacao.NumeroInscricao];
+        bool abrevia = camposPublicos.Contains(ConfiguracaoDivulgacao.NomeAbreviado, StringComparer.Ordinal);
+
+        return new JsonObject
+        {
+            ["camposPublicos"] = OrdenarPorConteudo(camposPublicos.Select(static c => JsonValue.Create(c)!)),
+            ["regraNomeAbreviado"] = abrevia ? RegrasDeNomeAbreviado.Vigente : null,
+            ["justificativa"] = divulgacao?.Justificativa is { } justificativa ? HashCanonicalComputer.NormalizeNfc(justificativa) : null,
         };
     }
 
@@ -1015,26 +1037,29 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     }
 
     /// <summary>
-    /// A mesma chave de conteúdo (ADR-0109 D9) para os seis conjuntos que são arrays de
+    /// A mesma chave de conteúdo (ADR-0109 D9) para os sete conjuntos que são arrays de
     /// TEXTO puro — <c>criteriosCumulativos</c>, <c>ocorrenciasEsperadas</c>,
     /// <c>valoresDominio</c>, os dois <c>args</c> de predicado de obrigatoriedade
-    /// (<c>codigos</c>, <c>necessidades</c>) e as alternativas de um átomo sob operador de
-    /// pertencimento (<see cref="SerializarValorDeAtomo"/>, issue #1068).
-    /// <see cref="PerfilCanonicoV1.SerializarChave"/> aceita <see cref="JsonNode"/>, não só
-    /// <see cref="JsonObject"/> — é o que permite ordenar o escalar pelos MESMOS bytes
-    /// canônicos (NFC incluído) que a emissão final grava, sem duplicar a normalização aqui.
+    /// (<c>codigos</c>, <c>necessidades</c>), as alternativas de um átomo sob operador de
+    /// pertencimento (<see cref="SerializarValorDeAtomo"/>, issue #1068) e
+    /// <c>divulgacao.camposPublicos</c> (issue #563). <see cref="PerfilCanonicoV1.SerializarChave"/>
+    /// aceita <see cref="JsonNode"/>, não só <see cref="JsonObject"/> — é o que permite ordenar o
+    /// escalar pelos MESMOS bytes canônicos (NFC incluído) que a emissão final grava, sem
+    /// duplicar a normalização aqui. <b>Internal</b>, não <c>private</c>: o decoder
+    /// (<see cref="EnvelopeCodec.LerDivulgacao"/>) reusa esta MESMA política para conferir que
+    /// <c>camposPublicos</c> chegou já ordenado — nunca reimplementa um comparador próprio.
     /// </summary>
     /// <remarks>
-    /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos seis vocabulários
+    /// Um item nulo é invariante quebrada, não entrada tolerável: nenhum dos sete vocabulários
     /// admite <c>null</c> como elemento — <see cref="LeitorEnvelope.Textos"/> já o recusa na
-    /// leitura para os cinco primeiros, e <see cref="Services.PredicadoDnfValidador"/> já
-    /// recusa alternativa não-string (logo nunca nula) antes da publicação para o sexto. Um
+    /// leitura para os seis primeiros, e <see cref="Services.PredicadoDnfValidador"/> já
+    /// recusa alternativa não-string (logo nunca nula) antes da publicação para o sétimo. Um
     /// envelope que o emitisse produziria um documento que o próprio decoder da mesma versão
     /// rejeitaria. Falha alto aqui, com mensagem própria, em vez de deixar o
     /// <see langword="null"/> estourar mais adiante dentro da serialização com uma
     /// <see cref="NullReferenceException"/> sem contexto.
     /// </remarks>
-    private static JsonArray OrdenarPorConteudo(IEnumerable<JsonValue> itens)
+    internal static JsonArray OrdenarPorConteudo(IEnumerable<JsonValue> itens)
     {
         List<JsonValue> lista = [];
         foreach (JsonValue? item in itens)
