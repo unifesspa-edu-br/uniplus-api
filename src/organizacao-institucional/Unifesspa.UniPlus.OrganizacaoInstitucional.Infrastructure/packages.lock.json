@@ -1132,7 +1132,7 @@
       },
       "Microsoft.EntityFrameworkCore.Design": {
         "type": "CentralTransitive",
-        "requested": "[10.0.7, )",
+        "requested": "[10.0.10, )",
         "resolved": "10.0.2",
         "contentHash": "tBwpyZ75SqcRjmZyhLYJVGKyfz1Z1dmsYtvJGZ2QLSI1tOHgMuLPTovunHA1JF9a0EWJs+WB6tVWmqo3DTL/MQ==",
         "dependencies": {
