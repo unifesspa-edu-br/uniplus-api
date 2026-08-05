@@ -127,20 +127,9 @@ public static class RegrasDeNomeAbreviado
     private static bool EhParticula(string token) =>
         Array.IndexOf(Particulas, RemoverAcentos(token).ToLowerInvariant()) >= 0;
 
-    private static string RemoverAcentos(string valor)
-    {
-        string decomposto = valor.Normalize(NormalizationForm.FormD);
-        StringBuilder builder = new(decomposto.Length);
-        foreach (char c in decomposto)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-            {
-                builder.Append(c);
-            }
-        }
-
-        return builder.ToString();
-    }
+    private static string RemoverAcentos(string valor) =>
+        string.Concat(valor.Normalize(NormalizationForm.FormD)
+            .Where(static c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark));
 
     /// <summary>
     /// O primeiro ELEMENTO DE TEXTO Unicode do token, maiúsculo — nunca <c>token[0]</c>: um

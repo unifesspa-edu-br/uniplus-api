@@ -74,14 +74,11 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
                 "A lista de campos públicos não pode ser vazia — para restaurar o default, remova a configuração explícita."));
         }
 
-        foreach (string campo in camposPublicos)
+        if (camposPublicos.FirstOrDefault(static c => c is not (NumeroInscricao or NomeAbreviado or Nome)) is { } campoNaoPermitido)
         {
-            if (campo is not (NumeroInscricao or NomeAbreviado or Nome))
-            {
-                return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
-                    "ConfiguracaoDivulgacao.CampoNaoPermitido",
-                    $"O campo '{campo}' não pertence ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome})."));
-            }
+            return Result<ConfiguracaoDivulgacao>.Failure(new DomainError(
+                "ConfiguracaoDivulgacao.CampoNaoPermitido",
+                $"O campo '{campoNaoPermitido}' não pertence ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome})."));
         }
 
         if (!camposPublicos.Contains(NumeroInscricao, StringComparer.Ordinal))
