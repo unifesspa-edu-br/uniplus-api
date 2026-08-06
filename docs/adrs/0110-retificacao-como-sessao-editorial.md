@@ -244,3 +244,40 @@ E o `IdempotencyFilter` — código **compartilhado** — precisa mudar (D6). N�
 - Transições `Encerrado` / `Cancelado` — não há comando na `main`, e esta ADR não os cria. Ela apenas impede que esses estados sejam **mutáveis por omissão** (D4).
 - Expiração de rascunho abandonado.
 - Diff visual "o que mudou" entre a versão vigente e o rascunho — frontend; aqui entregam-se os dados que o tornam possível.
+
+## Emenda 2 (2026-08-06) — codec único até o primeiro certame publicado
+
+Esta emenda corrige o regime de codecs da D1 sem reescrever o texto histórico. A regra de
+avanço de `schema_version` da D1 da ADR-0109 **não cai** com esta emenda; o que cai é a
+preservação de encoder e decoder para cada versão antes de haver envelope publicado a
+preservar.
+
+### E2.1 — Cai o registro de codecs por versão; permanece um único codec vivo
+
+Enquanto não houver produção nem certame publicado, há **um único codec vivo**, reescrito no
+lugar a cada mudança de forma. Não se criam codecs de versão ao lado. `EnvelopeCodecV11`,
+`EnvelopeCodecV12` e `EnvelopeCodecV13` são bibliotecas de leitores de bloco reutilizadas
+pelo codec único, não codecs registrados por `schema_version`.
+
+Por consequência, a versão anterior deixa de ser reconhecida quando a corrente avança: uma
+configuração congelada nessa versão não é reidratável, e a abertura de retificação sobre ela
+é recusada na porta. Sem certame publicado, essa perda não tem custo jurídico; contudo,
+ambientes compartilhados de desenvolvimento e homologação guardam dados que sobrevivem ao
+deploy. Eles precisam ser verificados e, se necessário, recriados antes do avanço.
+
+A regra de avanço continua a da ADR-0109: toda mudança de forma avança a versão corrente. O
+trem coordenado pré-publicação, definido na Emenda 2 da ADR-0109, não relaxa essa regra: as
+formas intermediárias não são publicáveis e o único avanço da última entrada fecha todas as
+mudanças da janela.
+
+### E2.2 — Retorno ao regime forense
+
+O primeiro certame publicado em **qualquer ambiente, inclusive homologação**, encerra este
+regime transitório. Não se espera a primeira versão de produção: publicar em homologação já
+cria um envelope que precisa ser preservado. A partir desse marco, volta a valer o regime
+forense que a D1 descrevia: cada `schema_version` publicada mantém encoder e decoder, os
+encoders não são aposentados e cada mudança de forma recebe avanço próprio.
+
+Assim, a prova de fidelidade de uma configuração congelada permanece possível durante toda a
+vida de cada versão publicada; versões anteriores à primeira publicação permanecem
+deliberadamente fora desse compromisso.

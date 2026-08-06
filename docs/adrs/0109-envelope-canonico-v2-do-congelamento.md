@@ -178,3 +178,41 @@ engano, destruiria o testemunho produtor→consumidor que o array existe para pr
 
 Contagem de blocos/chaves do envelope: fatia de #1083. Política de fixture única versus
 fixture-por-`schema_version`: fatia de #1053. Esta emenda não reabre nenhuma das duas.
+
+## Emenda 2 (2026-08-06) — golden fixture da forma corrente antes da primeira publicação
+
+Esta emenda corrige o alcance histórico da D2, sem reescrever as decisões originais: o
+regime de fixtures por `schema_version` pressupunha o registro de codecs por versão que a
+Emenda 2 da ADR-0110 aposenta para o período pré-publicação.
+
+### E2.1 — D1 continua valendo; o trem coordenado não cria duas formas publicáveis sob a mesma versão
+
+A **D1 continua valendo integralmente**: toda mudança de forma do envelope avança a versão
+corrente. Não é permitido deixar de avançar uma versão porque a alteração pareça pequena ou
+porque apenas um bloco provisório ganhou conteúdo real.
+
+Antes de haver produção ou certame publicado, mudanças de forma que pertencem à mesma janela
+e **só fazem sentido publicadas juntas** formam um trem coordenado. As entradas anteriores
+regeneram a golden fixture sem avançar a versão; a última entrada faz o único avanço que
+fecha o trem. Isto não é exceção à D1: nenhuma forma intermediária é publicável, portanto
+nunca há dois envelopes distintos publicados sob a mesma `schema_version`.
+
+O trem que fechou a forma `0.0.6` é o caso exercido: `315e4ca0` (valores selecionáveis),
+`339c1f87` (conjuntos simples), `3dab71a6` (cláusulas de predicado) e `69e01405`
+(divulgação) regeneraram a golden fixture ainda em `0.0.5`; `b29741ee` fez o avanço único
+para `0.0.6` e regenerou a fixture final. A regra vale somente antes do primeiro certame
+publicado em qualquer ambiente, inclusive homologação. A partir dele, cada mudança de forma
+exige o seu próprio avanço.
+
+### E2.2 — Cai a fixture por versão; permanece a prova de fidelidade da forma corrente
+
+Cai a parte da D2 que manda manter uma golden fixture por `schema_version`. Enquanto vigora
+o codec único, mantém-se somente a golden fixture da versão corrente, como prova de
+fidelidade byte a byte; a fixture da versão anterior sai no mesmo commit que avança a versão.
+No fechamento `b29741ee`, as fixtures `0.0.5` foram renomeadas para `0.0.6` e a `0.0.4`,
+órfã, foi removida.
+
+Permanece a outra parte da D2: mudar a forma sem regenerar a golden fixture corrente é
+impossível, e o diff continua tornando a mudança visível. Quando o primeiro certame for
+publicado em qualquer ambiente, inclusive homologação, volta o regime de preservação por
+versão da ADR-0110; então cada versão publicada terá a sua golden fixture preservada.
