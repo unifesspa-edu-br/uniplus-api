@@ -23,8 +23,9 @@ using Xunit;
 /// de identidade (etapa.Id). Prova o codec CORRENTE — no regime pré-produção (<c>EnvelopeCodec</c>,
 /// codec único, forma reescrita no lugar a cada bump), um bump de <c>schema_version</c> troca o
 /// codec corrente sem preservar o anterior no registro; o versionamento forense por codec
-/// (um por <c>schema_version</c>, nenhum jamais aposentado) só passa a valer a partir da primeira
-/// release de produção.
+/// (um por <c>schema_version</c>, nenhum jamais aposentado) só passa a valer a partir do primeiro
+/// certame publicado em qualquer ambiente, inclusive homologação — não da primeira release de
+/// produção.
 /// </summary>
 /// <remarks>
 /// <para>

@@ -16,8 +16,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// e a evolui livremente: mudar a forma reescreve a fixture, não gera um encoder congelado ao
 /// lado. O
 /// versionamento forense — um codec por <c>schema_version</c>, encoders aposentados só quando
-/// deixam de ser correntes — volta a valer quando a primeira release de produção fixar a
-/// versão <c>1.0.0</c>.
+/// deixam de ser correntes — volta a valer no primeiro certame publicado em qualquer ambiente,
+/// inclusive homologação. Não se espera a primeira release de produção: publicar em homologação
+/// já cria um envelope que precisa ser preservado.
 /// </summary>
 /// <remarks>
 /// <c>Codificar</c> delega ao <see cref="SnapshotPublicacaoCanonicalizer"/>, a projeção viva —

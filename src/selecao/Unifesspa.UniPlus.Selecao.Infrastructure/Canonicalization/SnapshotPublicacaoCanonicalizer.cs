@@ -105,10 +105,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// lugar sob a mesma versão corrente quando a forma muda — bump livre,
     /// sem migration, mas também sem obrigação de bump a cada mudança. O
     /// versionamento forense (um bump por chave nova ou por stub virando
-    /// conteúdo real, com encoder anterior aposentado) começa a valer só a
-    /// partir da primeira release de produção. Toda versão aqui declarada tem
-    /// de ter a sua golden fixture correspondente — um teste de política falha
-    /// o build se não tiver.
+    /// conteúdo real, com encoder anterior aposentado) começa a valer a
+    /// partir do primeiro certame publicado em qualquer ambiente, inclusive
+    /// homologação — não da primeira release de produção. Toda versão aqui
+    /// declarada tem de ter a sua golden fixture correspondente — um teste
+    /// de política falha o build se não tiver.
     /// </summary>
     /// <remarks>
     /// Story #575: <c>cascataRemanejamento</c> sai de stub para bloco real
