@@ -12,11 +12,13 @@ using Xunit;
 /// <summary>
 /// <b>Invariância à permutação</b> (Story #928, §7.5; issue #1087): o envelope canônico depende só
 /// do <b>conteúdo</b> da configuração, nunca da ordem em que as coleções não ordenadas chegam ao
-/// agregado. Permutar a ordem de entrada de etapas, distribuição de vagas e ofertas, critérios de
-/// desempate, cronograma de fases, fatos coletados, regras de derivação (a lista externa e as
-/// condições/regras aninhadas), destinos da cascata de remanejamento (dentro de uma mesma origem) e
-/// a árvore de satisfação (as raízes e os filhos de um grupo) — sem mudar nenhum valor — SHALL
-/// produzir os mesmos bytes canônicos e o mesmo hash.
+/// agregado. Permutar a ordem de entrada de etapas, da oferta de atendimento (condições, recursos e
+/// tipos de deficiência), distribuição de vagas e ofertas, critérios de desempate, cronograma de
+/// fases (inclusive as bancas requeridas de uma fase), fatos coletados, regras de derivação (a
+/// lista externa, as regras internas de uma configuração e as condições aninhadas de uma regra),
+/// destinos da cascata de remanejamento (dentro de uma mesma origem) e a árvore de satisfação (as
+/// raízes e os filhos de um grupo) — sem mudar nenhum valor — SHALL produzir os mesmos bytes
+/// canônicos e o mesmo hash.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -27,14 +29,34 @@ using Xunit;
 /// <c>IdCanonicoTests</c>); aqui a prova é sobre os <b>bytes do envelope inteiro</b>.
 /// </para>
 /// <para>
-/// FORA desta prova, por decisão: as coleções que o encoder já ordena pela CHAVE DE CONTEÚDO do
-/// próprio item (ADR-0109 D9) em vez de um campo <c>Ordem</c> declarado — <c>ofertaAtendimento</c>
-/// (condições/recursos/tipos de deficiência), <c>modalidades[].criteriosCumulativos</c>,
-/// <c>classificacao.regrasEliminacao</c>, <c>cronogramaFases.fases[].bancasRequeridas</c> e
-/// <c>documentosExigidos.exigencias</c>. A ordem de CRIAÇÃO dessa família não pode vazar para o
-/// envelope de qualquer forma (dois Guid v7 em ordem inversa também mudariam a ordem de ENTRADA), e
-/// já tem prova própria — <c>EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao</c> —
-/// no vetor de regressão que cabe a uma chave que É o próprio conteúdo, não uma posição declarada.
+/// <c>ofertaAtendimento</c> (condições/recursos/tipos de deficiência) e
+/// <c>cronogramaFases.fases[].bancasRequeridas</c> ordenam pela IDENTIDADE DE ORIGEM do item
+/// (<c>CondicaoOrigemId</c>/<c>RecursoOrigemId</c>/<c>TipoDeficienciaOrigemId</c>/<c>TipoBancaOrigemId</c>)
+/// — a segunda camada da política de ordenação, não a chave de conteúdo (ADR-0109 D9, a terceira e
+/// última camada, reservada a coleções sem identidade de negócio nenhuma). As duas entram nesta
+/// prova (a pré-condição correspondente confere que a permutação de fato inverte a ordem de
+/// entrada de cada uma).
+/// </para>
+/// <para>
+/// FORA desta prova, por decisão: <c>modalidades[].criteriosCumulativos</c> e
+/// <c>classificacao.regrasEliminacao</c> — as duas coleções que não têm identidade de negócio nem
+/// de origem entre os elementos, e por isso o encoder ordena pela CHAVE DE CONTEÚDO do próprio
+/// item (ADR-0109 D9). <c>classificacao.regrasEliminacao</c> tem prova própria —
+/// <c>EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao</c> varia a ordem de CRIAÇÃO
+/// de duas regras de eliminação (e, com ela, a ordem dos Guid v7) e prova que o envelope resultante
+/// não muda. <c>modalidades[].criteriosCumulativos</c> tem prova própria em
+/// <c>OrdenacaoDeConjuntosCanonicosTests.CriteriosCumulativos_OrdenaPelaChaveDeConteudoEmBytesUtf8</c>,
+/// que compara os bytes de duas entradas com o mesmo conteúdo em ordens de entrada diferentes.
+/// </para>
+/// <para>
+/// <c>documentosExigidos.exigencias</c> também fica FORA, por um motivo distinto dos dois acima: a
+/// chave PRIMÁRIA de ordenação é de negócio parcial — fase mais tipo de documento, ver
+/// <c>SnapshotPublicacaoCanonicalizer.SerializarExigencias</c> — não a identidade de origem nem a
+/// chave de conteúdo; a chave de conteúdo só desempata o caso raro de duas exigências idênticas na
+/// mesma fase e no mesmo tipo. Como a chave primária independe de qualquer identidade técnica da
+/// linha, a ordem de entrada não tem como vazar para o envelope — não há permutação a provar aqui.
+/// </para>
+/// <para>
 /// <c>valoresSelecionaveis[]</c> tem prova própria, em
 /// <see cref="PermutacaoDeValoresSelecionaveis_ProduzMesmosBytes"/>.
 /// </para>
@@ -55,18 +77,67 @@ public sealed class EnvelopeCanonicoPermutacaoTests
         direto.Etapas.Select(static e => e.Nome)
             .Should().NotEqual(permutado.Etapas.Select(static e => e.Nome),
                 "pré-condição: a permutação tem de inverter a ordem de entrada das etapas");
+
+        // A oferta de atendimento não tem chave `Ordem` — o encoder ordena as três listas pela
+        // IDENTIDADE DE ORIGEM do item (CondicaoOrigemId/RecursoOrigemId/TipoDeficienciaOrigemId),
+        // não pela chave de conteúdo. Sem esta pré-condição, remover o OrderBy de
+        // SerializarAtendimento no encoder deixaria a comparação de bytes ao final vazia para as
+        // três listas (issue #1087).
+        direto.OfertaAtendimento!.Condicoes.Select(static c => c.CondicaoOrigemId)
+            .Should().NotEqual(permutado.OfertaAtendimento!.Condicoes.Select(static c => c.CondicaoOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das condições da oferta de atendimento");
+        direto.OfertaAtendimento!.Recursos.Select(static r => r.RecursoOrigemId)
+            .Should().NotEqual(permutado.OfertaAtendimento!.Recursos.Select(static r => r.RecursoOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada dos recursos da oferta de atendimento");
+        direto.OfertaAtendimento!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId)
+            .Should().NotEqual(permutado.OfertaAtendimento!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada dos tipos de deficiência da oferta de atendimento");
+
+        direto.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId)
+            .Should().NotEqual(permutado.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada da distribuição de vagas por oferta");
+
         direto.CriteriosDesempate.Select(static c => c.Ordem)
             .Should().NotEqual(permutado.CriteriosDesempate.Select(static c => c.Ordem),
                 "pré-condição: a permutação tem de inverter a ordem de entrada dos critérios de desempate");
         direto.CronogramaFases.Select(static f => f.Codigo)
             .Should().NotEqual(permutado.CronogramaFases.Select(static f => f.Codigo),
                 "pré-condição: a permutação tem de inverter a ordem de entrada das fases do cronograma");
+
+        // As bancas requeridas não têm chave `Ordem` — o encoder ordena pela IDENTIDADE DE ORIGEM
+        // (TipoBancaOrigemId), não pela chave de conteúdo. A fase RESULTADO_PRELIMINAR é a única
+        // do corpus com mais de uma banca — sem esta pré-condição, remover o OrderBy de
+        // SerializarBancasRequeridas deixaria a comparação de bytes ao final vazia para esta lista.
+        FaseCronograma faseComBancasDireto = direto.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_PRELIMINAR");
+        FaseCronograma faseComBancasPermutado = permutado.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_PRELIMINAR");
+        faseComBancasDireto.BancasRequeridas.Select(static b => b.TipoBancaOrigemId)
+            .Should().NotEqual(faseComBancasPermutado.BancasRequeridas.Select(static b => b.TipoBancaOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das bancas requeridas da fase RESULTADO_PRELIMINAR");
+
         direto.FatosColetados.Select(static f => f.FatoCodigo)
             .Should().NotEqual(permutado.FatosColetados.Select(static f => f.FatoCodigo),
                 "pré-condição: a permutação tem de inverter a ordem de entrada dos fatos coletados");
         direto.RegrasDerivacao.Select(static c => c.CodigoFato)
             .Should().NotEqual(permutado.RegrasDerivacao.Select(static c => c.CodigoFato),
                 "pré-condição: a permutação tem de inverter a ordem de entrada da lista de configurações de derivação");
+
+        // A lista EXTERNA de configurações de derivação já está coberta acima — mas o `permutar`
+        // também inverte, DENTRO da configuração de MODALIDADE, a lista de regras (AC/LB_PPI) e,
+        // dentro da regra LB_PPI, a lista de condições aninhadas (COR_RACA/RENDA). Nenhuma das duas
+        // tinha pré-condição própria: um agregado que normalizasse a ordem de QUALQUER uma na
+        // entrada (por exemplo, reordenando por `Ordem`/`Clausula` num factory futuro) passaria
+        // pela comparação de bytes ao final por vacuidade, sem que a lacuna aparecesse (issue #1087).
+        ConfiguracaoDerivacaoFato derivacaoModalidadeDireto = direto.RegrasDerivacao.Single(static c => c.CodigoFato == "MODALIDADE");
+        ConfiguracaoDerivacaoFato derivacaoModalidadePermutado = permutado.RegrasDerivacao.Single(static c => c.CodigoFato == "MODALIDADE");
+        derivacaoModalidadeDireto.Regras.Select(static r => r.Contribui)
+            .Should().NotEqual(derivacaoModalidadePermutado.Regras.Select(static r => r.Contribui),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das regras dentro da configuração de derivação de MODALIDADE");
+
+        RegraDerivacaoConfigurada regraComCondicoesDireto = derivacaoModalidadeDireto.Regras.Single(static r => r.Contribui == "LB_PPI");
+        RegraDerivacaoConfigurada regraComCondicoesPermutado = derivacaoModalidadePermutado.Regras.Single(static r => r.Contribui == "LB_PPI");
+        regraComCondicoesDireto.Condicoes.Select(static c => c.Fato)
+            .Should().NotEqual(regraComCondicoesPermutado.Condicoes.Select(static c => c.Fato),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das condições aninhadas da regra que contribui LB_PPI");
 
         // A origem fixada é a primeira das 8 federais — permutar embaralha os DESTINOS dentro dela;
         // inverter a sequência de ORIGENS não provaria nada (cada origem aparece uma única vez na
@@ -93,9 +164,11 @@ public sealed class EnvelopeCanonicoPermutacaoTests
         SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(permutado));
 
         bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
-            "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, distribuição/ofertas, " +
-            "critérios de desempate, cronograma de fases, fatos coletados, regras de derivação, destinos da " +
-            "cascata e a árvore de satisfação não muda um único byte");
+            "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, oferta de atendimento, " +
+            "distribuição/ofertas, critérios de desempate, cronograma de fases (inclusive as bancas requeridas " +
+            "de uma fase), fatos coletados, regras de derivação (a lista externa, as regras internas de uma " +
+            "configuração e as condições aninhadas de uma regra), destinos da cascata e a árvore de satisfação " +
+            "não muda um único byte");
         PerfilCanonicoV1.Instancia.HashHex(bytesPermutado.Bytes)
             .Should().Be(PerfilCanonicoV1.Instancia.HashHex(bytesDireto.Bytes),
                 "bytes idênticos ⟹ hash idêntico");
