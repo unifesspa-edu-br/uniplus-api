@@ -85,9 +85,9 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         // retificação (ADR-0103). O tipo é o que o operador DECLAROU no corpo, não algo que o
         // servidor tenha deduzido do fato de ser uma retificação: um aviso pode emendar um
         // edital, e o rótulo do documento pertence ao órgão que o publica, não ao sistema.
-        AtoNormativo? ato = await AguardarAtoAsync(api, versoes[1].AtoCriadorId);
-        ato.Should().NotBeNull();
-        ato!.AtoRetificadoId.Should().Be(atoAberturaId);
+        AtoNormativo ato = await EsperaDeAtoRegistrado.AguardarAsync(
+            api, versoes[1].AtoCriadorId, "ato da retificação", processoId, atoPredecessorId: atoAberturaId);
+        ato.AtoRetificadoId.Should().Be(atoAberturaId);
         ato.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
         ato.TipoCodigo.Should().Be(
             DadosDoAtoDeTeste.TipoRetificacao,
@@ -129,35 +129,10 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         // O snapshot forense (Seleção) e o ato registrado (Publicações) guardam o MESMO
         // valor NFC — a reconciliação entre os dois módulos vale mesmo com input decomposto
         // (Postgres não normaliza texto, e a normalização acontece uma vez só, no handler).
-        AtoNormativo? ato = await AguardarAtoAsync(api, versao.AtoCriadorId);
-        ato.Should().NotBeNull();
-        ato!.MotivoRetificacao.Should().Be(motivoNoSnapshot);
+        AtoNormativo ato = await EsperaDeAtoRegistrado.AguardarAsync(api, versao.AtoCriadorId, "ato da retificação", processoId);
+        ato.MotivoRetificacao.Should().Be(motivoNoSnapshot);
         ato.MotivoRetificacao.Should().Be(
             "correção do prazo de inscrição".Normalize(NormalizationForm.FormC));
-    }
-
-    /// <summary>
-    /// Espera o ato aparecer em Publicações — o registro é assíncrono, por mensagem durável
-    /// (ADR-0108). A publicação em si já respondeu 204 muito antes.
-    /// </summary>
-    private static async Task<AtoNormativo?> AguardarAtoAsync(CascadingApiFactory api, Guid atoId)
-    {
-        DateTimeOffset limite = DateTimeOffset.UtcNow.AddSeconds(20);
-        while (DateTimeOffset.UtcNow < limite)
-        {
-            await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-            PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
-            AtoNormativo? ato = await db.Set<AtoNormativo>().AsNoTracking()
-                .FirstOrDefaultAsync(a => a.Id == atoId);
-            if (ato is not null)
-            {
-                return ato;
-            }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(300));
-        }
-
-        return null;
     }
 
     private static async Task<ProcessoPublicadoEvent?> EsperarEventoPorEditalAsync(
