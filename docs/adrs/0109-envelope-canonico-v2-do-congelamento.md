@@ -106,3 +106,75 @@ Onde a coleção não tem chave de negócio (as regras de eliminação: cardinal
 - O **conteúdo** dos 7 blocos ainda não construídos — cada um é a sua story.
 - O **motor** que avalia os predicados de D7. Esta ADR fixa a gramática e o freeze; quem executa é incremento (Inscrição, Homologação, Classificação).
 - A **canonicalização portável** (JCS/RFC 8785). O algoritmo corrente (`canonical-json/sha256@v1`) é estável e reproduzível dentro do runtime .NET; a interoperabilidade com outro runtime não é requisito desta fatia.
+
+## Emenda 1 (2026-08-05) — composição hierárquica da ordenação de coleções, e delegação do grafo de dependência
+
+A issue #1069 fechou a ordenação semântica das etapas (`etapas` passa a desempatar por
+`Ordem`, depois pelo conteúdo de negócio, nunca só pelo `Id`) e, ao fazê-lo, encontrou uma
+leitura ambígua no código que esta emenda corrige na origem: o comentário de classe de
+`SnapshotPublicacaoCanonicalizer` rotulava três camadas de ordenação distintas sob o único
+nome "D9", quando a decisão original só cobre a terceira. Esta emenda declara a política
+corrente por inteiro; não reabre o texto histórico acima.
+
+### E1.1 — D9 continua restrita à chave de conteúdo; a política completa é composição hierárquica
+
+Nenhum array do envelope escolhe UMA das três camadas abaixo — a política aplica-as em
+sequência, cada uma decidindo só o que a anterior deixou empatado:
+
+1. **`Ordem` semântica**, quando o campo existe e é atribuído por quem configura — etapas
+   (`Ordem` nulo ao fim), critérios de desempate, fases do cronograma, destinos da cascata de
+   remanejamento dentro de uma origem, raízes e filhos da árvore de satisfação (aqui a
+   unicidade de `Ordem` garantida por índice único dispensa qualquer camada seguinte) e
+   `valoresDominioDeclarados` (`Ordem`, depois `Codigo` como desempate de NEGÓCIO, não
+   técnico);
+2. **identidade de negócio única**, quando existe — oferta por `OfertaCursoOrigemId` e,
+   dentro da oferta, modalidade por `Codigo` ordinal (não `ModalidadeOrigemId`: ordenar pelo
+   Guid técnico da linha seria exatamente o vazamento de identidade técnica para o hash que
+   esta camada existe para evitar); condição/recurso/banca pelos seus `*OrigemId`; exigências
+   documentais por fase mais tipo de documento (chave PARCIAL: só reduz o empate ao caso raro
+   de duas exigências na mesma fase e do mesmo tipo, sem discriminar a coleção inteira
+   sozinha);
+3. **chave de conteúdo — esta é a D9**, usada onde não há chave natural SUFICIENTE para
+   decidir a posição sozinha: arrays sem nenhuma chave de negócio (regras de eliminação —
+   cardinalidade múltipla, duas do mesmo código são válidas —, critérios cumulativos,
+   ocorrências esperadas, obrigatoriedades) e, explicitamente, o grupo residual que sobra
+   depois de uma identidade PARCIAL — o desempate de exigências com fase e tipo idênticos
+   (camada 2), onde a chave de negócio existe mas não é total.
+
+Sobre o resultado das três, um desempate TÉCNICO final por `EntityBase.Id` estabiliza a rara
+duplicata verdadeira — só onde o Id já é congelado no envelope (etapa, exigência documental).
+Não é código morto: o domínio recusa `Ordem` INFORMADA duplicada, não conteúdo repetido, e o
+índice único do banco admite múltiplos `NULL` — duas etapas classificatórias com o mesmo
+nome, caráter, peso e nota mínima, ambas sem `Ordem`, são aceitas e precisam de um desempate
+alcançável.
+
+### E1.1b — o que a ordem semântica de cada array SIGNIFICA
+
+Registrar a camada não basta — nomear cada array de `Ordem` semântica pelo que a posição dele
+**decide no domínio**, não só pela regra técnica que a produz:
+
+| Caminho | O que a ordem significa |
+|---|---|
+| `etapas` | organização opcional da apresentação — NÃO é parcela do divisor da média (caráter e peso decidem isso) nem precedência de execução; nenhum consumidor a lê como sequência |
+| `cascataRemanejamento.ordens[].destinos` | prioridade legal de tentativa de remanejamento — muda para ONDE a vaga é oferecida primeiro, e pode mudar quem é convocado (UNI-REQ-0056) |
+| `criteriosDesempate` | refinamento sequencial do empate — o primeiro critério é aplicado antes do seguinte, e só desempata o resíduo que sobrar |
+| `cronogramaFases.fases` | ordem cronológica e jurídica — base de janelas, precedências entre fases e prazos de recurso |
+| `fatosColetados` | ordem de exibição e coleta no formulário; também limita toda pré-condição a citar só fato ANTERIOR |
+| `arvoreSatisfacao` (raízes e filhos) | posição declarada no fluxo documental — a álgebra de satisfação (grupos E/OU) é comutativa, a apresentação ao candidato não |
+| `regrasDerivacao[].regras` | ordem configurada de avaliação da derivação, incluindo qual regra é a âncora (incondicional) |
+| `documentosExigidos.metadadosFatos[].valoresDominioDeclarados` | ordem de apresentação das opções de um fato de seleção no formulário |
+| `grafoDependencia.ordemTopologica` | ordem produtor→consumidor entre campo, fato e exigência — delegada ao domínio, ver E1.2 |
+
+### E1.2 — `grafoDependencia.nos`/`arestas`/`ordemTopologica` é delegação, não uma quarta camada
+
+O grafo de dependência conjunto não é ordenado pela projeção do envelope: o value object de
+domínio já devolve nós, arestas e ordem topológica na sua forma canônica (Kahn, com a ordem
+de coleta efetiva como prioridade e `(Classe, Codigo)` como desempate), e o canonicalizador só
+serializa o que recebe, sem reordenar. Registrar isto como delegação evita a leitura de que
+"toda ordenação acontece na projeção": quem reordenasse `ordemTopologica` alfabeticamente, por
+engano, destruiria o testemunho produtor→consumidor que o array existe para provar.
+
+### Fora desta emenda
+
+Contagem de blocos/chaves do envelope: fatia de #1083. Política de fixture única versus
+fixture-por-`schema_version`: fatia de #1053. Esta emenda não reabre nenhuma das duas.
