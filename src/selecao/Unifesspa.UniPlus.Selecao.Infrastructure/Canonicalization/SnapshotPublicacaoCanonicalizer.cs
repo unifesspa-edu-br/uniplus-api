@@ -49,23 +49,51 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// recalcula o quadro a partir dele, e o round-trip compara os bytes dos dois blocos.
 /// </para>
 /// <para>
-/// <strong>Ordenação determinística das coleções (ADR-0109 D9):</strong>
-/// <c>IProcessoSeletivoRepository.ObterComConfiguracaoAsync</c> não aplica
-/// <c>ORDER BY</c> aos <c>Include</c> das coleções filhas — a ordem física
-/// devolvida pelo Postgres para a MESMA linha pode variar entre leituras
-/// (plano de execução, VACUUM, etc.). Como a ordem de um array entra no
-/// hash, todo bloco baseado em coleção é ordenado por uma chave estável
-/// antes de serializar: campo <c>Ordem</c> quando ele é semântico (etapas,
-/// critérios de desempate), identidade de negócio única quando existe
-/// (oferta/modalidade/condição/recurso por seus <c>*OrigemId</c>), e — onde
-/// não há chave natural — pela <b>chave de conteúdo</b>: os bytes canônicos
-/// do próprio item, comparados como bytes
-/// (<see cref="ComparadorLexicograficoDeBytes"/>), não como texto decodificado.
-/// Ordenar por <c>EntityBase.Id</c> era determinístico entre
-/// leituras da MESMA linha, mas não entre <b>configurações equivalentes</b>:
-/// duas regras de eliminação idênticas inseridas em ordem inversa recebem
-/// Guids v7 distintos e produziriam bytes distintos para a mesma configuração.
-/// A chave de conteúdo faz o envelope depender só do que ele diz.
+/// <strong>Ordenação determinística das coleções — composição hierárquica (ADR-0109, emenda
+/// #1069):</strong> <c>IProcessoSeletivoRepository.ObterComConfiguracaoAsync</c> não aplica
+/// <c>ORDER BY</c> aos <c>Include</c> das coleções filhas — a ordem física devolvida pelo
+/// Postgres para a MESMA linha pode variar entre leituras (plano de execução, VACUUM, etc.). Como
+/// a ordem de um array entra no hash, todo bloco baseado em coleção é ordenado antes de
+/// serializar — mas a política <b>não é a escolha de uma entre três camadas</b>; é a composição
+/// delas em sequência, cada uma decidindo só o que a anterior deixou empatado:
+/// </para>
+/// <list type="number">
+///   <item><c>Ordem</c> semântica, quando o campo existe — etapas (<c>Ordem</c> nulo ao fim),
+///   critérios de desempate, fases do cronograma, destinos da cascata dentro de uma origem,
+///   raízes/filhos da árvore de satisfação (a unicidade de <c>Ordem</c> por índice único dispensa
+///   qualquer camada seguinte) e <c>valoresDominioDeclarados</c> (<c>Ordem</c>, depois
+///   <c>Codigo</c> como desempate de negócio);</item>
+///   <item>identidade de negócio única, quando existe — oferta por <c>OfertaCursoOrigemId</c> e,
+///   dentro da oferta, modalidade por <c>Codigo</c> ordinal (não <c>ModalidadeOrigemId</c>: ordenar
+///   pelo Guid técnico da linha seria o vazamento de identidade técnica para o hash que esta camada
+///   existe para evitar); condição/recurso/banca por seus <c>*OrigemId</c>; exigências documentais
+///   por fase mais tipo de documento (chave PARCIAL: só reduz o empate ao caso raro, sem discriminar
+///   a coleção inteira sozinha);</item>
+///   <item>a <b>chave de conteúdo</b> (ADR-0109 D9), usada onde não há chave natural SUFICIENTE
+///   para decidir a posição sozinha: os bytes canônicos do próprio item, comparados como bytes
+///   (<see cref="ComparadorLexicograficoDeBytes"/>), não como texto decodificado. Regras de
+///   eliminação, critérios cumulativos, ocorrências esperadas e obrigatoriedades (sem nenhuma chave
+///   de negócio) usam esta camada — e também, explicitamente, o desempate residual de exigências
+///   com fase+tipo idênticos: a identidade da camada anterior é PARCIAL ali, não suficiente para
+///   decidir sozinha.</item>
+/// </list>
+/// <para>
+/// Por cima do resultado das três, um desempate <b>técnico</b> final por <c>EntityBase.Id</c>
+/// estabiliza a rara duplicata verdadeira — só onde o Id já é congelado no envelope (etapa,
+/// exigência). Não é código morto: o domínio recusa <c>Ordem</c> INFORMADA duplicada, não conteúdo
+/// repetido, e o índice único do banco admite múltiplos <c>NULL</c> — duas etapas classificatórias
+/// com o mesmo nome, caráter, peso e nota mínima, ambas sem <c>Ordem</c>, são aceitas e precisam de
+/// um desempate alcançável. Ordenar por <c>Id</c> sozinho, sem as camadas de conteúdo/identidade
+/// antes dele, era determinístico entre leituras da MESMA linha, mas não entre configurações
+/// equivalentes: duas linhas idênticas inseridas em ordem inversa recebem Guids v7 distintos e
+/// produziriam bytes distintos para a mesma configuração.
+/// </para>
+/// <para>
+/// <c>grafoDependencia.nos</c>/<c>arestas</c>/<c>ordemTopologica</c> NÃO é uma quarta camada desta
+/// lista — é ordem canônica <b>derivada pelo domínio e apenas preservada</b> aqui:
+/// <see cref="Domain.ValueObjects.GrafoDependenciaConjunta"/> já devolve os três na sua forma final
+/// (Kahn, com a ordem de coleta efetiva como prioridade e <c>(Classe, Codigo)</c> como desempate),
+/// e a projeção não reordena o que recebe.
 /// </para>
 /// </remarks>
 public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonicalizer
@@ -114,8 +142,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// que o candidato pode escolher, quando o tipo de renderização é de seleção — e
     /// <c>documentosExigidos.metadadosFatos[].valoresDominioDeclarados[]</c> ganha <c>ordem</c>,
     /// que até aqui era descartada no congelamento.
+    /// Issue #1069: o bump para <c>0.0.6</c> fecha o trem de mudanças de forma que #1059, #1067 e
+    /// #1068 regeneraram sob a mesma <c>0.0.5</c> sem tocar a versão, de propósito — e acrescenta a
+    /// própria mudança desta issue: <c>etapas</c> passa a desempatar duas etapas sem <c>Ordem</c>
+    /// pelo conteúdo de negócio (nome, caráter, peso, nota mínima), não mais só por <c>Id</c> — ver
+    /// <see cref="SerializarEtapas"/>. Como não há produção nem certame publicado em ambiente
+    /// nenhum, o avanço não migra dado nem cria decodificador de compatibilidade: fixture nova,
+    /// versão anterior deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.5";
+    internal const string SchemaVersionAtual = "0.0.6";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -203,34 +238,58 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ["termoAceiteTexto"] = processo.FormularioTermoAceiteTexto is { } termo ? HashCanonicalComputer.NormalizeNfc(termo) : null,
     };
 
+    /// <summary>
+    /// Etapas do processo (issue #1069): <c>Ordem ?? int.MaxValue</c> primeiro (semântica, define a
+    /// posição de apresentação — nunca o divisor da média, ver <see cref="Domain.Entities.ProcessoSeletivo.DefinirEtapas"/>);
+    /// para as etapas sem <c>Ordem</c>, o desempate é pelo <b>conteúdo de negócio</b> do item — não
+    /// pelo <c>Id</c>. Sem chave de negócio única entre etapas (o domínio só recusa <c>Ordem</c>
+    /// INFORMADA duplicada), duas etapas classificatórias com o mesmo nome, caráter, peso e nota
+    /// mínima, ambas sem <c>Ordem</c>, são aceitas — se o desempate fosse por <c>Id</c>, a posição de
+    /// uma etapa sem <c>Ordem</c> dependeria da ordem de inserção no banco (Guid v7 cronológico) em
+    /// vez do que a etapa efetivamente diz.
+    /// </summary>
+    /// <remarks>
+    /// <c>Id</c> continua como desempate TÉCNICO final, alcançável: as duas etapas do parágrafo
+    /// acima são conteudisticamente idênticas, então a chave de conteúdo empata, e sobra o Id para
+    /// tornar a posição determinística entre leituras — não para discriminar etapas genuinamente
+    /// distintas, que a chave de conteúdo já resolve.
+    /// </remarks>
     private static JsonArray SerializarEtapas(ProcessoSeletivo processo)
     {
-        JsonArray array = [];
-        IOrderedEnumerable<EtapaProcesso> ordenadas = processo.Etapas
-            .OrderBy(static e => e.Ordem ?? int.MaxValue)
-            .ThenBy(static e => e.Id);
-        foreach (EtapaProcesso etapa in ordenadas)
-        {
-            array.Add(new JsonObject
-            {
-                // Id incluído (achado Codex, revisão do PR #791): os blocos
-                // "criteriosDesempate" (DESEMPATE-MAIOR-NOTA-ETAPA) e
-                // "classificacao" (ELIM-NOTA-MINIMA-ETAPA) congelam um
-                // etapaRef apontando para este Id — sem ele aqui, o snapshot
-                // teria uma referência não resolvível dentro do próprio JSON
-                // congelado, obrigando a consultar a tabela viva (mutável)
-                // para interpretar um documento que deveria ser autocontido.
-                ["id"] = etapa.Id,
-                ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome),
-                ["carater"] = etapa.Carater.ToString(),
-                ["peso"] = etapa.Peso is { } peso ? HashCanonicalComputer.SerializeDecimalCanonical(peso, EscalaPadrao) : null,
-                ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscalaPadrao) : null,
-                ["ordem"] = etapa.Ordem,
-            });
-        }
+        // Uma projeção só por etapa: o JsonObject SEM "id" é montado uma única vez, os bytes-chave
+        // saem dele, e "id" é inserido no MESMO objeto depois de ordenar. Duas projeções (uma para
+        // a chave, outra para a emissão) poderiam divergir se uma normalização futura tocasse só
+        // uma delas — a etapa sairia ordenada por bytes que não correspondem ao item emitido.
+        IOrderedEnumerable<(EtapaProcesso Etapa, JsonObject SemId)> ordenadas = processo.Etapas
+            .Select(static e => (Etapa: e, SemId: SerializarEtapaSemIdentidade(e)))
+            .OrderBy(static par => par.Etapa.Ordem ?? int.MaxValue)
+            .ThenBy(
+                static par => PerfilAtual.Serializar(par.SemId),
+                ComparadorLexicograficoDeBytes.Instancia)
+            .ThenBy(static par => par.Etapa.Id);
 
-        return array;
+        return new JsonArray([.. ordenadas.Select(static par =>
+        {
+            // Id incluído: os blocos "criteriosDesempate" (DESEMPATE-MAIOR-NOTA-ETAPA) e
+            // "classificacao" (ELIM-NOTA-MINIMA-ETAPA) congelam um
+            // etapaRef apontando para este Id — sem ele aqui, o snapshot
+            // teria uma referência não resolvível dentro do próprio JSON
+            // congelado, obrigando a consultar a tabela viva (mutável)
+            // para interpretar um documento que deveria ser autocontido.
+            JsonObject item = par.SemId;
+            item.Insert(0, "id", JsonValue.Create(par.Etapa.Id));
+            return (JsonNode)item;
+        })]);
     }
+
+    private static JsonObject SerializarEtapaSemIdentidade(EtapaProcesso etapa) => new()
+    {
+        ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome),
+        ["carater"] = etapa.Carater.ToString(),
+        ["peso"] = etapa.Peso is { } peso ? HashCanonicalComputer.SerializeDecimalCanonical(peso, EscalaPadrao) : null,
+        ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscalaPadrao) : null,
+        ["ordem"] = etapa.Ordem,
+    };
 
     private static JsonArray SerializarDistribuicao(ProcessoSeletivo processo)
     {
@@ -624,7 +683,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// em alguma <see cref="CondicaoGatilho"/> de alguma <see cref="DocumentoExigido"/> do
     /// processo. Bloco IRMÃO de <c>exigencias</c>/<c>obrigatoriedades</c>/
     /// <c>referenciaTemporalFatos</c> dentro de <c>documentosExigidos</c> — array SEMPRE
-    /// presente (nunca <c>nao_construido</c>, D9), vazio quando nenhuma condição existe.
+    /// presente (nunca <c>nao_construido</c>, D8), vazio quando nenhuma condição existe.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -684,11 +743,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
     /// <summary>
     /// Story #923 — a TOPOLOGIA da árvore de satisfação (<see cref="NoExigencia"/>, Stories
-    /// #920/#921/#922): raízes ordenadas por <see cref="NoExigencia.Ordem"/> — determinístico
-    /// sem chave de conteúdo (D9 não se aplica aqui, ao contrário de <c>exigencias</c>/
-    /// <c>regrasEliminacao</c>): <c>ux_nos_exigencia_raiz_ordem</c>/<c>ux_nos_exigencia_irmaos_ordem</c>
-    /// (unique index, <c>NoExigenciaConfiguration</c>) já garantem <c>Ordem</c> única entre
-    /// raízes e entre irmãos, então não há empate possível a resolver por conteúdo.
+    /// #920/#921/#922): raízes ordenadas pela primeira camada da composição hierárquica (ADR-0109,
+    /// emenda #1069), <see cref="NoExigencia.Ordem"/> — posição declarada no fluxo documental
+    /// apresentado ao candidato. <c>ux_nos_exigencia_raiz_ordem</c>/<c>ux_nos_exigencia_irmaos_ordem</c>
+    /// (unique index, <c>NoExigenciaConfiguration</c>) garantem <c>Ordem</c> única entre raízes e
+    /// entre irmãos — suficiente para tornar a posição determinística.
     /// </summary>
     private static JsonArray SerializarArvoreSatisfacao(ProcessoSeletivo processo) =>
         new([.. processo.RaizesDeExigencia.OrderBy(static r => r.Ordem).Select(static r => (JsonNode)SerializarNo(r))]);

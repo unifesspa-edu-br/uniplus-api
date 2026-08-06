@@ -784,7 +784,7 @@ public sealed class EnvelopeCanonicoGoldenTests
     // ── Fixture da variante COM cascata (Story #575) — nome próprio, fora da chave por
     // schema_version: é uma segunda fixture da MESMA versão de schema, não uma versão nova. ──
 
-    private const string NomeDaFixtureCascata = "envelope-0.0.5-cascata.json";
+    private const string NomeDaFixtureCascata = "envelope-0.0.6-cascata.json";
 
     private static string CaminhoDaFixtureCascata() => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
