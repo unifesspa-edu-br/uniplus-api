@@ -15,10 +15,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </para>
 /// <list type="number">
 ///   <item>chaves de todo objeto reordenadas recursivamente por comparação ordinal; o perfil
-///   em si <b>não reordena arrays</b> — a ordem que ele recebe é a ordem que emite. Quem
-///   decide, ANTES de chegar aqui, se um array carrega ordem semântica (preservada tal qual)
-///   ou é um conjunto sem posição própria entre os itens (reduzido à ordem canônica pela
-///   chave de conteúdo, ADR-0109 D9) é a projeção que monta o payload — nunca o perfil;</item>
+///   em si <b>não reordena arrays</b> — a ordem que ele recebe é a ordem que emite. A projeção
+///   que monta o payload, nunca o perfil, decide ANTES de chegar aqui: aplica, em sequência, as
+///   camadas pertinentes — materializa a ordem semântica já declarada (por exemplo, ordenando
+///   por <c>Ordem</c>), resolve a identidade de negócio quando existe para desempatar o que a
+///   camada anterior deixou empatado, e reduz o que ainda sobrar sem posição própria à ordem
+///   canônica pela chave de conteúdo (ADR-0109 D9) — o array que chega aqui já está na ordem
+///   final, e o perfil só o preserva;</item>
 ///   <item>chaves reordenadas por comparação ordinal (não são normalizadas em NFC — as chaves
 ///   estruturais são ASCII; a normalização de chaves de bloco opaco fica para quando a válvula
 ///   de escape deixar de ser exceção);</item>

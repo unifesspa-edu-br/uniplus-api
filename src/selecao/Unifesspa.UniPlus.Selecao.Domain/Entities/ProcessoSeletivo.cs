@@ -201,9 +201,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Substitui integralmente as etapas pontuadas do processo. A ordem, o
-    /// caráter e o peso definem o divisor da média
-    /// (<see cref="CalcularDivisorMedia"/>).
+    /// Substitui integralmente as etapas pontuadas do processo. O caráter e o
+    /// peso definem o divisor da média (<see cref="CalcularDivisorMedia"/>);
+    /// a <c>Ordem</c> é só a posição de apresentação no envelope congelado
+    /// (issue #1069) — não entra na fórmula da nota final.
     /// </summary>
     public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas, PrecondicaoIfMatch precondicao)
     {
