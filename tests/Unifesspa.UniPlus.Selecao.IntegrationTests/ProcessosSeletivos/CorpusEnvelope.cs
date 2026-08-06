@@ -122,18 +122,18 @@ internal static class CorpusEnvelope
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
-            condicoes: [
+            condicoes: Ordem<OfertaCondicao>([
                 OfertaCondicao.Criar(new Guid("eeee0000-0000-4000-8000-000000000001"), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
                 OfertaCondicao.Criar(new Guid("eeee0000-0000-4000-8000-000000000002"), "LACTANTE", "Lactante"),
-            ],
-            recursos: [
+            ], permutar),
+            recursos: Ordem<OfertaRecurso>([
                 OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000001"), "Ledor"),
                 OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000002"), "Prova ampliada"),
-            ],
-            tiposDeficiencia: [
+            ], permutar),
+            tiposDeficiencia: Ordem<OfertaTipoDeficiencia>([
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "Deficiência visual"),
                 OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "Deficiência auditiva"),
-            ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas(Ordem([DistribuicaoLei12711(), DistribuicaoInstitucional()], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -171,7 +171,7 @@ internal static class CorpusEnvelope
             baseadoEmEnem: true).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases(
-            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4): COR_RACA é coletado sem
@@ -367,7 +367,9 @@ internal static class CorpusEnvelope
     /// 1ª instância com valor (5 dias corridos), a 2ª <b>nula</b> (não bloqueia — o caso
     /// normal do Ingresso via judicial). É o ramo mais rico do bloco <c>cronogramaFases</c>.
     /// </summary>
-    private static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0) => FaseCronograma.Reidratar(
+    /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
+    /// <param name="permutar">Inverte a ordem de ENTRADA das bancas requeridas desta fase — nunca o conteúdo.</param>
+    private static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0, bool permutar = false) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         ordem: 2,
         faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"),
@@ -383,10 +385,10 @@ internal static class CorpusEnvelope
         fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
         atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
         atoProduzidoEfeitoIrreversivel: true,
-        bancasRequeridas: [
+        bancasRequeridas: Ordem<BancaRequerida>([
             BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000001"), "BANCA_ANALISE_DOCUMENTAL"),
             BancaRequerida.Criar(new Guid("5555eeee-0000-4000-8000-000000000002"), "BANCA_HETEROIDENTIFICACAO"),
-        ],
+        ], permutar),
         regraRecurso: RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
             new ArgsRegraPrazoRecurso(
