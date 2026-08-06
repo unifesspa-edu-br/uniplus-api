@@ -48,8 +48,8 @@ public sealed class RegraDeNomeAbreviadoUnicaTests
             "aquela versão congelou — a prova de fidelidade (round-trip) vai acusar divergência em " +
             "certames legítimos. A correção é reintroduzir o transporte explícito da regra " +
             "congelada (um campo em EntradaCanonicalizacao/EnvelopeReidratado, propagado por " +
-            "RestauradorDeConfiguracao) — ou, se a primeira release de produção já tiver saído, " +
-            "resolver pelo regime de codec por versão (um decoder por schema_version, cada um " +
-            "com a semântica da sua época).");
+            "RestauradorDeConfiguracao) — ou, se o primeiro certame publicado em qualquer " +
+            "ambiente, inclusive homologação, já tiver ocorrido, resolver pelo regime de codec " +
+            "por versão (um decoder por schema_version, cada um com a semântica da sua época).");
     }
 }
