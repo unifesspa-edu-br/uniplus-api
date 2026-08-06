@@ -71,6 +71,18 @@ internal static class CorpusEnvelope
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
     /// <summary>
+    /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo (Story
+    /// #928, §7.5): o mesmo conjunto de itens, apresentado ao agregado em ordem física
+    /// inversa, tem de produzir bytes canônicos idênticos — a projeção ordena tudo por
+    /// chave determinística antes de serializar. Compartilhado por toda coleção do corpus
+    /// que declara <c>permutar</c>: etapas, distribuição de vagas, critérios de desempate,
+    /// cronograma de fases, fatos coletados, regras de derivação, destinos da cascata
+    /// (dentro de uma mesma origem) e a árvore de satisfação (raízes e filhos).
+    /// </summary>
+    private static IReadOnlyList<T> Ordem<T>(IReadOnlyList<T> itens, bool inverter) =>
+        inverter ? [.. ((IEnumerable<T>)itens).Reverse()] : itens;
+
+    /// <summary>
     /// O agregado mais rico que o modelo permite: três etapas (uma de cada caráter),
     /// atendimento povoado, bônus com teto, <b>as quatro</b> variantes de desempate,
     /// classificação local com <b>três</b> regras de eliminação — duas delas do
@@ -83,14 +95,17 @@ internal static class CorpusEnvelope
     /// e o segundo <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> em silêncio. Um corpus com “uma de
     /// cada variante” não pegaria isso.
     /// </remarks>
-    internal static ProcessoSeletivo ProcessoRico(int variante = 0, bool permutar = false)
+    /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
+    /// <param name="permutar">Inverte a ordem de ENTRADA das coleções não ordenadas — nunca o conteúdo.</param>
+    /// <param name="comArvoreSatisfacao">
+    /// Opt-in: acrescenta a árvore de satisfação de documentos exigidos (<see cref="ArvoreSatisfacaoRica"/>).
+    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.5-rico.json</c>) e os testes de
+    /// round-trip congelam a forma de HOJE do corpus rico — sem árvore, <c>documentosExigidos.exigencias</c>
+    /// e <c>arvoreSatisfacao</c> vazios. Populá-la incondicionalmente mudaria os bytes desse envelope de
+    /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
+    /// </param>
+    internal static ProcessoSeletivo ProcessoRico(int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false)
     {
-        // Permuta a ORDEM DE ENTRADA das coleções não ordenadas (Story #928, §7.5): o mesmo conteúdo
-        // apresentado ao agregado em ordem inversa tem de produzir bytes canônicos idênticos, porque a
-        // projeção ordena tudo por chave determinística. Só a ordem de entrada muda — nunca o conteúdo.
-        static IReadOnlyList<T> Ordem<T>(IReadOnlyList<T> itens, bool inverter) =>
-            inverter ? [.. ((IEnumerable<T>)itens).Reverse()] : itens;
-
         Guid objetiva = EtapaId(1, variante);
         Guid redacao = EtapaId(2, variante);
         Guid entrevista = EtapaId(3, variante);
@@ -100,11 +115,11 @@ internal static class CorpusEnvelope
             "PS Rico 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
-        processo.DefinirEtapas([
+        processo.DefinirEtapas(Ordem([
             EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),
             EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, peso: 2.2500m, notaMinima: null, ordem: 2),
             EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 60.0000m, ordem: 3),
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
             condicoes: [
@@ -131,14 +146,14 @@ internal static class CorpusEnvelope
 
         // As QUATRO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
         // ordens distintas), que um decoder indexado por código colapsaria em uma.
-        processo.DefinirCriteriosDesempate([
+        processo.DefinirCriteriosDesempate(Ordem([
             CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, 'c'), new ArgsDesempateIdoso(60)).Value!,
             CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(objetiva)).Value!,
             CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(redacao)).Value!,
             CriterioDesempate.Criar(4, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), new ArgsDesempatePredicadoFato(
                 CondicaoDnf.Criar("escola_publica", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)).Value!,
             CriterioDesempate.Criar(5, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
@@ -155,7 +170,8 @@ internal static class CorpusEnvelope
             ],
             baseadoEmEnem: true).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirCronogramaFases([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante)], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases(
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         // Coleta de fatos + derivação de MODALIDADE (Story #928, §7.4): COR_RACA é coletado sem
@@ -201,28 +217,129 @@ internal static class CorpusEnvelope
         // DistribuicaoLei12711 já são SegueCascata (INV-12) — sem uma cascata que as cubra,
         // Publicar() recusa com ProcessoSeletivo.CascataOrigemAusente (PendenciaDaCascata).
         // A matriz legal completa (8×7, fallback AC) é o que mantém este corpus PUBLICÁVEL.
-        processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataLegalCompleta(permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Árvore de satisfação de documentos exigidos (Story #920) — opt-in (ver o parâmetro
+        // comArvoreSatisfacao acima): incluí-la incondicionalmente mudaria o envelope de
+        // referência que as golden fixtures e os testes de round-trip congelam.
+        if (comArvoreSatisfacao)
+        {
+            processo.DefinirDocumentosExigidos(ArvoreSatisfacaoRica(variante, permutar), PrecondicaoIfMatch.Ausente)
+                .IsSuccess.Should().BeTrue();
+        }
 
         return processo;
     }
 
-    /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>
-    private static ConfiguracaoCascataRemanejamento CascataLegalCompleta()
+    /// <summary>
+    /// A matriz legal completa (8×7), fallback AC — mesma forma semeada em
+    /// REMANEJ-CASCATA-LEI-12711 v1. <paramref name="permutar"/> inverte a ordem de ENTRADA dos
+    /// destinos DENTRO de cada origem — nunca a ordem das origens em si: cada origem aparece uma
+    /// única vez na cascata, então permutar a sequência de origens não exercitaria a ordenação de
+    /// <c>cascataRemanejamento…destinos</c> — só a dos destinos de uma MESMA origem prova isso.
+    /// </summary>
+    private static ConfiguracaoCascataRemanejamento CascataLegalCompleta(bool permutar = false)
     {
         IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
         List<DestinoRemanejamento> destinos = [];
         foreach (string origem in origens)
         {
             string[] destinosDaOrigem = [.. origens.Where(o => o != origem)];
+            List<DestinoRemanejamento> destinosDestaOrigem = [];
             for (int i = 0; i < destinosDaOrigem.Length; i++)
             {
-                destinos.Add(DestinoRemanejamento.Criar(origem, i + 1, destinosDaOrigem[i]).Value!);
+                destinosDestaOrigem.Add(DestinoRemanejamento.Criar(origem, i + 1, destinosDaOrigem[i]).Value!);
             }
+
+            destinos.AddRange(Ordem(destinosDestaOrigem, permutar));
         }
 
         return ConfiguracaoCascataRemanejamento.Criar(
             Regra(RegraRemanejamentoCodigo.Cascata, '1'), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
+
+    /// <summary>
+    /// A árvore de satisfação exercitada pela prova de permutação (Story #928, §7.5, issue
+    /// #1087): DUAS raízes — uma folha solteira (<c>HISTORICO_ESCOLAR</c>, exigência "solteira",
+    /// sem grupo) e um grupo <c>OU</c> com DOIS filhos (comprovação de renda por declaração de
+    /// imposto de renda OU extrato bancário). Duas raízes de um filho cada deixariam a coleção
+    /// <c>filhos</c> trivial — qualquer ordenação produziria o mesmo resultado, e a permutação
+    /// não provaria nada sobre a ordenação de <c>arvoreSatisfacao[].filhos</c>.
+    /// </summary>
+    /// <remarks>
+    /// Ids <b>fixos</b>, via <c>Reidratar</c> — mesma razão de <see cref="EtapaId"/>: tanto
+    /// <c>DocumentoExigido.Id</c> quanto <c>NoExigencia.Id</c> entram no envelope
+    /// (<c>exigenciaId</c>/<c>id</c>). <c>Criar</c> sorteia um Guid v7 novo a cada chamada — duas
+    /// montagens desta árvore (uma para o processo direto, outra para o permutado) produziriam
+    /// ids distintos e os bytes nunca bateriam, mesmo sem nenhuma diferença de ORDEM.
+    /// </remarks>
+    private static IReadOnlyList<NoExigencia> ArvoreSatisfacaoRica(int variante, bool permutar)
+    {
+        Guid faseInscricaoId = FaseInscricao(variante).Id;
+
+        DocumentoExigido historicoEscolar = DocumentoExigidoRico(
+            DocumentoExigidoIdFixo(1, variante), faseInscricaoId, TipoDocumentoOrigemIdFixo(1), "HISTORICO_ESCOLAR",
+            "Histórico escolar do ensino médio", "ACADEMICO", obrigatorio: true);
+        DocumentoExigido declaracaoImpostoRenda = DocumentoExigidoRico(
+            DocumentoExigidoIdFixo(2, variante), faseInscricaoId, TipoDocumentoOrigemIdFixo(2), "DECLARACAO_IMPOSTO_RENDA",
+            "Declaração de Imposto de Renda", "RENDA", obrigatorio: false);
+        DocumentoExigido extratoBancario = DocumentoExigidoRico(
+            DocumentoExigidoIdFixo(3, variante), faseInscricaoId, TipoDocumentoOrigemIdFixo(3), "EXTRATO_BANCARIO",
+            "Extrato bancário dos últimos três meses", "RENDA", obrigatorio: false);
+
+        NoExigencia raizSolteira = NoExigencia.Reidratar(
+            NoExigenciaIdFixo(1, variante), TipoNo.Folha, ordem: 0,
+            documentoExigidoId: historicoEscolar.Id, documentoExigido: historicoEscolar,
+            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
+            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
+        NoExigencia filhoDeclaracao = NoExigencia.Reidratar(
+            NoExigenciaIdFixo(2, variante), TipoNo.Folha, ordem: 0,
+            documentoExigidoId: declaracaoImpostoRenda.Id, documentoExigido: declaracaoImpostoRenda,
+            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
+            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
+        NoExigencia filhoExtrato = NoExigencia.Reidratar(
+            NoExigenciaIdFixo(3, variante), TipoNo.Folha, ordem: 1,
+            documentoExigidoId: extratoBancario.Id, documentoExigido: extratoBancario,
+            quantidadeMinima: NoExigencia.QuantidadeMinimaPadrao, consequencia: null, chaveDistincao: null,
+            dataReferencia: null, ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [], filhos: []);
+        NoExigencia grupoRenda = NoExigencia.Reidratar(
+            NoExigenciaIdFixo(4, variante), TipoNo.GrupoOu, ordem: 1,
+            documentoExigidoId: null, documentoExigido: null,
+            quantidadeMinima: 1, consequencia: null, chaveDistincao: null, dataReferencia: null,
+            ocorrenciasEsperadas: null, repetePorEntidade: null, basesLegais: [],
+            filhos: Ordem([filhoDeclaracao, filhoExtrato], permutar));
+
+        return Ordem([raizSolteira, grupoRenda], permutar);
+    }
+
+    private static Guid TipoDocumentoOrigemIdFixo(int indice) =>
+        new($"77771111-0000-4000-8000-00000000000{indice:x}");
+
+    private static Guid DocumentoExigidoIdFixo(int ordem, int variante) =>
+        new($"7777200{variante:x}-0000-4000-8000-00000000000{ordem:x}");
+
+    private static Guid NoExigenciaIdFixo(int ordem, int variante) =>
+        new($"7777300{variante:x}-0000-4000-8000-00000000000{ordem:x}");
+
+    private static DocumentoExigido DocumentoExigidoRico(
+        Guid id, Guid exigidoNaFaseId, Guid tipoDocumentoOrigemId, string tipoDocumentoCodigo,
+        string tipoDocumentoNome, string tipoDocumentoCategoria, bool obrigatorio) =>
+        DocumentoExigido.Reidratar(
+            id,
+            exigidoNaFaseId,
+            tipoDocumentoOrigemId: tipoDocumentoOrigemId,
+            tipoDocumentoCodigo: tipoDocumentoCodigo,
+            tipoDocumentoNome: tipoDocumentoNome,
+            tipoDocumentoCategoria: tipoDocumentoCategoria,
+            aplicabilidade: Aplicabilidade.Geral,
+            obrigatorio: obrigatorio,
+            consequenciaIndeferimento: null,
+            grupoSatisfacaoId: null,
+            condicoes: [],
+            basesLegais: [],
+            idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(qualquer: true, entradas: null).Value!,
+            tamanhoMaximoBytes: null);
 
     /// <summary>Fase 1: coleta inscrição, sem ato produzido — a origem é InscricaoPropria.</summary>
     private static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(
