@@ -274,6 +274,13 @@ public sealed class EnvelopeFechadoE2ETests
         // fechamento (passo 21) vai reconferir que eles não mudaram um byte.
         (string hashV1, Guid versaoV1Id) = await LerIdentidadeDaVersaoAsync(api, atoV1Id);
 
+        // O vínculo cross-módulo é provado pela IDENTIDADE da versão que o ato guarda por
+        // valor, não pela existência dela: um mapeamento que gravasse a versão errada — ou uma
+        // versão obsoleta de outro processo — passaria por uma asserção de nulidade.
+        atoV1.VersaoInvocada.Should().NotBeNull("o ato guarda por valor a versão que ele governa (ADR-0075/0061)");
+        atoV1.VersaoInvocada!.Id.Should().Be(versaoV1Id, "o ato de abertura governa exatamente V1");
+        atoV1.VersaoInvocada.Hash.Should().Be(hashV1, "o hash guardado em Publicações é o mesmo que Seleção congelou para V1");
+
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 18 — abrir a SESSÃO editorial (não o atalho atômico) — captura o ETag da abertura
         // ══════════════════════════════════════════════════════════════════════════════
@@ -310,7 +317,8 @@ public sealed class EnvelopeFechadoE2ETests
         // retifica V1, nunca "qualquer ato do processo". V1 permanece intacta (append-only).
         // ══════════════════════════════════════════════════════════════════════════════
 
-        (Guid atoV2Id, Guid atoV2RetificaId, string hashV1AposFechamento) = await LerVersoesAposFechamentoAsync(api, processoId);
+        (Guid atoV2Id, Guid atoV2RetificaId, string hashV1AposFechamento, Guid versaoV2Id, string hashV2) =
+            await LerVersoesAposFechamentoAsync(api, processoId);
 
         atoV2Id.Should().NotBe(atoV1Id, "o fechamento cria um ato novo — nunca reaproveita o de abertura");
         atoV2RetificaId.Should().Be(atoV1Id, "V2.AtoCriadorRetificaId aponta para o ato que ela retifica: V1");
@@ -327,6 +335,9 @@ public sealed class EnvelopeFechadoE2ETests
         atoV2.AtoRetificadoId.Should().Be(atoV1Id, "no ato registrado em Publicações, a relação de retificação espelha a de Seleção");
         atoV2.TipoCodigo.Should().Be("EDITAL_RETIFICACAO");
         atoV2.VersaoInvocada.Should().NotBeNull("o ato guarda por valor a versão que ele governa (ADR-0075/0061)");
+        atoV2.VersaoInvocada!.Id.Should().Be(versaoV2Id, "o ato retificador governa exatamente V2 — nunca V1 nem uma versão obsoleta");
+        atoV2.VersaoInvocada.Hash.Should().Be(hashV2, "o hash guardado em Publicações é o mesmo que Seleção congelou para V2");
+        hashV2.Should().NotBe(hashV1, "V2 congela outra configuração — se os hashes coincidissem, a asserção de identidade acima seria vácua");
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 23 — GET /snapshot-vigente == versão 2 (a versão vigente reflete o fechamento)
@@ -928,7 +939,7 @@ public sealed class EnvelopeFechadoE2ETests
     /// produziu: o id do ato V2, o ato que ele retifica (deve ser o de V1) e o hash de V1 tal
     /// como está gravado agora (para o checkpoint de imutabilidade).
     /// </summary>
-    private static async Task<(Guid AtoV2Id, Guid AtoV2RetificaId, string HashV1AposFechamento)> LerVersoesAposFechamentoAsync(
+    private static async Task<(Guid AtoV2Id, Guid AtoV2RetificaId, string HashV1AposFechamento, Guid VersaoV2Id, string HashV2)> LerVersoesAposFechamentoAsync(
         CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
@@ -943,6 +954,6 @@ public sealed class EnvelopeFechadoE2ETests
         VersaoConfiguracao v2 = versoes[1];
         v2.AtoCriadorRetificaId.Should().NotBeNull("V2 é uma retificação — ela emenda o ato criador de V1");
 
-        return (v2.AtoCriadorId, v2.AtoCriadorRetificaId!.Value, v1.HashConfiguracao);
+        return (v2.AtoCriadorId, v2.AtoCriadorRetificaId!.Value, v1.HashConfiguracao, v2.Id, v2.HashConfiguracao);
     }
 }
