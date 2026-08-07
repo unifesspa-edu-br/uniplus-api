@@ -71,10 +71,13 @@ internal static class EsperaDeAtoRegistrado
                     ? $", predecessor {predecessorId}"
                     : string.Empty;
 
-                // A asserção falha AQUI, dentro da espera — quem lê o teste vermelho vê de
+                // A falha acontece AQUI, dentro da espera — quem lê o teste vermelho vê de
                 // imediato qual ato faltou, de qual processo e há quanto tempo, em vez de um
-                // NullReferenceException genérico numa linha posterior.
-                ato.Should().NotBeNull(
+                // NullReferenceException genérico numa linha posterior. Falha direta em vez de
+                // asserção sobre `ato`: neste ponto ele é necessariamente nulo (o retorno acima
+                // trata o caso encontrado), e afirmar não-nulidade de algo sabidamente nulo
+                // esconde a intenção — o que se quer é encerrar a espera com o diagnóstico.
+                Assert.Fail(
                     $"{checkpoint}: o ato {atoId} do processo {processoId}{predecessor} não foi " +
                     $"observado em Publicações após {decorrido.TotalSeconds:F1}s — nenhum " +
                     "AtoNormativo com esse id existe na tabela. A publicação/retificação já " +
