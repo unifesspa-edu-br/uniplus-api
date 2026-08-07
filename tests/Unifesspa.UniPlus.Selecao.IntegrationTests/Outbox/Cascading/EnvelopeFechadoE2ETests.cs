@@ -58,6 +58,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// </para>
 /// </remarks>
 [Collection(CascadingCollection.Name)]
+[Trait("Category", "Integration")]
 [Trait("Category", "OutboxCapability")]
 [Trait("Category", "OutboxCascading")]
 public sealed class EnvelopeFechadoE2ETests
