@@ -25,7 +25,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
     // Alinhado ao ReferenciaReservaDemograficaConfiguration (Configuracao) —
     // o snapshot-copy (ADR-0061) precisa caber qualquer valor aceito na
     // origem, senão um Censo válido lá estoura em SaveChanges aqui em vez de
-    // persistir (achado Codex).
+    // persistir.
     private const int CensoMaxLength = 20;
     private const int BaseLegalMaxLength = 500;
 

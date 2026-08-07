@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="DefinirReferenciaTemporalFatosCommandValidator"/> (Story #554,
-/// issue #892, PR #896) — inclui a regressão do achado Codex P2 (PR #896): <c>Tipo</c> nulo
+/// issue #892) — inclui a regra de que <c>Tipo</c> nulo
 /// (remoção) não pode carregar <c>Data</c>/<c>FaseId</c> soltos.
 /// </summary>
 public sealed class DefinirReferenciaTemporalFatosCommandValidatorTests
@@ -31,7 +31,7 @@ public sealed class DefinirReferenciaTemporalFatosCommandValidatorTests
     public void Rejeita_TipoDesconhecido() =>
         Validar("TIPO_INEXISTENTE", null, null).IsValid.Should().BeFalse();
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #896): Tipo nulo com Data solta é recusado — não pode remover a referência silenciosamente")]
+    [Fact(DisplayName = "Tipo nulo com Data solta é recusado — não pode remover a referência silenciosamente")]
     public void Rejeita_TipoNuloComDataSolta()
     {
         ValidationResult resultado = Validar(null, new DateOnly(2026, 3, 1), null);
@@ -40,7 +40,7 @@ public sealed class DefinirReferenciaTemporalFatosCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("Data e FaseId não são aceitos", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #896): Tipo nulo com FaseId solta é recusado")]
+    [Fact(DisplayName = "Tipo nulo com FaseId solta é recusado")]
     public void Rejeita_TipoNuloComFaseIdSolta()
     {
         ValidationResult resultado = Validar(null, null, Guid.CreateVersion7());

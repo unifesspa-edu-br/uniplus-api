@@ -169,7 +169,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         return processo;
     }
 
-    [Fact(DisplayName = "Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard — achado Codex (PR #903): o gate B-03 também precede a canonicalização (ADR-0109 D5)")]
+    [Fact(DisplayName = "Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard — o gate B-03 também precede a canonicalização (ADR-0109 D5)")]
     public async Task Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard()
     {
         ProcessoSeletivo processo = NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out _);

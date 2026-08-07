@@ -55,7 +55,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
         projetado.TipoDocumentoOrigemId.Should().Be(tipoDocumentoOrigemId);
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #896, issue #892): projeta Condicoes do gatilho DNF — round-trip GET→PUT sem perda")]
+    [Fact(DisplayName = "Projeta Condicoes do gatilho DNF (issue #892) — round-trip GET→PUT sem perda")]
     public async Task Handle_CondicaoGatilho_EmiteTokenDeWireERoundTripDoValor()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
@@ -91,7 +91,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerDocumentosExigidosTests
             .Should().BeEquivalentTo(["LB_PPI", "AC"]);
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #896, issue #892, 3ª rodada): projeta ReferenciaTemporalFatos no agregado GET — round-trip GET→PUT")]
+    [Fact(DisplayName = "Projeta ReferenciaTemporalFatos no agregado GET (issue #892) — round-trip GET→PUT")]
     public async Task Handle_ReferenciaTemporalFatos_EmiteTokenDeWire()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Query", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);

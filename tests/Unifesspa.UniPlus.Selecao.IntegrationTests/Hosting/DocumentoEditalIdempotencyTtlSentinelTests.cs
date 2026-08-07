@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
 
 /// <summary>
 /// Sentinela contra o TTL de idempotência do endpoint de iniciar upload
-/// (achado Codex no PR #790) divergir do TTL real da URL pre-assinada de
+/// divergir do TTL real da URL pre-assinada de
 /// PUT. Um <c>[RequiresIdempotencyKey]</c> sem override usa o teto de 24h
 /// (ADR-0027) — como a URL expira em <see cref="IniciarUploadDocumentoEditalCommandHandler.TtlUploadSegundos"/>
 /// (15 min), um replay depois disso devolveria uma URL inutilizável. O

@@ -136,7 +136,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         // Mesma Ordem (1) E mesma FaseCanonicaOrigemId — "editar a mesma fase" (o caso
         // comum de uma sessão editorial que só ajusta datas), não "trocar qual fase ocupa
-        // o slot" (achado Codex P2, PR #900): a reconciliação reusa a instância viva,
+        // o slot" — a reconciliação reusa a instância viva,
         // preserva o Id, e a exigência continua referenciando uma fase que existe.
         Result resultado = processo.DefinirCronogramaFases(
             [Fase(1, "INSCRICAO_REVISADA", fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
@@ -147,7 +147,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         exigencia.ExigidoNaFaseId.Should().Be(fase.Id, "a exigência nunca deixou de referenciar uma fase existente");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900): trocar a fase canônica na MESMA Ordem, referenciada por exigência viva, é recusado — não retargeta o Id silenciosamente")]
+    [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem, referenciada por exigência viva, é recusado — não retargeta o Id silenciosamente")]
     public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemComExigenciaViva_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -165,7 +165,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 4ª rodada): trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito como remoção+inserção — NÃO reusa a linha (o Id muda)")]
+    [Fact(DisplayName = "Trocar a fase canônica na MESMA Ordem, SEM exigência viva referenciando-a, é aceito como remoção+inserção — NÃO reusa a linha (o Id muda)")]
     public void DefinirCronogramaFases_TrocaFaseCanonicaNaMesmaOrdemSemExigenciaViva_AceitaComoRemocaoMaisInsercao()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -186,7 +186,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         processo.CronogramaFases.Single().Codigo.Should().Be("ANALISE");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 4ª rodada): permutação cíclica de Ordem entre 2 fases retidas é recusada — sem ordem de UPDATE que resolva a troca")]
+    [Fact(DisplayName = "Permutação cíclica de Ordem entre 2 fases retidas é recusada — sem ordem de UPDATE que resolva a troca")]
     public void DefinirCronogramaFases_PermutacaoCiclicaDeOrdemEntreDuasFases_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -202,7 +202,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("FaseCronograma.PermutacaoDeOrdemNaoSuportada");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 4ª rodada): permutação cíclica de Ordem entre 3 fases retidas é recusada")]
+    [Fact(DisplayName = "Permutação cíclica de Ordem entre 3 fases retidas é recusada")]
     public void DefinirCronogramaFases_PermutacaoCiclicaDeOrdemEntreTresFases_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -342,7 +342,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    // ── Story #554/issue #893 (achado Codex P2, PR #900) — IdadeMaximaEmissao.ReferenciaFaseId ──
+    // ── Story #554/issue #893 — IdadeMaximaEmissao.ReferenciaFaseId ──
 
     private static FaseCronograma FaseComExtremo(
         int ordem, string codigo, DateTimeOffset? inicio, DateTimeOffset? fim, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
@@ -379,7 +379,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             condicoes: [], basesLegais: [], idadeMaximaEmissao: idade, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900): remover fase usada só como âncora de IdadeMaximaEmissao (não ExigidoNaFaseId) é recusado")]
+    [Fact(DisplayName = "Remover fase usada só como âncora de IdadeMaximaEmissao (não ExigidoNaFaseId) é recusado")]
     public void DefinirCronogramaFases_RemoveFaseAncoraDeIdade_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -400,7 +400,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900): fase sobrevivente que perde o extremo usado como âncora de idade é recusado")]
+    [Fact(DisplayName = "Fase sobrevivente que perde o extremo usado como âncora de idade é recusado")]
     public void DefinirCronogramaFases_FaseSobreviventePerdeExtremoAncoraDeIdade_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -438,7 +438,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "o Fim continua definido — só o valor mudou, o que é uma edição legítima");
     }
 
-    // ── Story #554/issue #893 (achado Codex P2, PR #900, 5ª rodada) — FIM_INSCRICAO não
+    // ── Story #554/issue #893 — FIM_INSCRICAO não
     // usa ReferenciaFaseId (a âncora é implícita: a fase com ColetaInscricao) ──
 
     private static FaseCronograma FaseColetaInscricao(
@@ -475,7 +475,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             condicoes: [], basesLegais: [], idadeMaximaEmissao: idade, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 5ª rodada): FIM_INSCRICAO sem NENHUMA fase que coleta inscrição no processo é recusado")]
+    [Fact(DisplayName = "FIM_INSCRICAO sem NENHUMA fase que coleta inscrição no processo é recusado")]
     public void DefinirDocumentosExigidos_FimInscricaoSemFaseDeColeta_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -488,7 +488,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 5ª rodada): FIM_INSCRICAO com fase de coleta SEM Fim definido é recusado")]
+    [Fact(DisplayName = "FIM_INSCRICAO com fase de coleta SEM Fim definido é recusado")]
     public void DefinirDocumentosExigidos_FimInscricaoComFaseDeColetaSemFim_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -514,7 +514,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 6ª rodada): com DUAS fases de coleta, a primeira sem Fim e a segunda com Fim, FIM_INSCRICAO é aceito — a pergunta é existencial (Any), não posicional (FirstOrDefault)")]
+    [Fact(DisplayName = "Com DUAS fases de coleta, a primeira sem Fim e a segunda com Fim, FIM_INSCRICAO é aceito — a pergunta é existencial (Any), não posicional (FirstOrDefault)")]
     public void DefinirDocumentosExigidos_FimInscricaoComPrimeiraFaseDeColetaSemFimEDemaisComFim_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -528,7 +528,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "a segunda fase de coleta resolve FIM_INSCRICAO — escolher a primeira encontrada (sem Fim) seria um 422 falso");
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #900, 5ª rodada): redefinir o cronograma tirando o Fim da fase de coleta com exigência FIM_INSCRICAO viva é recusado")]
+    [Fact(DisplayName = "Redefinir o cronograma tirando o Fim da fase de coleta com exigência FIM_INSCRICAO viva é recusado")]
     public void DefinirCronogramaFases_FaseDeColetaPerdeFimComExigenciaFimInscricaoViva_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -562,7 +562,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    // ── Story #554/issue #892 (achado Codex P2, PR #896) — CA-03 backward guard ──
+    // ── Story #554/issue #892 — CA-03 backward guard ──
 
     private static CondicaoGatilho CondicaoDe(string fato, string valor) => CondicaoGatilho.Criar(
         0, fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!;

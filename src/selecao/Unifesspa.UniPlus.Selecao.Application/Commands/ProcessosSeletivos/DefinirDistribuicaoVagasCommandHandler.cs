@@ -152,7 +152,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
             return Result<ConfiguracaoDistribuicaoVagas>.Failure(regraAjusteResult.Error!);
         }
 
-        // Achado Codex (revisão do plano, ADR-0115 §2.1): o quadro traz um código que não
+        // ADR-0115 §2.1: o quadro traz um código que não
         // é modalidade selecionada é reconciliação de IDs crus — Application, não Domain.
         DomainError? erroQuadroOrfao = input.Quadro
             .Where(q => !input.ModalidadeIds.Contains(q.ModalidadeId))

@@ -104,7 +104,7 @@ public static class ObterProcessoSeletivoQueryHandler
                 .Select(c => criar(c.Fato, c.Operador.ToCodigo(), c.Valor))])];
     }
 
-    // Achado Codex P2 (PR #896, issue #892): sem isto, um FIM_FASE/DATA_ESPECIFICA salvo
+    // issue #892: sem isto, um FIM_FASE/DATA_ESPECIFICA salvo
     // desaparecia do agregado GET, e o formulário de edição podia sobrescrevê-lo ou
     // removê-lo sem querer ao pré-preencher com um estado que não reflete o persistido.
     private static ReferenciaTemporalFatosDto? ProjectReferenciaTemporalFatos(ReferenciaTemporalFatos? referencia) =>

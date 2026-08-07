@@ -13,7 +13,7 @@ using Microsoft.Extensions.Hosting;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Por que esta classe existe (#360, eco do Codex P2 no PR #361):
+/// Por que esta classe existe (#360):
 /// <see cref="Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton{TService}(Microsoft.Extensions.DependencyInjection.IServiceCollection, TService)"/>
 /// com instância pré-criada (criada fora do container) <b>não transfere ownership</b>
 /// ao IServiceProvider — o container só dispõe o que ele próprio instancia (via tipo

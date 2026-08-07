@@ -67,7 +67,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         // em ProcessoSeletivo.DefinirCriteriosDesempate é check-then-act
         // não-atômico — duas escritas concorrentes carregando o mesmo agregado
         // tracked poderiam ambas passar a checagem em memória e inserir a
-        // mesma ordem (achado Codex). A constraint do banco é a defesa
+        // mesma ordem. A constraint do banco é a defesa
         // realmente atômica.
         builder.HasIndex(c => new { c.ProcessoSeletivoId, c.Ordem })
             .IsUnique()

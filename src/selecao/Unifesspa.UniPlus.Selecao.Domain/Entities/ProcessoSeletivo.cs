@@ -241,9 +241,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // INV-B6 sobrevive a DefinirEtapas: um critério de desempate
         // DESEMPATE-MAIOR-NOTA-ETAPA já configurado referencia uma etapa pelo
         // Id (dentro do Args); trocar as etapas sem revalidar deixaria o
-        // critério apontando para uma etapa removida — desempate inexecutável
-        // (achado Codex). Rejeita a troca de etapas em vez de silenciosamente
-        // invalidar o desempate; o admin reconfigura o desempate primeiro.
+        // critério apontando para uma etapa removida — desempate inexecutável.
+        // Rejeita a troca de etapas em vez de silenciosamente invalidar o
+        // desempate; o admin reconfigura o desempate primeiro.
         List<Guid> novosIdsEtapas = [.. etapas.Select(e => e.Id)];
         IEnumerable<(CriterioDesempate Criterio, ArgsDesempateMaiorNotaEtapa Args)> criteriosPorEtapa =
             _criteriosDesempate
@@ -303,7 +303,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        // Story #554/issue #892 (achado Codex P2, PR #896, CA-03): um gatilho DNF com fato
+        // Story #554/issue #892 (CA-03): um gatilho DNF com fato
         // CONDICAO_ATENDIMENTO referencia um código de condição por VALOR (não por Guid —
         // diferente da fase), então a checagem é precisa: só recusa se o novo conjunto de
         // ofertas realmente deixaria de conter um código hoje referenciado por condição
@@ -368,7 +368,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo."));
         }
 
-        // Story #554/issue #892 (achado Codex P2, PR #896, CA-03): mesmo raciocínio do
+        // Story #554/issue #892 (CA-03): mesmo raciocínio do
         // guard de CONDICAO_ATENDIMENTO em DefinirOfertaAtendimento — MODALIDADE referencia
         // por código, então a checagem é precisa (só recusa se um código hoje referenciado
         // por condição viva deixaria de existir na nova distribuição).
@@ -634,8 +634,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A mesma fase canônica não pode aparecer duas vezes no cronograma."));
         }
 
-        // Story #554/issue #893 (PR #900, CA-04): reconciliação por FaseCanonicaOrigemId —
-        // achado Codex P2 (PR #900, 4ª rodada). FaseCanonicaOrigemId é a identidade ESTÁVEL
+        // Story #554/issue #893 (CA-04): reconciliação por FaseCanonicaOrigemId.
+        // FaseCanonicaOrigemId é a identidade ESTÁVEL
         // de uma fase no cronograma (índice único ux_fases_cronograma_processo_fase_canonica);
         // Ordem é só um ATRIBUTO mutável dela (uma fase pode ser reordenada sem deixar de
         // ser "a mesma fase"). Casar por Ordem (como as rodadas anteriores fizeram) confundia
@@ -681,7 +681,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por uma exigência (folha ou grupo) com consequência PENDENCIA_REENVIO."));
             }
 
-            // Achado Codex P2 (PR #900): fase SOBREVIVENTE (mesma Ordem) cujo extremo
+            // Uma fase SOBREVIVENTE (mesma Ordem) cujo extremo
             // âncora (Início/Fim) deixa de existir — a checagem eager de
             // DefinirDocumentosExigidos só prova a coerência no INSTANTE da escrita da
             // exigência; sem este guard, uma redefinição de cronograma POSTERIOR poderia
@@ -703,7 +703,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // Achado Codex P2 (PR #900, 5ª rodada): mesma lacuna do guard eager de
+        // Mesma lacuna do guard eager de
         // DefinirDocumentosExigidos — FIM_INSCRICAO não usa ReferenciaFaseId (a âncora é
         // implícita: a fase com ColetaInscricao), então os guards por fase acima (que só
         // olham ReferenciaFaseId) nunca pegam uma redefinição que deixa de ter QUALQUER
@@ -718,7 +718,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A redefinição do cronograma deixaria de ter uma fase que coleta inscrição com Fim definido, mas há documento exigido configurado com idade máxima de emissão ancorada em FIM_INSCRICAO."));
         }
 
-        // Achado Codex P2 (PR #900, 4ª rodada): mesmo casando por identidade estável, uma
+        // Mesmo casando por identidade estável, uma
         // PERMUTAÇÃO CÍCLICA de Ordem entre fases retidas (ex.: A@1,B@2 -> A@2,B@1, ou um
         // ciclo de 3+) ainda pede que linhas TROQUEM valores cobertos pelo índice único
         // ux_fases_cronograma_processo_ordem entre si — nenhuma ordem de UPDATE resolve um
@@ -826,7 +826,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
 
-        // Reconciliação por FaseCanonicaOrigemId (achado Codex P2, PR #900, 4ª rodada) — a
+        // Reconciliação por FaseCanonicaOrigemId — a
         // mesma chave de identidade do guard acima. Reusa a instância TRACKED existente
         // (retargetando-a via AtualizarSnapshot, preservando o Id) sempre que a fase
         // canônica persiste no cronograma, independente de Ordem: evita tanto FK Restrict
@@ -944,7 +944,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
             else if (item.IdadeMaximaEmissao is { ReferenciaTipo: ReferenciaTipoIdadeEmissao.FimInscricao })
             {
-                // Achado Codex P2 (PR #900, 5ª rodada): FIM_INSCRICAO não usa
+                // FIM_INSCRICAO não usa
                 // ReferenciaFaseId (a âncora é implícita — a fase com ColetaInscricao do
                 // PRÓPRIO cronograma, não uma fase escolhida pelo chamador), então o
                 // branch acima nunca a valida. Sem esta checagem, um PUT aceitava a regra
@@ -952,7 +952,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // externa) ou com a fase de coleta sem Fim definido, deixando-a
                 // irresolvível depois — mesmo sem gate de publicação para idade de
                 // emissão (issue #893 §1: é aviso, não bloqueio de presença).
-                // Achado Codex P2 (PR #900, 6ª rodada): nada no domínio impede MAIS de uma
+                // Nada no domínio impede MAIS de uma
                 // fase com ColetaInscricao — FirstOrDefault pegava a primeira, mesmo que
                 // outra (com Fim definido) resolvesse a regra; um processo com duas fases
                 // de coleta, a primeira sem Fim e a segunda com Fim, era um 422 falso. A
@@ -2033,7 +2033,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// CA-03 (Story #554, issue #892 — achado Codex P2, PR #896): um gatilho DNF sobre um
+    /// CA-03 (Story #554, issue #892): um gatilho DNF sobre um
     /// fato categórico dinâmico (<c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>) referencia
     /// um valor por CÓDIGO — nunca por Guid, diferente de <c>FaseCronograma</c>. Isso
     /// permite checagem precisa (não o guard coarse de <c>FaseCronograma.ReferenciadaPorExigenciaViva</c>):

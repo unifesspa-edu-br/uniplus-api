@@ -192,7 +192,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         classificacao.RegrasEliminacao.Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém a eliminação referenciando-a (achado Codex, F3)")]
+    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém a eliminação referenciando-a (F3)")]
     public async Task AtualizarEtapaMesmoId_MantemEliminacaoReferenciada()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);

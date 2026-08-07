@@ -205,7 +205,7 @@ public static class SchemaRegistryServiceCollectionExtensions
             // ownsHttpClient: true. O provider, por sua vez, é registrado no DI
             // abaixo para que o IHost dispõe via lifecycle de singleton IDisposable
             // — necessário porque CachedSchemaRegistryClient.Dispose não dispõe
-            // custom auth providers (Codex P2 na review do PR #359, issue #360).
+            // custom auth providers (issue #360).
             HttpClient httpClient = new();
             // TimeProvider.System explícito: este é um composition root genuíno
             // (callback do Wolverine que roda antes de builder.Build(), sem

@@ -106,8 +106,8 @@ internal sealed class ObrigatoriedadeLegalConfiguration
             .HasFilter("is_deleted = false")
             .HasDatabaseName("ux_obrigatoriedades_legais_hash_ativos");
 
-        // UNIQUE parcial sobre RegraCodigo entre regras ativas (Codex P1 de
-        // #461). O ExisteRegraCodigoAtivoAsync no handler é check-then-act
+        // UNIQUE parcial sobre RegraCodigo entre regras ativas (Story #461). O
+        // ExisteRegraCodigoAtivoAsync no handler é check-then-act
         // não-atômico — duas escritas concorrentes com o mesmo RegraCodigo
         // poderiam ambas passar a checagem e commitar, criando o cenário
         // ambíguo de "duas regras vigentes com mesmo código simbólico"

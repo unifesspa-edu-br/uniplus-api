@@ -113,7 +113,7 @@ public sealed class TermoConsentimentoPersistenceTests
     [Fact(DisplayName = "Promover concorrente com edição que reverte a revisão falha por concorrência (xmin)")]
     public async Task Promover_ConcorrenteComEdicaoQueReverteRevisao_FalhaPorConcorrencia()
     {
-        // Reproduz o achado do Codex (PR #1019, P1): request A lê o termo revisado
+        // Reproduz uma corrida de leitura-escrita: request A lê o termo revisado
         // (fica com uma cópia rastreada nesse estado); antes de A promover, request B
         // carrega o MESMO termo, edita o rascunho (o que reverte Revisado para false)
         // e comita. Sem o xmin amarrado a um write real no commit de A, a promoção
@@ -150,8 +150,8 @@ public sealed class TermoConsentimentoPersistenceTests
     [Fact(DisplayName = "Após o conflito capturado, descartar o rastreamento evita a segunda exceção do SaveChanges do outbox")]
     public async Task ConflitoDeConcorrencia_AposDescartarRastreamento_SegundoSaveChangesNaoLancaDeNovo()
     {
-        // Reproduz o achado do Codex (PR #1019, P2): o outbox do Wolverine
-        // (AutoApplyTransactions, ADR-0004) chama SaveChangesAsync no MESMO
+        // Reproduz a interação com o outbox do Wolverine
+        // (AutoApplyTransactions, ADR-0004), que chama SaveChangesAsync no MESMO
         // DbContext DEPOIS que o handler retorna. Se o handler capturar a
         // DbUpdateConcurrencyException e devolver a falha sem descartar o
         // rastreamento das entidades Added/Modified da tentativa fracassada, essa
