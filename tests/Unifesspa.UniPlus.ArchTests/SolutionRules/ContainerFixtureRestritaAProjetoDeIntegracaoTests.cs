@@ -69,7 +69,16 @@ using TestSupport;
 /// parser — o mesmo grau de rigor que a detecção de namespace já usa. Não trata comentário de
 /// bloco (<c>/* ... */</c>) porque o repositório não usa esse estilo (só <c>///</c> e <c>//</c>,
 /// que a âncora de início de linha já ignora, já que a linha começa pela marca do comentário, não
-/// por modificador nem por palavra-chave de declaração).
+/// por modificador nem por palavra-chave de declaração). Pela mesma razão, também não trata código
+/// C# embutido em raw string (<c>"""..."""</c>): se uma raw string contivesse, no início de linha,
+/// algo com a forma de uma declaração real (por exemplo <c>public sealed class
+/// ExampleIntegrationTests</c> dentro de um literal usado como amostra de código em outro teste de
+/// arquitetura), a varredura a contaria como declaração de verdade, do mesmo jeito que contaria uma
+/// declaração dentro de um comentário de bloco. Hoje isso é hipotético: nenhuma raw string em
+/// <c>tests/</c> declara, no início de linha, um tipo, método ou namespace cujo nome contenha o
+/// token do filtro. Se isso passar a existir, vale o mesmo raciocínio do comentário de bloco —
+/// ignorar o conteúdo entre delimitadores de raw string antes de aplicar os padrões, sem virar
+/// parser completo de C#.
 /// </para>
 /// <para>
 /// A exceção das bibliotecas de fixture, por sua vez, só é segura enquanto
@@ -154,7 +163,7 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
             }
 
             string? pacoteDireto = projeto.PacotesReferenciados
-                .FirstOrDefault(pacote => pacote.StartsWith("Testcontainers", StringComparison.Ordinal));
+                .FirstOrDefault(pacote => pacote.StartsWith("Testcontainers", StringComparison.OrdinalIgnoreCase));
 
             violacoes.Add(pacoteDireto is not null
                 ? $"{projeto.Nome}: referencia o pacote '{pacoteDireto}' diretamente."
@@ -431,8 +440,12 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
             return false; // ciclo defensivo; o grafo de ProjectReference não deveria ciclar
         }
 
+        // OrdinalIgnoreCase porque ID de pacote NuGet é case-insensitive por definição do
+        // protocolo: "testcontainers.postgresql" restaura o mesmo pacote que
+        // "Testcontainers.PostgreSql", então uma comparação sensível a maiúsculas deixaria
+        // passar uma grafia diferente da convencional sem deixar de alcançar o container.
         bool alcanca = projeto.PacotesReferenciados.Any(
-                pacote => pacote.StartsWith("Testcontainers", StringComparison.Ordinal))
+                pacote => pacote.StartsWith("Testcontainers", StringComparison.OrdinalIgnoreCase))
             || projeto.ProjetosReferenciados.Any(
                 referenciado => AlcancaTestcontainers(referenciado, projetos, memo, emAndamento));
 
