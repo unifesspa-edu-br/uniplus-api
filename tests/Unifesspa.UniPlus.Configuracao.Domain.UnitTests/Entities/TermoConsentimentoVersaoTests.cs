@@ -12,7 +12,7 @@ public sealed class TermoConsentimentoVersaoTests
     [Fact(DisplayName = "Promover deriva o hash do próprio conteúdo — a factory não aceita hash de fora")]
     public void Promover_DerivaHashDoConteudo_NaoAceitaHashExterno()
     {
-        // Codex #1019 P2 (rodada 5): tornar a factory pública (exigência do
+        // Tornar a factory pública (exigência do
         // fitness test de entidades forenses, ADR-0063) abriria brecha para um
         // chamador gravar um hash divergente do conteúdo se a factory ainda
         // aceitasse `hash` por parâmetro. A assinatura atual não tem esse

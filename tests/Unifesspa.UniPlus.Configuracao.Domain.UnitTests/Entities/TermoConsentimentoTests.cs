@@ -216,7 +216,7 @@ public sealed class TermoConsentimentoTests
     [Fact(DisplayName = "Promover duas vezes sem revisar de novo recusa a segunda promoção")]
     public void Promover_DuasVezesSemRevisarDeNovo_RecusaSegunda()
     {
-        // Codex #1019 P2: sem consumir a revisão, um retry acidental da promoção
+        // Sem consumir a revisão, um retry acidental da promoção
         // (outra Idempotency-Key, duplo clique) anexaria uma segunda versão
         // idêntica ao histórico forense a partir do MESMO conteúdo já revisado.
         TermoConsentimento termo = CriarRevisavel();
@@ -247,7 +247,7 @@ public sealed class TermoConsentimentoTests
     [Fact(DisplayName = "Hash distingue splits diferentes que concatenariam para o mesmo texto")]
     public void Promover_SplitDiferenteMesmaConcatenacao_HashDiferente()
     {
-        // Codex #1019 P2: sem prefixo de tamanho, ("AB","C") e ("A","BC") produziriam
+        // Sem prefixo de tamanho, ("AB","C") e ("A","BC") produziriam
         // o mesmo payload concatenado — e por isso o mesmo hash — mesmo sendo
         // conteúdos legalmente distintos.
         TermoConsentimento termoA = CriarRevisavel(texto: "AB", baseLegal: "C");

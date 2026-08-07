@@ -77,7 +77,7 @@ public sealed class IdadeMaximaEmissaoTests
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.ValorInvalido");
     }
 
-    [Theory(DisplayName = "Achado Codex P2 (PR #900, 3ª rodada): sentinel Nenhuma em Unidade ou ReferenciaTipo, com Valor positivo, é recusado")]
+    [Theory(DisplayName = "Sentinel Nenhuma em Unidade ou ReferenciaTipo, com Valor positivo, é recusado")]
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]

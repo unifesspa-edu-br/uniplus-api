@@ -91,7 +91,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     public void Aceita_TodasCombinacoesValidas(string abrangencia, string status) =>
         Validar(ItemCom(new BaseLegalInput("Referência", abrangencia, status, "Observação"))).IsValid.Should().BeTrue();
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #898): referência acima de 500 caracteres é rejeitada — o mesmo teto de DocumentoExigidoBaseLegalConfiguration")]
+    [Fact(DisplayName = "Referência acima de 500 caracteres é rejeitada — o mesmo teto de DocumentoExigidoBaseLegalConfiguration")]
     public void Rejeita_ReferenciaAcimaDoTetoDePersistencia()
     {
         string referenciaLonga = new('a', 501);
@@ -106,7 +106,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     public void Aceita_ReferenciaNoTetoDePersistencia() =>
         Validar(ItemCom(new BaseLegalInput(new string('a', 500), "FEDERAL", "RESOLVIDO", null))).IsValid.Should().BeTrue();
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #898): observação acima de 1000 caracteres é rejeitada")]
+    [Fact(DisplayName = "Observação acima de 1000 caracteres é rejeitada")]
     public void Rejeita_ObservacaoAcimaDoTetoDePersistencia()
     {
         string observacaoLonga = new('a', 1001);
@@ -117,7 +117,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.ErrorMessage.Contains("1000 caracteres", StringComparison.Ordinal));
     }
 
-    [Fact(DisplayName = "Achado Codex P2 (PR #898, 2ª rodada): item de base legal nulo na lista é rejeitado")]
+    [Fact(DisplayName = "Item de base legal nulo na lista é rejeitado")]
     public void Rejeita_ItemDeBaseLegalNulo()
     {
         ItemDocumentoExigidoInput item = new(

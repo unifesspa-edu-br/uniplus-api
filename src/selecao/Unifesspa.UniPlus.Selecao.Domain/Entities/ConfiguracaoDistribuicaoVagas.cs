@@ -167,7 +167,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
             // ComposicaoOrigemCodigo apontar para qualquer modalidade selecionada (para
             // servir também o ramo institucional/remanejamento), mas uma retirada
             // federal com origem diferente de AC descontaria de AC no cálculo sem
-            // nunca reduzir a modalidade que ela alega retirar — achado Codex.
+            // nunca reduzir a modalidade que ela alega retirar.
             ModalidadeSelecionada? retiradaForaDeAc = modalidades.FirstOrDefault(
                 m => m.ComposicaoVagas == ComposicaoVagasModalidade.RetiraDe
                     && !string.Equals(m.ComposicaoOrigemCodigo, ModalidadesFederaisLei12711.Ac, StringComparison.Ordinal));
@@ -390,7 +390,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     /// Valida que todo código de cruzamento (origem de RETIRA_DE, destino de
     /// DESTINO_UNICO, par/fallback de CRUZADO) referencia uma modalidade
     /// presente neste MESMO conjunto selecionado — não apenas uma modalidade
-    /// existente no cadastro global. Achado do Codex: sem esta checagem, uma
+    /// existente no cadastro global. Sem esta checagem, uma
     /// modalidade poderia apontar para um código nunca selecionado nesta
     /// oferta, deixando o motor de vagas/remanejamento futuro sem a
     /// modalidade referenciada.

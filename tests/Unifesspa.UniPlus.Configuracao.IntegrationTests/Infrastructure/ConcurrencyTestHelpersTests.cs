@@ -22,9 +22,9 @@ using IMessageBus = Wolverine.IMessageBus;
 /// Prova de correção da issue #1031: <see cref="ConcorrenciaTestHelpers.WaitForBlockedBackendAsync"/>
 /// identifica o backend bloqueado correlacionando via <c>pg_blocking_pids</c> —
 /// imune tanto a texto de query coincidente quanto a qualquer OUTRO backend
-/// bloqueado por um lock não relacionado ao que o chamador está segurando (o
-/// achado P2 do Codex sobre a primeira versão deste teste, que só excluía PIDs
-/// conhecidos sem confirmar QUEM realmente bloqueava o candidato).
+/// bloqueado por um lock não relacionado ao que o chamador está segurando. A
+/// primeira versão deste teste só excluía PIDs conhecidos, sem confirmar QUEM
+/// realmente bloqueava o candidato.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 [Trait("Category", "Integration")]
@@ -87,7 +87,7 @@ public sealed class ConcurrencyTestHelpersTests
         // decoyBlockedTask continua bloqueado quando o `await using` de
         // txDecoyBlocked/scopeDecoyBlocked começar a descartar a conexão —
         // Npgsql não aceita descartar uma conexão com um comando ainda em
-        // voo. Dois flags distintos (achado do Codex no PR #1036, 4ª rodada):
+        // voo. Dois flags distintos:
         // "o holder commitou" (não pode mais ser revertido por rollback) é
         // diferente de "o decoy foi de fato aguardado e descartado" — commitar
         // txDecoyHolder libera o lock do LADO DO SERVIDOR, mas não garante que

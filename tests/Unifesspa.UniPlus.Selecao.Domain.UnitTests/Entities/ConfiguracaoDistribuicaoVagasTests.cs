@@ -119,7 +119,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
     }
 
-    [Fact(DisplayName = "Criar com RETIRA_DE apontando para código fora do conjunto selecionado falha (achado Codex)")]
+    [Fact(DisplayName = "Criar com RETIRA_DE apontando para código fora do conjunto selecionado falha")]
     public void Criar_ComposicaoOrigemForaDoConjunto_Falha()
     {
         ModalidadeSelecionada retiraDeSemOrigemSelecionada = ModalidadeSelecionada.Criar(
@@ -135,7 +135,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ComposicaoOrigemNaoSelecionada");
     }
 
-    [Fact(DisplayName = "Criar com remanejamento CRUZADO apontando para par fora do conjunto falha (achado Codex)")]
+    [Fact(DisplayName = "Criar com remanejamento CRUZADO apontando para par fora do conjunto falha")]
     public void Criar_RemanejamentoParForaDoConjunto_Falha()
     {
         ModalidadeSelecionada indSemParSelecionado = ModalidadeSelecionada.Criar(
@@ -175,7 +175,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadesFederaisIncompletas");
     }
 
-    [Fact(DisplayName = "Criar Lei 12.711 com retirada de origem diferente de AC falha (achado Codex)")]
+    [Fact(DisplayName = "Criar Lei 12.711 com retirada de origem diferente de AC falha")]
     public void Criar_Lei12711RetiradaForaDeAc_Falha()
     {
         ModalidadeSelecionada retiradaDeSubReserva = ModalidadeSelecionada.Criar(

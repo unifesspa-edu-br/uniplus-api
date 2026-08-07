@@ -86,7 +86,7 @@ internal static class ConcorrenciaTestHelpers
             // transação explícita, então o PID capturado antes do loop podia
             // já ter voltado ao pool do Npgsql e sido reaproveitado pelo
             // PRÓPRIO handler sob teste, excluindo exatamente o backend que
-            // este método deveria encontrar (achado do Codex no PR #1036).
+            // este método deveria encontrar.
             int blockedBackends = await pollDb.Database
                 .SqlQuery<int>(
                     $"""

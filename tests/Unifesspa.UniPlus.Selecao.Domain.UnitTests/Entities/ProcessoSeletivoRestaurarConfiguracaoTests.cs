@@ -612,7 +612,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             "precisa repor esse estado vazio, não preservar o que a sessão descartada editou");
     }
 
-    [Fact(DisplayName = "Story #554/issue #892 (achado Codex P1) — restauração limpa ReferenciaTemporalFatos definida durante a sessão")]
+    [Fact(DisplayName = "Story #554/issue #892 — restauração limpa ReferenciaTemporalFatos definida durante a sessão")]
     public void Restauracao_LimpaReferenciaTemporalFatosDaSessao()
     {
         // Mesmo raciocínio de Restauracao_LimpaDocumentosExigidosDaSessao: o campo não é

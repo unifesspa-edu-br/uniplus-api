@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// (Story #920) — persiste via <see cref="ProcessoSeletivoRepository"/> e recarrega em uma
 /// SESSÃO NOVA do DbContext (simulando uma requisição HTTP diferente), pelo MESMO caminho de
 /// produção (<see cref="ProcessoSeletivoRepository.ObterParaMutacaoAsync"/>) — não uma query
-/// de teste hand-rolled. Achado de revisão (Codex, rodada de review desta PR): sem o
+/// de teste hand-rolled. Sem o
 /// <c>Include(p =&gt; p.NosExigencia)</c> no repositório, a coleção tracked nascia vazia em
 /// todo carregamento novo do agregado — furo real de "perda silenciosa" já no caminho
 /// ordinário (toda requisição recarrega o agregado do zero). Story #923: o antigo gate

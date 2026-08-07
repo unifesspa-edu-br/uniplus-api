@@ -186,7 +186,7 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
         quadro.VrFinal.Should().Be(28);
     }
 
-    [Fact(DisplayName = "V11 — floor-first: piso de I,II,III vence o excedente de I (achado Codex do protótipo)")]
+    [Fact(DisplayName = "V11 — floor-first: piso de I,II,III vence o excedente de I")]
     public void FloorFirst_PisoDosGruposPosterioresVenceExcedenteDoAnterior_CasoSimetrico()
     {
         Result<QuadroVagasCalculado> resultado = CalculadoraQuadroVagasLei12711.Calcular(

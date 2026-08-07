@@ -227,7 +227,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
     }
 
     [Fact(DisplayName =
-        "Handle com processo já publicado propaga MutacaoPosPublicacaoBloqueada e NÃO persiste (CA-04, achado Codex PR #791)")]
+        "Handle com processo já publicado propaga MutacaoPosPublicacaoBloqueada e NÃO persiste (CA-04)")]
     public async Task Handle_ProcessoPublicado_PropagaBloqueioENaoPersiste()
     {
         ProcessoSeletivo processo = NovoProcessoPublicado();

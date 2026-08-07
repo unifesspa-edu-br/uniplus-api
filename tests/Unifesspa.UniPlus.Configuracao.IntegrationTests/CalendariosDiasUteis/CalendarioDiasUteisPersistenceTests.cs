@@ -131,7 +131,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
         // comita é o `using` da transação, não este método. A exclusion constraint
         // DEFERRED não é checada aqui: exatamente o cenário que fazia o handler
         // devolver 500 em vez de 409 (o commit real só rodaria no outbox do
-        // Wolverine, fora do try/catch do handler — achado de revisão do Codex).
+        // Wolverine, fora do try/catch do handler).
         await ctx2.SaveChangesAsync();
 
         Func<Task> act = async () => await ctx2.ForcarChecagemImediataDeConstraintsAsync();

@@ -34,7 +34,7 @@ public sealed class DefinirBonusRegionalCommandValidator : AbstractValidator<Def
 
         // Alinhado a ConfiguracaoBonusRegionalConfiguration (varchar(200)/(500))
         // — sem o limite aqui, um valor mais longo passa a validação e só
-        // falha em SaveChanges com erro de banco em vez de 422 (achado Codex).
+        // falha em SaveChanges com erro de banco em vez de 422.
         RuleFor(x => x.MunicipioConvenio)
             .MaximumLength(200)
             .WithMessage("Município do convênio deve ter no máximo 200 caracteres.");

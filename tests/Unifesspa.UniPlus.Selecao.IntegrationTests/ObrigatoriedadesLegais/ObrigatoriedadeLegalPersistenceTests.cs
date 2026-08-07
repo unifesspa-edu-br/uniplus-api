@@ -286,7 +286,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
         foraDaVigencia.Select(static regra => regra.RegraCodigo).Should().NotContain("RULESET_PSIQ");
     }
 
-    [Fact(DisplayName = "FK historico→regra bloqueia INSERT de histórico órfão (Codex P2)")]
+    [Fact(DisplayName = "FK historico→regra bloqueia INSERT de histórico órfão")]
     public async Task FkHistorico_BloqueiaOrfao()
     {
         // Tentar inserir uma linha de histórico apontando para regra_id que

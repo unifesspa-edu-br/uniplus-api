@@ -183,10 +183,10 @@ public sealed class CorrelationIdEnvelopeMiddlewareTests : IDisposable
     [InlineData("char-com-acentuação")]
     [InlineData("control\r\nchar")]
     // NUL byte literal embed em InlineData faria git renderizar o arquivo como binário
-    // e analisadores text-based quebrariam (Codex review do PR #411). O caso de NUL byte
+    // e analisadores text-based quebrariam. O caso de NUL byte
     // específico é coberto pela classe de equivalência 'control char' via
     // [InlineData("control\\r\\nchar")] acima — re-introduzir NUL literal aqui só
-    // recriaria o bug que o Codex apontou.
+    // recriaria esse problema de tooling.
     [InlineData("muito-longo-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
     public void Before_DadoHeaderInvalido_DeveRejeitarEGerarNovoGuid(string valorInvalido)
     {

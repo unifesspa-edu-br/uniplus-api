@@ -417,7 +417,7 @@ public sealed class ProcessoSeletivoTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
     }
 
-    [Fact(DisplayName = "DefinirEtapas recusa remover uma etapa referenciada por critério de desempate (achado Codex)")]
+    [Fact(DisplayName = "DefinirEtapas recusa remover uma etapa referenciada por critério de desempate (INV-B6)")]
     public void DefinirEtapas_RemoverEtapaReferenciadaPorDesempate_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();

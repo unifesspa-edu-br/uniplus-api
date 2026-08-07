@@ -82,7 +82,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Quadro nulo gera erro de validação, sem lançar exceção (achado Codex)")]
+    [Fact(DisplayName = "Quadro nulo gera erro de validação, sem lançar exceção")]
     public void Validar_QuadroNulo_GeraErroSemLancarExcecao()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Quadro = null! };
@@ -93,7 +93,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Item nulo dentro do quadro gera erro de validação, sem lançar exceção (achado Codex)")]
+    [Fact(DisplayName = "Item nulo dentro do quadro gera erro de validação, sem lançar exceção")]
     public void Validar_ItemNuloDentroDoQuadro_GeraErroSemLancarExcecao()
     {
         ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Quadro = [null!] };

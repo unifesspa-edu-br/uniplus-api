@@ -53,8 +53,8 @@ public sealed class HttpResponsePiiAssertionsTests
         excecao!.Message.Should().Contain("CPF não mascarado");
     }
 
-    // ─── Regressão P1: traceId/UUID com dígitos adjacentes a letra hex não disparam
-    //     o padrão CPF cru (falso positivo reportado pelo Codex) ──────────────────
+    // ─── traceId/UUID com dígitos adjacentes a letra hex não disparam
+    //     o padrão CPF cru (falso positivo do regex anterior) ──────────────────
 
     [Fact]
     public void AssertBodyNoPii_DadoTraceIdComSequenciaDigitosAdjacenteALetraHex_NaoDeveGerarFalha()
