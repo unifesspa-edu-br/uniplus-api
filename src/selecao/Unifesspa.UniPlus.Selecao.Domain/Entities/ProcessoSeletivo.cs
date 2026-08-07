@@ -1329,34 +1329,30 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .Any(m => m.NaturezaLegal == NaturezaLegalModalidade.CotaReservada);
 
     /// <summary>
-    /// Checklist de conformidade estrutural (Story #758 CA-07; reusado por
-    /// <see cref="Publicar"/>, Story #759 CA-03) — cobre as dimensões
-    /// estruturalmente OBRIGATÓRIAS do agregado: Oferta de atendimento
-    /// especializado (1), Distribuição de vagas (1..*), Classificação (1) e
-    /// Cronograma de fases (1..*, Story #851). Bônus regional (0..1) e
-    /// critérios de desempate (0..*) são deliberadamente opcionais e NÃO
-    /// entram — a ausência é um estado válido (RN05: ausência de bônus = sem
-    /// bônus), não uma pendência. Única fonte de verdade do checklist: tanto
-    /// <c>ObterConformidadeProcessoSeletivoQueryHandler</c> quanto
-    /// <see cref="Publicar"/> chamam este método, nunca duplicam a lista.
+    /// Os itens do PRIMEIRO gate estrutural — <see cref="PendenciaDeConformidade"/> (Story #758
+    /// CA-07) — as dimensões estruturalmente OBRIGATÓRIAS do agregado: Oferta de atendimento
+    /// especializado (1), Distribuição de vagas (1..*), Classificação (1) e Cronograma de fases
+    /// (1..*, Story #851). Bônus regional (0..1) e critérios de desempate (0..*) são
+    /// deliberadamente opcionais e NÃO entram — a ausência é um estado válido (RN05: ausência de
+    /// bônus = sem bônus), não uma pendência.
     /// </summary>
     /// <remarks>
     /// <b>"Etapas" deixou de ser item incondicional (Story #851 §3.5).</b> Um processo
     /// sem prova (SiSU, <c>CLASSIFICACAO-IMPORTADA</c>) publica sem etapa — a fase que
     /// agrupa etapas existe se e somente se há etapa, e essa bicondicional é gate à
-    /// parte (<see cref="PendenciaDoCronograma"/>), não item do checklist booleano. O
-    /// que sobrevive aqui é a exigência de <see cref="RegraCalculoCodigo.FormulaMediaPonderada"/>:
-    /// sob essa fórmula, o divisor da média (<see cref="CalcularDivisorMedia"/>) tem de
-    /// ser maior que zero. Sob <see cref="RegraCalculoCodigo.ClassificacaoImportada"/>, a
-    /// classificação dispensa etapa, fórmula e precisão locais — nenhum item aqui.
-    /// </remarks>
-    /// <summary>
-    /// Os itens estruturais de conformidade — a fonte que <see cref="PendenciaDeConformidade"/>
-    /// agrega no <c>DomainError</c> genérico. Extraído de <see cref="AvaliarConformidade"/> na
-    /// Story #575 (achado de revisão de plano): a cascata de remanejamento tem erro NOMEADO
+    /// parte (<see cref="PendenciaDoCronograma"/>), projetada em <see cref="AvaliarConformidade"/>
+    /// por predicados próprios, não aqui. O que sobrevive aqui é a exigência de
+    /// <see cref="RegraCalculoCodigo.FormulaMediaPonderada"/>: sob essa fórmula, o divisor da
+    /// média (<see cref="CalcularDivisorMedia"/>) tem de ser maior que zero. Sob
+    /// <see cref="RegraCalculoCodigo.ClassificacaoImportada"/>, a classificação dispensa etapa,
+    /// fórmula e precisão locais — nenhum item aqui.
+    /// <para>
+    /// Fonte que <see cref="PendenciaDeConformidade"/> agrega no <c>DomainError</c> genérico
+    /// (Story #575, achado de revisão de plano): a cascata de remanejamento tem erro NOMEADO
     /// próprio (<see cref="PendenciaDaCascata"/>) e não pode entrar nesta lista, senão o
     /// agregador genérico intercepta o erro específico antes que ele seja alcançado.
-    /// </summary>
+    /// </para>
+    /// </remarks>
     private List<ItemConformidade> ItensEstruturaisDeConformidade()
     {
         List<ItemConformidade> itens =
@@ -1385,13 +1381,69 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// O checklist completo que <c>GET /conformidade</c> exibe — itens estruturais mais o item
-    /// de exibição da cascata de remanejamento (Story #575). O item da cascata NUNCA alimenta
-    /// <see cref="PendenciaDeConformidade"/>: o erro específico, nomeando oferta e modalidade,
-    /// só existe via <see cref="PendenciaDaCascata"/>.
+    /// Checklist de conformidade ESTRUTURAL do agregado (issue #1092): bicondicional com os
+    /// QUATRO gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
+    /// — <see cref="PendenciaDeConformidade"/>, <see cref="PendenciaDoCronograma"/>,
+    /// <see cref="PendenciaDaCascata"/> e <see cref="PendenciaPreCanonicalizacao"/>. Todos os
+    /// itens ficam <see langword="true"/> se e somente se os quatro gates não têm pendência —
+    /// não existe estado em que este checklist declare tudo <c>Ok</c> e a publicação recuse por
+    /// razão estrutural.
     /// </summary>
+    /// <remarks>
+    /// <b>Delimitação — "estrutural" não é "publicável".</b> Mesmo com os quatro gates verdes, a
+    /// publicação ainda pode recusar por conformidade LEGAL (motor data-driven, <c>GET
+    /// /conformidade-legal</c>), documento confirmado, tipo de ato e outras leituras
+    /// request-specific que só o command handler de publicação avalia (ADR-0109). Este método
+    /// cobre só a publicabilidade ESTRUTURAL do agregado, nunca o ensaio completo do command
+    /// handler.
+    /// <para>
+    /// <b>Sem segunda lista de predicados.</b> Cada item abaixo vem de um predicado privado
+    /// NOMEADO que o gate correspondente TAMBÉM chama (os <c>Ha*</c> de
+    /// <see cref="PendenciaDoCronograma"/>, os <c>Existe*</c> de <see cref="PendenciaDaCascata"/>
+    /// e da coerência de indeferimento, os <c>ReferenciaTemporalFatos*</c>, e os sub-gates de
+    /// <see cref="PendenciaPreCanonicalizacao"/> chamados diretamente) — o gate escolhe a
+    /// PRIMEIRA falha na precedência que <see cref="Publicar"/> já fixa; este método projeta
+    /// TODOS os vereditos. Uma razão nova acrescentada a um predicado compartilhado aparece nos
+    /// dois ao mesmo tempo, por construção — não há um segundo <c>if</c> para lembrar de manter
+    /// sincronizado.
+    /// </para>
+    /// <para>
+    /// Ordem estável: a ordem dos itens é a ordem de declaração abaixo, nunca a ordem de
+    /// iteração de uma coleção do EF.
+    /// </para>
+    /// </remarks>
     public IReadOnlyList<ItemConformidade> AvaliarConformidade() =>
-        [.. ItensEstruturaisDeConformidade(), new ItemConformidade("Cascata de remanejamento", PendenciaDaCascata() is null)];
+    [
+        .. ItensEstruturaisDeConformidade(),
+        new ItemConformidade("Cascata de remanejamento", PendenciaDaCascata() is null),
+
+        // ── PendenciaDoCronograma (Story #851 §3.4/§3.5) ──
+        new ItemConformidade("Cronograma: fase que agrupa etapas só quando há etapa pontuada", !HaFaseDeAvaliacaoSemEtapa()),
+        new ItemConformidade("Cronograma: etapa pontuada tem fase que agrupa etapas", !HaEtapaSemFaseDeAvaliacao()),
+        new ItemConformidade("Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
+        new ItemConformidade("Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
+
+        // ── PendenciaDaCascata, detalhamento por razão (RN-CASCATA-1/2/2b/3, Story #575) ──
+        new ItemConformidade("Cascata: modalidade SegueCascata usa a regra de distribuição federal", !ExisteCascataForaDoRegimeFederal()),
+        new ItemConformidade("Cascata: origem SegueCascata declarada na cascata de remanejamento", !ExisteCascataOrigemAusente()),
+        new ItemConformidade("Cascata: fallback e destinos resolvíveis nas modalidades ofertadas", !ExisteCascataFallbackNaoSelecionadoNaOferta()),
+        new ItemConformidade("Cascata: origem declarada corresponde a modalidade SegueCascata ofertada", !ExisteCascataOrigemNaoSegueCascata()),
+        new ItemConformidade("Cascata: destino declarado corresponde a modalidade ofertada", !ExisteCascataDestinoDesconhecido()),
+
+        // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
+        new ItemConformidade("Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
+        new ItemConformidade("Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
+        new ItemConformidade("Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga()),
+        new ItemConformidade("Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
+        new ItemConformidade("Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga()),
+        new ItemConformidade("Referência temporal de fatos: configurada quando há gatilho por faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
+        new ItemConformidade("Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
+        new ItemConformidade("Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
+        new ItemConformidade("Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
+        new ItemConformidade("Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
+        new ItemConformidade("Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
+        new ItemConformidade("Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
+    ];
 
     /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria (Story #920) — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
     private bool GruposComConsequenciaTemBaseLegalResolvida() =>
@@ -1458,7 +1510,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
             // RN-CASCATA-2b: SegueCascata só é coberta pela cascata única do processo quando a
             // oferta usa o regime federal — fora dele, a cascata não tem o que validar.
-            if (oferta.RegraDistribuicao.Codigo != RegraDistribuicaoVagasCodigo.Lei12711)
+            if (OfertaForaDoRegimeFederal(oferta))
             {
                 return new DomainError(
                     "ProcessoSeletivo.CascataForaDoRegimeFederal",
@@ -1472,9 +1524,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidadesSegueCascata[0].Codigo}\" com SegueCascata, mas o processo não tem cascata de remanejamento configurada.");
             }
 
-            HashSet<string> codigosDaOferta = new(oferta.Modalidades.Select(static m => m.Codigo), StringComparer.Ordinal);
-
-            if (!codigosDaOferta.Contains(Cascata.FallbackCodigo))
+            if (FallbackNaoSelecionadoNaOferta(oferta, Cascata.FallbackCodigo))
             {
                 return new DomainError(
                     "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
@@ -1483,22 +1533,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
             foreach (ModalidadeSelecionada modalidade in modalidadesSegueCascata)
             {
-                bool temDestinoResolvivelNaOferta = Cascata.Destinos
-                    .Where(d => string.Equals(d.ModalidadeOrigemCodigo, modalidade.Codigo, StringComparison.Ordinal))
-                    .OrderBy(static d => d.Ordem)
-                    .Any(d => codigosDaOferta.Contains(d.ModalidadeDestinoCodigo));
-
-                bool origemDeclaradaNaCascata = Cascata.Destinos
-                    .Any(d => string.Equals(d.ModalidadeOrigemCodigo, modalidade.Codigo, StringComparison.Ordinal));
-
-                if (!origemDeclaradaNaCascata)
+                if (OrigemNaoDeclaradaNaCascata(modalidade.Codigo))
                 {
                     return new DomainError(
                         "ProcessoSeletivo.CascataOrigemAusente",
                         $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidade.Codigo}\" com SegueCascata, mas a cascata não declara nenhum destino para ela.");
                 }
 
-                if (!temDestinoResolvivelNaOferta)
+                if (DestinoDaOrigemNaoResolvivelNaOferta(oferta, modalidade.Codigo))
                 {
                     return new DomainError(
                         "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
@@ -1549,22 +1591,154 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return null;
     }
 
+    /// <summary>A oferta exige a cascata única do processo: tem ≥1 modalidade SegueCascata (RN-CASCATA-2b).</summary>
+    private static bool OfertaExigeCascata(ConfiguracaoDistribuicaoVagas oferta) =>
+        oferta.Modalidades.Any(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata);
+
+    /// <summary>A oferta não usa o regime federal (Lei 12.711/2012) — condição de <c>CascataForaDoRegimeFederal</c>.</summary>
+    private static bool OfertaForaDoRegimeFederal(ConfiguracaoDistribuicaoVagas oferta) =>
+        oferta.RegraDistribuicao.Codigo != RegraDistribuicaoVagasCodigo.Lei12711;
+
+    /// <summary>O fallback da cascata não é modalidade selecionada na oferta — condição de <c>CascataFallbackNaoSelecionadoNaOferta</c> (nível oferta).</summary>
+    private static bool FallbackNaoSelecionadoNaOferta(ConfiguracaoDistribuicaoVagas oferta, string fallbackCodigo) =>
+        !oferta.Modalidades.Select(static m => m.Codigo).Contains(fallbackCodigo, StringComparer.Ordinal);
+
+    /// <summary>A cascata não declara nenhum destino para a origem — condição de <c>CascataOrigemAusente</c> (nível modalidade).</summary>
+    private bool OrigemNaoDeclaradaNaCascata(string modalidadeOrigemCodigo) =>
+        Cascata is not null
+        && !Cascata.Destinos.Any(d => string.Equals(d.ModalidadeOrigemCodigo, modalidadeOrigemCodigo, StringComparison.Ordinal));
+
+    /// <summary>Nenhum destino declarado da origem é modalidade selecionada NESTA oferta — condição de <c>CascataFallbackNaoSelecionadoNaOferta</c> (nível modalidade).</summary>
+    private bool DestinoDaOrigemNaoResolvivelNaOferta(ConfiguracaoDistribuicaoVagas oferta, string modalidadeOrigemCodigo)
+    {
+        if (Cascata is null)
+        {
+            return false;
+        }
+
+        HashSet<string> codigosDaOferta = new(oferta.Modalidades.Select(static m => m.Codigo), StringComparer.Ordinal);
+        return !Cascata.Destinos
+            .Where(d => string.Equals(d.ModalidadeOrigemCodigo, modalidadeOrigemCodigo, StringComparison.Ordinal))
+            .OrderBy(static d => d.Ordem)
+            .Any(d => codigosDaOferta.Contains(d.ModalidadeDestinoCodigo));
+    }
+
     /// <summary>
-    /// Pendências do cronograma que não cabem no checklist booleano de
-    /// <see cref="AvaliarConformidade"/> — cada uma tem o seu próprio <c>DomainError</c>
+    /// Existe alguma oferta com modalidade SegueCascata sob regime não-federal — mesmo predicado
+    /// de <see cref="OfertaForaDoRegimeFederal"/> que o gate usa, agregado sobre TODAS as ofertas
+    /// (não só a primeira) para o item do checklist estrutural.
+    /// </summary>
+    private bool ExisteCascataForaDoRegimeFederal() =>
+        _distribuicaoVagas.Any(o => OfertaExigeCascata(o) && OfertaForaDoRegimeFederal(o));
+
+    /// <summary>Existe alguma origem SegueCascata (cascata ausente, ou destino não declarado) alcançável por uma oferta federal.</summary>
+    private bool ExisteCascataOrigemAusente()
+    {
+        foreach (ConfiguracaoDistribuicaoVagas oferta in _distribuicaoVagas)
+        {
+            if (!OfertaExigeCascata(oferta) || OfertaForaDoRegimeFederal(oferta))
+            {
+                continue;
+            }
+
+            if (Cascata is null)
+            {
+                return true;
+            }
+
+            if (oferta.Modalidades
+                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
+                .Any(m => OrigemNaoDeclaradaNaCascata(m.Codigo)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Existe fallback ou destino não resolvível numa oferta federal que exige cascata.</summary>
+    private bool ExisteCascataFallbackNaoSelecionadoNaOferta()
+    {
+        foreach (ConfiguracaoDistribuicaoVagas oferta in _distribuicaoVagas)
+        {
+            if (!OfertaExigeCascata(oferta) || OfertaForaDoRegimeFederal(oferta) || Cascata is null)
+            {
+                continue;
+            }
+
+            if (FallbackNaoSelecionadoNaOferta(oferta, Cascata.FallbackCodigo))
+            {
+                return true;
+            }
+
+            if (oferta.Modalidades
+                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
+                .Any(m => !OrigemNaoDeclaradaNaCascata(m.Codigo) && DestinoDaOrigemNaoResolvivelNaOferta(oferta, m.Codigo)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Existe origem declarada na cascata que nenhuma oferta do processo marca como SegueCascata.</summary>
+    private bool ExisteCascataOrigemNaoSegueCascata()
+    {
+        if (Cascata is null)
+        {
+            return false;
+        }
+
+        HashSet<string> todasAsOrigensSegueCascata = new(
+            _distribuicaoVagas.SelectMany(static o => o.Modalidades)
+                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
+                .Select(static m => m.Codigo),
+            StringComparer.Ordinal);
+
+        return Cascata.Destinos
+            .Select(static d => d.ModalidadeOrigemCodigo)
+            .Distinct(StringComparer.Ordinal)
+            .Any(origem => !todasAsOrigensSegueCascata.Contains(origem));
+    }
+
+    /// <summary>Existe destino declarado na cascata que não é modalidade selecionada em nenhuma oferta do processo.</summary>
+    private bool ExisteCascataDestinoDesconhecido()
+    {
+        if (Cascata is null)
+        {
+            return false;
+        }
+
+        HashSet<string> todosOsCodigosOfertados = new(
+            _distribuicaoVagas.SelectMany(static o => o.Modalidades).Select(static m => m.Codigo),
+            StringComparer.Ordinal);
+
+        return Cascata.Destinos.Any(d => !todosOsCodigosOfertados.Contains(d.ModalidadeDestinoCodigo));
+    }
+
+    /// <summary>
+    /// Pendências do cronograma que não cabem no checklist booleano ORIGINAL de
+    /// <see cref="PendenciaDeConformidade"/> — cada uma tem o seu próprio <c>DomainError</c>
     /// nomeado (Story #851 §3.4/§3.5, CA-11/CA-13/CA-14). Chamado por
     /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/FecharRetificacao),
     /// sempre <b>depois</b> de <see cref="PendenciaDeConformidade"/>.
     /// </summary>
+    /// <remarks>
+    /// Issue #1092: cada <c>if</c> abaixo testa um predicado privado nomeado
+    /// (<c>Ha*</c>) em vez de uma expressão inline — <see cref="AvaliarConformidade"/>
+    /// chama os MESMOS quatro predicados para projetar um item por razão. A precedência
+    /// (qual falha é devolvida primeiro) continua decidida só aqui, pela ORDEM dos
+    /// <c>if</c>; o checklist não reordena nem filtra — só projeta todos os quatro.
+    /// </remarks>
     private DomainError? PendenciaDoCronograma()
     {
-        bool existeFaseDeAvaliacao = _cronogramaFases.Any(static f => f.AgrupaEtapas);
-
         // §3.5, direção "fase de avaliação sem etapa" — defesa em profundidade: o mesmo
         // sentido já é bloqueado eagerly em DefinirCronogramaFases, mas uma etapa
         // removida DEPOIS (via DefinirEtapas) deixaria uma fase de avaliação órfã sem
         // que nada a pegasse na hora — o gate de publicação é a rede de segurança.
-        if (existeFaseDeAvaliacao && _etapas.Count == 0)
+        if (HaFaseDeAvaliacaoSemEtapa())
         {
             return new DomainError(
                 "ProcessoSeletivo.AvaliacaoSemEtapa",
@@ -1573,7 +1747,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // §3.5, direção "etapa sem fase de avaliação" — lazy por natureza (a etapa pode
         // ser declarada depois do cronograma).
-        if (_etapas.Count > 0 && !existeFaseDeAvaliacao)
+        if (HaEtapaSemFaseDeAvaliacao())
         {
             return new DomainError(
                 "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",
@@ -1581,8 +1755,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         // §3.4 — piso mínimo derivado da ORIGEM DOS CANDIDATOS, nunca do tipo.
-        if (OrigemCandidatos == OrigemCandidatos.InscricaoPropria
-            && !_cronogramaFases.Any(static f => f.ColetaInscricao))
+        if (HaInscricaoPropriaSemFaseDeColeta())
         {
             return new DomainError(
                 "ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta",
@@ -1591,8 +1764,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // §3.4 — havendo vagas ofertadas, o cronograma precisa de ao menos uma fase que
         // produza resultado.
-        bool temVagasOfertadas = _distribuicaoVagas.Any(static d => d.VoBase > 0);
-        if (temVagasOfertadas && !_cronogramaFases.Any(static f => f.ProduzResultado))
+        if (HaVagasSemFaseQueProduzResultado())
         {
             return new DomainError(
                 "ProcessoSeletivo.VagasSemFaseQueProduzResultado",
@@ -1601,6 +1773,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return null;
     }
+
+    /// <summary>Fase que agrupa etapas existe, mas o processo não tem etapa pontuada (§3.5).</summary>
+    private bool HaFaseDeAvaliacaoSemEtapa() =>
+        _cronogramaFases.Any(static f => f.AgrupaEtapas) && _etapas.Count == 0;
+
+    /// <summary>Etapa pontuada existe, mas nenhuma fase do cronograma agrupa etapas (§3.5).</summary>
+    private bool HaEtapaSemFaseDeAvaliacao() =>
+        _etapas.Count > 0 && !_cronogramaFases.Any(static f => f.AgrupaEtapas);
+
+    /// <summary>Origem InscricaoPropria sem nenhuma fase que colete inscrição (§3.4).</summary>
+    private bool HaInscricaoPropriaSemFaseDeColeta() =>
+        OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
+
+    /// <summary>Há vagas ofertadas (VoBase > 0), mas nenhuma fase do cronograma produz resultado (§3.4).</summary>
+    private bool HaVagasSemFaseQueProduzResultado() =>
+        _distribuicaoVagas.Any(static d => d.VoBase > 0) && !_cronogramaFases.Any(static f => f.ProduzResultado);
 
     /// <summary>
     /// Documentos exigidos, coerência de consequência e referência temporal de fatos —
@@ -1820,18 +2008,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 continue;
             }
 
-            if (consequencia == "REMOVE_VANTAGEM" && BonusRegional is null)
+            if (ConsequenciaRemoveVantagemSemVantagemViva(consequencia))
             {
                 return new DomainError(
                     "DocumentoExigido.RemoveVantagemSemVantagemViva",
                     $"A exigência '{exigencia.TipoDocumentoCodigo}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
             }
 
-            string consequenciaComoAcaoDaVaga = NormalizarConsequenciaParaAcaoDaVaga(consequencia);
-            ModalidadeSelecionada? modalidadeIncoerente = ModalidadesAlcancadasPor(exigencia)
-                .FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
-                    && !string.Equals(acao, consequenciaComoAcaoDaVaga, StringComparison.Ordinal));
-            if (modalidadeIncoerente is not null)
+            if (ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(exigencia)) is { } modalidadeIncoerente)
             {
                 return new DomainError(
                     "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
@@ -1846,18 +2030,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             string consequenciaDoGrupo = grupo.Consequencia!;
 
-            if (consequenciaDoGrupo == "REMOVE_VANTAGEM" && BonusRegional is null)
+            if (ConsequenciaRemoveVantagemSemVantagemViva(consequenciaDoGrupo))
             {
                 return new DomainError(
                     "NoExigencia.RemoveVantagemSemVantagemViva",
                     $"O grupo '{grupo.Id}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
             }
 
-            string consequenciaDoGrupoComoAcaoDaVaga = NormalizarConsequenciaParaAcaoDaVaga(consequenciaDoGrupo);
-            ModalidadeSelecionada? modalidadeIncoerenteDoGrupo = ModalidadesAlcancadasPor(grupo)
-                .FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
-                    && !string.Equals(acao, consequenciaDoGrupoComoAcaoDaVaga, StringComparison.Ordinal));
-            if (modalidadeIncoerenteDoGrupo is not null)
+            if (ModalidadeIncoerenteComConsequencia(consequenciaDoGrupo, ModalidadesAlcancadasPor(grupo)) is { } modalidadeIncoerenteDoGrupo)
             {
                 return new DomainError(
                     "NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga",
@@ -1867,6 +2047,42 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return null;
     }
+
+    /// <summary>A consequência é REMOVE_VANTAGEM sem nenhuma vantagem viva no processo (bônus regional, RN05).</summary>
+    private bool ConsequenciaRemoveVantagemSemVantagemViva(string? consequencia) =>
+        consequencia == "REMOVE_VANTAGEM" && BonusRegional is null;
+
+    /// <summary>
+    /// A primeira modalidade alcançada cuja <c>AcaoQuandoIndeferido</c> declarada é incoerente com a
+    /// consequência — ou <see langword="null"/> quando todas as que declaram ação concordam. Devolve a
+    /// ENTIDADE (não um bool) porque tanto o gate (mensagem nomeando oferta/modalidade) quanto o
+    /// checklist (presença) derivam do mesmo cálculo, sem recomputar a busca duas vezes.
+    /// </summary>
+    private static ModalidadeSelecionada? ModalidadeIncoerenteComConsequencia(
+        string consequencia, IEnumerable<ModalidadeSelecionada> modalidadesAlcancadas)
+    {
+        string consequenciaComoAcaoDaVaga = NormalizarConsequenciaParaAcaoDaVaga(consequencia);
+        return modalidadesAlcancadas.FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
+            && !string.Equals(acao, consequenciaComoAcaoDaVaga, StringComparison.Ordinal));
+    }
+
+    /// <summary>Existe <see cref="DocumentoExigido"/> (folha) com REMOVE_VANTAGEM sem vantagem viva.</summary>
+    private bool ExisteExigenciaRemoveVantagemSemVantagemViva() =>
+        _documentosExigidos.Any(e => ConsequenciaRemoveVantagemSemVantagemViva(e.ConsequenciaIndeferimento));
+
+    /// <summary>Existe <see cref="DocumentoExigido"/> (folha) com consequência incoerente com a ação de alguma modalidade alcançada.</summary>
+    private bool ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga() =>
+        _documentosExigidos.Any(e => e.ConsequenciaIndeferimento is { } c
+            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(e)) is not null);
+
+    /// <summary>Existe grupo OU/N-de com consequência própria REMOVE_VANTAGEM sem vantagem viva (Story #920).</summary>
+    private bool ExisteGrupoRemoveVantagemSemVantagemViva() =>
+        _nosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && ConsequenciaRemoveVantagemSemVantagemViva(no.Consequencia));
+
+    /// <summary>Existe grupo OU/N-de com consequência própria incoerente com a ação de alguma modalidade alcançada (Story #920).</summary>
+    private bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga() =>
+        _nosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is { } c
+            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(no)) is not null);
 
     /// <summary>
     /// Ponte entre os dois vocabulários fechados de "ação de indeferimento" — Story #554
@@ -1918,34 +2134,30 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     private DomainError? PendenciaDaReferenciaTemporalFatos()
     {
-        bool existeGatilhoPorFaixaEtaria = _documentosExigidos
-            .SelectMany(static d => d.Condicoes)
-            .Any(static c => string.Equals(c.Fato, "FAIXA_ETARIA", StringComparison.Ordinal));
-
-        if (!existeGatilhoPorFaixaEtaria)
+        if (!ExisteGatilhoPorFaixaEtaria())
         {
             return null;
         }
 
-        if (ReferenciaTemporalFatos is not { } referencia)
+        if (ReferenciaTemporalFatosAusenteQuandoExigida())
         {
             return new DomainError(
                 "ProcessoSeletivo.ReferenciaTemporalFatosAusente",
                 "Existe gatilho por FAIXA_ETARIA, mas nenhuma referência temporal de fatos foi configurada — a publicação não pode resolver a idade do candidato sem fallback silencioso (ADR-0111).");
         }
 
+        ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos!;
+
         if (referencia.Tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase)
         {
-            FaseCronograma? fase = _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId);
-            if (fase is null)
+            if (ReferenciaTemporalFatosFaseNaoPertenceAoCronograma())
             {
                 return new DomainError(
                     "ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente",
                     "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma deste processo.");
             }
 
-            DateTimeOffset? extremo = referencia.Tipo == ReferenciaTipo.InicioFase ? fase.Inicio : fase.Fim;
-            if (extremo is null)
+            if (ReferenciaTemporalFatosExtremoDaFaseAusente())
             {
                 return new DomainError(
                     "ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente",
@@ -1956,10 +2168,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             // Achado de revisão (Story #554, PR #903): nada no domínio impede MAIS de uma
             // fase com ColetaInscricao (mesma família de guard já corrigida para
-            // IdadeMaximaEmissao, PR #900) — FirstOrDefault pegava a primeira, mesmo que
-            // outra (com Fim definido) resolvesse a referência. A pergunta certa é
-            // existencial (Any), não posicional.
-            if (!_cronogramaFases.Any(static f => f.ColetaInscricao && f.Fim is not null))
+            // IdadeMaximaEmissao, PR #900) — a pergunta certa é existencial (Any), não posicional.
+            if (ReferenciaTemporalFatosFimInscricaoIndisponivel())
             {
                 return new DomainError(
                     "ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel",
@@ -1970,6 +2180,36 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // DATA_ESPECIFICA: ReferenciaTemporalFatos.Criar já garante Data presente — nada a checar aqui.
         return null;
     }
+
+    /// <summary>Existe gatilho por FAIXA_ETARIA em algum <see cref="DocumentoExigido"/> — sem ele, a referência temporal é opcional.</summary>
+    private bool ExisteGatilhoPorFaixaEtaria() =>
+        _documentosExigidos.SelectMany(static d => d.Condicoes)
+            .Any(static c => string.Equals(c.Fato, "FAIXA_ETARIA", StringComparison.Ordinal));
+
+    /// <summary>A fase âncora de InicioFase/FimFase — <see langword="null"/> quando o tipo não usa fase ou ela não pertence (mais) ao cronograma.</summary>
+    private FaseCronograma? FaseAncoraDaReferenciaTemporal() =>
+        ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
+            ? _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)
+            : null;
+
+    private bool ReferenciaTemporalFatosAusenteQuandoExigida() =>
+        ExisteGatilhoPorFaixaEtaria() && ReferenciaTemporalFatos is null;
+
+    private bool ReferenciaTemporalFatosFaseNaoPertenceAoCronograma() =>
+        ExisteGatilhoPorFaixaEtaria()
+        && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase }
+        && FaseAncoraDaReferenciaTemporal() is null;
+
+    private bool ReferenciaTemporalFatosExtremoDaFaseAusente() =>
+        ExisteGatilhoPorFaixaEtaria()
+        && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
+        && FaseAncoraDaReferenciaTemporal() is { } fase
+        && (referencia.Tipo == ReferenciaTipo.InicioFase ? fase.Inicio : fase.Fim) is null;
+
+    private bool ReferenciaTemporalFatosFimInscricaoIndisponivel() =>
+        ExisteGatilhoPorFaixaEtaria()
+        && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.FimInscricao }
+        && !_cronogramaFases.Any(static f => f.ColetaInscricao && f.Fim is not null);
 
     /// <summary>
     /// Resolve <see cref="ReferenciaTemporalFatos"/> para a <see cref="DateOnly"/> concreta

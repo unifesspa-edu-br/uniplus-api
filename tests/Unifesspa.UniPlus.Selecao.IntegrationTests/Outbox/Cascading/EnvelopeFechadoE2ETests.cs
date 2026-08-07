@@ -237,9 +237,14 @@ public sealed class EnvelopeFechadoE2ETests
 
         conformidade.Itens.Should().NotBeEmpty("uma lista vazia daria falso verde por AllSatisfy trivial");
         conformidade.Itens.Select(i => i.Item).Should().OnlyHaveUniqueItems("cada item do checklist aparece uma única vez");
+        // issue #1092: o checklist passou a ser bicondicional com os QUATRO gates estruturais
+        // (antes só projetava PendenciaDeConformidade) — a publicação no passo 16 só devolve 204
+        // porque os quatro gates já estão satisfeitos, então o corpus rico continua OnlyContain(Ok):
+        // a ampliação não pode criar falso vermelho no caminho HTTP completo.
         conformidade.Itens.Should().OnlyContain(i => i.Ok, "o processo está completo — nenhum item deveria estar pendente");
         conformidade.Itens.Select(i => i.Item).Should().BeEquivalentTo(
             [
+                // ── PendenciaDeConformidade (itens estruturais originais) ──
                 "Atendimento especializado",
                 "Distribuição de vagas",
                 "Classificação",
@@ -247,6 +252,30 @@ public sealed class EnvelopeFechadoE2ETests
                 "Base legal das exigências documentais",
                 "Divisor da média (fórmula local)",
                 "Cascata de remanejamento",
+                // ── PendenciaDoCronograma ──
+                "Cronograma: fase que agrupa etapas só quando há etapa pontuada",
+                "Cronograma: etapa pontuada tem fase que agrupa etapas",
+                "Cronograma: inscrição própria tem fase que coleta inscrição",
+                "Cronograma: vagas ofertadas têm fase que produz resultado",
+                // ── PendenciaDaCascata, detalhamento por razão ──
+                "Cascata: modalidade SegueCascata usa a regra de distribuição federal",
+                "Cascata: origem SegueCascata declarada na cascata de remanejamento",
+                "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas",
+                "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada",
+                "Cascata: destino declarado corresponde a modalidade ofertada",
+                // ── PendenciaPreCanonicalizacao ──
+                "Exigência documental: sem CONDICIONAL vazia que determina resultado",
+                "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)",
+                "Consequência de indeferimento: coerente com a ação da vaga (exigência)",
+                "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)",
+                "Consequência de indeferimento: coerente com a ação da vaga (grupo)",
+                "Referência temporal de fatos: configurada quando há gatilho por faixa etária",
+                "Referência temporal de fatos: fase âncora pertence ao cronograma",
+                "Referência temporal de fatos: extremo da fase âncora definido",
+                "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO",
+                "Regras de derivação: fatos citados existem no processo",
+                "Regras de derivação: código contribuído pertence ao domínio ofertado",
+                "Grafo de dependência conjunto: sem ciclo",
             ],
             "o conjunto exato de itens que este corpus produz — remover um item do checklist, ou acrescentar um item indevido marcado ok, muda este conjunto");
 

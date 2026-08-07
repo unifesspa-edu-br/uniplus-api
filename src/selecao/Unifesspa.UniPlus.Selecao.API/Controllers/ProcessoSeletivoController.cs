@@ -871,9 +871,17 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
-    /// Consulta a conformidade estrutural do processo (CA-07): checklist com
-    /// cada item obrigatório marcado ok/pendente, sem alterar o processo.
+    /// Consulta a conformidade ESTRUTURAL do processo (CA-07, issue #1092): checklist
+    /// bicondicional com os quatro gates estruturais de <c>Publicar</c>/<c>Retificar</c> — todo
+    /// item <c>Ok</c> se e somente se nenhum dos quatro gates tem pendência. Não altera o
+    /// processo.
     /// </summary>
+    /// <remarks>
+    /// <b>Não é "publicável".</b> Mesmo com todos os itens <c>Ok</c>, a publicação ainda pode
+    /// recusar por conformidade LEGAL (<see cref="ObterConformidadeLegal"/>), documento
+    /// confirmado, tipo de ato e outras leituras request-specific que só o comando de publicação
+    /// avalia — este checklist cobre só a publicabilidade estrutural do agregado.
+    /// </remarks>
     [HttpGet("{id:guid}/conformidade")]
     [VendorMediaType(Resource = "conformidade-processo-seletivo", Versions = [1])]
     [ProducesResponseType(typeof(ConformidadeProcessoSeletivoDto), StatusCodes.Status200OK)]
