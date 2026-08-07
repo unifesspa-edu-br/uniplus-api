@@ -44,32 +44,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 internal static class EnvelopeCodecV13
 {
-    private static readonly string[] Stubs =
-    [
-        "formulario",
-        "cascataRemanejamento",
-        "divulgacao",
-        "identidadesUnidade",
-    ];
-
-    private static readonly string[] BlocosReais =
-    [
-        "periodo",
-        "etapas",
-        "distribuicao",
-        "modalidades",
-        "ofertas",
-        "atendimento",
-        "bonusRegional",
-        "criteriosDesempate",
-        "classificacao",
-        "hashesEdital",
-        "cronogramaFases",
-        "documentosExigidos",
-        "vagas",
-    ];
-
-
     /// <summary>
     /// Story #919: a única leitura de bloco que difere de <see cref="EnvelopeCodecV12"/>.
     /// <c>exigencias</c>/<c>obrigatoriedades</c>/<c>referenciaTemporalFatos</c> mantêm a

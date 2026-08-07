@@ -36,41 +36,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class EnvelopeCodecV11
 {
     /// <summary>
-    /// Os 4 blocos sem dono (ADR-0109 D8). Um bloco <b>real</b> nunca emite
-    /// <c>nao_construido</c> na raiz; um stub que virou objeto rico é forma nova, e forma
-    /// nova é bump de versão. <c>documentosExigidos</c> saiu daqui na Story #853 — ele
-    /// próprio virou bloco real, com a sub-chave <c>exigencias</c> (#554) ainda stub
-    /// <b>dentro</b> dele (ver <see cref="LerDocumentosExigidos"/>).
-    /// </summary>
-    private static readonly string[] Stubs =
-    [
-        "formulario",
-        "cascataRemanejamento",
-        "divulgacao",
-        "identidadesUnidade",
-    ];
-
-    private static readonly string[] BlocosReais =
-    [
-        "periodo",
-        "etapas",
-        "distribuicao",
-        "modalidades",
-        "ofertas",
-        "atendimento",
-        "bonusRegional",
-        "criteriosDesempate",
-        "classificacao",
-        "hashesEdital",
-        // Story #851 — cronogramaFases deixa de ser stub.
-        "cronogramaFases",
-        // Story #853 — documentosExigidos deixa de ser stub (obrigatoriedades[] real).
-        "documentosExigidos",
-        // issue #848/ADR-0115 — vagas deixa de ser stub (quadro sempre materializado).
-        "vagas",
-    ];
-
-    /// <summary>
     /// Chave duplicada é <b>erro</b>, não “a última ganha”. Um envelope com
     /// <c>"fator"</c> duas vezes tem duas leituras possíveis, e a que o hash cobre é
     /// indistinguível da que o parser escolheria.
