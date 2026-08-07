@@ -43,6 +43,15 @@ using TestSupport;
 /// fecha essa lacuna.
 /// </para>
 /// </remarks>
+/// <remarks>
+/// <para>
+/// <b>Os nomes dos métodos evitam de propósito o token que o filtro usa.</b> O predicado
+/// <c>FullyQualifiedName~IntegrationTests</c> casa por conteúdo, e o nome do método entra no
+/// <c>FullyQualifiedName</c>; um método chamado <c>...IntegrationTests...</c> seria classificado
+/// como teste de integração, sairia da suíte rápida e passaria a exigir Docker — justamente o
+/// guarda que existe para proteger essa separação ficaria fora dela.
+/// </para>
+/// </remarks>
 public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
 {
     private static readonly Regex[] PadroesDeUsoDeTestcontainers =
@@ -65,7 +74,7 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
     ];
 
     [Fact(DisplayName = "Nenhuma classe fora de *.IntegrationTests referencia Testcontainers diretamente")]
-    public void NenhumArquivoForaDeIntegrationTestsUsaTestcontainers()
+    public void SoProjetoDeIntegracaoReferenciaTestcontainers()
     {
         string solutionRoot = SolutionRootLocator.Locate();
         string testsRoot = Path.Combine(solutionRoot, "tests");
@@ -111,7 +120,7 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
     }
 
     [Fact(DisplayName = "Todo teste dentro de *.IntegrationTests declara namespace que contém IntegrationTests")]
-    public void TestesEmProjetoDeIntegracaoDeclaramNamespaceComIntegrationTests()
+    public void ProjetoDeIntegracaoDeclaraNamespaceCoerenteComOFiltro()
     {
         string solutionRoot = SolutionRootLocator.Locate();
         string testsRoot = Path.Combine(solutionRoot, "tests");
