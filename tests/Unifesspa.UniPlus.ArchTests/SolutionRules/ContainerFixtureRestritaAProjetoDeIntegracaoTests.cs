@@ -36,14 +36,40 @@ using TestSupport;
 /// <c>FullyQualifiedName</c> (namespace + classe + método) — os dois só coincidem enquanto
 /// o namespace de todo arquivo dentro de um projeto <c>*.IntegrationTests</c> contiver
 /// <c>IntegrationTests</c>. <see cref="ProjetoDeIntegracaoDeclaraNamespaceCoerenteComOFiltro"/>
-/// fecha essa lacuna verificando **todo** arquivo <c>.cs</c> que declara namespace — não só os
-/// que uma regex reconhece como contendo um caso de teste. Restringir a verificação a arquivos
-/// com <c>[Fact]</c>/<c>[Theory]</c> tem o mesmo problema da varredura textual de Testcontainers:
+/// fecha essa lacuna verificando **todo** arquivo <c>.cs</c> que declara tipo — não só os
+/// que uma regex reconhece como contendo um caso de teste, e não só os que declaram namespace.
+/// Um arquivo sem declaração de namespace dentro de um projeto <c>*.IntegrationTests</c> não é
+/// automaticamente inofensivo: se ele declarar um tipo, esse tipo cai no namespace global, e o
+/// <c>FullyQualifiedName</c> do método vira só <c>Tipo.Metodo</c> — sem o token
+/// <c>IntegrationTests</c> em lugar nenhum —, então o filtro sem Docker o inclui mesmo ele
+/// precisando de container. Restringir a verificação (de namespace ou de tipo) a arquivos com
+/// <c>[Fact]</c>/<c>[Theory]</c> tem o mesmo problema da varredura textual de Testcontainers:
 /// qualquer forma de declarar teste que a regex não previu (atributo totalmente qualificado,
 /// alias, framework de teste diferente) passa batido. Um arquivo de apoio (fixture, stub,
 /// collection) com namespace divergente já é risco em potencial — não precisa conter um teste
 /// para o <c>FullyQualifiedName</c> de uma classe vizinha no mesmo namespace ficar incoerente
 /// com o diretório físico.
+/// </para>
+/// <para>
+/// A direção inversa não tinha guarda nenhuma: nada impedia um arquivo **fora** de
+/// <c>*.IntegrationTests</c> de ganhar, à mão, um namespace, um tipo ou um método cujo nome
+/// contivesse <c>IntegrationTests</c> — o mesmo predicado <c>FullyQualifiedName~IntegrationTests</c>
+/// que inclui a suíte com Docker também o pegaria, puxando um teste sem Docker para o gate lento.
+/// <see cref="ForaDeIntegracaoNadaDeclaraORotuloDoFiltro"/> fecha essa lacuna varrendo declaração
+/// de namespace, tipo e método — nunca string, comentário ou chamada — fora de
+/// <c>*.IntegrationTests</c>. As duas bibliotecas de fixture ficam fora dessa varredura pelo mesmo
+/// motivo que já as isenta em <see cref="SoProjetoDeIntegracaoReferenciaPacoteTestcontainers"/>:
+/// <c>IsTestProject=false</c>, sem <c>[Fact]</c>/<c>[Theory]</c> próprio — o namespace
+/// <c>Unifesspa.UniPlus.IntegrationTests.Fixtures.*</c> que elas declaram é o nome do próprio
+/// pacote consumido pelos projetos <c>*.IntegrationTests</c>, não um teste que o filtro algum dia
+/// avalie.
+/// </para>
+/// <para>
+/// A detecção de tipo e de método é por forma sintática ancorada em início de linha, não por
+/// parser — o mesmo grau de rigor que a detecção de namespace já usa. Não trata comentário de
+/// bloco (<c>/* ... */</c>) porque o repositório não usa esse estilo (só <c>///</c> e <c>//</c>,
+/// que a âncora de início de linha já ignora, já que a linha começa pela marca do comentário, não
+/// por modificador nem por palavra-chave de declaração).
 /// </para>
 /// <para>
 /// A exceção das bibliotecas de fixture, por sua vez, só é segura enquanto
@@ -72,6 +98,28 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
 {
     private static readonly Regex PadraoDeNamespace =
         new(@"^\s*namespace\s+([A-Za-z0-9_.]+)\s*[;{]", RegexOptions.Multiline | RegexOptions.Compiled);
+
+    // Reconhece a declaração de um tipo (classe, record, struct ou interface) no início da
+    // linha — atributos e modificadores são opcionais, mas a palavra-chave de declaração vem
+    // logo em seguida. "class"/"record"/"struct"/"interface" são palavras reservadas do C#, sem
+    // ambiguidade com identificador ou chamada; o único falso positivo teoricamente possível é a
+    // palavra abrir uma linha dentro de um comentário de bloco (/* ... */) — o repositório só usa
+    // /// e //, então não há caso real disso em tests/.
+    private static readonly Regex PadraoDeDeclaracaoDeTipo =
+        new(
+            @"^\s*(?:\[[^\]]*\]\s*)*(?:(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|unsafe|new|file)\s+)*(?:class|interface|struct|record)\s+(\w+)",
+            RegexOptions.Multiline | RegexOptions.Compiled);
+
+    // Reconhece a forma "tipo-de-retorno identificador(" no início da linha — a mesma forma de
+    // "void X(" usada como critério simplificado quando a distinção por regex fica difícil demais
+    // para valer um parser completo. A negação inicial evita o falso positivo mais realista dessa
+    // forma: uma instrução "return Foo();" ou "await Foo();" tem exatamente esse formato sem ser
+    // declaração nenhuma; outras palavras de controle de fluxo (if/while/for/foreach/...) já não
+    // casam sozinhas porque são seguidas de "(" direto, sem identificador entre as duas.
+    private static readonly Regex PadraoDeDeclaracaoDeMetodo =
+        new(
+            @"^\s*(?:\[[^\]]*\]\s*)*(?:(?:public|internal|private|protected|sealed|abstract|static|virtual|override|async|partial|new|unsafe|extern|readonly)\s+)*(?!return\b|throw\b|await\b)[\w.?]+(?:<[^>]*>)?(?:\[\])?\s+(\w+)\s*\(",
+            RegexOptions.Multiline | RegexOptions.Compiled);
 
     private static readonly string[] ProjetosDeFixtureExcluidos =
     [
@@ -121,7 +169,7 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
             + "para dentro de *.IntegrationTests. Violações:\n" + string.Join("\n", violacoes));
     }
 
-    [Fact(DisplayName = "Todo arquivo com namespace dentro de *.IntegrationTests declara namespace que contém IntegrationTests")]
+    [Fact(DisplayName = "Todo tipo declarado dentro de *.IntegrationTests fica em um namespace que contém IntegrationTests")]
     public void ProjetoDeIntegracaoDeclaraNamespaceCoerenteComOFiltro()
     {
         string solutionRoot = SolutionRootLocator.Locate();
@@ -147,10 +195,21 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
             string conteudo = File.ReadAllText(arquivo);
             Match match = PadraoDeNamespace.Match(conteudo);
 
-            // Arquivo sem declaração de namespace (ex.: um GlobalUsings.cs só com
-            // `global using`) não produz FullyQualifiedName — nada para o filtro avaliar.
             if (!match.Success)
             {
+                // Arquivo sem declaração de namespace só é inofensivo se também não declarar
+                // tipo algum (ex.: um GlobalUsings.cs só com `global using`, ou um arquivo só
+                // com atributo de assembly). Sem tipo, não há FullyQualifiedName para o filtro
+                // avaliar. Com tipo, o método desse tipo cai no namespace global — o
+                // FullyQualifiedName vira "Tipo.Metodo", sem o namespace do projeto e sem o
+                // token 'IntegrationTests' — e o filtro sem Docker o inclui mesmo o projeto
+                // tendo Docker disponível.
+                if (PadraoDeDeclaracaoDeTipo.IsMatch(conteudo))
+                {
+                    violacoes.Add($"{relativo}: declara tipo sem declaração de namespace (fica no namespace global); "
+                        + "o FullyQualifiedName resultante não contém 'IntegrationTests'.");
+                }
+
                 continue;
             }
 
@@ -165,9 +224,78 @@ public sealed class ContainerFixtureRestritaAProjetoDeIntegracaoTests
         violacoes.Should().BeEmpty(
             "o filtro estrutural (FullyQualifiedName!~IntegrationTests / FullyQualifiedName~IntegrationTests) "
             + "opera sobre o FullyQualifiedName do teste — namespace + classe + método —, não sobre o diretório "
-            + "do projeto; um arquivo fisicamente dentro de *.IntegrationTests cujo namespace não contenha "
-            + "'IntegrationTests' arrisca produzir um FullyQualifiedName que entra na suíte sem Docker mesmo "
-            + "estando no projeto certo. Ajuste o namespace para refletir o projeto. Violações:\n"
+            + "do projeto; um arquivo fisicamente dentro de *.IntegrationTests cujo namespace não contenha (ou "
+            + "não declare) 'IntegrationTests' arrisca produzir um FullyQualifiedName que entra na suíte sem "
+            + "Docker mesmo estando no projeto certo. Declare (ou ajuste) o namespace para refletir o projeto. "
+            + "Violações:\n" + string.Join("\n", violacoes));
+    }
+
+    [Fact(DisplayName = "Fora de *.IntegrationTests, nada declara namespace, tipo ou método com o token do filtro")]
+    public void ForaDeIntegracaoNadaDeclaraORotuloDoFiltro()
+    {
+        string solutionRoot = SolutionRootLocator.Locate();
+        string testsRoot = Path.Combine(solutionRoot, "tests");
+
+        List<string> violacoes = [];
+
+        foreach (string arquivo in Directory.EnumerateFiles(testsRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            if (EstaEmBinOuObj(arquivo))
+            {
+                continue;
+            }
+
+            string relativo = Path.GetRelativePath(testsRoot, arquivo);
+            string nomeProjeto = relativo.Split(Path.DirectorySeparatorChar)[0];
+
+            // Direção inversa da guarda anterior: aqui o arquivo só entra na varredura se o
+            // projeto NÃO for *.IntegrationTests. As duas bibliotecas de fixture ficam de fora
+            // pelo mesmo motivo que já as isenta em SoProjetoDeIntegracaoReferenciaPacoteTestcontainers:
+            // IsTestProject=false, sem [Fact]/[Theory] próprio (ver remarks da classe) — nenhum
+            // tipo ou método delas produz um FullyQualifiedName para o filtro avaliar, então o
+            // namespace Unifesspa.UniPlus.IntegrationTests.Fixtures.* que elas declaram é o nome
+            // do próprio pacote consumido pelos projetos *.IntegrationTests, não um vazamento
+            // entre suítes.
+            if (nomeProjeto.EndsWith(".IntegrationTests", StringComparison.Ordinal)
+                || ProjetosDeFixtureExcluidos.Contains(nomeProjeto, StringComparer.Ordinal))
+            {
+                continue;
+            }
+
+            string conteudo = File.ReadAllText(arquivo);
+
+            Match matchNamespace = PadraoDeNamespace.Match(conteudo);
+            if (matchNamespace.Success
+                && matchNamespace.Groups[1].Value.Contains("IntegrationTests", StringComparison.Ordinal))
+            {
+                violacoes.Add($"{relativo}: declara namespace '{matchNamespace.Groups[1].Value}'.");
+            }
+
+            foreach (Match matchTipo in PadraoDeDeclaracaoDeTipo.Matches(conteudo))
+            {
+                string nomeTipo = matchTipo.Groups[1].Value;
+                if (nomeTipo.Contains("IntegrationTests", StringComparison.Ordinal))
+                {
+                    violacoes.Add($"{relativo}: declara tipo '{nomeTipo}'.");
+                }
+            }
+
+            foreach (Match matchMetodo in PadraoDeDeclaracaoDeMetodo.Matches(conteudo))
+            {
+                string nomeMetodo = matchMetodo.Groups[1].Value;
+                if (nomeMetodo.Contains("IntegrationTests", StringComparison.Ordinal))
+                {
+                    violacoes.Add($"{relativo}: declara método '{nomeMetodo}'.");
+                }
+            }
+        }
+
+        violacoes.Should().BeEmpty(
+            "o filtro estrutural (FullyQualifiedName!~IntegrationTests / FullyQualifiedName~IntegrationTests) casa "
+            + "por conteúdo do FullyQualifiedName inteiro — namespace, classe e método —, então um nome que "
+            + "contenha 'IntegrationTests' fora de um projeto *.IntegrationTests puxa um teste sem Docker para a "
+            + "suíte que exige Docker, tirando-o da suíte rápida. Renomeie para não conter o token (ou mova o "
+            + "arquivo para dentro de *.IntegrationTests, se ele realmente precisar de container). Violações:\n"
             + string.Join("\n", violacoes));
     }
 
