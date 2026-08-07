@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Abstractions;
+
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -15,18 +17,25 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// resolve a versão vigente da configuração e projeta os blocos <c>formulario</c>/
 /// <c>fatosColetados</c> (incluindo <c>valoresSelecionaveis</c>) do envelope congelado. Distingue
 /// 404 (processo inexistente) de 422 (<c>Snapshot.VigenteAusente</c>) — mesmo contrato de erro de
-/// <see cref="ObterSnapshotVigenteQueryHandler"/>.
+/// <see cref="ObterSnapshotVigenteQueryHandler"/>. Antes de projetar, confere a
+/// <c>SchemaVersion</c> contra as capacidades de leitura que <see cref="IRegistroCodecsEnvelope"/>
+/// declara: sob o regime de codec único reescrito no lugar (ADR-0110 Emenda 2, ADR-0109 Emenda 2),
+/// uma versão que deixou de ser a corrente não ganha decodificador próprio, e bytes que
+/// coincidentemente têm a forma atual não a tornam reconhecida — a recusa é
+/// <c>EnvelopeCodec.VersaoDesconhecida</c>, decidida antes de qualquer parse.
 /// </summary>
 public static class ObterFormularioRenderizavelQueryHandler
 {
     public static async Task<Result<FormularioRenderizavelDto>> Handle(
         ObterFormularioRenderizavelQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         // Endpoint público de renderização: sempre "agora", nunca um instante passado explícito
@@ -52,21 +61,41 @@ public static class ObterFormularioRenderizavelQueryHandler
                     $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
+        if (!VersaoReconhecidaParaLeitura(registroCodecs, versao.SchemaVersion))
+        {
+            return Result<FormularioRenderizavelDto>.Failure(new DomainError(
+                ErrosCodecEnvelope.VersaoDesconhecida,
+                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de " +
+                "leitura reconhecidas pelo codec vivo — mesmo que os bytes tenham a forma atual, uma versão " +
+                "aposentada não é reidratada."));
+        }
+
         JsonObject envelope = (JsonObject)JsonNode.Parse(versao.ConfiguracaoCongelada)!;
         return Projetar(envelope);
     }
 
     /// <summary>
+    /// A <paramref name="schemaVersion"/> está entre as capacidades que o registro de codecs hoje
+    /// sabe LER? Comparação ordinal — <c>SchemaVersion</c> é token, não texto localizável, e
+    /// <c>"0.0.6"</c> não é apelido de <c>"0.0.06"</c> nem de variante de caixa.
+    /// </summary>
+    private static bool VersaoReconhecidaParaLeitura(IRegistroCodecsEnvelope registroCodecs, string schemaVersion) =>
+        registroCodecs.Capacidades.Any(capacidade =>
+            string.Equals(capacidade.SchemaVersion, schemaVersion, StringComparison.Ordinal) && capacidade.TemDecoder);
+
+    /// <summary>
     /// Projeta os blocos <c>formulario</c>/<c>fatosColetados</c> (incluindo
-    /// <c>valoresSelecionaveis</c>, issue #1059) do envelope congelado. Guardado contra QUALQUER
-    /// forma que não seja exatamente a esperada — versão vigente congelada ANTES de a
-    /// apresentação existir no envelope (sem as chaves novas), ou um valor de tipo/nulidade
-    /// incoerente (só alcançável por uma linha adulterada diretamente no banco, nunca pelo
-    /// caminho normal de escrita, que sempre passa pelo encoder). Nenhum
-    /// <c>Decodificar</c>/<c>LeitorEnvelope</c> disponível aqui (a Application não alcança a
-    /// Infrastructure, dona do codec) — a leitura tipada abaixo é o substituto local, mesma
-    /// disciplina: toda extração checa presença, tipo e nulidade antes de usar o valor, nunca um
-    /// cast bruto sobre entrada que não passou pelo encoder confiável.
+    /// <c>valoresSelecionaveis</c>, issue #1059) do envelope congelado, já com a
+    /// <c>SchemaVersion</c> confirmada como reconhecida por <see cref="IRegistroCodecsEnvelope"/>
+    /// (ver <see cref="Handle"/>). Guardado contra QUALQUER forma que não seja exatamente a
+    /// esperada — versão vigente congelada ANTES de a apresentação existir no envelope (sem as
+    /// chaves novas), ou um valor de tipo/nulidade incoerente (só alcançável por uma linha
+    /// adulterada diretamente no banco, nunca pelo caminho normal de escrita, que sempre passa
+    /// pelo encoder). O registro de codecs confirma a versão, mas decodifica para o grafo de
+    /// entidades das seis dimensões (<see cref="EnvelopeReidratado"/>), não para este DTO de
+    /// renderização — por isso a leitura abaixo permanece local, mesma disciplina: toda extração
+    /// checa presença, tipo e nulidade antes de usar o valor, nunca um cast bruto sobre entrada
+    /// que não passou pelo encoder confiável.
     /// </summary>
     private static Result<FormularioRenderizavelDto> Projetar(JsonObject envelope)
     {
