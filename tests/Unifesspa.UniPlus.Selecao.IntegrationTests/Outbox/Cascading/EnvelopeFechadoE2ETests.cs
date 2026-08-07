@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -112,6 +113,12 @@ public sealed class EnvelopeFechadoE2ETests
         Guid objetivaId = processoComEtapas.Etapas.Single(e => e.Nome == "Prova Objetiva").Id;
         Guid redacaoId = processoComEtapas.Etapas.Single(e => e.Nome == "Redação").Id;
         Guid entrevistaId = processoComEtapas.Etapas.Single(e => e.Nome == "Entrevista").Id;
+
+        // Âncora do estado inicial: sem este valor fixado, um corpus que já nascesse com o peso
+        // pós-retificação (4.0000) tornaria vácua a asserção de peso no envelope depois do
+        // fechamento — a diferença deixaria de provar que o PUT sob a sessão (passo 19) entrou.
+        processoComEtapas.Etapas.Single(e => e.Id == objetivaId).Peso.Should().Be(
+            3.5000m, "a Prova Objetiva nasce com este peso em EtapasIniciais — é o valor que a sessão editorial altera");
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 3 — oferta de atendimento especializado (listas vazias — ver inventário §3:
@@ -224,13 +231,23 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.OK, "GET conformidade", "/conformidade");
         ConformidadeProcessoSeletivoDto conformidade = (await conformidadeResp.Content
             .ReadFromJsonAsync<ConformidadeProcessoSeletivoDto>())!;
+        conformidade.ProcessoSeletivoId.Should().Be(
+            processoId, "a coleção compartilha o Postgres com outros processos conformes — sem amarrar o ID, uma regressão no handler que ignorasse a rota devolveria a conformidade de outro processo");
 
         conformidade.Itens.Should().NotBeEmpty("uma lista vazia daria falso verde por AllSatisfy trivial");
         conformidade.Itens.Select(i => i.Item).Should().OnlyHaveUniqueItems("cada item do checklist aparece uma única vez");
         conformidade.Itens.Should().OnlyContain(i => i.Ok, "o processo está completo — nenhum item deveria estar pendente");
-        conformidade.Itens.Select(i => i.Item).Should().Contain(
-            ["Atendimento especializado", "Distribuição de vagas", "Classificação", "Cronograma de fases", "Cascata de remanejamento"],
-            "estes são os itens estruturais e o item de exibição da cascata que este corpus exercita");
+        conformidade.Itens.Select(i => i.Item).Should().BeEquivalentTo(
+            [
+                "Atendimento especializado",
+                "Distribuição de vagas",
+                "Classificação",
+                "Cronograma de fases",
+                "Base legal das exigências documentais",
+                "Divisor da média (fórmula local)",
+                "Cascata de remanejamento",
+            ],
+            "o conjunto exato de itens que este corpus produz — remover um item do checklist, ou acrescentar um item indevido marcado ok, muda este conjunto");
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 16 — publicar. A publicação em si é 204; o ato ainda NÃO existe em Publicações
@@ -320,7 +337,16 @@ public sealed class EnvelopeFechadoE2ETests
         SnapshotVigenteDto snapshotVigente = (await snapshotResp.Content.ReadFromJsonAsync<SnapshotVigenteDto>())!;
 
         snapshotVigente.AtoId.Should().Be(atoV2Id, "o snapshot vigente aponta para o ato que o governa — V2, depois do fechamento");
-        snapshotVigente.HashConfiguracao.Should().NotBe(hashV1, "V2 congela a configuração EDITADA — o peso mudou");
+
+        // A diferença de hash sozinha não prova que a edição entrou: toda retificação
+        // acrescenta o bloco `retificacao` ao envelope, então o hash muda mesmo que o peso
+        // enviado no passo 19 tivesse sido ignorado. A prova de que a edição entrou é o valor
+        // do peso dentro da configuração congelada, casado pelo id da etapa — nunca por
+        // posição no array, que a política de ordenação pode mudar.
+        JsonObject etapaObjetivaCongelada = LocalizarEtapaPorId(snapshotVigente.Configuracao, objetivaId);
+        etapaObjetivaCongelada["peso"]!.GetValue<string>().Should().Be(
+            "4.0000", "V2 congela a configuração EDITADA sob a sessão — o peso da Prova Objetiva enviado no passo 19");
+        snapshotVigente.HashConfiguracao.Should().NotBe(hashV1, "V2 é uma versão congelada distinta de V1 — consequência de qualquer retificação, provada aqui só como reforço da asserção de peso acima");
 
         await using AsyncServiceScope scopeFinal = api.Services.CreateAsyncScope();
         SelecaoDbContext dbFinal = scopeFinal.ServiceProvider.GetRequiredService<SelecaoDbContext>();
@@ -354,6 +380,17 @@ public sealed class EnvelopeFechadoE2ETests
         resposta.Headers.ETag.Should().NotBeNull($"passo '{passo}': a resposta de uma sessão editorial carrega o ETag");
         return resposta.Headers.ETag!.ToString();
     }
+
+    /// <summary>
+    /// Localiza, dentro do bloco <c>etapas</c> do envelope congelado, o item cujo <c>id</c>
+    /// bate com <paramref name="etapaId"/> — casamento por identidade, nunca por posição no
+    /// array (<c>SnapshotPublicacaoCanonicalizer.SerializarEtapas</c> reordena por conteúdo
+    /// quando duas etapas empatam em <c>Ordem</c>).
+    /// </summary>
+    private static JsonObject LocalizarEtapaPorId(JsonNode configuracao, Guid etapaId) =>
+        configuracao["etapas"]!.AsArray()
+            .Select(static no => no!.AsObject())
+            .Single(etapa => etapa["id"]!.GetValue<Guid>() == etapaId);
 
     // ══════════════════════════════════════════════════════════════════════════════
     // Payloads das dimensões — um método por dimensão, na ordem topológica do plano §4.2
