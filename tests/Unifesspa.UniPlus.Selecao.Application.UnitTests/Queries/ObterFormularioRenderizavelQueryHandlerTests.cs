@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -14,22 +15,58 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// Cobertura do <see cref="ObterFormularioRenderizavelQueryHandler"/> (Story #559/#1059): a
-/// distinção 404/422/200, e a guarda contra versão vigente congelada ANTES de a apresentação do
-/// formulário — ou os valores selecionáveis (UNI-REQ-0072) — existirem no envelope. Sem
-/// <see cref="Unifesspa.UniPlus.Selecao.Infrastructure"/> disponível aqui (Application não a
-/// alcança), a projeção lê o JSON cru e tem de recusar com um erro nomeado, nunca estourar,
+/// distinção 404/422/200, a guarda contra versão vigente congelada ANTES de a apresentação do
+/// formulário — ou os valores selecionáveis (UNI-REQ-0072) — existirem no envelope, e a recusa de
+/// uma <c>SchemaVersion</c> aposentada (issue #1089) mesmo quando os bytes coincidem com a forma
+/// atual. Sem <see cref="Unifesspa.UniPlus.Selecao.Infrastructure"/> disponível aqui (Application
+/// não a alcança), a projeção lê o JSON cru e tem de recusar com um erro nomeado, nunca estourar,
 /// quando as chaves novas (rotulo/tipoRenderizacao/obrigatorio/formulario/valoresSelecionaveis)
 /// não existem, ou quando <c>valoresSelecionaveis</c> descumpre a bicondicional com
 /// <c>tipoRenderizacao</c>.
 /// </summary>
 public sealed class ObterFormularioRenderizavelQueryHandlerTests
 {
+    /// <summary>
+    /// A versão que o registro de codecs FAKE (<see cref="RegistroReconhecendoVersaoCorrente"/>)
+    /// declara como única capacidade de leitura — o caso corrente de todo teste que não é sobre o
+    /// gate de versão em si.
+    /// </summary>
+    private const string VersaoCorrenteReconhecida = "0.0.6";
+
+    /// <summary>
+    /// Uma versão que já foi corrente e deixou de ser reconhecida quando o codec vivo avançou —
+    /// usada SÓ no teste que prova a recusa (issue #1089); nenhum outro teste deste arquivo rotula
+    /// o caso corrente com ela.
+    /// </summary>
+    private const string VersaoAposentada = "0.0.5";
+
     private static readonly TimeProvider Relogio = TimeProvider.System;
+
+    /// <summary>
+    /// Substituto da porta reconhecendo, como única capacidade de leitura, exatamente
+    /// <see cref="VersaoCorrenteReconhecida"/> — o mesmo perfil do registro de produção, que hoje
+    /// tem um único codec vivo (ADR-0110 Emenda 2).
+    /// </summary>
+    private static readonly IRegistroCodecsEnvelope RegistroReconhecendoVersaoCorrente =
+        CriarRegistroReconhecendo(VersaoCorrenteReconhecida);
 
     private static Task<Result<FormularioRenderizavelDto>> HandleAsync(
         IProcessoSeletivoRepository repository, Guid processoId) =>
         ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId), repository, Relogio, CancellationToken.None);
+            new ObterFormularioRenderizavelQuery(processoId),
+            repository,
+            RegistroReconhecendoVersaoCorrente,
+            Relogio,
+            CancellationToken.None);
+
+    private static IRegistroCodecsEnvelope CriarRegistroReconhecendo(params string[] schemaVersionsReconhecidas)
+    {
+        IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
+        registro.Capacidades.Returns(schemaVersionsReconhecidas
+            .Select(static v => new CapacidadeCodec(v, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null))
+            .ToList());
+        return registro;
+    }
 
     [Fact(DisplayName = "Processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
@@ -169,6 +206,35 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     }
 
     /// <summary>
+    /// O teste central da issue #1089: a versão é aposentada, mas o JSON congelado tem a forma
+    /// ATUAL e é válido — exatamente o cenário em que decidir pela forma (o que o handler fazia
+    /// antes desta correção) mascara a recusa que o registro de codecs já dá em outras
+    /// superfícies (ex.: <c>AbrirRetificacaoCommandHandler</c>). Um envelope malformado não
+    /// provaria nada aqui: o handler já o recusava antes, por <c>FormularioInscricao.VersaoSemApresentacao</c>.
+    /// O que só esta correção resolve é a versão desconhecida com bytes que "passariam" no shape.
+    /// </summary>
+    [Fact(DisplayName = "Versão aposentada com bytes de forma corrente recusa com EnvelopeCodec.VersaoDesconhecida, sem tentar decidir pela forma")]
+    public async Task Handle_VersaoAposentadaComFormaCorrente_RetornaVersaoDesconhecida()
+    {
+        const string envelopeFormaCorrente = """
+            {
+              "formulario": {"titulo": "Formulário de Inscrição", "termoAceiteTexto": null},
+              "fatosColetados": []
+            }
+            """;
+        Guid processoId = Guid.CreateVersion7();
+        IProcessoSeletivoRepository repository = MockComVersaoVigente(processoId, envelopeFormaCorrente, VersaoAposentada);
+
+        Result<FormularioRenderizavelDto> resultado = await HandleAsync(repository, processoId);
+
+        resultado.IsFailure.Should().BeTrue(
+            $"a versão '{VersaoAposentada}' deixou de ser reconhecida quando o codec vivo avançou para " +
+            $"'{VersaoCorrenteReconhecida}' — bytes coincidentemente válidos na forma atual não a devolvem " +
+            "à lista de capacidades reconhecidas");
+        resultado.Error!.Code.Should().Be("EnvelopeCodec.VersaoDesconhecida");
+    }
+
+    /// <summary>
     /// Prova ESTRUTURAL (não comportamental) de que a leitura pública nunca reconsulta o
     /// catálogo: nenhum parâmetro do <c>Handle</c> é um leitor cross-módulo do catálogo de fatos
     /// (<c>IFatoCandidatoReader</c>) — os valores selecionáveis entregues vêm inteiramente do
@@ -190,12 +256,13 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             "no cadastro mudaria a resposta de uma versão já publicada, o que a imutabilidade do envelope proíbe");
     }
 
-    private static IProcessoSeletivoRepository MockComVersaoVigente(Guid processoId, string envelopeJson)
+    private static IProcessoSeletivoRepository MockComVersaoVigente(
+        Guid processoId, string envelopeJson, string schemaVersion = VersaoCorrenteReconhecida)
     {
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processoId,
             Encoding.UTF8.GetBytes(envelopeJson),
-            "0.0.4",
+            schemaVersion,
             "canonical-json/sha256@v1",
             Guid.CreateVersion7(),
             new string('a', 64),

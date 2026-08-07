@@ -46,6 +46,11 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 {
     private static readonly SnapshotPublicacaoCanonicalizer Canonicalizer = new();
 
+    // O registro de PRODUÇÃO (não um substituto de teste): a leitura pública real, com
+    // Postgres real, tem de passar pelo mesmo gate de versão que o handler usa fora dos
+    // testes — reconhecendo hoje somente o codec vivo (ADR-0110 Emenda 2).
+    private static readonly IRegistroCodecsEnvelope RegistroCodecs = new RegistroCodecsEnvelope();
+
     private readonly ProcessoSeletivoDbFixture _fixture;
 
     public FormularioRenderizavelPersistenciaTests(ProcessoSeletivoDbFixture fixture)
@@ -169,7 +174,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             await using SelecaoDbContext readContext = _fixture.CreateDbContext();
             ProcessoSeletivoRepository repository = new(readContext, TimeProvider.System);
             Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
-                new ObterFormularioRenderizavelQuery(processoId), repository, TimeProvider.System, CancellationToken.None);
+                new ObterFormularioRenderizavelQuery(processoId), repository, RegistroCodecs, TimeProvider.System, CancellationToken.None);
             resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
             return resultado.Value!;
         }
