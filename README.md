@@ -83,7 +83,7 @@ Para o guia completo com troubleshooting, veja [docs/setup-ambiente-local.md](do
 dotnet test
 
 # Testes de integração (requer Docker)
-dotnet test --filter "Category=Integration"
+dotnet test --filter "FullyQualifiedName~IntegrationTests"
 
 # Mutation testing (domain layer)
 dotnet stryker

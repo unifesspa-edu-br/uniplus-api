@@ -15,8 +15,8 @@ in `docker/`, `infra/`, `scripts/`, and `tools/`.
 docker compose -f docker/docker-compose.yml up -d
 dotnet restore UniPlus.slnx --locked-mode
 dotnet build UniPlus.slnx
-dotnet test UniPlus.slnx --filter "Category!=Integration"
-dotnet test UniPlus.slnx --filter "Category=Integration"
+dotnet test UniPlus.slnx --filter "FullyQualifiedName!~IntegrationTests"
+dotnet test UniPlus.slnx --filter "FullyQualifiedName~IntegrationTests"
 dotnet format --verify-no-changes --exclude-diagnostics CA1515 --exclude "**/Migrations/**"
 bash tools/forbidden-deps/check.sh
 ```
@@ -42,9 +42,19 @@ convention. New logging should use `[LoggerMessage]`, not direct
 ## Testing Guidelines
 Tests use xUnit, AwesomeAssertions, NSubstitute, Bogus, Testcontainers,
 ArchUnitNET, and coverlet. Name tests in the
-`Method_Condition_ExpectedResult` style used by the suite. Mark integration
-tests with `Category=Integration`; they require Docker. Domain and Application
-coverage should stay at or above 80%.
+`Method_Condition_ExpectedResult` style used by the suite. Tests that need
+Docker live in a `tests/*.IntegrationTests` project; the `--filter
+"FullyQualifiedName~IntegrationTests"` / `"FullyQualifiedName!~IntegrationTests"`
+split above relies on that project name, not on per-class markers — the name is
+structural and verifiable, while a `[Trait("Category", "Integration")]` on
+every class depends on someone remembering to add it and silently rots as new
+classes are created. The trait still exists on some classes and stays valid
+for a future integration test that lives outside those projects, but it is no
+longer what separates the two `dotnet test` runs above. An ArchTests fitness
+function (`ContainerFixtureRestritaAProjetoDeIntegracaoTests`) fails the build
+if a class outside `tests/*.IntegrationTests` references Testcontainers
+directly, closing the one way the structural filter could go wrong. Domain and
+Application coverage should stay at or above 80%.
 
 ## Commit & Pull Request Guidelines
 Use Conventional Commits in pt-BR:
