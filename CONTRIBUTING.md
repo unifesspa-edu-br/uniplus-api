@@ -265,14 +265,19 @@ public static class ObterProcessoSeletivoQueryHandler
 dotnet build --warnaserrors
 
 # Testes unitários
-dotnet test --filter "Category!=Integration"
+dotnet test --filter "FullyQualifiedName!~IntegrationTests"
 
 # Testes de integração (requer Docker)
-dotnet test --filter "Category=Integration"
+dotnet test --filter "FullyQualifiedName~IntegrationTests"
 
 # Formatação — as duas flags são OBRIGATÓRIAS (ver aviso abaixo)
 dotnet format --verify-no-changes --exclude-diagnostics CA1515 --exclude "**/Migrations/**"
 ```
+
+O split acima é pelo **nome do projeto** (`tests/*.IntegrationTests` precisa de Docker; o resto,
+não), não por marcação individual de classe — o nome é estrutural e verificável, uma marcação por
+classe depende de disciplina e envelhece em silêncio a cada classe nova. Ver AGENTS.md § Testing
+Guidelines.
 
 Todos os comandos acima devem passar antes de abrir o PR. O de formatação é o mesmo que o job
 `Formatação (dotnet format)` roda no CI, e ele bloqueia o merge — ver

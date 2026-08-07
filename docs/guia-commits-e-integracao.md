@@ -154,11 +154,14 @@ Rode todos os comandos abaixo e confirme que passam **antes** de abrir/atualizar
 # Build com TreatWarningsAsErrors (zero avisos, zero erros)
 dotnet build UniPlus.slnx
 
-# Testes unitários (Domain, Application, ArchTests)
-dotnet test UniPlus.slnx --filter "Category!=Integration"
+# Testes unitários (Domain, Application, ArchTests) — filtra pelo nome do
+# projeto, não por marcação de classe: tests/*.IntegrationTests é quem
+# precisa de Docker, e o nome do projeto não depende de disciplina para
+# ficar correto (ver AGENTS.md § Testing Guidelines).
+dotnet test UniPlus.slnx --filter "FullyQualifiedName!~IntegrationTests"
 
 # Testes de integração (Testcontainers — requer Docker rodando)
-dotnet test UniPlus.slnx --filter "Category=Integration"
+dotnet test UniPlus.slnx --filter "FullyQualifiedName~IntegrationTests"
 
 # Formatação (verifica sem aplicar — falha se houver drift).
 # A flag --exclude-diagnostics CA1515 é obrigatória: sem ela o comando
