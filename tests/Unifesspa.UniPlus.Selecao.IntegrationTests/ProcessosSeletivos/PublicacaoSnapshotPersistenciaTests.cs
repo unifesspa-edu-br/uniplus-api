@@ -193,18 +193,19 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             // interpretador e conjunto de modalidades ofertadas.
             "fatosColetados", "regrasDerivacao", "grafoDependencia", "versaoInterpretador", "modalidadesOfertadas",
         ];
-        blocosEsperados.Should().HaveCount(23, "pré-condição do próprio teste — o envelope tem 23 chaves (Story #928: fatos/regras/grafo)");
-
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
         {
             objeto.Should().ContainKey(bloco, $"o bloco canônico '{bloco}' deve estar presente no envelope");
         }
 
-        // A contagem é DERIVADA do envelope, não escrita à mão. Um bloco
-        // que sai de stub sem que este teste seja atualizado faz a contagem
-        // divergir — que é exatamente o sinal que se quer.
-        objeto.Should().HaveCount(23, "o envelope de abertura tem exatamente 23 chaves — nem mais, nem menos");
+        // Equivalência EXATA de conjunto entre as chaves do envelope e a lista literal acima —
+        // não só "os blocos esperados estão presentes" (o foreach acima, que por si só não
+        // reprovaria uma chave espúria), mas também "não sobra nenhuma outra". A lista literal
+        // FICA: este é o teste de contrato da abertura, e derivá-la do próprio objeto o
+        // tornaria tautológico — passaria com qualquer conjunto de chaves.
+        objeto.Select(static kvp => kvp.Key).Should().BeEquivalentTo(blocosEsperados,
+            "o envelope de abertura tem exatamente os blocos canônicos listados acima — nem mais, nem menos");
 
         string[] stubs = [.. objeto
             .Where(static kvp => kvp.Value is JsonObject bloco

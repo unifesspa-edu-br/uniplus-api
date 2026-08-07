@@ -54,7 +54,7 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         //
         // A RetificacaoInfo é a ORIGINAL, recuperada do próprio bloco `retificacao`: ela não
         // vem do agregado (é parâmetro externo da canonicalização), e sem ela a versão N>1
-        // recanonicalizaria com 17 blocos em vez de 18.
+        // recanonicalizaria sem o bloco retificacao, que a acrescenta aos blocos da abertura.
         Result<SnapshotCanonico> recodificado = registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(

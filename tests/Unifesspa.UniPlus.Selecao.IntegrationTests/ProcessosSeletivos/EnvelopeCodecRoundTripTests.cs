@@ -57,12 +57,12 @@ public sealed class EnvelopeCodecRoundTripTests
         AssertRoundTrip(processo, versao, congelado);
     }
 
-    [Fact(DisplayName = "A versão N>1 tem o 18º bloco: o round-trip usa a RetificacaoInfo ORIGINAL, recuperada do próprio envelope")]
+    [Fact(DisplayName = "A versão N>1 tem o bloco retificacao: o round-trip usa a RetificacaoInfo ORIGINAL, recuperada do próprio envelope")]
     public void RoundTrip_VersaoRetificada()
     {
-        // O round-trip de uma versão retificada NÃO é "os 17 blocos". Ela tem o 18º
-        // (`retificacao`), que não vem do agregado — é parâmetro externo da
-        // canonicalização. Recanonicalizar sem ele produziria um envelope de 17 blocos
+        // O round-trip de uma versão retificada não é o dos blocos da abertura sozinhos. Ela
+        // tem também o bloco `retificacao`, que não vem do agregado — é parâmetro externo da
+        // canonicalização. Recanonicalizar sem ele produziria um envelope sem esse bloco
         // e a comparação falharia por uma razão que nada tem a ver com a reidratação.
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         RetificacaoInfo retificacao = new(CorpusEnvelope.AtoAbertura, "Correção do quadro de vagas do curso de Direito");
@@ -76,7 +76,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
         EnvelopeReidratado envelope = AssertRoundTrip(processo, v2, congelado);
 
-        envelope.Retificacao.Should().NotBeNull("a versão N>1 carrega o 18º bloco");
+        envelope.Retificacao.Should().NotBeNull("a versão N>1 carrega o bloco retificacao");
         envelope.Retificacao!.EditalRetificadoId.Should().Be(CorpusEnvelope.AtoAbertura);
         envelope.Retificacao.Motivo.Should().Be("Correção do quadro de vagas do curso de Direito");
     }

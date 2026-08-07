@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// Cobertura de integração (Postgres real via Testcontainers) da retificação
 /// (RN08, ADR-0101/0103/0104): a retificação sucede a versão corrente com um ato que
 /// emenda o ato criador dela, e o novo snapshot acrescenta o bloco de retificação
-/// preservando os 17 anteriores; o snapshot da abertura permanece imutável.
+/// preservando integralmente os blocos da abertura; o snapshot da abertura permanece imutável.
 /// </summary>
 public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
@@ -173,7 +173,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             .GetValue<string>().Should().Be("Correção do prazo de inscrição");
     }
 
-    [Fact(DisplayName = "Snapshot de retificação carrega o bloco retificacao + os 17 blocos; o snapshot da abertura permanece imutável")]
+    [Fact(DisplayName = "Snapshot de retificação carrega os blocos da abertura mais o bloco retificacao; o snapshot da abertura permanece imutável")]
     public async Task Retificacao_SnapshotComBlocoRetificacao_AnteriorImutavel()
     {
         (_, VersaoConfiguracao versaoAbertura, VersaoConfiguracao versaoRetificacao) =
@@ -181,31 +181,29 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
 
+        VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao
+            .AsNoTracking().FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
+        JsonObject payloadAbertura = JsonNode.Parse(aberturaLida.ConfiguracaoCongelada)!.AsObject();
+
         VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == versaoRetificacao.Id, CancellationToken.None);
         JsonObject payloadRetificacao = JsonNode.Parse(retificacaoLida.ConfiguracaoCongelada)!.AsObject();
 
-        // Os 17 blocos canônicos continuam presentes...
-        foreach (string bloco in new[]
-        {
-            "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas", "atendimento",
-            "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital", "documentosExigidos",
-            "formulario", "cascataRemanejamento", "divulgacao", "cronogramaFases", "identidadesUnidade",
-        })
-        {
-            payloadRetificacao.Should().ContainKey(bloco);
-        }
+        // Os blocos esperados na retificação são DERIVADOS do snapshot da abertura, não uma
+        // lista literal escrita à mão: são exatamente os blocos da abertura mais o bloco
+        // `retificacao` (ADR-0101). Assim, se a abertura ganhar um bloco novo e a retificação
+        // não o preservar — qualquer um deles, não só os que alguém lembrou de listar —, esta
+        // asserção falha sozinha, sem que ninguém precise atualizar um número.
+        IEnumerable<string> blocosEsperados = [.. payloadAbertura.Select(static kvp => kvp.Key), "retificacao"];
+        payloadRetificacao.Select(static kvp => kvp.Key).Should().BeEquivalentTo(blocosEsperados,
+            "a retificação preserva integralmente os blocos da abertura e acrescenta o bloco retificacao");
 
-        // ...e o 18º bloco de retificação foi acrescentado (ADR-0101).
-        payloadRetificacao.Should().ContainKey("retificacao");
         payloadRetificacao["retificacao"]!["motivo"]!.GetValue<string>().Should().Be("Correção do prazo de inscrição");
 
         // O snapshot da abertura permanece byte-a-byte idêntico (append-only).
-        VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao
-            .AsNoTracking().FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
         aberturaLida.HashConfiguracao.Should().Be(versaoAbertura.HashConfiguracao);
         aberturaLida.ConfiguracaoCongeladaCanonica.Should().Equal(versaoAbertura.ConfiguracaoCongeladaCanonica);
-        JsonNode.Parse(aberturaLida.ConfiguracaoCongelada)!.AsObject().Should().NotContainKey("retificacao",
+        payloadAbertura.Should().NotContainKey("retificacao",
             "o snapshot da abertura nunca carrega o bloco de retificação");
     }
 
