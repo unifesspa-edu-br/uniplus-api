@@ -48,31 +48,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 internal static class EnvelopeCodecV12
 {
-    private static readonly string[] Stubs =
-    [
-        "formulario",
-        "cascataRemanejamento",
-        "divulgacao",
-        "identidadesUnidade",
-    ];
-
-    private static readonly string[] BlocosReais =
-    [
-        "periodo",
-        "etapas",
-        "distribuicao",
-        "modalidades",
-        "ofertas",
-        "atendimento",
-        "bonusRegional",
-        "criteriosDesempate",
-        "classificacao",
-        "hashesEdital",
-        "cronogramaFases",
-        "documentosExigidos",
-        "vagas",
-    ];
-
     /// <summary>
     /// Não valida <c>exigidoNaFaseId</c> contra as fases decodificadas nesta mesma
     /// passagem. Desde o achado de revisão que acrescentou <c>id</c> ao bloco
