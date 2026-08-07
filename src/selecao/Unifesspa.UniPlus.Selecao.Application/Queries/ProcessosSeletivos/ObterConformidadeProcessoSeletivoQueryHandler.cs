@@ -13,9 +13,10 @@ using DTOs;
 /// legais configuráveis aplicáveis ao processo.
 /// </summary>
 /// <remarks>
-/// O checklist em si vive em <c>ProcessoSeletivo.AvaliarConformidade()</c>
-/// (Domain) — reusado também pelo gate de <c>Publicar</c> (Story #759 CA-03),
-/// para que a leitura pública e o gate de publicação nunca divirjam.
+/// O checklist em si vive em <c>ProcessoSeletivo.AvaliarConformidade()</c> (Domain) — bicondicional
+/// com os QUATRO gates estruturais que <c>Publicar</c>/<c>Retificar</c> aplicam (issue #1092), não
+/// só o primeiro. Este handler apenas mapeia; a fonte única evita que a leitura pública e os gates
+/// de publicação divirjam.
 /// </remarks>
 public static class ObterConformidadeProcessoSeletivoQueryHandler
 {
