@@ -58,9 +58,9 @@
       },
       "WolverineFx": {
         "type": "Direct",
-        "requested": "[5.40.0, )",
-        "resolved": "5.40.0",
-        "contentHash": "4by7jva0Vi75rH330utnHHSCyfBKH2uDzB4r+Ea++5UGKUm4x6FnUBSkviPMiHYfDvxo5JxM5ovNdjunTMgzvQ==",
+        "requested": "[5.40.1, )",
+        "resolved": "5.40.1",
+        "contentHash": "M2VaFujWO68UQEhEkIBqP0mi2HBrPAp85+S7QxfqOpfIDXsJuaI+enmqHN3MmvEnbnNV4TgY3cDFAEe//luVSw==",
         "dependencies": {
           "JasperFx": "1.31.0",
           "JasperFx.Events": "1.36.0",
@@ -1202,7 +1202,7 @@
           "Unifesspa.UniPlus.Configuracao.Domain": "[1.0.0, )",
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
-          "WolverineFx": "[5.40.0, )"
+          "WolverineFx": "[5.40.1, )"
         }
       },
       "unifesspa.uniplus.configuracao.contracts": {
@@ -1236,7 +1236,7 @@
           "OpenTelemetry.Instrumentation.Runtime": "[1.17.0, )",
           "Unifesspa.UniPlus.Configuracao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "WolverineFx": "[5.40.0, )",
+          "WolverineFx": "[5.40.1, )",
           "WolverineFx.EntityFrameworkCore": "[5.40.0, )",
           "WolverineFx.Kafka": "[5.40.0, )",
           "WolverineFx.Postgresql": "[5.40.0, )"
@@ -1327,7 +1327,7 @@
           "Unifesspa.UniPlus.Governance.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "VaultSharp": "[1.17.5.1, )",
-          "WolverineFx": "[5.40.0, )",
+          "WolverineFx": "[5.40.1, )",
           "WolverineFx.EntityFrameworkCore": "[5.40.0, )",
           "WolverineFx.FluentValidation": "[5.40.0, )",
           "WolverineFx.Kafka": "[5.40.0, )",
@@ -1366,7 +1366,7 @@
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.10, )",
           "Testcontainers": "[4.13.0, )",
           "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
-          "WolverineFx": "[5.40.0, )",
+          "WolverineFx": "[5.40.1, )",
           "xunit": "[2.9.3, )"
         }
       },
@@ -1430,7 +1430,7 @@
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Infrastructure": "[1.0.0, )",
-          "WolverineFx": "[5.40.0, )"
+          "WolverineFx": "[5.40.1, )"
         }
       },
       "unifesspa.uniplus.publicacoes.application": {
@@ -1442,7 +1442,7 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Domain": "[1.0.0, )",
-          "WolverineFx": "[5.40.0, )"
+          "WolverineFx": "[5.40.1, )"
         }
       },
       "unifesspa.uniplus.publicacoes.contracts": {
@@ -1494,7 +1494,7 @@
           "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Contracts": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Domain": "[1.0.0, )",
-          "WolverineFx": "[5.40.0, )"
+          "WolverineFx": "[5.40.1, )"
         }
       },
       "unifesspa.uniplus.selecao.domain": {
