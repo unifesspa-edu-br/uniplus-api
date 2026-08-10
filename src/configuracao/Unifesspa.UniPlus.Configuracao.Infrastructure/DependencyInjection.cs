@@ -44,6 +44,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IModalidadeRepository, ModalidadeRepository>();
         services.AddScoped<IFaseCanonicaRepository, FaseCanonicaRepository>();
         services.AddScoped<ITipoBancaRepository, TipoBancaRepository>();
+        services.AddScoped<ITipoProcessoRepository, TipoProcessoRepository>();
         services.AddScoped<ICursoRepository, CursoRepository>();
         services.AddScoped<IOfertaCursoRepository, OfertaCursoRepository>();
         services.AddScoped<IPrecedenciaFaseRepository, PrecedenciaFaseRepository>();
@@ -60,6 +61,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IModalidadeReader, ModalidadeReader>();
         services.AddScoped<IFaseCanonicaReader, FaseCanonicaReader>();
         services.AddScoped<ITipoBancaReader, TipoBancaReader>();
+        services.AddScoped<ITipoProcessoReader, TipoProcessoReader>();
         services.AddScoped<IOfertaCursoReader, OfertaCursoReader>();
         // Catálogo seed-governado de fatos do candidato (ADR-0111): só leitura,
         // sem repositório (não há escrita em runtime).
