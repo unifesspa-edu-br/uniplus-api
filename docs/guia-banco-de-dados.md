@@ -174,7 +174,7 @@ builder.OwnsOne(e => e.NumeroEdital, ne =>
 
 ### ValueObjectConventions
 
-Existe `ValueObjectConventions.ConfigureValueObjectConverters()` (`Infrastructure.Core/Persistence/Converters/`) com 4 converters (`Cpf`, `Email`, `NomeSocial`, `NotaFinal`). **Não está ativada** porque é incompatível com `OwnsOne` para o mesmo tipo CLR. Fica disponível para o cutover futuro (#397) ou para uso pontual em entity onde VO seja primitive property.
+Existe `ValueObjectConventions.ConfigureValueObjectConverters()` (`Infrastructure.Core/Persistence/Converters/`) com 4 converters (`Cpf`, `Email`, `NomeSocial`, `NotaFinal`). **Não está ativada** porque é incompatível com `OwnsOne` para o mesmo tipo CLR. Fica disponível para a transição futura (#397) ou para uso pontual em entity onde VO seja primitive property.
 
 ## 7. Workflow de migration
 
@@ -416,7 +416,7 @@ Procedimentos de cluster (SSH, `psql` no host, troubleshooting) vivem no reposit
 
 ## 16. Promoção de enum → entidade
 
-Quando um enum modelado como `int4` em coluna de tabela (`HasConversion<int>`) precisa virar uma **entidade plena** (com aggregate próprio, código strongly-typed, atributos extensíveis), o cutover é feito em **três Stories sequenciais** para evitar schema drift entre o domain model e o banco. O padrão foi consolidado na promoção `TipoProcesso → TipoEdital` (Stories #454 → #455) e vale para qualquer enum futuro que ganhar status de entidade.
+Quando um enum modelado como `int4` em coluna de tabela (`HasConversion<int>`) precisa virar uma **entidade plena** (com aggregate próprio, código strongly-typed, atributos extensíveis), a transição é feita em **três Stories sequenciais** para evitar schema drift entre o domain model e o banco. O padrão foi consolidado na promoção `TipoProcesso → TipoEdital` (Stories #454 → #455) e vale para qualquer enum futuro que ganhar status de entidade.
 
 ### Etapa 1 — Migration preparatória (drop + add FK NULL)
 

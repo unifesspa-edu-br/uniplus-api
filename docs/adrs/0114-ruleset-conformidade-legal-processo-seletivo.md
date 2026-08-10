@@ -55,18 +55,16 @@ fornece essa data; `ObterVigentesParaTipoProcessoAsync` e
 `DateTimeOffset.UtcNow` nem `DateTimeOffset.Now`.
 
 O ruleset aplicável é a união das regras com `TipoProcessoCodigo = "*"` e das
-regras cujo código é exatamente o nome declarado de `ProcessoSeletivo.Tipo`.
+regras cujo código é exatamente o código congelado em `ProcessoSeletivo.TipoProcesso`.
 As duas partes obedecem a `VigenciaInicio <= dataReferencia < VigenciaFim`,
 sendo `VigenciaFim` nula uma vigência aberta. Regras de outro tipo não entram;
 não há fallback, comparação parcial ou comparação case-insensitive.
 
 `TipoProcessoCodigo` substitui diretamente `TipoEditalCodigo` em domínio,
-aplicação, API, persistência, payload de hash e histórico forense. O vocabulário
-é fechado: aceita `"*"` ou exatamente um nome de `TipoProcesso`, exceto o
-sentinela interno `Nenhum`: `SiSU`, `PSIQ`, `PSECampo`, `PSVR`,
-`TransferenciaInterna`, `TransferenciaExterna`, `PortadorDiploma` e `Reopcao`.
-Isso é uma chave administrativa, diferente do wire format camelCase de enums
-HTTP. Não há camada de compatibilidade para o nome ou query string antigo.
+aplicação, API, persistência, payload de hash e histórico forense. Por emenda
+da ADR-0122, aceita `"*"` ou o código de um tipo ativo em Configuração,
+validado no handler; não há vocabulário enum compilado. A avaliação posterior
+lê a cópia congelada no processo, não a configuração atual.
 
 O resultado da futura avaliação continua sendo `ResultadoConformidade` e
 `RegraAvaliada`. Quando a #853 o congelar, o handler acrescentará um campo a

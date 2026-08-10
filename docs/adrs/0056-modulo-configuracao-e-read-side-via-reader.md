@@ -16,7 +16,7 @@ O `uniplus-api` tem oito catálogos admin-editáveis identificados pelo protóti
 
 | Catálogo | Natureza | Usado por |
 |---|---|---|
-| `TipoEdital` | Template de processo seletivo | Apenas Selecao |
+| `TipoProcesso` | Cadastro administrativo de tipos de processo seletivo | Configuracao + Selecao |
 | `TipoEtapa` | Stage de workflow de seleção | Apenas Selecao |
 | `CriterioDesempate` | Primitiva do motor de classificação ([ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)) | Apenas Selecao |
 | `LocalProva` | Local de aplicação de prova (capacidade, responsável exam-specific) | Apenas Selecao |
@@ -94,7 +94,7 @@ src/configuracao/
 
 ### Catálogos que ficam no módulo dono (domain-specific)
 
-1. **`TipoEdital`** → Selecao (template de processo seletivo; primitiva pura de Selecao).
+1. **`TipoProcesso`** → Configuracao, por emenda da ADR-0122; Seleção o consome por `ITipoProcessoReader` e congela snapshot-copy, sem FK cross-schema.
 2. **`TipoEtapa`** → Selecao (definições de stage de workflow; specific to selection).
 3. **`CriterioDesempate`** → Selecao (primitiva do motor de classificação per [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md)).
 4. **`LocalProva`** → Selecao (referencia `Endereco` por `EnderecoOrigemId` snapshot per [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md); adiciona campos exam-specific: `CapacidadeMaxima`, `ResponsavelExame`, `CondicoesAcessibilidade`. CEPS-administered).
