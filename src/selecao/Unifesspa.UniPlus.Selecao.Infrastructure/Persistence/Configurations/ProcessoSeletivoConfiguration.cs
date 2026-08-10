@@ -24,7 +24,18 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.Property(p => p.Id).ValueGeneratedNever();
 
         builder.Property(p => p.Nome).HasMaxLength(300).IsRequired();
-        builder.Property(p => p.Tipo).HasConversion<int>().IsRequired();
+        builder.Ignore(p => p.TipoProcessoOrigemId);
+        builder.OwnsOne(p => p.TipoProcesso, tipo =>
+        {
+            tipo.Property(x => x.OrigemId)
+                .HasColumnName("tipo_processo_origem_id")
+                .IsRequired()
+                .HasComment("Id de origem do tipo de processo em Configuração, sem FK cross-schema; congelado na criação.");
+            tipo.Property(x => x.Codigo).HasColumnName("tipo_processo_codigo").HasMaxLength(64).IsRequired();
+            tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired();
+        });
+        builder.Navigation(p => p.TipoProcesso).IsRequired();
+        builder.Ignore(p => p.Tipo);
         builder.Property(p => p.Status).HasConversion<int>().IsRequired();
         // Story #851 §3.4: NOT NULL, exigido na criação — sem produção, migration direta.
         builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();

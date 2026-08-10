@@ -37,7 +37,7 @@ public sealed class ObrigatoriedadeLegalCriarTests
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
     }
 
-    [Theory(DisplayName = "TipoProcessoCodigo aceita o sentinela e os nomes declarados do enum")]
+    [Theory(DisplayName = "TipoProcessoCodigo estruturalmente válido é aceito; a atividade é validada pelo catálogo no handler")]
     [InlineData("*")]
     [InlineData("SiSU")]
     [InlineData("PSIQ")]
@@ -62,11 +62,11 @@ public sealed class ObrigatoriedadeLegalCriarTests
         resultado.Value!.TipoProcessoCodigo.Should().Be(tipoProcessoCodigo);
     }
 
-    [Theory(DisplayName = "TipoProcessoCodigo fora do vocabulário fechado é recusado")]
+    [Theory(DisplayName = "TipoProcessoCodigo estruturalmente válido não depende de enum fechado")]
     [InlineData("SISU_ANTIGO")]
     [InlineData("sisu")]
     [InlineData("Nenhum")]
-    public void Criar_TipoProcessoCodigoForaDoVocabulario_Recusa(string tipoProcessoCodigo)
+    public void Criar_TipoProcessoCodigoEstruturalmenteValido_Aceita(string tipoProcessoCodigo)
     {
         Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
             tipoProcessoCodigo,
@@ -77,8 +77,10 @@ public sealed class ObrigatoriedadeLegalCriarTests
             "Lei",
             new DateOnly(2026, 1, 1));
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoCodigoForaDoVocabulario");
+        resultado.IsSuccess.Should().BeTrue(
+            "o domínio só conhece a estrutura do código; a existência e a atividade são verificadas pelo handler " +
+            "contra o catálogo de Configuração");
+        resultado.Value!.TipoProcessoCodigo.Should().Be(tipoProcessoCodigo);
     }
 
     [Fact(DisplayName = "VigenciaFim igual a VigenciaInicio é inválida")]

@@ -139,14 +139,10 @@ public static class ObrigatoriedadeLegalPayloadNormalizer
             return codigo;
         }
 
-        string normalizado = codigo.Value!;
-        return normalizado == ObrigatoriedadeLegal.TipoProcessoUniversal
-            || Enum.GetNames<TipoProcesso>().Contains(normalizado, StringComparer.Ordinal)
-                && normalizado != nameof(TipoProcesso.Nenhum)
-            ? codigo
-            : Result<string>.Failure(new DomainError(
-                "ObrigatoriedadeLegal.TipoProcessoCodigoForaDoVocabulario",
-                "TipoProcessoCodigo deve ser \"*\" ou um nome válido de TipoProcesso."));
+        // O domínio preserva apenas a estrutura (presença + tamanho). A pertença
+        // a um tipo ativo em Configuração é uma consulta cross-módulo e ocorre nos
+        // handlers; "*" continua o sentinela universal sem entrada de tipo.
+        return codigo;
     }
 
     private static Result<string> NormalizarRegraCodigo(string? valor) =>

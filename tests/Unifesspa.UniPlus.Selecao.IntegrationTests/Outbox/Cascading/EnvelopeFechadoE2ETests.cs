@@ -472,7 +472,7 @@ public sealed class EnvelopeFechadoE2ETests
             new
             {
                 nome,
-                tipo = 1, // TipoProcesso.SiSU
+                tipoProcessoOrigemId = Catalogos.TipoProcessoId,
                 origemCandidatos = 1, // OrigemCandidatos.InscricaoPropria
                 unidadeAdministradoraOrigemId = Catalogos.UnidadeId,
             },
@@ -781,6 +781,7 @@ public sealed class EnvelopeFechadoE2ETests
         Guid FaseInscricaoId,
         Guid FaseResultadoPreliminarId,
         Guid TipoBancaId,
+        Guid TipoProcessoId,
         IReadOnlyDictionary<string, Guid> ModalidadeIdPorCodigo);
 
     /// <summary>
@@ -818,6 +819,7 @@ public sealed class EnvelopeFechadoE2ETests
         Guid faseInscricaoId;
         Guid faseResultadoPreliminarId;
         Guid tipoBancaId;
+        Guid tipoProcessoId;
         await using (AsyncServiceScope scopeConfig = api.Services.CreateAsyncScope())
         {
             ConfiguracaoDbContext config = scopeConfig.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
@@ -889,6 +891,10 @@ public sealed class EnvelopeFechadoE2ETests
             faseInscricaoId = faseInscricao.Id;
             faseResultadoPreliminarId = faseResultadoPreliminar.Id;
             tipoBancaId = banca.Id;
+            tipoProcessoId = await config.TiposProcesso
+                .Where(tipo => tipo.Codigo == "SiSU" && tipo.Ativo)
+                .Select(tipo => tipo.Id)
+                .SingleAsync().ConfigureAwait(false);
         }
 
         Dictionary<string, Guid> modalidadeIdPorCodigo = ModalidadeSeed.Itens
@@ -896,7 +902,7 @@ public sealed class EnvelopeFechadoE2ETests
             .ToDictionary(i => i.Codigo, i => i.Id, StringComparer.Ordinal);
 
         return new CatalogosSemeados(
-            unidadeId, ofertaCursoId, referenciaDemograficaId, faseInscricaoId, faseResultadoPreliminarId, tipoBancaId,
+            unidadeId, ofertaCursoId, referenciaDemograficaId, faseInscricaoId, faseResultadoPreliminarId, tipoBancaId, tipoProcessoId,
             modalidadeIdPorCodigo);
     }
 

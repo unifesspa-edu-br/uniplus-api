@@ -647,9 +647,24 @@ public sealed class EnvelopeCanonicoGoldenTests
         }
     }
 
+    [Fact(DisplayName = "Envelope_TipoProcessoEhSnapshot — o tipo congelado carrega origem, código e nome")]
+    public void Envelope_TipoProcessoEhSnapshot()
+    {
+        JsonObject tipoProcesso = EnvelopeComoObjeto()["tipoProcesso"]!.AsObject();
+
+        tipoProcesso.Select(static propriedade => propriedade.Key).Should().BeEquivalentTo(
+            ["origemId", "codigo", "nome"],
+            "o tipo de processo é uma cópia entre módulos: a origem permite rastrear a escolha e código/nome " +
+            "preservam a interpretação publicada mesmo que o catálogo seja alterado depois");
+        tipoProcesso["origemId"]!.GetValue<string>().Should().NotBeNullOrWhiteSpace();
+        tipoProcesso["codigo"]!.GetValue<string>().Should().Be("SiSU");
+        tipoProcesso["nome"]!.GetValue<string>().Should().Be("SiSU");
+    }
+
     /// <summary>
-    /// Candidato a referência de regra = qualquer objeto com a chave <c>codigo</c>.
-    /// Deliberadamente frouxo: é a asserção, não o coletor, que exige a tripla.
+    /// Candidato a referência de regra = qualquer objeto com a chave <c>codigo</c>, exceto
+    /// snapshots cross-módulo identificados por <c>origemId</c>. Deliberadamente frouxo para
+    /// referências de regra: é a asserção, não o coletor, que exige a tripla.
     /// </summary>
     private static void ColetarCandidatosAReferencia(
         JsonNode? node,
@@ -659,12 +674,13 @@ public sealed class EnvelopeCanonicoGoldenTests
         switch (node)
         {
             case JsonObject obj:
-                if (obj.ContainsKey("codigo") && !obj.ContainsKey("naturezaLegal") && !obj.ContainsKey("ordem"))
+                if (obj.ContainsKey("codigo") && !obj.ContainsKey("origemId") && !obj.ContainsKey("naturezaLegal") && !obj.ContainsKey("ordem"))
                 {
-                    // `naturezaLegal` distingue a MODALIDADE (que também tem `codigo`,
-                    // mas não é referência de regra) de uma referência do rol. `ordem`
-                    // distingue a FASE do cronograma (Story #554, PR #903) pela mesma razão —
-                    // nenhuma referência de regra tem `ordem`.
+                    // `origemId` distingue o snapshot de TipoProcesso; `naturezaLegal`
+                    // distingue a MODALIDADE (que também tem `codigo`, mas não é referência
+                    // de regra) de uma referência do rol. `ordem` distingue a FASE do
+                    // cronograma (Story #554, PR #903) pela mesma razão — nenhuma referência
+                    // de regra tem `ordem`.
                     acumulador.Add((caminho, obj));
                 }
 
@@ -784,18 +800,19 @@ public sealed class EnvelopeCanonicoGoldenTests
     // ── Fixture da variante COM cascata (Story #575) — nome próprio, fora da chave por
     // schema_version: é uma segunda fixture da MESMA versão de schema, não uma versão nova. ──
 
-    private const string NomeDaFixtureCascata = "envelope-0.0.6-cascata.json";
+    private static string NomeDaFixtureCascata(string schemaVersion) =>
+        $"envelope-{Path.GetFileName(schemaVersion)}-cascata.json";
 
     private static string CaminhoDaFixtureCascata() => Path.Combine(
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        NomeDaFixtureCascata);
+        NomeDaFixtureCascata(CanonicalizarReferencia().SchemaVersion));
 
     private static string CaminhoDaFixtureCascataNoFonte([CallerFilePath] string origem = "") => Path.Combine(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        NomeDaFixtureCascata);
+        NomeDaFixtureCascata(CanonicalizarReferencia().SchemaVersion));
 
     private static string LerFixtureCascata() => File.ReadAllText(CaminhoDaFixtureCascata()).Trim();
 }

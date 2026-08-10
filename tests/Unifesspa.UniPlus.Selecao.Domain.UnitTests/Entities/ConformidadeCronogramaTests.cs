@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Cobertura do gate de publicação para as pendências do cronograma que só afloram no
 /// congelamento (<c>ProcessoSeletivo.PendenciaDoCronograma</c>, Story #851 §3.4/§3.5):
-/// piso mínimo derivado da origem dos candidatos (CA-11), indistinguibilidade por tipo
-/// (CA-12), vagas sem fase que produz resultado (CA-13), a direção lazy da
+/// piso mínimo derivado da origem dos candidatos (issue #851, CA-11), indistinguibilidade por tipo
+/// (issue #851, CA-12), vagas sem fase que produz resultado (issue #851, CA-13), a direção lazy da
 /// bicondicional fase×etapa (CA-14) e o divisor da média sob fórmula local (CA-15).
 /// </summary>
 public sealed class ConformidadeCronogramaTests
@@ -77,12 +77,17 @@ public sealed class ConformidadeCronogramaTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta");
     }
 
-    // ── CA-12 — indistinguibilidade por tipo ──
+    // ── Issue #851, CA-12 — indistinguibilidade por tipo ──
 
-    [Theory(DisplayName = "CA-12: ImportacaoExterna publica sem inscrição/etapa/fórmula local — o veredicto NÃO muda com o Tipo (indistinguibilidade)")]
-    [InlineData(TipoProcesso.SiSU)]
-    [InlineData(TipoProcesso.PSIQ)]
-    public void ImportacaoExterna_MesmaConfiguracao_TiposDiferentes_MesmoVeredicto(TipoProcesso tipo)
+    public static IEnumerable<object[]> TiposDeProcessoDistintos =>
+    [
+        [TipoProcesso.SiSU],
+        [TipoProcesso.PSIQ],
+    ];
+
+    [Theory(DisplayName = "Issue #851, CA-12: ImportacaoExterna publica sem inscrição/etapa/fórmula local — o veredicto NÃO muda com o tipo (indistinguibilidade)")]
+    [MemberData(nameof(TiposDeProcessoDistintos))]
+    public void ImportacaoExterna_MesmaConfiguracao_TiposDiferentes_MesmoVeredicto(TipoProcessoSnapshot tipo)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", tipo, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);

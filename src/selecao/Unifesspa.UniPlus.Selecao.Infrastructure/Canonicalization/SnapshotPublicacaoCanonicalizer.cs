@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>23 blocos
+/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>24 blocos
 /// reais</b> — e devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) já carrega <c>obrigatoriedades[]</c> e
 /// <c>exigencias[]</c> (#554) reais. <c>vagas</c> (issue #848/ADR-0115) é outro: o
@@ -132,7 +132,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// em <c>documentosExigidos.exigencias[].exigenciaId</c>, sem duplicar conteúdo.
     /// Story #850: o bump para <c>0.0.4</c> acrescenta <c>baseadoEmEnem</c> ao bloco
     /// <c>classificacao</c> — o sinal explícito que substitui a ramificação por
-    /// <see cref="Domain.Entities.ProcessoSeletivo.Tipo"/> na aceitação de
+    /// <see cref="Domain.Entities.ProcessoSeletivo.TipoProcesso"/> na aceitação de
     /// <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c>.
     /// Story #559: o bump para <c>0.0.5</c> promove <c>formulario</c> de stub a bloco real
     /// (título, termo de aceite) e acrescenta <c>rotulo</c>/<c>tipoRenderizacao</c>/
@@ -150,8 +150,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <see cref="SerializarEtapas"/>. Como não há produção nem certame publicado em ambiente
     /// nenhum, o avanço não migra dado nem cria decodificador de compatibilidade: fixture nova,
     /// versão anterior deixa de ser reconhecida.
+    /// Issue #1070: o bump para <c>0.0.7</c> acrescenta <c>tipoProcesso</c> como 24º bloco de
+    /// topo, congelando por valor a identidade do cadastro institucional vinculada ao processo.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.6";
+    internal const string SchemaVersionAtual = "0.0.7";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -178,6 +180,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
 
         JsonObject payload = new()
         {
+            ["tipoProcesso"] = SerializarTipoProcesso(processo),
             ["periodo"] = SerializarPeriodo(dados),
             ["etapas"] = SerializarEtapas(processo),
             ["vagas"] = SerializarVagas(processo),
@@ -203,7 +206,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["modalidadesOfertadas"] = SerializarModalidadesOfertadas(processo.DistribuicaoVagas),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 24º bloco preservando os 23
+        // ADR-0101: a retificação ACRESCENTA um 25º bloco preservando os 24
         // anteriores. A abertura não escreve esta chave — seu payload é
         // byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
@@ -219,6 +222,18 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         byte[] bytes = PerfilAtual.Serializar(payload);
         return new SnapshotCanonico(bytes, SchemaVersionAtual, PerfilAtual.Algoritmo);
     }
+
+    /// <summary>
+    /// Tipo de processo escolhido, como cópia de valor autocontida. Não há leitura
+    /// da configuração atual ao interpretar uma publicação: desativação ou alteração
+    /// posterior do cadastro não pode alterar a prova emitida.
+    /// </summary>
+    private static JsonObject SerializarTipoProcesso(ProcessoSeletivo processo) => new()
+    {
+        ["origemId"] = processo.TipoProcessoOrigemId,
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(processo.TipoProcesso.Codigo),
+        ["nome"] = HashCanonicalComputer.NormalizeNfc(processo.TipoProcesso.Nome),
+    };
 
     private static JsonObject SerializarPeriodo(DadosEdital dados) => new()
     {

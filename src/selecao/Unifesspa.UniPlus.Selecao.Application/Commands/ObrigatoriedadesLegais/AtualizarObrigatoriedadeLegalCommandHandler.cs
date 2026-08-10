@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+
+using Wolverine.Attributes;
 
 /// <summary>
 /// Handler convention-based do <see cref="AtualizarObrigatoriedadeLegalCommand"/>.
@@ -13,14 +16,17 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 public static class AtualizarObrigatoriedadeLegalCommandHandler
 {
+    [NonTransactional]
     public static async Task<Result> Handle(
         AtualizarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
+        ITipoProcessoReader tipoProcessoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ObrigatoriedadeLegal? regra = await repository
@@ -31,6 +37,13 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
             return Result.Failure(new DomainError(
                 "ObrigatoriedadeLegal.NaoEncontrada",
                 $"ObrigatoriedadeLegal {command.Id} não encontrada."));
+        }
+
+        if (!await CriarObrigatoriedadeLegalCommandHandler
+                .TipoProcessoEhUniversalOuAtivoAsync(command.TipoProcessoCodigo, tipoProcessoReader, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
         }
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(

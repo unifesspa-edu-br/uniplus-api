@@ -783,7 +783,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
-    private static ProcessoSeletivo ProcessoConforme(TipoProcesso tipo)
+    private static ProcessoSeletivo ProcessoConforme(TipoProcessoSnapshot tipo)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restauração", tipo, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
@@ -798,7 +798,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         return processo;
     }
 
-    private static ProcessoSeletivo ProcessoPublicado(TipoProcesso tipo)
+    private static ProcessoSeletivo ProcessoPublicado(TipoProcessoSnapshot tipo)
     {
         ProcessoSeletivo processo = ProcessoConforme(tipo);
 

@@ -11,6 +11,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 public sealed record ProcessoSeletivoResumoDto(
     Guid Id,
     string Nome,
-    string Tipo,
+    TipoProcessoSnapshotDto TipoProcesso,
     string Status,
     DateTimeOffset CriadoEm);

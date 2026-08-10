@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+
+using Wolverine.Attributes;
 
 /// <summary>
 /// Handler convention-based do <see cref="CriarObrigatoriedadeLegalCommand"/>.
@@ -13,15 +16,23 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 public static class CriarObrigatoriedadeLegalCommandHandler
 {
+    [NonTransactional]
     public static async Task<Result<Guid>> Handle(
         CriarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
+        ITipoProcessoReader tipoProcessoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        if (!await TipoProcessoEhUniversalOuAtivoAsync(command.TipoProcessoCodigo, tipoProcessoReader, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
+        }
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
             command.RegraCodigo,
@@ -82,4 +93,15 @@ public static class CriarObrigatoriedadeLegalCommandHandler
 
         return Result<Guid>.Success(regra.Id);
     }
+
+    internal static async Task<bool> TipoProcessoEhUniversalOuAtivoAsync(
+        string codigo,
+        ITipoProcessoReader tipoProcessoReader,
+        CancellationToken cancellationToken) =>
+        string.Equals(codigo?.Trim(), ObrigatoriedadeLegal.TipoProcessoUniversal, StringComparison.Ordinal)
+        || await tipoProcessoReader.ObterAtivoPorCodigoAsync(codigo ?? string.Empty, cancellationToken).ConfigureAwait(false) is not null;
+
+    internal static DomainError TipoProcessoNaoEncontradoOuInativo(string codigo) => new(
+        "ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo",
+        $"Tipo de processo seletivo '{codigo?.Trim()}' não encontrado ou não está ativo.");
 }

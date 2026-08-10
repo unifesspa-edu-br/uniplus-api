@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 public sealed record ProcessoSeletivoDto(
     Guid Id,
     string Nome,
-    string Tipo,
+    TipoProcessoSnapshotDto TipoProcesso,
     string Status,
     string OrigemCandidatos,
     UnidadeAdministradoraSnapshotDto UnidadeAdministradora,
@@ -63,6 +63,9 @@ public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Gui
 /// </summary>
 public sealed record UnidadeAdministradoraSnapshotDto(
     Guid OrigemId, string Sigla, string Slug, string Nome, string Tipo);
+
+/// <summary>Identidade e rótulo do tipo congelados na criação do processo (UNI-REQ-0098).</summary>
+public sealed record TipoProcessoSnapshotDto(Guid OrigemId, string Codigo, string Nome);
 
 /// <summary>
 /// Projeção de leitura da divulgação pública (UNI-REQ-0050, issue #563). <see langword="null"/>

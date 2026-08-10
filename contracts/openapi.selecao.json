@@ -5731,7 +5731,7 @@
       "CriarProcessoSeletivoCommand": {
         "required": [
           "nome",
-          "tipo",
+          "tipoProcessoOrigemId",
           "origemCandidatos",
           "unidadeAdministradoraOrigemId"
         ],
@@ -5740,8 +5740,9 @@
           "nome": {
             "type": "string"
           },
-          "tipo": {
-            "$ref": "#/components/schemas/TipoProcesso"
+          "tipoProcessoOrigemId": {
+            "type": "string",
+            "format": "uuid"
           },
           "origemCandidatos": {
             "$ref": "#/components/schemas/OrigemCandidatos"
@@ -7712,7 +7713,7 @@
         "required": [
           "id",
           "nome",
-          "tipo",
+          "tipoProcesso",
           "status",
           "origemCandidatos",
           "unidadeAdministradora",
@@ -7743,8 +7744,8 @@
           "nome": {
             "type": "string"
           },
-          "tipo": {
-            "type": "string"
+          "tipoProcesso": {
+            "$ref": "#/components/schemas/TipoProcessoSnapshotDto"
           },
           "status": {
             "type": "string"
@@ -7894,7 +7895,7 @@
         "required": [
           "id",
           "nome",
-          "tipo",
+          "tipoProcesso",
           "status",
           "criadoEm"
         ],
@@ -7907,8 +7908,8 @@
           "nome": {
             "type": "string"
           },
-          "tipo": {
-            "type": "string"
+          "tipoProcesso": {
+            "$ref": "#/components/schemas/TipoProcessoSnapshotDto"
           },
           "status": {
             "type": "string"
@@ -8522,19 +8523,25 @@
           }
         }
       },
-      "TipoProcesso": {
-        "enum": [
-          "nenhum",
-          "siSU",
-          "psiq",
-          "pseCampo",
-          "psvr",
-          "transferenciaInterna",
-          "transferenciaExterna",
-          "portadorDiploma",
-          "reopcao"
+      "TipoProcessoSnapshotDto": {
+        "required": [
+          "origemId",
+          "codigo",
+          "nome"
         ],
-        "type": "string"
+        "type": "object",
+        "properties": {
+          "origemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
       },
       "UnidadeAdministradoraSnapshotDto": {
         "required": [

@@ -35,7 +35,7 @@ public static class ObterObrigatoriedadesAplicaveisQueryHandler
 
         IReadOnlyList<ObrigatoriedadeLegal> regras = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(
-                processo.Tipo.ToString(),
+                processo.TipoProcesso.Codigo,
                 query.DataReferencia,
                 cancellationToken)
             .ConfigureAwait(false);

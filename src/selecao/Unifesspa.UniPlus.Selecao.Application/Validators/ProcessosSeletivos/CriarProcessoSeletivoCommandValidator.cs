@@ -16,11 +16,9 @@ public sealed class CriarProcessoSeletivoCommandValidator : AbstractValidator<Cr
             .MaximumLength(300)
             .WithMessage("Nome do processo seletivo deve ter no máximo 300 caracteres.");
 
-        RuleFor(x => x.Tipo)
-            .NotEqual(TipoProcesso.Nenhum)
-            .WithMessage("Tipo do processo seletivo é obrigatório.")
-            .IsInEnum()
-            .WithMessage("Tipo do processo seletivo inválido.");
+        RuleFor(x => x.TipoProcessoOrigemId)
+            .NotEmpty()
+            .WithMessage("Tipo do processo seletivo é obrigatório.");
 
         // Story #851 §3.4: OrigemCandidatos é NOT NULL e exigido na criação — o piso
         // mínimo do cronograma deriva dela, nunca do Tipo.

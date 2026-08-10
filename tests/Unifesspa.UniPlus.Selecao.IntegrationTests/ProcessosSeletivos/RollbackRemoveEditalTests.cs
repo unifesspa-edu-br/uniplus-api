@@ -159,8 +159,19 @@ public sealed class RollbackRemoveEditalTests : IAsyncLifetime
         await conexao.OpenAsync();
 
         await ExecutarAsync(conexao, $$"""
-            INSERT INTO selecao.processos_seletivos (id, nome, tipo, status, created_at, is_deleted)
-            VALUES ('{{ProcessoId}}', 'PS publicado', 1, 2, now(), false);
+            INSERT INTO selecao.processos_seletivos (
+                id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
+                status, origem_candidatos,
+                unidade_administradora_origem_id, unidade_administradora_sigla,
+                unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
+                created_at, is_deleted)
+            VALUES (
+                '{{ProcessoId}}', 'PS publicado',
+                '019fe8f8-1400-7000-8000-000000000001', 'SiSU', 'SiSU',
+                2, 1,
+                '00000000-0000-0000-0000-000000000010', 'CEPS',
+                'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
+                now(), false);
 
             INSERT INTO selecao.documentos_edital (
                 id, processo_seletivo_id, object_key, status, expira_em, hash_sha256, confirmado_em, created_at)

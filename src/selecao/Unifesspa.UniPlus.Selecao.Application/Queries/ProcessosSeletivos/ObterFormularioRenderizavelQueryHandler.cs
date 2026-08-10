@@ -77,7 +77,7 @@ public static class ObterFormularioRenderizavelQueryHandler
     /// <summary>
     /// A <paramref name="schemaVersion"/> está entre as capacidades que o registro de codecs hoje
     /// sabe LER? Comparação ordinal — <c>SchemaVersion</c> é token, não texto localizável, e
-    /// <c>"0.0.6"</c> não é apelido de <c>"0.0.06"</c> nem de variante de caixa.
+    /// <c>"0.0.7"</c> não é apelido de <c>"0.0.07"</c> nem de variante de caixa.
     /// </summary>
     private static bool VersaoReconhecidaParaLeitura(IRegistroCodecsEnvelope registroCodecs, string schemaVersion) =>
         registroCodecs.Capacidades.Any(capacidade =>

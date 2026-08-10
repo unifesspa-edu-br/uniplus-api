@@ -133,8 +133,8 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
             "RequiresIdempotencyKey filter rejeita request sem header");
     }
 
-    [Fact(DisplayName = "POST com tipo de processo fora do vocabulário retorna 422 específico")]
-    public async Task Criar_TipoProcessoForaDoVocabulario_Retorna422()
+    [Fact(DisplayName = "POST com tipo de processo inexistente ou inativo retorna 422 específico")]
+    public async Task Criar_TipoProcessoInexistenteOuInativo_Retorna422()
     {
         using HttpClient client = ClientWithRoles(AdminPlataforma);
 
@@ -154,7 +154,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("type").GetString()
-            .Should().EndWith("uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_fora_do_vocabulario");
+            .Should().EndWith("uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo");
     }
 
     [Fact(DisplayName = "POST com Idempotency-Key repetido retorna 200 com mesmo Id (idempotência)")]

@@ -37,7 +37,7 @@ public sealed class ProcessoSeletivoTests
     {
         Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
-        act.Should().Throw<ArgumentException>().WithParameterName("tipo");
+        act.Should().Throw<ArgumentException>().WithParameterName("tipoProcesso");
     }
 
     [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (Story #851 §3.4)")]

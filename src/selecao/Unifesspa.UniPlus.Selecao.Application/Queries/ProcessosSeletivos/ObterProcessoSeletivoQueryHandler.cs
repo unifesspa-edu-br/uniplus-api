@@ -29,7 +29,10 @@ public static class ObterProcessoSeletivoQueryHandler
     internal static ProcessoSeletivoDto Project(ProcessoSeletivo processo) => new(
         processo.Id,
         processo.Nome,
-        processo.Tipo.ToString(),
+        new TipoProcessoSnapshotDto(
+            processo.TipoProcessoOrigemId,
+            processo.TipoProcesso.Codigo,
+            processo.TipoProcesso.Nome),
         processo.Status.ToString(),
         processo.OrigemCandidatos.ToString(),
         new UnidadeAdministradoraSnapshotDto(
