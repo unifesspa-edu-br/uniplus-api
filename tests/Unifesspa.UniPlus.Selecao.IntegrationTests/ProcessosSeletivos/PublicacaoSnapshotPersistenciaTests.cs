@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_ContemBlocosCanonicos</c> (os 23 blocos — todos
+/// pela app) e <c>Snapshot_Contem24BlocosCanonicos</c> (os 24 blocos — todos
 /// reais — estão presentes). Story #575 promoveu <c>cascataRemanejamento</c>
 /// de stub a bloco real; issue #849 promoveu <c>identidadesUnidade</c>;
 /// Story #559 promoveu <c>formulario</c>; issue #563 promoveu <c>divulgacao</c>
@@ -171,10 +171,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_ContemBlocosCanonicos — os 23 blocos, todos reais, estão presentes")]
-    public async Task Snapshot_ContemBlocosCanonicos()
+    [Fact(DisplayName = "Snapshot_Contem24BlocosCanonicos — os 24 blocos, todos reais, estão presentes")]
+    public async Task Snapshot_Contem24BlocosCanonicos()
     {
-        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_ContemBlocosCanonicos));
+        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem24BlocosCanonicos));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
@@ -185,7 +185,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
         string[] blocosEsperados =
         [
-            "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
+            "tipoProcesso", "periodo", "etapas", "vagas", "distribuicao", "modalidades", "ofertas",
             "atendimento", "bonusRegional", "criteriosDesempate", "classificacao", "hashesEdital",
             "documentosExigidos", "arvoreSatisfacao", "formulario", "cascataRemanejamento", "divulgacao",
             "cronogramaFases", "identidadesUnidade",
@@ -215,7 +215,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             .Order(StringComparer.Ordinal)];
 
         stubs.Should().BeEmpty(
-            "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real. Os 23 " +
+            "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real. Os 24 " +
             "blocos são todos reais agora (Story #851 promoveu cronogramaFases; Story #853 promoveu " +
             "documentosExigidos; issue #848 promoveu vagas; Story #575 promoveu cascataRemanejamento; issue #849 " +
             "promoveu identidadesUnidade; Story #559 promoveu formulario; os demais sempre foram reais)");

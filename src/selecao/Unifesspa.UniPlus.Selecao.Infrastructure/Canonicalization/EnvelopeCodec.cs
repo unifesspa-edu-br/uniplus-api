@@ -31,6 +31,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 {
     private static readonly string[] BlocosReais =
     [
+        "tipoProcesso",
         "periodo",
         "etapas",
         "distribuicao",
@@ -58,7 +59,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.6";
+    public string SchemaVersion => "0.0.7";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -109,6 +110,8 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             : BlocosReais;
 
         leitor.ExigirChaves(payload, "$", chavesEsperadas);
+
+        LerTipoProcesso(leitor, payload);
 
         DadosEdital? dados = EnvelopeCodecV11.LerDadosEdital(leitor, payload, out string hashDocumento);
         IReadOnlyList<EtapaProcesso> etapas = EnvelopeCodecV11.LerEtapas(leitor, payload);
@@ -183,6 +186,25 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, retificacao, conformidade,
                 metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis));
+    }
+
+    /// <summary>
+    /// Lê e fecha a forma do tipo autocontido. O agregado vivo já carrega a
+    /// mesma cópia por valor e a recanonicalização posterior prova a paridade;
+    /// o decoder não consulta Configuração para validar este dado histórico.
+    /// </summary>
+    private static void LerTipoProcesso(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject tipo = leitor.Objeto(payload, "tipoProcesso", "$");
+        if (leitor.Falhou)
+        {
+            return;
+        }
+
+        leitor.ExigirChaves(tipo, "tipoProcesso", "origemId", "codigo", "nome");
+        leitor.Identificador(tipo, "origemId", "tipoProcesso");
+        leitor.TextoNaoVazio(tipo, "codigo", "tipoProcesso");
+        leitor.TextoNaoVazio(tipo, "nome", "tipoProcesso");
     }
 
     /// <summary>

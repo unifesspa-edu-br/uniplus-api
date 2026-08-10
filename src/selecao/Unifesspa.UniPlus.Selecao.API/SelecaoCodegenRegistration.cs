@@ -98,5 +98,6 @@ public static class SelecaoCodegenRegistration
         // cross-módulo acima — o concreto TipoDocumentoReader é internal a
         // Configuracao.Infrastructure.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDocumentoReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
     }
 }

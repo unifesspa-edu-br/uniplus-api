@@ -71,7 +71,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase
     /// A classificação usa a estrutura de pontuação por área do ENEM — o
     /// sinal explícito (Story #850) do qual <c>ELIM-CORTE-REDACAO</c> e
     /// <c>ELIM-ZERO-EM-AREA</c> dependem. Deixou de ser calculado a partir de
-    /// <see cref="ProcessoSeletivo.Tipo"/>: o rótulo do processo não decide
+    /// <see cref="ProcessoSeletivo.TipoProcesso"/>: o rótulo do processo não decide
     /// comportamento, só a configuração declarada decide.
     /// </summary>
     public bool BaseadoEmEnem { get; private set; }

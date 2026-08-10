@@ -8,6 +8,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 
 using Wolverine.Attributes;
@@ -41,12 +42,14 @@ public static class CriarProcessoSeletivoCommandHandler
         CriarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnidadeReader unidadeReader,
+        ITipoProcessoReader tipoProcessoReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(unidadeReader);
+        ArgumentNullException.ThrowIfNull(tipoProcessoReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         UnidadeView? unidade = await unidadeReader
@@ -59,6 +62,22 @@ public static class CriarProcessoSeletivoCommandHandler
                 $"Unidade administradora {command.UnidadeAdministradoraOrigemId} não encontrada ou não está mais viva."));
         }
 
+        TipoProcessoView? tipo = await tipoProcessoReader
+            .ObterAtivoPorIdAsync(command.TipoProcessoOrigemId, cancellationToken)
+            .ConfigureAwait(false);
+        if (tipo is null)
+        {
+            return Result<Guid>.Failure(new DomainError(
+                "ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo",
+                $"Tipo de processo seletivo {command.TipoProcessoOrigemId} não encontrado ou não está ativo."));
+        }
+
+        Result<TipoProcessoSnapshot> tipoSnapshotResult = TipoProcessoSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
+        if (tipoSnapshotResult.IsFailure)
+        {
+            return Result<Guid>.Failure(tipoSnapshotResult.Error!);
+        }
+
         Result<UnidadeAdministradoraSnapshot> snapshotResult = UnidadeAdministradoraSnapshot.Criar(
             unidade.Sigla, unidade.Slug, unidade.Nome, unidade.Tipo);
         if (snapshotResult.IsFailure)
@@ -67,7 +86,7 @@ public static class CriarProcessoSeletivoCommandHandler
         }
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            command.Nome, command.Tipo, command.OrigemCandidatos, unidade.Id, snapshotResult.Value!);
+            command.Nome, tipoSnapshotResult.Value!, command.OrigemCandidatos, unidade.Id, snapshotResult.Value!);
 
         await processoSeletivoRepository.AdicionarAsync(processo, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

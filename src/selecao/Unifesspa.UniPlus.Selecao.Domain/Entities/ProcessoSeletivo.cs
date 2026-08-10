@@ -42,13 +42,20 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ProcessoSeletivo : SoftDeletableEntity
 {
     public string Nome { get; private set; } = string.Empty;
-    public TipoProcesso Tipo { get; private set; }
+    /// <summary>Id da origem em Configuração, sem FK cross-schema (ADR-0061).</summary>
+    public Guid TipoProcessoOrigemId => TipoProcesso.OrigemId;
+
+    /// <summary>Snapshot-copy do tipo escolhido na criação, imutável para a vida do processo.</summary>
+    public TipoProcessoSnapshot TipoProcesso { get; private set; } = null!;
+
+    /// <summary>Alias de compatibilidade interna para fixtures; o contrato HTTP expõe <see cref="TipoProcesso"/>.</summary>
+    public TipoProcessoSnapshot Tipo => TipoProcesso;
     public StatusProcesso Status { get; private set; }
 
     /// <summary>
     /// De onde vêm os candidatos deste certame (§3.4, Story #851) — NOT NULL, exigido na
     /// criação. Deriva o piso mínimo do cronograma de fases; nunca ramifica por
-    /// <see cref="Tipo"/>.
+    /// <see cref="TipoProcesso"/>.
     /// </summary>
     public OrigemCandidatos OrigemCandidatos { get; private set; }
 
@@ -166,15 +173,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     public static ProcessoSeletivo Criar(
         string nome,
-        TipoProcesso tipo,
+        TipoProcessoSnapshot tipoProcesso,
         OrigemCandidatos origemCandidatos,
         Guid unidadeAdministradoraOrigemId,
         UnidadeAdministradoraSnapshot unidadeAdministradora)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
-        if (tipo == TipoProcesso.Nenhum)
+        if (tipoProcesso is null)
         {
-            throw new ArgumentException("Tipo do processo é obrigatório.", nameof(tipo));
+            throw new ArgumentException("Tipo do processo é obrigatório.", nameof(tipoProcesso));
         }
 
         if (origemCandidatos == OrigemCandidatos.Nenhuma)
@@ -192,7 +199,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return new ProcessoSeletivo
         {
             Nome = nome.Trim(),
-            Tipo = tipo,
+            TipoProcesso = tipoProcesso,
             OrigemCandidatos = origemCandidatos,
             UnidadeAdministradoraOrigemId = unidadeAdministradoraOrigemId,
             UnidadeAdministradora = unidadeAdministradora,
@@ -2854,7 +2861,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         Id = Id,
         Nome = Nome,
-        Tipo = Tipo,
+        TipoProcesso = TipoProcesso,
         Status = Status,
         OrigemCandidatos = OrigemCandidatos,
         UnidadeAdministradoraOrigemId = UnidadeAdministradoraOrigemId,

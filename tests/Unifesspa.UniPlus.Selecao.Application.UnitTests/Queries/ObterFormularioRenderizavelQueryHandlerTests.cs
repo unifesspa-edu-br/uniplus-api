@@ -31,14 +31,14 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     /// declara como única capacidade de leitura — o caso corrente de todo teste que não é sobre o
     /// gate de versão em si.
     /// </summary>
-    private const string VersaoCorrenteReconhecida = "0.0.6";
+    private const string VersaoCorrenteReconhecida = "0.0.7";
 
     /// <summary>
     /// Uma versão que já foi corrente e deixou de ser reconhecida quando o codec vivo avançou —
     /// usada SÓ no teste que prova a recusa (issue #1089); nenhum outro teste deste arquivo rotula
     /// o caso corrente com ela.
     /// </summary>
-    private const string VersaoAposentada = "0.0.5";
+    private const string VersaoAposentada = "0.0.6";
 
     private static readonly TimeProvider Relogio = TimeProvider.System;
 

@@ -34,7 +34,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
             return null;
         }
 
-        string tipoProcessoCodigo = processo.Tipo.ToString();
+        string tipoProcessoCodigo = processo.TipoProcesso.Codigo;
 
         IReadOnlyList<ObrigatoriedadeLegal> regrasVigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, query.DataReferencia, cancellationToken)

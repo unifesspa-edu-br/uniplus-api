@@ -38,7 +38,7 @@ internal static class ConferenciaDeConformidadeLegal
         ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
         ArgumentNullException.ThrowIfNull(processo);
 
-        string tipoProcessoCodigo = processo.Tipo.ToString();
+        string tipoProcessoCodigo = processo.TipoProcesso.Codigo;
 
         IReadOnlyList<ObrigatoriedadeLegal> regrasVigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, dataReferencia, cancellationToken)

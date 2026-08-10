@@ -32,7 +32,10 @@ public static class ListarProcessosSeletivosQueryHandler
     private static ProcessoSeletivoResumoDto Project(ProcessoSeletivo processo) => new(
         processo.Id,
         processo.Nome,
-        processo.Tipo.ToString(),
+        new TipoProcessoSnapshotDto(
+            processo.TipoProcessoOrigemId,
+            processo.TipoProcesso.Codigo,
+            processo.TipoProcesso.Nome),
         processo.Status.ToString(),
         processo.CreatedAt);
 }

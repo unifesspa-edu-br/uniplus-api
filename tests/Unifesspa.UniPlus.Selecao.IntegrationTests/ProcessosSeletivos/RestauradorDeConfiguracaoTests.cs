@@ -471,7 +471,7 @@ public sealed class RestauradorDeConfiguracaoTests
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.6", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.7", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

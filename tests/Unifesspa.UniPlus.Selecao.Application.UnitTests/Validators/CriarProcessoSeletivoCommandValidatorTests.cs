@@ -38,7 +38,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
             .Validate(new CriarProcessoSeletivoCommand("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria, UnidadeId));
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "Tipo");
+        result.Errors.Should().Contain(e => e.PropertyName == "TipoProcessoOrigemId");
     }
 
     [Fact(DisplayName = "Validator falha quando origem dos candidatos é Nenhuma (Story #851 §3.4)")]

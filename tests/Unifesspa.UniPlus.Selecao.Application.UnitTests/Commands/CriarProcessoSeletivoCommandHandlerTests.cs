@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -20,20 +21,25 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     private static readonly UnidadeView UnidadeCeps = new(
         UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
 
+    private static readonly TipoProcessoView TipoSisu = new(
+        TipoProcesso.SiSU.OrigemId, "SiSU", "SiSU", null);
+
     [Fact(DisplayName = "Handle persiste o processo em rascunho com a Unidade resolvida e retorna o id (CA-01, CA-03)")]
     public async Task Handle_PersisteComUnidadeResolvidaERetornaId()
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId);
         ProcessoSeletivo? processoPersistido = null;
         repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
             .Do(ci => processoPersistido = ci.Arg<ProcessoSeletivo>());
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, unitOfWork, CancellationToken.None);
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processoPersistido.Should().NotBeNull();
@@ -46,7 +52,10 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
                 && p.UnidadeAdministradora.Sigla == "CEPS"
                 && p.UnidadeAdministradora.Slug == "ceps"
                 && p.UnidadeAdministradora.Nome == "Centro de Processos Seletivos"
-                && p.UnidadeAdministradora.Tipo == "ADMINISTRATIVA"),
+                && p.UnidadeAdministradora.Tipo == "ADMINISTRATIVA"
+                && p.TipoProcessoOrigemId == TipoSisu.Id
+                && p.TipoProcesso.Codigo == "SiSU"
+                && p.TipoProcesso.Nome == "SiSU"),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -56,16 +65,36 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
         CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId);
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            command, repository, unidadeReader, unitOfWork, CancellationToken.None);
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada");
         await repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle recusa tipo inexistente ou inativo sem criar vínculo")]
+    public async Task Handle_TipoInativo_RecusaSemPersistir()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            new CriarProcessoSeletivoCommand("PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId),
+            repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo");
+        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
     }
 }

@@ -7,6 +7,8 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
+using Npgsql;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -72,6 +74,9 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
 
         recarregado.Should().NotBeNull();
         recarregado!.Status.Should().Be(StatusProcesso.Rascunho);
+        recarregado.TipoProcesso.OrigemId.Should().Be(TipoProcesso.SiSU.OrigemId);
+        recarregado.TipoProcessoOrigemId.Should().Be(TipoProcesso.SiSU.OrigemId);
+        recarregado.TipoProcesso.Codigo.Should().Be("SiSU");
         recarregado.Etapas.Should().HaveCount(2);
         recarregado.CalcularDivisorMedia().Should().Be(5m);
 
@@ -79,6 +84,37 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.OfertaAtendimento!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);
         recarregado.OfertaAtendimento.Recursos.Single().RecursoOrigemId.Should().Be(recursoOrigemId);
         recarregado.OfertaAtendimento.TiposDeficiencia.Single().TipoDeficienciaOrigemId.Should().Be(tipoDeficienciaOrigemId);
+    }
+
+    [Fact(DisplayName = "Persiste dois processos do mesmo tipo no mesmo DbContext sem compartilhar o owned snapshot")]
+    public async Task Persistir_DoisProcessosDoMesmoTipoNoMesmoContexto_PreservaSnapshotEmAmbos()
+    {
+        ProcessoSeletivo processoA = ProcessoSeletivo.Criar(
+            "PS snapshot A", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo processoB = ProcessoSeletivo.Criar(
+            "PS snapshot B", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processoA, CancellationToken.None);
+            await repository.AdicionarAsync(processoB, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo[] recarregados = await readContext.ProcessosSeletivos
+            .AsNoTracking()
+            .Where(processo => processo.Id == processoA.Id || processo.Id == processoB.Id)
+            .ToArrayAsync(CancellationToken.None);
+
+        recarregados.Should().HaveCount(2);
+        recarregados.Should().OnlyContain(processo =>
+            processo.TipoProcesso.OrigemId == TipoProcesso.SiSU.OrigemId
+            && processo.TipoProcesso.Codigo == "SiSU"
+            && processo.TipoProcesso.Nome == "SiSU");
     }
 
     [Fact(DisplayName = "Persiste e recarrega a Unidade administradora sem perda (issue #849, CA-05)")]
@@ -122,18 +158,20 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         Func<Task> act = async () => await writeContext.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO selecao.processos_seletivos (
-                id, nome, tipo, status, origem_candidatos, unidade_administradora_origem_id,
+                id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
+                status, origem_candidatos, unidade_administradora_origem_id,
                 unidade_administradora_sigla, unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
                 created_at, is_deleted)
             VALUES (
-                {processoId}, 'PS sem unidade', 1, 1, 1, {Guid.NewGuid()},
+                {processoId}, 'PS sem unidade', {TipoProcesso.SiSU.OrigemId}, 'SiSU', 'SiSU', 1, 1, {Guid.NewGuid()},
                 NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
                 now(), false)
             """,
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<Exception>(
-            "unidade_administradora_sigla é NOT NULL desde a migration inicial — sem produção, sem estratégia em duas fases");
+        (await act.Should().ThrowAsync<PostgresException>(
+            "unidade_administradora_sigla é NOT NULL desde a migration inicial — sem produção, sem estratégia em duas fases"))
+            .Which.ColumnName.Should().Be("unidade_administradora_sigla");
     }
 
     [Fact(DisplayName = "Reconfigurar etapas sobre o agregado carregado (tracked) insere os filhos novos, não falha em UPDATE")]

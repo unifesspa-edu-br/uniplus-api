@@ -33,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// silenciosamente ignorada.
 /// </remarks>
 /// <remarks>
-/// Nenhum ramo compara <see cref="ProcessoSeletivo.Tipo"/> nem qualquer
+/// Nenhum ramo compara <see cref="ProcessoSeletivo.TipoProcesso"/> nem qualquer
 /// rótulo institucional — a flexibilidade entre tipos de processo vem
 /// inteiramente de quais regras o cadastro tem vigentes para
 /// <paramref name="tipoProcessoCodigoAvaliado"/>, nunca de um <c>if</c>
