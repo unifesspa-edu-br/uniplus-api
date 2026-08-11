@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
+using System.Text;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -53,7 +55,14 @@ public static class CriarObrigatoriedadeLegalCommandHandler
             // subtipo polimórfico — e System.Text.Json não impõe NRT em runtime, então um
             // payload com "tipoEtapaCodigo": null desserializa sem erro. Sem o '?.', isso seria
             // NullReferenceException nesta linha (500) em vez de 422 pelo reader logo abaixo.
-            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty;
+            //
+            // NFC além do Trim: TipoEtapaSnapshot.Criar já congela o código da etapa em NFC
+            // (mesma normalização do payload canônico) — sem normalizar aqui também, um código
+            // digitado em forma decomposta aprovaria a checagem de existência (o reader
+            // normaliza a busca) mas nunca bateria ordinalmente contra o código congelado da
+            // etapa em AvaliadorConformidadeLegal.
+            string codigoNormalizado = (etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty)
+                .Normalize(NormalizationForm.FormC);
             if (!await TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken).ConfigureAwait(false))
             {
                 return Result<Guid>.Failure(TipoEtapaNaoEncontradoOuInativo(codigoNormalizado));

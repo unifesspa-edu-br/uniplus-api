@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using System.Text;
+
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -39,8 +41,15 @@ public sealed record TipoEtapaSnapshot
             return Falha("TipoEtapaSnapshot.NomeObrigatorio", "Nome do tipo de etapa é obrigatório.");
         }
 
-        string codigoNormalizado = codigo.Trim();
-        string nomeNormalizado = nome.Trim();
+        // NFC na fronteira de congelamento (mesma normalização do payload canônico,
+        // HashCanonicalComputer.NormalizeNfc): sem isso, o mesmo código digitado em forma
+        // decomposta aqui e recomposta (NFC) ao serializar no envelope vira dois valores
+        // ordinalmente diferentes depois de um ciclo de retificação descartada — o código
+        // congelado muda de representação sem que o dado mude de significado, e
+        // AvaliadorConformidadeLegal, que compara por igualdade ordinal, passa a reportar a
+        // etapa como ausente mesmo com a regra e a etapa usando o "mesmo" código.
+        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
+        string nomeNormalizado = nome.Trim().Normalize(NormalizationForm.FormC);
 
         // Defesa de decode: um envelope adulterado não pode injetar U+0000 e só falhar
         // depois, na constraint do Postgres — o VO recusa aqui, na fronteira do domínio.
