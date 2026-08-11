@@ -66,6 +66,15 @@ da ADR-0122, aceita `"*"` ou o código de um tipo ativo em Configuração,
 validado no handler; não há vocabulário enum compilado. A avaliação posterior
 lê a cópia congelada no processo, não a configuração atual.
 
+`EtapaObrigatoria.TipoEtapaCodigo`, por emenda da ADR-0123, deixa de casar com
+`EtapaProcesso.Nome` (rótulo editorial, ordinal case-insensitive) e passa a
+comparar contra `EtapaProcesso.TipoEtapa.Codigo` — a cópia congelada do
+cadastro `TipoEtapa` de Configuração, `StringComparison.Ordinal`. Diferente de
+`TipoProcessoCodigo`, não há sentinela `"*"`: todo predicado referencia um tipo
+de etapa específico. O handler de `ObrigatoriedadeLegal` valida pertença a um
+tipo ativo na criação e na atualização; a avaliação posterior lê o snapshot
+congelado na etapa, não a configuração atual.
+
 O resultado da futura avaliação continua sendo `ResultadoConformidade` e
 `RegraAvaliada`. Quando a #853 o congelar, o handler acrescentará um campo a
 `EntradaCanonicalizacao`; a assinatura de
@@ -77,7 +86,7 @@ relógio ou outro estado externo.
 
 | Predicado | Alvo e decisão |
 | --- | --- |
-| `EtapaObrigatoria(TipoEtapaCodigo)` | Mantido; casa com `Etapas[].Nome`, ordinal e case-insensitive. |
+| `EtapaObrigatoria(TipoEtapaCodigo)` | Mantido; por emenda da ADR-0123, casa com `EtapaProcesso.TipoEtapa.Codigo` (cópia congelada do cadastro de Configuração), `StringComparison.Ordinal` — nunca com `Etapas[].Nome`. |
 | `ModalidadesMinimas(Codigos)` | Mantido; avalia por oferta: toda `ConfiguracaoDistribuicaoVagas` precisa conter todas as modalidades. |
 | `DesempateDeveIncluir(Criterio)` | Mantido; casa com `CriteriosDesempate[].Regra.Codigo`. |
 | `DocumentoObrigatorioParaModalidade(...)` | Sem alvo hoje; bloqueado por #554, que introduz `DocumentoExigido`. |
