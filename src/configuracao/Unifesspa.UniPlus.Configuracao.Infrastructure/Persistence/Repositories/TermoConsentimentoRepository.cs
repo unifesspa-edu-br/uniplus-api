@@ -57,16 +57,22 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            // Busca por proximidade indexada via pg_trgm (issue #1105), não ILIKE:
-            // full scan por ILIKE '%termo%' não usa índice B-tree para wildcard à
-            // esquerda; word_similarity (operador <%, extensão pg_trgm) casa o
-            // termo curto contra qualquer trecho contínuo de nome e é acelerado
+            // Busca indexada via pg_trgm (issue #1105): ILIKE '%termo%' acelerado
             // pelo índice GIN de expressão ix_termo_consentimento_nome_trgm sobre
-            // lower(nome) (migration AdicionaBuscaTrigramTermoConsentimento).
-            // lower() nos dois lados mantém a busca caixa-insensível; sem
-            // acento-insensibilidade (fora de escopo da issue).
-            string term = searchTerm.Trim().ToLowerInvariant();
-            query = query.Where(t => EF.Functions.TrigramsAreWordSimilar(term, t.Nome.ToLower()));
+            // lower(nome) (migration AdicionaBuscaTrigramTermoConsentimento) — o
+            // opclass gin_trgm_ops também acelera LIKE/ILIKE, não só os operadores
+            // de similaridade. Preferido a word_similarity/<%: abaixo do threshold
+            // padrão (0.6) esse operador não garante casar substrings internas
+            // curtas (ex.: "lat" não bate com "Plataforma", mesmo com termo válido
+            // e presente) — ILIKE dá semântica de "contains" exata, sem depender de
+            // limiar algum, para qualquer tamanho de termo. lower() nos dois lados
+            // mantém a busca caixa-insensível e casa com o índice; sem
+            // acento-insensibilidade (fora de escopo da issue). Curingas do LIKE
+            // (% _ \) são escapados para virarem texto literal.
+            string term = EscaparCuringasLike(searchTerm.Trim());
+            string pattern = "%" + term + "%";
+            const string escape = @"\";
+            query = query.Where(t => EF.Functions.ILike(t.Nome.ToLower(), pattern, escape));
         }
 
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032),
@@ -78,6 +84,16 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
+
+    // Escapa os curingas do LIKE/ILIKE (\ % _) para que metacaracteres digitados
+    // pelo usuário sejam comparados como texto literal, não wildcards — sem isso,
+    // searchTerm="_" ou searchTerm="%" casaria quase qualquer registro. Barra
+    // invertida escapada primeiro para não duplicar as inseridas ao escapar % e _.
+    private static string EscaparCuringasLike(string termo) =>
+        termo
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
 
     public async Task AdicionarAsync(TermoConsentimento termo, CancellationToken cancellationToken)
     {
