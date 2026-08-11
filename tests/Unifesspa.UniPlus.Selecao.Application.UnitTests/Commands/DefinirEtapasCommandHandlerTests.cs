@@ -178,6 +178,98 @@ public sealed class DefinirEtapasCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// issue #1108 (achado de review do PR #1071): desativar um tipo já vinculado a uma etapa
+    /// não pode bloquear PUTs subsequentes da coleção inteira — só vínculos NOVOS ou que MUDAM
+    /// de tipo precisam do cadastro ativo. O snapshot já congelado é reaproveitado sem nova
+    /// leitura do cadastro.
+    /// </summary>
+    [Fact(DisplayName = "Handle com vínculo inalterado reaproveita o snapshot já congelado, mesmo com o tipo desde então desativado")]
+    public async Task Handle_ComVinculoInalterado_ReaproveitaSnapshotMesmoComTipoDesativado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        // Reader configurado para devolver null para TODO Id — simula o tipo desativado depois
+        // que a etapa já existia. Se o handler tentasse reavaliar o vínculo inalterado, a
+        // publicação inteira recusaria com TipoEtapaNaoEncontradoOuInativo.
+        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
+        tipoEtapaReader.ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TipoEtapaView?)null);
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        // Edita só o Peso — TipoEtapaOrigemId permanece o mesmo do snapshot já congelado.
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 9m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, unitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Etapas.Single().Peso.Should().Be(9m);
+        processo.Etapas.Single().TipoEtapa.Codigo.Should().Be("PROVA_OBJETIVA");
+        await tipoEtapaReader.DidNotReceiveWithAnyArgs().ObterAtivoPorIdAsync(default, default);
+    }
+
+    /// <summary>
+    /// issue #1108 (achado de review do PR #1071): o snapshot-copy (ADR-0061) só muda quando o
+    /// VÍNCULO muda — renomear o tipo no cadastro, ainda ativo, não pode reescrever
+    /// silenciosamente o snapshot de uma etapa que não trocou de TipoEtapaOrigemId.
+    /// </summary>
+    [Fact(DisplayName = "Handle com vínculo inalterado não atualiza o Nome congelado, mesmo com o tipo renomeado no cadastro")]
+    public async Task Handle_ComVinculoInalterado_NaoAtualizaNomeAoRenomearTipoNoCadastro()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        // Se o handler fosse reler o cadastro para um vínculo inalterado, encontraria este Nome
+        // renomeado — a asserção abaixo prova que ele nunca chega a consultar.
+        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
+        tipoEtapaReader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null));
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, unitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Etapas.Single().TipoEtapa.Nome.Should().Be("Prova Objetiva",
+            "o snapshot só muda quando o VÍNCULO (TipoEtapaOrigemId) muda, não quando o cadastro de origem muda");
+        await tipoEtapaReader.DidNotReceiveWithAnyArgs().ObterAtivoPorIdAsync(default, default);
+    }
+
+    [Fact(DisplayName = "Handle com vínculo alterado resolve o novo tipo contra o cadastro corrente")]
+    public async Task Handle_ComVinculoAlterado_ResolveContraCadastroAtual()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        EtapaProcesso etapaOriginal = EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), peso: 1m, ordem: 1);
+        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        // Mesma etapa (mesmo Id), agora vinculada à Redação em vez de Prova Objetiva.
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1, etapaOriginal.Id)], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, unitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        processo.Etapas.Single().TipoEtapa.Codigo.Should().Be("REDACAO");
+        await tipoEtapaReader.Received(1).ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "issue #1071 — CA-03: tipo de etapa inexistente ou inativo é recusado")]
     public async Task Handle_TipoEtapaInexistenteOuInativo_Recusa()
     {
