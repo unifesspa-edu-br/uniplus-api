@@ -69,7 +69,7 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
             // mantém a busca caixa-insensível e casa com o índice; sem
             // acento-insensibilidade (fora de escopo da issue). Curingas do LIKE
             // (% _ \) são escapados para virarem texto literal.
-            string term = EscaparCuringasLike(searchTerm.Trim());
+            string term = EscapeLikeWildcards(searchTerm.Trim());
             string pattern = "%" + term + "%";
             const string escape = @"\";
             query = query.Where(t => EF.Functions.ILike(t.Nome.ToLower(), pattern, escape));
@@ -89,8 +89,8 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
     // pelo usuário sejam comparados como texto literal, não wildcards — sem isso,
     // searchTerm="_" ou searchTerm="%" casaria quase qualquer registro. Barra
     // invertida escapada primeiro para não duplicar as inseridas ao escapar % e _.
-    private static string EscaparCuringasLike(string termo) =>
-        termo
+    private static string EscapeLikeWildcards(string term) =>
+        term
             .Replace("\\", "\\\\", StringComparison.Ordinal)
             .Replace("%", "\\%", StringComparison.Ordinal)
             .Replace("_", "\\_", StringComparison.Ordinal);
