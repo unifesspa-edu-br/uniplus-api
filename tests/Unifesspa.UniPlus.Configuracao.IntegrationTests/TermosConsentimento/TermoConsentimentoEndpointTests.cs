@@ -190,6 +190,20 @@ public sealed class TermoConsentimentoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Theory(DisplayName = "GET coleção ?q= abaixo do piso de 3 caracteres retorna 400")]
+    [InlineData("a")]
+    [InlineData("ab")]
+    public async Task Listar_ComBuscaMuitoCurta_Retorna400(string buscaMuitoCurta)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"{ColecaoPath}?q={buscaMuitoCurta}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "abaixo de 3 caracteres o pg_trgm não tem trigramas suficientes para casar de forma confiável");
+    }
+
     [Fact(DisplayName = "GET coleção não inclui versoes — a listagem projeta só o resumo")]
     public async Task Listar_NaoIncluiVersoes()
     {

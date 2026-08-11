@@ -6121,7 +6121,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Termo de busca livre (caixa-insens\u00EDvel) sobre o Nome do termo de consentimento; ausente/vazio = sem filtro. Mantenha fixo ao navegar prev/next (o cursor n\u00E3o vincula o filtro).",
+            "description": "Termo de busca livre (caixa-insens\u00EDvel) sobre o Nome do termo de consentimento; ausente/vazio = sem filtro. M\u00EDnimo de 3 caracteres (busca por proximidade indexada via pg_trgm). Mantenha fixo ao navegar prev/next (o cursor n\u00E3o vincula o filtro).",
             "schema": {
               "type": "string"
             }
