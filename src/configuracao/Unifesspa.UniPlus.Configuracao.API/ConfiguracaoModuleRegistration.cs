@@ -59,6 +59,7 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<FaseCanonicaDto>, FaseCanonicaLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<TipoBancaDto>, TipoBancaLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<TipoProcessoDto>, TipoProcessoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<TipoEtapaDto>, TipoEtapaLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<CursoDto>, CursoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<OfertaCursoDto>, OfertaCursoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<PrecedenciaFaseDto>, PrecedenciaFaseLinksBuilder>();
