@@ -12,10 +12,11 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// Integração da filtragem server-side por nome na listagem de termos de
-/// consentimento (issue #1105) contra Postgres real: busca por proximidade
-/// indexada (pg_trgm word_similarity), caixa-insensível, e coerência do cursor
-/// keyset sobre o conjunto filtrado — busca e paginação devem descrever o
-/// mesmo conjunto de resultados.
+/// consentimento (issue #1105) contra Postgres real: busca indexada via
+/// pg_trgm (ILIKE acelerado pelo índice GIN, não word_similarity — este não
+/// garante casar substrings internas curtas independente do threshold),
+/// caixa-insensível, e coerência do cursor keyset sobre o conjunto filtrado —
+/// busca e paginação devem descrever o mesmo conjunto de resultados.
 /// </summary>
 /// <remarks>
 /// A fixture compartilha um único banco entre os testes da classe; cada teste
@@ -53,7 +54,7 @@ public sealed class TermoConsentimentoFiltroListagemTests
         maiusculo.Should().Contain(comToken, "a busca deve ser caixa-insensível");
     }
 
-    [Fact(DisplayName = "Busca casa um trecho contínuo do termo dentro de um nome mais longo (word_similarity)")]
+    [Fact(DisplayName = "Busca casa um trecho contínuo do termo dentro de um nome mais longo")]
     public async Task Busca_CasaSubstringDentroDeNomeMaisLongo()
     {
         string iso = NovoToken();
@@ -61,20 +62,62 @@ public sealed class TermoConsentimentoFiltroListagemTests
 
         IReadOnlyList<Guid> ids = await ListarIdsAsync(iso);
 
-        ids.Should().Contain(comToken, "word_similarity encontra o termo como trecho contínuo do nome mais longo");
+        ids.Should().Contain(comToken, "ILIKE '%termo%' encontra o termo como trecho contínuo do nome mais longo");
     }
 
-    [Fact(DisplayName = "Busca sem relação de trigramas com o nome não retorna o registro")]
+    [Fact(DisplayName = "Busca com termo curto (2 caracteres) casa substring interna do nome")]
+    public async Task Busca_TermoCurto_CasaSubstringInterna()
+    {
+        // Regressão: word_similarity (pg_trgm, threshold padrão 0.6) não
+        // garantia casar substrings curtas internas ao nome — ex.: "lat" não
+        // batia com "Plataforma" mesmo sendo um trecho contínuo real. ILIKE dá
+        // semântica de "contains" exata, sem depender de nenhum limiar.
+        string iso = NovoToken();
+        string marcador = iso[..2];
+        Guid comMarcador = await SeedAsync($"Termo {marcador}Interno {iso}");
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(marcador + "Interno");
+
+        ids.Should().Contain(comMarcador, "um termo de 2 caracteres presente como substring deve casar via ILIKE");
+    }
+
+    [Fact(DisplayName = "Busca sem correspondência textual com o nome não retorna o registro")]
     public async Task Busca_TermoSemRelacao_NaoCasa()
     {
         string iso = NovoToken();
         Guid semRelacao = await SeedAsync($"Termo Alpha {iso}");
 
-        // Token novo, sem overlap de trigramas com "Termo Alpha <iso>" nem com
-        // qualquer outro dado de teste — abaixo do limiar de word_similarity.
+        // Token novo, que não aparece como substring de "Termo Alpha <iso>" nem
+        // de qualquer outro dado de teste.
         IReadOnlyList<Guid> ids = await ListarIdsAsync(NovoToken());
 
         ids.Should().NotContain(semRelacao);
+    }
+
+    [Fact(DisplayName = "Curingas do LIKE (_, % e \\) no termo são tratados como literais, não wildcards")]
+    public async Task Busca_EscapaCuringasLike()
+    {
+        string iso = NovoToken();
+        // Pares com o MESMO comprimento: sem escape, o curinga no termo casaria
+        // o caractere/sequência divergente do par, devolvendo o registro errado.
+        Guid comUnderscore = await SeedAsync($"Alfa_{iso}");
+        Guid soLetra = await SeedAsync($"AlfaX{iso}");
+        Guid comPercent = await SeedAsync($"Beta%{iso}");
+        Guid soSequencia = await SeedAsync($"BetaZZ{iso}");
+        Guid comBarra = await SeedAsync($"Gama\\{iso}");
+        Guid soLetraBarra = await SeedAsync($"GamaX{iso}");
+
+        IReadOnlyList<Guid> porUnderscore = await ListarIdsAsync($"Alfa_{iso}");
+        porUnderscore.Should().Contain(comUnderscore);
+        porUnderscore.Should().NotContain(soLetra, "'_' deve ser literal, não curinga de 1 caractere");
+
+        IReadOnlyList<Guid> porPercent = await ListarIdsAsync($"Beta%{iso}");
+        porPercent.Should().Contain(comPercent);
+        porPercent.Should().NotContain(soSequencia, "'%' deve ser literal, não curinga de sequência");
+
+        IReadOnlyList<Guid> porBarra = await ListarIdsAsync($"Gama\\{iso}");
+        porBarra.Should().Contain(comBarra);
+        porBarra.Should().NotContain(soLetraBarra, "'\\' deve ser literal, não escape de LIKE do usuário");
     }
 
     [Fact(DisplayName = "Cursor avança sobre o conjunto filtrado sem incluir registros de fora do filtro")]
