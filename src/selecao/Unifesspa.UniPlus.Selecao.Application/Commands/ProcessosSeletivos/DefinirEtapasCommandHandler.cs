@@ -74,28 +74,6 @@ public static class DefinirEtapasCommandHandler
                 "O mesmo Id de etapa não pode ser informado mais de uma vez no mesmo payload."));
         }
 
-        Dictionary<Guid, TipoEtapaSnapshot> snapshotsPorTipoOrigemId = [];
-        foreach (Guid tipoEtapaOrigemId in command.Etapas.Select(e => e.TipoEtapaOrigemId).Distinct())
-        {
-            TipoEtapaView? tipo = await tipoEtapaReader
-                .ObterAtivoPorIdAsync(tipoEtapaOrigemId, cancellationToken)
-                .ConfigureAwait(false);
-            if (tipo is null)
-            {
-                return Result<MutacaoAceita>.Failure(new DomainError(
-                    "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
-                    $"Tipo de etapa {tipoEtapaOrigemId} não encontrado ou não está ativo."));
-            }
-
-            Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
-            if (snapshotResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(snapshotResult.Error!);
-            }
-
-            snapshotsPorTipoOrigemId[tipoEtapaOrigemId] = snapshotResult.Value!;
-        }
-
         // Reconcilia por Id em vez de recriar toda a coleção: uma etapa cujo
         // Id (ecoado pelo cliente a partir da leitura anterior) ainda existe
         // no processo é ATUALIZADA na mesma instância tracked, preservando o
@@ -103,12 +81,54 @@ public static class DefinirEtapasCommandHandler
         // possam ter — do contrário, todo PUT /etapas geraria etapas com Id
         // novo e invalidaria essas referências por construção.
         Dictionary<Guid, EtapaProcesso> existentes = processo.Etapas.ToDictionary(e => e.Id);
+
+        // Resolvido contra o cadastro corrente SÓ quando o vínculo é novo ou muda de tipo —
+        // nunca para uma etapa existente cujo TipoEtapaOrigemId não mudou. Sem essa distinção,
+        // (a) desativar um tipo já vinculado bloquearia QUALQUER PUT subsequente da coleção
+        // inteira, mesmo editando só o Peso de uma etapa não relacionada; e (b) renomear um
+        // tipo ainda ativo reescreveria silenciosamente o snapshot já congelado de uma etapa
+        // que o cliente nem tocou — violando o próprio propósito do snapshot-copy (ADR-0061):
+        // a cópia só muda quando o vínculo muda, não quando o cadastro de origem muda.
+        Dictionary<Guid, TipoEtapaSnapshot> snapshotsResolvidos = [];
         List<EtapaProcesso> etapas = [];
         foreach (EtapaProcessoInput input in command.Etapas)
         {
-            TipoEtapaSnapshot tipoEtapa = snapshotsPorTipoOrigemId[input.TipoEtapaOrigemId];
+            EtapaProcesso? etapaExistente = input.Id is { } id && existentes.TryGetValue(id, out EtapaProcesso? candidata)
+                ? candidata
+                : null;
 
-            if (input.Id is { } id && existentes.TryGetValue(id, out EtapaProcesso? etapaExistente))
+            TipoEtapaSnapshot tipoEtapa;
+            if (etapaExistente is not null && etapaExistente.TipoEtapaOrigemId == input.TipoEtapaOrigemId)
+            {
+                tipoEtapa = etapaExistente.TipoEtapa;
+            }
+            else if (snapshotsResolvidos.TryGetValue(input.TipoEtapaOrigemId, out TipoEtapaSnapshot? snapshotEmCache))
+            {
+                tipoEtapa = snapshotEmCache;
+            }
+            else
+            {
+                TipoEtapaView? tipo = await tipoEtapaReader
+                    .ObterAtivoPorIdAsync(input.TipoEtapaOrigemId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (tipo is null)
+                {
+                    return Result<MutacaoAceita>.Failure(new DomainError(
+                        "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
+                        $"Tipo de etapa {input.TipoEtapaOrigemId} não encontrado ou não está ativo."));
+                }
+
+                Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
+                if (snapshotResult.IsFailure)
+                {
+                    return Result<MutacaoAceita>.Failure(snapshotResult.Error!);
+                }
+
+                tipoEtapa = snapshotResult.Value!;
+                snapshotsResolvidos[input.TipoEtapaOrigemId] = tipoEtapa;
+            }
+
+            if (etapaExistente is not null)
             {
                 etapaExistente.AtualizarDados(
                     input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem);
