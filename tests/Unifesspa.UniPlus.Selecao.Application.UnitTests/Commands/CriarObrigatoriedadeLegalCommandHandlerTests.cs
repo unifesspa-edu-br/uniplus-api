@@ -108,6 +108,41 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
     }
 
     /// <summary>
+    /// TipoEtapaCodigo é non-nullable só em compile-time: FluentValidation valida Predicado
+    /// não-nulo, não os campos do subtipo polimórfico, e System.Text.Json não impõe NRT em
+    /// runtime — um payload com <c>"tipoEtapaCodigo": null</c> desserializa sem erro.
+    /// </summary>
+    [Fact(DisplayName = "Handle recusa código de tipo de etapa nulo sem lançar")]
+    public async Task Handle_TipoEtapaCodigoNulo_RecusaSemLancar()
+    {
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
+        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        tipoReader.ObterAtivoPorCodigoAsync("PS_NOVO", Arg.Any<CancellationToken>())
+            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
+
+        CriarObrigatoriedadeLegalCommand command = new(
+            "PS_NOVO",
+            CategoriaObrigatoriedade.Etapa,
+            "REGRA_NOVA",
+            new EtapaObrigatoria(null!),
+            "Descrição da regra.",
+            "Lei de teste.",
+            new DateOnly(2026, 1, 1),
+            null,
+            null,
+            null);
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            command, repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo");
+        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
     /// O reader normaliza a busca (<c>Trim</c>), mas se o valor persistido não fosse
     /// normalizado a regra ficaria aceita e, ao mesmo tempo, permanentemente inatingível em
     /// AvaliadorConformidadeLegal — que compara por igualdade ordinal exata.
