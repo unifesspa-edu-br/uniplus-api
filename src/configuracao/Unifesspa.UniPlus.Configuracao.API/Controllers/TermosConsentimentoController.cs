@@ -35,6 +35,13 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// <summary>Limite defensivo do termo de busca — igual ao <c>Nome</c> máximo da entidade.</summary>
     private const int SearchTermMaxLength = 200;
 
+    /// <summary>
+    /// Piso do termo de busca — abaixo de 3 caracteres, o word_similarity do
+    /// pg_trgm (threshold padrão 0.6) não tem trigramas suficientes para casar
+    /// de forma confiável (ex.: 1 caractere não forma nenhum trigrama completo).
+    /// </summary>
+    private const int SearchTermMinLength = 3;
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -66,9 +73,11 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// <param name="page">Cursor decodificado (<c>cursor</c>/<c>limit</c>/<c>direction</c> da wire).</param>
     /// <param name="q">
     /// Termo de busca livre (caixa-insensível) sobre o <c>Nome</c> do termo;
-    /// ausente/vazio = sem filtro. Trocar o termo entre páginas de uma mesma
-    /// navegação produz resultados inconsistentes — o cursor não vincula o
-    /// filtro (ADR-0026), então mantenha <c>q</c> fixo ao seguir prev/next.
+    /// ausente/vazio = sem filtro. Mínimo de 3 caracteres (busca por
+    /// proximidade indexada via pg_trgm, ver <see cref="SearchTermMinLength"/>).
+    /// Trocar o termo entre páginas de uma mesma navegação produz resultados
+    /// inconsistentes — o cursor não vincula o filtro (ADR-0026), então
+    /// mantenha <c>q</c> fixo ao seguir prev/next.
     /// </param>
     /// <param name="cancellationToken">Token de cancelamento da requisição.</param>
     [HttpGet("termos-consentimento")]
@@ -83,7 +92,8 @@ public sealed class TermosConsentimentoController : ControllerBase
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery(Name = "q")] [Description(
             "Termo de busca livre (caixa-insensível) sobre o Nome do termo de consentimento; " +
-            "ausente/vazio = sem filtro. Mantenha fixo ao navegar prev/next (o cursor não vincula o filtro).")]
+            "ausente/vazio = sem filtro. Mínimo de 3 caracteres (busca por proximidade indexada " +
+            "via pg_trgm). Mantenha fixo ao navegar prev/next (o cursor não vincula o filtro).")]
         string? q,
         CancellationToken cancellationToken)
     {
@@ -100,6 +110,20 @@ public sealed class TermosConsentimentoController : ControllerBase
             {
                 Title = "Termo de busca muito longo",
                 Detail = $"O parâmetro 'q' não pode exceder {SearchTermMaxLength} caracteres.",
+                Status = StatusCodes.Status400BadRequest,
+            });
+        }
+
+        // Abaixo do piso, o word_similarity do pg_trgm não tem trigramas
+        // suficientes para casar de forma confiável (issue #1105) — rejeitar
+        // explicitamente em vez de devolver uma lista vazia silenciosa.
+        if (searchTerm is { Length: > 0 and < SearchTermMinLength })
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Termo de busca muito curto",
+                Detail = $"O parâmetro 'q' precisa ter ao menos {SearchTermMinLength} caracteres " +
+                    "(ou ser omitido) — abaixo disso a busca por proximidade não tem trigramas suficientes.",
                 Status = StatusCodes.Status400BadRequest,
             });
         }
