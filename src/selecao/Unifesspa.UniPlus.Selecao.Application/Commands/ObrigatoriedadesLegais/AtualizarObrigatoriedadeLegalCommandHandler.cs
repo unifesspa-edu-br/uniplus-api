@@ -49,12 +49,21 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
             return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
         }
 
-        if (command.Predicado is EtapaObrigatoria etapaObrigatoria
-            && !await CriarObrigatoriedadeLegalCommandHandler
-                .TipoEtapaEhAtivoAsync(etapaObrigatoria.TipoEtapaCodigo, tipoEtapaReader, cancellationToken)
-                .ConfigureAwait(false))
+        // Mesma normalização do Criar: o código é aparado ANTES de persistir, não só na
+        // consulta ao reader — do contrário a regra aceita na atualização nunca mais bateria
+        // em AvaliadorConformidadeLegal (igualdade ordinal exata contra o código congelado).
+        PredicadoObrigatoriedade predicado = command.Predicado;
+        if (predicado is EtapaObrigatoria etapaObrigatoria)
         {
-            return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoEtapaNaoEncontradoOuInativo(etapaObrigatoria.TipoEtapaCodigo));
+            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo.Trim();
+            if (!await CriarObrigatoriedadeLegalCommandHandler
+                    .TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoEtapaNaoEncontradoOuInativo(codigoNormalizado));
+            }
+
+            predicado = etapaObrigatoria with { TipoEtapaCodigo = codigoNormalizado };
         }
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
@@ -72,7 +81,7 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
             tipoProcessoCodigo: command.TipoProcessoCodigo,
             categoria: command.Categoria,
             regraCodigo: command.RegraCodigo,
-            predicado: command.Predicado,
+            predicado: predicado,
             descricaoHumana: command.DescricaoHumana,
             baseLegal: command.BaseLegal,
             vigenciaInicio: command.VigenciaInicio,

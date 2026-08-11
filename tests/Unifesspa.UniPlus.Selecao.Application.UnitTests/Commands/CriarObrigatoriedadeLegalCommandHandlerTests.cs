@@ -107,6 +107,44 @@ public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// O reader normaliza a busca (<c>Trim</c>), mas se o valor persistido não fosse
+    /// normalizado a regra ficaria aceita e, ao mesmo tempo, permanentemente inatingível em
+    /// AvaliadorConformidadeLegal — que compara por igualdade ordinal exata.
+    /// </summary>
+    [Fact(DisplayName = "Handle normaliza espaços do código de tipo de etapa antes de persistir")]
+    public async Task Handle_TipoEtapaCodigoComEspacos_PersisteNormalizado()
+    {
+        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
+        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
+        ITipoEtapaReader tipoEtapaReader = TipoEtapaReaderAtivo();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        tipoReader.ObterAtivoPorCodigoAsync("PS_NOVO", Arg.Any<CancellationToken>())
+            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
+        repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
+
+        CriarObrigatoriedadeLegalCommand command = new(
+            "PS_NOVO",
+            CategoriaObrigatoriedade.Etapa,
+            "REGRA_NOVA",
+            new EtapaObrigatoria($"  {TipoEtapaCodigo}  "),
+            "Descrição da regra.",
+            "Lei de teste.",
+            new DateOnly(2026, 1, 1),
+            null,
+            null,
+            null);
+
+        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
+            command, repository, tipoReader, tipoEtapaReader, unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        await repository.Received(1).AdicionarAsync(
+            Arg.Is<ObrigatoriedadeLegal>(regra =>
+                ((EtapaObrigatoria)regra.Predicado).TipoEtapaCodigo == TipoEtapaCodigo),
+            Arg.Any<CancellationToken>());
+    }
+
     /// <summary>Predicados que não são EtapaObrigatoria não consultam o reader de tipos de etapa.</summary>
     [Fact(DisplayName = "Handle com predicado que não é EtapaObrigatoria não consulta os tipos de etapa ativos")]
     public async Task Handle_PredicadoNaoEEtapaObrigatoria_NaoConsultaTiposDeEtapa()

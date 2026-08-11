@@ -40,10 +40,21 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         // Issue #1071: uma obrigatoriedade nova só pode usar código de tipo de etapa ativo —
         // a validação de fronteira (shape) já garantiu que o predicado existe; aqui é a
         // checagem cross-módulo (existência + atividade) que só o handler pode fazer.
-        if (command.Predicado is EtapaObrigatoria etapaObrigatoria
-            && !await TipoEtapaEhAtivoAsync(etapaObrigatoria.TipoEtapaCodigo, tipoEtapaReader, cancellationToken).ConfigureAwait(false))
+        //
+        // O código é normalizado (Trim) ANTES de persistir, não só na consulta ao reader: se
+        // guardássemos o valor com espaços supérfluos, a regra seria aceita na criação (o
+        // reader normaliza a busca) mas nunca mais bateria em AvaliadorConformidadeLegal, que
+        // compara por igualdade ordinal exata contra o código congelado da etapa.
+        PredicadoObrigatoriedade predicado = command.Predicado;
+        if (predicado is EtapaObrigatoria etapaObrigatoria)
         {
-            return Result<Guid>.Failure(TipoEtapaNaoEncontradoOuInativo(etapaObrigatoria.TipoEtapaCodigo));
+            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo.Trim();
+            if (!await TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken).ConfigureAwait(false))
+            {
+                return Result<Guid>.Failure(TipoEtapaNaoEncontradoOuInativo(codigoNormalizado));
+            }
+
+            predicado = etapaObrigatoria with { TipoEtapaCodigo = codigoNormalizado };
         }
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
@@ -61,7 +72,7 @@ public static class CriarObrigatoriedadeLegalCommandHandler
             tipoProcessoCodigo: command.TipoProcessoCodigo,
             categoria: command.Categoria,
             regraCodigo: command.RegraCodigo,
-            predicado: command.Predicado,
+            predicado: predicado,
             descricaoHumana: command.DescricaoHumana,
             baseLegal: command.BaseLegal,
             vigenciaInicio: command.VigenciaInicio,
