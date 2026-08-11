@@ -36,16 +36,44 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Globalization",
+        "CA1304:Specify CultureInfo",
+        Justification = "t.Nome.ToLower() vive dentro de uma expression tree traduzida pelo EF Core " +
+            "para SQL lower(nome) — roda no Postgres, sem CurrentCulture do processo .NET envolvida.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Globalization",
+        "CA1311:Specify a culture or use an invariant version",
+        Justification = "Mesma razão de CA1304 — chamada traduzida para SQL, não executada em CLR.")]
     public async Task<(IReadOnlyList<TermoConsentimento> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        string? busca,
         CancellationToken cancellationToken)
     {
-        // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032).
         // Sem Include de Versoes — a listagem projeta só o cabeçalho do termo.
+        IQueryable<TermoConsentimento> query = _dbContext.TermosConsentimento.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(busca))
+        {
+            // Busca por proximidade indexada via pg_trgm (issue #1105), não ILIKE:
+            // full scan por ILIKE '%termo%' não usa índice B-tree para wildcard à
+            // esquerda; word_similarity (operador <%, extensão pg_trgm) casa o
+            // termo curto contra qualquer trecho contínuo de nome e é acelerado
+            // pelo índice GIN de expressão ix_termo_consentimento_nome_trgm sobre
+            // lower(nome) (migration AdicionaBuscaTrigramTermoConsentimento).
+            // lower() nos dois lados mantém a busca caixa-insensível; sem
+            // acento-insensibilidade (fora de escopo da issue).
+            string termo = busca.Trim().ToLowerInvariant();
+            query = query.Where(t => EF.Functions.TrigramsAreWordSimilar(termo, t.Nome.ToLower()));
+        }
+
+        // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032),
+        // aplicado sobre a query JÁ FILTRADA — os EXISTS internos do helper herdam
+        // o mesmo filtro de busca.
         CursorKeysetPage<TermoConsentimento> page = await CursorKeyset
-            .ApplyAsync(_dbContext.TermosConsentimento.AsNoTracking(), afterId, limit, direction, cancellationToken)
+            .ApplyAsync(query, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);

@@ -106,6 +106,90 @@ public sealed class TermoConsentimentoEndpointTests
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
+    [Fact(DisplayName = "GET coleção ?q= filtra server-side por nome, caixa-insensível")]
+    public async Task Listar_ComBusca_FiltraServerSide()
+    {
+        string token = Guid.NewGuid().ToString("N")[..10];
+        string nomeAlvo = $"Termo Alvo {token}";
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), nomeAlvo);
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), "Termo Fora Do Filtro");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"{ColecaoPath}?q={token.ToUpperInvariant()}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        IReadOnlyList<string> nomes = await LerNomesAsync(response);
+        nomes.Should().Contain(nomeAlvo);
+        nomes.Should().NotContain(n => n.Contains("Fora Do Filtro", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "GET coleção preserva ?q= especificamente no link rel=\"next\", e a página seguinte respeita o filtro")]
+    public async Task Listar_ComBusca_PreservaQueryParamNoLinkNext()
+    {
+        string token = Guid.NewGuid().ToString("N")[..10];
+        // Duas ocorrências do token → com limit=1 há próxima página (rel=next).
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Um");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Dois");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), "Termo Fora Do Filtro");
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage primeira = await client.GetAsync(
+            new Uri($"{ColecaoPath}?q={token}&limit=1", UriKind.Relative));
+
+        primeira.StatusCode.Should().Be(HttpStatusCode.OK);
+        string? next = LerLinkRel(primeira, "next");
+        // Extrai só o link rel="next" (não a string inteira do header, que
+        // também contém rel="self") — prova que o filtro viaja especificamente
+        // no link seguido pelo cliente ao paginar, não só no link atual.
+        next.Should().NotBeNull("limit=1 com 2 itens filtrados deve emitir próxima página");
+        next.Should().Contain($"q={token}");
+
+        HttpResponseMessage segunda = await client.GetAsync(new Uri(next!, UriKind.Absolute));
+        segunda.StatusCode.Should().Be(HttpStatusCode.OK);
+        IReadOnlyList<string> nomes = await LerNomesAsync(segunda);
+        nomes.Should().OnlyContain(n => n.Contains(token, StringComparison.Ordinal),
+            "a segunda página, seguida via rel=\"next\", deve continuar restrita ao conjunto filtrado");
+    }
+
+    private static string? LerLinkRel(HttpResponseMessage response, string rel)
+    {
+        if (!response.Headers.TryGetValues("Link", out IEnumerable<string>? links))
+        {
+            return null;
+        }
+
+        string header = links.Single();
+        foreach (string parte in header.Split(", ", StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!parte.Contains($"rel=\"{rel}\"", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            int inicio = parte.IndexOf('<', StringComparison.Ordinal) + 1;
+            int fim = parte.IndexOf('>', StringComparison.Ordinal);
+            if (inicio > 0 && fim > inicio)
+            {
+                return parte[inicio..fim];
+            }
+        }
+
+        return null;
+    }
+
+    [Fact(DisplayName = "GET coleção ?q= acima do limite de tamanho retorna 400")]
+    public async Task Listar_ComBuscaMuitoLonga_Retorna400()
+    {
+        string buscaMuitoLonga = new('a', 201);
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri($"{ColecaoPath}?q={buscaMuitoLonga}", UriKind.Relative));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Fact(DisplayName = "GET coleção não inclui versoes — a listagem projeta só o resumo")]
     public async Task Listar_NaoIncluiVersoes()
     {
@@ -239,6 +323,30 @@ public sealed class TermoConsentimentoEndpointTests
         HttpResponseMessage criar = await EnviarAdmin(client, HttpMethod.Post, AdminPath, corpo);
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         return await criar.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static Task<Guid> CriarTermoComNome(HttpClient client, string nome) => CriarTermo(client, new
+    {
+        nome,
+        textoRascunho = (string?)null,
+        baseLegalRascunho = (string?)null,
+        formaAceiteRascunho = (string?)null,
+    });
+
+    private static async Task<IReadOnlyList<string>> LerNomesAsync(HttpResponseMessage response)
+    {
+        string body = await response.Content.ReadAsStringAsync();
+        using JsonDocument doc = JsonDocument.Parse(body);
+        List<string> nomes = [];
+        foreach (JsonElement item in doc.RootElement.EnumerateArray())
+        {
+            if (item.TryGetProperty("nome", out JsonElement nome) && nome.GetString() is { } valor)
+            {
+                nomes.Add(valor);
+            }
+        }
+
+        return nomes;
     }
 
     private static async Task<bool> ObterRevisado(HttpClient client, Guid id)

@@ -101,6 +101,11 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
         // default do modelo — tabelas, índices, FKs e idempotency_cache deste
         // módulo passam a ser qualificados por `configuracao`.
         modelBuilder.HasDefaultSchema(Schema);
+        // pg_trgm: busca por proximidade indexada (GIN trigram) do catálogo de
+        // termos de consentimento por nome (issue #1105) — evita ILIKE em full
+        // scan. Extensão global ao banco; o índice de expressão em si (não
+        // representável via HasIndex fluente) vive na migration.
+        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ConfiguracaoDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);

@@ -19,12 +19,15 @@ public interface ITermoConsentimentoRepository
     /// <summary>
     /// Lista termos vivos paginados por cursor keyset bidirecional (ADR-0026 +
     /// ADR-0089): ordena por <c>Id</c> (Guid v7, ADR-0032) e devolve as âncoras
-    /// de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado).
+    /// de <c>prev</c>/<c>next</c> (nulas quando não há aquele lado). O filtro de
+    /// <paramref name="busca"/>, quando informado, é aplicado ANTES do keyset —
+    /// busca e paginação descrevem o mesmo conjunto de resultados (issue #1105).
     /// </summary>
     Task<(IReadOnlyList<TermoConsentimento> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
+        string? busca,
         CancellationToken cancellationToken);
 
     Task AdicionarAsync(TermoConsentimento termo, CancellationToken cancellationToken);
