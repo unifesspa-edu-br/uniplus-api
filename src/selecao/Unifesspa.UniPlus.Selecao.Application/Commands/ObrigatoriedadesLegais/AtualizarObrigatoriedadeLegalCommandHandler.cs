@@ -55,7 +55,11 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         PredicadoObrigatoriedade predicado = command.Predicado;
         if (predicado is EtapaObrigatoria etapaObrigatoria)
         {
-            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo.Trim();
+            // Mesma defesa do Criar: TipoEtapaCodigo pode chegar null em runtime apesar do tipo
+            // non-nullable (System.Text.Json não impõe NRT; FluentValidation só valida Predicado
+            // não-nulo, não os campos do subtipo) — sem o '?.' seria NullReferenceException (500)
+            // em vez de 422 pelo reader logo abaixo.
+            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty;
             if (!await CriarObrigatoriedadeLegalCommandHandler
                     .TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken)
                     .ConfigureAwait(false))

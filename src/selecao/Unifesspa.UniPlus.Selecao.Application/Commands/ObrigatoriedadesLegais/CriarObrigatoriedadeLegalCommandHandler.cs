@@ -48,7 +48,12 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         PredicadoObrigatoriedade predicado = command.Predicado;
         if (predicado is EtapaObrigatoria etapaObrigatoria)
         {
-            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo.Trim();
+            // TipoEtapaCodigo é non-nullable só em compile-time: FluentValidation só garante
+            // Predicado não-nulo (RuleFor(x => x.Predicado).NotNull()), sem descer aos campos do
+            // subtipo polimórfico — e System.Text.Json não impõe NRT em runtime, então um
+            // payload com "tipoEtapaCodigo": null desserializa sem erro. Sem o '?.', isso seria
+            // NullReferenceException nesta linha (500) em vez de 422 pelo reader logo abaixo.
+            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty;
             if (!await TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken).ConfigureAwait(false))
             {
                 return Result<Guid>.Failure(TipoEtapaNaoEncontradoOuInativo(codigoNormalizado));
