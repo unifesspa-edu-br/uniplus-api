@@ -337,16 +337,12 @@ public sealed class TermoConsentimentoEndpointTests
     {
         string body = await response.Content.ReadAsStringAsync();
         using JsonDocument doc = JsonDocument.Parse(body);
-        List<string> nomes = [];
-        foreach (JsonElement item in doc.RootElement.EnumerateArray())
-        {
-            if (item.TryGetProperty("nome", out JsonElement nome) && nome.GetString() is { } valor)
-            {
-                nomes.Add(valor);
-            }
-        }
-
-        return nomes;
+        return
+        [
+            .. doc.RootElement.EnumerateArray()
+                .Select(item => item.TryGetProperty("nome", out JsonElement nome) ? nome.GetString() : null)
+                .OfType<string>(),
+        ];
     }
 
     private static async Task<bool> ObterRevisado(HttpClient client, Guid id)
