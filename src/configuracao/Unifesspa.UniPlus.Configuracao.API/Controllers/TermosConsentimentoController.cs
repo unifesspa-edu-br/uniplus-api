@@ -33,7 +33,7 @@ public sealed class TermosConsentimentoController : ControllerBase
     private const string ResourceTag = "termos-consentimento";
 
     /// <summary>Limite defensivo do termo de busca — igual ao <c>Nome</c> máximo da entidade.</summary>
-    private const int BuscaMaxLength = 200;
+    private const int SearchTermMaxLength = 200;
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -89,18 +89,23 @@ public sealed class TermosConsentimentoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        if (q is { Length: > BuscaMaxLength })
+        // Normaliza (trim) ANTES de checar o tamanho — um termo com espaços nas
+        // pontas que só excede 200 caracteres por causa deles não pode ser
+        // rejeitado quando o valor normalizado cabe no limite.
+        string? searchTerm = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+
+        if (searchTerm is { Length: > SearchTermMaxLength })
         {
             return BadRequest(new ProblemDetails
             {
                 Title = "Termo de busca muito longo",
-                Detail = $"O parâmetro 'q' não pode exceder {BuscaMaxLength} caracteres.",
+                Detail = $"O parâmetro 'q' não pode exceder {SearchTermMaxLength} caracteres.",
                 Status = StatusCodes.Status400BadRequest,
             });
         }
 
         ListarTermosConsentimentoResult resultado = await _queryBus
-            .Send(new ListarTermosConsentimentoQuery(page.AfterId, page.Limit, page.Direction, q), cancellationToken)
+            .Send(new ListarTermosConsentimentoQuery(page.AfterId, page.Limit, page.Direction, searchTerm), cancellationToken)
             .ConfigureAwait(false);
 
         TermoConsentimentoResumoDto[] comLinks =

@@ -15,10 +15,10 @@ public static class ListarTermosConsentimentoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
 
-        string? busca = string.IsNullOrWhiteSpace(query.Busca) ? null : query.Busca;
+        string? searchTerm = string.IsNullOrWhiteSpace(query.SearchTerm) ? null : query.SearchTerm;
 
         (IReadOnlyList<TermoConsentimento> itens, Guid? anteriorAfterId, Guid? proximoAfterId) = await repository
-            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, busca, cancellationToken)
+            .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, searchTerm, cancellationToken)
             .ConfigureAwait(false);
 
         TermoConsentimentoResumoDto[] items = [.. itens.Select(t => t.ToResumoDto())];
