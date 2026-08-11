@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
+using System.Text;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
@@ -80,7 +82,12 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
             return Falha(TipoEtapaErrorCodes.CodigoObrigatorio, "Código do tipo de etapa é obrigatório.");
         }
 
-        string codigoNormalizado = codigo.Trim();
+        // NFC além do Trim: sem normalizar aqui, duas grafias Unicode do mesmo texto (forma
+        // composta e decomposta) cadastrariam como códigos DIFERENTES — o índice único do banco
+        // é ordinal/binário, então as duas colidiriam com a checagem de duplicidade e, pior,
+        // um lookup por código (TipoEtapaReader) feito com a outra forma nunca encontraria este
+        // registro, mesmo sendo textualmente "o mesmo" código.
+        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
         if (codigoNormalizado.Contains(CaractereNulo))
         {
             return Falha(TipoEtapaErrorCodes.CodigoComCaractereNulo,
@@ -98,7 +105,7 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
             return Falha(TipoEtapaErrorCodes.NomeObrigatorio, "Nome do tipo de etapa é obrigatório.");
         }
 
-        string nomeNormalizado = nome.Trim();
+        string nomeNormalizado = nome.Trim().Normalize(NormalizationForm.FormC);
         if (nomeNormalizado.Contains(CaractereNulo))
         {
             return Falha(TipoEtapaErrorCodes.NomeComCaractereNulo,
@@ -128,7 +135,7 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     }
 
     private static string? NormalizarOpcional(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim().Normalize(NormalizationForm.FormC);
 
     private static Result<Campos> Falha(string code, string message) =>
         Result<Campos>.Failure(new DomainError(code, message));

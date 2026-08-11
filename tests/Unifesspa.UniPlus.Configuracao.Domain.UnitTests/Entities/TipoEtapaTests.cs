@@ -18,6 +18,29 @@ public sealed class TipoEtapaTests
         result.Value.Codigo.Should().Be("NOVO_TIPO");
     }
 
+    [Fact(DisplayName = "Criar normaliza codigo, nome e descricao para NFC")]
+    public void Criar_ComFormaDecomposta_NormalizaParaNfc()
+    {
+        // Mesmo texto em duas representacoes Unicode: NFC (um unico code point por letra
+        // acentuada, aqui \u00C7 e \u00C3) e NFD (letra base + combining mark) - bytes
+        // diferentes, mesmo significado. Escapes em vez de literal acentuado no fonte, para o
+        // teste nao depender de qual normalizacao o editor/terminal aplicaria ao salvar o
+        // arquivo. Sem normalizar, duas grafias do "mesmo" codigo colidiriam com o indice unico
+        // do banco só por coincidencia de bytes, e um lookup por codigo (TipoEtapaReader) feito
+        // com a outra forma nunca encontraria o registro.
+        const string codigoComposto = "BANCA_HETEROIDENTIFICA\u00C7\u00C3O";
+        const string nomeComposto = "Banca de Heteroidentifica\u00E7\u00E3o";
+        string codigoDecomposto = codigoComposto.Normalize(System.Text.NormalizationForm.FormD);
+        string nomeDecomposto = nomeComposto.Normalize(System.Text.NormalizationForm.FormD);
+        codigoDecomposto.Should().NotBe(codigoComposto, "pre-condicao do teste: as duas formas tem bytes diferentes");
+
+        Result<TipoEtapa> result = TipoEtapa.Criar(codigoDecomposto, nomeDecomposto, null);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Codigo.Should().Be(codigoComposto);
+        result.Value.Nome.Should().Be(nomeComposto);
+    }
+
     [Theory(DisplayName = "Recusa U+0000 em todos os campos textuais na criação")]
     [InlineData("codigo", TipoEtapaErrorCodes.CodigoComCaractereNulo)]
     [InlineData("nome", TipoEtapaErrorCodes.NomeComCaractereNulo)]
