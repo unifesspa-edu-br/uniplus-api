@@ -140,8 +140,8 @@ public sealed class TermoConsentimentoFiltroListagemTests
     {
         Guid id = await SeedAsync($"Termo {NovoToken()}");
 
-        IReadOnlyList<Guid> semFiltro = await ListarIdsAsync(busca: null, TakeAlto);
-        IReadOnlyList<Guid> filtroVazio = await ListarIdsAsync(busca: "   ", TakeAlto);
+        IReadOnlyList<Guid> semFiltro = await ListarIdsAsync(searchTerm: null, TakeAlto);
+        IReadOnlyList<Guid> filtroVazio = await ListarIdsAsync(searchTerm: "   ", TakeAlto);
 
         semFiltro.Should().Contain(id);
         filtroVazio.Should().Contain(id);
@@ -160,19 +160,19 @@ public sealed class TermoConsentimentoFiltroListagemTests
     }
 
     private async Task<(IReadOnlyList<TermoConsentimento> Itens, Guid? Anterior, Guid? Proximo)> PaginarAsync(
-        string? busca,
+        string? searchTerm,
         int take,
         Guid? afterId,
         PaginationDirection direction = PaginationDirection.Next)
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
         TermoConsentimentoRepository repository = new(ctx);
-        return await repository.ListarPaginadoAsync(afterId, take, direction, busca, CancellationToken.None);
+        return await repository.ListarPaginadoAsync(afterId, take, direction, searchTerm, CancellationToken.None);
     }
 
-    private async Task<IReadOnlyList<Guid>> ListarIdsAsync(string? busca, int take = TakeAlto)
+    private async Task<IReadOnlyList<Guid>> ListarIdsAsync(string? searchTerm, int take = TakeAlto)
     {
-        (IReadOnlyList<TermoConsentimento> itens, _, _) = await PaginarAsync(busca, take, afterId: null);
+        (IReadOnlyList<TermoConsentimento> itens, _, _) = await PaginarAsync(searchTerm, take, afterId: null);
         return [.. itens.Select(t => t.Id)];
     }
 

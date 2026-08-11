@@ -49,13 +49,13 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
         Guid? afterId,
         int limit,
         PaginationDirection direction,
-        string? busca,
+        string? searchTerm,
         CancellationToken cancellationToken)
     {
         // Sem Include de Versoes — a listagem projeta só o cabeçalho do termo.
         IQueryable<TermoConsentimento> query = _dbContext.TermosConsentimento.AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(busca))
+        if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             // Busca por proximidade indexada via pg_trgm (issue #1105), não ILIKE:
             // full scan por ILIKE '%termo%' não usa índice B-tree para wildcard à
@@ -65,8 +65,8 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
             // lower(nome) (migration AdicionaBuscaTrigramTermoConsentimento).
             // lower() nos dois lados mantém a busca caixa-insensível; sem
             // acento-insensibilidade (fora de escopo da issue).
-            string termo = busca.Trim().ToLowerInvariant();
-            query = query.Where(t => EF.Functions.TrigramsAreWordSimilar(termo, t.Nome.ToLower()));
+            string term = searchTerm.Trim().ToLowerInvariant();
+            query = query.Where(t => EF.Functions.TrigramsAreWordSimilar(term, t.Nome.ToLower()));
         }
 
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032),
