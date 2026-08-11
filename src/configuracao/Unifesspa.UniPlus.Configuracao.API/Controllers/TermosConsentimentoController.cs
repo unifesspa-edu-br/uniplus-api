@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
@@ -31,6 +32,9 @@ public sealed class TermosConsentimentoController : ControllerBase
 {
     private const string ResourceTag = "termos-consentimento";
 
+    /// <summary>Limite defensivo do termo de busca — igual ao <c>Nome</c> máximo da entidade.</summary>
+    private const int BuscaMaxLength = 200;
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -54,8 +58,19 @@ public sealed class TermosConsentimentoController : ControllerBase
     /// <summary>
     /// Lista os termos de consentimento vivos, paginados por cursor opaco
     /// bidirecional (ADR-0026 + ADR-0089). Não inclui as versões promovidas —
-    /// use <see cref="ObterPorId"/> para o termo completo.
+    /// use <see cref="ObterPorId"/> para o termo completo. Aceita filtro
+    /// opcional de busca por nome (issue #1105); o cliente reanexa o filtro a
+    /// cada página ao seguir o <c>cursor</c> do header <c>Link</c> — que já o
+    /// preserva automaticamente.
     /// </summary>
+    /// <param name="page">Cursor decodificado (<c>cursor</c>/<c>limit</c>/<c>direction</c> da wire).</param>
+    /// <param name="q">
+    /// Termo de busca livre (caixa-insensível) sobre o <c>Nome</c> do termo;
+    /// ausente/vazio = sem filtro. Trocar o termo entre páginas de uma mesma
+    /// navegação produz resultados inconsistentes — o cursor não vincula o
+    /// filtro (ADR-0026), então mantenha <c>q</c> fixo ao seguir prev/next.
+    /// </param>
+    /// <param name="cancellationToken">Token de cancelamento da requisição.</param>
     [HttpGet("termos-consentimento")]
     [AllowAnonymous]
     [VendorMediaType(Resource = "termo-consentimento", Versions = [1])]
@@ -66,12 +81,26 @@ public sealed class TermosConsentimentoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
+        [FromQuery(Name = "q")] [Description(
+            "Termo de busca livre (caixa-insensível) sobre o Nome do termo de consentimento; " +
+            "ausente/vazio = sem filtro. Mantenha fixo ao navegar prev/next (o cursor não vincula o filtro).")]
+        string? q,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
+        if (q is { Length: > BuscaMaxLength })
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Termo de busca muito longo",
+                Detail = $"O parâmetro 'q' não pode exceder {BuscaMaxLength} caracteres.",
+                Status = StatusCodes.Status400BadRequest,
+            });
+        }
+
         ListarTermosConsentimentoResult resultado = await _queryBus
-            .Send(new ListarTermosConsentimentoQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarTermosConsentimentoQuery(page.AfterId, page.Limit, page.Direction, q), cancellationToken)
             .ConfigureAwait(false);
 
         TermoConsentimentoResumoDto[] comLinks =
