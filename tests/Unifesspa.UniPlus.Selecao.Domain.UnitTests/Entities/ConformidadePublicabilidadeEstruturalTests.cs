@@ -613,6 +613,49 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 
+    private static OfertaAtendimentoEspecializado OfertaComCondicaoPcd() => OfertaAtendimentoEspecializado.Criar(
+        [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+        [],
+        []).Value!;
+
+    [Fact(DisplayName = "Pré-canonicalização: fato coletável CONDICAO_ATENDIMENTO sem nenhuma condição ofertada — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados (cenário da issue)")]
+    public void PreCanon_FatoColetadoCondicaoAtendimentoSemValoresOfertados()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        // ProcessoConforme já oferta atendimento vazio (sem condições) — só falta o fato coletável.
+        FatoColetado fato = FatoColetado.Criar(
+            "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
+            TipoRenderizacao.SelecaoMultipla, obrigatorio: false, precondicoes: null).Value!;
+        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
+            .Which.Item.Should().Be("Fato coletável de escopo do processo: oferta declara ao menos um valor");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+    }
+
+    [Fact(DisplayName = "Pré-canonicalização: fato coletável TIPO_DEFICIENCIA sem nenhum tipo ofertado — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados")]
+    public void PreCanon_FatoColetadoTipoDeficienciaSemValoresOfertados()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        // Condição PcD ofertada (pré-requisito da ADR-0067), mas nenhum TipoDeficiencia —
+        // só o fato de tipo de deficiência fica sem valor para oferecer ao candidato.
+        processo.DefinirOfertaAtendimento(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FatoColetado fato = FatoColetado.Criar(
+            "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
+            TipoRenderizacao.SelecaoUnica, obrigatorio: false, precondicoes: null).Value!;
+        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
+            .Which.Item.Should().Be("Fato coletável de escopo do processo: oferta declara ao menos um valor");
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+    }
+
     [Fact(DisplayName = "Pré-canonicalização: MODALIDADE contribui código fora do domínio ofertado — item vermelho e Publicar recusa com RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio")]
     public void PreCanon_ModalidadeContribuiForaDoDominio()
     {
@@ -731,6 +774,41 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         {
             checklist.Should().Contain(i => i.Item == item && i.Ok, $"cascata não se aplica — \"{item}\" não pode ficar vermelho");
         }
+    }
+
+    [Fact(DisplayName = "Contraprova: fato coletável CONDICAO_ATENDIMENTO com condição ofertada mantém o item Ok")]
+    public void Contraprova_FatoColetadoCondicaoAtendimentoComOferta_ChecklistVerde()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        processo.DefinirOfertaAtendimento(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FatoColetado fato = FatoColetado.Criar(
+            "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
+            TipoRenderizacao.SelecaoMultipla, obrigatorio: false, precondicoes: null).Value!;
+        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Should().Contain(
+            i => i.Item == "Fato coletável de escopo do processo: oferta declara ao menos um valor" && i.Ok);
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Contraprova: fato coletável renderizado como Booleano não aciona o gate, mesmo sem oferta correspondente")]
+    public void Contraprova_FatoColetadoBooleano_NaoAcionaGate()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        // Mesmo código de fato do gate, mas TipoRenderizacao fora de {SelecaoUnica, SelecaoMultipla}
+        // — o gate só se aplica a campo com opções, que é o que fica vazio sem oferta.
+        FatoColetado fato = FatoColetado.Criar(
+            "CONDICAO_ATENDIMENTO", 0, "Possui alguma condição de atendimento?",
+            TipoRenderizacao.Booleano, obrigatorio: false, precondicoes: null).Value!;
+        processo.DefinirFatosColetados([fato], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.AvaliarConformidade().Should().Contain(
+            i => i.Item == "Fato coletável de escopo do processo: oferta declara ao menos um valor" && i.Ok);
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     [Fact(DisplayName = "Contraprova: ausência de gatilho por FAIXA_ETARIA mantém os quatro itens de referência temporal Ok, mesmo com outras exigências configuradas")]
