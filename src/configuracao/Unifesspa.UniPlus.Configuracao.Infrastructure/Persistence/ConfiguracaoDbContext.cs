@@ -54,6 +54,9 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     /// <summary>Catálogo configurável de tipos de processo seletivo (UNI-REQ-0098).</summary>
     public DbSet<TipoProcesso> TiposProcesso => Set<TipoProcesso>();
 
+    /// <summary>Catálogo configurável de tipos de etapa (UNI-REQ-0015, UNI-REQ-0087).</summary>
+    public DbSet<TipoEtapa> TiposEtapa => Set<TipoEtapa>();
+
     public DbSet<Curso> Cursos => Set<Curso>();
 
     public DbSet<OfertaCurso> OfertasCurso => Set<OfertaCurso>();

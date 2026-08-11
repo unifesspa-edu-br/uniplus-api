@@ -1,0 +1,36 @@
+namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
+
+using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
+
+public static class DesativarTipoEtapaCommandHandler
+{
+    public static async Task<Result> Handle(
+        DesativarTipoEtapaCommand command,
+        ITipoEtapaRepository repository,
+        IConfiguracaoUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        TipoEtapa? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (tipo is null)
+        {
+            return Result.Failure(new DomainError(TipoEtapaErrorCodes.NaoEncontrado, "Tipo de etapa não encontrado."));
+        }
+
+        Result desativar = tipo.Desativar();
+        if (desativar.IsFailure)
+        {
+            return desativar;
+        }
+
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
+    }
+}
