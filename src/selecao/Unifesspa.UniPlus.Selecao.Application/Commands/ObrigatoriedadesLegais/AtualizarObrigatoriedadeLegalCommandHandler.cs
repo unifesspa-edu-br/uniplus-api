@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
+using System.Text;
+
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -58,8 +60,11 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
             // Mesma defesa do Criar: TipoEtapaCodigo pode chegar null em runtime apesar do tipo
             // non-nullable (System.Text.Json não impõe NRT; FluentValidation só valida Predicado
             // não-nulo, não os campos do subtipo) — sem o '?.' seria NullReferenceException (500)
-            // em vez de 422 pelo reader logo abaixo.
-            string codigoNormalizado = etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty;
+            // em vez de 422 pelo reader logo abaixo. NFC pelo mesmo motivo do Criar: o código
+            // congelado da etapa (TipoEtapaSnapshot) é normalizado em NFC — sem normalizar aqui
+            // também, forma decomposta aprovaria a existência mas nunca bateria ordinalmente.
+            string codigoNormalizado = (etapaObrigatoria.TipoEtapaCodigo?.Trim() ?? string.Empty)
+                .Normalize(NormalizationForm.FormC);
             if (!await CriarObrigatoriedadeLegalCommandHandler
                     .TipoEtapaEhAtivoAsync(codigoNormalizado, tipoEtapaReader, cancellationToken)
                     .ConfigureAwait(false))
