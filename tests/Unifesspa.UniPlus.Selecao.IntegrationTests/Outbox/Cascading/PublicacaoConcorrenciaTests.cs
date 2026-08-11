@@ -59,9 +59,15 @@ public sealed class PublicacaoConcorrenciaTests
             documentoId = documento.Id;
         }
 
+        // origemId real do seed determinístico de TipoEtapa (CriaCadastroTiposEtapa) — este
+        // teste passa pelo bus real, então ITipoEtapaReader resolve contra o Postgres do
+        // Testcontainers, não um mock.
         var definirEtapasCommand = new DefinirEtapasCommand(
             processoId,
-            [new EtapaProcessoInput("Prova Discursiva (revisada)", CaraterEtapa.Classificatoria, Peso: 1m, NotaMinima: null, Ordem: 1)], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput(
+                "Prova Discursiva (revisada)", CaraterEtapa.Classificatoria,
+                TipoEtapaOrigemId: new Guid("019fee1e-7000-7000-8000-000000000001"),
+                Peso: 1m, NotaMinima: null, Ordem: 1)], PrecondicaoIfMatch.Ausente);
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,

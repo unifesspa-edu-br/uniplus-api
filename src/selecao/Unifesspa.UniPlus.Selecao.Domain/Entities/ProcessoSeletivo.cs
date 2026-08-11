@@ -3254,6 +3254,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 viva.AtualizarDados(
                     congelada.Nome,
                     congelada.Carater,
+                    congelada.TipoEtapa,
                     congelada.Peso,
                     congelada.NotaMinima,
                     congelada.Ordem);

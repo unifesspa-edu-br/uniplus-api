@@ -35,6 +35,12 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
                 .MaximumLength(300)
                 .WithMessage("Nome da etapa deve ter no máximo 300 caracteres.");
 
+            // Issue #1071: toda etapa declara o tipo de origem — sem produção em
+            // nenhum ambiente, não há transição com tipo opcional.
+            etapa.RuleFor(e => e.TipoEtapaOrigemId)
+                .NotEmpty()
+                .WithMessage("TipoEtapaOrigemId é obrigatório.");
+
             etapa.RuleFor(e => e.Carater)
                 .NotEqual(CaraterEtapa.Nenhum)
                 .WithMessage("Caráter da etapa é obrigatório.")

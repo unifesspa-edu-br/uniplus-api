@@ -6376,6 +6376,7 @@
           "id",
           "nome",
           "carater",
+          "tipoEtapa",
           "peso",
           "notaMinima",
           "ordem"
@@ -6391,6 +6392,9 @@
           },
           "carater": {
             "type": "string"
+          },
+          "tipoEtapa": {
+            "$ref": "#/components/schemas/TipoEtapaSnapshotDto"
           },
           "peso": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
@@ -6425,6 +6429,7 @@
         "required": [
           "nome",
           "carater",
+          "tipoEtapaOrigemId",
           "peso",
           "notaMinima",
           "ordem"
@@ -6436,6 +6441,10 @@
           },
           "carater": {
             "$ref": "#/components/schemas/CaraterEtapa"
+          },
+          "tipoEtapaOrigemId": {
+            "type": "string",
+            "format": "uuid"
           },
           "peso": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
@@ -8520,6 +8529,26 @@
           },
           "configuracao": {
             "$ref": "#/components/schemas/JsonNode"
+          }
+        }
+      },
+      "TipoEtapaSnapshotDto": {
+        "required": [
+          "origemId",
+          "codigo",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "origemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
           }
         }
       },

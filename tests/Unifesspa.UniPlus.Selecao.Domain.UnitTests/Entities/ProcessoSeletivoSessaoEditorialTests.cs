@@ -40,7 +40,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ForcarStatus(processo, status);
 
         Result resultado = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Nova etapa", CaraterEtapa.Classificatoria, peso: 2m, ordem: 1)],
+            [EtapaProcesso.Criar("Nova etapa", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 2m, ordem: 1)],
             PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue(
@@ -325,8 +325,8 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         // por isso a contraprova de recusa de negócio migrou para ordem duplicada.)
         Result resultado = processo.DefinirEtapas(
             [
-                EtapaProcesso.Criar("Prova A", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
-                EtapaProcesso.Criar("Prova B", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+                EtapaProcesso.Criar("Prova A", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1),
+                EtapaProcesso.Criar("Prova B", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1),
             ],
             PrecondicaoIfMatch.DeTags([rascunho.ETag]));
 
@@ -578,7 +578,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1),
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(

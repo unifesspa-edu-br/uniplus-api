@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Etapa <em>pontuada</em> do <see cref="ProcessoSeletivo"/> (peso, caráter e
@@ -24,6 +25,15 @@ public sealed class EtapaProcesso : EntityBase
     public Guid ProcessoSeletivoId { get; private set; }
     public string Nome { get; private set; } = string.Empty;
     public CaraterEtapa Carater { get; private set; }
+
+    /// <summary>
+    /// Cópia por valor do tipo de etapa resolvido em Configuração (ADR-0061). Fonte
+    /// estável de identidade para avaliação de conformidade legal — o rótulo editorial
+    /// (<see cref="Nome"/>) pode divergir do nome do tipo e não participa da avaliação.
+    /// </summary>
+    public TipoEtapaSnapshot TipoEtapa { get; private set; } = null!;
+
+    public Guid TipoEtapaOrigemId => TipoEtapa.OrigemId;
     public decimal? Peso { get; private set; }
     public decimal? NotaMinima { get; private set; }
     public int? Ordem { get; private set; }
@@ -33,11 +43,13 @@ public sealed class EtapaProcesso : EntityBase
     public static EtapaProcesso Criar(
         string nome,
         CaraterEtapa carater,
+        TipoEtapaSnapshot tipoEtapa,
         decimal? peso = null,
         decimal? notaMinima = null,
         int? ordem = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+        ArgumentNullException.ThrowIfNull(tipoEtapa);
         if (carater == CaraterEtapa.Nenhum)
         {
             throw new ArgumentException(
@@ -49,6 +61,7 @@ public sealed class EtapaProcesso : EntityBase
         {
             Nome = nome.Trim(),
             Carater = carater,
+            TipoEtapa = tipoEtapa,
             Peso = peso,
             NotaMinima = notaMinima,
             Ordem = ordem,
@@ -81,11 +94,13 @@ public sealed class EtapaProcesso : EntityBase
         Guid id,
         string nome,
         CaraterEtapa carater,
+        TipoEtapaSnapshot tipoEtapa,
         decimal? peso,
         decimal? notaMinima,
         int? ordem)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+        ArgumentNullException.ThrowIfNull(tipoEtapa);
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A etapa reidratada deve declarar o Id congelado no envelope.", nameof(id));
@@ -103,6 +118,7 @@ public sealed class EtapaProcesso : EntityBase
             Id = id,
             Nome = nome.Trim(),
             Carater = carater,
+            TipoEtapa = tipoEtapa,
             Peso = peso,
             NotaMinima = notaMinima,
             Ordem = ordem,
@@ -127,11 +143,13 @@ public sealed class EtapaProcesso : EntityBase
     public void AtualizarDados(
         string nome,
         CaraterEtapa carater,
+        TipoEtapaSnapshot tipoEtapa,
         decimal? peso,
         decimal? notaMinima,
         int? ordem)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+        ArgumentNullException.ThrowIfNull(tipoEtapa);
         if (carater == CaraterEtapa.Nenhum)
         {
             throw new ArgumentException(
@@ -141,6 +159,7 @@ public sealed class EtapaProcesso : EntityBase
 
         Nome = nome.Trim();
         Carater = carater;
+        TipoEtapa = tipoEtapa;
         Peso = peso;
         NotaMinima = notaMinima;
         Ordem = ordem;

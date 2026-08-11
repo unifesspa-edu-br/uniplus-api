@@ -210,6 +210,20 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraNome, "LimitesDoEnvelope.UnidadeAdministradoraNome espelha a coluna de Nome");
         unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Tipo))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraTipo, "LimitesDoEnvelope.UnidadeAdministradoraTipo espelha a coluna de Tipo");
+
+        // Issue #1071 — snapshot de tipo de etapa (tipoEtapa aninhado em cada item de etapas).
+        // Diferente do bloco de topo tipoProcesso (só forma, nunca reidratado), este valor É
+        // persistido ao restaurar uma versão — por isso precisa da mesma disciplina de limite.
+        IEntityType tipoEtapa = contexto.Model
+            .FindEntityType(typeof(EtapaProcesso))!
+            .GetNavigations()
+            .Single(n => n.Name == nameof(EtapaProcesso.TipoEtapa))
+            .TargetEntityType;
+
+        tipoEtapa.FindProperty(nameof(TipoEtapaSnapshot.Codigo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.TipoEtapaCodigo, "LimitesDoEnvelope.TipoEtapaCodigo espelha a coluna tipo_etapa_codigo");
+        tipoEtapa.FindProperty(nameof(TipoEtapaSnapshot.Nome))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.TipoEtapaNome, "LimitesDoEnvelope.TipoEtapaNome espelha a coluna tipo_etapa_nome");
     }
 
     /// <summary>
@@ -232,6 +246,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             // Exercidas em OwnedTypes_BatemComOSchema.
             "RegraCodigo", "RegraVersao", "CensoReferencia", "PrecisaoPercentual", "PrecisaoPrazo",
             "UnidadeAdministradoraSigla", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
+            "TipoEtapaCodigo", "TipoEtapaNome",
 
             // NumeroDoAto não é coluna do agregado — os DadosEdital são do ato, não da
             // configuração. O limite vem dos validators de publicar e de retificar (60), e é

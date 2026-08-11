@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Wolverine.Attributes;
 
@@ -21,12 +22,14 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         AtualizarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
         ITipoProcessoReader tipoProcessoReader,
+        ITipoEtapaReader tipoEtapaReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
+        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         ObrigatoriedadeLegal? regra = await repository
@@ -44,6 +47,14 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
                 .ConfigureAwait(false))
         {
             return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
+        }
+
+        if (command.Predicado is EtapaObrigatoria etapaObrigatoria
+            && !await CriarObrigatoriedadeLegalCommandHandler
+                .TipoEtapaEhAtivoAsync(etapaObrigatoria.TipoEtapaCodigo, tipoEtapaReader, cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoEtapaNaoEncontradoOuInativo(etapaObrigatoria.TipoEtapaCodigo));
         }
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(

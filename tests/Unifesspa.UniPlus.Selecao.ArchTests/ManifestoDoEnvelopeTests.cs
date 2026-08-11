@@ -41,10 +41,11 @@ public sealed class ManifestoDoEnvelopeTests
     private static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Manifesto = new()
     {
         [typeof(EtapaProcesso)] = (
-            ["Nome", "Carater", "Peso", "NotaMinima", "Ordem"],
+            ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "Ordem"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("ComponeNota", "Derivada de Carater + Peso — congelá-la duplicaria a fonte de verdade."),
+                ("TipoEtapaOrigemId", "Derivada de TipoEtapa.OrigemId (issue #1071) — congelá-la duplicaria a fonte de verdade."),
             ]),
 
         [typeof(OfertaAtendimentoEspecializado)] = (
@@ -128,6 +129,12 @@ public sealed class ManifestoDoEnvelopeTests
 
         [typeof(ReferenciaRegra)] = (
             ["Codigo", "Versao", "Hash"],
+            []),
+
+        // Issue #1071 — snapshot de tipo de etapa, mesmo padrão de cópia por valor de
+        // ReferenciaRegra acima.
+        [typeof(TipoEtapaSnapshot)] = (
+            ["OrigemId", "Codigo", "Nome"],
             []),
 
         [typeof(ReferenciaReservaDemograficaSnapshot)] = (

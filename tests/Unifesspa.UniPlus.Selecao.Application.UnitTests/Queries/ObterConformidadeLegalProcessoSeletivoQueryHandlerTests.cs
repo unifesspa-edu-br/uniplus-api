@@ -38,11 +38,11 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)],
+            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1)],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA-APROVA", new EtapaObrigatoria("Prova Objetiva"));
-        ObrigatoriedadeLegal regraReprovada = NovaRegra("CONSULTA-REPROVA", new EtapaObrigatoria("Entrevista"));
+        ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+        ObrigatoriedadeLegal regraReprovada = NovaRegra("CONSULTA-REPROVA", new EtapaObrigatoria("ENTREVISTA"));
         DateOnly dataDeCorte = new(2026, 1, 1);
 
         IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
@@ -65,7 +65,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
 
         RegraAvaliadaDto reprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-REPROVA");
         reprovadaNaConsulta.Aprovada.Should().BeFalse();
-        reprovadaNaConsulta.Motivo.Should().Contain("Entrevista",
+        reprovadaNaConsulta.Motivo.Should().Contain("ENTREVISTA",
             "a consulta pública tem de expor o motivo nomeado (CA-02), não projetar Motivo: null");
         RegraAvaliadaDto aprovadaNaConsulta = dto.Regras.Single(r => r.RegraCodigo == "CONSULTA-APROVA");
         aprovadaNaConsulta.Aprovada.Should().BeTrue();

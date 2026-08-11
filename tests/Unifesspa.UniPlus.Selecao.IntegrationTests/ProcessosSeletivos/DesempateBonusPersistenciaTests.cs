@@ -40,7 +40,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     public async Task PersisteERecarrega_DesempateEBonus()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
-        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1);
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         CriterioDesempate maiorNotaEtapa = CriterioDesempate.Criar(
@@ -102,7 +102,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     public async Task ReconfigurarDesempateBonusSobreAgregadoTracked_InsereFilhos()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026 — Reconfig", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1)], PrecondicaoIfMatch.Ausente);
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirBonusRegional(
@@ -150,7 +150,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     public async Task AtualizarEtapaMesmoId_MantemDesempateReferenciado()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
-        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1);
+        EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1);
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!], PrecondicaoIfMatch.Ausente);
@@ -172,7 +172,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             // mesma instância tracked em vez de recriá-la — sem isso, o
             // etapa_ref do desempate ficaria órfão a cada PUT /etapas.
             EtapaProcesso etapaTracked = carregado.Etapas.Single();
-            etapaTracked.AtualizarDados("Redação (revisada)", CaraterEtapa.Classificatoria, 2m, null, 1);
+            etapaTracked.AtualizarDados("Redação (revisada)", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 2m, null, 1);
 
             Result result = carregado.DefinirEtapas([etapaTracked], PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();

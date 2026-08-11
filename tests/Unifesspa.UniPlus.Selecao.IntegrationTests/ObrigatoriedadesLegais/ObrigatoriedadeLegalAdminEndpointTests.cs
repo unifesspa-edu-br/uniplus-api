@@ -41,7 +41,9 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     private static readonly Dictionary<string, object> PredicadoEtapaProvaObjetiva = new(StringComparer.Ordinal)
     {
         ["$tipo"] = "etapaObrigatoria",
-        ["tipoEtapaCodigo"] = "ProvaObjetiva",
+        // Código de um tipo de etapa ativo e semeado (CriaCadastroTiposEtapa, issue #1071) —
+        // este teste passa pelo endpoint real, então o handler valida contra o cadastro.
+        ["tipoEtapaCodigo"] = "PROVA_OBJETIVA",
     };
 
     private readonly CascadingFixture _fixture;

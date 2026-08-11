@@ -71,6 +71,20 @@ internal static class CorpusEnvelope
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
     /// <summary>
+    /// Snapshots de tipo de etapa fixos (issue #1071) — mesmos <c>origemId</c> semeados no
+    /// cadastro real de Configuração (<c>CriaCadastroTiposEtapa</c>), por legibilidade; o
+    /// decoder/round-trip nunca consulta o cadastro, então a coincidência não é requisito.
+    /// </summary>
+    internal static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva").Value!;
+
+    internal static TipoEtapaSnapshot TipoEtapaRedacao() =>
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000002"), "REDACAO", "Redação").Value!;
+
+    internal static TipoEtapaSnapshot TipoEtapaEntrevista() =>
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista").Value!;
+
+    /// <summary>
     /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo (Story
     /// #928, §7.5): o mesmo conjunto de itens, apresentado ao agregado em ordem física
     /// inversa, tem de produzir bytes canônicos idênticos — a projeção ordena tudo por
@@ -99,7 +113,7 @@ internal static class CorpusEnvelope
     /// <param name="permutar">Inverte a ordem de ENTRADA das coleções não ordenadas — nunca o conteúdo.</param>
     /// <param name="comArvoreSatisfacao">
     /// Opt-in: acrescenta a árvore de satisfação de documentos exigidos (<see cref="ArvoreSatisfacaoRica"/>).
-    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.7-rico.json</c>) e os testes de
+    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.8-rico.json</c>) e os testes de
     /// round-trip congelam a forma de HOJE do corpus rico — sem árvore, <c>documentosExigidos.exigencias</c>
     /// e <c>arvoreSatisfacao</c> vazios. Populá-la incondicionalmente mudaria os bytes desse envelope de
     /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
@@ -116,9 +130,9 @@ internal static class CorpusEnvelope
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas(Ordem([
-            EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),
-            EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, peso: 2.2500m, notaMinima: null, ordem: 2),
-            EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, peso: null, notaMinima: 60.0000m, ordem: 3),
+            EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),
+            EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2),
+            EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3),
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
@@ -629,6 +643,7 @@ internal static class CorpusEnvelope
                 primeira.Id,
                 "Etapa Descaracterizada",
                 CaraterEtapa.Classificatoria,
+                TipoEtapaProvaObjetiva(),
                 peso: 9.9999m,
                 notaMinima: null,
                 ordem: 7)],
@@ -653,7 +668,7 @@ internal static class CorpusEnvelope
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
     internal static GrafoConfiguracao GrafoPobre(int variante = 0) => new(
-        etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, 1.0000m, null, 1)],
+        etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), 1.0000m, null, 1)],
         ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [DistribuicaoInstitucional()],
         bonusRegional: null,

@@ -33,6 +33,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ObrigatoriedadeLegal.HashColisao", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.obrigatoriedade_legal.hash_colisao", "Colisão de hash de regra ativa")),
         new("ObrigatoriedadeLegal.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.obrigatoriedade_legal.nao_encontrada", "ObrigatoriedadeLegal não encontrada")),
         new("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo", "Tipo de processo seletivo não encontrado ou não está ativo")),
+        new("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_etapa_nao_encontrado_ou_inativo", "Tipo de etapa não encontrado ou não está ativo")),
         // Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015) — F0.
         // Invariantes do agregado-raiz nesta fatia: etapas e atendimento
         // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram
@@ -523,6 +524,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // Unidade administradora do Processo Seletivo (issue #849, CA-04 da Feature #40).
         new("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada", "Unidade administradora não encontrada ou não está mais viva")),
         new("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_processo_nao_encontrado_ou_inativo", "Tipo de processo seletivo não encontrado ou não está ativo")),
+        new("ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.tipo_etapa_nao_encontrado_ou_inativo", "Tipo de etapa não encontrado ou não está ativo")),
         new("UnidadeAdministradoraSnapshot.SiglaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.sigla_obrigatoria", "Sigla da unidade administradora é obrigatória")),
         new("UnidadeAdministradoraSnapshot.SlugObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.slug_obrigatorio", "Slug da unidade administradora é obrigatório")),
         new("UnidadeAdministradoraSnapshot.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.nome_obrigatorio", "Nome da unidade administradora é obrigatório")),

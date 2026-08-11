@@ -55,13 +55,12 @@ public abstract record PredicadoObrigatoriedade
 }
 
 /// <summary>
-/// Regra: o edital DEVE incluir uma etapa cujo código corresponde a
-/// <paramref name="TipoEtapaCodigo"/>. Em V1, o "código" é comparado
-/// contra a propriedade <c>Etapa.Nome</c> do agregado (ordinal,
-/// case-insensitive). Quando #455 promover <c>TipoEtapa</c> para entidade
-/// com <c>Codigo</c> próprio, a projeção
-/// <c>EditalConformidadeView.CodigosTiposEtapaPresentes</c> passa a usar
-/// esse <c>Codigo</c> — a regra em si não muda.
+/// Regra: o processo DEVE incluir uma etapa cujo tipo congelado
+/// (<c>EtapaProcesso.TipoEtapa.Codigo</c>) corresponde a
+/// <paramref name="TipoEtapaCodigo"/> — comparação ordinal contra a cópia
+/// por valor do cadastro de Configuração (ADR-0061), nunca contra o rótulo
+/// editorial <c>EtapaProcesso.Nome</c>, que pode divergir livremente do
+/// tipo sem afetar a conformidade.
 /// </summary>
 public sealed record EtapaObrigatoria(string TipoEtapaCodigo) : PredicadoObrigatoriedade;
 

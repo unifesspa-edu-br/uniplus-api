@@ -16,9 +16,15 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// referenciar (<c>etapa_ref</c>). Omitido (ou sem correspondência), o
 /// handler cria uma etapa nova.
 /// </summary>
+/// <param name="TipoEtapaOrigemId">
+/// Id do tipo de etapa ativo em Configuração (issue #1071). Obrigatório em toda
+/// definição — o handler resolve o item via <c>ITipoEtapaReader</c> e congela um
+/// snapshot-copy independente do rótulo editorial (<paramref name="Nome"/>).
+/// </param>
 public sealed record EtapaProcessoInput(
     string Nome,
     CaraterEtapa Carater,
+    Guid TipoEtapaOrigemId,
     decimal? Peso,
     decimal? NotaMinima,
     int? Ordem,

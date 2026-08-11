@@ -4,20 +4,62 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Configuracao.Contracts;
+
 public static class DefinirEtapasCommandHandler
 {
+    /// <summary>
+    /// SEM <c>[NonTransactional]</c>, de propósito (issue #1071): este handler depende da
+    /// transação ambiente do Wolverine para <see cref="IProcessoSeletivoRepository.ObterParaMutacaoAsync"/>
+    /// — o <c>SELECT ... FOR UPDATE</c> só serializa handlers concorrentes porque roda
+    /// enrolado nela (ver comentário em <c>ProcessoSeletivoRepository.ObterParaMutacaoAsync</c>);
+    /// <c>[NonTransactional]</c> desabilitaria esse enrolamento e o lock pessimista deixaria
+    /// de bloquear qualquer coisa. <see cref="PublicarProcessoSeletivoCommandHandler"/> já prova
+    /// que injetar reader cross-módulo (<see cref="ITipoEtapaReader"/>, aqui) junto do mesmo
+    /// lock não é ambíguo para o <c>AutoApplyTransactions</c> — só um handler que injeta
+    /// diretamente um <em>segundo DbContext concreto</em> (não um reader por trás de interface
+    /// pública) precisaria do opt-in.
+    /// </summary>
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
+        ITipoEtapaReader tipoEtapaReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        // Resolvidos ANTES de ObterParaMutacaoAsync (o SELECT ... FOR UPDATE): manter o lock
+        // pessimista aberto pelo menor tempo possível, sem round-trip a outro DbContext
+        // (Configuração) no meio da seção crítica — ver Publicar concorrente com DefinirEtapas.
+        Dictionary<Guid, TipoEtapaSnapshot> snapshotsPorTipoOrigemId = [];
+        foreach (Guid tipoEtapaOrigemId in command.Etapas.Select(e => e.TipoEtapaOrigemId).Distinct())
+        {
+            TipoEtapaView? tipo = await tipoEtapaReader
+                .ObterAtivoPorIdAsync(tipoEtapaOrigemId, cancellationToken)
+                .ConfigureAwait(false);
+            if (tipo is null)
+            {
+                return Result<MutacaoAceita>.Failure(new DomainError(
+                    "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
+                    $"Tipo de etapa {tipoEtapaOrigemId} não encontrado ou não está ativo."));
+            }
+
+            Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
+            if (snapshotResult.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(snapshotResult.Error!);
+            }
+
+            snapshotsPorTipoOrigemId[tipoEtapaOrigemId] = snapshotResult.Value!;
+        }
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
@@ -65,14 +107,18 @@ public static class DefinirEtapasCommandHandler
         List<EtapaProcesso> etapas = [];
         foreach (EtapaProcessoInput input in command.Etapas)
         {
+            TipoEtapaSnapshot tipoEtapa = snapshotsPorTipoOrigemId[input.TipoEtapaOrigemId];
+
             if (input.Id is { } id && existentes.TryGetValue(id, out EtapaProcesso? etapaExistente))
             {
-                etapaExistente.AtualizarDados(input.Nome, input.Carater, input.Peso, input.NotaMinima, input.Ordem);
+                etapaExistente.AtualizarDados(
+                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem);
                 etapas.Add(etapaExistente);
             }
             else
             {
-                etapas.Add(EtapaProcesso.Criar(input.Nome, input.Carater, input.Peso, input.NotaMinima, input.Ordem));
+                etapas.Add(EtapaProcesso.Criar(
+                    input.Nome, input.Carater, tipoEtapa, input.Peso, input.NotaMinima, input.Ordem));
             }
         }
 
