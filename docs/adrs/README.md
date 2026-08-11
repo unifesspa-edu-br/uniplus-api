@@ -151,12 +151,13 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0120](0120-fonte-normativa-matriz-cascata-remanejamento.md) | Fonte normativa da matriz de remanejamento de cotas (Portaria MEC 704/2025, Anexo — art. 20-A da Portaria Normativa MEC 18/2012) e decisão de alcance institucional além do Sisu | accepted | 2026-08-03 |
 | [0121](0121-criptografia-de-dados-sensiveis-em-repouso.md) | Criptografia de campo sensível em repouso (CPF hoje, outros dados pessoais no futuro): proteção assíncrona na fronteira de repositório/query service, opt-in por propriedade, sem alterar `ValueObjectConventions` globalmente | proposed | 2026-07-28 |
 | [0122](0122-tipos-processo-seletivo-configuraveis.md) | Tipos de processo seletivo configuráveis | accepted | 2026-08-10 |
+| [0123](0123-tipos-etapa-configuraveis.md) | Tipos de etapa configuráveis — conformidade legal por código congelado, não por rótulo editorial | accepted | 2026-08-11 |
 
-> **Nota de numeração:** a sequência de `0001` a `0122` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0123+`.
+> **Nota de numeração:** a sequência de `0001` a `0123` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0124+`.
 
 ## Como adicionar um novo ADR
 
-1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0123`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
+1. Identifique o próximo número livre: **o maior número da tabela acima + 1** (atualmente `0124`). **Não** use `ls | wc -l` — confira a coluna de número da tabela e use o maior valor + 1.
 2. Copie [`_template.md`](_template.md).
 3. Renomeie para `NNNN-titulo-em-slug.md` (slug ASCII em minúsculas, hífens como separador).
 4. Preencha frontmatter, contexto, drivers, opções, resultado da decisão (única), consequências.
