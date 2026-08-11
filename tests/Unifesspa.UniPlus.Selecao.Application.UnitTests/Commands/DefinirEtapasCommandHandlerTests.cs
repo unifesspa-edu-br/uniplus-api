@@ -270,6 +270,40 @@ public sealed class DefinirEtapasCommandHandlerTests
         await tipoEtapaReader.Received(1).ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// issue #1108 (achado de review do PR #1071): TipoEtapa é owned type (OwnsOne) de
+    /// EtapaProcesso — EF Core não aceita a MESMA instância de TipoEtapaSnapshot pertencendo a
+    /// duas etapas ao mesmo tempo. Duas etapas novas com o mesmo tipo é caso legítimo (duas
+    /// fases classificatórias do mesmo propósito institucional); o cache de resolução tem de
+    /// reaproveitar só o dado do catálogo, nunca a instância do snapshot já construído.
+    /// </summary>
+    [Fact(DisplayName = "Handle com duas etapas novas do mesmo tipo cria instâncias distintas de TipoEtapaSnapshot")]
+    public async Task Handle_ComDuasEtapasMesmoTipo_CriaInstanciasDistintas()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        ITipoEtapaReader tipoEtapaReader = ReaderPadrao();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [
+                new EtapaProcessoInput("Prova — Manhã", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1),
+                new EtapaProcessoInput("Prova — Tarde", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2),
+            ], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> result = await DefinirEtapasCommandHandler.Handle(command, repository, tipoEtapaReader, unitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error?.Message);
+        EtapaProcesso[] etapas = [.. processo.Etapas.OrderBy(e => e.Ordem)];
+        etapas.Should().HaveCount(2);
+        etapas[0].TipoEtapa.Should().NotBeSameAs(etapas[1].TipoEtapa,
+            "TipoEtapa é owned type — a mesma instância em dois donos quebraria o change tracking do EF Core");
+        etapas[0].TipoEtapa.Should().Be(etapas[1].TipoEtapa, "mesmo conteúdo, apesar de instâncias diferentes (record com igualdade por valor)");
+        await tipoEtapaReader.Received(1).ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "issue #1071 — CA-03: tipo de etapa inexistente ou inativo é recusado")]
     public async Task Handle_TipoEtapaInexistenteOuInativo_Recusa()
     {

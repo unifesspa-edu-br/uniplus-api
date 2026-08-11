@@ -89,7 +89,13 @@ public static class DefinirEtapasCommandHandler
         // tipo ainda ativo reescreveria silenciosamente o snapshot já congelado de uma etapa
         // que o cliente nem tocou — violando o próprio propósito do snapshot-copy (ADR-0061):
         // a cópia só muda quando o vínculo muda, não quando o cadastro de origem muda.
-        Dictionary<Guid, TipoEtapaSnapshot> snapshotsResolvidos = [];
+        //
+        // O cache guarda o TipoEtapaView (dado bruto do catálogo, evita reconsultar o reader
+        // quando duas etapas NOVAS ou realinhadas compartilham o mesmo tipo), NUNCA a instância
+        // de TipoEtapaSnapshot já construída — TipoEtapa é owned type (OwnsOne) de EtapaProcesso,
+        // e EF Core não aceita a MESMA instância pertencendo a dois donos ao mesmo tempo; duas
+        // etapas com o mesmo tipo, cada uma com sua própria instância, é caso legítimo e comum.
+        Dictionary<Guid, TipoEtapaView> tiposEmCache = [];
         List<EtapaProcesso> etapas = [];
         foreach (EtapaProcessoInput input in command.Etapas)
         {
@@ -102,20 +108,21 @@ public static class DefinirEtapasCommandHandler
             {
                 tipoEtapa = etapaExistente.TipoEtapa;
             }
-            else if (snapshotsResolvidos.TryGetValue(input.TipoEtapaOrigemId, out TipoEtapaSnapshot? snapshotEmCache))
-            {
-                tipoEtapa = snapshotEmCache;
-            }
             else
             {
-                TipoEtapaView? tipo = await tipoEtapaReader
-                    .ObterAtivoPorIdAsync(input.TipoEtapaOrigemId, cancellationToken)
-                    .ConfigureAwait(false);
-                if (tipo is null)
+                if (!tiposEmCache.TryGetValue(input.TipoEtapaOrigemId, out TipoEtapaView? tipo))
                 {
-                    return Result<MutacaoAceita>.Failure(new DomainError(
-                        "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
-                        $"Tipo de etapa {input.TipoEtapaOrigemId} não encontrado ou não está ativo."));
+                    tipo = await tipoEtapaReader
+                        .ObterAtivoPorIdAsync(input.TipoEtapaOrigemId, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (tipo is null)
+                    {
+                        return Result<MutacaoAceita>.Failure(new DomainError(
+                            "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
+                            $"Tipo de etapa {input.TipoEtapaOrigemId} não encontrado ou não está ativo."));
+                    }
+
+                    tiposEmCache[input.TipoEtapaOrigemId] = tipo;
                 }
 
                 Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
@@ -125,7 +132,6 @@ public static class DefinirEtapasCommandHandler
                 }
 
                 tipoEtapa = snapshotResult.Value!;
-                snapshotsResolvidos[input.TipoEtapaOrigemId] = tipoEtapa;
             }
 
             if (etapaExistente is not null)
