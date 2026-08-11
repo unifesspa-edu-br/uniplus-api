@@ -152,8 +152,14 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// versão anterior deixa de ser reconhecida.
     /// Issue #1070: o bump para <c>0.0.7</c> acrescenta <c>tipoProcesso</c> como 24º bloco de
     /// topo, congelando por valor a identidade do cadastro institucional vinculada ao processo.
+    /// Issue #1071: o bump para <c>0.0.8</c> enriquece cada item de <c>etapas</c> com
+    /// <c>tipoEtapa</c> — mesmo shape de <see cref="SerializarTipoProcesso"/>, sem criar novo
+    /// bloco de topo (continuam 24). Substitui a comparação por
+    /// <see cref="Domain.Entities.EtapaProcesso.Nome"/> em <c>EtapaObrigatoria</c> por código
+    /// congelado do tipo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.7</c> deixa de
+    /// ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.7";
+    internal const string SchemaVersionAtual = "0.0.8";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -302,9 +308,23 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     {
         ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome),
         ["carater"] = etapa.Carater.ToString(),
+        ["tipoEtapa"] = SerializarTipoEtapa(etapa),
         ["peso"] = etapa.Peso is { } peso ? HashCanonicalComputer.SerializeDecimalCanonical(peso, EscalaPadrao) : null,
         ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscalaPadrao) : null,
         ["ordem"] = etapa.Ordem,
+    };
+
+    /// <summary>
+    /// Tipo de etapa escolhido, como cópia de valor autocontida (issue #1071) — mesmo shape de
+    /// <see cref="SerializarTipoProcesso"/>. Não há leitura da configuração atual ao interpretar
+    /// uma publicação: desativação ou alteração posterior do cadastro não pode alterar a prova
+    /// emitida, nem o resultado da avaliação de <c>EtapaObrigatoria</c> já congelada.
+    /// </summary>
+    private static JsonObject SerializarTipoEtapa(EtapaProcesso etapa) => new()
+    {
+        ["origemId"] = etapa.TipoEtapaOrigemId,
+        ["codigo"] = HashCanonicalComputer.NormalizeNfc(etapa.TipoEtapa.Codigo),
+        ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.TipoEtapa.Nome),
     };
 
     private static JsonArray SerializarDistribuicao(ProcessoSeletivo processo)

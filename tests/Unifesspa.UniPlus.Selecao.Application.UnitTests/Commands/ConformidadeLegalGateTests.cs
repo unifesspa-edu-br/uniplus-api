@@ -37,14 +37,16 @@ public sealed class ConformidadeLegalGateTests
             baseLegal: "Lei de teste",
             vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
 
-    // A "Prova Objetiva" é a única etapa de NovoProcessoConforme() — exigir OUTRA etapa
-    // reprova; exigir a MESMA aprova. Suficiente para testar o fio do gate sem repetir
-    // as 7 variantes já cobertas por AvaliadorConformidadeLegalTests (Domain).
+    // PROVA_OBJETIVA é o código do tipo congelado na única etapa de NovoProcessoConforme()
+    // (issue #1071: a avaliação compara pelo código do tipo, nunca pelo rótulo editorial da
+    // etapa) — exigir OUTRO código reprova; exigir o MESMO aprova. Suficiente para testar o
+    // fio do gate sem repetir as 7 variantes já cobertas por AvaliadorConformidadeLegalTests
+    // (Domain).
     private static ObrigatoriedadeLegal RegraQueReprova() =>
-        NovaRegra("GATE-REPROVA", new EtapaObrigatoria("Etapa Que Não Existe"));
+        NovaRegra("GATE-REPROVA", new EtapaObrigatoria("TIPO_QUE_NAO_EXISTE"));
 
     private static ObrigatoriedadeLegal RegraQueAprova() =>
-        NovaRegra("GATE-APROVA", new EtapaObrigatoria("Prova Objetiva"));
+        NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
     [Fact(DisplayName = "CA-12 (Publicar): regra legal vigente reprovada recusa ANTES da canonicalização")]
     public async Task Publicar_ComRegraLegalReprovada_RecusaSemCanonicalizar()

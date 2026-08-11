@@ -437,11 +437,15 @@ public sealed class EnvelopeFechadoE2ETests
     // Payloads das dimensões — um método por dimensão, na ordem topológica do plano §4.2
     // ══════════════════════════════════════════════════════════════════════════════
 
+    private static readonly Guid TipoEtapaProvaObjetivaOrigemId = new("019fee1e-7000-7000-8000-000000000001");
+    private static readonly Guid TipoEtapaRedacaoOrigemId = new("019fee1e-7000-7000-8000-000000000002");
+    private static readonly Guid TipoEtapaEntrevistaOrigemId = new("019fee1e-7000-7000-8000-000000000003");
+
     private static object[] EtapasIniciais() =>
     [
-        new { nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, peso = 3.5000m, notaMinima = 40.0000m, ordem = 1 },
-        new { nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, peso = 2.2500m, notaMinima = (decimal?)null, ordem = 2 },
-        new { nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, peso = (decimal?)null, notaMinima = 60.0000m, ordem = 3 },
+        new { nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 3.5000m, notaMinima = 40.0000m, ordem = 1 },
+        new { nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, ordem = 2 },
+        new { nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, ordem = 3 },
     ];
 
     /// <summary>
@@ -451,9 +455,9 @@ public sealed class EnvelopeFechadoE2ETests
     /// </summary>
     private static object[] EtapasComPesoAlterado(Guid objetivaId, Guid redacaoId, Guid entrevistaId) =>
     [
-        new { id = objetivaId, nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, peso = 4.0000m, notaMinima = 40.0000m, ordem = 1 },
-        new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, peso = 2.2500m, notaMinima = (decimal?)null, ordem = 2 },
-        new { id = entrevistaId, nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, peso = (decimal?)null, notaMinima = 60.0000m, ordem = 3 },
+        new { id = objetivaId, nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 4.0000m, notaMinima = 40.0000m, ordem = 1 },
+        new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, ordem = 2 },
+        new { id = entrevistaId, nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, ordem = 3 },
     ];
 
     // ══════════════════════════════════════════════════════════════════════════════

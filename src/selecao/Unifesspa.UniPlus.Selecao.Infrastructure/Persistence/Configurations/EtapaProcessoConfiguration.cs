@@ -20,6 +20,21 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
 
         builder.Property(e => e.Nome).HasMaxLength(300).IsRequired();
         builder.Property(e => e.Carater).HasConversion<int>().IsRequired();
+
+        builder.Ignore(e => e.TipoEtapaOrigemId);
+        // Sem produção em nenhum ambiente: o vínculo nasce obrigatório desde a primeira
+        // migration, sem coluna nullable transitória (issue #1071).
+        builder.OwnsOne(e => e.TipoEtapa, tipo =>
+        {
+            tipo.Property(x => x.OrigemId)
+                .HasColumnName("tipo_etapa_origem_id")
+                .IsRequired()
+                .HasComment("Id de origem do tipo de etapa em Configuração, sem FK cross-schema; congelado na definição.");
+            tipo.Property(x => x.Codigo).HasColumnName("tipo_etapa_codigo").HasMaxLength(64).IsRequired();
+            tipo.Property(x => x.Nome).HasColumnName("tipo_etapa_nome").HasMaxLength(200).IsRequired();
+        });
+        builder.Navigation(e => e.TipoEtapa).IsRequired();
+
         builder.Property(e => e.Peso).HasPrecision(18, 4);
         builder.Property(e => e.NotaMinima).HasPrecision(18, 4);
 

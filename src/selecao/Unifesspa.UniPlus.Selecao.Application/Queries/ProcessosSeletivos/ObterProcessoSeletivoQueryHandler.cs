@@ -43,7 +43,14 @@ public static class ObterProcessoSeletivoQueryHandler
             processo.UnidadeAdministradora.Tipo),
         [.. processo.Etapas
             .OrderBy(e => e.Ordem)
-            .Select(e => new EtapaProcessoDto(e.Id, e.Nome, e.Carater.ToString(), e.Peso, e.NotaMinima, e.Ordem))],
+            .Select(e => new EtapaProcessoDto(
+                e.Id,
+                e.Nome,
+                e.Carater.ToString(),
+                new TipoEtapaSnapshotDto(e.TipoEtapa.OrigemId, e.TipoEtapa.Codigo, e.TipoEtapa.Nome),
+                e.Peso,
+                e.NotaMinima,
+                e.Ordem))],
         ProjectOfertaAtendimento(processo.OfertaAtendimento),
         [.. processo.DistribuicaoVagas.Select(ProjectDistribuicaoVagas)],
         ProjectBonusRegional(processo.BonusRegional),

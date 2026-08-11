@@ -99,5 +99,10 @@ public static class SelecaoCodegenRegistration
         // Configuracao.Infrastructure.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDocumentoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
+
+        // Tipos de etapa (issue #1071): DefinirEtapasCommandHandler e os handlers de
+        // ObrigatoriedadeLegal resolvem o cadastro configurável de Configuração para
+        // congelar o snapshot-copy — mesmo motivo dos demais readers cross-módulo acima.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoEtapaReader>();
     }
 }

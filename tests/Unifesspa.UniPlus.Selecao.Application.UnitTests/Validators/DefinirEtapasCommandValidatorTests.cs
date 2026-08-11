@@ -11,7 +11,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirEtapasCommandValidatorTests
 {
-    private static EtapaProcessoInput EtapaValida() => new("Prova Objetiva", CaraterEtapa.Classificatoria, 3m, null, 1);
+    private static readonly Guid TipoEtapaOrigemIdValido = Guid.CreateVersion7();
+
+    private static EtapaProcessoInput EtapaValida() =>
+        new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 3m, null, 1);
 
     [Fact(DisplayName = "Validator passa com ao menos uma etapa válida")]
     public void Aceita_ComandoValido()
@@ -44,7 +47,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     [Fact(DisplayName = "Validator falha quando o caráter da etapa é Nenhum")]
     public void Rejeita_CaraterNenhum()
     {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Nenhum, 3m, null, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Nenhum, TipoEtapaOrigemIdValido, 3m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
@@ -53,10 +56,26 @@ public sealed class DefinirEtapasCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].Carater");
     }
 
+    /// <summary>
+    /// issue #1071 — cenário 3: tipo é obrigatório desde a definição da etapa. Sem produção em
+    /// nenhum ambiente, não há transição com tipo opcional (ver ADR-0123).
+    /// </summary>
+    [Fact(DisplayName = "Validator falha quando TipoEtapaOrigemId não é informado")]
+    public void Rejeita_TipoEtapaOrigemIdVazio()
+    {
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, Guid.Empty, 3m, null, 1);
+
+        ValidationResult result = new DefinirEtapasCommandValidator()
+            .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Etapas[0].TipoEtapaOrigemId");
+    }
+
     [Fact(DisplayName = "Validator falha quando o peso informado não é positivo")]
     public void Rejeita_PesoNaoPositivo()
     {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, 0m, null, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
@@ -69,7 +88,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     public void Rejeita_PesoComEscalaExcessiva()
     {
         // 0.00001 > 0 mas numeric(18,4) arredondaria para 0.0000 — divisor da média viraria zero.
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, 0.00001m, null, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaOrigemIdValido, 0.00001m, null, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));
@@ -81,7 +100,7 @@ public sealed class DefinirEtapasCommandValidatorTests
     [Fact(DisplayName = "Validator falha quando a nota mínima tem mais de 4 casas decimais")]
     public void Rejeita_NotaMinimaComEscalaExcessiva()
     {
-        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Eliminatoria, 3m, 5.00001m, 1);
+        EtapaProcessoInput etapa = new("Prova Objetiva", CaraterEtapa.Eliminatoria, TipoEtapaOrigemIdValido, 3m, 5.00001m, 1);
 
         ValidationResult result = new DefinirEtapasCommandValidator()
             .Validate(new DefinirEtapasCommand(Guid.CreateVersion7(), [etapa], PrecondicaoIfMatch.Ausente));

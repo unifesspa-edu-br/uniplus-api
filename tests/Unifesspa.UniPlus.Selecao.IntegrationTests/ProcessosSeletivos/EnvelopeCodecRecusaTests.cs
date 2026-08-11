@@ -846,7 +846,10 @@ public sealed class EnvelopeCodecRecusaTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Exigência Duplicada", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
         processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1),
+            EtapaProcesso.Criar(
+                "Prova Objetiva", CaraterEtapa.Classificatoria,
+                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva").Value!,
+                peso: 1m, ordem: 1),
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -1066,6 +1069,90 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.IsFailure.Should().BeTrue(
             "uma ordem negativa não corresponde a posição alguma de exibição — o encoder só emite índices " +
             "canônicos, sempre a partir de zero");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    // ── issue #1071 — etapas[].tipoEtapa: snapshot congelado do tipo de etapa ──
+
+    [Fact(DisplayName = "etapas[].tipoEtapa ausente é recusado")]
+    public void TipoEtapa_Ausente_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!.AsObject().Remove("tipoEtapa"));
+
+        resultado.IsFailure.Should().BeTrue(
+            "sem tipoEtapa não há como reidratar a identidade estável que AvaliarEtapaObrigatoria compara");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Theory(DisplayName = "etapas[].tipoEtapa com chave obrigatória ausente é recusado")]
+    [InlineData("origemId")]
+    [InlineData("codigo")]
+    [InlineData("nome")]
+    public void TipoEtapa_ChaveAusente_Recusa(string chave)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!.AsObject().Remove(chave));
+
+        resultado.IsFailure.Should().BeTrue(
+            $"'{chave}' fecha a gramática de tipoEtapa — o encoder sempre a emite");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "etapas[].tipoEtapa com chave intrusa é recusado")]
+    public void TipoEtapa_ChaveIntrusa_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!["descricao"] = "campo que o encoder nunca emitiu");
+
+        resultado.IsFailure.Should().BeTrue("a gramática de tipoEtapa é fechada — igual a qualquer outro bloco do envelope");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "etapas[].tipoEtapa.origemId vazio (Guid.Empty) é recusado")]
+    public void TipoEtapa_OrigemIdVazio_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!["origemId"] = Guid.Empty.ToString());
+
+        resultado.IsFailure.Should().BeTrue(
+            "um snapshot sem origem não prova de qual tipo do cadastro a etapa foi copiada");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Theory(DisplayName = "etapas[].tipoEtapa.codigo ou nome vazio é recusado")]
+    [InlineData("codigo")]
+    [InlineData("nome")]
+    public void TipoEtapa_CodigoOuNomeVazio_Recusa(string chave)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]![chave] = "");
+
+        resultado.IsFailure.Should().BeTrue(
+            $"'{chave}' vazio produziria um snapshot que a própria factory do domínio (TipoEtapaSnapshot.Criar) recusa");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "etapas[].tipoEtapa.codigo acima do limite da coluna (64) é recusado")]
+    public void TipoEtapa_CodigoAcimaDoLimite_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!["codigo"] = new string('A', 65));
+
+        resultado.IsFailure.Should().BeTrue(
+            "um código de 65 caracteres não cabe na coluna tipo_etapa_codigo (varchar 64) — recusar aqui evita " +
+            "DbUpdateException (500) no meio do descarte");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "etapas[].tipoEtapa.nome acima do limite da coluna (200) é recusado")]
+    public void TipoEtapa_NomeAcimaDoLimite_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["etapas"]!.AsArray()[0]!["tipoEtapa"]!["nome"] = new string('A', 201));
+
+        resultado.IsFailure.Should().BeTrue(
+            "um nome de 201 caracteres não cabe na coluna tipo_etapa_nome (varchar 200)");
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 

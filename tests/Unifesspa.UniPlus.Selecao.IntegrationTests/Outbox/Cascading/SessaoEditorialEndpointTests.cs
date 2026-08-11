@@ -466,7 +466,12 @@ public sealed class SessaoEditorialEndpointTests
                     // Classificatória (1) com peso: ao menos uma etapa precisa COMPOR a nota,
                     // senão o divisor da média sai zero e o domínio recusa (422) antes mesmo
                     // de a precondição virar o assunto.
-                    new { nome = "Prova Objetiva", carater = 1, peso = 1.0m, notaMinima = (decimal?)null, ordem = 1 },
+                    new
+                    {
+                        nome = "Prova Objetiva", carater = 1,
+                        tipoEtapaOrigemId = new Guid("019fee1e-7000-7000-8000-000000000001"),
+                        peso = 1.0m, notaMinima = (decimal?)null, ordem = 1,
+                    },
                 }),
             };
             AppendTestAuth(request);

@@ -268,7 +268,15 @@ public sealed class CicloDaRetificacaoEndpointTests
             EnviarAsync(
                 HttpMethod.Put,
                 $"{Rota}/{ProcessoId}/etapas",
-                new[] { new { nome = "Prova Objetiva", carater = 1, peso, notaMinima = (decimal?)null, ordem = 1 } },
+                new[]
+                {
+                    new
+                    {
+                        nome = "Prova Objetiva", carater = 1,
+                        tipoEtapaOrigemId = new Guid("019fee1e-7000-7000-8000-000000000001"),
+                        peso, notaMinima = (decimal?)null, ordem = 1,
+                    },
+                },
                 ifMatch);
 
         public Task<HttpResponseMessage> ObterRecursoAsync() =>

@@ -58,38 +58,67 @@ public sealed class AvaliadorConformidadeLegalTests
         resultado.Regras.Should().OnlyContain(r => r.TipoProcessoCodigoAvaliado == TipoProcessoAvaliado);
     }
 
-    [Fact(DisplayName = "CA-02 (EtapaObrigatoria): aprova quando existe etapa cujo Nome bate, ordinal case-insensitive")]
-    public void EtapaObrigatoria_ComEtapaCorrespondente_Aprova()
+    private static TipoEtapaSnapshot NovoTipoEtapa(string codigo, string nome) =>
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), codigo, nome).Value!;
+
+    [Fact(DisplayName = "issue #1071 — cenário 1: nome editorial não interfere na conformidade")]
+    public void EtapaObrigatoria_ComTipoCongeladoCorrespondente_AprovaIndependenteDoNome()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("prova objetiva", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)],
+            [EtapaProcesso.Criar(
+                "Primeira avaliação", CaraterEtapa.Classificatoria, NovoTipoEtapa("PROVA_OBJETIVA", "Prova Objetiva"),
+                peso: 1m, ordem: 1)],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("Prova Objetiva"));
+        ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
 
-        resultado.Regras.Single().Aprovada.Should().BeTrue();
+        resultado.Regras.Single().Aprovada.Should().BeTrue(
+            "o rótulo editorial ('Primeira avaliação') não participa da avaliação — só o código congelado do tipo");
         resultado.Regras.Single().Motivo.Should().BeNull("regra aprovada não carrega motivo de reprovação");
     }
 
-    [Fact(DisplayName = "CA-02 (EtapaObrigatoria): reprova nomeando o código da etapa ausente")]
+    [Fact(DisplayName = "issue #1071 — cenário 2: nome igual ao código não substitui a identidade do tipo")]
+    public void EtapaObrigatoria_MesmoNomeTipoDiferente_Reprova()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirEtapas(
+            [EtapaProcesso.Criar(
+                "PROVA_OBJETIVA", CaraterEtapa.Classificatoria, NovoTipoEtapa("ENTREVISTA", "Entrevista"),
+                peso: 1m, ordem: 1)],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
+
+        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
+
+        RegraAvaliada avaliada = resultado.Regras.Single();
+        avaliada.Aprovada.Should().BeFalse(
+            "a etapa se chama 'PROVA_OBJETIVA' mas o tipo congelado é ENTREVISTA — nome não é identidade");
+        avaliada.Motivo.Should().Contain("PROVA_OBJETIVA",
+            "CA exige que a reprovação nomeie o código do tipo ausente, não só um booleano");
+    }
+
+    [Fact(DisplayName = "CA (EtapaObrigatoria): reprova nomeando o código do tipo ausente")]
     public void EtapaObrigatoria_SemEtapaCorrespondente_Reprova()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, peso: 1m, ordem: 1)],
+            [EtapaProcesso.Criar(
+                "Redação", CaraterEtapa.Classificatoria, NovoTipoEtapa("REDACAO", "Redação"),
+                peso: 1m, ordem: 1)],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("Prova Objetiva"));
+        ObrigatoriedadeLegal regra = NovaRegra("ETAPA", new EtapaObrigatoria("PROVA_OBJETIVA"));
 
         ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(processo, TipoProcessoAvaliado, [regra]);
 
         RegraAvaliada avaliada = resultado.Regras.Single();
         avaliada.Aprovada.Should().BeFalse();
-        avaliada.Motivo.Should().Contain("Prova Objetiva",
-            "CA-02 exige que a reprovação nomeie o código da etapa ausente, não só um booleano");
+        avaliada.Motivo.Should().Contain("PROVA_OBJETIVA",
+            "a reprovação precisa nomear o código do tipo ausente, não só um booleano");
     }
 
     private static ModalidadeSelecionada NovaModalidade(string codigo, NaturezaLegalModalidade natureza) =>

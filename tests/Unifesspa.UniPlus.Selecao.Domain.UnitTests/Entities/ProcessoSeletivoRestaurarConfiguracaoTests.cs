@@ -44,7 +44,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         Estado antes = Estado.De(processo);
 
         GrafoConfiguracao invalido = Grafo(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             eliminacoes: [
                 RegraEliminacao.Criar(
                     Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'e'),
@@ -83,7 +83,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             baseadoEmEnem: true).Value!;
 
         GrafoConfiguracao GrafoComClassificacaoEnem() => new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
@@ -110,7 +110,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         Estado antes = Estado.De(processo);
 
         GrafoConfiguracao invalido = Grafo(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             criterios: [
                 CriterioDesempate.Criar(
                     1,
@@ -134,8 +134,8 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao invalido = Grafo(etapas: [
-            EtapaProcesso.Reidratar(EtapaCongelada, "Prova A", CaraterEtapa.Classificatoria, 1m, null, 1),
-            EtapaProcesso.Reidratar(EtapaCongelada, "Prova B", CaraterEtapa.Classificatoria, 2m, null, 2),
+            EtapaProcesso.Reidratar(EtapaCongelada, "Prova A", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1),
+            EtapaProcesso.Reidratar(EtapaCongelada, "Prova B", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 2m, null, 2),
         ]);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
@@ -184,7 +184,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 
         // A etapa congelada tem o MESMO Id da viva, mas dados diferentes.
         GrafoConfiguracao grafo = Grafo(etapas: [
-            EtapaProcesso.Reidratar(EtapaOriginal, "Nome Restaurado", CaraterEtapa.Ambas, 7m, 20m, 3),
+            EtapaProcesso.Reidratar(EtapaOriginal, "Nome Restaurado", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 7m, 20m, 3),
         ]);
 
         processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
@@ -233,7 +233,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)]).Value!;
 
         GrafoConfiguracao invalido = new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [ofertaA, ofertaB],
             bonusRegional: null,
@@ -564,7 +564,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao grafo = Grafo(etapas: [
-            EtapaProcesso.Reidratar(EtapaCongelada, "Etapa Que Voltou", CaraterEtapa.Classificatoria, 1m, null, 1),
+            EtapaProcesso.Reidratar(EtapaCongelada, "Etapa Que Voltou", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1),
         ]);
 
         processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
@@ -749,7 +749,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
             ReferenciaTipo.FimFase, null, faseCongeladaId).Value!;
 
         GrafoConfiguracao grafoCongelado = new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
@@ -788,7 +788,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Restauração", tipo, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
         processo.DefinirEtapas([
-            EtapaProcesso.Reidratar(EtapaOriginal, "Prova Original", CaraterEtapa.Classificatoria, 1m, null, 1),
+            EtapaProcesso.Reidratar(EtapaOriginal, "Prova Original", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1),
         ], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao()], PrecondicaoIfMatch.Ausente);
@@ -836,7 +836,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         IReadOnlyList<RegraEliminacao>? eliminacoes = null,
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
         ConfiguracaoDivulgacao? configuracaoDivulgacao = null) => new(
-            etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
@@ -855,7 +855,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     /// </summary>
     private static GrafoConfiguracao GrafoComArvore(
         FaseCronograma fase, IReadOnlyList<DocumentoExigido> documentosExigidos, IReadOnlyList<NoExigencia> nosExigencia) => new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, 1m, null, 1)],
+            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, 1m, null, 1)],
             ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,

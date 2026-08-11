@@ -105,8 +105,8 @@ public static class AvaliadorConformidadeLegal
     private static (bool, string?, string?) AvaliarEtapaObrigatoria(ProcessoSeletivo processo, EtapaObrigatoria predicado)
     {
         bool aprovada = processo.Etapas.Any(
-            e => string.Equals(e.Nome, predicado.TipoEtapaCodigo, StringComparison.OrdinalIgnoreCase));
-        return (aprovada, aprovada ? null : $"etapa '{predicado.TipoEtapaCodigo}' ausente", null);
+            e => string.Equals(e.TipoEtapa.Codigo, predicado.TipoEtapaCodigo, StringComparison.Ordinal));
+        return (aprovada, aprovada ? null : $"etapa do tipo '{predicado.TipoEtapaCodigo}' ausente", null);
     }
 
     /// <summary>

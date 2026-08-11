@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Wolverine.Attributes;
 
@@ -21,17 +22,28 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         CriarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
         ITipoProcessoReader tipoProcessoReader,
+        ITipoEtapaReader tipoEtapaReader,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(tipoProcessoReader);
+        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         if (!await TipoProcessoEhUniversalOuAtivoAsync(command.TipoProcessoCodigo, tipoProcessoReader, cancellationToken).ConfigureAwait(false))
         {
             return Result<Guid>.Failure(TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
+        }
+
+        // Issue #1071: uma obrigatoriedade nova só pode usar código de tipo de etapa ativo —
+        // a validação de fronteira (shape) já garantiu que o predicado existe; aqui é a
+        // checagem cross-módulo (existência + atividade) que só o handler pode fazer.
+        if (command.Predicado is EtapaObrigatoria etapaObrigatoria
+            && !await TipoEtapaEhAtivoAsync(etapaObrigatoria.TipoEtapaCodigo, tipoEtapaReader, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(TipoEtapaNaoEncontradoOuInativo(etapaObrigatoria.TipoEtapaCodigo));
         }
 
         bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
@@ -104,4 +116,14 @@ public static class CriarObrigatoriedadeLegalCommandHandler
     internal static DomainError TipoProcessoNaoEncontradoOuInativo(string codigo) => new(
         "ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo",
         $"Tipo de processo seletivo '{codigo?.Trim()}' não encontrado ou não está ativo.");
+
+    internal static async Task<bool> TipoEtapaEhAtivoAsync(
+        string codigo,
+        ITipoEtapaReader tipoEtapaReader,
+        CancellationToken cancellationToken) =>
+        await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo ?? string.Empty, cancellationToken).ConfigureAwait(false) is not null;
+
+    internal static DomainError TipoEtapaNaoEncontradoOuInativo(string codigo) => new(
+        "ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo",
+        $"Tipo de etapa '{codigo?.Trim()}' não encontrado ou não está ativo.");
 }

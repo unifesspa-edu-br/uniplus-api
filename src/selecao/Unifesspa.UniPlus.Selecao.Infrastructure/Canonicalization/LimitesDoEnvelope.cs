@@ -29,6 +29,8 @@ public static class LimitesDoEnvelope
 {
     // Texto — comprimento máximo (varchar).
     public const int EtapaNome = 300;
+    public const int TipoEtapaCodigo = 64;
+    public const int TipoEtapaNome = 200;
     public const int ModalidadeCodigo = 60;
     public const int ModalidadeDescricao = 300;
     public const int Token = 30;
