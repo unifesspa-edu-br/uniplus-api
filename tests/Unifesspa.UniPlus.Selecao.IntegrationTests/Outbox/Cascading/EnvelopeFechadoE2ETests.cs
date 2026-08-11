@@ -274,6 +274,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "Referência temporal de fatos: extremo da fase âncora definido",
                 "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO",
                 "Regras de derivação: fatos citados existem no processo",
+                "Fato coletável de escopo do processo: oferta declara ao menos um valor",
                 "Regras de derivação: código contribuído pertence ao domínio ofertado",
                 "Grafo de dependência conjunto: sem ciclo",
             ],

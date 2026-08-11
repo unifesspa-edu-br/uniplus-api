@@ -1448,6 +1448,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
         new ItemConformidade("Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
         new ItemConformidade("Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
+        new ItemConformidade("Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("Regras de derivação: código contribuído pertence ao domínio ofertado", PendenciaDoDominioDeContribuicao() is null),
         new ItemConformidade("Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
     ];
@@ -1838,6 +1839,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return fatoCitado;
         }
 
+        if (PendenciaDeFatoColetadoSemValoresOfertados() is { } fatoSemOferta)
+        {
+            return fatoSemOferta;
+        }
+
         if (PendenciaDoDominioDeContribuicao() is { } contribuicaoForaDoDominio)
         {
             return contribuicaoForaDoDominio;
@@ -1921,6 +1927,42 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                             + "que este processo não coleta nem deriva.");
                     }
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Um fato categórico coletável cujo domínio é derivado da oferta do próprio processo
+    /// (<c>CONDICAO_ATENDIMENTO</c>, <c>TIPO_DEFICIENCIA</c>) não pode ser publicado sem pelo
+    /// menos um valor ofertado — obrigatório ou opcional, a pessoa candidata precisa de alguma
+    /// opção para responder. Sem este gate, <c>DefinirFatosColetadosCommandHandler</c> aceita o
+    /// vínculo (rascunho aceita configuração incompleta, de propósito) e
+    /// <c>ResolvedorValoresSelecionaveisCongelados</c> congela a lista vazia — o formulário de
+    /// inscrição publicado recebe um seletor sem nenhuma opção.
+    /// </summary>
+    private DomainError? PendenciaDeFatoColetadoSemValoresOfertados()
+    {
+        foreach (FatoColetado fato in _fatosColetados)
+        {
+            if (fato.TipoRenderizacao is not (TipoRenderizacao.SelecaoUnica or TipoRenderizacao.SelecaoMultipla))
+            {
+                continue;
+            }
+
+            bool ofertaVazia = fato.FatoCodigo switch
+            {
+                "CONDICAO_ATENDIMENTO" => (OfertaAtendimento?.Condicoes.Count ?? 0) == 0,
+                "TIPO_DEFICIENCIA" => (OfertaAtendimento?.TiposDeficiencia.Count ?? 0) == 0,
+                _ => false,
+            };
+
+            if (ofertaVazia)
+            {
+                return new DomainError(
+                    "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
+                    $"O fato '{fato.FatoCodigo}' é coletável, mas a oferta do processo não declara nenhum valor para ele.");
             }
         }
 
