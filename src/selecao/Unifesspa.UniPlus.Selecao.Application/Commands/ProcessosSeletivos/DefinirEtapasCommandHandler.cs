@@ -36,31 +36,6 @@ public static class DefinirEtapasCommandHandler
         ArgumentNullException.ThrowIfNull(tipoEtapaReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // Resolvidos ANTES de ObterParaMutacaoAsync (o SELECT ... FOR UPDATE): manter o lock
-        // pessimista aberto pelo menor tempo possível, sem round-trip a outro DbContext
-        // (Configuração) no meio da seção crítica — ver Publicar concorrente com DefinirEtapas.
-        Dictionary<Guid, TipoEtapaSnapshot> snapshotsPorTipoOrigemId = [];
-        foreach (Guid tipoEtapaOrigemId in command.Etapas.Select(e => e.TipoEtapaOrigemId).Distinct())
-        {
-            TipoEtapaView? tipo = await tipoEtapaReader
-                .ObterAtivoPorIdAsync(tipoEtapaOrigemId, cancellationToken)
-                .ConfigureAwait(false);
-            if (tipo is null)
-            {
-                return Result<MutacaoAceita>.Failure(new DomainError(
-                    "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
-                    $"Tipo de etapa {tipoEtapaOrigemId} não encontrado ou não está ativo."));
-            }
-
-            Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
-            if (snapshotResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(snapshotResult.Error!);
-            }
-
-            snapshotsPorTipoOrigemId[tipoEtapaOrigemId] = snapshotResult.Value!;
-        }
-
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
@@ -74,7 +49,9 @@ public static class DefinirEtapasCommandHandler
         // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
         // que este handler avalia (existência de cadastros, coerência de referências): ela
         // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
+        // disso antes de sair caçando um cadastro que ele não errou — inclusive antes da
+        // resolução de TipoEtapaOrigemId contra o cadastro de Configuração, que só roda a
+        // seguir.
         //
         // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
         // como middleware do Wolverine, antes deste handler, e um command malformado morre
@@ -95,6 +72,28 @@ public static class DefinirEtapasCommandHandler
             return Result<MutacaoAceita>.Failure(new DomainError(
                 "ProcessoSeletivo.IdEtapaDuplicado",
                 "O mesmo Id de etapa não pode ser informado mais de uma vez no mesmo payload."));
+        }
+
+        Dictionary<Guid, TipoEtapaSnapshot> snapshotsPorTipoOrigemId = [];
+        foreach (Guid tipoEtapaOrigemId in command.Etapas.Select(e => e.TipoEtapaOrigemId).Distinct())
+        {
+            TipoEtapaView? tipo = await tipoEtapaReader
+                .ObterAtivoPorIdAsync(tipoEtapaOrigemId, cancellationToken)
+                .ConfigureAwait(false);
+            if (tipo is null)
+            {
+                return Result<MutacaoAceita>.Failure(new DomainError(
+                    "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
+                    $"Tipo de etapa {tipoEtapaOrigemId} não encontrado ou não está ativo."));
+            }
+
+            Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
+            if (snapshotResult.IsFailure)
+            {
+                return Result<MutacaoAceita>.Failure(snapshotResult.Error!);
+            }
+
+            snapshotsPorTipoOrigemId[tipoEtapaOrigemId] = snapshotResult.Value!;
         }
 
         // Reconcilia por Id em vez de recriar toda a coleção: uma etapa cujo

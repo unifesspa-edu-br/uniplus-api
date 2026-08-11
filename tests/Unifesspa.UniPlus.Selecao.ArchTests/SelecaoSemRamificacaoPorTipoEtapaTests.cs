@@ -83,7 +83,7 @@ public sealed partial class SelecaoSemRamificacaoPorTipoEtapaTests
     public void Selecao_NaoRecriaEnumTipoEtapa()
     {
         string raizDoRepo = RaizDoRepo();
-        string raizEnums = Path.Combine(raizDoRepo, "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "Enums");
+        string raizEnums = Path.Join(raizDoRepo, "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "Enums");
 
         Directory.Exists(raizEnums).Should().BeTrue($"a pasta '{raizEnums}' precisa existir para ser varrida");
 
@@ -106,7 +106,7 @@ public sealed partial class SelecaoSemRamificacaoPorTipoEtapaTests
     public void Selecao_AvaliarEtapaObrigatoria_ComparaPeloCodigoCongelado()
     {
         string raizDoRepo = RaizDoRepo();
-        string arquivo = Path.Combine(
+        string arquivo = Path.Join(
             raizDoRepo, "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "Services", "AvaliadorConformidadeLegal.cs");
 
         File.Exists(arquivo).Should().BeTrue($"o arquivo '{arquivo}' precisa existir para ser varrido");
