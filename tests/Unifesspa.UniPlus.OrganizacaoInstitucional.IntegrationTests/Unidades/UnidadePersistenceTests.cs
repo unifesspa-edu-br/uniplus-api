@@ -413,6 +413,53 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             "o histórico de identificadores não pode ser hard-deletado no soft-delete da Unidade (issue #629)");
     }
 
+    // ── Cidade (issue #1114) ─────────────────────────────────────────────
+
+    [Fact(DisplayName = "Insert persiste e recarrega a cidade completa da Unidade")]
+    public async Task Insert_ComCidadeCompleta_PersisteERecarrega()
+    {
+        Unidade unidade = NovaUnidade(
+            "cidade-completa", "CIDCOMP", "CID001",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA");
+
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Unidades.Add(unidade);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        Unidade persistida = await readCtx.Unidades.SingleAsync(u => u.Id == unidade.Id);
+
+        persistida.CidadeCodigoIbge.Should().Be("1504208");
+        persistida.CidadeNome.Should().Be("Marabá");
+        persistida.CidadeUf.Should().Be("PA");
+    }
+
+    [Fact(DisplayName = "CHECK ck_unidade_cidade_completa rejeita UPDATE cru que deixa o trio de cidade parcial")]
+    public async Task CheckCidadeCompleta_RejeitaTrioParcial()
+    {
+        Unidade unidade = NovaUnidade(
+            "cidade-trio", "CIDTRIO", "CID002",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA");
+
+        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.Unidades.Add(unidade);
+            await ctx.SaveChangesAsync();
+        }
+
+        // Zera só o nome da cidade, deixando código/UF — trio parcial. O domínio trata a
+        // cidade como all-or-nothing; o CHECK protege a escrita crua (mesmo padrão de
+        // InstituicaoPersistenceTests.CheckCidadeCompleta_RejeitaTrioParcial).
+        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
+            $"UPDATE organizacao.unidade SET cidade_nome = NULL WHERE id = {unidade.Id}");
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_unidade_cidade_completa exige o trio de cidade completo ou ausente");
+    }
+
     // ── Factory helper ───────────────────────────────────────────────────
 
     private static Unidade NovaUnidade(
@@ -420,7 +467,10 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         string sigla,
         string codigo,
         Guid? superiorId = null,
-        string? alias = null) =>
+        string? alias = null,
+        string? cidadeCodigoIbge = null,
+        string? cidadeNome = null,
+        string? cidadeUf = null) =>
         Unidade.Criar(
             nome: $"Unidade {sigla}",
             alias: alias,
@@ -431,5 +481,8 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             tipo: TipoUnidade.Centro,
             unidadeAcademica: false,
             vigenciaInicio: DataInicio,
-            vigenciaFim: null).Value!;
+            vigenciaFim: null,
+            cidadeCodigoIbge: cidadeCodigoIbge,
+            cidadeNome: cidadeNome,
+            cidadeUf: cidadeUf).Value!;
 }

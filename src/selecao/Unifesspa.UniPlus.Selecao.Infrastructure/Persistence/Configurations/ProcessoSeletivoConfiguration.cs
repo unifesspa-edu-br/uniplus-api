@@ -6,6 +6,8 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
+
 public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<ProcessoSeletivo>
 {
     private const int ReferenciaTemporalFatosTipoMaxLength = 20;
@@ -14,7 +16,14 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("processos_seletivos");
+        // Trio de cidade da Unidade administradora, all-or-nothing (issue #1114):
+        // espelha no banco a invariante já provada por
+        // UnidadeAdministradoraSnapshot.ValidarReferenciaCidade — mesmo padrão de
+        // InstituicaoConfiguration/UnidadeConfiguration.
+        builder.ToTable("processos_seletivos", t => t.HasCheckConstraint(
+            "ck_processos_seletivos_unidade_administradora_cidade_completa",
+            "(unidade_administradora_cidade_codigo_ibge IS NULL AND unidade_administradora_cidade_nome IS NULL AND unidade_administradora_cidade_uf IS NULL) "
+            + "OR (unidade_administradora_cidade_codigo_ibge IS NOT NULL AND unidade_administradora_cidade_nome IS NOT NULL AND unidade_administradora_cidade_uf IS NOT NULL)"));
         builder.HasKey(p => p.Id);
         // Chave Guid v7 gerada no domínio (EntityBase): ValueGeneratedNever
         // força o EF a tratar a chave como fornecida pela aplicação. Sem isso,
@@ -66,6 +75,25 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 .HasComment("Snapshot-copy do nome da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Tipo).HasColumnName("unidade_administradora_tipo").HasMaxLength(30).IsRequired()
                 .HasComment("Snapshot-copy do tipo organizacional da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+
+            // Cidade da Unidade administradora (issue #1114) — snapshot-copy opcional
+            // all-or-nothing: nula para processos criados antes desta Story (sem
+            // produção, não há backfill); não-nula para processos novos, que o
+            // gate de CriarProcessoSeletivoCommandHandler (CA-02) já exige.
+            u.Property(x => x.CidadeCodigoIbge)
+                .HasColumnName("unidade_administradora_cidade_codigo_ibge")
+                .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)
+                .IsFixedLength()
+                .HasComment("Snapshot-copy do código IBGE da cidade da Unidade administradora no momento da criação — nulo para processos anteriores à issue #1114.");
+            u.Property(x => x.CidadeNome)
+                .HasColumnName("unidade_administradora_cidade_nome")
+                .HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength)
+                .HasComment("Snapshot-copy do nome de exibição da cidade da Unidade administradora no momento da criação.");
+            u.Property(x => x.CidadeUf)
+                .HasColumnName("unidade_administradora_cidade_uf")
+                .HasMaxLength(ReferenciaCidadeGeo.UfLength)
+                .IsFixedLength()
+                .HasComment("Snapshot-copy da UF da cidade da Unidade administradora no momento da criação.");
         });
         builder.Navigation(p => p.UnidadeAdministradora).IsRequired();
 

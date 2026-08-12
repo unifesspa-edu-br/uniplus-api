@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidad
 
 using FluentValidation;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 
 public sealed class AtualizarUnidadeCommandValidator : AbstractValidator<AtualizarUnidadeCommand>
@@ -34,5 +35,14 @@ public sealed class AtualizarUnidadeCommandValidator : AbstractValidator<Atualiz
         RuleFor(x => x.Tipo)
             .Must(t => Enum.IsDefined(t) && t != TipoUnidade.Nenhum)
             .WithMessage("Tipo de Unidade inválido.");
+
+        // Referência de cidade do Geo (issue #1114), opcional all-or-nothing — mesmo
+        // padrão de AtualizarInstituicaoCommandValidator.
+        RuleFor(x => x)
+            .Must(x => ReferenciaCidadeGeo.EhValida(x.CidadeCodigoIbge, x.CidadeNome, x.CidadeUf))
+            .WithMessage("Referência de cidade inválida: informe o trio código IBGE (7 dígitos), nome e UF, com prefixo de UF coerente.")
+            .When(x => !string.IsNullOrWhiteSpace(x.CidadeCodigoIbge)
+                || !string.IsNullOrWhiteSpace(x.CidadeNome)
+                || !string.IsNullOrWhiteSpace(x.CidadeUf));
     }
 }

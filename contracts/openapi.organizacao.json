@@ -1164,6 +1164,24 @@
               "null",
               "string"
             ]
+          },
+          "cidadeCodigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1453,6 +1471,24 @@
               "string"
             ],
             "format": "date"
+          },
+          "cidadeCodigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1843,7 +1879,10 @@
           "unidadeAcademica",
           "vigenciaInicio",
           "vigenciaFim",
-          "criadoEm"
+          "criadoEm",
+          "cidadeCodigoIbge",
+          "cidadeNome",
+          "cidadeUf"
         ],
         "type": "object",
         "properties": {
@@ -1896,6 +1935,24 @@
           "criadoEm": {
             "type": "string",
             "format": "date-time"
+          },
+          "cidadeCodigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "_links": {
             "type": [

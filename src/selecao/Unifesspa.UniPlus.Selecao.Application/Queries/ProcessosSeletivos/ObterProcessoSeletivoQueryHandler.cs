@@ -40,7 +40,10 @@ public static class ObterProcessoSeletivoQueryHandler
             processo.UnidadeAdministradora.Sigla,
             processo.UnidadeAdministradora.Slug,
             processo.UnidadeAdministradora.Nome,
-            processo.UnidadeAdministradora.Tipo),
+            processo.UnidadeAdministradora.Tipo,
+            processo.UnidadeAdministradora.CidadeCodigoIbge,
+            processo.UnidadeAdministradora.CidadeNome,
+            processo.UnidadeAdministradora.CidadeUf),
         [.. processo.Etapas
             .OrderBy(e => e.Ordem)
             .Select(e => new EtapaProcessoDto(

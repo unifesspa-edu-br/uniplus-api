@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -24,6 +25,16 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 /// pelo handler. O domínio não consulta relógio diretamente.</para>
 /// <para>Detecção de ciclo na hierarquia é responsabilidade do handler (via
 /// repositório); este agregado recebe o ID do superior já validado.</para>
+/// <para>A cidade (issue #1114) é uma <strong>referência de cidade do Geo</strong>
+/// (mesmo padrão de <c>Instituicao</c>, ADR-0090): <see cref="CidadeCodigoIbge"/>
+/// (código IBGE de 7 dígitos) + display cache (<see cref="CidadeNome"/>,
+/// <see cref="CidadeUf"/>), sem FK cross-banco nem chamada ao Geo. É
+/// <strong>opcional all-or-nothing</strong> — nem toda Unidade administra um
+/// certame (há <see cref="UnidadeAcademica"/> como flag, mas mesmo unidades
+/// acadêmicas podem não ser administradoras), então exigir cidade em toda
+/// Unidade infla cadastro sem uso; a obrigatoriedade real é do PONTO DE USO
+/// (<c>ProcessoSeletivo</c> exige Unidade administradora com cidade —
+/// uniplus-api#1114 CA-02).</para>
 /// </remarks>
 public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
 {
@@ -47,6 +58,12 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
     public bool UnidadeAcademica { get; private set; }
     public DateOnly VigenciaInicio { get; private set; }
     public DateOnly? VigenciaFim { get; private set; }
+
+    // Referência de cidade do Geo (ADR-0090) — código + display cache, opcional
+    // all-or-nothing (issue #1114). Mesmo padrão de Instituicao.
+    public string? CidadeCodigoIbge { get; private set; }
+    public string? CidadeNome { get; private set; }
+    public string? CidadeUf { get; private set; }
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -75,13 +92,18 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         TipoUnidade tipo,
         bool unidadeAcademica,
         DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim)
+        DateOnly? vigenciaFim,
+        string? cidadeCodigoIbge = null,
+        string? cidadeNome = null,
+        string? cidadeUf = null)
     {
         ArgumentNullException.ThrowIfNull(nome);
         ArgumentNullException.ThrowIfNull(sigla);
         ArgumentNullException.ThrowIfNull(codigo);
 
-        Result validacao = ValidarCampos(nome, alias, sigla, codigo, tipo, vigenciaInicio, vigenciaFim);
+        Result validacao = ValidarCampos(
+            nome, alias, sigla, codigo, tipo, vigenciaInicio, vigenciaFim,
+            cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
             return Result<Unidade>.Failure(validacao.Error!);
@@ -100,6 +122,11 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
             VigenciaInicio = vigenciaInicio,
             VigenciaFim = vigenciaFim,
         };
+        // CA1062: ValidarCampos, chamado acima, já prova a bicondicional entre os três
+        // parâmetros — o analisador não relaciona essa prova entre parâmetros distintos.
+#pragma warning disable CA1062
+        unidade.AplicarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+#pragma warning restore CA1062
 
         // Abre histórico inicial para identificadores com variação temporal.
         unidade._historico.Add(
@@ -133,13 +160,18 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         bool unidadeAcademica,
         DateOnly? vigenciaFim,
         DateOnly dataAtual,
-        string? motivoMudancaIdentificador = null)
+        string? motivoMudancaIdentificador = null,
+        string? cidadeCodigoIbge = null,
+        string? cidadeNome = null,
+        string? cidadeUf = null)
     {
         ArgumentNullException.ThrowIfNull(nome);
         ArgumentNullException.ThrowIfNull(sigla);
         ArgumentNullException.ThrowIfNull(codigo);
 
-        Result validacao = ValidarCampos(nome, alias, sigla, codigo, tipo, VigenciaInicio, vigenciaFim);
+        Result validacao = ValidarCampos(
+            nome, alias, sigla, codigo, tipo, VigenciaInicio, vigenciaFim,
+            cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (validacao.IsFailure)
         {
             return validacao;
@@ -163,8 +195,28 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         Tipo = tipo;
         UnidadeAcademica = unidadeAcademica;
         VigenciaFim = vigenciaFim;
+        // CA1062: ValidarCampos, chamado acima, já prova a bicondicional entre os três
+        // parâmetros — o analisador não relaciona essa prova entre parâmetros distintos.
+#pragma warning disable CA1062
+        AplicarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+#pragma warning restore CA1062
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Aplica a referência de cidade já validada (bicondicional): código presente
+    /// implica trio completo, ausente zera os três campos. Extraído para método
+    /// privado — não externamente visível — porque <c>ValidarCampos</c> já provou
+    /// a bicondicional antes desta chamada; o analisador CA1062 não relaciona essa
+    /// prova entre parâmetros diferentes num método público.
+    /// </summary>
+    private void AplicarReferenciaCidade(string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
+    {
+        bool temCidade = !string.IsNullOrWhiteSpace(cidadeCodigoIbge);
+        CidadeCodigoIbge = temCidade ? cidadeCodigoIbge!.Trim() : null;
+        CidadeNome = temCidade ? cidadeNome!.Trim() : null;
+        CidadeUf = temCidade ? cidadeUf!.Trim().ToUpperInvariant() : null;
     }
 
     private void RenomearIdentificadorSeNecessario(
@@ -207,7 +259,10 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
         string codigo,
         TipoUnidade tipo,
         DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim)
+        DateOnly? vigenciaFim,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf)
     {
         if (!Enum.IsDefined(tipo) || tipo == TipoUnidade.Nenhum)
         {
@@ -272,6 +327,28 @@ public sealed class Unidade : SoftDeletableEntity, IAuditableEntity
                 "Data de encerramento da vigência deve ser igual ou posterior à data de início."));
         }
 
-        return Result.Success();
+        return ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+    }
+
+    /// <summary>
+    /// Valida a referência de cidade do Geo (issue #1114) como opcional
+    /// <strong>all-or-nothing</strong>: ausente por completo é válido; qualquer
+    /// fragmento presente exige o trio (código IBGE + nome + UF) com formato e
+    /// coerência de UF — delegado ao <see cref="ReferenciaCidadeGeo"/>, que
+    /// reporta o campo faltante quando o preenchimento é parcial. Mesmo padrão
+    /// de <c>Instituicao.ValidarReferenciaCidade</c>.
+    /// </summary>
+    private static Result ValidarReferenciaCidade(
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf)
+    {
+        bool algumPresente = !string.IsNullOrWhiteSpace(cidadeCodigoIbge)
+            || !string.IsNullOrWhiteSpace(cidadeNome)
+            || !string.IsNullOrWhiteSpace(cidadeUf);
+
+        return algumPresente
+            ? ReferenciaCidadeGeo.Validar(cidadeCodigoIbge, cidadeNome, cidadeUf)
+            : Result.Success();
     }
 }

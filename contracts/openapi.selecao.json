@@ -8821,7 +8821,10 @@
           "sigla",
           "slug",
           "nome",
-          "tipo"
+          "tipo",
+          "cidadeCodigoIbge",
+          "cidadeNome",
+          "cidadeUf"
         ],
         "type": "object",
         "properties": {
@@ -8840,6 +8843,24 @@
           },
           "tipo": {
             "type": "string"
+          },
+          "cidadeCodigoIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cidadeUf": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

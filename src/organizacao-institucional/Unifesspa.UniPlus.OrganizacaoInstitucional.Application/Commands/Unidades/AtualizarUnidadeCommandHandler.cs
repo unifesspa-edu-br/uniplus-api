@@ -107,7 +107,10 @@ public static class AtualizarUnidadeCommandHandler
             command.UnidadeAcademica,
             command.VigenciaFim,
             dataAtual,
-            command.MotivoMudancaIdentificador);
+            command.MotivoMudancaIdentificador,
+            command.CidadeCodigoIbge,
+            command.CidadeNome,
+            command.CidadeUf);
 
         if (atualizarResult.IsFailure)
         {

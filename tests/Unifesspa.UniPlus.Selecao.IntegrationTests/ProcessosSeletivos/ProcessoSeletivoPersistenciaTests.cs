@@ -117,13 +117,15 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             && processo.TipoProcesso.Nome == "SiSU");
     }
 
-    [Fact(DisplayName = "Persiste e recarrega a Unidade administradora sem perda (issue #849, CA-05)")]
+    [Fact(DisplayName = "Persiste e recarrega a Unidade administradora sem perda, inclusive a cidade (issue #849 CA-05, issue #1114)")]
     public async Task PersisteERecarrega_UnidadeAdministradora()
     {
         Guid unidadeId = Guid.NewGuid();
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId,
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+            UnidadeAdministradoraSnapshot.Criar(
+                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
+                cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!);
 
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -142,6 +144,35 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.UnidadeAdministradora.Slug.Should().Be("ceps");
         recarregado.UnidadeAdministradora.Nome.Should().Be("Centro de Processos Seletivos");
         recarregado.UnidadeAdministradora.Tipo.Should().Be("ADMINISTRATIVA");
+        recarregado.UnidadeAdministradora.CidadeCodigoIbge.Should().Be("1504208");
+        recarregado.UnidadeAdministradora.CidadeNome.Should().Be("Marabá");
+        recarregado.UnidadeAdministradora.CidadeUf.Should().Be("PA");
+    }
+
+    [Fact(DisplayName = "CHECK ck_processos_seletivos_unidade_administradora_cidade_completa rejeita UPDATE cru com trio de cidade parcial (issue #1114)")]
+    public async Task CheckCidadeCompleta_RejeitaTrioParcial()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS 2026 — Cidade Parcial", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar(
+                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
+                cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!);
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            await repository.AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        // Zera só o nome da cidade, deixando código/UF — trio parcial. O domínio trata a
+        // cidade como all-or-nothing; o CHECK protege a escrita crua.
+        await using SelecaoDbContext rawContext = _fixture.CreateDbContext();
+        Func<Task> act = async () => await rawContext.Database.ExecuteSqlAsync(
+            $"UPDATE selecao.processos_seletivos SET unidade_administradora_cidade_nome = NULL WHERE id = {processo.Id}");
+
+        await act.Should().ThrowAsync<PostgresException>(
+            "o CHECK ck_processos_seletivos_unidade_administradora_cidade_completa exige o trio de cidade completo ou ausente");
     }
 
     [Fact(DisplayName = "Inserir sem Unidade administradora viola a constraint NOT NULL da coluna (issue #849, CA-05)")]

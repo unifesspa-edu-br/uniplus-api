@@ -834,7 +834,12 @@ public sealed class EnvelopeFechadoE2ETests
                 tipo: TipoUnidade.Centro,
                 unidadeAcademica: true,
                 vigenciaInicio: new DateOnly(2020, 1, 1),
-                vigenciaFim: null).Value!;
+                vigenciaFim: null,
+                // Issue #1114 (CA-02): Unidade administradora sem cidade recusa a criação do
+                // processo — este catálogo é consumido justamente para criar um.
+                cidadeCodigoIbge: "1504208",
+                cidadeNome: "Marabá",
+                cidadeUf: "PA").Value!;
             org.Unidades.Add(unidade);
             await org.SaveChangesAsync().ConfigureAwait(false);
             unidadeId = unidade.Id;

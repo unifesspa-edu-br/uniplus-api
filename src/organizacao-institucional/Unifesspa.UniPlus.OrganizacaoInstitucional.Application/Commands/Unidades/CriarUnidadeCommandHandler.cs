@@ -88,7 +88,10 @@ public static class CriarUnidadeCommandHandler
             command.Tipo,
             command.UnidadeAcademica,
             command.VigenciaInicio,
-            command.VigenciaFim);
+            command.VigenciaFim,
+            command.CidadeCodigoIbge,
+            command.CidadeNome,
+            command.CidadeUf);
 
         if (unidadeResult.IsFailure)
         {
