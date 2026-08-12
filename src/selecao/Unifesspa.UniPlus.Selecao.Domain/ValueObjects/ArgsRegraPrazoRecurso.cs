@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </para>
 /// </remarks>
 /// <param name="PrazoValor">Magnitude do prazo de interposição (1ª instância — o Uni+ gere só esta).</param>
-/// <param name="PrazoUnidade">Unidade do prazo de interposição — <see cref="UnidadePrazo.DiasUteis"/> é recusado em runtime (sem calendário).</param>
+/// <param name="PrazoUnidade">Unidade do prazo de interposição — <see cref="UnidadePrazo.DiasUteis"/> permanece representável, mas o prazo de interposição admite apenas horas ou dias corridos, e <see cref="Entities.RegraRecursoFase.Criar"/> recusa a configuração em runtime.</param>
 /// <param name="AtoAncoraCodigo">Código do tipo de ato do qual o prazo conta o instante de publicação — sempre o ato produzido pela PRÓPRIA fase.</param>
 /// <param name="SuspensividadePrimeiraInstanciaValor">Magnitude da janela de suspensividade da 1ª instância, ou <see langword="null"/> — não bloqueia.</param>
 /// <param name="SuspensividadePrimeiraInstanciaUnidade">Unidade da suspensividade da 1ª instância.</param>
@@ -55,7 +55,7 @@ public sealed record ArgsRegraPrazoRecurso(
             UnidadePrazo.Horas => instantePublicacaoAtoAncora.AddHours((double)PrazoValor),
             UnidadePrazo.Dias => instantePublicacaoAtoAncora.AddDays((double)PrazoValor),
             UnidadePrazo.DiasUteis => throw new InvalidOperationException(
-                "Prazo em dias úteis não tem calendário para resolver — o gate de publicação recusa este valor antes de chegar aqui."),
+                "O prazo de interposição não admite dias úteis — RegraRecursoFase.Criar recusa essa configuração antes de qualquer resolução."),
             _ => throw new InvalidOperationException($"Unidade de prazo desconhecida: {PrazoUnidade}."),
         };
 }

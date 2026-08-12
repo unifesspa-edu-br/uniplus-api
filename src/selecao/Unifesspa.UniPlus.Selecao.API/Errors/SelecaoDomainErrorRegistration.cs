@@ -352,8 +352,13 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RegraRecursoFase.AncoraDeOutraFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_de_outra_fase", "O ato recorrido tem de ser o ato produzido pela própria fase")),
         new("RegraRecursoFase.AncoraEmAtoCongelante", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_em_ato_congelante", "A âncora do recurso nunca é o ato que congela a configuração")),
         new("RegraRecursoFase.AncoraNaoEncontradaNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_nao_encontrada_no_catalogo", "O tipo de ato âncora não tem versão vigente no catálogo de Publicações")),
-        new("RegraRecursoFase.PrazoEmDiasUteisSemCalendario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_dias_uteis_sem_calendario", "O prazo de interposição em dias úteis é recusado — não há calendário de dias úteis no sistema")),
-        new("RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_em_dias_uteis_sem_calendario", "A suspensividade em dias úteis é recusada — não há calendário de dias úteis no sistema")),
+        // Os dois `code` mantêm o sufixo `sem_calendario` por compatibilidade: são chave
+        // estável de consumidor e integram o URI `type`. Os textos user-facing, porém,
+        // dizem a causa real (UNI-REQ-0080): no prazo de interposição dias úteis é
+        // proibido em definitivo; na suspensividade depende do algoritmo de contagem
+        // versionado, que ainda não existe — o calendário de dias úteis já é cadastrável.
+        new("RegraRecursoFase.PrazoEmDiasUteisSemCalendario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_dias_uteis_sem_calendario", "Prazo de interposição em dias úteis não permitido")),
+        new("RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_em_dias_uteis_sem_calendario", "Suspensividade em dias úteis indisponível")),
         new("RegraRecursoFase.RegraCatalogoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida", "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do rol_de_regras")),
         // Codec do envelope (Story #859, ADR-0110 D1/D8). A recusa é NOMEADA: um descarte
         // que falha precisa distinguir uma versão que o sistema não conhece, uma que ele

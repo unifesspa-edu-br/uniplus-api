@@ -43,13 +43,16 @@ public sealed class ArgsRegraPrazoRecursoTests
         args.ResolverFimDaInterposicao(publicacao).Should().Be(new DateTimeOffset(2026, 6, 17, 14, 0, 0, TimeSpan.Zero));
     }
 
-    [Fact(DisplayName = "Prazo em DIAS_UTEIS não tem calendário para resolver — lança (o gate de publicação recusa antes de chegar aqui)")]
+    [Fact(DisplayName = "Prazo de interposição em DIAS_UTEIS lança — a unidade é proibida, não é falta de calendário")]
     public void Prazo_EmDiasUteis_Lanca()
     {
         ArgsRegraPrazoRecurso args = Args(3m, UnidadePrazo.DiasUteis);
 
         Action act = () => args.ResolverFimDaInterposicao(DateTimeOffset.UnixEpoch);
 
-        act.Should().Throw<InvalidOperationException>();
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*não admite dias úteis*")
+            .Which.Message.Should().NotContain("calendário",
+                "a resolução do prazo de interposição nunca dependeu de calendário — a unidade é proibida por regra de negócio");
     }
 }

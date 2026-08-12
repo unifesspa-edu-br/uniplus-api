@@ -9,10 +9,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="RegraRecursoFase.Criar"/> (Story #851 §3.6): as invariantes
-/// puras que o VO consegue provar sozinho — referência por símbolo (CA-01/CA-02) e
-/// DIAS_UTEIS sem calendário na interposição e na suspensividade (CA-20/CA-21). A
-/// resolução contra o catálogo vivo (existe, TipoRegra correto, hash bate) é do
-/// handler (Application) — ver <c>DefinirCronogramaFasesCommandHandlerTests</c>.
+/// puras que o VO consegue provar sozinho — referência por símbolo (CA-01/CA-02) e as duas
+/// recusas de DIAS_UTEIS (CA-20/CA-21), que não têm a mesma causa: no prazo de interposição
+/// a proibição é permanente; na suspensividade a indisponibilidade decorre da falta do
+/// algoritmo de contagem versionado. A resolução contra o catálogo vivo (existe, TipoRegra
+/// correto, hash bate) é do handler (Application) — ver
+/// <c>DefinirCronogramaFasesCommandHandlerTests</c>.
 /// </summary>
 public sealed class RegraRecursoFaseTests
 {
@@ -52,8 +54,8 @@ public sealed class RegraRecursoFaseTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.RegraCatalogoInvalida");
     }
 
-    [Fact(DisplayName = "CA-20: prazo de interposição em DIAS_UTEIS é recusado — nunca aproximado em silêncio")]
-    public void PrazoEmDiasUteis_SemCalendario_Recusa()
+    [Fact(DisplayName = "CA-20: prazo de interposição em DIAS_UTEIS é recusado — proibição permanente, nunca aproximada em silêncio")]
+    public void PrazoDeInterposicaoEmDiasUteis_Recusa()
     {
         ReferenciaRegra regra = ReferenciaRegra.Criar(
             RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
@@ -62,6 +64,12 @@ public sealed class RegraRecursoFaseTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoEmDiasUteisSemCalendario");
+
+        // A mensagem chega ao administrador como `detail` do ProblemDetails: precisa
+        // orientar a unidade admitida, e nunca atribuir a recusa à falta de calendário —
+        // o calendário existe e é irrelevante para esta proibição.
+        resultado.Error.Message.Should().Be(
+            "O prazo de interposição deve ser informado em horas ou dias corridos; dias úteis não são aceitos.");
     }
 
     [Theory(DisplayName = "CA-21: suspensividade em DIAS_UTEIS é recusada em QUALQUER uma das duas instâncias, independentemente")]
@@ -81,6 +89,12 @@ public sealed class RegraRecursoFaseTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario");
+
+        // Diferente da interposição: aqui dias úteis é admissível em tese, e a recusa
+        // dura só enquanto o algoritmo de contagem não for artefato versionado.
+        resultado.Error.Message.Should().Be(
+            "A suspensividade em dias úteis, em qualquer uma das duas instâncias, exige calendário vigente e "
+                + "algoritmo de contagem versionado; o algoritmo ainda não está disponível.");
     }
 
     [Fact(DisplayName = "CA-21 (contraprova): suspensividade em DIAS corridos é aceita e congelada — em qualquer uma das duas instâncias, inclusive com a outra nula")]
