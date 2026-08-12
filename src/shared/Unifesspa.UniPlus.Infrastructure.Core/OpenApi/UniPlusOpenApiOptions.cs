@@ -31,4 +31,17 @@ public sealed record UniPlusOpenApiOptions
 
     /// <summary>URL base de homologação.</summary>
     public string StagingServerUrl { get; init; } = "https://api.hml.uniplus.unifesspa.edu.br";
+
+    /// <summary>
+    /// URL base do ambiente local, quando houver. <see langword="null"/> por padrão — em
+    /// homologação e produção o documento não deve anunciar um servidor de desenvolvimento.
+    /// </summary>
+    /// <remarks>
+    /// Quando definida, entra como o <b>primeiro</b> servidor da lista, porque é o primeiro
+    /// que uma interface de exploração seleciona por padrão. Sem isso, o "Try it out" de uma
+    /// UI local dispara contra <see cref="ProductionServerUrl"/>: além de falhar em CORS, é
+    /// uma requisição — possivelmente com credencial colada — enviada a produção por quem
+    /// pensava estar testando na própria máquina.
+    /// </remarks>
+    public string? LocalServerUrl { get; init; }
 }

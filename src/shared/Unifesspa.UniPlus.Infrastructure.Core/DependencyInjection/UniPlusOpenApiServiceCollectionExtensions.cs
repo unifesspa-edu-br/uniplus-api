@@ -30,8 +30,14 @@ public static class UniPlusOpenApiServiceCollectionExtensions
             .Validate(
                 static o => Uri.TryCreate(o.ContactUrl, UriKind.Absolute, out _)
                     && Uri.TryCreate(o.ProductionServerUrl, UriKind.Absolute, out _)
-                    && Uri.TryCreate(o.StagingServerUrl, UriKind.Absolute, out _),
-                "UniPlus:OpenApi — ContactUrl/ProductionServerUrl/StagingServerUrl precisam ser URIs absolutas.")
+                    && Uri.TryCreate(o.StagingServerUrl, UriKind.Absolute, out _)
+                    // Opcional, mas se vier tem de ser utilizável: uma URL relativa ou
+                    // malformada aqui vira um servidor que a interface seleciona por padrão
+                    // e contra o qual nenhuma chamada funciona.
+                    && (string.IsNullOrWhiteSpace(o.LocalServerUrl)
+                        || Uri.TryCreate(o.LocalServerUrl, UriKind.Absolute, out _)),
+                "UniPlus:OpenApi — ContactUrl/ProductionServerUrl/StagingServerUrl precisam ser URIs absolutas, "
+                + "e LocalServerUrl (quando definida) também.")
             .ValidateOnStart();
 
         services.TryAddSingleton<UniPlusInfoTransformer>();
