@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260812054020_AdicionaTaxaInscricao")]
+    [Migration("20260812055014_AdicionaTaxaInscricao")]
     partial class AdicionaTaxaInscricao
     {
         /// <inheritdoc />
@@ -551,7 +551,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
                     b.Property<string>("Fundamentos")
                         .IsRequired()
@@ -561,11 +562,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
+                        .HasColumnName("processo_seletivo_id")
+                        .HasComment("Id do processo seletivo dono desta configuração (FK 1:1, cascade delete).");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
                     b.Property<decimal?>("Valor")
                         .HasPrecision(12, 2)
