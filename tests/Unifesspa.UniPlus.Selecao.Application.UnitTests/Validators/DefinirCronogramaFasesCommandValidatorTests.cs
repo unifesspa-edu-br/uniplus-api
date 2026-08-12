@@ -110,6 +110,19 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         resultado.Errors.Should().Contain(e => e.PropertyName == "Fases[0].RegraRecurso.SuspensividadePrimeiraInstanciaValor");
     }
 
+    [Theory(DisplayName = "Rejeita suspensividade da 1ª instância <= 0 — presente mas sem janela real (ausência já é a desativação)")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Rejeita_Suspensividade1NaoPositiva(int valor)
+    {
+        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
+            .Validate(Comando(RegraRecurso(
+                3m, UnidadePrazo.Horas, susp1Valor: valor, susp1Unidade: UnidadePrazo.Dias)));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == "Fases[0].RegraRecurso.SuspensividadePrimeiraInstanciaValor");
+    }
+
     [Fact(DisplayName = "Rejeita suspensividade da 2ª instância em DIAS_UTEIS fracionária")]
     public void Rejeita_Suspensividade2DiasUteisFracionaria()
     {
@@ -127,6 +140,19 @@ public sealed class DefinirCronogramaFasesCommandValidatorTests
         ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
             .Validate(Comando(RegraRecurso(
                 3m, UnidadePrazo.Horas, susp2Valor: 999999m, susp2Unidade: UnidadePrazo.DiasUteis)));
+
+        resultado.IsValid.Should().BeFalse();
+        resultado.Errors.Should().Contain(e => e.PropertyName == "Fases[0].RegraRecurso.SuspensividadeSegundaInstanciaValor");
+    }
+
+    [Theory(DisplayName = "Rejeita suspensividade da 2ª instância <= 0 — presente mas sem janela real (ausência já é a desativação)")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void Rejeita_Suspensividade2NaoPositiva(int valor)
+    {
+        ValidationResult resultado = new DefinirCronogramaFasesCommandValidator()
+            .Validate(Comando(RegraRecurso(
+                3m, UnidadePrazo.Horas, susp2Valor: valor, susp2Unidade: UnidadePrazo.Dias)));
 
         resultado.IsValid.Should().BeFalse();
         resultado.Errors.Should().Contain(e => e.PropertyName == "Fases[0].RegraRecurso.SuspensividadeSegundaInstanciaValor");

@@ -107,6 +107,13 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                     .When(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaUnidade.HasValue)
                     .WithMessage("O valor da suspensividade da 1ª instância é obrigatório quando a unidade é informada.");
 
+                // Ausência (null) já é a desativação (ver <remarks> de ArgsRegraPrazoRecurso)
+                // — um valor presente, mas <= 0, não representa nenhuma janela real.
+                fase.RuleFor(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor)
+                    .GreaterThan(0)
+                    .When(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor.HasValue)
+                    .WithMessage("O valor da suspensividade da 1ª instância deve ser maior que zero.");
+
                 // Issue #1113: mesmo motivo do prazo de interposição acima.
                 fase.RuleFor(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor)
                     .Must(v => v!.Value == decimal.Truncate(v.Value))
@@ -129,6 +136,13 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                     .NotNull()
                     .When(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaUnidade.HasValue)
                     .WithMessage("O valor da suspensividade da 2ª instância é obrigatório quando a unidade é informada.");
+
+                // Ausência (null) já é a desativação (ver <remarks> de ArgsRegraPrazoRecurso)
+                // — um valor presente, mas <= 0, não representa nenhuma janela real.
+                fase.RuleFor(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaValor)
+                    .GreaterThan(0)
+                    .When(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaValor.HasValue)
+                    .WithMessage("O valor da suspensividade da 2ª instância deve ser maior que zero.");
 
                 // Issue #1113: mesmo motivo do prazo de interposição acima.
                 fase.RuleFor(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaValor)
