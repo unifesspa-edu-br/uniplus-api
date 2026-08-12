@@ -54,7 +54,9 @@ automaticamente, sem passo manual e sem lista paralela para manter sincronizada.
 
 Toda tabela e coluna representada por uma `IEntityTypeConfiguration<T>` documenta
 via `builder.ToTable("...", table => table.HasComment("..."))` para a tabela e
-`builder.Property(...).HasComment("...")` para cada coluna relevante. SQL manual
+`builder.Property(...).HasComment("...")` para toda coluna mapeada — sem exceção
+por julgamento de "relevância", que criaria discricionariedade sobre o que fica
+documentado. SQL manual
 com `COMMENT ON` fica restrito a objetos que o modelo do EF Core não representa
 (schema, extensão, view não mapeada) ou a limitação comprovada do provider Npgsql
 para um caso específico — sempre dentro de uma migration versionada, com a
@@ -112,7 +114,7 @@ já rege qualquer outra mudança de shape no projeto.
 ## Confirmação
 
 - Revisão de PR confere que toda `IEntityTypeConfiguration<T>` nova ou alterada
-  documenta tabela e colunas relevantes via `HasComment`, e que nenhum
+  documenta tabela e toda coluna mapeada via `HasComment`, e que nenhum
   `COMMENT ON` manual aparece numa migration sem comentário de justificativa ao
   lado.
 - A issue #1057 (cobertura retroativa) usa esta ADR como padrão de aceite: toda
