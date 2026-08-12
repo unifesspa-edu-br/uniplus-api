@@ -206,7 +206,16 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
     private static void StoreAcceptedVersion(HttpContext httpContext, int version) =>
         httpContext.Items[ResponseContextKey] = version;
 
-    private static string BuildVendorMime(string resource, int version) =>
+    /// <summary>
+    /// Monta a vendor MIME de um recurso numa versão — <c>application/vnd.uniplus.{recurso}.v{n}+json</c>.
+    /// </summary>
+    /// <remarks>
+    /// Público porque o documento OpenAPI precisa anunciar exatamente os mesmos valores que este
+    /// filtro negocia: se o contrato listar outro media type, o cliente gerado (ou a interface de
+    /// exploração) manda um <c>Accept</c> que o servidor recusa com 406. Uma segunda montagem da
+    /// string em outro lugar poderia divergir em silêncio.
+    /// </remarks>
+    public static string BuildVendorMime(string resource, int version) =>
         string.Create(CultureInfo.InvariantCulture, $"{VendorPrefix}{resource}.v{version}{JsonSuffix}");
 
     private void WriteNotAcceptable(ActionExecutingContext context)

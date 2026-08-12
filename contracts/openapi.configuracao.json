@@ -155,23 +155,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CalendarioDiasUteisResumoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CalendarioDiasUteisResumoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.calendario-dias-uteis.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -245,17 +229,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalendarioDiasUteisDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalendarioDiasUteisDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.calendario-dias-uteis.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/CalendarioDiasUteisDto"
                 }
@@ -638,23 +612,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CampusDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CampusDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.campus.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -728,17 +686,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/CampusDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CampusDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.campus.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/CampusDto"
                 }
@@ -1153,23 +1101,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CondicaoAtendimentoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CondicaoAtendimentoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.condicao-atendimento.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1243,17 +1175,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/CondicaoAtendimentoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CondicaoAtendimentoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.condicao-atendimento.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/CondicaoAtendimentoDto"
                 }
@@ -1668,23 +1590,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CursoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CursoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.curso.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1758,17 +1664,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/CursoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CursoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.curso.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/CursoDto"
                 }
@@ -2183,23 +2079,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FaseCanonicaDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FaseCanonicaDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.fase-canonica.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -2273,17 +2153,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/FaseCanonicaDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FaseCanonicaDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.fase-canonica.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/FaseCanonicaDto"
                 }
@@ -2641,23 +2511,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FatoCandidatoView"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FatoCandidatoView"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.fato-candidato.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -2699,17 +2553,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/FatoCandidatoView"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FatoCandidatoView"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.fato-candidato.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/FatoCandidatoView"
                 }
@@ -2795,23 +2639,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LocalOfertaDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LocalOfertaDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.local-oferta.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -2885,17 +2713,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/LocalOfertaDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LocalOfertaDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.local-oferta.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/LocalOfertaDto"
                 }
@@ -3310,23 +3128,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ModalidadeDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ModalidadeDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.modalidade.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -3400,17 +3202,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModalidadeDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModalidadeDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.modalidade.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ModalidadeDto"
                 }
@@ -3833,23 +3625,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OfertaCursoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OfertaCursoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.oferta-curso.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -3923,17 +3699,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/OfertaCursoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OfertaCursoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.oferta-curso.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/OfertaCursoDto"
                 }
@@ -4338,23 +4104,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PesoAreaEnemDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PesoAreaEnemDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.peso-area-enem.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -4428,17 +4178,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PesoAreaEnemDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PesoAreaEnemDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.peso-area-enem.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/PesoAreaEnemDto"
                 }
@@ -4843,23 +4583,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PrecedenciaFaseDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PrecedenciaFaseDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.precedencia-fase.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -4933,17 +4657,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PrecedenciaFaseDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PrecedenciaFaseDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.precedencia-fase.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/PrecedenciaFaseDto"
                 }
@@ -5348,23 +5062,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RecursoAcessibilidadeDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RecursoAcessibilidadeDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.recurso-acessibilidade.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -5438,17 +5136,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecursoAcessibilidadeDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecursoAcessibilidadeDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.recurso-acessibilidade.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/RecursoAcessibilidadeDto"
                 }
@@ -5853,23 +5541,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReferenciaReservaDemograficaDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ReferenciaReservaDemograficaDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.referencia-reserva-demografica.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -5943,17 +5615,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReferenciaReservaDemograficaDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReferenciaReservaDemograficaDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.referencia-reserva-demografica.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ReferenciaReservaDemograficaDto"
                 }
@@ -6366,23 +6028,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TermoConsentimentoResumoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TermoConsentimentoResumoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.termo-consentimento.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -6456,17 +6102,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TermoConsentimentoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TermoConsentimentoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.termo-consentimento.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/TermoConsentimentoDto"
                 }
@@ -7091,23 +6727,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoBancaDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoBancaDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-banca.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -7181,17 +6801,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoBancaDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoBancaDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-banca.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/TipoBancaDto"
                 }
@@ -7596,23 +7206,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoDeficienciaDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoDeficienciaDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-deficiencia.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -7686,17 +7280,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoDeficienciaDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoDeficienciaDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-deficiencia.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/TipoDeficienciaDto"
                 }
@@ -8101,23 +7685,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoDocumentoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoDocumentoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-documento.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -8191,17 +7759,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoDocumentoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoDocumentoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-documento.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/TipoDocumentoDto"
                 }
@@ -8606,23 +8164,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoEtapaDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoEtapaDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-etapa.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -8696,17 +8238,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoEtapaDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoEtapaDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-etapa.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/TipoEtapaDto"
                 }
@@ -9121,23 +8653,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoProcessoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoProcessoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-processo.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -9211,17 +8727,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoProcessoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TipoProcessoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.tipo-processo.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/TipoProcessoDto"
                 }

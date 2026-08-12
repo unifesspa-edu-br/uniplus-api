@@ -108,17 +108,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstituicaoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstituicaoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.instituicao.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/InstituicaoDto"
                 }
@@ -545,23 +535,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UnidadeDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UnidadeDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.unidade.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -635,17 +609,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnidadeDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnidadeDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.unidade.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/UnidadeDto"
                 }
