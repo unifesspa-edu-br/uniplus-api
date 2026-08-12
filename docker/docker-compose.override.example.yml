@@ -166,9 +166,12 @@ services:
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
-      # Mesmo motivo do host consolidado: o documento do Portal também é explorado pela
-      # interface em :5299, que proxia /api/portal/ para cá.
-      UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299"
+      # Mesmo motivo do host consolidado, com um prefixo próprio: o Portal expõe
+      # /api/auth/me e /api/profile/me com o MESMO path do monólito, então rotear por
+      # path mandaria essas chamadas ao processo errado — respondendo 200 sem ter
+      # passado por aqui. Sob /portal, tudo que o documento do Portal invoca chega a
+      # este processo, seja qual for o path da operação.
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299/portal"
     ports:
       - "5302:8080"
     depends_on:
