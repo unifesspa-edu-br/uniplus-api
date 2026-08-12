@@ -568,6 +568,35 @@ public sealed class EnvelopeCanonicoGoldenTests
                 "primeiro erro de programação que o encoder encontra");
     }
 
+    /// <summary>issue #1077 — §3, CA-12: o canonicalizer nunca serializa uma lista vazia para um fato de seleção.</summary>
+    [Fact(DisplayName = "SerializarFatosColetados lança quando o dicionário traz lista VAZIA para um fato de seleção")]
+    public void SerializarFatosColetados_ComListaVaziaParaFatoDeSelecao_Lanca()
+    {
+        // Diferente do teste acima (entrada AUSENTE): aqui a entrada existe, mas é []. O gate de
+        // pré-canonicalização (ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados,
+        // issue #1077) deveria ter recusado a publicação antes deste ponto — chegar aqui com
+        // lista vazia é erro de programação do handler (esqueceu o gate ou o resolvedor), nunca
+        // um seletor legítimo sem opção.
+        ProcessoSeletivo processo = ProcessoDeReferencia();
+        DadosEdital dados = DadosDeReferencia();
+        Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresComListaVazia =
+            new(ValoresSelecionaveisDeReferencia(), StringComparer.Ordinal)
+            {
+                ["COR_RACA"] = [],
+            };
+
+        Action canonicalizarComListaVazia = () => Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(
+                processo, dados, HashFixo,
+                MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
+                ValoresSelecionaveisCongelados: valoresComListaVazia));
+
+        canonicalizarComListaVazia.Should().Throw<InvalidOperationException>()
+            .WithMessage("*COR_RACA*",
+                "um seletor de SELECAO_UNICA/SELECAO_MULTIPLA publicado sem opção nenhuma não é respondível — " +
+                "o canonicalizer nunca emite \"valoresSelecionaveis\": []");
+    }
+
     // ── Issue #1059 (UNI-REQ-0072) — ordem: bate com a origem, é canônica e desempata por código ──
 
     [Fact(DisplayName = "valoresSelecionaveis[].ordem e metadadosFatos[].valoresDominioDeclarados[].ordem batem com a Ordem de origem, ordenados por Ordem/Codigo — independente da ordem de inserção no dicionário")]

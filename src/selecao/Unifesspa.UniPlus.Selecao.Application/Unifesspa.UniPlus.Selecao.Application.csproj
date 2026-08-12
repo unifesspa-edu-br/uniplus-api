@@ -24,4 +24,10 @@
     <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Governance.Contracts\Unifesspa.UniPlus.Governance.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Expõe internals (ex.: ResolvedorValoresSelecionaveisCongelados) aos testes de
+         unidade — mesmo padrão de Selecao.Infrastructure/Configuracao/OrganizacaoInstitucional. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.Application.UnitTests" />
+  </ItemGroup>
+
 </Project>

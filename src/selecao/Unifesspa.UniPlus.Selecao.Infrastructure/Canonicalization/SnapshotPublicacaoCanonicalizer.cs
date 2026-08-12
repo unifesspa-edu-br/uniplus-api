@@ -1274,7 +1274,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// </summary>
     /// <remarks>
     /// <c>valoresSelecionaveis</c> obedece a bicondicional com <c>tipoRenderizacao</c>:
-    /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> ⟺ array (possivelmente vazio);
+    /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> ⟺ array com cardinalidade mínima 1
+    /// (issue #1077: nunca vazio — um seletor publicado sem opção nenhuma não é respondível);
     /// <c>BOOLEANO</c>/<c>NUMERO</c> ⟺ <see langword="null"/>. <paramref name="valoresSelecionaveisCongelados"/>
     /// não é revalidado contra o catálogo — quem garante que ele tem uma entrada para todo fato de
     /// seleção, ANTES de canonicalizar, é o handler (<c>ResolvedorValoresSelecionaveisCongelados</c>);
@@ -1300,6 +1301,18 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                     $"O fato coletado '{fato.FatoCodigo}' é de seleção ({fato.TipoRenderizacao}), mas o dicionário " +
                     "de valores selecionáveis recebido pelo canonicalizador não tem entrada para ele — a ausência é " +
                     "erro de programação do handler, nunca lista vazia por omissão.");
+            }
+
+            if (ehFatoDeSelecao && valoresDoFato is { Count: 0 })
+            {
+                // issue #1077: o gate de pré-canonicalização (ProcessoSeletivo.
+                // PendenciaDeFatoColetadoSemValoresOfertados) já deveria ter recusado a
+                // publicação antes deste ponto — chegar aqui é erro de programação do handler
+                // (esqueceu o gate ou o resolvedor), nunca lista vazia legítima.
+                throw new InvalidOperationException(
+                    $"O fato coletado '{fato.FatoCodigo}' é de seleção ({fato.TipoRenderizacao}), mas o dicionário " +
+                    "de valores selecionáveis traz uma lista VAZIA para ele — o canonicalizador nunca serializa " +
+                    "um seletor sem opção nenhuma.");
             }
 
             if (!ehFatoDeSelecao && temEntrada && valoresDoFato is not null)
