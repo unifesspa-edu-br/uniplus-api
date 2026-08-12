@@ -17,12 +17,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// resolve os snapshots-copy de <c>FaseCanonica</c>/<c>TipoBanca</c> (módulo
 /// Configuração), o grafo de precedências vigente e o tipo do ato produzido/âncora
 /// (módulo Publicações), usando a data do relógio injetado lida <b>uma vez</b> por
-/// operação (ADR-0068) — e delega a montagem/validação ao domínio. Também confere,
-/// no máximo uma vez por operação, o calendário de dias úteis vigente
-/// (<c>ICalendarioVigenteReader</c>, módulo Configuração) e a localidade da unidade
-/// administradora quando alguma fase declara <c>DiasUteis</c> (issue #1113,
-/// CA-01/CA-02/CA-03) — o domínio (<see cref="RegraRecursoFase.Criar"/>) não sabe
-/// mais nada sobre calendário, porque também reidrata envelope histórico.
+/// operação (ADR-0068) — e delega a montagem/validação ao domínio.
 /// </summary>
 public static class DefinirCronogramaFasesCommandHandler
 {
@@ -34,7 +29,6 @@ public static class DefinirCronogramaFasesCommandHandler
         IPrecedenciaFaseReader precedenciaFaseReader,
         IRegraCatalogoReader regraCatalogoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
-        ICalendarioVigenteReader calendarioVigenteReader,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -46,7 +40,6 @@ public static class DefinirCronogramaFasesCommandHandler
         ArgumentNullException.ThrowIfNull(precedenciaFaseReader);
         ArgumentNullException.ThrowIfNull(regraCatalogoReader);
         ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
-        ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -70,12 +63,6 @@ public static class DefinirCronogramaFasesCommandHandler
         // UMA leitura do relógio para toda a operação (ADR-0068): a vigência do ato
         // produzido e a do ato âncora são resolvidas contra o MESMO instante.
         DateOnly hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
-
-        // No máximo UMA leitura do calendário vigente por operação (issue #1113, mesmo
-        // espírito do ADR-0068 acima) — lazy: só é resolvido se alguma fase de fato
-        // declarar DiasUteis, e reaproveitado pelas fases seguintes que também declararem.
-        CalendarioVigenteView? calendarioVigente = null;
-        bool calendarioVigenteResolvido = false;
 
         List<FaseCronograma> fases = [];
         foreach (FaseCronogramaInput input in command.Fases)
@@ -171,39 +158,6 @@ public static class DefinirCronogramaFasesCommandHandler
                     regraInput.SuspensividadeSegundaInstanciaValor,
                     regraInput.SuspensividadeSegundaInstanciaUnidade);
 
-                // CA-01/CA-02/CA-03 (issue #1113): DiasUteis exige dataset de calendário
-                // VIGENTE e a localidade da unidade administradora resolvível — nenhuma das
-                // duas é invariante de RegraRecursoFase (que também reidrata envelope
-                // histórico, onde não há I/O). Ambas checadas aqui, no handler.
-                bool exigeCalendarioVigente = args.PrazoUnidade == UnidadePrazo.DiasUteis
-                    || args.SuspensividadePrimeiraInstanciaUnidade == UnidadePrazo.DiasUteis
-                    || args.SuspensividadeSegundaInstanciaUnidade == UnidadePrazo.DiasUteis;
-                if (exigeCalendarioVigente)
-                {
-                    if (!calendarioVigenteResolvido)
-                    {
-                        calendarioVigente = await calendarioVigenteReader
-                            .ObterVigenteAsync(cancellationToken)
-                            .ConfigureAwait(false);
-                        calendarioVigenteResolvido = true;
-                    }
-
-                    if (calendarioVigente is null)
-                    {
-                        return Result<MutacaoAceita>.Failure(ErroDiasUteisSemCalendario(args));
-                    }
-
-                    // A localidade vem da unidade administradora do processo (CA-05) —
-                    // snapshots congelados antes da issue #1114 podem não ter cidade; sem
-                    // ela, feriados municipais não são resolvíveis, então DiasUteis é
-                    // recusado em vez de contar só feriados nacionais/institucionais em
-                    // silêncio.
-                    if (processo.UnidadeAdministradora.CidadeCodigoIbge is null)
-                    {
-                        return Result<MutacaoAceita>.Failure(ErroDiasUteisSemLocalidade(args));
-                    }
-                }
-
                 Result<RegraRecursoFase> regraRecursoResult = RegraRecursoFase.Criar(referenciaResult.Value!, args);
                 if (regraRecursoResult.IsFailure)
                 {
@@ -281,24 +235,4 @@ public static class DefinirCronogramaFasesCommandHandler
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
-
-    // Precedência prazo-antes-de-suspensividade preservada — mesma ordem que valia
-    // quando esta checagem ainda era de RegraRecursoFase.Criar.
-    private static DomainError ErroDiasUteisSemCalendario(ArgsRegraPrazoRecurso args) =>
-        args.PrazoUnidade == UnidadePrazo.DiasUteis
-            ? new DomainError(
-                "RegraRecursoFase.PrazoEmDiasUteisSemCalendario",
-                "O prazo de interposição em dias úteis é recusado — não há calendário de dias úteis vigente.")
-            : new DomainError(
-                "RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario",
-                "A suspensividade em dias úteis é recusada (em qualquer uma das duas instâncias) — não há calendário de dias úteis vigente.");
-
-    private static DomainError ErroDiasUteisSemLocalidade(ArgsRegraPrazoRecurso args) =>
-        args.PrazoUnidade == UnidadePrazo.DiasUteis
-            ? new DomainError(
-                "RegraRecursoFase.PrazoEmDiasUteisSemLocalidade",
-                "O prazo de interposição em dias úteis é recusado — a unidade administradora do processo não tem cidade cadastrada, e a localidade é indispensável para resolver feriados municipais.")
-            : new DomainError(
-                "RegraRecursoFase.SuspensividadeEmDiasUteisSemLocalidade",
-                "A suspensividade em dias úteis é recusada (em qualquer uma das duas instâncias) — a unidade administradora do processo não tem cidade cadastrada, e a localidade é indispensável para resolver feriados municipais.");
 }
