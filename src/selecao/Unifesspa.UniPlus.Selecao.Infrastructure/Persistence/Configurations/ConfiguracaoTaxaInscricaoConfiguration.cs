@@ -27,13 +27,23 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("configuracoes_taxa_inscricao");
+        builder.ToTable("configuracoes_taxa_inscricao", t => t.HasComment(
+            "Configuração de taxa de inscrição e fundamentos de isenção do processo seletivo " +
+            "(issue #1112) — entidade dependente 1:1 de processos_seletivos."));
         builder.HasKey(c => c.Id);
-        builder.Property(c => c.Id).ValueGeneratedNever();
+        builder.Property(c => c.Id)
+            .ValueGeneratedNever()
+            .HasComment("Identificador interno (UUIDv7) — não confundir com o Id do processo seletivo, a FK.");
 
-        builder.Property(c => c.Cobra).IsRequired();
-        builder.Property(c => c.Valor).HasPrecision(ConfiguracaoTaxaInscricao.ValorPrecisao, ConfiguracaoTaxaInscricao.ValorEscala);
-        builder.Property(c => c.ConfirmacaoFundamentos).IsRequired();
+        builder.Property(c => c.Cobra)
+            .IsRequired()
+            .HasComment("Declaração explícita de cobrança de taxa — nunca inferida pela ausência da linha (CA-01).");
+        builder.Property(c => c.Valor)
+            .HasPrecision(ConfiguracaoTaxaInscricao.ValorPrecisao, ConfiguracaoTaxaInscricao.ValorEscala)
+            .HasComment("Valor da taxa em reais, positivo quando cobra=true; sempre nulo quando cobra=false (CA-02/CA-03).");
+        builder.Property(c => c.ConfirmacaoFundamentos)
+            .IsRequired()
+            .HasComment("Confirmação explícita do administrador ao referenciar fundamentos de isenção (CA-06) — irrelevante quando fundamentos é vazio.");
 
         // fundamentos: lista de tokens (não ordinais de enum — nomes de coluna vendor-neutral,
         // mesmo raciocínio de ConfiguracaoDivulgacao.CamposPublicos). SEM DEFAULT: lista vazia é
@@ -42,7 +52,8 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
         builder.Property(c => c.Fundamentos)
             .HasConversion(FundamentosConverter, FundamentosComparer)
             .HasColumnType("jsonb")
-            .IsRequired();
+            .IsRequired()
+            .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio é estado válido (CA-04).");
     }
 
     private static readonly ValueConverter<IReadOnlyList<FundamentoIsencao>, string> FundamentosConverter =
