@@ -45,6 +45,139 @@ public sealed class EnvelopeCodecRoundTripTests
 {
     // ── Round-trip byte-a-byte, com o encoder DA VERSÃO ──
 
+    /// <summary>
+    /// Issue #1113: <see cref="RegraRecursoFase"/> é reidratada em dois lugares — o handler
+    /// de declaração (que confere calendário vigente/localidade, I/O) e aqui, a reidratação
+    /// do envelope, que é <b>pura</b> (ADR-0109 D6) e NUNCA consulta
+    /// <c>ICalendarioVigenteReader</c>. Este teste prova especificamente o caso DIAS_UTEIS —
+    /// os demais round-trips desta suíte só exercitam Horas/Dias
+    /// (<see cref="CorpusEnvelope.ProcessoRico"/>). Os blocos de distribuição de vagas,
+    /// classificação e taxa de inscrição abaixo não são o objeto do teste — são o piso
+    /// mínimo que <c>ProcessoSeletivo.Publicar</c> exige para aceitar a publicação; o que
+    /// se prova é só a fidelidade do codec para o bloco <c>regraRecurso</c> em DIAS_UTEIS.
+    /// </summary>
+    [Fact(DisplayName = "Issue #1113: RegraRecurso com prazo e suspensividade em DIAS_UTEIS reidrata do envelope reproduzindo os bytes — sem qualquer I/O de calendário")]
+    public void RoundTrip_RegraRecursoEmDiasUteis_ReidrataSemCalendario()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Dias Úteis", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+
+        RegraRecursoFase regraRecurso = RegraRecursoFase.Criar(
+            CorpusEnvelope.Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'f'),
+            new ArgsRegraPrazoRecurso(
+                PrazoValor: 3.0000m,
+                PrazoUnidade: UnidadePrazo.DiasUteis,
+                AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
+                SuspensividadePrimeiraInstanciaValor: 2.0000m,
+                SuspensividadePrimeiraInstanciaUnidade: UnidadePrazo.DiasUteis,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null)).Value!;
+
+        FaseCronograma fase = FaseCronograma.Criar(
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_PRELIMINAR",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            produzResultado: true,
+            resultadoDefinitivo: false,
+            coletaInscricao: true,
+            inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: new DateTimeOffset(2026, 3, 31, 0, 0, 0, TimeSpan.Zero),
+            atoProduzidoCodigo: "RESULTADO_PRELIMINAR",
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: regraRecurso).Value!;
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Canonicalizar exige o processo completo (mesmas invariantes do gate de
+        // publicação) — os blocos abaixo não são o objeto deste teste, só o piso mínimo
+        // para chegar ao ponto que serializa regraRecurso.
+        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
+            ofertaCursoOrigemId: Guid.CreateVersion7(),
+            voBase: 40,
+            pr: 1m,
+            regraDistribuicao: CorpusEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+            regraAjuste: null,
+            referenciaDemografica: null,
+            modalidades: [
+                ModalidadeSelecionada.Criar(
+                    modalidadeOrigemId: Guid.CreateVersion7(),
+                    codigo: "AC",
+                    descricao: null,
+                    naturezaLegal: NaturezaLegalModalidade.Ampla,
+                    composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+                    composicaoOrigemCodigo: null,
+                    regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+                    remanejamentoDestino: null,
+                    remanejamentoPar: null,
+                    remanejamentoFallback: null,
+                    criteriosCumulativos: [],
+                    acaoQuandoIndeferido: null,
+                    baseLegal: "Res. Unifesspa 532/2021",
+                    quantidadeDeclarada: 40).Value!,
+            ]).Value!;
+        processo.DefinirDistribuicaoVagas([distribuicao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
+            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            regraArredondamento: null,
+            casasArredondamento: null,
+            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'),
+            nOpcoesAlocacao: 1,
+            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        DadosEdital dados = DadosEdital.Criar(
+            numero: "001/2026",
+            periodoInscricaoInicio: new DateOnly(2026, 1, 1),
+            periodoInscricaoFim: new DateOnly(2026, 1, 31),
+            documentoEditalId: Guid.CreateVersion7()).Value!;
+        const string hashDocumento = "4444444444444444444444444444444444444444444444444444444444444444";
+        EntradaCanonicalizacao entrada = new(processo, dados, hashDocumento);
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            hashDocumento, "user-sub-dias-uteis", TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        VersaoConfiguracao versao = publicacao.Value!;
+
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+
+        Result restauracao = processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo);
+        restauracao.IsSuccess.Should().BeTrue(restauracao.Error?.Message);
+
+        FaseCronograma faseReidratada = processo.CronogramaFases.Should().ContainSingle().Subject;
+        faseReidratada.RegraRecurso.Should().NotBeNull();
+        faseReidratada.RegraRecurso!.Args.PrazoUnidade.Should().Be(UnidadePrazo.DiasUteis);
+        faseReidratada.RegraRecurso.Args.SuspensividadePrimeiraInstanciaUnidade.Should().Be(UnidadePrazo.DiasUteis);
+
+        byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
+            versao.SchemaVersion,
+            new EntradaCanonicalizacao(
+                processo,
+                reidratado.Value.Dados,
+                reidratado.Value.HashDocumento,
+                reidratado.Value.Retificacao,
+                reidratado.Value.Conformidade,
+                reidratado.Value.MetadadosFatosCongelados,
+                reidratado.Value.ValoresSelecionaveisCongelados)).Value!.Bytes;
+
+        recodificado.Should().Equal(congelado.Bytes,
+            "reidratar e recanonicalizar RegraRecurso com prazo/suspensividade em DIAS_UTEIS reproduz os " +
+            "bytes congelados — o codec nunca consulta ICalendarioVigenteReader durante a reidratação");
+    }
+
     [Fact(DisplayName = "Reidratar a versão 1 e recanonicalizá-la reproduz os bytes congelados, inteiros")]
     public void RoundTrip_VersaoDeAbertura()
     {
