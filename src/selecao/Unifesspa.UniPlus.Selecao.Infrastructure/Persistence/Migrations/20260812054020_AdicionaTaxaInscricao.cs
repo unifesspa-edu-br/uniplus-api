@@ -16,12 +16,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 schema: "selecao",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador interno (UUIDv7) — não confundir com o Id do processo seletivo, a FK."),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    cobra = table.Column<bool>(type: "boolean", nullable: false),
-                    valor = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: true),
-                    fundamentos = table.Column<string>(type: "jsonb", nullable: false),
-                    confirmacao_fundamentos = table.Column<bool>(type: "boolean", nullable: false),
+                    cobra = table.Column<bool>(type: "boolean", nullable: false, comment: "Declaração explícita de cobrança de taxa — nunca inferida pela ausência da linha (CA-01)."),
+                    valor = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: true, comment: "Valor da taxa em reais, positivo quando cobra=true; sempre nulo quando cobra=false (CA-02/CA-03)."),
+                    fundamentos = table.Column<string>(type: "jsonb", nullable: false, comment: "Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio é estado válido (CA-04)."),
+                    confirmacao_fundamentos = table.Column<bool>(type: "boolean", nullable: false, comment: "Confirmação explícita do administrador ao referenciar fundamentos de isenção (CA-06) — irrelevante quando fundamentos é vazio."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -35,7 +35,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
-                });
+                },
+                comment: "Configuração de taxa de inscrição e fundamentos de isenção do processo seletivo (issue #1112) — entidade dependente 1:1 de processos_seletivos.");
 
             migrationBuilder.CreateIndex(
                 name: "ix_configuracoes_taxa_inscricao_processo_seletivo_id",

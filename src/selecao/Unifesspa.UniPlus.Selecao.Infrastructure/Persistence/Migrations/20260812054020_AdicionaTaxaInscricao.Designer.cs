@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SelecaoDbContext))]
-    [Migration("20260812041506_AdicionaTaxaInscricao")]
+    [Migration("20260812054020_AdicionaTaxaInscricao")]
     partial class AdicionaTaxaInscricao
     {
         /// <inheritdoc />
@@ -536,15 +536,18 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasComment("Identificador interno (UUIDv7) — não confundir com o Id do processo seletivo, a FK.");
 
                     b.Property<bool>("Cobra")
                         .HasColumnType("boolean")
-                        .HasColumnName("cobra");
+                        .HasColumnName("cobra")
+                        .HasComment("Declaração explícita de cobrança de taxa — nunca inferida pela ausência da linha (CA-01).");
 
                     b.Property<bool>("ConfirmacaoFundamentos")
                         .HasColumnType("boolean")
-                        .HasColumnName("confirmacao_fundamentos");
+                        .HasColumnName("confirmacao_fundamentos")
+                        .HasComment("Confirmação explícita do administrador ao referenciar fundamentos de isenção (CA-06) — irrelevante quando fundamentos é vazio.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -553,7 +556,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<string>("Fundamentos")
                         .IsRequired()
                         .HasColumnType("jsonb")
-                        .HasColumnName("fundamentos");
+                        .HasColumnName("fundamentos")
+                        .HasComment("Fundamentos de isenção referenciados (tokens de FundamentoIsencaoCodigo), deduplicados e em ordem canônica; vazio é estado válido (CA-04).");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
@@ -566,7 +570,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<decimal?>("Valor")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)")
-                        .HasColumnName("valor");
+                        .HasColumnName("valor")
+                        .HasComment("Valor da taxa em reais, positivo quando cobra=true; sempre nulo quando cobra=false (CA-02/CA-03).");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_taxa_inscricao");
@@ -575,7 +580,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_configuracoes_taxa_inscricao_processo_seletivo_id");
 
-                    b.ToTable("configuracoes_taxa_inscricao", "selecao");
+                    b.ToTable("configuracoes_taxa_inscricao", "selecao", t =>
+                        {
+                            t.HasComment("Configuração de taxa de inscrição e fundamentos de isenção do processo seletivo (issue #1112) — entidade dependente 1:1 de processos_seletivos.");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CriterioDesempate", b =>
