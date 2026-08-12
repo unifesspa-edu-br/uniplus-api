@@ -25,7 +25,7 @@ public sealed class GateDeConformidadeTests
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
 
-    private static ProcessoSeletivo ProcessoConforme()
+    private static ProcessoSeletivo ProcessoConforme(bool declararTaxa = true)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
 
@@ -72,6 +72,14 @@ public sealed class GateDeConformidadeTests
             regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        if (declararTaxa)
+        {
+            processo.DefinirTaxaInscricao(
+                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }
 
         return processo;
     }
@@ -197,5 +205,39 @@ public sealed class GateDeConformidadeTests
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
+    }
+
+    [Fact(DisplayName =
+        "PendenciaDeConformidade_SemTaxaDeclarada — processo conforme nas demais cinco dimensões ainda pendencia a taxa de inscrição (CA-01)")]
+    public void PendenciaDeConformidade_SemTaxaDeclarada()
+    {
+        ProcessoSeletivo processo = ProcessoConforme(declararTaxa: false);
+
+        DomainError? pendencia = processo.PendenciaDeConformidade();
+
+        pendencia.Should().NotBeNull();
+        pendencia!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
+        pendencia.Message.Should().Contain("Taxa de inscrição e isenção");
+    }
+
+    [Fact(DisplayName =
+        "Publicar_SemTaxaDeclarada_Recusa — processo conforme nas demais cinco dimensões é recusado por faltar declarar taxa (CA-01)")]
+    public void Publicar_SemTaxaDeclarada_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme(declararTaxa: false);
+
+        Result<VersaoConfiguracao> publicar = processo.Publicar(
+            Dados(),
+            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
+            schemaVersion: "1.1",
+            algoritmoHash: "canonical-json/sha256@v1",
+            hashDocumento: HashFixo,
+            atorUsuarioSub: "teste",
+            TimeProvider.System);
+
+        publicar.IsFailure.Should().BeTrue(
+            "as outras cinco dimensões estão conformes — só a ausência de declaração de taxa pode estar bloqueando");
+        publicar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
+        publicar.Error!.Message.Should().Contain("Taxa de inscrição e isenção");
     }
 }

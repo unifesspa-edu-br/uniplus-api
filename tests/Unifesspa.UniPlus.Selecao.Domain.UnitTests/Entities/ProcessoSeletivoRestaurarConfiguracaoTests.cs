@@ -795,6 +795,11 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         processo.DefinirClassificacao(Classificacao([]), PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente);
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente);
+
         return processo;
     }
 

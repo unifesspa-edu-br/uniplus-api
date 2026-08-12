@@ -143,6 +143,10 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         processo.DefinirDocumentosExigidos(
             [NoExigencia.CriarFolha(documento, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         return processo;
     }
 

@@ -52,7 +52,12 @@ public sealed class GrafoConfiguracao
         // Divulgação pública (UNI-REQ-0050, issue #563) — opcional, ausência = default
         // minimizado (só o número de inscrição), mesmo padrão de BonusRegional/CascataRemanejamento
         // (toggle por presença — D5 do congelamento).
-        ConfiguracaoDivulgacao? configuracaoDivulgacao = null)
+        ConfiguracaoDivulgacao? configuracaoDivulgacao = null,
+        // Taxa de inscrição e isenção (issue #1112) — ausência = "ainda não declarado", ESTADO
+        // QUE BLOQUEIA PUBLICAÇÃO (CA-01), diferente do toggle-por-presença de BonusRegional
+        // (onde ausência é estado válido). O grafo só carrega o valor tal como veio congelado;
+        // a recusa de "não declarado" acontece na publicação, não aqui.
+        ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -83,6 +88,7 @@ public sealed class GrafoConfiguracao
         FormularioTitulo = formularioTitulo;
         FormularioTermoAceiteTexto = formularioTermoAceiteTexto;
         ConfiguracaoDivulgacao = configuracaoDivulgacao;
+        ConfiguracaoTaxaInscricao = configuracaoTaxaInscricao;
     }
 
     public IReadOnlyList<EtapaProcesso> Etapas { get; }
@@ -147,4 +153,11 @@ public sealed class GrafoConfiguracao
     /// toggle por presença, mesmo padrão de <see cref="BonusRegional"/>.
     /// </summary>
     public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; }
+
+    /// <summary>
+    /// Taxa de inscrição e isenção (issue #1112) — congelada no envelope e reposta na
+    /// restauração. Ausência = "ainda não declarado" (CA-01), não um estado válido de
+    /// publicação — diferente de <see cref="BonusRegional"/>.
+    /// </summary>
+    public ConfiguracaoTaxaInscricao? ConfiguracaoTaxaInscricao { get; }
 }

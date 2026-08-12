@@ -150,6 +150,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; private set; }
 
     /// <summary>
+    /// Taxa de inscrição e isenção (issue #1112) — <see langword="null"/> significa "ainda não
+    /// declarado" e BLOQUEIA a publicação (CA-01, ver <see cref="ItensEstruturaisDeConformidade"/>).
+    /// Diferente de <see cref="BonusRegional"/>/<see cref="ConfiguracaoDivulgacao"/>, ausência
+    /// aqui não é um estado válido de publicação — é uma dimensão obrigatória ainda não
+    /// preenchida.
+    /// </summary>
+    public ConfiguracaoTaxaInscricao? ConfiguracaoTaxaInscricao { get; private set; }
+
+    /// <summary>
     /// A sessão editorial aberta sobre a configuração — o <b>portador</b> da retificação
     /// (ADR-0110 D3). <see langword="null"/> quando não há retificação em curso.
     /// </summary>
@@ -444,6 +453,32 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         configuracao.VincularProcesso(Id);
         ConfiguracaoDivulgacao = configuracao;
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
+    /// #1112). Passar <see langword="null"/> remove a declaração — o processo volta a "ainda
+    /// não declarado" (CA-01), que BLOQUEIA a publicação, diferente do toggle de
+    /// <see cref="DefinirBonusRegional"/> (onde ausência é estado publicável).
+    /// </summary>
+    public Result DefinirTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (configuracao is null)
+        {
+            ConfiguracaoTaxaInscricao = null;
+            Rascunho?.IncrementarRevisao();
+            return Result.Success();
+        }
+
+        configuracao.VincularProcesso(Id);
+        ConfiguracaoTaxaInscricao = configuracao;
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
@@ -1368,6 +1403,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             new ItemConformidade("Distribuição de vagas", _distribuicaoVagas.Count > 0),
             new ItemConformidade("Classificação", Classificacao is not null),
             new ItemConformidade("Cronograma de fases", _cronogramaFases.Count > 0),
+            // Issue #1112: publicar sem declarar cobrança de taxa é recusado — a ausência nunca
+            // é interpretada como "não cobra" (CA-01). Diferente de BonusRegional/Divulgacao,
+            // aqui ausência não é estado publicável.
+            new ItemConformidade("Taxa de inscrição e isenção", ConfiguracaoTaxaInscricao is not null),
             // Story #554, PR #898 (issue #549, ADR-0074): toda exigência que determina
             // resultado precisa de ≥1 base legal RESOLVIDO — semântica vazia quando não há
             // exigência que determine resultado (Services.ValidadorBaseLegalExigencias).
@@ -3355,6 +3394,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // editado na configuração viva, o mesmo defeito que a reposição de BonusRegional evita.
         grafo.ConfiguracaoDivulgacao?.VincularProcesso(Id);
         ConfiguracaoDivulgacao = grafo.ConfiguracaoDivulgacao;
+
+        // Taxa de inscrição e isenção (issue #1112): mesmo padrão de reposição de
+        // BonusRegional/Divulgacao acima. Sem esta reposição, editar a taxa durante uma sessão
+        // de retificação e depois descartar deixaria o valor editado na configuração viva.
+        grafo.ConfiguracaoTaxaInscricao?.VincularProcesso(Id);
+        ConfiguracaoTaxaInscricao = grafo.ConfiguracaoTaxaInscricao;
 
         // Cronograma de fases (Story #851): nenhuma referência externa aponta para
         // FaseCronograma.Id (diferente das etapas) — o Id não é congelado no envelope

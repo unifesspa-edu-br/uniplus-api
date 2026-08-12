@@ -7,11 +7,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Processo mínimo conforme às cinco dimensões estruturais de
+/// Processo mínimo conforme às seis dimensões estruturais de
 /// <c>ProcessoSeletivo.ItensEstruturaisDeConformidade</c> (etapas, oferta de atendimento,
-/// distribuição de vagas, classificação, cronograma de fases) — compartilhado pelos testes dos
-/// handlers que congelam (Publicar/Retificar/FecharRetificacao), que precisam de um processo
-/// que passe pelo gate estrutural antes de exercitar o gate específico de cada teste.
+/// distribuição de vagas, classificação, cronograma de fases, taxa de inscrição — issue #1112)
+/// — compartilhado pelos testes dos handlers que congelam (Publicar/Retificar/FecharRetificacao),
+/// que precisam de um processo que passe pelo gate estrutural antes de exercitar o gate
+/// específico de cada teste.
 /// </summary>
 internal static class ProcessoSeletivoConformeBuilder
 {
@@ -90,6 +91,11 @@ internal static class ProcessoSeletivoConformeBuilder
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         faseId = fase.Id;
+
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

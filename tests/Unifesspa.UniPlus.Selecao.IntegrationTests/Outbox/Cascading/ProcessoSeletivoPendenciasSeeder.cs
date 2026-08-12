@@ -228,6 +228,14 @@ internal static class ProcessoSeletivoPendenciasSeeder
             atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false,
             bancasRequeridas: [], regraRecurso: null).Value!;
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada
+        // aqui para que cada método desta classe continue isolando SÓ o defeito que se propõe
+        // a isolar (issue #1096).
+        Result taxaResult = processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente);
+        taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
+
         return processo;
     }
 

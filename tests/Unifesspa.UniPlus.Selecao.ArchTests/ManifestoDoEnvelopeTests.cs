@@ -99,6 +99,12 @@ public sealed class ManifestoDoEnvelopeTests
             ["CamposPublicos", "Justificativa"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
+        // Taxa de inscrição e isenção (issue #1112) — diferente de ConfiguracaoBonusRegional/
+        // ConfiguracaoDivulgacao, ausência aqui NÃO é estado publicável (CA-01).
+        [typeof(ConfiguracaoTaxaInscricao)] = (
+            ["Cobra", "Valor", "Fundamentos", "ConfirmacaoFundamentos"],
+            [("ProcessoSeletivoId", "FK interna.")]),
+
         // Story #575 — a cascata de remanejamento das cotas federais (RN-CASCATA-1..5).
         [typeof(ConfiguracaoCascataRemanejamento)] = (
             ["Regra", "FallbackCodigo", "Destinos"],

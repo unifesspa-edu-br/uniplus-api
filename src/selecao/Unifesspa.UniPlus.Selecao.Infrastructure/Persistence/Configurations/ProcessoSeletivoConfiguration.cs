@@ -98,6 +98,14 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey<ConfiguracaoDivulgacao>(c => c.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Taxa de inscrição e isenção (issue #1112) — 1:1, mesmo padrão de BonusRegional/
+        // Divulgacao acima. Diferente dos dois, ausência aqui NÃO é estado publicável (CA-01) —
+        // é dimensão do agregado do mesmo jeito, só o significado semântico da ausência muda.
+        builder.HasOne(p => p.ConfiguracaoTaxaInscricao)
+            .WithOne()
+            .HasForeignKey<ConfiguracaoTaxaInscricao>(t => t.ProcessoSeletivoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasMany(p => p.CriteriosDesempate)
             .WithOne()
             .HasForeignKey(c => c.ProcessoSeletivoId)

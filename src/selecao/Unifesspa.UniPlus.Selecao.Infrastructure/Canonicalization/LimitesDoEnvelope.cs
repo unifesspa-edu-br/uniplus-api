@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+
 /// <summary>
 /// Os limites das <b>colunas</b> que vão receber a configuração reidratada.
 /// </summary>
@@ -89,6 +91,9 @@ public static class LimitesDoEnvelope
 
     /// <summary>Precisão de <c>ArgsRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
     public const int PrecisaoPrazo = 18;
+
+    /// <summary>Precisão de <c>ConfiguracaoTaxaInscricao.Valor</c> (issue #1112) — <c>numeric(12,2)</c>, monetário.</summary>
+    public const int PrecisaoTaxaInscricao = ConfiguracaoTaxaInscricao.ValorPrecisao;
 
     // Issue #849 (CA-04 da Feature #40) — identidadesUnidade real.
     /// <summary><c>UnidadeAdministradoraSnapshot.Sigla</c> — espelha <c>UnidadeConfiguration.Sigla</c>.</summary>

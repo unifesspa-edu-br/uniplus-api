@@ -37,6 +37,10 @@ public sealed record ProcessoSeletivoDto(
     // configuração salva e poderia sobrescrevê-la com o default ao reenviar. A regra de
     // abreviação não entra aqui: não é configuração viva, só existe congelada no envelope.
     ConfiguracaoDivulgacaoDto? ConfiguracaoDivulgacao,
+    // Taxa de inscrição e isenção (issue #1112): read-back administrativo. null distingue
+    // "ainda não declarado" (bloqueia publicação) de uma declaração explícita — diferente de
+    // ConfiguracaoDivulgacao, aqui null NÃO é um estado publicável.
+    ConfiguracaoTaxaInscricaoDto? ConfiguracaoTaxaInscricao,
     DateTimeOffset CriadoEm)
 {
     /// <summary>
@@ -74,3 +78,11 @@ public sealed record TipoProcessoSnapshotDto(Guid OrigemId, string Codigo, strin
 /// congelada no envelope de publicação.
 /// </summary>
 public sealed record ConfiguracaoDivulgacaoDto(IReadOnlyList<string> CamposPublicos, string? Justificativa);
+
+/// <summary>
+/// Projeção de leitura da taxa de inscrição e isenção (issue #1112). <see langword="null"/> é
+/// "ainda não declarado" (bloqueia publicação, CA-01) — diferente de
+/// <see cref="ConfiguracaoDivulgacaoDto"/>, aqui ausência não é estado publicável.
+/// </summary>
+public sealed record ConfiguracaoTaxaInscricaoDto(
+    bool Cobra, decimal? Valor, IReadOnlyList<string> Fundamentos, bool ConfirmacaoFundamentos);

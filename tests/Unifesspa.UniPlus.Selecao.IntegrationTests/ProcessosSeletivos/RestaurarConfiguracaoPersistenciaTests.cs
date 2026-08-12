@@ -248,6 +248,11 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             // índice único — a mesma razão pela qual o repositório de produção já os inclui.
             .Include(p => p.FatosColetados).ThenInclude(f => f.Precondicoes)
             .Include(p => p.RegrasDerivacao).ThenInclude(c => c.Regras).ThenInclude(r => r.Condicoes)
+            // Taxa de inscrição e isenção (issue #1112) — MESMO motivo do Include de Cascata
+            // acima: sem ele, a restauração (AplicarGrafo) tentaria inserir uma
+            // ConfiguracaoTaxaInscricao nova para um ProcessoSeletivoId que já tem uma,
+            // colidindo no índice único.
+            .Include(p => p.ConfiguracaoTaxaInscricao)
             .AsSplitQuery()
             .FirstAsync(p => p.Id == id);
 }

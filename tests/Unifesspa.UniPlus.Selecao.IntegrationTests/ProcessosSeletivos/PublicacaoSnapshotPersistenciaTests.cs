@@ -23,14 +23,14 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_Contem24BlocosCanonicos</c> (os 24 blocos — todos
+/// pela app) e <c>Snapshot_Contem25BlocosCanonicos</c> (os 25 blocos — todos
 /// reais — estão presentes). Story #575 promoveu <c>cascataRemanejamento</c>
 /// de stub a bloco real; issue #849 promoveu <c>identidadesUnidade</c>;
 /// Story #559 promoveu <c>formulario</c>; issue #563 promoveu <c>divulgacao</c>
-/// de stub a bloco real — a última dimensão provisória da Feature #40, agora
-/// fechada: cobertura de persistência EF da entidade filha (sobrevivência a
-/// reload, substituição sem órfãos, remoção, constraints do banco) na segunda
-/// metade do arquivo.
+/// de stub a bloco real — a última dimensão provisória da Feature #40; issue
+/// #1112 acrescentou <c>taxaInscricao</c> já como bloco real: cobertura de
+/// persistência EF da entidade filha (sobrevivência a reload, substituição
+/// sem órfãos, remoção, constraints do banco) na segunda metade do arquivo.
 /// </summary>
 [SuppressMessage(
     "Security",
@@ -115,6 +115,11 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         return processo;
     }
 
@@ -171,10 +176,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_Contem24BlocosCanonicos — os 24 blocos, todos reais, estão presentes")]
-    public async Task Snapshot_Contem24BlocosCanonicos()
+    [Fact(DisplayName = "Snapshot_Contem25BlocosCanonicos — os 25 blocos, todos reais, estão presentes")]
+    public async Task Snapshot_Contem25BlocosCanonicos()
     {
-        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem24BlocosCanonicos));
+        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem25BlocosCanonicos));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
@@ -192,6 +197,8 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             // Story #928, §7.4: coleta de fatos, derivação, grafo conjunto congelado, versão do
             // interpretador e conjunto de modalidades ofertadas.
             "fatosColetados", "regrasDerivacao", "grafoDependencia", "versaoInterpretador", "modalidadesOfertadas",
+            // Issue #1112: taxa de inscrição e fundamentos de isenção — 25º bloco.
+            "taxaInscricao",
         ];
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
@@ -215,10 +222,11 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             .Order(StringComparer.Ordinal)];
 
         stubs.Should().BeEmpty(
-            "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real. Os 24 " +
-            "blocos são todos reais agora (Story #851 promoveu cronogramaFases; Story #853 promoveu " +
-            "documentosExigidos; issue #848 promoveu vagas; Story #575 promoveu cascataRemanejamento; issue #849 " +
-            "promoveu identidadesUnidade; Story #559 promoveu formulario; os demais sempre foram reais)");
+            "issue #563 promoveu 'divulgacao' — a última dimensão sem dono da Feature #40 — a bloco real, e " +
+            "issue #1112 acrescentou 'taxaInscricao' já como bloco real. Os 25 blocos são todos reais " +
+            "(Story #851 promoveu cronogramaFases; Story #853 promoveu documentosExigidos; issue #848 promoveu " +
+            "vagas; Story #575 promoveu cascataRemanejamento; issue #849 promoveu identidadesUnidade; Story #559 " +
+            "promoveu formulario; os demais sempre foram reais)");
 
         // Nenhum bloco REAL emite `nao_construido` na RAIZ. Atendimento, classificação e
         // documentosExigidos são dimensões obrigatórias/já entregues: a ausência da primeira é

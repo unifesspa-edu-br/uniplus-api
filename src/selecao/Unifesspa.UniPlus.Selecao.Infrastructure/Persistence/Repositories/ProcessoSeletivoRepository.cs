@@ -100,6 +100,10 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             // acima: sem o Include, a navegação 0..1 nasce null em todo carregamento novo do
             // agregado, e o read-back administrativo (ProcessoSeletivoDto) sempre veria ausência.
             .Include(p => p.ConfiguracaoDivulgacao)
+            // Taxa de inscrição e isenção (issue #1112) — MESMO raciocínio acima: sem o Include,
+            // uma configuração persistida reaparece null na próxima leitura, a publicação
+            // recusaria como "não declarada" mesmo já declarada, e o GET administrativo mentiria.
+            .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
             // Cronograma de fases (Story #851) — 2 coleções novas (bancas requeridas,

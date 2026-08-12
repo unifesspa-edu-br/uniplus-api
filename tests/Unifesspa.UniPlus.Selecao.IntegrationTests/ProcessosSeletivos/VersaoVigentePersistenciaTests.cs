@@ -68,6 +68,10 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"), null, null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"), 1, [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
 

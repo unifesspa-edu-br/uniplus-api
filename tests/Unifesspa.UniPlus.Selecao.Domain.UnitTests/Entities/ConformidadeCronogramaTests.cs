@@ -57,6 +57,16 @@ public sealed class ConformidadeCronogramaTests
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
         Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System);
 
+    /// <summary>
+    /// Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada em
+    /// todo teste deste arquivo para que a pendência de CRONOGRAMA isolada por cada um seja a
+    /// única a aflorar, não mascarada pela pendência estrutural genérica.
+    /// </summary>
+    private static void DeclararNaoCobra(ProcessoSeletivo processo) =>
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
     // ── CA-11 — piso mínimo de InscricaoPropria ──
 
     [Fact(DisplayName = "CA-11: origem InscricaoPropria sem NENHUMA fase que colete inscrição reprova a publicação")]
@@ -70,6 +80,7 @@ public sealed class ConformidadeCronogramaTests
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases(
             [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+        DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
@@ -97,6 +108,7 @@ public sealed class ConformidadeCronogramaTests
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases(
             [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+        DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
@@ -116,6 +128,7 @@ public sealed class ConformidadeCronogramaTests
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente);
         // Só a fase de matrícula — nenhuma produz resultado.
         processo.DefinirCronogramaFases([Fase(1, "MATRICULA").Value!], [], PrecondicaoIfMatch.Ausente);
+        DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
@@ -139,6 +152,7 @@ public sealed class ConformidadeCronogramaTests
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente);
         // Fase que produz resultado, mas NÃO agrupa etapas.
         processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+        DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
@@ -160,6 +174,7 @@ public sealed class ConformidadeCronogramaTests
             Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, 'c'), 1, [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+        DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
