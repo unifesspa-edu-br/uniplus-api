@@ -5,7 +5,8 @@ using Microsoft.OpenApi;
 
 /// <summary>
 /// Schema transformer que aplica invariantes de domínio Uni+ a propriedades
-/// tipadas. Hoje cobre <c>cpf</c> (regex de 11 dígitos + nota PII).
+/// tipadas. Hoje cobre <c>cpf</c> (regex de 11 dígitos + nota PII) e
+/// <c>valoresSelecionaveis</c> (cardinalidade mínima 1, issue #1077).
 /// <para>
 /// O <c>code</c> de ProblemDetails NÃO é coberto aqui: o campo vive em
 /// <c>ProblemDetails.Extensions["code"]</c> (<c>[JsonExtensionData]</c>) e
@@ -35,14 +36,23 @@ public sealed class UniPlusSchemaTransformer : IOpenApiSchemaTransformer
             schema.Type = JsonSchemaType.String;
         }
 
-        // JsonSchemaType é [Flags] — propriedades nullable saem como
-        // String | Null, então comparação por igualdade exata pula schemas
-        // legítimos. HasFlag pega ambos os casos (String puro e String|Null).
-        if (!schema.Type.HasValue || !schema.Type.Value.HasFlag(JsonSchemaType.String))
-            return Task.CompletedTask;
-
         string? propertyName = context.JsonPropertyInfo?.Name;
         if (propertyName is null)
+            return Task.CompletedTask;
+
+        // JsonSchemaType é [Flags] — propriedades nullable saem com o flag Null somado ao
+        // tipo base (ex.: Array | Null, String | Null), então comparação por igualdade exata
+        // pula schemas legítimos. HasFlag pega o tipo base com ou sem nulidade.
+        if (schema.Type is { } tipo && tipo.HasFlag(JsonSchemaType.Array)
+            && string.Equals(propertyName, "valoresSelecionaveis", StringComparison.Ordinal))
+        {
+            // issue #1077: um seletor de SELECAO_UNICA/SELECAO_MULTIPLA publicado sem opção
+            // nenhuma não é respondível — o contrato exige pelo menos um valor selecionável
+            // quando o array está presente (null continua válido para BOOLEANO/NUMERO).
+            schema.MinItems = 1;
+        }
+
+        if (!schema.Type.HasValue || !schema.Type.Value.HasFlag(JsonSchemaType.String))
             return Task.CompletedTask;
 
         if (string.Equals(propertyName, "cpf", StringComparison.Ordinal))

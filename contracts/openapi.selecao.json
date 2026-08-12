@@ -6783,6 +6783,7 @@
             }
           },
           "valoresSelecionaveis": {
+            "minItems": 1,
             "type": [
               "null",
               "array"

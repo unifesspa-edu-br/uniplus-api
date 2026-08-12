@@ -536,10 +536,11 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// <summary>
     /// Os valores selecionáveis de um fato coletado (issue #1059, UNI-REQ-0072) — bicondicional
     /// com <paramref name="tipoRenderizacao"/> (D1-bis do plano da issue): <c>SELECAO_UNICA</c>/
-    /// <c>SELECAO_MULTIPLA</c> exige array (possivelmente vazio); <c>BOOLEANO</c>/<c>NUMERO</c>
-    /// exige <see langword="null"/>. Um envelope que descumpra a bicondicional em qualquer
-    /// sentido — seletor mudo (<c>null</c> onde deveria ter array) ou vocabulário pendurado num
-    /// campo booleano/numérico — é malformado. Cada item exige <c>ordem</c> não negativa e
+    /// <c>SELECAO_MULTIPLA</c> exige array com cardinalidade mínima 1 (issue #1077: nunca vazio);
+    /// <c>BOOLEANO</c>/<c>NUMERO</c> exige <see langword="null"/>. Um envelope que descumpra a
+    /// bicondicional em qualquer sentido — seletor mudo (<c>null</c> ou <c>[]</c> onde deveria
+    /// ter opção), ou vocabulário pendurado num campo booleano/numérico — é malformado. Cada
+    /// item exige <c>ordem</c> não negativa e
     /// <c>valorCodigo</c> sem repetição, mesma disciplina que
     /// <c>EnvelopeCodecV13.LerValoresDominioDeclarados</c> aplica a <c>valoresDominioDeclarados</c>.
     /// </summary>
@@ -604,6 +605,17 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             }
 
             valores.Add(new ValorDominioDeclaradoCongelado(valorCodigo, descricao, ordem));
+        }
+
+        // issue #1077: a bicondicional exige array, mas array VAZIO para um fato de seleção não
+        // é forma válida — um seletor publicado sem opção nenhuma não é respondível. Um envelope
+        // adulterado com "valoresSelecionaveis": [] é malformado, não um caso legítimo a
+        // reidratar silenciosamente.
+        if (ehFatoDeSelecao && valores.Count == 0)
+        {
+            return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'{path}' é um array vazio, mas o tipo de renderização é de seleção — a cardinalidade mínima é 1."));
         }
 
         return valores;

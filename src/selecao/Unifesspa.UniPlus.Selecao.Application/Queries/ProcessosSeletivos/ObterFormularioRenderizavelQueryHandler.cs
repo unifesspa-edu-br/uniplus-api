@@ -228,7 +228,7 @@ public static class ObterFormularioRenderizavelQueryHandler
 
     /// <summary>
     /// Chave presente e coerente com a bicondicional (issue #1059, UNI-REQ-0072):
-    /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> exige um array (possivelmente vazio);
+    /// <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> exige um array com cardinalidade mínima 1 (issue #1077);
     /// <c>BOOLEANO</c>/<c>NUMERO</c> exige <c>null</c> explícito. <paramref name="tipoRenderizacao"/>
     /// fora dos QUATRO tokens fechados falha aqui — sem isso, um token desconhecido cairia no
     /// ramo "não é seleção" por omissão e aceitaria <c>valoresSelecionaveis: null</c> em silêncio,
@@ -286,6 +286,15 @@ public static class ObterFormularioRenderizavelQueryHandler
             }
 
             valores.Add(new ValorSelecionavelDto(valorCodigo, descricao, ordem));
+        }
+
+        // issue #1077: defesa em profundidade — o decoder já recusa um envelope persistido com
+        // array vazio para fato de seleção (EnvelopeMalformado), então este ramo é inalcançável
+        // em uso normal. Mantido para nunca projetar um seletor sem opção nenhuma caso um
+        // chamador futuro monte o JsonObject por outro caminho que não o decoder.
+        if (valores.Count == 0)
+        {
+            return false;
         }
 
         valoresSelecionaveis = valores;

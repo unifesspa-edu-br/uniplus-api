@@ -10,8 +10,8 @@ public sealed record ValorSelecionavelDto(string Codigo, string? Descricao, int 
 /// <summary>
 /// Um fato coletado pronto para renderização pública (Story #559, issue #1059): mesmos campos
 /// de <see cref="FatoColetadoDto"/> mais <see cref="ValoresSelecionaveis"/> — as opções que o
-/// candidato pode escolher, presente (mesmo que vazio) quando <see cref="TipoRenderizacao"/> é
-/// de seleção, <see langword="null"/> quando não é.
+/// candidato pode escolher. Presente com cardinalidade mínima 1 (issue #1077: nunca vazio) quando
+/// <see cref="TipoRenderizacao"/> é de seleção, <see langword="null"/> quando não é.
 /// </summary>
 /// <remarks>
 /// DTO PRÓPRIO, e não reaproveitamento de <see cref="FatoColetadoDto"/>: aquele é o read-back

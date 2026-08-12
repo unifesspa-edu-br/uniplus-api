@@ -101,6 +101,32 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverValoresDoFato(
         string fatoCodigo, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
     {
+        Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> resolvido = ResolverOrigemDosValores(fatoCodigo, fatoNoCatalogo, processo);
+        if (resolvido.IsFailure)
+        {
+            return resolvido;
+        }
+
+        // Defesa em profundidade (issue #1077): o caminho esperado para um fato de escopo-processo
+        // (CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA) sem nenhum valor ofertado é
+        // ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados, avaliado ANTES deste
+        // resolvedor rodar (PendenciaPreCanonicalizacao precede a canonicalização, ADR-0109 D5).
+        // Chegar aqui com lista vazia significaria o gate e este resolvedor operando sobre
+        // estados diferentes — o resolvedor nunca pode devolver sucesso com lista vazia, mesmo
+        // que um chamador futuro esqueça de invocar o gate.
+        if (resolvido.Value!.Count == 0)
+        {
+            return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Failure(new DomainError(
+                "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
+                $"O fato coletado '{fatoCodigo}' é de seleção, mas resolveu zero valores selecionáveis."));
+        }
+
+        return resolvido;
+    }
+
+    private static Result<IReadOnlyList<ValorDominioDeclaradoCongelado>> ResolverOrigemDosValores(
+        string fatoCodigo, FatoCandidatoView fatoNoCatalogo, ProcessoSeletivo processo)
+    {
         if (fatoNoCatalogo.ValoresDominioDeclarados is { Count: > 0 } declarados)
         {
             // Ordenação canônica própria (D2): o encoder não pode depender de o catálogo já vir

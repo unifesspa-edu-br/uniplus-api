@@ -1000,6 +1000,21 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    /// <summary>issue #1077 — §4, CA-13: um envelope adulterado com array VAZIO para um fato de seleção é malformado, não um caso legítimo a reidratar.</summary>
+    [Fact(DisplayName = "Bicondicional: valoresSelecionaveis com array VAZIO num fato de SELEÇÃO é recusado — cardinalidade mínima 1")]
+    public void ValoresSelecionaveis_ArrayVazioEmFatoDeSelecao_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            FatoColetadoPorCodigo(envelope, "COR_RACA")["valoresSelecionaveis"] = new JsonArray());
+
+        resultado.IsFailure.Should().BeTrue(
+            "COR_RACA é SELECAO_UNICA — array vazio é um seletor sem opção nenhuma, tão mudo quanto null. " +
+            "A publicação original nunca teria produzido isso: o gate de pré-canonicalização " +
+            "(ProcessoSeletivo.PendenciaDeFatoColetadoSemValoresOfertados) recusa antes de canonicalizar, e " +
+            "SerializarFatosColetados também lança — só um envelope adulterado chega aqui com [] persistido");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Bicondicional: valoresSelecionaveis com array num fato que NÃO é de seleção é recusado — vocabulário pendurado")]
     public void ValoresSelecionaveis_ArrayEmFatoNaoDeSelecao_Recusa()
     {
