@@ -6,9 +6,10 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
 /// <summary>
-/// Declara no contrato as respostas de <b>autorização</b> — <c>401</c> e <c>403</c> — em toda
-/// operação de controller protegida por <see cref="AuthorizeAttribute"/> (na action ou na classe)
-/// e não liberada por <see cref="AllowAnonymousAttribute"/>.
+/// Declara no contrato as respostas de <b>autorização</b> — <c>401</c> e <c>403</c> — e o
+/// <b>requisito de segurança</b> em toda operação de controller protegida por
+/// <see cref="AuthorizeAttribute"/> (na action ou na classe) e não liberada por
+/// <see cref="AllowAnonymousAttribute"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -24,6 +25,13 @@ using Microsoft.OpenApi;
 /// dezenas de atributos copiados pelos módulos, é o que faz um endpoint protegido novo herdar o
 /// contrato correto sem o autor ter de saber disso. Uma action que já declara o próprio 401/403 —
 /// com uma descrição mais específica — não é sobrescrita.
+/// </para>
+/// <para>
+/// Pela mesma detecção sai o <c>security</c> da operação, apontando para o esquema que
+/// <see cref="BearerSecuritySchemeDocumentTransformer"/> declara no documento: dizer que a rota
+/// responde <c>401</c> sem dizer que credencial a evita descreve o sintoma e omite o contrato. São
+/// a mesma decisão — "esta rota exige autorização" —, então saem do mesmo lugar; separá-las
+/// abriria espaço para uma rota protegida ganhar os status e não o requisito.
 /// </para>
 /// </remarks>
 public sealed class AuthorizationOperationTransformer : IOpenApiOperationTransformer
@@ -71,6 +79,30 @@ public sealed class AuthorizationOperationTransformer : IOpenApiOperationTransfo
         if (!requiresAuthorization)
         {
             return Task.CompletedTask;
+        }
+
+        // Requisito de segurança da operação. Lista de escopos vazia porque o esquema é Bearer, não
+        // OAuth2 — a autorização fina é por role no token, e o documento a descreve na 403 e na
+        // descrição do esquema, não como escopo OpenAPI.
+        operation.Security ??= [];
+        bool jaExigeBearer = operation.Security.Any(
+            requisito => requisito.Keys.Any(
+                esquema => string.Equals(
+                    (esquema as OpenApiSecuritySchemeReference)?.Reference?.Id,
+                    BearerSecuritySchemeDocumentTransformer.SchemeName,
+                    StringComparison.Ordinal)));
+
+        if (!jaExigeBearer)
+        {
+            // O documento hospedeiro não é opcional aqui: a referência resolve o esquema contra
+            // ele na hora de serializar, e sem essa ligação o requisito sai como objeto vazio
+            // ({}) — sintaticamente válido, semanticamente mudo, e a UI não oferece o Authorize.
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference(
+                    BearerSecuritySchemeDocumentTransformer.SchemeName,
+                    context.Document)] = [],
+            });
         }
 
         operation.Responses ??= [];
