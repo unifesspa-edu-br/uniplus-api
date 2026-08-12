@@ -152,8 +152,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0121](0121-criptografia-de-dados-sensiveis-em-repouso.md) | Criptografia de campo sensível em repouso (CPF hoje, outros dados pessoais no futuro): proteção assíncrona na fronteira de repositório/query service, opt-in por propriedade, sem alterar `ValueObjectConventions` globalmente | proposed | 2026-07-28 |
 | [0122](0122-tipos-processo-seletivo-configuraveis.md) | Tipos de processo seletivo configuráveis | accepted | 2026-08-10 |
 | [0123](0123-tipos-etapa-configuraveis.md) | Tipos de etapa configuráveis — conformidade legal por código congelado, não por rótulo editorial | accepted | 2026-08-11 |
+| [0124](0124-comentarios-schema-postgresql-via-hascomment-ef-core.md) | Comentários do schema PostgreSQL via metadados do modelo EF Core (`HasComment`), com `COMMENT ON` manual restrito ao que o modelo não representa | accepted | 2026-08-11 |
 
-> **Nota de numeração:** a sequência de `0001` a `0123` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0124+`.
+> **Nota de numeração:** a sequência de `0001` a `0124` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0125+`.
 
 ## Como adicionar um novo ADR
 
