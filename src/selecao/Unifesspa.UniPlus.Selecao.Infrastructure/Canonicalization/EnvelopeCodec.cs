@@ -610,8 +610,9 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         // issue #1077: a bicondicional exige array, mas array VAZIO para um fato de seleção não
         // é forma válida — um seletor publicado sem opção nenhuma não é respondível. Um envelope
         // adulterado com "valoresSelecionaveis": [] é malformado, não um caso legítimo a
-        // reidratar silenciosamente.
-        if (ehFatoDeSelecao && valores.Count == 0)
+        // reidratar silenciosamente. ehFatoDeSelecao já é garantidamente true aqui (o ramo
+        // !ehFatoDeSelecao retornou acima) — checagem redundante removida (achado CodeQL).
+        if (valores.Count == 0)
         {
             return leitor.Propagar<IReadOnlyList<ValorDominioDeclaradoCongelado>?>(new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado,
