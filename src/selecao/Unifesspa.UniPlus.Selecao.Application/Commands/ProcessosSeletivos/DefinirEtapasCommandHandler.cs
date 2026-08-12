@@ -117,6 +117,11 @@ public static class DefinirEtapasCommandHandler
                         .ConfigureAwait(false);
                     if (tipo is null)
                     {
+                        // Uma etapa ANTERIOR no mesmo payload pode já ter mutado uma instância
+                        // tracked (AtualizarDados) antes desta falhar — sem descartar, o
+                        // SaveChangesAsync automático do Wolverine (AutoApplyTransactions)
+                        // persistiria essa mutação parcial mesmo com o PUT inteiro recusado.
+                        unitOfWork.DescartarAlteracoesNaoSalvas();
                         return Result<MutacaoAceita>.Failure(new DomainError(
                             "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
                             $"Tipo de etapa {input.TipoEtapaOrigemId} não encontrado ou não está ativo."));
@@ -128,6 +133,7 @@ public static class DefinirEtapasCommandHandler
                 Result<TipoEtapaSnapshot> snapshotResult = TipoEtapaSnapshot.Criar(tipo.Id, tipo.Codigo, tipo.Nome);
                 if (snapshotResult.IsFailure)
                 {
+                    unitOfWork.DescartarAlteracoesNaoSalvas();
                     return Result<MutacaoAceita>.Failure(snapshotResult.Error!);
                 }
 
@@ -150,6 +156,11 @@ public static class DefinirEtapasCommandHandler
         Result result = processo.DefinirEtapas(etapas, command.Precondicao);
         if (result.IsFailure)
         {
+            // Mesmo motivo do descarte acima: etapas existentes já foram mutadas
+            // (AtualizarDados) no loop de reconciliação antes desta checagem — sem
+            // descartar, o SaveChangesAsync automático do Wolverine persistiria a
+            // mutação parcial mesmo com DefinirEtapas tendo recusado a coleção inteira.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<MutacaoAceita>.Failure(result.Error!);
         }
 

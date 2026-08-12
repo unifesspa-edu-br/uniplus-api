@@ -146,4 +146,9 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     {
         return await SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public void DescartarAlteracoesNaoSalvas()
+    {
+        ChangeTracker.Clear();
+    }
 }
