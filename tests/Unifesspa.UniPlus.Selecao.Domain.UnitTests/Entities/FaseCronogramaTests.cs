@@ -102,6 +102,75 @@ public sealed class FaseCronogramaTests
         resultado.Error!.Code.Should().Be("FaseCronograma.JanelaInvertida");
     }
 
+    // ── A janela é guardada em UTC (issue #1124) ──
+
+    [Theory(DisplayName = "A janela informada com offset é guardada em UTC, preservando o instante")]
+    [InlineData(-3, 0)]
+    [InlineData(5, 30)]
+    [InlineData(0, 0)]
+    public void Janela_ComOffset_EGuardadaEmUtc(int horas, int minutos)
+    {
+        TimeSpan offset = new(horas, minutos, 0);
+        DateTimeOffset instanteUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);
+
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Propria,
+            inicio: instanteUtc.ToOffset(offset),
+            fim: instanteUtc.AddDays(2).ToOffset(offset));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Inicio.Should().Be(instanteUtc, "o instante informado é preservado");
+        resultado.Value.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero,
+            "a coluna 'timestamp with time zone' só aceita a representação em UTC");
+        resultado.Value.Fim.Should().Be(instanteUtc.AddDays(2));
+        resultado.Value.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact(DisplayName = "A janela invertida é reconhecida pelo instante, não pela hora local de cada offset")]
+    public void Janela_InvertidaEntreOffsetsDiferentes_Recusa()
+    {
+        // 10:00-03:00 é 13:00Z; 12:00Z é anterior — a hora local do fim (12) parece maior
+        // que a do início (10), mas o instante é menor.
+        Result<FaseCronograma> resultado = Criar(
+            origemData: OrigemDataFase.Delegada,
+            inicio: new DateTimeOffset(2027, 1, 25, 10, 0, 0, TimeSpan.FromHours(-3)),
+            fim: new DateTimeOffset(2027, 1, 25, 12, 0, 0, TimeSpan.Zero));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FaseCronograma.JanelaInvertida");
+        resultado.Error.Message.Should().NotContain("-03:00",
+            "a mensagem descreve a janela na mesma representação em que ela é guardada");
+    }
+
+    [Fact(DisplayName = "Reidratar também guarda a janela em UTC")]
+    public void Reidratar_ComOffset_GuardaEmUtc()
+    {
+        DateTimeOffset instanteUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);
+
+        FaseCronograma fase = FaseCronograma.Reidratar(
+            Guid.CreateVersion7(),
+            ordem: 1,
+            faseCanonicaOrigemId: Guid.CreateVersion7(),
+            codigo: "RESULTADO_PRELIMINAR",
+            donoInstitucional: "CEPS",
+            origemData: OrigemDataFase.Propria,
+            agrupaEtapas: false,
+            permiteComplementacao: false,
+            produzResultado: false,
+            resultadoDefinitivo: false,
+            coletaInscricao: false,
+            inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)),
+            fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)),
+            atoProduzidoCodigo: null,
+            atoProduzidoEfeitoIrreversivel: false,
+            bancasRequeridas: [],
+            regraRecurso: null);
+
+        fase.Inicio.Should().Be(instanteUtc);
+        fase.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero);
+        fase.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
+    }
+
     [Fact(DisplayName = "Fase que produz resultado sem declarar o ato produzido é recusada")]
     public void ProduzResultado_SemAtoProduzido_Recusa()
     {

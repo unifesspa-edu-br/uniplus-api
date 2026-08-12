@@ -19,6 +19,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>).
 /// </para>
 /// <para>
+/// <b>A janela é guardada em UTC</b>, qualquer que seja o offset com que o instante
+/// chegou: <see cref="Inicio"/> e <see cref="Fim"/> passam por
+/// <see cref="DateTimeOffset.ToUniversalTime"/> em todo caminho de escrita, preservando o
+/// instante. O offset escolhido por quem escreve é forma de transporte, não informação de
+/// domínio — e a coluna <c>timestamp with time zone</c> só aceita a representação em UTC.
+/// </para>
+/// <para>
 /// <b>Invariantes que esta factory prova sozinha</b> (não dependem de leitura externa):
 /// janela obrigatória/opcional conforme <see cref="OrigemData"/> (CA-07), janela não
 /// invertida, e as duas primeiras invariantes de <see cref="RegraRecursoFase"/> que
@@ -61,8 +68,13 @@ public sealed class FaseCronograma : EntityBase
     /// <summary>Se a fase coleta inscrição — decide o piso mínimo quando <see cref="OrigemCandidatos.InscricaoPropria"/>.</summary>
     public bool ColetaInscricao { get; private set; }
 
+    /// <summary>
+    /// Início da janela, sempre em UTC (<c>Offset</c> zero) — ver o <c>&lt;remarks&gt;</c> da
+    /// classe sobre a representação da janela.
+    /// </summary>
     public DateTimeOffset? Inicio { get; private set; }
 
+    /// <summary>Fim da janela, sempre em UTC (<c>Offset</c> zero).</summary>
     public DateTimeOffset? Fim { get; private set; }
 
     /// <summary>Código do tipo de ato que esta fase produz — a âncora de <see cref="RegraRecurso"/> é sempre este.</summary>
@@ -108,6 +120,11 @@ public sealed class FaseCronograma : EntityBase
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(donoInstitucional);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
+
+        // A janela é fixada em UTC ANTES das validações, para que a mensagem de
+        // JanelaInvertida e o valor gravado falem da mesma representação do instante.
+        inicio = EmUtc(inicio);
+        fim = EmUtc(fim);
 
         if (ordem <= 0)
         {
@@ -279,8 +296,8 @@ public sealed class FaseCronograma : EntityBase
             ProduzResultado = produzResultado,
             ResultadoDefinitivo = resultadoDefinitivo,
             ColetaInscricao = coletaInscricao,
-            Inicio = inicio,
-            Fim = fim,
+            Inicio = EmUtc(inicio),
+            Fim = EmUtc(fim),
             AtoProduzidoCodigo = atoProduzidoCodigo,
             AtoProduzidoEfeitoIrreversivel = atoProduzidoEfeitoIrreversivel,
         };
@@ -357,8 +374,8 @@ public sealed class FaseCronograma : EntityBase
         ProduzResultado = produzResultado;
         ResultadoDefinitivo = resultadoDefinitivo;
         ColetaInscricao = coletaInscricao;
-        Inicio = inicio;
-        Fim = fim;
+        Inicio = EmUtc(inicio);
+        Fim = EmUtc(fim);
         AtoProduzidoCodigo = atoProduzidoCodigo;
         AtoProduzidoEfeitoIrreversivel = atoProduzidoEfeitoIrreversivel;
 
@@ -375,4 +392,12 @@ public sealed class FaseCronograma : EntityBase
             regraRecurso.VincularFase(Id);
         }
     }
+
+    /// <summary>
+    /// Fixa a representação da janela em UTC preservando o instante — o cliente informa
+    /// um instante inequívoco (RFC 3339), e qual offset ele escolheu para escrevê-lo é
+    /// detalhe de transporte, não dado de domínio. Mesma normalização que
+    /// <c>AuthorizationRequestContext</c> aplica à data de acesso.
+    /// </summary>
+    private static DateTimeOffset? EmUtc(DateTimeOffset? instante) => instante?.ToUniversalTime();
 }
