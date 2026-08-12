@@ -78,6 +78,35 @@ public sealed class UniPlusInfoTransformerTests
         document.Info.Description.Should().Contain("pt-BR");
     }
 
+    [Fact]
+    public async Task TransformAsync_Should_AnnounceOnlyDeployedEnvironments_WhenLocalServerIsNotConfigured()
+    {
+        UniPlusInfoTransformer transformer = CreateTransformer();
+        OpenApiDocument document = new();
+
+        await transformer.TransformAsync(document, CreateContext("selecao"), CancellationToken.None);
+
+        document.Servers.Should().HaveCount(2, "HML e PROD não anunciam servidor de desenvolvimento");
+        document.Servers!.Select(s => s.Description).Should().Equal("Produção", "Homologação");
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_PutLocalServerFirst_WhenConfigured()
+    {
+        UniPlusInfoTransformer transformer = CreateTransformer(
+            o => o with { LocalServerUrl = "http://localhost:5299" });
+        OpenApiDocument document = new();
+
+        await transformer.TransformAsync(document, CreateContext("selecao"), CancellationToken.None);
+
+        // A ORDEM é o comportamento: uma interface de exploração seleciona o primeiro servidor
+        // por padrão. Anunciar o local em segundo lugar deixaria o "Try it out" disparando
+        // contra produção — com a credencial que a pessoa acabou de colar no Authorize.
+        document.Servers.Should().HaveCount(3);
+        document.Servers![0].Url.Should().Be("http://localhost:5299");
+        document.Servers[0].Description.Should().Be("Ambiente local");
+    }
+
     private static UniPlusInfoTransformer CreateTransformer(Func<UniPlusOpenApiOptions, UniPlusOpenApiOptions>? configure = null)
     {
         UniPlusOpenApiOptions baseOptions = new();

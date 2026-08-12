@@ -71,6 +71,12 @@ services:
       # via password grant, o override docker-compose.smoke.yml realinha para dev-local.
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
       Auth__Audience: "uniplus"
+      # Anuncia o proxy da documentação como PRIMEIRO servidor do documento — é o que a
+      # interface seleciona por padrão. Sem isto o "Try it out" dispara contra a URL de
+      # produção: além de falhar em CORS, manda a requisição (e a credencial colada no
+      # Authorize) para o ambiente errado. Só de desenvolvimento; em HML/PROD a variável
+      # não existe e o documento volta a anunciar apenas Produção e Homologação.
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299"
     ports:
       - "5200:8080"
     depends_on:
@@ -160,6 +166,9 @@ services:
       Storage__AccessKey: "${MINIO_ROOT_USER}"
       Storage__SecretKey: "${MINIO_ROOT_PASSWORD}"
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      # Mesmo motivo do host consolidado: o documento do Portal também é explorado pela
+      # interface em :5299, que proxia /api/portal/ para cá.
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299"
     ports:
       - "5302:8080"
     depends_on:

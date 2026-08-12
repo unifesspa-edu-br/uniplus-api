@@ -56,18 +56,11 @@ public sealed class AuthorizationOperationTransformer : IOpenApiOperationTransfo
         ArgumentNullException.ThrowIfNull(operation);
         ArgumentNullException.ThrowIfNull(context);
 
-        // Scope: controllers only. Minimal API endpoints have their own lifecycle and are not the
-        // target of this controller-route contract fix.
-        if (context.Description.ActionDescriptor is not ControllerActionDescriptor descriptor)
-        {
-            return Task.CompletedTask;
-        }
-
-        // Reads the endpoint metadata (action AND class attributes, aggregated by MVC) through the
-        // SAME interfaces the authorization middleware consults — IAllowAnonymous wins over
-        // IAuthorizeData. So the contract describes exactly what the server does, and the test does
-        // not need controller fixtures.
-        IList<object> metadata = descriptor.EndpointMetadata;
+        // Reads the endpoint metadata (action AND class attributes, aggregated by MVC; route group
+        // conventions for minimal APIs) through the SAME interfaces the authorization middleware
+        // consults — IAllowAnonymous wins over IAuthorizeData. So the contract describes exactly
+        // what the server does, and the test does not need controller fixtures.
+        IList<object> metadata = context.Description.ActionDescriptor.EndpointMetadata;
 
         bool anonymous = metadata.OfType<IAllowAnonymous>().Any();
         if (anonymous)
@@ -103,6 +96,16 @@ public sealed class AuthorizationOperationTransformer : IOpenApiOperationTransfo
                     BearerSecuritySchemeDocumentTransformer.SchemeName,
                     context.Document)] = [],
             });
+        }
+
+        // Daqui para baixo, só controllers. As respostas 401/403 declaradas em massa foram
+        // pensadas para a rota de controller, cuja política vem da classe e cujo autor não as
+        // repete action a action; um endpoint minimal API declara as suas próprias no ponto de
+        // mapeamento. O requisito de segurança acima não tem essa distinção — a UI precisa
+        // anexar o token em qualquer rota protegida, seja qual for o estilo de roteamento.
+        if (context.Description.ActionDescriptor is not ControllerActionDescriptor)
+        {
+            return Task.CompletedTask;
         }
 
         operation.Responses ??= [];

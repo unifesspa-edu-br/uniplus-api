@@ -57,11 +57,19 @@ public sealed class UniPlusInfoTransformer : IOpenApiDocumentTransformer
             },
         };
 
-        document.Servers =
-        [
-            new OpenApiServer { Url = _options.ProductionServerUrl, Description = "Produção" },
-            new OpenApiServer { Url = _options.StagingServerUrl, Description = "Homologação" },
-        ];
+        List<OpenApiServer> servidores = [];
+
+        // O local vem primeiro quando existe: é o primeiro que uma interface de exploração
+        // seleciona, e o padrão precisa ser a máquina de quem está explorando — não produção.
+        if (!string.IsNullOrWhiteSpace(_options.LocalServerUrl))
+        {
+            servidores.Add(new OpenApiServer { Url = _options.LocalServerUrl, Description = "Ambiente local" });
+        }
+
+        servidores.Add(new OpenApiServer { Url = _options.ProductionServerUrl, Description = "Produção" });
+        servidores.Add(new OpenApiServer { Url = _options.StagingServerUrl, Description = "Homologação" });
+
+        document.Servers = servidores;
 
         return Task.CompletedTask;
     }

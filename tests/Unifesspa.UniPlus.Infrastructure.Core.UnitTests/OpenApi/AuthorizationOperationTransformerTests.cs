@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
@@ -136,6 +137,37 @@ public sealed class AuthorizationOperationTransformerTests
     }
 
     [Fact]
+    public async Task TransformAsync_Should_RequireBearerScheme_OnProtectedMinimalApi()
+    {
+        // /api/auth/me e /api/profile/me são minimal APIs protegidas por RequireAuthorization()
+        // no grupo de rotas. Sem o requisito, a interface de exploração não anexa o token
+        // autorizado e essas rotas continuam devolvendo 401 mesmo depois do Authorize.
+        OpenApiOperation operation = new();
+
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, MinimalApiContext([new AuthorizeAttribute()]), CancellationToken.None);
+
+        operation.Security.Should().ContainSingle();
+        operation.Security![0].Keys.Should().ContainSingle()
+            .Which.Should().BeOfType<OpenApiSecuritySchemeReference>()
+            .Which.Reference!.Id.Should().Be(BearerSecuritySchemeDocumentTransformer.SchemeName);
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_NotDeclare401Or403_OnMinimalApi()
+    {
+        // As respostas em massa continuam restritas a controllers: um endpoint minimal API
+        // declara as suas no ponto de mapeamento, e sobrescrevê-las aqui apagaria a descrição
+        // específica que o autor escreveu.
+        OpenApiOperation operation = new();
+
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, MinimalApiContext([new AuthorizeAttribute()]), CancellationToken.None);
+
+        operation.Responses.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
     public async Task TransformAsync_Should_NotDuplicateRequirement_WhenBearerIsAlreadyDeclared()
     {
         // O pipeline pode transformar a mesma operação mais de uma vez (documento por módulo);
@@ -164,6 +196,23 @@ public sealed class AuthorizationOperationTransformerTests
             // A referência de segurança resolve o esquema contra o documento hospedeiro ao
             // serializar; sem ele o requisito viraria um objeto vazio no contrato publicado.
             Document = document ?? new OpenApiDocument(),
+        };
+
+    /// <summary>
+    /// Contexto de endpoint NÃO-controller: o ApiExplorer descreve minimal APIs com um
+    /// <see cref="ActionDescriptor"/> base, cuja <c>EndpointMetadata</c> carrega as convenções
+    /// do grupo de rotas (incluindo o <c>RequireAuthorization()</c>).
+    /// </summary>
+    private static OpenApiOperationTransformerContext MinimalApiContext(IList<object> metadata) =>
+        new()
+        {
+            DocumentName = "selecao",
+            ApplicationServices = NSubstitute.Substitute.For<IServiceProvider>(),
+            Description = new ApiDescription
+            {
+                ActionDescriptor = new ActionDescriptor { EndpointMetadata = metadata },
+            },
+            Document = new OpenApiDocument(),
         };
 
     private static OpenApiDocumentTransformerContext DocumentContext() =>

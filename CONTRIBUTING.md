@@ -99,8 +99,22 @@ it out", e uma UI em porta separada colocaria essas chamadas em outra origem —
 a API não emite `Access-Control-Allow-Origin`, então todos os documentos
 falhariam em CORS.
 
+O seletor **Servers** já vem no ambiente local: o documento anuncia
+`http://localhost:5299` como primeiro servidor porque o override define
+`UniPlus__OpenApi__LocalServerUrl`. Sem isso o "Try it out" dispararia contra a
+URL de produção — o que falha em CORS e, pior, manda requisição e credencial
+para o ambiente errado. Em HML e PROD a variável não existe e o documento volta
+a anunciar apenas Produção e Homologação.
+
 Para exercitar rotas protegidas, clique em **Authorize** e cole um token. As
-rotas administrativas exigem a role `plataforma-admin`; no realm de smoke:
+rotas administrativas exigem a role `plataforma-admin`, e o
+`PERSIST_AUTHORIZATION` guarda o token entre recargas.
+
+**De onde tirar o token depende de como você subiu a stack.** No stack completo
+acima, as APIs validam o realm `unifesspa`, cujos clients `*-web` não têm direct
+access grant — o token vem do fluxo de login do navegador, pelos frontends em
+4200-4203. Para obtê-lo por linha de comando, suba com o override de smoke (ver
+**Smoke / Newman** abaixo), que realinha as APIs ao realm `unifesspa-dev-local`:
 
 ```bash
 curl -s -X POST http://localhost:8080/realms/unifesspa-dev-local/protocol/openid-connect/token \
@@ -108,10 +122,12 @@ curl -s -X POST http://localhost:8080/realms/unifesspa-dev-local/protocol/openid
   | jq -r .access_token
 ```
 
-O token é aceito porque o documento declara o esquema de segurança Bearer e
-cada rota protegida o referencia — a declaração sai do mesmo lugar que já
-adiciona o `401`/`403` ao contrato, a partir da presença de `[Authorize]` no
-endpoint. O `PERSIST_AUTHORIZATION` mantém o token entre recargas da página.
+Um token do realm errado é recusado pelo emissor e toda chamada volta 401 —
+conferir o realm antes de investigar o token.
+
+O token é aceito porque o documento declara o esquema de segurança Bearer e cada
+rota protegida o referencia — a declaração sai do mesmo lugar que já adiciona o
+`401`/`403` ao contrato, a partir da presença de `[Authorize]` no endpoint.
 
 ### Desenvolver o frontend com hot reload (`nx serve`)
 
