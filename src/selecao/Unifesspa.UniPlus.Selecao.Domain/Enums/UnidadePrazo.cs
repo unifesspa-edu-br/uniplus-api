@@ -7,14 +7,18 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <remarks>
 /// <see cref="DiasUteis"/> <b>fica no enum</b> — nunca excluído do domínio fechado: o
 /// vocabulário legal admite dias úteis, e removê-lo do tipo seria mentir sobre o que o
-/// edital pode declarar. O calendário de dias úteis existe (issue #1113,
-/// <c>ICalendarioVigenteReader</c>, módulo Configuração) — o que pode faltar é um
-/// <b>dataset vigente</b> ou a <b>localidade</b> da unidade administradora do processo
-/// para resolver a abrangência municipal. O gate, por isso, saiu do domínio: é o
-/// handler (<c>DefinirCronogramaFasesCommandHandler</c>) que confere as duas condições
-/// em runtime e recusa com erro nomeado (<c>RegraRecursoFase.PrazoEmDiasUteisSemCalendario</c>
-/// / <c>SuspensividadeEmDiasUteisSemCalendario</c> / <c>...SemLocalidade</c>), nunca
-/// aproximando em silêncio.
+/// edital pode declarar. As duas recusas, porém, NÃO têm o mesmo motivo (UNI-REQ-0080):
+/// no prazo de interposição, dias úteis é proibido de forma <b>permanente</b> — é o prazo
+/// que fecha a porta do candidato, e um erro de contagem para menos cercearia direito;
+/// nunca deixa de ser recusado, mesmo com calendário e algoritmo de contagem disponíveis.
+/// Na suspensividade, dias úteis é condicionalmente aceitável, mas só quando existirem,
+/// ao mesmo tempo, um calendário de dias úteis vigente E uma versão identificável do
+/// algoritmo de contagem — nenhum artefato de algoritmo versionado existe hoje (o motor
+/// de contagem é UNI-REQ-0081, incremento futuro), então a recusa também vale sempre, por
+/// ora. O gate recusa em runtime com erro nomeado
+/// (<c>RegraRecursoFase.PrazoEmDiasUteisSemCalendario</c> /
+/// <c>RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario</c>), nunca aproximando em
+/// silêncio.
 /// </remarks>
 public enum UnidadePrazo
 {

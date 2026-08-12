@@ -15,11 +15,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Deriva de <see cref="EntityBase"/> puro (sem soft-delete), mesmo padrão de
 /// <see cref="EtapaProcesso"/>. As invariantes que dependem da fase-mãe (ProduzResultado,
 /// ResultadoDefinitivo, AtoProduzidoCodigo — itens 1 e 2 do §3.6) são validadas por
-/// <see cref="FaseCronograma.Criar"/>, que tem acesso aos dois lados; a que esta
-/// entidade consegue provar sozinha (a coerência da regra referenciada) fica aqui.
-/// DIAS_UTEIS sem calendário vigente ou sem localidade resolvível (issue #1113) NÃO é
-/// invariante deste VO — exige I/O (<c>ICalendarioVigenteReader</c>) e é competência do
-/// handler (<c>DefinirCronogramaFasesCommandHandler</c>).
+/// <see cref="FaseCronograma.Criar"/>, que tem acesso aos dois lados; as que esta
+/// entidade consegue provar sozinha (item 6/7 — DIAS_UTEIS sem calendário; a coerência
+/// da regra referenciada) ficam aqui.
 /// </remarks>
 public sealed class RegraRecursoFase : EntityBase
 {
@@ -34,16 +32,9 @@ public sealed class RegraRecursoFase : EntityBase
     /// <summary>
     /// Cria a regra de recurso da fase. Não resolve nem confere a existência da
     /// <paramref name="regra"/> no catálogo (isso é I/O — Application, via
-    /// <c>IRegraCatalogoReader</c>, ADR-0042), a vigência do ato âncora (Application,
-    /// via <c>ITipoAtoPublicadoReader</c>) nem a vigência do calendário de dias úteis ou
-    /// a localidade da unidade administradora (Application, via
-    /// <c>ICalendarioVigenteReader</c>, issue #1113) — só as invariantes puras que este
-    /// VO consegue provar sozinho. <c>DiasUteis</c> é aceito aqui como qualquer outra
-    /// <see cref="UnidadePrazo"/>: este método também roda na reidratação do envelope
-    /// (<c>EnvelopeCodecV11.LerRegraRecursoFase</c>), onde não há I/O disponível para
-    /// reconferir se o calendário que valeu na declaração ainda é o vigente hoje — e não
-    /// deveria haver, já que reidratar histórico não pode falhar por o presente ter
-    /// mudado.
+    /// <c>IRegraCatalogoReader</c>, ADR-0042) nem a vigência do ato âncora (Application,
+    /// via <c>ITipoAtoPublicadoReader</c>) — só as invariantes puras que este VO consegue
+    /// provar sozinho.
     /// </summary>
     public static Result<RegraRecursoFase> Criar(ReferenciaRegra regra, ArgsRegraPrazoRecurso args)
     {
@@ -62,6 +53,33 @@ public sealed class RegraRecursoFase : EntityBase
             return Result<RegraRecursoFase>.Failure(new DomainError(
                 "RegraRecursoFase.RegraCatalogoInvalida",
                 $"RegraRecursoFase só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
+        }
+
+        // CA-20 (UNI-REQ-0080): a interposição em dias úteis é recusada de forma
+        // PERMANENTE — não é limitação técnica temporária. É o prazo que fecha a porta do
+        // candidato; um erro de contagem para menos cercearia direito, e nenhum calendário
+        // ou algoritmo de contagem elimina esse risco. Nunca aproximado em silêncio; o
+        // valor permanece representável no enum (vocabulário legal fechado).
+        if (args.PrazoUnidade == UnidadePrazo.DiasUteis)
+        {
+            return Result<RegraRecursoFase>.Failure(new DomainError(
+                "RegraRecursoFase.PrazoEmDiasUteisSemCalendario",
+                "O prazo de interposição em dias úteis é recusado — não há calendário de dias úteis no sistema."));
+        }
+
+        // CA-21 (UNI-REQ-0080): a suspensividade em dias úteis é condicionalmente
+        // aceitável — mas exige, ao mesmo tempo, um calendário de dias úteis vigente E
+        // uma versão identificável do algoritmo de contagem, ambas congeladas no
+        // snapshot. Nenhum artefato de algoritmo versionado existe hoje (o motor de
+        // contagem é UNI-REQ-0081, incremento futuro), então a recusa vale sempre, por
+        // ora — checagem POR INSTÂNCIA, independente: qualquer uma das duas em dias
+        // úteis recusa, mesmo que a outra esteja em dias corridos ou seja null.
+        if (args.SuspensividadePrimeiraInstanciaUnidade == UnidadePrazo.DiasUteis
+            || args.SuspensividadeSegundaInstanciaUnidade == UnidadePrazo.DiasUteis)
+        {
+            return Result<RegraRecursoFase>.Failure(new DomainError(
+                "RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario",
+                "A suspensividade em dias úteis é recusada (em qualquer uma das duas instâncias) — não há calendário de dias úteis no sistema."));
         }
 
         return Result<RegraRecursoFase>.Success(new RegraRecursoFase { Regra = regra, Args = args });

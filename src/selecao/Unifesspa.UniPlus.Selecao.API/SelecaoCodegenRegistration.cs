@@ -104,11 +104,5 @@ public static class SelecaoCodegenRegistration
         // ObrigatoriedadeLegal resolvem o cadastro configurável de Configuração para
         // congelar o snapshot-copy — mesmo motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoEtapaReader>();
-
-        // Calendário de dias úteis (issue #1113): DefinirCronogramaFasesCommandHandler
-        // confere dataset vigente antes de aceitar DiasUteis. Mesmo motivo dos demais
-        // readers cross-módulo acima — o concreto CalendarioVigenteReader é internal a
-        // Configuracao.Infrastructure.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICalendarioVigenteReader>();
     }
 }
