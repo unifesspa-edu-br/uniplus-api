@@ -434,6 +434,9 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fase_inexistente", "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma")),
         new("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_extremo_ausente", "A fase âncora da referência temporal de fatos não tem o extremo (início/fim) definido")),
         new("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.referencia_temporal_fatos_fim_inscricao_indisponivel", "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido")),
+        // issue #1077 — fato coletável de escopo do processo (CONDICAO_ATENDIMENTO/TIPO_DEFICIENCIA)
+        // sem nenhum valor ofertado publicaria um seletor sem opção para o candidato escolher.
+        new("ProcessoSeletivo.FatoColetadoSemValoresOfertados", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_coletado_sem_valores_ofertados", "O fato coletado é de seleção, mas a oferta do processo não declara nenhum valor para ele")),
         // Base legal 1:N (Story #554, PR #898, issue #549, ADR-0074) — DocumentoExigidoBaseLegal
         // e o gate de publicação (ValidadorBaseLegalExigencias) aflora pelo
         // ProcessoSeletivo.ConformidadeInsuficiente já registrado acima, sem código novo.
