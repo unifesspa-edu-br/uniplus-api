@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -114,6 +115,143 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await segunda.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString()
             .Should().Be("uniplus.selecao.processo_seletivo.transicao_invalida");
+        // issue #1096 CA-07: processo já publicado tem o checklist estrutural 100% verde —
+        // "pendencias" nunca aparece vazio, e aqui nem deveria aparecer.
+        doc.RootElement.TryGetProperty("pendencias", out _).Should().BeFalse();
+    }
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao com cadastro próprio não conforme — 422 ConformidadeInsuficiente inclui pendencias (issue #1096 CA-04, regressão)")]
+    public async Task Publicar_QuandoCadastroProprioNaoConforme_Retorna422ComPendencias() =>
+        await AssertGateEstruturalNaoConformeAsync(
+            (db, nome) => ProcessoSeletivoPendenciasSeeder.SemearComCadastroProprioNaoConformeAsync(db, nome),
+            "uniplus.selecao.processo_seletivo.conformidade_insuficiente",
+            "Atendimento especializado",
+            nameof(Publicar_QuandoCadastroProprioNaoConforme_Retorna422ComPendencias));
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao com cronograma não conforme (InscricaoPropria sem fase de coleta) — 422 inclui pendencias (issue #1096 CA-01, cenário Gherkin da issue)")]
+    public async Task Publicar_QuandoCronogramaNaoConforme_Retorna422ComPendencias() =>
+        await AssertGateEstruturalNaoConformeAsync(
+            ProcessoSeletivoPendenciasSeeder.SemearComCronogramaNaoConformeAsync,
+            "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta",
+            "Cronograma: inscrição própria tem fase que coleta inscrição",
+            nameof(Publicar_QuandoCronogramaNaoConforme_Retorna422ComPendencias));
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao com cascata não conforme (fora do regime federal) — 422 inclui pendencias (issue #1096 CA-02)")]
+    public async Task Publicar_QuandoCascataNaoConforme_Retorna422ComPendencias() =>
+        await AssertGateEstruturalNaoConformeAsync(
+            ProcessoSeletivoPendenciasSeeder.SemearComCascataNaoConformeAsync,
+            "uniplus.selecao.processo_seletivo.cascata_fora_do_regime_federal",
+            "Cascata: modalidade SegueCascata usa a regra de distribuição federal",
+            nameof(Publicar_QuandoCascataNaoConforme_Retorna422ComPendencias));
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao com pré-canonicalização não conforme (CONDICIONAL vazia) — 422 inclui pendencias (issue #1096 CA-03)")]
+    public async Task Publicar_QuandoPreCanonicalizacaoNaoConforme_Retorna422ComPendencias() =>
+        await AssertGateEstruturalNaoConformeAsync(
+            ProcessoSeletivoPendenciasSeeder.SemearComPreCanonicalizacaoNaoConformeAsync,
+            "uniplus.selecao.documento_exigido.condicional_vazia_determina_resultado",
+            "Exigência documental: sem CONDICIONAL vazia que determina resultado",
+            nameof(Publicar_QuandoPreCanonicalizacaoNaoConforme_Retorna422ComPendencias));
+
+    /// <summary>
+    /// Semeia via <paramref name="semear"/>, publica e confirma que o 422 tem o <paramref
+    /// name="codigoEsperado"/> e que <c>pendencias</c> contém <paramref
+    /// name="itemVermelhoEsperado"/> — corpo comum aos quatro grupos de gate estrutural da
+    /// issue #1096 (CA-01 a CA-04).
+    /// </summary>
+    private async Task AssertGateEstruturalNaoConformeAsync(
+        Func<SelecaoDbContext, string, Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)>> semear,
+        string codigoEsperado,
+        string itemVermelhoEsperado,
+        string nomeDoCenario)
+    {
+        ArgumentNullException.ThrowIfNull(semear);
+
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (ProcessoSeletivo processo, DocumentoEdital documento) = await semear(db, $"{nomeDoCenario} {Guid.CreateVersion7()}");
+
+        HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be(codigoEsperado);
+        doc.RootElement.GetProperty("pendencias").EnumerateArray().Select(e => e.GetString())
+            .Should().Contain(itemVermelhoEsperado);
+    }
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao recusado por obrigatoriedade legal com checklist estrutural verde — 422 com obrigatoriedadesReprovadas e SEM pendencias (issue #1096 CA-05/CA-07)")]
+    public async Task Publicar_QuandoSoObrigatoriedadeLegalReprovada_Retorna422SemPendencias()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        Guid regraId = await ProcessoSeletivoPendenciasSeeder.SemearObrigatoriedadeNaoAtendidaAsync(
+            db, $"TEST_GATE_{Guid.CreateVersion7():N}");
+        try
+        {
+            (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPublicavelSeeder
+                .SemearAsync(db, nameof(Publicar_QuandoSoObrigatoriedadeLegalReprovada_Retorna422SemPendencias));
+
+            HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
+
+            response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+            using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            doc.RootElement.GetProperty("code").GetString()
+                .Should().Be("uniplus.selecao.processo_seletivo.conformidade_legal_insuficiente");
+            doc.RootElement.GetProperty("obrigatoriedadesReprovadas").GetArrayLength().Should().BeGreaterThan(0);
+            doc.RootElement.TryGetProperty("pendencias", out _).Should().BeFalse(
+                "o checklist estrutural está 100% verde — só a obrigatoriedade legal reprovou");
+        }
+        finally
+        {
+            // A regra é universal (TipoProcessoUniversal) e sem vigenciaFim — sem esta limpeza,
+            // ela continuaria reprovando todo processo SiSU publicado depois dela neste mesmo
+            // container Postgres, compartilhado por toda a classe via CascadingFixture (afeta
+            // até os testes que esperam 204, como Publicar_FluxoCompleto_DispatchaCascadingMessages).
+            await db.Database.ExecuteSqlAsync($"UPDATE selecao.obrigatoriedades_legais SET is_deleted = true WHERE id = {regraId}");
+        }
+    }
+
+    [Fact(DisplayName =
+        "POST /processos-seletivos/{id}/publicacao recusado por documento não confirmado, com checklist estrutural vermelho — 422 inclui pendencias mesmo sendo erro alheio à conformidade (issue #1096 CA-06)")]
+    public async Task Publicar_QuandoOutroErro422EChecklistAindaVermelho_IncluiPendencias()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        using HttpClient client = api.CreateClient();
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (ProcessoSeletivo processo, DocumentoEdital documento) = await ProcessoSeletivoPendenciasSeeder
+            .SemearComCadastroProprioNaoConformeAsync(
+                db,
+                nameof(Publicar_QuandoOutroErro422EChecklistAindaVermelho_IncluiPendencias),
+                documentoConfirmado: false);
+
+        HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        // A recusa é por documento não confirmado — nada a ver com conformidade estrutural —,
+        // mas o checklist reconsultado no momento do enriquecimento ainda tem item vermelho, e
+        // o contrato (issue #1096) diz que "pendencias" é um retrato do estado atual, não uma
+        // tradução exclusiva do código de erro que efetivamente recusou.
+        doc.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.selecao.processo_seletivo.documento_nao_confirmado");
+        doc.RootElement.GetProperty("pendencias").EnumerateArray().Select(e => e.GetString())
+            .Should().Contain("Atendimento especializado");
     }
 
     [Fact(DisplayName =
