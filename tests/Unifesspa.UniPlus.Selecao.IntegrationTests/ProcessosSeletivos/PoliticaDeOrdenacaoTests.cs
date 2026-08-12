@@ -252,8 +252,14 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "etapas: duplicata verdadeira (mesmo conteúdo, sem Ordem) desempata por Id — o desempate final é alcançável, não código morto")]
     public void Etapas_DuplicataVerdadeira_IdEstabilizaComoDesempateFinal()
     {
-        EtapaProcesso etapaComIdMenor = EtapaProcesso.Reidratar(IdFixo(1), "Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, notaMinima: null, ordem: null);
-        EtapaProcesso etapaComIdMaior = EtapaProcesso.Reidratar(IdFixo(2), "Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, notaMinima: null, ordem: null);
+        // O MESMO TipoEtapaSnapshot para as duas etapas — não um TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), ...)
+        // por etapa (flaky sob CORRIDA, issue #1115): duas chamadas independentes gerariam origemId
+        // distintos, e origemId entra em SerializarTipoEtapa/SemId — as etapas deixariam de ser
+        // conteudisticamente idênticas, e o ThenBy de CONTEÚDO (não o de Id, que é o objeto real
+        // desta prova) desempataria a posição, tornando o teste dependente da ordem de criação dos Guid v7.
+        TipoEtapaSnapshot tipoEtapa = TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!;
+        EtapaProcesso etapaComIdMenor = EtapaProcesso.Reidratar(IdFixo(1), "Prova Objetiva", CaraterEtapa.Classificatoria, tipoEtapa, peso: 1m, notaMinima: null, ordem: null);
+        EtapaProcesso etapaComIdMaior = EtapaProcesso.Reidratar(IdFixo(2), "Prova Objetiva", CaraterEtapa.Classificatoria, tipoEtapa, peso: 1m, notaMinima: null, ordem: null);
 
         etapaComIdMenor.Nome.Should().Be(etapaComIdMaior.Nome,
             "pré-condição: as duas etapas são conteudisticamente IDÊNTICAS (mesmo nome/caráter/peso/notaMinima, ambas sem Ordem) — a chave de conteúdo empata e sobra o Id");
