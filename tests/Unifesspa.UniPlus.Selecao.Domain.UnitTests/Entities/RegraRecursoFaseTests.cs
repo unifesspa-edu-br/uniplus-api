@@ -9,10 +9,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Cobertura de <see cref="RegraRecursoFase.Criar"/> (Story #851 §3.6): as invariantes
-/// puras que o VO consegue provar sozinho — referência por símbolo (CA-01/CA-02) e
-/// DIAS_UTEIS sem calendário na interposição e na suspensividade (CA-20/CA-21). A
-/// resolução contra o catálogo vivo (existe, TipoRegra correto, hash bate) é do
-/// handler (Application) — ver <c>DefinirCronogramaFasesCommandHandlerTests</c>.
+/// puras que o VO consegue provar sozinho — referência por símbolo (CA-01/CA-02). A
+/// resolução contra o catálogo vivo (existe, TipoRegra correto, hash bate) e a checagem
+/// de calendário vigente/localidade para DIAS_UTEIS (issue #1113) são do handler
+/// (Application) — ver <c>DefinirCronogramaFasesCommandHandlerTests</c>; este VO aceita
+/// DIAS_UTEIS estruturalmente, como qualquer outra <see cref="UnidadePrazo"/>.
 /// </summary>
 public sealed class RegraRecursoFaseTests
 {
@@ -52,23 +53,23 @@ public sealed class RegraRecursoFaseTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.RegraCatalogoInvalida");
     }
 
-    [Fact(DisplayName = "CA-20: prazo de interposição em DIAS_UTEIS é recusado — nunca aproximado em silêncio")]
-    public void PrazoEmDiasUteis_SemCalendario_Recusa()
+    [Fact(DisplayName = "CA-03 (contraprova): domínio ACEITA DiasUteis estruturalmente — a checagem de calendário vigente/localidade é do handler, não daqui")]
+    public void PrazoEmDiasUteis_AceitoEstruturalmente()
     {
         ReferenciaRegra regra = ReferenciaRegra.Criar(
             RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
 
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(regra, ArgsBase(prazoUnidade: UnidadePrazo.DiasUteis));
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoEmDiasUteisSemCalendario");
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.PrazoUnidade.Should().Be(UnidadePrazo.DiasUteis);
     }
 
-    [Theory(DisplayName = "CA-21: suspensividade em DIAS_UTEIS é recusada em QUALQUER uma das duas instâncias, independentemente")]
+    [Theory(DisplayName = "CA-03 (contraprova): suspensividade em DiasUteis, em qualquer uma das duas instâncias, é aceita estruturalmente pelo domínio")]
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
-    public void SuspensividadeEmDiasUteis_QualquerInstancia_Recusa(bool primeiraEmDiasUteis, bool segundaEmDiasUteis)
+    public void SuspensividadeEmDiasUteis_AceitaEstruturalmente(bool primeiraEmDiasUteis, bool segundaEmDiasUteis)
     {
         ReferenciaRegra regra = ReferenciaRegra.Criar(
             RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
@@ -79,8 +80,9 @@ public sealed class RegraRecursoFaseTests
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
             regra, ArgsBase(susp1Unidade: susp1, susp2Unidade: susp2));
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario");
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.SuspensividadePrimeiraInstanciaUnidade.Should().Be(susp1);
+        resultado.Value.Args.SuspensividadeSegundaInstanciaUnidade.Should().Be(susp2);
     }
 
     [Fact(DisplayName = "CA-21 (contraprova): suspensividade em DIAS corridos é aceita e congelada — em qualquer uma das duas instâncias, inclusive com a outra nula")]

@@ -14,6 +14,13 @@ using FluentValidation;
 /// </summary>
 public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<DefinirCronogramaFasesCommand>
 {
+    // Issue #1113: ArgsRegraPrazoRecurso.ResolverFimDaInterposicao faz (int)PrazoValor e
+    // itera um dia por vez até contar essa quantidade de dias úteis — sem teto, um valor
+    // gigantesco (inclusive > int.MaxValue) lançaria OverflowException ou giraria por
+    // tempo inaceitável. 3650 (10 anos corridos) é generoso para qualquer prazo de
+    // recurso real e ainda assim limita o pior caso do laço.
+    private const decimal MagnitudeMaximaDiasUteis = 3650m;
+
     public DefinirCronogramaFasesCommandValidator()
     {
         RuleFor(x => x.ProcessoSeletivoId)
@@ -64,6 +71,20 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                     .GreaterThan(0)
                     .WithMessage("O prazo de interposição deve ser maior que zero.");
 
+                // Issue #1113: dias úteis é contagem discreta — uma fração (ex.: 1,5 dias
+                // úteis) não tem significado sem uma convenção de arredondamento, e o
+                // domínio (ArgsRegraPrazoRecurso.ResolverFimDaInterposicao) faz cast direto
+                // para int. Recusar na borda evita truncamento silencioso.
+                fase.RuleFor(f => f.RegraRecurso!.PrazoValor)
+                    .Must(v => v == decimal.Truncate(v))
+                    .When(f => f.RegraRecurso!.PrazoUnidade == UnidadePrazo.DiasUteis)
+                    .WithMessage("O prazo de interposição em dias úteis não admite fração — informe um número inteiro de dias.");
+
+                fase.RuleFor(f => f.RegraRecurso!.PrazoValor)
+                    .LessThanOrEqualTo(MagnitudeMaximaDiasUteis)
+                    .When(f => f.RegraRecurso!.PrazoUnidade == UnidadePrazo.DiasUteis)
+                    .WithMessage($"O prazo de interposição em dias úteis não pode exceder {MagnitudeMaximaDiasUteis} dias.");
+
                 fase.RuleFor(f => f.RegraRecurso!.PrazoUnidade)
                     .NotEqual(UnidadePrazo.Nenhuma)
                     .WithMessage("A unidade do prazo de interposição é obrigatória.")
@@ -86,6 +107,19 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                     .When(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaUnidade.HasValue)
                     .WithMessage("O valor da suspensividade da 1ª instância é obrigatório quando a unidade é informada.");
 
+                // Issue #1113: mesmo motivo do prazo de interposição acima.
+                fase.RuleFor(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor)
+                    .Must(v => v!.Value == decimal.Truncate(v.Value))
+                    .When(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaUnidade == UnidadePrazo.DiasUteis
+                        && f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor.HasValue)
+                    .WithMessage("A suspensividade da 1ª instância em dias úteis não admite fração — informe um número inteiro de dias.");
+
+                fase.RuleFor(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor)
+                    .LessThanOrEqualTo(MagnitudeMaximaDiasUteis)
+                    .When(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaUnidade == UnidadePrazo.DiasUteis
+                        && f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor.HasValue)
+                    .WithMessage($"A suspensividade da 1ª instância em dias úteis não pode exceder {MagnitudeMaximaDiasUteis} dias.");
+
                 fase.RuleFor(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaUnidade)
                     .NotNull()
                     .When(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaValor.HasValue)
@@ -95,6 +129,19 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
                     .NotNull()
                     .When(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaUnidade.HasValue)
                     .WithMessage("O valor da suspensividade da 2ª instância é obrigatório quando a unidade é informada.");
+
+                // Issue #1113: mesmo motivo do prazo de interposição acima.
+                fase.RuleFor(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaValor)
+                    .Must(v => v!.Value == decimal.Truncate(v.Value))
+                    .When(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaUnidade == UnidadePrazo.DiasUteis
+                        && f.RegraRecurso!.SuspensividadeSegundaInstanciaValor.HasValue)
+                    .WithMessage("A suspensividade da 2ª instância em dias úteis não admite fração — informe um número inteiro de dias.");
+
+                fase.RuleFor(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaValor)
+                    .LessThanOrEqualTo(MagnitudeMaximaDiasUteis)
+                    .When(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaUnidade == UnidadePrazo.DiasUteis
+                        && f.RegraRecurso!.SuspensividadeSegundaInstanciaValor.HasValue)
+                    .WithMessage($"A suspensividade da 2ª instância em dias úteis não pode exceder {MagnitudeMaximaDiasUteis} dias.");
             });
         });
     }

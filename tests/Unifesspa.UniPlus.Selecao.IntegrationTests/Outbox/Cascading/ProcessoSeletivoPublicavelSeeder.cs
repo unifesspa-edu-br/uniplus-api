@@ -27,14 +27,30 @@ internal static class ProcessoSeletivoPublicavelSeeder
     // recomputado, só precisa satisfazer o formato).
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
+    public static Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearAsync(
+        SelecaoDbContext db,
+        string nome) => SemearAsync(db, nome, cidade: null);
+
+    /// <param name="cidade">
+    /// Cidade da unidade administradora (issue #1113, CA-05) — omitida por padrão para não
+    /// alterar o snapshot que os demais cenários de cascading já esperam; use quando o
+    /// teste precisar de uma unidade administradora com localidade resolvível.
+    /// </param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoEdital Documento)> SemearAsync(
         SelecaoDbContext db,
-        string nome)
+        string nome,
+        (string CodigoIbge, string CidadeNome, string Uf)? cidade)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot unidadeAdministradora = cidade is { } c
+            ? Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
+                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA", c.CodigoIbge, c.CidadeNome, c.Uf).Value!
+            : Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
+                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!;
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), unidadeAdministradora);
 
         Result etapasResult = processo.DefinirEtapas([
             EtapaProcesso.Criar(
