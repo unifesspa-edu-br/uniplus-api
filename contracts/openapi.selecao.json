@@ -384,17 +384,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/FormularioRenderizavelDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FormularioRenderizavelDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.formulario-inscricao.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/FormularioRenderizavelDto"
                 }
@@ -678,23 +668,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.obrigatoriedade-legal.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -768,17 +742,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.obrigatoriedade-legal.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ObrigatoriedadeLegalDto"
                 }
@@ -1313,23 +1277,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProcessoSeletivoResumoDto"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProcessoSeletivoResumoDto"
-                  }
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.processo-seletivo.v1\u002Bjson": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1428,17 +1376,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProcessoSeletivoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProcessoSeletivoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.processo-seletivo.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProcessoSeletivoDto"
                 }
@@ -4324,17 +4262,7 @@
               }
             },
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RetificacaoEmCursoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.retificacao-em-curso.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/RetificacaoEmCursoDto"
                 }
@@ -4873,17 +4801,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConformidadeProcessoSeletivoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConformidadeProcessoSeletivoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.conformidade-processo-seletivo.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ConformidadeProcessoSeletivoDto"
                 }
@@ -4967,17 +4885,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConformidadeLegalProcessoSeletivoDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConformidadeLegalProcessoSeletivoDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.conformidade-legal-processo-seletivo.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ConformidadeLegalProcessoSeletivoDto"
                 }
@@ -5070,17 +4978,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/SnapshotVigenteDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SnapshotVigenteDto"
-                }
-              },
-              "text/json": {
+              "application/vnd.uniplus.snapshot-vigente-processo-seletivo.v1\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/SnapshotVigenteDto"
                 }
