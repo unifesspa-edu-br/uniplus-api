@@ -36,6 +36,11 @@ public static class CriarTipoEtapaCommandHandler
         }
         catch (Exception exception) when (UniqueConstraintViolation.EhConflitoDeCodigo(exception))
         {
+            // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync
+            // automático do Wolverine (AutoApplyTransactions) tenta a mesma inserção de
+            // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
+            // pretendido vira 500.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<Guid>.Failure(CodigoJaExiste(command.Codigo));
         }
         return Result<Guid>.Success(criar.Value!.Id);
