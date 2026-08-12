@@ -240,7 +240,7 @@
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
-        "description": "Token JWT emitido pelo provedor de identidade institucional (Keycloak), enviado no cabe\u00E7alho Authorization. As rotas administrativas exigem, al\u00E9m da autentica\u00E7\u00E3o, a role plataforma-admin no token.",
+        "description": "Token JWT emitido pelo provedor de identidade institucional (Keycloak). Cole apenas o token: o prefixo \u0022Bearer\u0022 \u00E9 acrescentado ao cabe\u00E7alho Authorization automaticamente. As rotas administrativas exigem, al\u00E9m da autentica\u00E7\u00E3o, a role plataforma-admin no token.",
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
