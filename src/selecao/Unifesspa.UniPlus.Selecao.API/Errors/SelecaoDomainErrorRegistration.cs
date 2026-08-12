@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via IServiceProvider.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>().")]
@@ -536,15 +535,13 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("UnidadeAdministradoraSnapshot.SlugObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.slug_obrigatorio", "Slug da unidade administradora é obrigatório")),
         new("UnidadeAdministradoraSnapshot.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.nome_obrigatorio", "Nome da unidade administradora é obrigatório")),
         new("UnidadeAdministradoraSnapshot.TipoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.tipo_obrigatorio", "Tipo da unidade administradora é obrigatório")),
-        // Referência de cidade do Geo (issue #1114, ADR-0090) — mesmos códigos compartilhados de
-        // ReferenciaCidadeGeo, usados tanto por UnidadeAdministradoraSnapshot.Criar (Domain, ao montar
-        // o snapshot) quanto pelo decoder do envelope (EnvelopeCodecV11.LerIdentidadesUnidade).
-        new(CidadeReferenciaErrorCodes.CodigoIbgeObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cidade_referencia.codigo_ibge_obrigatorio", "Código IBGE da cidade é obrigatório")),
-        new(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cidade_referencia.codigo_ibge_formato_invalido", "Código IBGE da cidade em formato inválido")),
-        new(CidadeReferenciaErrorCodes.UfObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cidade_referencia.uf_obrigatoria", "UF da cidade é obrigatória")),
-        new(CidadeReferenciaErrorCodes.UfIncoerente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cidade_referencia.uf_incoerente", "UF informada incompatível com o prefixo do código IBGE")),
-        new(CidadeReferenciaErrorCodes.NomeObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cidade_referencia.nome_obrigatorio", "Nome da cidade é obrigatório")),
-        new(CidadeReferenciaErrorCodes.NomeTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cidade_referencia.nome_tamanho", "Nome da cidade excede o tamanho máximo")),
+        // Referência de cidade do Geo (issue #1114, ADR-0090) — usada tanto por
+        // UnidadeAdministradoraSnapshot.Criar (Domain) quanto pelo decoder do envelope
+        // (EnvelopeCodecV11.LerIdentidadesUnidade): registrada uma única vez em
+        // KernelDomainErrorRegistration, não aqui — DomainErrorMappingRegistry agrega todo
+        // IDomainErrorRegistration num único dicionário global por código, e um segundo registro
+        // do mesmo CidadeReferenciaErrorCodes sobrescreveria silenciosamente o mapeamento de
+        // Configuração/Organização Institucional (ou vice-versa, a depender da ordem de DI).
         // Divulgação pública do Processo Seletivo (UNI-REQ-0050, issue #563) — ausência já é o
         // default minimizado (só o número de inscrição), toggle por presença mesmo padrão de
         // ConfiguracaoBonusRegional acima.
