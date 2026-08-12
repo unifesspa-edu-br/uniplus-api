@@ -399,6 +399,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -491,6 +496,11 @@
             "description": "Mesma Idempotency-Key reusada com corpo diferente (uniplus.idempotency.body_mismatch) \u2014 a chave identifica a requisi\u00E7\u00E3o pelo hash do corpo."
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -554,7 +564,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/campi": {
@@ -867,6 +882,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -993,6 +1013,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -1054,7 +1079,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/condicoes-atendimento": {
@@ -1367,6 +1397,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -1493,6 +1528,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -1554,7 +1594,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/cursos": {
@@ -1867,6 +1912,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -1993,6 +2043,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -2054,7 +2109,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/fases-canonicas": {
@@ -2367,6 +2427,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -2493,6 +2558,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -2544,7 +2614,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/fatos-candidato": {
@@ -2964,6 +3039,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -3090,6 +3170,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -3151,7 +3236,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/modalidades": {
@@ -3464,6 +3554,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -3590,6 +3685,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -3651,7 +3751,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/ofertas-curso": {
@@ -3972,6 +4077,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -4098,6 +4208,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -4149,7 +4264,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/pesos-area-enem": {
@@ -4462,6 +4582,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -4588,6 +4713,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -4639,7 +4769,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/precedencias-fase": {
@@ -4952,6 +5087,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -5078,6 +5218,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -5129,7 +5274,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/recursos-acessibilidade": {
@@ -5442,6 +5592,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -5568,6 +5723,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -5619,7 +5779,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/referencias-reserva-demografica": {
@@ -5932,6 +6097,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -6058,6 +6228,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -6109,7 +6284,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/termos-consentimento": {
@@ -6430,6 +6610,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -6556,6 +6741,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -6655,6 +6845,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -6754,6 +6949,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -6817,7 +7017,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/tipos-banca": {
@@ -7130,6 +7335,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -7256,6 +7466,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -7307,7 +7522,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/tipos-deficiencia": {
@@ -7620,6 +7840,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -7746,6 +7971,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -7797,7 +8027,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/tipos-documento": {
@@ -8110,6 +8345,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -8236,6 +8476,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -8287,7 +8532,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/tipos-etapa": {
@@ -8600,6 +8850,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -8726,6 +8981,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -8787,7 +9047,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/api/configuracao/tipos-processo": {
@@ -9100,6 +9365,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       }
     },
@@ -9226,6 +9496,11 @@
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "x-uniplus-idempotent": true
       },
       "delete": {
@@ -9287,7 +9562,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     }
   },
@@ -12439,6 +12719,14 @@
             "format": "date-time"
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "Token JWT emitido pelo provedor de identidade institucional (Keycloak), enviado no cabe\u00E7alho Authorization. As rotas administrativas exigem, al\u00E9m da autentica\u00E7\u00E3o, a role plataforma-admin no token.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   },

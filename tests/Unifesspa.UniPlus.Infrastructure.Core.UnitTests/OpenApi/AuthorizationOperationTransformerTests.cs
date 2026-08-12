@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.OpenApi;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Authorization;
@@ -67,7 +69,89 @@ public sealed class AuthorizationOperationTransformerTests
         operation.Responses.Should().ContainKey("401");
     }
 
-    private static OpenApiOperationTransformerContext Context(IList<object> metadata) =>
+    [Fact]
+    public async Task TransformAsync_Should_RequireBearerScheme_WhenActionIsAuthorized()
+    {
+        OpenApiOperation operation = new();
+
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, Context([new AuthorizeAttribute()]), CancellationToken.None);
+
+        operation.Security.Should().ContainSingle(
+            "declarar 401 sem dizer que credencial o evita descreveria o sintoma e omitiria o contrato");
+        operation.Security![0].Keys.Should().ContainSingle()
+            .Which.Should().BeOfType<OpenApiSecuritySchemeReference>()
+            .Which.Reference!.Id.Should().Be(BearerSecuritySchemeDocumentTransformer.SchemeName);
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_NotRequireBearerScheme_WhenAllowAnonymousIsPresent()
+    {
+        OpenApiOperation operation = new();
+
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, Context([new AuthorizeAttribute(), new AllowAnonymousAttribute()]), CancellationToken.None);
+
+        operation.Security.Should().BeNullOrEmpty("uma rota anônima exigir credencial mentiria sobre o servidor");
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_SerializeSchemeName_InThePublishedDocument()
+    {
+        // Verificar só o Reference.Id em memória não basta: uma referência sem documento
+        // hospedeiro guarda o id, passa nessa checagem e mesmo assim serializa como objeto
+        // vazio ({}) — o contrato publicado fica sintaticamente válido e semanticamente mudo,
+        // e nenhuma UI descobre que a rota aceita Bearer. Quem prova o comportamento é o JSON.
+        OpenApiDocument document = new();
+        await new BearerSecuritySchemeDocumentTransformer().TransformAsync(
+            document, DocumentContext(), CancellationToken.None);
+
+        OpenApiOperation operation = new();
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, Context([new AuthorizeAttribute()], document), CancellationToken.None);
+
+        document.Paths = new OpenApiPaths
+        {
+            ["/api/recurso"] = new OpenApiPathItem
+            {
+                Operations = new Dictionary<HttpMethod, OpenApiOperation> { [HttpMethod.Post] = operation },
+            },
+        };
+
+        await using StringWriter texto = new();
+        document.SerializeAsV31(new OpenApiJsonWriter(texto));
+
+        // Procurar o nome do esquema no JSON inteiro não distinguiria nada: ele aparece em
+        // components.securitySchemes de qualquer forma. O que precisa ser verdade é o
+        // requisito DA OPERAÇÃO nomeá-lo.
+        using JsonDocument publicado = JsonDocument.Parse(texto.ToString());
+        JsonElement security = publicado.RootElement
+            .GetProperty("paths").GetProperty("/api/recurso")
+            .GetProperty("post").GetProperty("security");
+
+        security.EnumerateArray().Should().ContainSingle()
+            .Which.EnumerateObject().Select(p => p.Name).Should().Contain(
+                BearerSecuritySchemeDocumentTransformer.SchemeName,
+                "um requisito de segurança sem nome de esquema é sintaticamente válido e semanticamente mudo");
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_NotDuplicateRequirement_WhenBearerIsAlreadyDeclared()
+    {
+        // O pipeline pode transformar a mesma operação mais de uma vez (documento por módulo);
+        // sem o guard, cada passagem empilharia um requisito idêntico no contrato publicado.
+        OpenApiOperation operation = new();
+        OpenApiOperationTransformerContext context = Context([new AuthorizeAttribute()]);
+
+        await new AuthorizationOperationTransformer().TransformAsync(operation, context, CancellationToken.None);
+        await new AuthorizationOperationTransformer().TransformAsync(operation, context, CancellationToken.None);
+
+        operation.Security.Should().ContainSingle();
+    }
+
+    private static OpenApiOperationTransformerContext Context(
+        IList<object> metadata,
+        OpenApiDocument? document = null) =>
         new()
         {
             DocumentName = "selecao",
@@ -76,5 +160,17 @@ public sealed class AuthorizationOperationTransformerTests
             {
                 ActionDescriptor = new ControllerActionDescriptor { EndpointMetadata = metadata },
             },
+
+            // A referência de segurança resolve o esquema contra o documento hospedeiro ao
+            // serializar; sem ele o requisito viraria um objeto vazio no contrato publicado.
+            Document = document ?? new OpenApiDocument(),
+        };
+
+    private static OpenApiDocumentTransformerContext DocumentContext() =>
+        new()
+        {
+            DocumentName = "selecao",
+            ApplicationServices = NSubstitute.Substitute.For<IServiceProvider>(),
+            DescriptionGroups = [],
         };
 }
