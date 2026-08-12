@@ -147,6 +147,15 @@ public sealed class EnvelopeFechadoE2ETests
             HttpStatusCode.NoContent, "PUT bonus-regional", "/bonus-regional");
 
         // ══════════════════════════════════════════════════════════════════════════════
+        // Passo 5b — taxa de inscrição e isenção (issue #1112) — publicar sem declarar
+        // cobrança é recusado (CA-01); o corpus E2E declara "não cobra".
+        // ══════════════════════════════════════════════════════════════════════════════
+
+        await ExecutarPassoAsync(
+            () => ctx.PutTaxaInscricaoAsync(),
+            HttpStatusCode.NoContent, "PUT taxa-inscricao", "/taxa-inscricao");
+
+        // ══════════════════════════════════════════════════════════════════════════════
         // Passo 6 — critérios de desempate (referenciam a etapa Objetiva, já com Id real)
         // ══════════════════════════════════════════════════════════════════════════════
 
@@ -249,6 +258,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "Distribuição de vagas",
                 "Classificação",
                 "Cronograma de fases",
+                "Taxa de inscrição e isenção",
                 "Base legal das exigências documentais",
                 "Divisor da média (fórmula local)",
                 "Cascata de remanejamento",
@@ -524,6 +534,17 @@ public sealed class EnvelopeFechadoE2ETests
                 teto = 95.5000m,
                 municipioConvenio = "Marabá",
                 baseLegal = "Res. Unifesspa 414/2020",
+            },
+            ifMatch: null);
+
+        public Task<HttpResponseMessage> PutTaxaInscricaoAsync() => EnviarAsync(
+            HttpMethod.Put, $"{Rota}/{ProcessoId}/taxa-inscricao",
+            new
+            {
+                cobra = false,
+                valor = (decimal?)null,
+                fundamentos = (string[]?)null,
+                confirmacaoFundamentos = false,
             },
             ifMatch: null);
 

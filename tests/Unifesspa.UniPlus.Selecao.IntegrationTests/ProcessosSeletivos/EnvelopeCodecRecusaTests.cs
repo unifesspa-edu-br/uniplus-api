@@ -880,6 +880,11 @@ public sealed class EnvelopeCodecRecusaTests
             atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         FormatosPermitidos qualquer = FormatosPermitidos.Criar(true, null).Value!;
         DocumentoExigido rg = DocumentoExigido.Criar(
             fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL",
@@ -1250,6 +1255,82 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.IsFailure.Should().BeTrue(
             "uma regra que contribui um código fora do domínio de modalidades ofertadas resolveria um valor " +
             "impossível — a reconstrução do VO da regra contra o domínio congelado recusa");
+    }
+
+    // ── Taxa de inscrição e isenção (issue #1112) — mesmo raciocínio de forma fechada e
+    // vocabulário fechado de LerDivulgacao, aplicado ao bloco taxaInscricao ──
+
+    [Fact(DisplayName = "issue #1112: taxaInscricao.presente=false é recusado — CA-01 garante que todo envelope publicado declarou taxa")]
+    public void TaxaInscricao_PresenteFalso_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject bloco = envelope["taxaInscricao"]!.AsObject();
+            bloco.Clear();
+            bloco["presente"] = false;
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "um envelope legitimamente publicado nunca congela 'presente:false' — CA-01 recusa Publicar() " +
+            "sem taxa declarada, então só bytes adulterados chegam ao decoder nesse estado");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error!.Message.Should().Contain("taxaInscricao.presente");
+    }
+
+    [Fact(DisplayName = "issue #1112: fundamento de isenção com token fora do vocabulário conhecido é recusado")]
+    public void TaxaInscricao_FundamentoDesconhecido_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray(JsonValue.Create("FUNDAMENTO_INEXISTENTE")));
+
+        resultado.IsFailure.Should().BeTrue(
+            "'FUNDAMENTO_INEXISTENTE' não pertence ao vocabulário de FundamentoIsencaoCodigo — a factory recusa, " +
+            "nunca ignora em silêncio");
+        resultado.Error!.Code.Should().Be("ConfiguracaoTaxaInscricao.FundamentoDesconhecido");
+    }
+
+    [Fact(DisplayName = "issue #1112: fundamentos repetidos são recusados — o encoder nunca emite duplicata")]
+    public void TaxaInscricao_FundamentosDuplicados_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray(
+                JsonValue.Create(FundamentoIsencaoCodigo.CadastroUnico), JsonValue.Create(FundamentoIsencaoCodigo.CadastroUnico)));
+
+        resultado.IsFailure.Should().BeTrue(
+            "ConfiguracaoTaxaInscricao.Criar deduplica antes de guardar — o encoder nunca emite token repetido; " +
+            "achar um é sinal de bytes que não vieram desse caminho");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error!.Message.Should().Contain("taxaInscricao.fundamentos");
+    }
+
+    [Fact(DisplayName = "issue #1112: fundamentos fora da ordem canônica são recusados — o decoder não reordena")]
+    public void TaxaInscricao_FundamentosForaDeOrdem_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray(
+                JsonValue.Create(FundamentoIsencaoCodigo.DoacaoMedulaOssea), JsonValue.Create(FundamentoIsencaoCodigo.CadastroUnico)));
+
+        resultado.IsFailure.Should().BeTrue(
+            "'fundamentos' sai do encoder na ordem canônica (código ordinal) porque a entidade já os guarda " +
+            "ordenados — fora de ordem é malformado, não uma forma alternativa a reordenar em silêncio");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error!.Message.Should().Contain("taxaInscricao.fundamentos");
+    }
+
+    [Fact(DisplayName = "issue #1112: confirmacaoFundamentos=true com fundamentos vazio é recusado — a entidade nunca emite essa combinação")]
+    public void TaxaInscricao_ConfirmacaoFundamentosSemFundamentos_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            envelope["taxaInscricao"]!["fundamentos"] = new JsonArray();
+            envelope["taxaInscricao"]!["confirmacaoFundamentos"] = true;
+        });
+
+        resultado.IsFailure.Should().BeTrue(
+            "ConfiguracaoTaxaInscricao.Criar zera ConfirmacaoFundamentos quando Fundamentos é vazio antes de " +
+            "qualquer serialização — o encoder nunca emite 'confirmacaoFundamentos:true' junto de 'fundamentos:[]'");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error!.Message.Should().Contain("taxaInscricao.confirmacaoFundamentos");
     }
 
     private static ProcessoSeletivo ProcessoPublicado()

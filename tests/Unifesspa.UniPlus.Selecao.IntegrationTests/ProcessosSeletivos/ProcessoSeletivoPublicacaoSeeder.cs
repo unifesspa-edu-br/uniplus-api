@@ -105,7 +105,22 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        DefinirTaxaInscricaoNaoCobra(processo);
+
         return processo;
+    }
+
+    /// <summary>
+    /// Não cobra taxa — declaração padrão dos seeders desta classe, que representam processos
+    /// publicáveis e não testam a dimensão de taxa em si (issue #1112, CA-01).
+    /// </summary>
+    private static void DefinirTaxaInscricaoNaoCobra(ProcessoSeletivo processo)
+    {
+        Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
+            cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false);
+        taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
+        processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
     /// <summary>
@@ -173,6 +188,9 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         {
             processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
+
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        DefinirTaxaInscricaoNaoCobra(processo);
 
         return processo;
     }

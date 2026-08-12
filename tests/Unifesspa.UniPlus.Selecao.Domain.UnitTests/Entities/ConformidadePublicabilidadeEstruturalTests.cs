@@ -87,6 +87,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases([FaseBase()], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada
+        // aqui para manter os QUATRO gates estruturais vazios/Ok até o teste acrescentar a
+        // única razão que quer isolar.
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -160,6 +166,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.AvaliarConformidade().Should().ContainSingle(i => !i.Ok)
             .Which.Item.Should().Be("Cronograma: inscrição própria tem fase que coleta inscrição");

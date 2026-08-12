@@ -213,6 +213,11 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
             regraRecurso: null).Value!;
         processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         Domain.ValueObjects.DadosEdital dados = Domain.ValueObjects.DadosEdital.Criar(
             numero: "001/2026",
             periodoInscricaoInicio: new DateOnly(2026, 1, 1),

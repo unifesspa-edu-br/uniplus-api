@@ -31,7 +31,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     /// declara como única capacidade de leitura — o caso corrente de todo teste que não é sobre o
     /// gate de versão em si.
     /// </summary>
-    private const string VersaoCorrenteReconhecida = "0.0.8";
+    private const string VersaoCorrenteReconhecida = "0.0.9";
 
     /// <summary>
     /// Uma versão que já foi corrente e deixou de ser reconhecida quando o codec vivo avançou —

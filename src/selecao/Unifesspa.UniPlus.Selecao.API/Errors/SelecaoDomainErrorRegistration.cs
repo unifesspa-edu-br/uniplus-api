@@ -544,5 +544,13 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ConfiguracaoDivulgacao.JustificativaComCaractereNulo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_divulgacao.justificativa_com_caractere_nulo", "A justificativa contém o caractere nulo (U+0000), que a coluna de texto não admite")),
         new("RegrasDeNomeAbreviado.IdentificadorDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_de_nome_abreviado.identificador_desconhecido", "O identificador de regra de abreviação não é conhecido")),
         new("RegrasDeNomeAbreviado.NomeEmBranco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regras_de_nome_abreviado.nome_em_branco", "O nome a abreviar não pode ser vazio ou só espaços")),
+        // Taxa de inscrição e isenção do Processo Seletivo (issue #1112). Diferente de
+        // ConfiguracaoBonusRegional/ConfiguracaoDivulgacao, ausência aqui NÃO é estado
+        // publicável — ver ProcessoSeletivo.ItensEstruturaisDeConformidade (CA-01).
+        new("ConfiguracaoTaxaInscricao.ValorObrigatorioQuandoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.valor_obrigatorio_quando_cobra", "Processo que cobra taxa exige valor positivo")),
+        new("ConfiguracaoTaxaInscricao.ValorNaoPermitidoQuandoNaoCobra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.valor_nao_permitido_quando_nao_cobra", "Processo que declara não cobrar taxa não pode informar valor")),
+        new("ConfiguracaoTaxaInscricao.FundamentoExigeCobranca", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_exige_cobranca", "Processo que declara não cobrar taxa não pode configurar fundamento de isenção")),
+        new("ConfiguracaoTaxaInscricao.FundamentoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.fundamento_desconhecido", "O fundamento de isenção informado não é conhecido")),
+        new("ConfiguracaoTaxaInscricao.ConfirmacaoFundamentosObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_taxa_inscricao.confirmacao_fundamentos_obrigatoria", "Referenciar fundamento de isenção exige confirmação explícita do administrador")),
     ];
 }

@@ -158,8 +158,11 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <see cref="Domain.Entities.EtapaProcesso.Nome"/> em <c>EtapaObrigatoria</c> por código
     /// congelado do tipo. Sem produção em ambiente nenhum: fixture nova, <c>0.0.7</c> deixa de
     /// ser reconhecida.
+    /// Issue #1112: o bump para <c>0.0.9</c> acrescenta <c>taxaInscricao</c> como 25º bloco de
+    /// topo — a declaração de cobrança de taxa e os fundamentos de isenção referenciados. Sem
+    /// produção em ambiente nenhum: fixture nova, <c>0.0.8</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.8";
+    internal const string SchemaVersionAtual = "0.0.9";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -210,11 +213,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["grafoDependencia"] = SerializarGrafoDependencia(processo),
             ["versaoInterpretador"] = MotorDerivacao.VersaoSemantica,
             ["modalidadesOfertadas"] = SerializarModalidadesOfertadas(processo.DistribuicaoVagas),
+            ["taxaInscricao"] = SerializarTaxaInscricao(processo),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 25º bloco preservando os 24
-        // anteriores. A abertura não escreve esta chave — seu payload é
-        // byte-a-byte o mesmo do T4 (a reordenação de chaves em
+        // ADR-0101: a retificação ACRESCENTA um 26º bloco preservando os 25
+        // anteriores (issue #1112 elevou de 24 para 25). A abertura não escreve esta chave —
+        // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
         if (retificacao is not null)
         {
@@ -571,6 +575,30 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["camposPublicos"] = OrdenarPorConteudo(camposPublicos.Select(static c => JsonValue.Create(c)!)),
             ["regraNomeAbreviado"] = abrevia ? RegrasDeNomeAbreviado.Vigente : null,
             ["justificativa"] = divulgacao?.Justificativa is { } justificativa ? HashCanonicalComputer.NormalizeNfc(justificativa) : null,
+        };
+    }
+
+    /// <summary>
+    /// Taxa de inscrição e isenção (issue #1112) — mesmo toggle <c>"presente"</c> de
+    /// <see cref="SerializarBonusRegional"/>. Na prática a publicação já recusa processo sem
+    /// declaração (CA-01, <c>ItensEstruturaisDeConformidade</c>), então um envelope legítimo
+    /// nunca tem <c>"presente": false</c> aqui — o encoder trata o caso defensivamente pela
+    /// mesma disciplina do resto do arquivo, não porque seja alcançável em produção.
+    /// </summary>
+    private static JsonObject SerializarTaxaInscricao(ProcessoSeletivo processo)
+    {
+        if (processo.ConfiguracaoTaxaInscricao is not { } taxa)
+        {
+            return new JsonObject { ["presente"] = false };
+        }
+
+        return new JsonObject
+        {
+            ["presente"] = true,
+            ["cobra"] = taxa.Cobra,
+            ["valor"] = taxa.Valor is { } valor ? HashCanonicalComputer.SerializeDecimalCanonical(valor, ConfiguracaoTaxaInscricao.ValorEscala) : null,
+            ["fundamentos"] = new JsonArray([.. taxa.Fundamentos.Select(static f => (JsonNode)f.ToCodigo())]),
+            ["confirmacaoFundamentos"] = taxa.ConfirmacaoFundamentos,
         };
     }
 

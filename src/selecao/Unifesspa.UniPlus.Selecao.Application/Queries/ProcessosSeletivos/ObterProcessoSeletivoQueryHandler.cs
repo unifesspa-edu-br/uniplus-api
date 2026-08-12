@@ -66,6 +66,7 @@ public static class ObterProcessoSeletivoQueryHandler
         processo.FormularioTitulo,
         processo.FormularioTermoAceiteTexto,
         ProjectConfiguracaoDivulgacao(processo.ConfiguracaoDivulgacao),
+        ProjectConfiguracaoTaxaInscricao(processo.ConfiguracaoTaxaInscricao),
         processo.CreatedAt);
 
     private static FatoColetadoDto ProjectFatoColetado(FatoColetado fato) => new(
@@ -176,6 +177,15 @@ public static class ObterProcessoSeletivoQueryHandler
 
     private static ConfiguracaoDivulgacaoDto? ProjectConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao) =>
         configuracao is null ? null : new ConfiguracaoDivulgacaoDto(configuracao.CamposPublicos, configuracao.Justificativa);
+
+    private static ConfiguracaoTaxaInscricaoDto? ProjectConfiguracaoTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao) =>
+        configuracao is null
+            ? null
+            : new ConfiguracaoTaxaInscricaoDto(
+                configuracao.Cobra,
+                configuracao.Valor,
+                [.. configuracao.Fundamentos.Select(static f => f.ToCodigo())],
+                configuracao.ConfirmacaoFundamentos);
 
     private static ConfiguracaoCascataRemanejamentoDto? ProjectCascata(ConfiguracaoCascataRemanejamento? cascata)
     {

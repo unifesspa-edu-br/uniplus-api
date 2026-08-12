@@ -55,11 +55,12 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "grafoDependencia",
         "versaoInterpretador",
         "modalidadesOfertadas",
+        "taxaInscricao",
     ];
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.8";
+    public string SchemaVersion => "0.0.9";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -127,6 +128,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) = EnvelopeCodecV13.LerDocumentosExigidos(leitor, payload);
         (string? formularioTitulo, string? formularioTermoAceiteTexto) = LerFormulario(leitor, payload);
         ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
+        ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -181,7 +183,8 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             cascataRemanejamento: cascata,
             formularioTitulo: formularioTitulo,
             formularioTermoAceiteTexto: formularioTermoAceiteTexto,
-            configuracaoDivulgacao: configuracaoDivulgacao);
+            configuracaoDivulgacao: configuracaoDivulgacao,
+            configuracaoTaxaInscricao: configuracaoTaxaInscricao);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, retificacao, conformidade,
@@ -743,6 +746,86 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
 
         Result<ConfiguracaoDivulgacao> configuracao = ConfiguracaoDivulgacao.Criar(camposPublicos, justificativa);
         return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoDivulgacao>(configuracao.Error!) : configuracao.Value;
+    }
+
+    /// <summary>
+    /// Taxa de inscrição e isenção (issue #1112) — forma do bloco no molde do toggle
+    /// <c>"presente"</c> de <see cref="EnvelopeCodecV11.LerBonusRegional"/>, mas o desfecho
+    /// <c>presente:false</c> nunca é um estado válido AQUI: CA-01 recusa <see cref="Domain.Entities.ProcessoSeletivo.Publicar"/>
+    /// quando <see cref="Domain.Entities.ProcessoSeletivo.ConfiguracaoTaxaInscricao"/> é
+    /// <see langword="null"/>, então nenhum envelope que passou pelo gate consegue congelar
+    /// <c>presente:false</c> — só chega aqui bytes adulterados ou de um caminho que nunca deveria
+    /// ter sido aceito. Decodificar como "sem taxa declarada" repetiria, na leitura, o próprio
+    /// default silencioso que a issue existe para banir na escrita.
+    /// </summary>
+    /// <remarks>
+    /// O decodificador é tão estrito quanto o encoder (mesmo raciocínio de
+    /// <see cref="LerDivulgacao"/>): vocabulário fechado de <c>fundamentos</c> (token desconhecido
+    /// é malformado, nunca ignorado), sem repetição, na MESMA ordem canônica que
+    /// <see cref="SnapshotPublicacaoCanonicalizer.OrdenarPorConteudo(IEnumerable{JsonValue})"/>
+    /// usaria — o encoder nunca embaralha porque <see cref="ConfiguracaoTaxaInscricao.Criar"/> já
+    /// deduplica e ordena antes de guardar; achar duplicata ou ordem diferente aqui é sinal de
+    /// bytes que não vieram desse caminho. <c>confirmacaoFundamentos:true</c> com
+    /// <c>fundamentos:[]</c> é a mesma classe de impossível: a entidade zera essa combinação
+    /// (<see cref="ConfiguracaoTaxaInscricao.ConfirmacaoFundamentos"/>) antes de qualquer
+    /// serialização, então o encoder nunca a emite.
+    /// </remarks>
+    private static ConfiguracaoTaxaInscricao? LerTaxaInscricao(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "taxaInscricao", "$");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        bool presente = leitor.Booleano(bloco, "presente", "taxaInscricao");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        if (!presente)
+        {
+            return leitor.Propagar<ConfiguracaoTaxaInscricao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'taxaInscricao.presente' não pode ser falso — CA-01 recusa publicar sem declarar taxa."));
+        }
+
+        leitor.ExigirChaves(bloco, "taxaInscricao", "presente", "cobra", "valor", "fundamentos", "confirmacaoFundamentos");
+
+        bool cobra = leitor.Booleano(bloco, "cobra", "taxaInscricao");
+        decimal? valor = leitor.DecimalOpcional(bloco, "valor", ConfiguracaoTaxaInscricao.ValorEscala, "taxaInscricao", LimitesDoEnvelope.PrecisaoTaxaInscricao);
+        IReadOnlyList<string> fundamentos = leitor.Textos(bloco, "fundamentos", "taxaInscricao");
+        bool confirmacaoFundamentos = leitor.Booleano(bloco, "confirmacaoFundamentos", "taxaInscricao");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        if (fundamentos.Distinct(StringComparer.Ordinal).Count() != fundamentos.Count)
+        {
+            return leitor.Propagar<ConfiguracaoTaxaInscricao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, "'taxaInscricao.fundamentos' tem token repetido."));
+        }
+
+        IReadOnlyList<string> fundamentosNaOrdemCanonica = [.. SnapshotPublicacaoCanonicalizer
+            .OrdenarPorConteudo(fundamentos.Select(static f => JsonValue.Create(f)!))
+            .Select(static n => n!.GetValue<string>())];
+        if (!fundamentosNaOrdemCanonica.SequenceEqual(fundamentos, StringComparer.Ordinal))
+        {
+            return leitor.Propagar<ConfiguracaoTaxaInscricao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado, "'taxaInscricao.fundamentos' não está na ordem canônica."));
+        }
+
+        if (fundamentos.Count == 0 && confirmacaoFundamentos)
+        {
+            return leitor.Propagar<ConfiguracaoTaxaInscricao?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'taxaInscricao.confirmacaoFundamentos' não pode ser verdadeiro sem 'fundamentos'."));
+        }
+
+        Result<ConfiguracaoTaxaInscricao> configuracao = ConfiguracaoTaxaInscricao.Criar(cobra, valor, fundamentos, confirmacaoFundamentos);
+        return configuracao.IsFailure ? leitor.Propagar<ConfiguracaoTaxaInscricao>(configuracao.Error!) : configuracao.Value;
     }
 
     /// <summary>

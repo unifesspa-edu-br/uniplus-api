@@ -108,6 +108,11 @@ public sealed class ProcessoSeletivoRetificarTests
 
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
         return processo;
     }
 
@@ -464,6 +469,11 @@ public sealed class ProcessoSeletivoRetificarTests
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

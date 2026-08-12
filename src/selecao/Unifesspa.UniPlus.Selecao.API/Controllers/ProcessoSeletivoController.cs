@@ -268,6 +268,37 @@ public sealed class ProcessoSeletivoController : ControllerBase
     }
 
     /// <summary>
+    /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
+    /// #1112). <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não
+    /// declarado", que BLOQUEIA a publicação (CA-01).
+    /// </summary>
+    [HttpPut("{id:guid}/taxa-inscricao")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirTaxaInscricao(
+        Guid id,
+        [FromBody] DefinirTaxaInscricaoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirTaxaInscricaoCommand(id, request.Cobra, request.Valor, request.Fundamentos, request.ConfirmacaoFundamentos, precondicao),
+            cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
+    /// <summary>
     /// Define (ou remove) a divulgação pública do processo (UNI-REQ-0050, issue #563).
     /// <c>CamposPublicos</c> nulo remove a configuração explícita — o processo volta ao
     /// default minimizado (só o número de inscrição).

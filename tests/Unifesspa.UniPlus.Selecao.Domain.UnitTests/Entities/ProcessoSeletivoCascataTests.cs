@@ -312,6 +312,11 @@ public sealed class ProcessoSeletivoCascataTests
                 inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
                 atoProduzidoCodigo: "RESULTADO_FINAL", atoProduzidoEfeitoIrreversivel: false, bancasRequeridas: [], regraRecurso: null).Value!],
             [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // Issue #1112: item estrutural novo — declarado para manter os demais itens Ok, já que
+        // este teste isola a ausência de cascata como a ÚNICA pendência.
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.PendenciaDeConformidade().Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
         processo.PendenciaDaCascata().Should().NotBeNull("a oferta federal tem SegueCascata sem cascata configurada");

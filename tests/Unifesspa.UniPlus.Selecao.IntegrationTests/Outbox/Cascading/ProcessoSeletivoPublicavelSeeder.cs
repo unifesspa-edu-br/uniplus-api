@@ -112,6 +112,14 @@ internal static class ProcessoSeletivoPublicavelSeeder
         Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
 
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — o seeder
+        // declara explicitamente "não cobra" para continuar representando um processo publicável.
+        Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
+            cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false);
+        taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
+        Result taxaDefinirResult = processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente);
+        taxaDefinirResult.IsSuccess.Should().BeTrue(taxaDefinirResult.Error?.Message);
+
         await db.ProcessosSeletivos.AddAsync(processo);
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));

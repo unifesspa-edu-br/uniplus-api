@@ -113,7 +113,7 @@ internal static class CorpusEnvelope
     /// <param name="permutar">Inverte a ordem de ENTRADA das coleções não ordenadas — nunca o conteúdo.</param>
     /// <param name="comArvoreSatisfacao">
     /// Opt-in: acrescenta a árvore de satisfação de documentos exigidos (<see cref="ArvoreSatisfacaoRica"/>).
-    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.8-rico.json</c>) e os testes de
+    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.9-rico.json</c>) e os testes de
     /// round-trip congelam a forma de HOJE do corpus rico — sem árvore, <c>documentosExigidos.exigencias</c>
     /// e <c>arvoreSatisfacao</c> vazios. Populá-la incondicionalmente mudaria os bytes desse envelope de
     /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
@@ -241,6 +241,17 @@ internal static class CorpusEnvelope
             processo.DefinirDocumentosExigidos(ArvoreSatisfacaoRica(variante, permutar), PrecondicaoIfMatch.Ausente)
                 .IsSuccess.Should().BeTrue();
         }
+
+        // Taxa de inscrição e isenção (issue #1112): o corpus RICO cobra taxa e referencia os
+        // dois fundamentos — a combinação "cobra-com-fundamentos" do CA-08, que o corpus BASE
+        // (sem cobrança) não cobre.
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(
+                cobra: true,
+                valor: 150.00m,
+                fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar),
+                confirmacaoFundamentos: true).Value!,
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }
