@@ -113,7 +113,7 @@ internal static class CorpusEnvelope
     /// <param name="permutar">Inverte a ordem de ENTRADA das coleções não ordenadas — nunca o conteúdo.</param>
     /// <param name="comArvoreSatisfacao">
     /// Opt-in: acrescenta a árvore de satisfação de documentos exigidos (<see cref="ArvoreSatisfacaoRica"/>).
-    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.9-rico.json</c>) e os testes de
+    /// Fica fora por padrão porque as golden fixtures (<c>envelope-0.0.10-rico.json</c>) e os testes de
     /// round-trip congelam a forma de HOJE do corpus rico — sem árvore, <c>documentosExigidos.exigencias</c>
     /// e <c>arvoreSatisfacao</c> vazios. Populá-la incondicionalmente mudaria os bytes desse envelope de
     /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
@@ -127,7 +127,9 @@ internal static class CorpusEnvelope
         // SiSU é baseado em ENEM — é o que admite ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Rico 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
-            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
+                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
+                cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!);
 
         processo.DefinirEtapas(Ordem([
             EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),

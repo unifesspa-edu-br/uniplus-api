@@ -161,8 +161,15 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Issue #1112: o bump para <c>0.0.9</c> acrescenta <c>taxaInscricao</c> como 25º bloco de
     /// topo — a declaração de cobrança de taxa e os fundamentos de isenção referenciados. Sem
     /// produção em ambiente nenhum: fixture nova, <c>0.0.8</c> deixa de ser reconhecida.
+    /// Issue #1114: o bump para <c>0.0.10</c> enriquece <c>identidadesUnidade.administradora</c>
+    /// com <c>cidadeCodigoIbge</c>/<c>cidadeNome</c>/<c>cidadeUf</c> — a cidade da Unidade
+    /// administradora, congelada por valor (ADR-0090), sem criar novo bloco de topo (continuam
+    /// 25). Nula só para processos anteriores a esta issue (sem backfill, sem produção); todo
+    /// processo NOVO tem cidade não-nula, por força do gate de
+    /// <c>CriarProcessoSeletivoCommandHandler</c> (CA-02). Sem produção em ambiente nenhum:
+    /// fixture nova, <c>0.0.9</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.9";
+    internal const string SchemaVersionAtual = "0.0.10";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -606,7 +613,9 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// Serializa a identidade da Unidade administradora (issue #849, CA-04 da Feature #40) —
     /// sempre presente, NOT NULL desde a criação do processo (diferente de
     /// <see cref="SerializarCascataRemanejamento"/>/<see cref="SerializarBonusRegional"/>, que
-    /// alternam presença/ausência): não há toggle <c>"presente"</c> aqui.
+    /// alternam presença/ausência): não há toggle <c>"presente"</c> aqui. A cidade (issue #1114,
+    /// ADR-0090) é opcional all-or-nothing dentro deste bloco sempre-presente — nula só para
+    /// processos anteriores a #1114 (sem backfill, sem produção).
     /// </summary>
     private static JsonObject SerializarIdentidadesUnidade(ProcessoSeletivo processo) => new()
     {
@@ -617,6 +626,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["slug"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Slug),
             ["nome"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Nome),
             ["tipo"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Tipo),
+            ["cidadeCodigoIbge"] = processo.UnidadeAdministradora.CidadeCodigoIbge is { } codigoIbge
+                ? HashCanonicalComputer.NormalizeNfc(codigoIbge) : null,
+            ["cidadeNome"] = processo.UnidadeAdministradora.CidadeNome is { } cidadeNome
+                ? HashCanonicalComputer.NormalizeNfc(cidadeNome) : null,
+            ["cidadeUf"] = processo.UnidadeAdministradora.CidadeUf is { } cidadeUf
+                ? HashCanonicalComputer.NormalizeNfc(cidadeUf) : null,
         },
     };
 

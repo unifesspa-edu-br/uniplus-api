@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -69,5 +70,56 @@ public sealed class UnidadeAdministradoraSnapshotTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("UnidadeAdministradoraSnapshot.TipoObrigatorio");
+    }
+
+    // ── Cidade (issue #1114) — opcional all-or-nothing ────────────────────
+
+    [Fact(DisplayName = "Criar sem cidade tem sucesso — snapshot legado, pré-issue #1114")]
+    public void Criar_SemCidade_Sucesso()
+    {
+        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.CidadeCodigoIbge.Should().BeNull();
+        resultado.Value.CidadeNome.Should().BeNull();
+        resultado.Value.CidadeUf.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Criar com trio de cidade completo tem sucesso e normaliza UF para uppercase")]
+    public void Criar_ComCidadeCompleta_Sucesso()
+    {
+        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "pa");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.CidadeCodigoIbge.Should().Be("1504208");
+        resultado.Value.CidadeNome.Should().Be("Marabá");
+        resultado.Value.CidadeUf.Should().Be("PA");
+    }
+
+    [Theory(DisplayName = "Criar com cidade parcialmente preenchida falha — bicondicional all-or-nothing")]
+    [InlineData(null, "Marabá", "PA")]
+    [InlineData("1504208", null, "PA")]
+    [InlineData("1504208", "Marabá", null)]
+    public void Criar_ComCidadeParcial_Falha(string? codigo, string? nome, string? uf)
+    {
+        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
+            cidadeCodigoIbge: codigo, cidadeNome: nome, cidadeUf: uf);
+
+        resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Criar com código IBGE incoerente com a UF falha")]
+    public void Criar_ComCidadeUfIncoerente_Falha()
+    {
+        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
+            "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
+            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "SP");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.UfIncoerente);
     }
 }

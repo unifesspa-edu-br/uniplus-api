@@ -16,4 +16,7 @@ public sealed record AtualizarUnidadeCommand(
     bool UnidadeAcademica,
     DateOnly? VigenciaFim,
     /// <summary>Motivo da mudança de identificador (Slug/Sigla/Codigo/Alias), se aplicável.</summary>
-    string? MotivoMudancaIdentificador = null) : ICommand<Result>;
+    string? MotivoMudancaIdentificador = null,
+    string? CidadeCodigoIbge = null,
+    string? CidadeNome = null,
+    string? CidadeUf = null) : ICommand<Result>;

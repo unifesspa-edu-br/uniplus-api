@@ -66,7 +66,8 @@ public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Gui
 /// é NOT NULL desde a criação do processo.
 /// </summary>
 public sealed record UnidadeAdministradoraSnapshotDto(
-    Guid OrigemId, string Sigla, string Slug, string Nome, string Tipo);
+    Guid OrigemId, string Sigla, string Slug, string Nome, string Tipo,
+    string? CidadeCodigoIbge, string? CidadeNome, string? CidadeUf);
 
 /// <summary>Identidade e rótulo do tipo congelados na criação do processo (UNI-REQ-0098).</summary>
 public sealed record TipoProcessoSnapshotDto(Guid OrigemId, string Codigo, string Nome);

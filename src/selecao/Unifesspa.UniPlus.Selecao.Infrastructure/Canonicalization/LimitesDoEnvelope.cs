@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -107,6 +108,16 @@ public static class LimitesDoEnvelope
 
     /// <summary><c>UnidadeAdministradoraSnapshot.Tipo</c> — espelha <c>UnidadeConfiguration.Tipo</c>.</summary>
     public const int UnidadeAdministradoraTipo = 30;
+
+    // Issue #1114 — cidade da Unidade administradora (identidadesUnidade.administradora).
+    /// <summary><c>UnidadeAdministradoraSnapshot.CidadeCodigoIbge</c> — espelha <c>ProcessoSeletivoConfiguration</c> (owned).</summary>
+    public const int UnidadeAdministradoraCidadeCodigoIbge = ReferenciaCidadeGeo.CodigoIbgeLength;
+
+    /// <summary><c>UnidadeAdministradoraSnapshot.CidadeNome</c> — espelha <c>ProcessoSeletivoConfiguration</c> (owned).</summary>
+    public const int UnidadeAdministradoraCidadeNome = ReferenciaCidadeGeo.NomeMaxLength;
+
+    /// <summary><c>UnidadeAdministradoraSnapshot.CidadeUf</c> — espelha <c>ProcessoSeletivoConfiguration</c> (owned).</summary>
+    public const int UnidadeAdministradoraCidadeUf = ReferenciaCidadeGeo.UfLength;
 
     // Story #559 — formulário de inscrição.
     /// <summary>

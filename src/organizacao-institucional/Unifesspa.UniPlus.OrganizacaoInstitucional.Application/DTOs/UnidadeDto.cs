@@ -18,7 +18,10 @@ public sealed record UnidadeDto(
     bool UnidadeAcademica,
     DateOnly VigenciaInicio,
     DateOnly? VigenciaFim,
-    DateTimeOffset CriadoEm)
+    DateTimeOffset CriadoEm,
+    string? CidadeCodigoIbge,
+    string? CidadeNome,
+    string? CidadeUf)
 {
     [JsonPropertyName("_links")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

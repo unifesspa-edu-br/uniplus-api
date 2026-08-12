@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Converters;
 
@@ -16,7 +17,13 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("unidade");
+        // Trio de cidade all-or-nothing (issue #1114): espelha no banco a invariante
+        // de domínio já provada por Unidade.ValidarReferenciaCidade — mesmo padrão de
+        // InstituicaoConfiguration.
+        builder.ToTable("unidade", t => t.HasCheckConstraint(
+            "ck_unidade_cidade_completa",
+            "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) "
+            + "OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)"));
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.Nome).HasMaxLength(250).IsRequired();
@@ -32,6 +39,20 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.Property(u => u.UnidadeAcademica).IsRequired();
         builder.Property(u => u.VigenciaInicio).IsRequired();
         builder.Property(u => u.VigenciaFim);
+
+        // Referência de cidade do Geo (ADR-0090, issue #1114) — código + display
+        // cache, opcional all-or-nothing, sem FK cross-banco para uniplus_geo.
+        builder.Property(u => u.CidadeCodigoIbge)
+            .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)
+            .IsFixedLength()
+            .HasComment("Código IBGE (7 dígitos) da cidade da Unidade — referência ao Geo, sem FK cross-banco; opcional all-or-nothing com nome/UF.");
+        builder.Property(u => u.CidadeNome)
+            .HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength)
+            .HasComment("Nome de exibição da cidade (display cache) — snapshot do Geo no momento do cadastro/atualização.");
+        builder.Property(u => u.CidadeUf)
+            .HasMaxLength(ReferenciaCidadeGeo.UfLength)
+            .IsFixedLength()
+            .HasComment("UF da cidade (display cache) — snapshot do Geo no momento do cadastro/atualização.");
 
         // Auditoria (IAuditableEntity)
         builder.Property(u => u.CreatedBy).HasMaxLength(255);

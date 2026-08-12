@@ -21,7 +21,10 @@ public static class UnidadeMapping
             unidade.UnidadeAcademica,
             unidade.VigenciaInicio,
             unidade.VigenciaFim,
-            unidade.CreatedAt);
+            unidade.CreatedAt,
+            unidade.CidadeCodigoIbge,
+            unidade.CidadeNome,
+            unidade.CidadeUf);
     }
 
     public static UnidadeView ToView(this Unidade unidade)
@@ -35,6 +38,9 @@ public static class UnidadeMapping
             unidade.Alias,
             unidade.Tipo.ToString(),
             unidade.UnidadeAcademica,
-            unidade.UnidadeSuperiorId);
+            unidade.UnidadeSuperiorId,
+            unidade.CidadeCodigoIbge,
+            unidade.CidadeNome,
+            unidade.CidadeUf);
     }
 }

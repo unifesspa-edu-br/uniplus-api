@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -1204,6 +1205,14 @@ internal static class EnvelopeCodecV11
     /// prova de fidelidade do round-trip vem de <c>ProcessoSeletivo.SombraParaVerificacao()</c>,
     /// que já copia os dois campos direto da raiz viva, nunca do envelope decodificado.
     /// </summary>
+    /// <remarks>
+    /// A cidade (issue #1114, ADR-0090) é opcional all-or-nothing: nula para processos
+    /// congelados antes desta issue, trio completo e coerente para os demais. O decoder
+    /// reconfirma a bicondicional e o formato via <see cref="ReferenciaCidadeGeo.Validar"/> —
+    /// mesmo raciocínio de <see cref="LerDivulgacao"/>/<see cref="EnvelopeCodec.LerTaxaInscricao"/>:
+    /// um trio parcial nunca sai do encoder (<c>UnidadeAdministradoraSnapshot</c> só existe com
+    /// cidade completa ou nenhuma), então achar um é sinal de bytes que não vieram desse caminho.
+    /// </remarks>
     internal static void LerIdentidadesUnidade(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "identidadesUnidade", "$");
@@ -1219,13 +1228,41 @@ internal static class EnvelopeCodecV11
             return;
         }
 
-        leitor.ExigirChaves(administradora, "identidadesUnidade.administradora", "origemId", "sigla", "slug", "nome", "tipo");
+        leitor.ExigirChaves(
+            administradora, "identidadesUnidade.administradora",
+            "origemId", "sigla", "slug", "nome", "tipo", "cidadeCodigoIbge", "cidadeNome", "cidadeUf");
 
         leitor.Identificador(administradora, "origemId", "identidadesUnidade.administradora");
         leitor.TextoNaoVazio(administradora, "sigla", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraSigla);
         leitor.TextoNaoVazio(administradora, "slug", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraSlug);
         leitor.TextoNaoVazio(administradora, "nome", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraNome);
         leitor.TextoNaoVazio(administradora, "tipo", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraTipo);
+        string? cidadeCodigoIbge = leitor.TextoOpcional(administradora, "cidadeCodigoIbge", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraCidadeCodigoIbge);
+        string? cidadeNome = leitor.TextoOpcional(administradora, "cidadeNome", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraCidadeNome);
+        string? cidadeUf = leitor.TextoOpcional(administradora, "cidadeUf", "identidadesUnidade.administradora", LimitesDoEnvelope.UnidadeAdministradoraCidadeUf);
+        if (leitor.Falhou)
+        {
+            return;
+        }
+
+        bool algumPresente = cidadeCodigoIbge is not null || cidadeNome is not null || cidadeUf is not null;
+        bool todosPresentes = cidadeCodigoIbge is not null && cidadeNome is not null && cidadeUf is not null;
+        if (algumPresente && !todosPresentes)
+        {
+            leitor.Propagar<object?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                "'identidadesUnidade.administradora' tem cidade parcialmente preenchida — código IBGE, nome e UF têm de vir juntos ou nenhum."));
+            return;
+        }
+
+        if (todosPresentes)
+        {
+            Result cidadeValidacao = ReferenciaCidadeGeo.Validar(cidadeCodigoIbge, cidadeNome, cidadeUf);
+            if (cidadeValidacao.IsFailure)
+            {
+                leitor.Propagar<object?>(cidadeValidacao.Error!);
+            }
+        }
     }
 
     /// <summary>

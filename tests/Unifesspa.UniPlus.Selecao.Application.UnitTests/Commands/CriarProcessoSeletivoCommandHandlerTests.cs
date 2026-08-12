@@ -19,7 +19,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     private static readonly Guid UnidadeId = Guid.NewGuid();
 
     private static readonly UnidadeView UnidadeCeps = new(
-        UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
+        UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
+        "1504208", "Marabá", "PA");
 
     private static readonly TipoProcessoView TipoSisu = new(
         TipoProcesso.SiSU.OrigemId, "SiSU", "SiSU", null);
@@ -53,6 +54,9 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
                 && p.UnidadeAdministradora.Slug == "ceps"
                 && p.UnidadeAdministradora.Nome == "Centro de Processos Seletivos"
                 && p.UnidadeAdministradora.Tipo == "ADMINISTRATIVA"
+                && p.UnidadeAdministradora.CidadeCodigoIbge == "1504208"
+                && p.UnidadeAdministradora.CidadeNome == "Marabá"
+                && p.UnidadeAdministradora.CidadeUf == "PA"
                 && p.TipoProcessoOrigemId == TipoSisu.Id
                 && p.TipoProcesso.Codigo == "SiSU"
                 && p.TipoProcesso.Nome == "SiSU"),
@@ -75,6 +79,28 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada");
+        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle recusa quando a Unidade administradora não tem cidade cadastrada e não persiste nada (CA-02, issue #1114)")]
+    public async Task Handle_UnidadeSemCidade_RecusaSemPersistir()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        UnidadeView unidadeSemCidade = new(
+            UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(unidadeSemCidade);
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId);
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.UnidadeAdministradoraSemCidade");
+        await tipoProcessoReader.DidNotReceive().ObterAtivoPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

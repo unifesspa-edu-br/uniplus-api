@@ -62,6 +62,18 @@ public static class CriarProcessoSeletivoCommandHandler
                 $"Unidade administradora {command.UnidadeAdministradoraOrigemId} não encontrada ou não está mais viva."));
         }
 
+        // CA-02 (issue #1114): a localidade que governa a contagem de prazo em dias
+        // úteis (issue #1113) vem da Unidade administradora — criar um processo sem
+        // essa cidade cadastrada deixaria o prazo sem abrangência de feriado municipal
+        // resolvível depois, silenciosamente. Recusa nomeada aqui, antes de qualquer
+        // outra consulta, é mais barata que descobrir a lacuna na hora de publicar.
+        if (string.IsNullOrWhiteSpace(unidade.CidadeCodigoIbge))
+        {
+            return Result<Guid>.Failure(new DomainError(
+                "ProcessoSeletivo.UnidadeAdministradoraSemCidade",
+                $"Unidade administradora {command.UnidadeAdministradoraOrigemId} não tem cidade cadastrada — obrigatória para criar processo seletivo."));
+        }
+
         TipoProcessoView? tipo = await tipoProcessoReader
             .ObterAtivoPorIdAsync(command.TipoProcessoOrigemId, cancellationToken)
             .ConfigureAwait(false);
@@ -79,7 +91,8 @@ public static class CriarProcessoSeletivoCommandHandler
         }
 
         Result<UnidadeAdministradoraSnapshot> snapshotResult = UnidadeAdministradoraSnapshot.Criar(
-            unidade.Sigla, unidade.Slug, unidade.Nome, unidade.Tipo);
+            unidade.Sigla, unidade.Slug, unidade.Nome, unidade.Tipo,
+            unidade.CidadeCodigoIbge, unidade.CidadeNome, unidade.CidadeUf);
         if (snapshotResult.IsFailure)
         {
             return Result<Guid>.Failure(snapshotResult.Error!);
