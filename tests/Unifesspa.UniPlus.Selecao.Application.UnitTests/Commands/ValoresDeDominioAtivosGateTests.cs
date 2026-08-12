@@ -145,6 +145,15 @@ public sealed class ValoresDeDominioAtivosGateTests
     public async Task Publicar_FatoDeEscopoProcessoColetado_NaoBloqueiaMesmoComOutroFatoComValorInativo()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
+        // issue #1077: um fato coletável de escopo do processo sem NENHUM valor ofertado
+        // recusaria a publicação (gate à parte deste, ProcessoSeletivo.
+        // PendenciaDeFatoColetadoSemValoresOfertados) — a oferta precisa de ao menos uma
+        // condição para que este teste continue isolando o que realmente quer provar (o
+        // vocabulário inativo de OUTRO fato é irrelevante para um fato de escopo-processo).
+        processo.DefinirOfertaAtendimento(
+            OfertaAtendimentoEspecializado.Criar(
+                [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
+            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         FatoColetado condicaoAtendimento = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, obrigatorio: false, null).Value!;
         processo.DefinirFatosColetados([condicaoAtendimento], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
