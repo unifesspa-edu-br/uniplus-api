@@ -31,4 +31,14 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Selecao.Infrastructure\Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!--
+    O registro de erros do módulo (SelecaoDomainErrorRegistration) é internal, e o teste
+    que prova title e detail chegando juntos ao ProblemDetails precisa registrá-lo por DI,
+    do mesmo jeito que o host faz — resolver por reflexão esconderia justamente o call site
+    que se quer exercitar. Mesmo padrão de Selecao.Infrastructure.
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

@@ -16,8 +16,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="EtapaProcesso"/>. As invariantes que dependem da fase-mãe (ProduzResultado,
 /// ResultadoDefinitivo, AtoProduzidoCodigo — itens 1 e 2 do §3.6) são validadas por
 /// <see cref="FaseCronograma.Criar"/>, que tem acesso aos dois lados; as que esta
-/// entidade consegue provar sozinha (item 6/7 — DIAS_UTEIS sem calendário; a coerência
-/// da regra referenciada) ficam aqui.
+/// entidade consegue provar sozinha (itens 6/7 — dias úteis proibido no prazo de
+/// interposição, e indisponível na suspensividade enquanto o algoritmo de contagem não
+/// for artefato versionado; a coerência da regra referenciada) ficam aqui.
 /// </remarks>
 public sealed class RegraRecursoFase : EntityBase
 {
@@ -64,7 +65,7 @@ public sealed class RegraRecursoFase : EntityBase
         {
             return Result<RegraRecursoFase>.Failure(new DomainError(
                 "RegraRecursoFase.PrazoEmDiasUteisSemCalendario",
-                "O prazo de interposição em dias úteis é recusado — não há calendário de dias úteis no sistema."));
+                "O prazo de interposição deve ser informado em horas ou dias corridos; dias úteis não são aceitos."));
         }
 
         // CA-21 (UNI-REQ-0080): a suspensividade em dias úteis é condicionalmente
@@ -79,7 +80,7 @@ public sealed class RegraRecursoFase : EntityBase
         {
             return Result<RegraRecursoFase>.Failure(new DomainError(
                 "RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario",
-                "A suspensividade em dias úteis é recusada (em qualquer uma das duas instâncias) — não há calendário de dias úteis no sistema."));
+                "A suspensividade em dias úteis, em qualquer uma das duas instâncias, exige calendário vigente e algoritmo de contagem versionado; o algoritmo ainda não está disponível."));
         }
 
         return Result<RegraRecursoFase>.Success(new RegraRecursoFase { Regra = regra, Args = args });
