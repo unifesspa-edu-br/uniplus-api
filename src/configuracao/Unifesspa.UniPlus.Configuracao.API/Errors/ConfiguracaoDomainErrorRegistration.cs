@@ -6,13 +6,14 @@ using Microsoft.AspNetCore.Http;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 
 /// <summary>
 /// Registry de mapeamentos de erros de domínio do Configuracao para wire codes
-/// / status HTTP. Cobre os cadastros <c>Campus</c> e <c>LocalOferta</c> e a
-/// validação da referência de cidade do Geo (UNI-REQ #587 · ADR-0090).
+/// / status HTTP. Cobre os cadastros <c>Campus</c> e <c>LocalOferta</c>. A
+/// validação da referência de cidade do Geo (UNI-REQ #587 · ADR-0090) é
+/// compartilhada com outros módulos e registrada uma única vez em
+/// <c>KernelDomainErrorRegistration</c>.
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -22,42 +23,11 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
-        // ── Referência de cidade do Geo (compartilhada por Campus e LocalOferta) ──
-        new(CidadeReferenciaErrorCodes.CodigoIbgeObrigatorio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.cidade_referencia.codigo_ibge_obrigatorio",
-                "Código IBGE da cidade é obrigatório")),
-
-        new(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.cidade_referencia.codigo_ibge_formato_invalido",
-                "Código IBGE da cidade em formato inválido")),
-
-        new(CidadeReferenciaErrorCodes.UfObrigatoria,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.cidade_referencia.uf_obrigatoria",
-                "UF da cidade é obrigatória")),
-
-        new(CidadeReferenciaErrorCodes.UfIncoerente,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.cidade_referencia.uf_incoerente",
-                "UF informada incompatível com o prefixo do código IBGE")),
-
-        new(CidadeReferenciaErrorCodes.NomeObrigatorio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.cidade_referencia.nome_obrigatorio",
-                "Nome da cidade é obrigatório")),
-
-        new(CidadeReferenciaErrorCodes.NomeTamanho,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.cidade_referencia.nome_tamanho",
-                "Nome da cidade excede o tamanho máximo")),
+        // Referência de cidade do Geo (compartilhada por Campus e LocalOferta): registrada uma
+        // única vez em KernelDomainErrorRegistration (issue #1114) — DomainErrorMappingRegistry
+        // agrega todo IDomainErrorRegistration num único dicionário global por código, e
+        // registrar o mesmo CidadeReferenciaErrorCodes aqui de novo sobrescreveria silenciosamente
+        // o mapeamento de outro módulo que registra depois deste na ordem de DI.
 
         // ── Referência de endereço estruturado ao Geo (ADR-0096) ──────────
         new(EnderecoReferenciaErrorCodes.CepObrigatorio,
