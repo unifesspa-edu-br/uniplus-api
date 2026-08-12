@@ -537,8 +537,10 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Publica o processo (RN08): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
     /// transação — junto da requisição durável que registra o ato em Publicações
-    /// (ADR-0108). Quando a publicação é recusada por conformidade insuficiente
-    /// (CA-03), o corpo do 422 carrega <c>Extensions["pendencias"]</c> com o checklist.
+    /// (ADR-0108). Toda recusa 422 é reavaliada contra o checklist estrutural
+    /// (issue #1096): havendo item vermelho no estado atual, o corpo carrega
+    /// <c>Extensions["pendencias"]</c>, qualquer que seja o código do erro que
+    /// efetivamente recusou.
     /// <para>
     /// O bloco <c>ato</c> é o MESMO que a retificação recebe: o tipo do ato vem
     /// declarado pelo operador e é conferido contra o catálogo de Publicações — nunca
@@ -570,23 +572,29 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
-        actionResult = await EnriquecerComPendenciasEstruturaisAsync(resultado, actionResult, id, cancellationToken)
+        actionResult = await EnriquecerComPendenciasEstruturaisAsync(actionResult, id, cancellationToken)
             .ConfigureAwait(false);
         return await EnriquecerComObrigatoriedadesReprovadasAsync(
             resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// CA-03: enriquece o 422 de conformidade ESTRUTURAL insuficiente com o checklist de
+    /// Issue #1096: enriquece TODA recusa HTTP 422 da publicação com o checklist de
     /// pendências — reconsulta <see cref="ObterConformidadeProcessoSeletivoQuery"/> (mesmo
-    /// <c>ProcessoSeletivo.AvaliarConformidade()</c> por trás do gate, sem duplicar a regra)
-    /// para montar <c>Extensions["pendencias"]</c>.
+    /// <c>ProcessoSeletivo.AvaliarConformidade()</c> por trás dos quatro gates estruturais,
+    /// sem duplicar a regra nem manter lista paralela de códigos de erro no controller) e
+    /// anexa <c>Extensions["pendencias"]</c> quando o estado atual tiver item vermelho —
+    /// independentemente de qual gate produziu o 422 (CA-01/CA-02/CA-03/CA-04/CA-06). Quando
+    /// o checklist estiver 100% verde, a extensão é omitida — nunca <c>pendencias: []</c>
+    /// (CA-05/CA-07).
     /// </summary>
     private async Task<IActionResult> EnriquecerComPendenciasEstruturaisAsync(
-        Result resultado, IActionResult actionResult, Guid id, CancellationToken cancellationToken)
+        IActionResult actionResult, Guid id, CancellationToken cancellationToken)
     {
-        if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeInsuficiente")
-            || actionResult is not ObjectResult { Value: ProblemDetails problem })
+        if (actionResult is not ObjectResult
+            {
+                StatusCode: StatusCodes.Status422UnprocessableEntity, Value: ProblemDetails problem,
+            })
         {
             return actionResult;
         }
@@ -594,12 +602,14 @@ public sealed class ProcessoSeletivoController : ControllerBase
         ConformidadeProcessoSeletivoDto? conformidade = await _queryBus
             .Send(new ObterConformidadeProcessoSeletivoQuery(id), cancellationToken)
             .ConfigureAwait(false);
-        if (conformidade is not null)
+
+        string[] pendencias = conformidade?.Itens
+            .Where(item => !item.Ok)
+            .Select(item => item.Item)
+            .ToArray() ?? [];
+        if (pendencias.Length > 0)
         {
-            problem.Extensions["pendencias"] = conformidade.Itens
-                .Where(item => !item.Ok)
-                .Select(item => item.Item)
-                .ToArray();
+            problem.Extensions["pendencias"] = pendencias;
         }
 
         return actionResult;
