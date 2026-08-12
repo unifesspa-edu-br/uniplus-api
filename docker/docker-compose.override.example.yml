@@ -179,6 +179,47 @@ services:
       retries: 5
       start_period: 15s
 
+  # Documentação navegável dos seis documentos OpenAPI (cinco do host + Portal), em
+  # http://localhost:5299. O host registra MapOpenApi e nada além: desde o .NET 9 o
+  # Microsoft.AspNetCore.OpenApi gera o documento mas não serve interface, então a UI é
+  # escolha de quem hospeda. O botão Authorize aceita o JWT do Keycloak e o envia no
+  # "Try it out" — o documento declara o esquema Bearer, e cada rota protegida referencia
+  # esse esquema.
+  #
+  # Só de desenvolvimento: não há equivalente em HML/PROD.
+  openapi-ui:
+    image: swaggerapi/swagger-ui:v5.29.4
+    restart: unless-stopped
+    environment:
+      # URLs relativas de propósito: quem as busca é o navegador, e a página vem do nginx
+      # abaixo. Endereço absoluto para outra porta cairia em CORS.
+      URLS: >-
+        [
+          {"url":"/openapi/selecao.json","name":"Seleção"},
+          {"url":"/openapi/configuracao.json","name":"Configuração"},
+          {"url":"/openapi/organizacao.json","name":"Organização Institucional"},
+          {"url":"/openapi/publicacoes.json","name":"Publicações"},
+          {"url":"/openapi/ingresso.json","name":"Ingresso"},
+          {"url":"/openapi-portal/portal.json","name":"Portal"}
+        ]
+      URLS_PRIMARY_NAME: "Seleção"
+      DEEP_LINKING: "true"
+      DISPLAY_REQUEST_DURATION: "true"
+      TRY_IT_OUT_ENABLED: "true"
+      PERSIST_AUTHORIZATION: "true"
+    expose:
+      - "8080"
+
+  openapi-docs:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    volumes:
+      - ./openapi-ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "5299:8080"
+    depends_on:
+      - openapi-ui
+
   # Gateway de DEV (absorvido do antigo docker-compose.frontend-test.yml). Os frontends
   # consomem um único `apiUrl` (http://localhost:5000); o Traefik apenas SEPARA o tráfego
   # das 3 APIs sem reescrever paths (regras em ./traefik/dynamic.yml): /api/{cidades,

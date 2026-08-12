@@ -83,6 +83,36 @@ Os frontends consomem as APIs por um único `apiUrl` (o gateway Traefik em
 no realm **`unifesspa`** — as 3 APIs validam esse mesmo realm por padrão. Login
 de teste: usuário `admin` (ver **Sessões manuais longas** abaixo para a senha).
 
+### Explorar a API pela documentação navegável
+
+O stack completo publica os seis documentos OpenAPI (os cinco do host mais o do
+Portal) numa interface em **http://localhost:5299**, com seletor no topo. O host
+registra apenas `MapOpenApi`, que serve o JSON: desde o .NET 9 o
+`Microsoft.AspNetCore.OpenApi` gera o documento mas não fornece interface, então
+a UI é escolha de quem hospeda — por isso ela vive no override de
+desenvolvimento e não existe em HML/PROD.
+
+Interface, documentos e API são servidos pelo **mesmo host** (o serviço
+`openapi-docs` faz proxy de `/openapi/`, `/openapi-portal/` e `/api/`). Isso não
+é detalhe de arrumação: o navegador é quem busca os documentos e dispara o "Try
+it out", e uma UI em porta separada colocaria essas chamadas em outra origem —
+a API não emite `Access-Control-Allow-Origin`, então todos os documentos
+falhariam em CORS.
+
+Para exercitar rotas protegidas, clique em **Authorize** e cole um token. As
+rotas administrativas exigem a role `plataforma-admin`; no realm de smoke:
+
+```bash
+curl -s -X POST http://localhost:8080/realms/unifesspa-dev-local/protocol/openid-connect/token \
+  -d client_id=selecao-web -d username=admin -d password='Changeme!123' -d grant_type=password \
+  | jq -r .access_token
+```
+
+O token é aceito porque o documento declara o esquema de segurança Bearer e
+cada rota protegida o referencia — a declaração sai do mesmo lugar que já
+adiciona o `401`/`403` ao contrato, a partir da presença de `[Authorize]` no
+endpoint. O `PERSIST_AUTHORIZATION` mantém o token entre recargas da página.
+
 ### Desenvolver o frontend com hot reload (`nx serve`)
 
 Os apps `*-web` do override ocupam as portas 4200-4203. Para iterar no frontend
