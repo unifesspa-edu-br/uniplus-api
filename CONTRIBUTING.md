@@ -106,9 +106,14 @@ URL de produção — o que falha em CORS e, pior, manda requisição e credenci
 para o ambiente errado. Em HML e PROD a variável não existe e o documento volta
 a anunciar apenas Produção e Homologação.
 
-Para exercitar rotas protegidas, clique em **Authorize** e cole um token. As
-rotas administrativas exigem a role `plataforma-admin`, e o
-`PERSIST_AUTHORIZATION` guarda o token entre recargas.
+Para exercitar rotas protegidas, clique em **Authorize** e cole **apenas o
+token**, sem o prefixo `Bearer` — a interface o acrescenta ao cabeçalho. Colar
+`Bearer <token>` gera `Authorization: Bearer Bearer <token>` e um `401` que
+parece expiração. As rotas administrativas exigem a role `plataforma-admin`.
+
+O `PERSIST_AUTHORIZATION` guarda o token entre recargas, mas não o renova: ao
+trocar de token, use **Authorize → Logout** antes de colar o novo, senão a
+interface continua enviando o anterior.
 
 **De onde tirar o token depende de como você subiu a stack.** No stack completo
 acima, as APIs validam o realm `unifesspa`, cujos clients `*-web` não têm direct

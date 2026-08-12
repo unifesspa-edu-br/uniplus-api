@@ -50,10 +50,15 @@ public sealed class BearerSecuritySchemeDocumentTransformer : IOpenApiDocumentTr
             BearerFormat = "JWT",
 
             // Descrição é conteúdo user-facing do contrato — pt-BR, como a dos demais transformers.
+            // O aviso sobre o prefixo não é obviedade: o esquema `http`/`bearer` faz a interface
+            // montar o cabeçalho sozinha, então colar "Bearer <token>" produz "Bearer Bearer
+            // <token>" e um 401 que parece expiração — o erro mais provável de quem copia o
+            // token de um exemplo de curl.
             Description =
-                "Token JWT emitido pelo provedor de identidade institucional (Keycloak), enviado no "
-                + "cabeçalho Authorization. As rotas administrativas exigem, além da autenticação, a "
-                + "role plataforma-admin no token.",
+                "Token JWT emitido pelo provedor de identidade institucional (Keycloak). Cole "
+                + "apenas o token: o prefixo \"Bearer\" é acrescentado ao cabeçalho Authorization "
+                + "automaticamente. As rotas administrativas exigem, além da autenticação, a role "
+                + "plataforma-admin no token.",
         };
 
         return Task.CompletedTask;
