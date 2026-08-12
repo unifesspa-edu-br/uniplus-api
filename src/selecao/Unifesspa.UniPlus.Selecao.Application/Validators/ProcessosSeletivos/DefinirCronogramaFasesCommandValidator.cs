@@ -116,7 +116,7 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
 
                 // Issue #1113: mesmo motivo do prazo de interposição acima.
                 fase.RuleFor(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor)
-                    .Must(v => v!.Value == decimal.Truncate(v.Value))
+                    .Must(v => !v.HasValue || v.Value == decimal.Truncate(v.Value))
                     .When(f => f.RegraRecurso!.SuspensividadePrimeiraInstanciaUnidade == UnidadePrazo.DiasUteis
                         && f.RegraRecurso!.SuspensividadePrimeiraInstanciaValor.HasValue)
                     .WithMessage("A suspensividade da 1ª instância em dias úteis não admite fração — informe um número inteiro de dias.");
@@ -146,7 +146,7 @@ public sealed class DefinirCronogramaFasesCommandValidator : AbstractValidator<D
 
                 // Issue #1113: mesmo motivo do prazo de interposição acima.
                 fase.RuleFor(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaValor)
-                    .Must(v => v!.Value == decimal.Truncate(v.Value))
+                    .Must(v => !v.HasValue || v.Value == decimal.Truncate(v.Value))
                     .When(f => f.RegraRecurso!.SuspensividadeSegundaInstanciaUnidade == UnidadePrazo.DiasUteis
                         && f.RegraRecurso!.SuspensividadeSegundaInstanciaValor.HasValue)
                     .WithMessage("A suspensividade da 2ª instância em dias úteis não admite fração — informe um número inteiro de dias.");
