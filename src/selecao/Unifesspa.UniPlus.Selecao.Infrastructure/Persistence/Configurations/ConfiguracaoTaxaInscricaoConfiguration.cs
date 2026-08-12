@@ -35,6 +35,14 @@ internal sealed class ConfiguracaoTaxaInscricaoConfiguration : IEntityTypeConfig
             .ValueGeneratedNever()
             .HasComment("Identificador interno (UUIDv7) — não confundir com o Id do processo seletivo, a FK.");
 
+        builder.Property(c => c.ProcessoSeletivoId)
+            .HasComment("Id do processo seletivo dono desta configuração (FK 1:1, cascade delete).");
+
+        builder.Property(c => c.CreatedAt)
+            .HasComment("Instante de criação do registro (auditoria, carimbado pelo AuditableInterceptor).");
+        builder.Property(c => c.UpdatedAt)
+            .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
+
         builder.Property(c => c.Cobra)
             .IsRequired()
             .HasComment("Declaração explícita de cobrança de taxa — nunca inferida pela ausência da linha (CA-01).");
