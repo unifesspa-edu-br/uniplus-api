@@ -15,7 +15,7 @@ public enum Abrangencia
     /// <summary>Feriado estadual — vale só no estado declarado.</summary>
     Estadual = 2,
 
-    /// <summary>Feriado municipal — vale só no município declarado (exige <c>MunicipioIbge</c>).</summary>
+    /// <summary>Feriado municipal — vale só no município declarado (exige snapshot de código IBGE, nome e UF).</summary>
     Municipal = 3,
 
     /// <summary>Recesso institucional da Unifesspa, sem correspondência em calendário civil.</summary>

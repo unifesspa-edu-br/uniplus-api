@@ -1281,23 +1281,11 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.calendario_dias_uteis.abrangencia_invalida",
                 "Abrangência do dia não útil fora do domínio fechado")),
 
-        new(CalendarioDiasUteisErrorCodes.MunicipioIbgeObrigatorioParaMunicipal,
+        new(CalendarioDiasUteisErrorCodes.SnapshotMunicipalApenasParaMunicipal,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_obrigatorio_para_municipal",
-                "Código IBGE do município é obrigatório para abrangência municipal")),
-
-        new(CalendarioDiasUteisErrorCodes.MunicipioIbgeApenasParaMunicipal,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_apenas_para_municipal",
-                "Código IBGE do município só se aplica a abrangência municipal")),
-
-        new(CalendarioDiasUteisErrorCodes.MunicipioIbgeFormatoInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.calendario_dias_uteis.municipio_ibge_formato_invalido",
-                "Código IBGE do município em formato inválido")),
+                "uniplus.configuracao.calendario_dias_uteis.snapshot_municipal_apenas_para_municipal",
+                "Referência do município só se aplica a abrangência municipal")),
 
         new(CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual,
             new DomainErrorMapping(
