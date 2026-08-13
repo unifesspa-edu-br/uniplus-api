@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
-using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -25,10 +23,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// prova de que a precondição de migration aborta diante de referência
 /// fabricada fica em <see cref="AlgoritmoContagemPrazoPrecondicaoTests"/>.
 /// </summary>
-[SuppressMessage(
-    "Security",
-    "CA2100:Review SQL queries for security vulnerabilities",
-    Justification = "SQL fixo escrito no próprio teste; os únicos valores externos (token e amostra) entram por DbParameter.")]
 public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalogoDbFixture>
 {
     private readonly RegraCatalogoDbFixture _fixture;
