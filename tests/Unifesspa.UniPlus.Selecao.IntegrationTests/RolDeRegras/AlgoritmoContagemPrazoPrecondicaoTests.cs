@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 using AwesomeAssertions;
 
@@ -116,7 +115,7 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
     public void MigrationDown_CarregaAPrecondicao()
     {
         string guarda = FronteiraAppendOnlyDoRol.BlocoDown(
-            FronteiraAppendOnlyDoRol.LerMigration(ArquivoDaMigration, Origem()));
+            FronteiraAppendOnlyDoRol.LerMigration(ArquivoDaMigration));
 
         foreach (string marca in new[]
         {
@@ -140,7 +139,6 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
 
     private const string ArquivoDaMigration = "20260813180249_AddAlgoritmosContagemPrazo.cs";
 
-    private static string Origem([CallerFilePath] string origem = "") => origem;
 
     private static Task ExecutarPrecondicaoAsync(SelecaoDbContext context) =>
         FronteiraAppendOnlyDoRol.ExecutarAsync(context, PrecondicaoDaMigration);

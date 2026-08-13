@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 using AwesomeAssertions;
 
@@ -112,7 +111,7 @@ public sealed class AlgoritmoContagemAvancaDataUtilPrecondicaoTests : IClassFixt
     public void MigrationDown_CarregaAPrecondicao()
     {
         string guarda = FronteiraAppendOnlyDoRol.BlocoDown(
-            FronteiraAppendOnlyDoRol.LerMigration(ArquivoDaMigration, Origem()));
+            FronteiraAppendOnlyDoRol.LerMigration(ArquivoDaMigration));
 
         foreach (string marca in new[] { "$adr0112$", "RAISE EXCEPTION", PredicadoDaEntrada })
         {
@@ -131,5 +130,4 @@ public sealed class AlgoritmoContagemAvancaDataUtilPrecondicaoTests : IClassFixt
             "a guarda não pode olhar a convenção por horas úteis, que esta migration não remove");
     }
 
-    private static string Origem([CallerFilePath] string origem = "") => origem;
 }

@@ -197,106 +197,14 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         }
     }
 
-    // Referência de regra é a tripla {codigo, versao, hash} — o detector a
-    // procura pela ESTRUTURA, não pelo texto: o snapshot congela muitos outros
-    // objetos com a chave bare `codigo` cujo valor é declarado pelo
-    // administrador (uma fase, por exemplo), e casar por texto confundiria um
-    // homônimo com uma referência. Mesma convenção que
-    // `EnvelopeCanonicoGoldenTests.Envelope_ReferenciasDeRegraSaoTripla` fixa
-    // para o envelope canônico.
-    private const string DetectaReferenciaJsonb = """
-        WITH amostra(configuracao_congelada) AS (VALUES (@amostra::jsonb))
-        SELECT count(*) FROM amostra
-        WHERE configuracao_congelada @? @predicado::jsonpath
-        """;
-
-    private const string ContaReferenciasReais = """
-        SELECT count(*) FROM selecao.versoes_configuracao
-        WHERE configuracao_congelada @? @predicado::jsonpath
-        """;
-
-    private static string PredicadoDeReferencia(string codigo) =>
-        $"""$.** ? (@.codigo == "{codigo}" && @.versao == "v1" && exists(@.hash))""";
-
-    private static string TriplaDeReferencia(string codigo) =>
-        $$$"""
-        {"cronograma":{"fases":[{"regraContagem":{"codigo":"{{{codigo}}}","versao":"v1","hash":"{{{new string('b', 64)}}}"}}]}}
-        """;
-
     [Theory(DisplayName = "Nenhuma configuração congelada referencia a entrada de contagem (fronteira da ADR-0112)")]
     [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)]
     [InlineData(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)]
     public async Task NenhumaConfiguracaoCongelada_ReferenciaEntradaDeContagem(string codigo)
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
-        string predicado = PredicadoDeReferencia(codigo);
 
-        // Canário positivo: o detector ENXERGA uma configuração que referencia a
-        // entrada pela tripla — sem esta prova, a ausência real abaixo não
-        // significaria nada.
-        long detectados = await ContarAsync(
-            context,
-            DetectaReferenciaJsonb,
-            predicado,
-            amostra: TriplaDeReferencia(codigo));
-        detectados.Should().Be(1, "o detector precisa enxergar a referência para a ausência provar algo");
-
-        // Canário negativo: um código DISTINTO que apenas contém o semeado como
-        // prefixo não é confundido com ele — a fronteira é por identidade.
-        long falsosPositivos = await ContarAsync(
-            context,
-            DetectaReferenciaJsonb,
-            predicado,
-            amostra: TriplaDeReferencia(codigo + "-LEGADO"));
-        falsosPositivos.Should().Be(0, "um código diferente que contém o semeado como prefixo não é o semeado");
-
-        // Canário negativo: um objeto com a chave bare `codigo` de mesmo valor,
-        // mas sem a tripla, é homônimo — não referência. É o caso de uma fase
-        // batizada com o código de um algoritmo: casar por texto a trataria como
-        // referência e travaria uma correção legítima do catálogo.
-        long homonimos = await ContarAsync(
-            context,
-            DetectaReferenciaJsonb,
-            predicado,
-            amostra: $$$"""
-            {"cronograma":{"fases":[{"codigo":"{{{codigo}}}","ordem":1,"donoInstitucional":"CEPS"}]}}
-            """);
-        homonimos.Should().Be(0, "objeto com a chave bare codigo, sem versao e hash, não é referência de regra");
-
-        // Schema real (banco efêmero migrado): nenhuma configuração congelada
-        // referencia a entrada — enquanto isso valer, ela ainda é vocabulário e
-        // se corrige por substituição (ADR-0112); a partir da primeira
-        // referência, só versão nova.
-        long referenciasReais = await ContarAsync(context, ContaReferenciasReais, predicado, amostra: null);
-        referenciasReais.Should().Be(
-            0, "alterar ou remover uma entrada já congelada por configuração violaria o append-only (RN08)");
-    }
-
-    private static async Task<long> ContarAsync(SelecaoDbContext context, string sql, string predicado, string? amostra)
-    {
-        DbConnection conexao = context.Database.GetDbConnection();
-        if (conexao.State != System.Data.ConnectionState.Open)
-        {
-            await conexao.OpenAsync(CancellationToken.None);
-        }
-
-        await using DbCommand comando = conexao.CreateCommand();
-        comando.CommandText = sql;
-        AdicionarParametro(comando, "predicado", predicado);
-        if (amostra is not null)
-        {
-            AdicionarParametro(comando, "amostra", amostra);
-        }
-
-        object? resultado = await comando.ExecuteScalarAsync(CancellationToken.None);
-        return Convert.ToInt64(resultado, System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private static void AdicionarParametro(DbCommand comando, string nome, string valor)
-    {
-        DbParameter parametro = comando.CreateParameter();
-        parametro.ParameterName = nome;
-        parametro.Value = valor;
-        comando.Parameters.Add(parametro);
+        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
+            context, codigo, RegraCatalogoSeed.VersaoV1);
     }
 }

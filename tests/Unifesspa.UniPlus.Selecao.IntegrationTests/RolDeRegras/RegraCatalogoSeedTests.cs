@@ -183,82 +183,23 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .Which.Codigo.Should().Be("RECURSO-PRAZO-ANCORADO-EM-ATO");
     }
 
-    // O código da regra removida, como valor JSON — entre aspas. Casar o token
-    // aspado (e não a substring nua) impede que um OUTRO código que apenas
-    // contenha este como prefixo (ex.: RECURSO-MULTI-INSTANCIA-LEGACY) bloqueie a
-    // substituição por engano: o valor JSON só bate quando é igual, delimitado.
-    private const string TokenCodigoRemovido = "\"RECURSO-MULTI-INSTANCIA\"";
-
-    private const string DetectaReferenciaJsonb = """
-        WITH amostra(configuracao_congelada) AS (VALUES (@amostra::jsonb))
-        SELECT count(*) FROM amostra
-        WHERE configuracao_congelada::text LIKE '%' || @token || '%'
-        """;
-
-    private const string ContaReferenciasReais = """
-        SELECT count(*) FROM selecao.versoes_configuracao
-        WHERE configuracao_congelada::text LIKE '%' || @token || '%'
-        """;
-
     [Fact(DisplayName = "CA-12 — nenhuma configuração congelada referencia a regra substituída (fronteira da ADR-0112)")]
     public async Task RegraCatalogoSeed_SubstituirRegraReferenciada_Falha()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
-        // Canário positivo: o detector ENXERGA uma configuração que referencia a
-        // regra removida pelo seu valor de código. Sem esta prova, a ausência real
-        // abaixo não significaria nada — um detector quebrado passaria como verde.
-        long detectados = await ContarAsync(
-            context,
-            DetectaReferenciaJsonb,
-            amostra: """{"regra":{"codigo":"RECURSO-MULTI-INSTANCIA","versao":"v1"}}""");
-        detectados.Should().Be(1, "o detector precisa enxergar a referência para a ausência provar algo");
-
-        // Canário negativo: um código DISTINTO que apenas contém o removido como
-        // prefixo não pode ser confundido com ele — a fronteira da ADR-0112 é por
-        // identidade da regra, não por substring.
-        long falsosPositivos = await ContarAsync(
-            context,
-            DetectaReferenciaJsonb,
-            amostra: """{"regra":{"codigo":"RECURSO-MULTI-INSTANCIA-LEGACY","versao":"v1"}}""");
-        falsosPositivos.Should().Be(0, "um código diferente que contém o removido como prefixo não é o removido");
-
-        // Schema real (banco efêmero migrado): nenhuma VersaoConfiguracao congelada
-        // referencia a regra que o seed substituiu — é o que torna a substituição
-        // legítima no schema-alvo dos testes (ADR-0112). Para bases já implantadas,
-        // a verificação da fronteira roda como precondição do fluxo de migração,
-        // não neste teste.
-        long referenciasReais = await ContarAsync(context, ContaReferenciasReais, amostra: null);
-        referenciasReais.Should().Be(
-            0,
-            "substituir uma regra já congelada por uma configuração violaria o append-only (RN08)");
+        // A substituição da regra que geria a segunda instância só foi legítima
+        // porque nenhuma configuração congelada a referenciava (ADR-0112). A
+        // versão procurada é a v1, que era a que a substituição reescreveu.
+        // Para bases já implantadas, a verificação roda como precondição do
+        // fluxo de migração, não aqui.
+        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
+            context, CodigoRegraSubstituida, RegraCatalogoSeed.VersaoV1);
     }
 
-    private static async Task<long> ContarAsync(SelecaoDbContext context, string sql, string? amostra)
-    {
-        DbConnection conexao = context.Database.GetDbConnection();
-        if (conexao.State != System.Data.ConnectionState.Open)
-        {
-            await conexao.OpenAsync(CancellationToken.None);
-        }
-
-        await using DbCommand comando = conexao.CreateCommand();
-        comando.CommandText = sql;
-        AdicionarParametro(comando, "token", TokenCodigoRemovido);
-        if (amostra is not null)
-        {
-            AdicionarParametro(comando, "amostra", amostra);
-        }
-
-        object? resultado = await comando.ExecuteScalarAsync(CancellationToken.None);
-        return Convert.ToInt64(resultado, System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private static void AdicionarParametro(DbCommand comando, string nome, string valor)
-    {
-        DbParameter parametro = comando.CreateParameter();
-        parametro.ParameterName = nome;
-        parametro.Value = valor;
-        comando.Parameters.Add(parametro);
-    }
+    /// <summary>
+    /// A regra que geria uma segunda instância de recurso, removida do catálogo
+    /// e trocada por <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>.
+    /// </summary>
+    private const string CodigoRegraSubstituida = "RECURSO-MULTI-INSTANCIA";
 }
