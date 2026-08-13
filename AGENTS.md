@@ -33,8 +33,10 @@ NuGet versions or lockfiles. Regenerate OpenAPI baselines with
 Follow `.editorconfig`: four spaces, LF, UTF-8, final newline, file-scoped
 namespaces, nullable enabled, and warnings treated as errors. Use PascalCase for
 types, members, constants, and static readonly fields; camelCase for locals and
-parameters; `_camelCase` for private fields. Keep identifiers in English and
-user-facing API messages in pt-BR. Application validation uses FluentValidation;
+parameters; `_camelCase` for private fields. Keep infrastructure identifiers in
+English; domain identifiers preserve the ubiquitous language of the domain and
+are therefore in pt-BR (`ProcessoSeletivo`, `RegraCatalogo`, `TipoRegra`).
+User-facing API messages are in pt-BR. Application validation uses FluentValidation;
 EF mappings use `IEntityTypeConfiguration<T>` and the global snake_case
 convention. New logging should use `[LoggerMessage]`, not direct
 `logger.LogInformation(...)` calls.
