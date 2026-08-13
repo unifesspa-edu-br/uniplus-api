@@ -49,8 +49,8 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
             IF EXISTS (
                 SELECT 1
                 FROM selecao.versoes_configuracao
-                WHERE configuracao_congelada::text LIKE '%"CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL"%'
-                   OR configuracao_congelada::text LIKE '%"CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA"%'
+                WHERE configuracao_congelada @? '$.** ? (@.codigo == "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL" && @.versao == "v1" && exists(@.hash))'
+                   OR configuracao_congelada @? '$.** ? (@.codigo == "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA" && @.versao == "v1" && exists(@.hash))'
             ) THEN
                 RAISE EXCEPTION 'rol_de_regras: entrada de algoritmo de contagem referenciada por versão de configuração congelada; remover viola o append-only (ADR-0112)';
             END IF;
@@ -71,16 +71,41 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
         // Identidade, não substring: uma configuração congelada que referencia
         // um código DIFERENTE, que apenas contém o semeado como prefixo, não
         // bloqueia a reversão.
-        await FabricarReferenciaCongeladaAsync(
-            context, AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial + "-LEGADO");
+        await FabricarConfiguracaoCongeladaAsync(
+            context,
+            "prefixo",
+            TriplaDeReferencia(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial + "-LEGADO", "v1"));
+        await ExecutarPrecondicaoAsync(context);
+
+        // A busca é por referência de regra — a tripla {codigo, versao, hash} —,
+        // não por ocorrência do texto: o snapshot congela muitos outros objetos
+        // com a chave bare `codigo` cujo valor é declarado pelo administrador, e
+        // uma fase batizada com o código de um algoritmo não é uma referência a
+        // ele. Casar por texto abortaria esta reversão legítima.
+        await FabricarConfiguracaoCongeladaAsync(
+            context,
+            "fase-homonima",
+            $$$"""
+            {"cronograma":{"fases":[{"codigo":"{{{AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial}}}","ordem":1,"donoInstitucional":"CEPS"}]}}
+            """);
+        await ExecutarPrecondicaoAsync(context);
+
+        // Referência a uma versão que este Down não remove: a v1 continua
+        // removível enquanto ninguém a referenciar.
+        await FabricarConfiguracaoCongeladaAsync(
+            context,
+            "outra-versao",
+            TriplaDeReferencia(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v2"));
         await ExecutarPrecondicaoAsync(context);
 
         // Referência real fabricada: a partir da primeira configuração
         // congelada que referencia a entrada, ela é fato — a precondição
         // encontra a referência e aborta antes de alterar qualquer linha, seja
         // a intenção substituir, seja remover.
-        await FabricarReferenciaCongeladaAsync(
-            context, AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial);
+        await FabricarConfiguracaoCongeladaAsync(
+            context,
+            "referencia-real",
+            TriplaDeReferencia(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1"));
 
         Func<Task> reversao = () => ExecutarPrecondicaoAsync(context);
 
@@ -100,8 +125,8 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
         {
             "$adr0112$",
             "RAISE EXCEPTION",
-            """%"CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL"%""",
-            """%"CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA"%""",
+            """@.codigo == "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL" && @.versao == "v1" && exists(@.hash)""",
+            """@.codigo == "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA" && @.versao == "v1" && exists(@.hash)""",
         })
         {
             migration.Should().Contain(
@@ -137,21 +162,28 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
     }
 
     /// <summary>
-    /// Fabrica uma <see cref="VersaoConfiguracao"/> real cuja configuração
-    /// congelada referencia <paramref name="codigoReferenciado"/> — o formato é
-    /// o de auditoria, não o snapshot completo de publicação: para a fronteira
-    /// da ADR-0112 o que importa é a referência por valor de código existir
-    /// numa configuração congelada.
+    /// Uma referência de regra como o canonicalizador a serializa: a tripla
+    /// <c>{codigo, versao, hash}</c>, aninhada como fica no snapshot real.
     /// </summary>
-    private static async Task FabricarReferenciaCongeladaAsync(
-        SelecaoDbContext context, string codigoReferenciado)
+    private static string TriplaDeReferencia(string codigo, string versao) =>
+        $$$"""
+        {"cronograma":{"fases":[{"regraContagem":{"codigo":"{{{codigo}}}","versao":"{{{versao}}}","hash":"{{{new string('b', 64)}}}"}}]}}
+        """;
+
+    /// <summary>
+    /// Fabrica uma <see cref="VersaoConfiguracao"/> real com a configuração
+    /// congelada indicada — um recorte do snapshot, não o documento completo de
+    /// publicação: para a fronteira da ADR-0112 o que importa é a forma da
+    /// referência dentro do jsonb congelado.
+    /// </summary>
+    private static async Task FabricarConfiguracaoCongeladaAsync(
+        SelecaoDbContext context, string cenario, string configuracaoCongelada)
     {
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(
-            $"Fronteira append-only — {codigoReferenciado}");
+            $"Fronteira append-only — {cenario}");
         context.ProcessosSeletivos.Add(processo);
 
-        byte[] canonico = Encoding.UTF8.GetBytes(
-            $$$"""{"regra":{"codigo":"{{{codigoReferenciado}}}","versao":"v1"}}""");
+        byte[] canonico = Encoding.UTF8.GetBytes(configuracaoCongelada);
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processo.Id,

@@ -30,17 +30,23 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             // Fronteira append-only do rol_de_regras (ADR-0112): uma entrada
             // referenciada por configuração congelada é fato imutável — a
             // reversão só é legítima enquanto nenhuma VersaoConfiguracao citar
-            // os códigos semeados. O token é casado entre aspas (valor JSON
-            // delimitado), para que um código que apenas contenha um destes
-            // como prefixo não bloqueie a reversão por engano.
+            // as entradas que este Down remove.
+            //
+            // A busca é ESTRUTURAL, não textual: referência de regra é a tripla
+            // {codigo, versao, hash}, e o snapshot tem muitos outros objetos com
+            // a chave bare `codigo` cujo valor é declarado pelo administrador —
+            // uma fase batizada com o código de um algoritmo abortaria uma
+            // reversão legítima se o casamento fosse por texto. A versão entra
+            // no predicado porque só as linhas v1 são removidas aqui: uma
+            // configuração que referencie uma v2 futura não impede remover a v1.
             migrationBuilder.Sql("""
                 DO $adr0112$
                 BEGIN
                     IF EXISTS (
                         SELECT 1
                         FROM selecao.versoes_configuracao
-                        WHERE configuracao_congelada::text LIKE '%"CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL"%'
-                           OR configuracao_congelada::text LIKE '%"CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA"%'
+                        WHERE configuracao_congelada @? '$.** ? (@.codigo == "CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL" && @.versao == "v1" && exists(@.hash))'
+                           OR configuracao_congelada @? '$.** ? (@.codigo == "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA" && @.versao == "v1" && exists(@.hash))'
                     ) THEN
                         RAISE EXCEPTION 'rol_de_regras: entrada de algoritmo de contagem referenciada por versão de configuração congelada; remover viola o append-only (ADR-0112)';
                     END IF;
