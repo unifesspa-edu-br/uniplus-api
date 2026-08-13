@@ -27,6 +27,14 @@ public static class AlgoritmoContagemPrazoCodigo
     public const string HorasUteisDesdeAncora = "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA";
 
     /// <summary>
+    /// Em dias úteis, mantém a hora da âncora e avança datas úteis; âncora em
+    /// dia não útil desloca para o próximo dia útil na mesma hora. Em horas,
+    /// coincide com <see cref="HorasUteisDesdeAncora"/> — a diferença entre as
+    /// duas está só na unidade dias úteis.
+    /// </summary>
+    public const string AvancaDataUtil = "CONTAGEM-PRAZO-AVANCA-DATA-UTIL";
+
+    /// <summary>
     /// Placeholder honesto de pendência para a <c>base_legal</c> das entradas
     /// de contagem (UNI-REQ-0095): o dispositivo exato ainda não foi
     /// confirmado juridicamente, e citação aproximada seria pior que a lacuna.
