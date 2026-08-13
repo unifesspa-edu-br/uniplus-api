@@ -92,6 +92,17 @@ public sealed class ReferenciaCidadeGeoTests
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeTamanho);
     }
 
+    [Fact(DisplayName = "Nome com caractere nulo é rejeitado antes da persistência")]
+    public void Validar_NomeComCaractereNulo_Rejeita()
+    {
+        string nomeComNulo = "Mara" + '\0' + "bá";
+
+        Result resultado = ReferenciaCidadeGeo.Validar("1504208", nomeComNulo, "PA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeCaractereNulo);
+    }
+
     [Fact(DisplayName = "Nome exatamente no tamanho máximo é aceito (limite inclusivo)")]
     public void Validar_NomeNoLimite_Aceita()
     {

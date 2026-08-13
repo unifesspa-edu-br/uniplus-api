@@ -15,5 +15,6 @@ public static class CidadeReferenciaErrorCodes
     public const string UfObrigatoria = "CidadeReferencia.UfObrigatoria";
     public const string UfIncoerente = "CidadeReferencia.UfIncoerente";
     public const string NomeObrigatorio = "CidadeReferencia.NomeObrigatorio";
+    public const string NomeCaractereNulo = "CidadeReferencia.NomeCaractereNulo";
     public const string NomeTamanho = "CidadeReferencia.NomeTamanho";
 }

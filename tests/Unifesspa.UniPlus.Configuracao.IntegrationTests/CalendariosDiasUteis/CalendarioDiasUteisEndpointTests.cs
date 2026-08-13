@@ -140,6 +140,21 @@ public sealed class CalendarioDiasUteisEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "POST admin rejeita U+0000 no nome do snapshot municipal com 422")]
+    public async Task Criar_MunicipioNomeComCaractereNulo_Retorna422()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string nomeComNulo = "Mara" + '\0' + "bá";
+
+        HttpResponseMessage response = await EnviarPostAdmin(
+            client,
+            AdminPath,
+            CorpoComDia("MUNICIPAL", "1504208", nomeComNulo, "PA"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.cidade_referencia.nome_caractere_nulo");
+    }
+
     [Theory(DisplayName = "POST admin rejeita campos municipais fora de MUNICIPAL")]
     [InlineData("NACIONAL")]
     [InlineData("ESTADUAL")]
