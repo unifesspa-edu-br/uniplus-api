@@ -32,6 +32,7 @@ internal sealed class KernelDomainErrorRegistration : IDomainErrorRegistration
         new(CidadeReferenciaErrorCodes.UfObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.uf_obrigatoria", "UF da cidade é obrigatória")),
         new(CidadeReferenciaErrorCodes.UfIncoerente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.uf_incoerente", "UF informada incompatível com o prefixo do código IBGE")),
         new(CidadeReferenciaErrorCodes.NomeObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.nome_obrigatorio", "Nome da cidade é obrigatório")),
+        new(CidadeReferenciaErrorCodes.NomeCaractereNulo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.nome_caractere_nulo", "Nome da cidade contém caractere nulo")),
         new(CidadeReferenciaErrorCodes.NomeTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.cidade_referencia.nome_tamanho", "Nome da cidade excede o tamanho máximo")),
     ];
 }

@@ -128,7 +128,15 @@ public static class ReferenciaCidadeGeo
                 "Nome da cidade é obrigatório."));
         }
 
-        if (cidadeNome.Trim().Length > NomeMaxLength)
+        string nome = cidadeNome.Trim();
+        if (nome.Contains('\0'))
+        {
+            return Result.Failure(new DomainError(
+                CidadeReferenciaErrorCodes.NomeCaractereNulo,
+                "Nome da cidade não pode conter o caractere nulo (U+0000)."));
+        }
+
+        if (nome.Length > NomeMaxLength)
         {
             return Result.Failure(new DomainError(
                 CidadeReferenciaErrorCodes.NomeTamanho,
