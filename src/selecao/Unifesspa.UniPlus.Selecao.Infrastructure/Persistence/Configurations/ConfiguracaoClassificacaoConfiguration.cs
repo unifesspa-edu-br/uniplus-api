@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// Configuração EF Core de <see cref="ConfiguracaoClassificacao"/> (Story
-/// #775, modelagem P-B §2.1) — o 15º bloco canônico, 1:1 do agregado
+/// #775) — o 15º bloco canônico, 1:1 do agregado
 /// <see cref="ProcessoSeletivo"/>.
 /// </summary>
 [SuppressMessage(

@@ -15,11 +15,11 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do bônus
-/// regional (RN05) e dos critérios de desempate (Story #774, modelagem
-/// P-B §2.5/§2.6): persiste e recarrega as 4 variantes de
+/// regional (RN05) e dos critérios de desempate (Story #774): persiste e
+/// recarrega as 4 variantes de
 /// <c>ArgsCriterioDesempate</c> (jsonb polimórfico) e o owned type
 /// <c>ReferenciaRegra</c>, e prova a reconfiguração sobre o agregado tracked
-/// (mesma proteção <c>ValueGeneratedNever</c> da F0).
+/// (a mesma proteção <c>ValueGeneratedNever</c> dos demais filhos do agregado).
 /// </summary>
 public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {

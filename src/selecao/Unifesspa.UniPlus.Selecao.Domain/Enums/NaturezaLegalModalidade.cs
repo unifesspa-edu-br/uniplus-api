@@ -5,7 +5,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// uma oferta (snapshot-copy do <c>NaturezaLegal</c> de <c>Modalidade</c>,
 /// ADR-0061). Determina se a concorrência dupla (Lei 14.723/2023) se aplica —
 /// obrigatória quando ao menos uma modalidade selecionada é
-/// <see cref="CotaReservada"/> (INV-7 da modelagem P-A).
+/// <see cref="CotaReservada"/>.
 /// </summary>
 public enum NaturezaLegalModalidade
 {

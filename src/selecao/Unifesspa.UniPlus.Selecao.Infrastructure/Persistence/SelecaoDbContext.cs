@@ -32,7 +32,7 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<OfertaAtendimentoEspecializado> OfertasAtendimentoEspecializado => Set<OfertaAtendimentoEspecializado>();
 
     /// <summary>
-    /// Distribuição de vagas por oferta de curso (Story #773, modelagem P-A):
+    /// Distribuição de vagas por oferta de curso (Story #773):
     /// os inputs (VO_base, PR, referência à regra tipada, snapshot da
     /// referência demográfica) e as modalidades selecionadas. O quadro de
     /// vagas (output derivado, issue #848/ADR-0115) é materializado junto,
@@ -43,8 +43,8 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<VagaOfertada> VagasOfertadas => Set<VagaOfertada>();
 
     /// <summary>
-    /// Bônus regional (RN05) e critérios de desempate (Story #774, modelagem
-    /// P-B §2.5/§2.6) — ambos por referência ao <c>rol_de_regras</c>.
+    /// Bônus regional (RN05) e critérios de desempate (Story #774) — ambos por
+    /// referência ao <c>rol_de_regras</c>.
     /// </summary>
     public DbSet<ConfiguracaoBonusRegional> ConfiguracoesBonusRegional => Set<ConfiguracaoBonusRegional>();
     public DbSet<CriterioDesempate> CriteriosDesempate => Set<CriterioDesempate>();
@@ -58,7 +58,7 @@ public sealed class SelecaoDbContext : DbContext, ISelecaoUnitOfWork
     public DbSet<DestinoRemanejamento> DestinosRemanejamento => Set<DestinoRemanejamento>();
 
     /// <summary>
-    /// Classificação (15º bloco canônico, Story #775, modelagem P-B §2.1) —
+    /// Classificação (15º bloco canônico, Story #775) —
     /// compõe por referência a fórmula, precisão, eliminação e ordem de
     /// alocação.
     /// </summary>

@@ -62,7 +62,7 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IRecursoAcessibilidadeReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoDeficienciaReader>();
 
-        // Readers de vagas/modalidade (Story #773, F2) — mesmo motivo acima.
+        // Readers de vagas/modalidade (Story #773) — mesmo motivo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IOfertaCursoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IModalidadeReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IReferenciaReservaDemograficaReader>();

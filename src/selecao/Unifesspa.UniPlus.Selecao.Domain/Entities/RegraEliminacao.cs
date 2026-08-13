@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma regra de eliminação por cálculo da <see cref="ConfiguracaoClassificacao"/>
-/// (Story #775, modelagem P-B §2.5): referencia uma regra tipada do
+/// (Story #775): referencia uma regra tipada do
 /// <c>rol_de_regras</c> (<c>tipo=regra_eliminacao</c>) e seus args aplicados.
 /// Cardinalidade múltipla — ex.: o PS Convênios exige duas
 /// <c>ELIM-NOTA-MINIMA-ETAPA</c> independentes (Objetiva e Redação).

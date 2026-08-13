@@ -52,7 +52,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("OfertaAtendimento.RecursoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.oferta_atendimento.recurso_duplicado", "Recurso de acessibilidade duplicado na oferta")),
         new("OfertaAtendimento.TipoDeficienciaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.oferta_atendimento.tipo_deficiencia_duplicado", "Tipo de deficiência duplicado na oferta")),
         new("ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.condicao_atendimento_referenciada_por_exigencia_viva", "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado")),
-        // rol_de_regras (Story #772, F1) — validação da definição de uma regra
+        // rol_de_regras (Story #772) — validação da definição de uma regra
         // do catálogo e da referência tipada que a configuração embute.
         new("RegraCatalogo.CodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_catalogo.codigo_obrigatorio", "Código da regra obrigatório")),
         new("RegraCatalogo.VersaoObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_catalogo.versao_obrigatoria", "Versão da regra obrigatória")),
@@ -63,7 +63,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ReferenciaRegra.CodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_regra.codigo_obrigatorio", "Código da regra referenciada obrigatório")),
         new("ReferenciaRegra.VersaoObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_regra.versao_obrigatoria", "Versão da regra referenciada obrigatória")),
         new("ReferenciaRegra.HashInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_regra.hash_invalido", "Hash da regra referenciada inválido")),
-        // Distribuição de vagas (Story #773, F2, modelagem P-A) — vagas do
+        // Distribuição de vagas (Story #773) — vagas do
         // agregado-raiz, coerência de cada modalidade selecionada e o snapshot
         // de referência demográfica.
         new("ProcessoSeletivo.DistribuicaoVagasVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.distribuicao_vagas_vazia", "O processo deve ter ao menos uma distribuição de vagas configurada")),
@@ -115,7 +115,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ReferenciaReservaDemograficaSnapshot.CensoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.censo_obrigatorio", "Censo de referência é obrigatório")),
         new("ReferenciaReservaDemograficaSnapshot.PercentualInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.percentual_invalido", "Os percentuais demográficos devem estar entre 0 e 100")),
         new("ReferenciaReservaDemograficaSnapshot.BaseLegalObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.base_legal_obrigatoria", "Base legal é obrigatória")),
-        // Desempate + Bônus (Story #774, F3, modelagem P-B §2.5/§2.6) — RN05
+        // Desempate + Bônus (Story #774) — RN05
         // (bônus toggle por presença) e INV-B6 (etapa_ref executável).
         new("ProcessoSeletivo.OrdemDesempateDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_desempate_duplicada", "Cada critério de desempate deve ter uma ordem única dentro do processo")),
         new("ProcessoSeletivo.EtapaRefDesempateInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_ref_desempate_inexistente", "O critério de desempate referencia uma etapa que não existe neste processo")),
@@ -171,7 +171,7 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.CascataDestinoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_destino_desconhecido", "A cascata declara destino que não é modalidade selecionada em nenhuma oferta do processo")),
         new("ProcessoSeletivo.CascataOrigemNaoSegueCascata", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_origem_nao_segue_cascata", "A cascata declara origem que nenhuma oferta do processo marca como SegueCascata")),
         new("ProcessoSeletivo.CascataForaDoRegimeFederal", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_fora_do_regime_federal", "Uma modalidade SegueCascata está numa oferta que não usa a regra de distribuição da Lei 12.711")),
-        // Classificação (Story #775, F4, modelagem P-B §2.1) — 15º bloco
+        // Classificação (Story #775) — 15º bloco
         // canônico, composição por referência de fórmula/precisão/eliminação/
         // ordem de alocação.
         new("ConfiguracaoClassificacao.NOpcoesInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.n_opcoes_invalido", "O número de opções de curso deve ser 1 ou 2 (RN04)")),

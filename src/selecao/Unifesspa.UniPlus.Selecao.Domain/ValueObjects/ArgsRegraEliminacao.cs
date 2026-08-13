@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 /// Args aplicados de uma <see cref="Entities.RegraEliminacao"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do
 /// <c>rol_de_regras</c> (<c>tipo=regra_eliminacao</c>), tipados por variante
-/// conforme o <c>esquema_args</c> de cada código (modelagem P-B §2.5).
+/// conforme o <c>esquema_args</c> de cada código.
 /// Discriminated union no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058)
 /// e de <c>ArgsCriterioDesempate</c> (Story #774).
 /// </summary>

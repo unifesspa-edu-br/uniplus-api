@@ -97,7 +97,7 @@ public static class DefinirCriteriosDesempateCommandHandler
         }
 
         // Agregado tracked: persistência por change detection (ValueGeneratedNever
-        // nos filhos, ver lição da F0) — não chamar DbSet.Update.
+        // nos filhos) — não chamar DbSet.Update.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));

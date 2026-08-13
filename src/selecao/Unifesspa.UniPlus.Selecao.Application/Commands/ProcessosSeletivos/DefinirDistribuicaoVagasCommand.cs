@@ -37,7 +37,7 @@ public sealed record QuantidadeVagaInput(Guid ModalidadeId, int Quantidade);
 
 /// <summary>
 /// Substitui integralmente a distribuição de vagas do processo (Story #773,
-/// modelagem P-A + issue #848/ADR-0115): uma <c>ConfiguracaoDistribuicaoVagas</c>
+/// issue #848/ADR-0115): uma <c>ConfiguracaoDistribuicaoVagas</c>
 /// por oferta de curso, com o quadro de vagas (calculado no ramo federal,
 /// fixado no institucional) materializado na mesma operação.
 /// </summary>

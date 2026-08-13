@@ -25,7 +25,7 @@ public sealed record RegraEliminacaoInput(
 
 /// <summary>
 /// Define (ou substitui) a configuração de classificação do processo (Story
-/// #775, modelagem P-B §2.1) — o 15º bloco canônico, que compõe por
+/// #775) — o 15º bloco canônico, que compõe por
 /// referência a fórmula da nota, a precisão, a lista de eliminação e a ordem
 /// de alocação. Bônus e desempate não são parâmetros aqui: já são dimensões
 /// do próprio agregado (Story #774).

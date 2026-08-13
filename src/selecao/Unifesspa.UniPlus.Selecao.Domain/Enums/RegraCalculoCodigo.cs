@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>
 /// Códigos canônicos das regras de <c>tipo=regra_calculo</c> do
 /// <c>rol_de_regras</c> (Story #772) reconhecidas pela configuração de
-/// classificação (Story #775, modelagem P-B §2.3).
+/// classificação (Story #775).
 /// </summary>
 public static class RegraCalculoCodigo
 {

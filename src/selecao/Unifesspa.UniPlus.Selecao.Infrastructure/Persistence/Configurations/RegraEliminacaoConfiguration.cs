@@ -12,9 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração EF Core de <see cref="RegraEliminacao"/> (Story #775,
-/// modelagem P-B §2.5) — entidade filha de
-/// <see cref="ConfiguracaoClassificacao"/>, cardinalidade múltipla.
+/// Configuração EF Core de <see cref="RegraEliminacao"/> (Story #775) —
+/// entidade filha de <see cref="ConfiguracaoClassificacao"/>, cardinalidade
+/// múltipla.
 /// </summary>
 [SuppressMessage(
     "Performance",

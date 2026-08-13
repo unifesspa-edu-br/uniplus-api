@@ -181,7 +181,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente a distribuição de vagas do processo (Story
-    /// #773, modelagem P-A): uma configuração por oferta de curso. O
+    /// #773): uma configuração por oferta de curso. O
     /// <c>QuadroDeVagas</c> (quantidade calculada por modalidade) não é
     /// definido aqui — é output derivado de um motor futuro.
     /// </summary>
@@ -210,7 +210,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente os critérios de desempate do processo (Story
-    /// #774, modelagem P-B §2.6). Dimensão opcional (0..*) — lista vazia
+    /// #774). Dimensão opcional (0..*) — lista vazia
     /// remove todos os critérios.
     /// </summary>
     [HttpPut("{id:guid}/criterios-desempate")]
@@ -362,7 +362,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente a configuração de classificação do processo
-    /// (Story #775, modelagem P-B §2.1) — o 15º bloco canônico, que compõe
+    /// (Story #775) — o 15º bloco canônico, que compõe
     /// por referência a fórmula da nota, a precisão, a lista de eliminação e
     /// a ordem de alocação. Bônus e desempate não são parâmetros aqui.
     /// </summary>

@@ -31,7 +31,7 @@ public sealed record CriterioDesempateInput(
 
 /// <summary>
 /// Substitui integralmente os critérios de desempate do processo (Story
-/// #774, modelagem P-B §2.6). Dimensão opcional (0..*) — lista vazia remove
+/// #774). Dimensão opcional (0..*) — lista vazia remove
 /// todos os critérios.
 /// </summary>
 public sealed record DefinirCriteriosDesempateCommand(
