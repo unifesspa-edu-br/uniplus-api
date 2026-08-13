@@ -12,8 +12,9 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
 /// schema do <see cref="SelecaoDbContext"/> aplicado via <c>MigrateAsync</c> —
-/// inclui a migration <c>AddRolDeRegras</c> (Story #772) e o seed das 18
-/// regras <c>v1</c>, validando ponta-a-ponta contra Postgres real.
+/// inclui as migrations do <c>rol_de_regras</c> (da <c>AddRolDeRegras</c>,
+/// Story #772, em diante) e o seed das regras <c>v1</c> do
+/// <c>RegraCatalogoSeed</c>, validando ponta-a-ponta contra Postgres real.
 /// </summary>
 [SuppressMessage(
     "Performance",

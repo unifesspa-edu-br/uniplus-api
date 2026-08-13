@@ -35,6 +35,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// substituição enquanto nenhuma configuração congelada o referenciar; a partir
 /// do primeiro congelamento, vale append-only estrito (RN08).
 /// </para>
+/// <para>
+/// <b>Precondição obrigatória de migration (ADR-0112):</b> qualquer migration
+/// futura que substitua ou remova entrada deste seed deve verificar, antes de
+/// alterar qualquer linha, que nenhuma <c>VersaoConfiguracao</c> referencia o
+/// par código e versão afetado — encontrando referência, a migration aborta.
+/// O <c>Down</c> da migration <c>AddAlgoritmosContagemPrazo</c> é o exemplo
+/// executável do padrão (bloco <c>DO</c> com <c>RAISE EXCEPTION</c> antes do
+/// <c>DeleteData</c>).
+/// </para>
 /// </remarks>
 public static class RegraCatalogoSeed
 {
@@ -44,7 +53,7 @@ public static class RegraCatalogoSeed
     private static Guid SeedId(int n) =>
         Guid.Parse($"d0a00000-0000-7000-8000-{n:D12}");
 
-    /// <summary>As 19 regras <c>v1</c> do catálogo, na ordem canônica.</summary>
+    /// <summary>As 21 regras <c>v1</c> do catálogo, na ordem canônica.</summary>
     public static IReadOnlyList<RegraCatalogoSeedItem> Itens { get; } =
     [
         // regra_calculo — fórmula da nota final
@@ -181,6 +190,26 @@ public static class RegraCatalogoSeed
             """,
             """["oito origens federais, ordem fixa por origem, terminal sempre AC — matriz não recalculada, só aplicada"]""",
             "ADR-0120; Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 20-A e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 18/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)"),
+
+        // algoritmo_contagem_prazo — convenções nomeadas de contagem do prazo de
+        // interposição (UNI-REQ-0080). A entrada descreve e congela a convenção;
+        // o motor executa pelo par código e versão. Escolhido, não parametrizado:
+        // esquema_args vazio. As invariantes embutem os exemplos resolvidos nas
+        // âncoras canônicas do requisito (sexta 18h; domingo 18h), para que
+        // intenção e resultado da escolha vivam na própria entrada.
+        new(SeedId(20), AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, VersaoV1, TipoRegra.AlgoritmoContagemPrazo,
+            "{}",
+            """
+            ["âncora fora da meia-noite: a hora da âncora não influencia o fechamento — o dia civil da âncora é excluído por inteiro e a contagem parte do primeiro dia útil seguinte (1 dia útil ancorado sexta 18h, sem feriado no intervalo, fecha no fim de segunda)","âncora em dia não útil: o início desloca para o primeiro dia útil seguinte; o dia da âncora, útil ou não, nunca conta (1 dia útil ancorado domingo 18h, sem feriado no intervalo, fecha no fim de segunda)","em dias úteis: N dias úteis inteiros contados após o dia excluído; a janela fecha na fronteira final do N-ésimo dia útil — dia civil fechado no início e aberto no fim, no fuso congelado","em horas: a contagem começa no primeiro instante do primeiro dia útil seguinte ao dia da âncora e consome apenas horas situadas em dia útil (48h ancoradas sexta 18h, sem feriado no intervalo, começam segunda 00:00 e fecham quarta 00:00)"]
+            """,
+            AlgoritmoContagemPrazoCodigo.BaseLegalPendente),
+
+        new(SeedId(21), AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora, VersaoV1, TipoRegra.AlgoritmoContagemPrazo,
+            "{}",
+            """
+            ["âncora fora da meia-noite: a contagem parte do instante exato da âncora — a hora do fechamento deriva da hora da âncora, sem deslocamento para fronteira de dia (48h ancoradas sexta 18h, com sábado e domingo não úteis e sem feriado, fecham terça 18h)","âncora em dia não útil: o início não desloca — o relógio não avança em instante situado em dia não útil e o primeiro avanço ocorre no primeiro instante útil seguinte (24h ancoradas domingo 18h, com segunda útil, só começam a consumir segunda 00:00 e fecham terça 00:00)","em horas: consome exatamente o valor declarado em horas situadas em dia útil, atravessando a madrugada de dia útil normalmente; fecha no instante em que o saldo zera","em dias úteis: N dias úteis equivalem a N×24 horas situadas em dia útil consumidas desde a âncora; dia civil de transição de fuso contribui com as horas que realmente tem, nunca um bloco presumido de 24 (1 dia útil ancorado sexta 18h, sem feriado no intervalo, fecha segunda 18h)"]
+            """,
+            AlgoritmoContagemPrazoCodigo.BaseLegalPendente),
     ];
 }
 

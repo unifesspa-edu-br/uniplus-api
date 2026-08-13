@@ -22,13 +22,6 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
     private const string CodigoNovo = "RECURSO-PRAZO-ANCORADO-EM-ATO";
 
     /// <summary>
-    /// A regra da cascata de remanejamento (Story #575, seed posterior a este
-    /// pacote de #854) não integra o dicionário congelado das 17 originais —
-    /// ela prova a própria presença em <c>RegraCatalogoSeedTests</c>, não aqui.
-    /// </summary>
-    private const string CodigoCascataNova = "REMANEJ-CASCATA-LEI-12711";
-
-    /// <summary>
     /// Hash da regra 18 no seed original (migration <c>AddRolDeRegras</c>), antes
     /// da substituição — a contraprova de que o hash da regra nova mudou.
     /// </summary>
@@ -153,22 +146,26 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
             "trocar a definição da regra troca o hash content-addressable");
     }
 
-    [Fact(DisplayName = "CA-04 — as outras 17 regras permanecem idênticas; a substituição toca uma linha")]
+    [Fact(DisplayName = "CA-04 — as outras 17 regras do seed original permanecem idênticas; a substituição tocou uma linha")]
     public void DemaisRegras_Inalteradas()
     {
         IReadOnlyList<RegraCatalogoSeedItem> itens = RegraCatalogoSeed.Itens;
 
-        itens.Should().HaveCount(19, "o catálogo tem as 18 linhas de CA-05 mais a cascata de remanejamento (#575)");
         itens.Select(i => (i.Codigo, i.Versao)).Should().OnlyHaveUniqueItems("(codigo, versao) é único (CA-05)");
 
-        foreach (RegraCatalogoSeedItem item in itens.Where(i => i.Codigo != CodigoNovo && i.Codigo != CodigoCascataNova))
+        // Itera o dicionário histórico, não o seed: o que se prova é "as regras
+        // originais não mudaram", nunca "nenhuma regra nova pode existir" — o
+        // catálogo cresce por desenho (append-only, ADR-0112), e a completude do
+        // seed corrente é asserção de RegraCatalogoSeedTests.
+        foreach ((string codigo, string hashOriginal) in HashesOriginaisDasDemais)
         {
-            HashesOriginaisDasDemais.Should().ContainKey(
-                item.Codigo,
-                "nenhuma regra além da substituída pode ter surgido ou mudado de código");
-            item.ComputarHash().Should().Be(
-                HashesOriginaisDasDemais[item.Codigo],
-                $"a regra {item.Codigo} não foi tocada pela substituição");
+            itens.Should().ContainSingle(
+                i => i.Codigo == codigo && i.Versao == RegraCatalogoSeed.VersaoV1,
+                $"a regra histórica {codigo} continua no catálogo");
+            itens.Single(i => i.Codigo == codigo && i.Versao == RegraCatalogoSeed.VersaoV1)
+                .ComputarHash().Should().Be(
+                    hashOriginal,
+                    $"a regra {codigo} não foi tocada pela substituição");
         }
 
         // A única linha alterada é a nova — e seu hash não coincide com nenhum dos

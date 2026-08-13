@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) da biblioteca
-/// <c>rol_de_regras</c> (Story #772): o seed das 19 regras <c>v1</c>, a
+/// <c>rol_de_regras</c> (Story #772): o seed das 21 regras <c>v1</c>, a
 /// content-addressability do hash sobrevivendo à normalização jsonb do
 /// Postgres, a coexistência de versões (<c>UNIQUE (codigo, versao)</c>) e o
 /// <see cref="RegraCatalogoReader"/>.
@@ -35,8 +35,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Seed materializa exatamente as 19 regras v1 do catálogo")]
-    public async Task Seed_MaterializaAsDezenoveRegras()
+    [Fact(DisplayName = "Seed materializa exatamente as 21 regras v1 do catálogo")]
+    public async Task Seed_MaterializaAsVinteUmaRegras()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
@@ -44,12 +44,14 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .AsNoTracking()
             .ToListAsync(CancellationToken.None);
 
-        regras.Should().HaveCount(RegraCatalogoSeed.Itens.Count).And.HaveCount(19);
+        regras.Should().HaveCount(RegraCatalogoSeed.Itens.Count).And.HaveCount(21);
         regras.Select(r => r.Codigo).Should().OnlyHaveUniqueItems();
         regras.Should().OnlyContain(r => r.Versao == RegraCatalogoSeed.VersaoV1);
         regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().Contain(r => r.Codigo == "FORMULA-MEDIA-PONDERADA" && r.Tipo == TipoRegra.RegraCalculo);
         regras.Should().Contain(r => r.Codigo == "REMANEJ-CASCATA-LEI-12711" && r.Tipo == TipoRegra.CriterioRemanejamento);
+        regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
+        regras.Should().Contain(r => r.Codigo == AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora && r.Tipo == TipoRegra.AlgoritmoContagemPrazo);
     }
 
     [Fact(DisplayName = "Hash gravado é content-addressable: recomputar após round-trip jsonb bate")]
@@ -97,8 +99,8 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     {
         // Este teste muta o banco compartilhado do fixture (insere uma v2). Para
         // não vazar estado para as demais asserções de contagem do seed (que
-        // exigem exatamente as 18 v1), a v2 é removida ao final — a ordem de
-        // execução dentro da classe deixa de importar.
+        // exigem exatamente as regras v1 semeadas), a v2 é removida ao final —
+        // a ordem de execução dentro da classe deixa de importar.
         Guid v2Id;
         await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
         {
