@@ -63,7 +63,27 @@ internal static class FronteiraAppendOnlyDoRol
     /// fixa para o envelope canônico.
     /// </summary>
     public static string PredicadoDeReferencia(string codigo, string versao) =>
-        $"""$.** ? (@.codigo == "{codigo}" && @.versao == "{versao}" && exists(@.hash))""";
+        $"""$.** ? (@.codigo == "{Literal(codigo)}" && @.versao == "{Literal(versao)}" && exists(@.hash))""";
+
+    /// <summary>
+    /// O predicado é montado por interpolação — o jsonpath não tem parâmetro de
+    /// ligação, só a expressão inteira entra por <c>DbParameter</c>. Hoje os
+    /// valores vêm de constantes do domínio, mas aspa ou barra invertida
+    /// quebrariam a expressão em silêncio, então recusam-se na entrada em vez de
+    /// virarem erro de sintaxe obscuro — ou, no dia em que a origem for
+    /// dinâmica, uma injeção.
+    /// </summary>
+    private static string Literal(string valor)
+    {
+        if (valor.AsSpan().IndexOfAny('"', '\\') >= 0)
+        {
+            throw new ArgumentException(
+                $"Código ou versão com aspa ou barra invertida não pode entrar num predicado jsonpath: '{valor}'.",
+                nameof(valor));
+        }
+
+        return valor;
+    }
 
     /// <summary>Aplica o predicado a uma amostra avulsa — usado pelos canários.</summary>
     public const string DetectaEmAmostra = """
@@ -137,25 +157,29 @@ internal static class FronteiraAppendOnlyDoRol
         (await ContarAsync(context, ContaReferenciasReais, predicado, amostra: null)).Should().Be(
             0, "alterar ou remover entrada já congelada por configuração violaria o append-only (RN08)");
 
-        // Varredura mais larga sobre os dados reais: qualquer objeto que cite o
-        // código sob a chave `codigo`, ainda que fora da tripla. O predicado
-        // exato acima pularia uma referência mal formada — sem hash, ou noutra
-        // versão —, e o canonicalizador não produz essa forma, mas a afirmação
-        // "ninguém referenciava" fica mais forte provando também a ausência
-        // dela. Continua estrutural: um homônimo real apareceria aqui e exigiria
-        // julgamento humano, em vez de passar despercebido.
-        (await ContarAsync(context, ContaReferenciasReais, PredicadoDeCodigoEmQualquerForma(codigo), amostra: null))
+        // Varredura mais larga sobre os dados reais: qualquer menção ao código
+        // com FORMA de referência, ainda que incompleta. O predicado exato acima
+        // pularia uma referência mal formada — sem hash, ou noutra versão —, e o
+        // canonicalizador não produz essa forma, mas a afirmação "ninguém
+        // referenciava" fica mais forte provando também a ausência dela.
+        //
+        // Exigir versao ou hash é o que mantém o homônimo de fora: uma fase
+        // batizada com o código de uma regra não tem nenhum dos dois, e continua
+        // legitimamente invisível aqui — do contrário esta varredura acusaria
+        // justamente o caso que o canário acima declara benigno.
+        (await ContarAsync(context, ContaReferenciasReais, PredicadoDeMencaoComFormaDeReferencia(codigo), amostra: null))
             .Should().Be(
-                0, $"nenhuma configuração congelada menciona {codigo} sob a chave codigo, em forma alguma");
+                0, $"nenhuma configuração congelada menciona {codigo} em forma de referência, nem incompleta");
     }
 
     /// <summary>
-    /// Qualquer objeto com a chave <c>codigo</c> igual ao procurado, completo ou
-    /// não. Usado só como varredura de segurança sobre dados reais — nunca para
-    /// decidir se algo é referência, porque homônimo casa aqui.
+    /// Menção ao código acompanhada de <c>versao</c> ou <c>hash</c> — algo que
+    /// se apresenta como referência de regra, completa ou não. Serve de
+    /// varredura de segurança sobre dados reais; não decide o que É referência,
+    /// papel de <see cref="PredicadoDeReferencia"/>.
     /// </summary>
-    private static string PredicadoDeCodigoEmQualquerForma(string codigo) =>
-        $"""$.** ? (@.codigo == "{codigo}")""";
+    private static string PredicadoDeMencaoComFormaDeReferencia(string codigo) =>
+        $"""$.** ? (@.codigo == "{Literal(codigo)}" && (exists(@.versao) || exists(@.hash)))""";
 
     private static void AdicionarParametro(DbCommand comando, string nome, string valor)
     {
