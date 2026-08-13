@@ -11,8 +11,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Os 11 tipos espelham o domínio validado do <c>rol_de_regras</c>
-/// (fonte de verdade da modelagem P-A/P-B, validada contra Postgres real).
+/// Os 12 tipos espelham o domínio do <c>rol_de_regras</c>: 11 vêm da
+/// modelagem P-A/P-B validada contra Postgres real; o 12º
+/// (<see cref="AlgoritmoContagemPrazo"/>) veio da revisão do UNI-REQ-0080 que
+/// tornou a convenção de contagem de prazo declarável por edital.
 /// O sentinela <see cref="Nenhuma"/> garante que <c>default(TipoRegra)</c>
 /// nunca colida com um tipo real — a factory o rejeita explicitamente.
 /// </para>
@@ -59,4 +61,15 @@ public enum TipoRegra
 
     /// <summary>Prazo/janela/instâncias do recurso (P-D cronograma).</summary>
     RegraPrazoRecurso = 11,
+
+    /// <summary>
+    /// Convenção nomeada de contagem do prazo de interposição (ex.:
+    /// <c>CONTAGEM-PRAZO-EXCLUI-DIA-INICIAL</c>). A entrada <b>descreve e
+    /// congela</b> a convenção — como resolve âncora fora da meia-noite e
+    /// âncora em dia não útil, em horas e em dias úteis; quem <b>executa</b> a
+    /// contagem é o motor, que consome a definição pelo par código e versão. O
+    /// algoritmo é escolhido pelo edital, não parametrizado
+    /// (<c>esquema_args</c> vazio).
+    /// </summary>
+    AlgoritmoContagemPrazo = 12,
 }
