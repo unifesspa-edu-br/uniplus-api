@@ -10783,6 +10783,8 @@
         "required": [
           "abrangencia",
           "municipioIbge",
+          "municipioNome",
+          "municipioUf",
           "data",
           "descricao"
         ],
@@ -10792,6 +10794,18 @@
             "type": "string"
           },
           "municipioIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "municipioNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "municipioUf": {
             "type": [
               "null",
               "string"
@@ -10817,6 +10831,8 @@
           "id",
           "abrangencia",
           "municipioIbge",
+          "municipioNome",
+          "municipioUf",
           "uf",
           "data",
           "descricao"
@@ -10831,6 +10847,18 @@
             "type": "string"
           },
           "municipioIbge": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "municipioNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "municipioUf": {
             "type": [
               "null",
               "string"

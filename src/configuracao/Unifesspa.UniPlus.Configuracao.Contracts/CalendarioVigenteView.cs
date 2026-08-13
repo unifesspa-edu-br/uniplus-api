@@ -22,5 +22,13 @@ public sealed record CalendarioVigenteView(
 /// <param name="Data">A data não útil.</param>
 /// <param name="Abrangencia">Token canônico UPPER_SNAKE (ex.: <c>NACIONAL</c>, <c>MUNICIPAL</c>) — determina onde a data se aplica.</param>
 /// <param name="MunicipioIbge">Código IBGE do município, presente apenas quando <see cref="Abrangencia"/> é <c>MUNICIPAL</c>.</param>
+/// <param name="MunicipioNome">Nome do município, presente apenas quando <see cref="Abrangencia"/> é <c>MUNICIPAL</c>.</param>
+/// <param name="MunicipioUf">UF do município, presente apenas quando <see cref="Abrangencia"/> é <c>MUNICIPAL</c>.</param>
 /// <param name="Uf">UF (2 letras), presente apenas quando <see cref="Abrangencia"/> é <c>ESTADUAL</c>.</param>
-public sealed record DiaNaoUtilView(DateOnly Data, string Abrangencia, string? MunicipioIbge, string? Uf);
+public sealed record DiaNaoUtilView(
+    DateOnly Data,
+    string Abrangencia,
+    string? MunicipioIbge,
+    string? MunicipioNome,
+    string? MunicipioUf,
+    string? Uf);

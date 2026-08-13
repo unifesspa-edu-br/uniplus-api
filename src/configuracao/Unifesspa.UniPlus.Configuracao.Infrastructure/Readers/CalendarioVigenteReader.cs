@@ -45,5 +45,11 @@ internal sealed class CalendarioVigenteReader : ICalendarioVigenteReader
     }
 
     private static DiaNaoUtilView ParaView(DiaNaoUtil dia) =>
-        new(dia.Data, Abrangencias.ParaTokenCanonico(dia.Abrangencia), dia.MunicipioIbge, dia.Uf);
+        new(
+            dia.Data,
+            Abrangencias.ParaTokenCanonico(dia.Abrangencia),
+            dia.MunicipioIbge,
+            dia.MunicipioNome,
+            dia.MunicipioUf,
+            dia.Uf);
 }

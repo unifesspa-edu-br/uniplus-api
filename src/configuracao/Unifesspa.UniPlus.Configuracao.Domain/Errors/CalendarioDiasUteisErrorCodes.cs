@@ -6,9 +6,7 @@ public static class CalendarioDiasUteisErrorCodes
     public const string VersaoDatasetTamanho = "CalendarioDiasUteis.VersaoDatasetTamanho";
     public const string SemDiaNaoUtil = "CalendarioDiasUteis.SemDiaNaoUtil";
     public const string AbrangenciaInvalida = "CalendarioDiasUteis.AbrangenciaInvalida";
-    public const string MunicipioIbgeObrigatorioParaMunicipal = "CalendarioDiasUteis.MunicipioIbgeObrigatorioParaMunicipal";
-    public const string MunicipioIbgeApenasParaMunicipal = "CalendarioDiasUteis.MunicipioIbgeApenasParaMunicipal";
-    public const string MunicipioIbgeFormatoInvalido = "CalendarioDiasUteis.MunicipioIbgeFormatoInvalido";
+    public const string SnapshotMunicipalApenasParaMunicipal = "CalendarioDiasUteis.SnapshotMunicipalApenasParaMunicipal";
     public const string UfObrigatoriaParaEstadual = "CalendarioDiasUteis.UfObrigatoriaParaEstadual";
     public const string UfApenasParaEstadual = "CalendarioDiasUteis.UfApenasParaEstadual";
     public const string UfFormatoInvalido = "CalendarioDiasUteis.UfFormatoInvalido";
