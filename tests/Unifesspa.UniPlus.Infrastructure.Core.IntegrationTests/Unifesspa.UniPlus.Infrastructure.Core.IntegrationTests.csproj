@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="SSH.NET" />
     <!-- WebApplicationFactory<Program> para smoke tests do pipeline HTTP
          (issue #117 / #116). Os outros *.IntegrationTests por módulo já
          usam o mesmo pacote — versão central via Directory.Packages.props. -->
