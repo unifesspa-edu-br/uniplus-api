@@ -3,26 +3,24 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 using AwesomeAssertions;
-
-using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 /// <summary>
 /// Prova executável da precondição de migration da fronteira append-only do
 /// <c>rol_de_regras</c> (ADR-0112): substituir ou remover uma entrada
 /// referenciada por configuração congelada aborta ANTES de alterar qualquer
 /// linha. O SQL exercitado é o mesmo do <c>Down</c> da migration
-/// <c>AddAlgoritmosContagemPrazo</c>. A classe tem fixture próprio porque
-/// fabrica <see cref="VersaoConfiguracao"/> — append-only por trigger,
-/// impossível de remover depois — e não pode contaminar as asserções de
-/// contagem das demais classes do rol.
+/// <c>AddAlgoritmosContagemPrazo</c>, que semeia as duas primeiras convenções
+/// de contagem. A classe tem fixture próprio porque fabrica
+/// <see cref="VersaoConfiguracao"/> — append-only por gatilho, impossível de
+/// remover depois —, e uma referência fabricada aqui bloquearia a precondição
+/// provada pela classe irmã, que cobre a migration da convenção que avança
+/// data útil.
 /// </summary>
 [SuppressMessage(
     "Security",
@@ -150,5 +148,4 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
 
     private static Task ExecutarPrecondicaoAsync(SelecaoDbContext context) =>
         FronteiraAppendOnlyDoRol.ExecutarAsync(context, PrecondicaoDaMigration);
-
 }
