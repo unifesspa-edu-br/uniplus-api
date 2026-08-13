@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Testcontainers" />
+    <PackageReference Include="SSH.NET" />
     <PackageReference Include="WolverineFx" />
     <PackageReference Include="xunit" />
   </ItemGroup>

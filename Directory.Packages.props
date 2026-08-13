@@ -83,6 +83,17 @@
     <PackageVersion Include="Bogus" Version="35.6.5" />
     <PackageVersion Include="Testcontainers" Version="4.13.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
+    <!--
+      SSH.NET chega como dependência transitiva do Testcontainers, que ainda resolve a
+      2025.1.0 — alcançada pelo aviso GHSA-q939-rpr3-3284 (escrita arbitrária de arquivo
+      no ScpClient, corrigida em 2026.0.0). Como aviso é tratado como erro, o NU1903
+      interrompe o restore da solução inteira. Declarar a versão aqui não basta: o
+      gerenciamento central governa a versão de uma referência existente, não substitui
+      um transitivo. Por isso cada projeto que usa Testcontainers referencia SSH.NET
+      diretamente — a referência direta é que vence a resolução. Quando o Testcontainers
+      publicar versão que já traga a corrigida, estas referências saem junto.
+    -->
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
     <PackageVersion Include="TngTech.ArchUnitNET" Version="0.13.3" />
     <PackageVersion Include="TngTech.ArchUnitNET.xUnit" Version="0.13.3" />
     <PackageVersion Include="coverlet.collector" Version="8.0.1" />
