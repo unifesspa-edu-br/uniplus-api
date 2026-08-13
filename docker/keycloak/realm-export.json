@@ -592,7 +592,8 @@
         "admin",
         "gestor",
         "avaliador",
-        "candidato"
+        "candidato",
+        "plataforma-admin"
       ]
     },
     {
