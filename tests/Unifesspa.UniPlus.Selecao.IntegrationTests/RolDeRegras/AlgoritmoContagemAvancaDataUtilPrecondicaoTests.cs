@@ -111,24 +111,24 @@ public sealed class AlgoritmoContagemAvancaDataUtilPrecondicaoTests : IClassFixt
     [Fact(DisplayName = "O Down da migration carrega a precondição — o SQL provado aqui é o executado lá")]
     public void MigrationDown_CarregaAPrecondicao()
     {
-        string migration = FronteiraAppendOnlyDoRol.LerMigration(ArquivoDaMigration, Origem());
+        string guarda = FronteiraAppendOnlyDoRol.BlocoDown(
+            FronteiraAppendOnlyDoRol.LerMigration(ArquivoDaMigration, Origem()));
 
         foreach (string marca in new[] { "$adr0112$", "RAISE EXCEPTION", PredicadoDaEntrada })
         {
-            migration.Should().Contain(
+            guarda.Should().Contain(
                 marca,
                 "sem a precondição no Down, a prova comportamental desta classe deixaria de refletir a migration real");
         }
 
-        // O predicado da migration nomeia uma entrada só: ampliá-lo para as
-        // outras convenções faria esta reversão falhar por referência a entrada
-        // que ela não remove.
-        migration.Should().NotContain(
+        // A guarda nomeia uma entrada só: ampliá-la para as outras convenções
+        // faria esta reversão falhar por referência a entrada que ela não remove.
+        guarda.Should().NotContain(
             AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial,
-            "esta migration não semeia nem remove a convenção que exclui o dia inicial");
-        migration.Should().NotContain(
-            AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora + '"',
-            "a outra convenção só aparece citada dentro da invariante de horas, nunca como alvo da guarda");
+            "a guarda não pode olhar a convenção que exclui o dia inicial, que esta migration não remove");
+        guarda.Should().NotContain(
+            AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora,
+            "a guarda não pode olhar a convenção por horas úteis, que esta migration não remove");
     }
 
     private static string Origem([CallerFilePath] string origem = "") => origem;

@@ -115,10 +115,9 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
     [Fact(DisplayName = "O Down da migration carrega a precondição — o SQL provado aqui é o executado lá")]
     public void MigrationDown_CarregaAPrecondicao()
     {
-        string migration = File.ReadAllText(CaminhoDaMigration());
+        string guarda = FronteiraAppendOnlyDoRol.BlocoDown(
+            FronteiraAppendOnlyDoRol.LerMigration(ArquivoDaMigration, Origem()));
 
-        // Marcas que só existem na guarda do Down (o InsertData do Up também
-        // cita os códigos, então as marcas incluem a sintaxe do detector).
         foreach (string marca in new[]
         {
             "$adr0112$",
@@ -127,24 +126,21 @@ public sealed class AlgoritmoContagemPrazoPrecondicaoTests : IClassFixture<Regra
             """@.codigo == "CONTAGEM-PRAZO-HORAS-UTEIS-DESDE-ANCORA" && @.versao == "v1" && exists(@.hash)""",
         })
         {
-            migration.Should().Contain(
+            guarda.Should().Contain(
                 marca,
                 "sem a precondição no Down, a prova comportamental desta classe deixaria de refletir a migration real");
         }
+
+        // A guarda desta migration não olha a convenção semeada depois: cada
+        // uma protege só as entradas que ela mesma remove.
+        guarda.Should().NotContain(
+            AlgoritmoContagemPrazoCodigo.AvancaDataUtil,
+            "a convenção que avança data útil é removida pela própria migration, não por esta");
     }
 
-    private static string CaminhoDaMigration([CallerFilePath] string origem = "") =>
-        Path.GetFullPath(Path.Join(
-            Path.GetDirectoryName(origem)!,
-            "..",
-            "..",
-            "..",
-            "src",
-            "selecao",
-            "Unifesspa.UniPlus.Selecao.Infrastructure",
-            "Persistence",
-            "Migrations",
-            "20260813180249_AddAlgoritmosContagemPrazo.cs"));
+    private const string ArquivoDaMigration = "20260813180249_AddAlgoritmosContagemPrazo.cs";
+
+    private static string Origem([CallerFilePath] string origem = "") => origem;
 
     private static Task ExecutarPrecondicaoAsync(SelecaoDbContext context) =>
         FronteiraAppendOnlyDoRol.ExecutarAsync(context, PrecondicaoDaMigration);

@@ -101,4 +101,24 @@ internal static class FronteiraAppendOnlyDoRol
             "Persistence",
             "Migrations",
             arquivo)));
+
+    /// <summary>
+    /// Recorta o corpo do <c>Down</c> de uma migration. Asserir sobre o arquivo
+    /// inteiro confundiria a guarda com o <c>Up</c>, que cita os mesmos códigos
+    /// dentro do texto das entradas semeadas — o recorte deixa a asserção falar
+    /// só da guarda, sem depender de pontuação para desambiguar.
+    /// </summary>
+    public static string BlocoDown(string migration)
+    {
+        const string AssinaturaDown = "protected override void Down(";
+
+        int inicio = migration.IndexOf(AssinaturaDown, StringComparison.Ordinal);
+        if (inicio < 0)
+        {
+            throw new InvalidOperationException(
+                "A migration não declara Down — sem ele não há guarda de reversão a provar.");
+        }
+
+        return migration[inicio..];
+    }
 }
