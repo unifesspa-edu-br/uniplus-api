@@ -21,7 +21,7 @@ public sealed record ItemConformidadeDto(string Item, bool Ok);
 /// request-specific que só o comando de publicação avalia.
 /// <para>
 /// Bônus regional (0..1) e critérios de desempate (0..*) são deliberadamente opcionais na
-/// modelagem (P-B) e NÃO entram neste checklist — a ausência de bônus/desempate é um estado
+/// modelagem da classificação e NÃO entram neste checklist — a ausência de bônus/desempate é um estado
 /// válido (RN05: ausência de bônus = sem bônus), não uma pendência. Etapa também deixou de ser
 /// item incondicional (Story #851 §3.5): um processo sem prova (SiSU, <c>CLASSIFICACAO-IMPORTADA</c>)
 /// publica sem etapa quando o cronograma é coerente.

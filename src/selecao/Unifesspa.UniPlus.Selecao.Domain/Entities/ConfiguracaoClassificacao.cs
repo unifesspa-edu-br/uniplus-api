@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Configuração de classificação do <see cref="ProcessoSeletivo"/> — o 15º
-/// bloco canônico do snapshot de publicação (Story #775, modelagem P-B §2.1):
+/// bloco canônico do snapshot de publicação (Story #775):
 /// COMPÕE POR REFERÊNCIA as regras tipadas que amarram o cálculo do
 /// resultado — fórmula da nota, precisão, eliminação (lista) e ordem de
 /// alocação (RN04).

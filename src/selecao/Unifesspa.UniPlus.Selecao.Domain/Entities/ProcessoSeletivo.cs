@@ -340,7 +340,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Substitui integralmente a distribuição de vagas do processo (Story
-    /// #773, modelagem P-A): uma <see cref="ConfiguracaoDistribuicaoVagas"/>
+    /// #773): uma <see cref="ConfiguracaoDistribuicaoVagas"/>
     /// por oferta de curso, sem repetir a mesma oferta duas vezes. As
     /// invariantes de cada configuração (PR, referência demográfica,
     /// modalidades federais) já foram validadas em
@@ -514,7 +514,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Substitui integralmente os critérios de desempate do processo (Story
-    /// #774, modelagem P-B §2.6). Dimensão opcional (0..*): lista vazia
+    /// #774). Dimensão opcional (0..*): lista vazia
     /// remove todos os critérios. INV-B6: todo <c>etapa_ref</c> referenciado
     /// por um critério <c>DESEMPATE-MAIOR-NOTA-ETAPA</c> precisa existir entre
     /// as etapas deste processo — senão a config congelaria um desempate
@@ -565,7 +565,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Define (ou substitui) a configuração de classificação do processo
-    /// (Story #775, modelagem P-B §2.1). Valida a invariante que depende de
+    /// (Story #775). Valida a invariante que depende de
     /// OUTRA dimensão do agregado: INV-B4 (todo <c>etapa_ref</c> de uma
     /// <c>ELIM-NOTA-MINIMA-ETAPA</c> deve existir entre as etapas do
     /// processo). As invariantes internas da própria configuração (INV-B8,

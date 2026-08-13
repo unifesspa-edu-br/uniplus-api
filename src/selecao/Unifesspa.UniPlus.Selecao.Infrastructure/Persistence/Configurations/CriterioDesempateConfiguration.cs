@@ -12,9 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração EF Core de <see cref="CriterioDesempate"/> (Story #774,
-/// modelagem P-B §2.6) — entidade filha do agregado
-/// <see cref="ProcessoSeletivo"/>.
+/// Configuração EF Core de <see cref="CriterioDesempate"/> (Story #774) —
+/// entidade filha do agregado <see cref="ProcessoSeletivo"/>.
 /// </summary>
 [SuppressMessage(
     "Performance",

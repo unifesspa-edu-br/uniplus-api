@@ -15,8 +15,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <remarks>
 /// <para>
 /// O conteúdo de domínio (código, tipo, <c>esquema_args</c>, invariantes e
-/// base legal) é a modelagem validada do CEPS (P-A distribuição / P-B
-/// classificação, provada contra Postgres real). Portado fielmente; as
+/// base legal) é a modelagem do CEPS para distribuição de vagas e para
+/// classificação, validada contra Postgres real. Portado fielmente; as
 /// melhorias são estruturais — identificadores fixos determinísticos, hash
 /// canônico content-addressable computado no domínio e append-only por
 /// convenção (sem gatilho de banco).

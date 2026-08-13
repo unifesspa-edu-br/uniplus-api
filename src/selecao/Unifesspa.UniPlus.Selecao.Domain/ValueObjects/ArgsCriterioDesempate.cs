@@ -6,9 +6,8 @@ using System.Text.Json.Serialization;
 /// Args aplicados de um <see cref="Entities.CriterioDesempate"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do
 /// <c>rol_de_regras</c> (<c>tipo=criterio_desempate</c>), tipados por
-/// variante conforme o <c>esquema_args</c> de cada código (modelagem P-B
-/// §2.6). Discriminated union no molde de <c>PredicadoObrigatoriedade</c>
-/// (ADR-0058).
+/// variante conforme o <c>esquema_args</c> de cada código. Discriminated union
+/// no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,7 +20,7 @@ using System.Text.Json.Serialization;
 /// <para>
 /// <see cref="ArgsDesempatePredicadoFato"/> reusa literalmente
 /// <see cref="CondicaoDnf"/> (ADR-0111, Story #847) em vez de carregar três
-/// strings soltas — fecha o gap que a modelagem P-B documentava
+/// strings soltas — fecha o gap que a modelagem da classificação documentava
 /// (<c>Fato</c> tipado mas não validado contra o vocabulário fechado de
 /// fatos do candidato): <c>CriterioDesempate.Criar</c> agora confere a
 /// condição contra o vocabulário resolvido do catálogo <c>rol_de_fatos_candidato</c>

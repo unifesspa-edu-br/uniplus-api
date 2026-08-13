@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>
 /// Os 8 códigos de modalidade federal da Lei 12.711/2012 (red. Lei 14.723/2023,
 /// art. 3º) + a ampla concorrência — fato legal fixo, não configurável.
-/// Consumido pela INV-6 da modelagem P-A: quando a distribuição aplica
+/// Consumido pela invariante de cobertura da distribuição de vagas: quando ela aplica
 /// <see cref="RegraDistribuicaoVagasCodigo.Lei12711"/>, as 8 modalidades
 /// federais e a AC são obrigatoriamente selecionadas.
 /// </summary>

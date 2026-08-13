@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Bônus regional do <see cref="ProcessoSeletivo"/> (RN05, Story #774,
-/// modelagem P-B §2.5): referencia a regra tipada <c>BONUS-MULTIPLICATIVO</c>
+/// Bônus regional do <see cref="ProcessoSeletivo"/> (RN05, Story #774):
+/// referencia a regra tipada <c>BONUS-MULTIPLICATIVO</c>
 /// do <c>rol_de_regras</c> e seus args (<see cref="Fator"/>, <see cref="Teto"/>).
 /// </summary>
 /// <remarks>

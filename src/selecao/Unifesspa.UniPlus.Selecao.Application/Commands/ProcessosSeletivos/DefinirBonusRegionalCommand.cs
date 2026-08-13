@@ -7,8 +7,8 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 
 /// <summary>
-/// Define (ou remove) o bônus regional do processo (RN05, Story #774,
-/// modelagem P-B §2.5). Passar <see langword="null"/> em
+/// Define (ou remove) o bônus regional do processo (RN05, Story #774).
+/// Passar <see langword="null"/> em
 /// <see cref="RegraCodigo"/> remove o bônus — a ausência já é o toggle "sem
 /// bônus" (INV-B5); não existe um "BONUS-NENHUM".
 /// </summary>
