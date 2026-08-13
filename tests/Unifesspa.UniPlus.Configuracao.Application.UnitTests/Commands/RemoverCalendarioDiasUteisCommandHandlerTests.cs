@@ -22,7 +22,7 @@ public sealed class RemoverCalendarioDiasUteisCommandHandlerTests
     private static CalendarioDiasUteis Novo() =>
         CalendarioDiasUteis.Criar(
             "2027.1",
-            [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal")]).Value!;
+            [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]).Value!;
 
     [Fact(DisplayName = "Id inexistente retorna NaoEncontrado")]
     public async Task Handle_NaoEncontrado_RetornaErro()

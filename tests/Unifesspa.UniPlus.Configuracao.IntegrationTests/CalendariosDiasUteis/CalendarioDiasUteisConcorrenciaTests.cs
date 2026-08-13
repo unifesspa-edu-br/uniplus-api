@@ -69,7 +69,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
             ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
             CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
                 $"conc-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
+                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
             db.CalendariosDiasUteis.Add(criado);
             await db.SaveChangesAsync();
             id = criado.Id;

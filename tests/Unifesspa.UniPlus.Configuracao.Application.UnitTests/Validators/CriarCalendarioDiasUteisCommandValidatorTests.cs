@@ -13,7 +13,7 @@ public sealed class CriarCalendarioDiasUteisCommandValidatorTests
     private static CriarCalendarioDiasUteisCommand Base() =>
         new(
             "2027.1",
-            [new DiaNaoUtilCommandItem("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal")]);
+            [new DiaNaoUtilCommandItem("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]);
 
     [Fact(DisplayName = "Comando válido passa no validator")]
     public void Valido_Passa()
@@ -55,7 +55,7 @@ public sealed class CriarCalendarioDiasUteisCommandValidatorTests
     {
         ValidationResult resultado = _validator.Validate(Base() with
         {
-            DiasNaoUteis = [new DiaNaoUtilCommandItem("NACIONAL", null, new DateOnly(2027, 1, 1), "Válido"), null!],
+            DiasNaoUteis = [new DiaNaoUtilCommandItem("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Válido"), null!],
         });
 
         resultado.IsValid.Should().BeFalse();
@@ -68,7 +68,7 @@ public sealed class CriarCalendarioDiasUteisCommandValidatorTests
     {
         ValidationResult resultado = _validator.Validate(Base() with
         {
-            DiasNaoUteis = [new DiaNaoUtilCommandItem("", null, new DateOnly(2027, 1, 1), "Descrição válida")],
+            DiasNaoUteis = [new DiaNaoUtilCommandItem("", null, null, null, new DateOnly(2027, 1, 1), "Descrição válida")],
         });
 
         resultado.IsValid.Should().BeFalse();
@@ -81,7 +81,7 @@ public sealed class CriarCalendarioDiasUteisCommandValidatorTests
     {
         ValidationResult resultado = _validator.Validate(Base() with
         {
-            DiasNaoUteis = [new DiaNaoUtilCommandItem("NACIONAL", null, new DateOnly(2027, 1, 1), "")],
+            DiasNaoUteis = [new DiaNaoUtilCommandItem("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "")],
         });
 
         resultado.IsValid.Should().BeFalse();
@@ -94,7 +94,7 @@ public sealed class CriarCalendarioDiasUteisCommandValidatorTests
     {
         ValidationResult resultado = _validator.Validate(Base() with
         {
-            DiasNaoUteis = [new DiaNaoUtilCommandItem("NACIONAL", null, new DateOnly(2027, 1, 1), new string('A', 201))],
+            DiasNaoUteis = [new DiaNaoUtilCommandItem("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), new string('A', 201))],
         });
 
         resultado.IsValid.Should().BeFalse();

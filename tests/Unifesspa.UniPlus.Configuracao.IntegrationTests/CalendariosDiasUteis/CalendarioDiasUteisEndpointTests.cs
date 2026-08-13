@@ -103,12 +103,63 @@ public sealed class CalendarioDiasUteisEndpointTests
         JsonElement root = doc.RootElement;
         root.GetProperty("vigente").GetBoolean().Should().BeFalse("todo dataset nasce não vigente");
         JsonElement dias = root.GetProperty("diasNaoUteis");
-        dias.GetArrayLength().Should().Be(2);
+        dias.GetArrayLength().Should().Be(3);
         dias.EnumerateArray().Should().Contain(d => d.GetProperty("abrangencia").GetString() == "NACIONAL");
         dias.EnumerateArray().Should().Contain(d =>
+            d.GetProperty("abrangencia").GetString() == "ESTADUAL"
+            && d.GetProperty("municipioIbge").ValueKind == JsonValueKind.Null
+            && d.GetProperty("municipioNome").ValueKind == JsonValueKind.Null
+            && d.GetProperty("municipioUf").ValueKind == JsonValueKind.Null
+            && d.GetProperty("uf").GetString() == "PA");
+        dias.EnumerateArray().Should().Contain(d =>
             d.GetProperty("abrangencia").GetString() == "MUNICIPAL"
-            && d.GetProperty("municipioIbge").GetString() == "1501402");
+            && d.GetProperty("municipioIbge").GetString() == "1504208"
+            && d.GetProperty("municipioNome").GetString() == "Marabá"
+            && d.GetProperty("municipioUf").GetString() == "PA"
+            && d.GetProperty("uf").ValueKind == JsonValueKind.Null);
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
+    }
+
+    [Theory(DisplayName = "POST admin rejeita snapshot municipal parcial")]
+    [InlineData(null, "Marabá", "PA")]
+    [InlineData("1504208", null, "PA")]
+    [InlineData("1504208", "Marabá", null)]
+    [InlineData("1504208", null, null)]
+    public async Task Criar_SnapshotMunicipalParcial_Retorna422(
+        string? municipioIbge,
+        string? municipioNome,
+        string? municipioUf)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await EnviarPostAdmin(
+            client,
+            AdminPath,
+            CorpoComDia("MUNICIPAL", municipioIbge, municipioNome, municipioUf));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Theory(DisplayName = "POST admin rejeita campos municipais fora de MUNICIPAL")]
+    [InlineData("NACIONAL")]
+    [InlineData("ESTADUAL")]
+    public async Task Criar_SnapshotMunicipalForaDaAbrangencia_Retorna422(string abrangencia)
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        HttpResponseMessage response = await EnviarPostAdmin(
+            client,
+            AdminPath,
+            CorpoComDia(
+                abrangencia,
+                "1504208",
+                "Marabá",
+                "PA",
+                uf: abrangencia == "ESTADUAL" ? "PA" : null));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerCodigoDeErro(response)).Should().Be(
+            "uniplus.configuracao.calendario_dias_uteis.snapshot_municipal_apenas_para_municipal");
     }
 
     [Fact(DisplayName = "GET coleção não inclui diasNaoUteis — a listagem projeta só o resumo")]
@@ -183,10 +234,59 @@ public sealed class CalendarioDiasUteisEndpointTests
         versaoDataset = versaoDataset ?? "2027.1",
         diasNaoUteis = new object[]
         {
-            new { abrangencia = "NACIONAL", municipioIbge = (string?)null, data = "2027-01-01", descricao = "Confraternização Universal" },
-            new { abrangencia = "MUNICIPAL", municipioIbge = "1501402", data = "2027-05-08", descricao = "Aniversário de Marabá" },
+            new
+            {
+                abrangencia = "NACIONAL",
+                municipioIbge = (string?)null,
+                municipioNome = (string?)null,
+                municipioUf = (string?)null,
+                data = "2027-01-01",
+                descricao = "Confraternização Universal",
+            },
+            new
+            {
+                abrangencia = "ESTADUAL",
+                municipioIbge = (string?)null,
+                municipioNome = (string?)null,
+                municipioUf = (string?)null,
+                uf = "PA",
+                data = "2027-08-15",
+                descricao = "Adesão do Pará à Independência",
+            },
+            new
+            {
+                abrangencia = "MUNICIPAL",
+                municipioIbge = "1504208",
+                municipioNome = "Marabá",
+                municipioUf = "PA",
+                data = "2027-05-08",
+                descricao = "Aniversário de Marabá",
+            },
         },
     };
+
+    private static object CorpoComDia(
+        string abrangencia,
+        string? municipioIbge,
+        string? municipioNome,
+        string? municipioUf,
+        string? uf = null) => new
+        {
+            versaoDataset = VersaoUnica(),
+            diasNaoUteis = new[]
+            {
+                new
+                {
+                    abrangencia,
+                    municipioIbge,
+                    municipioNome,
+                    municipioUf,
+                    uf,
+                    data = "2027-05-08",
+                    descricao = "Dia não útil",
+                },
+            },
+        };
 
     // Versão de até 60 chars, única por teste — não é chave natural, mas a
     // unicidade evita confundir datasets entre testes que rodam na mesma coleção.
