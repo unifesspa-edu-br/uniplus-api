@@ -19,7 +19,13 @@ public sealed class CriarCalendarioDiasUteisCommandHandlerTests
     private static CriarCalendarioDiasUteisCommand ComandoValido() =>
         new(
             "2027.1",
-            [new DiaNaoUtilCommandItem("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal")]);
+            [new DiaNaoUtilCommandItem(
+                "MUNICIPAL",
+                "1504208",
+                "Marabá",
+                "PA",
+                new DateOnly(2027, 5, 8),
+                "Aniversário de Marabá")]);
 
     [Fact(DisplayName = "Cria o calendário, persiste e retorna o Id")]
     public async Task Handle_ComandoValido_CriaEPersiste()
@@ -29,7 +35,11 @@ public sealed class CriarCalendarioDiasUteisCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.Should().NotBe(Guid.Empty);
-        await _repository.Received(1).AdicionarAsync(Arg.Any<CalendarioDiasUteis>(), Arg.Any<CancellationToken>());
+        await _repository.Received(1).AdicionarAsync(
+            Arg.Is<CalendarioDiasUteis>(c => c.DiasNaoUteis.Single().MunicipioIbge == "1504208"
+                && c.DiasNaoUteis.Single().MunicipioNome == "Marabá"
+                && c.DiasNaoUteis.Single().MunicipioUf == "PA"),
+            Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

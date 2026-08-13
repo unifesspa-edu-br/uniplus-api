@@ -54,10 +54,10 @@ public sealed class ConcurrencyTestHelpersTests
             ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
             CalendarioDiasUteis target = CalendarioDiasUteis.Criar(
                 $"pid-target-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "x")]).Value!;
+                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "x")]).Value!;
             CalendarioDiasUteis decoy = CalendarioDiasUteis.Criar(
                 $"pid-decoy-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "x")]).Value!;
+                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "x")]).Value!;
             db.CalendariosDiasUteis.AddRange(target, decoy);
             await db.SaveChangesAsync();
             targetId = target.Id;

@@ -23,7 +23,7 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
     private static CalendarioDiasUteis Novo(string versaoDataset = "2027.1") =>
         CalendarioDiasUteis.Criar(
             versaoDataset,
-            [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal")]).Value!;
+            [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]).Value!;
 
     [Fact(DisplayName = "Id inexistente retorna NaoEncontrado")]
     public async Task Handle_NaoEncontrado_RetornaErro()

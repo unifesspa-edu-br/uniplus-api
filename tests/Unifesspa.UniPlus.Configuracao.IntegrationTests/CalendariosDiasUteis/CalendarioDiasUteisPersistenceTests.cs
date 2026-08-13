@@ -42,8 +42,9 @@ public sealed class CalendarioDiasUteisPersistenceTests
     {
         CalendarioDiasUteis calendario = Nova(
             VersaoUnica(),
-            new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
-            new DiaNaoUtilCriacao("MUNICIPAL", "1501402", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
+            new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
+            new DiaNaoUtilCriacao("ESTADUAL", null, null, null, new DateOnly(2027, 8, 15), "Adesão do Pará à Independência", "PA"),
+            new DiaNaoUtilCriacao("MUNICIPAL", "1504208", "Marabá", "PA", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -58,12 +59,22 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         persistido.CreatedBy.Should().Be(AdminA);
         persistido.Vigente.Should().BeFalse();
-        persistido.DiasNaoUteis.Should().HaveCount(2);
+        persistido.DiasNaoUteis.Should().HaveCount(3);
         persistido.DiasNaoUteis.Should().Contain(d =>
             d.Abrangencia == Abrangencia.Nacional && d.MunicipioIbge == null && d.Data == new DateOnly(2027, 1, 1));
         persistido.DiasNaoUteis.Should().Contain(d =>
+            d.Abrangencia == Abrangencia.Estadual
+            && d.MunicipioIbge == null
+            && d.MunicipioNome == null
+            && d.MunicipioUf == null
+            && d.Uf == "PA"
+            && d.Data == new DateOnly(2027, 8, 15));
+        persistido.DiasNaoUteis.Should().Contain(d =>
             d.Abrangencia == Abrangencia.Municipal
-            && d.MunicipioIbge == "1501402"
+            && d.MunicipioIbge == "1504208"
+            && d.MunicipioNome == "Marabá"
+            && d.MunicipioUf == "PA"
+            && d.Uf == null
             && d.Data == new DateOnly(2027, 5, 8));
     }
 
@@ -148,8 +159,8 @@ public sealed class CalendarioDiasUteisPersistenceTests
         await cleanupCtx.SaveChangesAsync();
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita dia não útil municipal sem código IBGE via SQL cru")]
-    public async Task Check_RejeitaMunicipalSemMunicipioIbgeViaSqlCru()
+    [Fact(DisplayName = "CHECK de banco rejeita dia municipal com snapshot parcial via SQL cru")]
+    public async Task Check_RejeitaMunicipalComSnapshotParcialViaSqlCru()
     {
         CalendarioDiasUteis pai = Nova(VersaoUnica());
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -165,11 +176,35 @@ public sealed class CalendarioDiasUteisPersistenceTests
              INSERT INTO configuracao.dia_nao_util
                  (id, calendario_dias_uteis_id, abrangencia, municipio_ibge, data, descricao, created_at)
              VALUES
-                 ({Guid.CreateVersion7()}, {pai.Id}, {"MUNICIPAL"}, {(string?)null}, {new DateOnly(2027, 1, 1)}, {"Sem município"}, {DateTimeOffset.UtcNow})
+                 ({Guid.CreateVersion7()}, {pai.Id}, {"MUNICIPAL"}, {"1504208"}, {new DateOnly(2027, 1, 1)}, {"Snapshot parcial"}, {DateTimeOffset.UtcNow})
              """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_dia_nao_util_municipio_coerente exige municipio_ibge quando abrangencia = MUNICIPAL");
+            "o CHECK ck_dia_nao_util_municipio_coerente exige a tripla municipal completa");
+    }
+
+    [Fact(DisplayName = "CHECK de banco rejeita campo municipal fora de MUNICIPAL via SQL cru")]
+    public async Task Check_RejeitaCampoMunicipalForaDeMunicipalViaSqlCru()
+    {
+        CalendarioDiasUteis pai = Nova(VersaoUnica());
+        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.CalendariosDiasUteis.Add(pai);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(userId: null);
+
+        Func<Task> act = async () => await ctx2.Database.ExecuteSqlAsync(
+            $"""
+             INSERT INTO configuracao.dia_nao_util
+                 (id, calendario_dias_uteis_id, abrangencia, municipio_nome, data, descricao, created_at)
+             VALUES
+                 ({Guid.CreateVersion7()}, {pai.Id}, {"NACIONAL"}, {"Marabá"}, {new DateOnly(2027, 1, 1)}, {"Campo indevido"}, {DateTimeOffset.UtcNow})
+             """);
+
+        await act.Should().ThrowAsync<Npgsql.PostgresException>(
+            "o CHECK ck_dia_nao_util_municipio_coerente proíbe cada campo municipal nas demais abrangências");
     }
 
     [Fact(DisplayName = "Soft-delete de dataset não vigente preserva os dias não úteis filhos (ClientNoAction)")]
@@ -177,8 +212,8 @@ public sealed class CalendarioDiasUteisPersistenceTests
     {
         CalendarioDiasUteis calendario = Nova(
             VersaoUnica(),
-            new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
-            new DiaNaoUtilCriacao("INSTITUCIONAL", null, new DateOnly(2027, 12, 24), "Recesso da Unifesspa"));
+            new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
+            new DiaNaoUtilCriacao("INSTITUCIONAL", null, null, null, new DateOnly(2027, 12, 24), "Recesso da Unifesspa"));
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -210,8 +245,8 @@ public sealed class CalendarioDiasUteisPersistenceTests
     {
         CalendarioDiasUteis calendario = Nova(
             VersaoUnica(),
-            new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
-            new DiaNaoUtilCriacao("MUNICIPAL", "1501402", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
+            new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
+            new DiaNaoUtilCriacao("MUNICIPAL", "1504208", "Marabá", "PA", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
         calendario.MarcarVigente();
 
         await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -231,7 +266,12 @@ public sealed class CalendarioDiasUteisPersistenceTests
         vigente.DiasNaoUteis.Should().Contain(d =>
             d.Data == new DateOnly(2027, 1, 1) && d.Abrangencia == "NACIONAL" && d.MunicipioIbge == null);
         vigente.DiasNaoUteis.Should().Contain(d =>
-            d.Data == new DateOnly(2027, 5, 8) && d.Abrangencia == "MUNICIPAL" && d.MunicipioIbge == "1501402");
+            d.Data == new DateOnly(2027, 5, 8)
+            && d.Abrangencia == "MUNICIPAL"
+            && d.MunicipioIbge == "1504208"
+            && d.MunicipioNome == "Marabá"
+            && d.MunicipioUf == "PA"
+            && d.Uf == null);
     }
 
     private static string VersaoUnica() => $"cal-{Guid.NewGuid():N}"[..20];
@@ -239,7 +279,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
     private static CalendarioDiasUteis Nova(string versaoDataset, params DiaNaoUtilCriacao[] dias)
     {
         DiaNaoUtilCriacao[] diasNaoUteis = dias.Length == 0
-            ? [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2027, 1, 1), "Confraternização Universal")]
+            ? [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal")]
             : dias;
         return CalendarioDiasUteis.Criar(versaoDataset, diasNaoUteis).Value!;
     }

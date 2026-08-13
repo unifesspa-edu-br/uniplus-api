@@ -93,10 +93,10 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
 
             CalendarioDiasUteis calendarA = CalendarioDiasUteis.Criar(
                 $"exc-a-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
+                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
             CalendarioDiasUteis calendarB = CalendarioDiasUteis.Criar(
                 $"exc-b-{Guid.NewGuid():N}"[..20],
-                [new DiaNaoUtilCriacao("NACIONAL", null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
+                [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
             db.CalendariosDiasUteis.AddRange(calendarA, calendarB);
             await db.SaveChangesAsync();
             idA = calendarA.Id;
