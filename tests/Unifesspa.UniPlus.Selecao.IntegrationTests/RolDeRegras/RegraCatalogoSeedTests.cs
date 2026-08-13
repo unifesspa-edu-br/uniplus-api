@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
-using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -22,10 +20,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// Postgres, a coexistência de versões (<c>UNIQUE (codigo, versao)</c>) e o
 /// <see cref="RegraCatalogoReader"/>.
 /// </summary>
-[SuppressMessage(
-    "Security",
-    "CA2100:Review SQL queries for security vulnerabilities",
-    Justification = "SQL fixo escrito no próprio teste; o único valor externo (o código da regra) entra por DbParameter.")]
 public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixture>
 {
     private readonly RegraCatalogoDbFixture _fixture;
