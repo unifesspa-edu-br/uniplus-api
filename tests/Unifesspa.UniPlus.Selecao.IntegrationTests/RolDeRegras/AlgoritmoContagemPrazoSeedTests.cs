@@ -39,9 +39,9 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     }
 
     /// <summary>
-    /// Hashes congelados na migration <c>AddAlgoritmosContagemPrazo</c>. Amarram
-    /// a definição do seed ao literal da migration: editar o texto de uma
-    /// entrada sem regenerar a migration quebra este teste.
+    /// Hashes congelados nas migrations que semeiam as convenções. Amarram a
+    /// definição do seed ao literal da migration: editar o texto de uma entrada
+    /// sem regenerar a migration quebra este teste.
     /// </summary>
     private const string HashExcluiDiaInicial =
         "63ef57b6b32c023cdcb4ba9406d84f9e63694d4a9a8ee46bd9b532bbedd08b72";
@@ -49,17 +49,34 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     private const string HashHorasUteisDesdeAncora =
         "01bb4ae923690f2ae79373112069723569fc286ee3054bc1e190336256decd56";
 
+    private const string HashAvancaDataUtil =
+        "73bf9e2448e2656e421243dff5f375c7fc9598eca71a5f291169efe01b777922";
+
     private static RegraCatalogoSeedItem Item(string codigo) =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == codigo);
+
+    private static string[] Invariantes(string codigo)
+    {
+        using JsonDocument documento = JsonDocument.Parse(Item(codigo).InvariantesJson);
+        return [.. documento.RootElement.EnumerateArray().Select(e => e.GetString()!)];
+    }
 
     private static readonly string[] CodigosDeContagem =
     [
         AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial,
         AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora,
+        AlgoritmoContagemPrazoCodigo.AvancaDataUtil,
     ];
 
-    [Fact(DisplayName = "O reader devolve as duas convenções de contagem, cada uma com código, versão e hash")]
-    public async Task Reader_ListarPorTipo_DevolveAsDuasConvencoes()
+    private static readonly Dictionary<string, string> HashesDourados = new(StringComparer.Ordinal)
+    {
+        [AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial] = HashExcluiDiaInicial,
+        [AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora] = HashHorasUteisDesdeAncora,
+        [AlgoritmoContagemPrazoCodigo.AvancaDataUtil] = HashAvancaDataUtil,
+    };
+
+    [Fact(DisplayName = "O reader devolve as três convenções de contagem, cada uma com código, versão e hash")]
+    public async Task Reader_ListarPorTipo_DevolveAsConvencoes()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
@@ -67,25 +84,48 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         IReadOnlyList<RegraCatalogo> algoritmos = await reader.ListarPorTipoAsync(
             TipoRegra.AlgoritmoContagemPrazo, CancellationToken.None);
 
-        algoritmos.Should().HaveCount(2);
+        algoritmos.Should().HaveCount(3);
         algoritmos.Select(a => a.Codigo).Should().BeEquivalentTo(CodigosDeContagem);
         algoritmos.Should().OnlyContain(a => a.Versao == RegraCatalogoSeed.VersaoV1);
-        algoritmos.Single(a => a.Codigo == AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial)
-            .Hash.Should().Be(HashExcluiDiaInicial);
-        algoritmos.Single(a => a.Codigo == AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora)
-            .Hash.Should().Be(HashHorasUteisDesdeAncora);
+
+        foreach (RegraCatalogo algoritmo in algoritmos)
+        {
+            algoritmo.Hash.Should().Be(HashesDourados[algoritmo.Codigo]);
+        }
     }
 
     [Fact(DisplayName = "Os hashes dourados amarram a definição do seed ao literal da migration")]
     public void Seed_HashesDourados_AmarramSeedEMigration()
     {
-        Item(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial).ComputarHash()
-            .Should().Be(HashExcluiDiaInicial, "editar a definição sem regenerar a migration dessincroniza seed e banco");
-        Item(AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora).ComputarHash()
-            .Should().Be(HashHorasUteisDesdeAncora, "editar a definição sem regenerar a migration dessincroniza seed e banco");
+        foreach (string codigo in CodigosDeContagem)
+        {
+            Item(codigo).ComputarHash().Should().Be(
+                HashesDourados[codigo],
+                $"editar a definição de {codigo} sem regenerar a migration dessincroniza seed e banco");
+        }
 
-        HashExcluiDiaInicial.Should().NotBe(
-            HashHorasUteisDesdeAncora, "convenções diferentes têm definições — e hashes — diferentes");
+        HashesDourados.Values.Should().OnlyHaveUniqueItems(
+            "convenções diferentes têm definições — e hashes — diferentes");
+    }
+
+    [Fact(DisplayName = "A coincidência declarada entre convenções nomeia uma entrada que existe no catálogo")]
+    public void Seed_CoincidenciaDeclarada_NomeiaEntradaExistente()
+    {
+        // A convenção que avança data útil declara, na invariante de horas, que
+        // nessa unidade coincide com outra entrada — informação de que quem
+        // escolhe depende. Um código errado ali é texto plausível que ninguém
+        // percebe, então o nome citado precisa existir no catálogo.
+        string invarianteHoras = Invariantes(AlgoritmoContagemPrazoCodigo.AvancaDataUtil)
+            .Single(i => i.StartsWith("em horas:", StringComparison.Ordinal));
+
+        invarianteHoras.Should().Contain(
+            AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora,
+            "a coincidência em horas é declarada nomeando a outra convenção");
+
+        RegraCatalogoSeed.Itens.Should().Contain(
+            i => i.Codigo == AlgoritmoContagemPrazoCodigo.HorasUteisDesdeAncora
+                && i.Tipo == TipoRegra.AlgoritmoContagemPrazo,
+            "a convenção citada tem de existir no catálogo, sob o mesmo tipo");
     }
 
     [Fact(DisplayName = "Cada entrada declara as quatro resoluções, com exemplos nas âncoras canônicas")]
@@ -97,8 +137,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
             item.Tipo.Should().Be(TipoRegra.AlgoritmoContagemPrazo);
             item.Versao.Should().Be(RegraCatalogoSeed.VersaoV1);
 
-            using JsonDocument documento = JsonDocument.Parse(item.InvariantesJson);
-            string[] invariantes = [.. documento.RootElement.EnumerateArray().Select(e => e.GetString()!)];
+            string[] invariantes = Invariantes(codigo);
 
             // As quatro perguntas que distinguem uma convenção da outra
             // (UNI-REQ-0080), cada uma com resposta própria e explícita.
