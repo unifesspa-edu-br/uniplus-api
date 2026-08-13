@@ -20,11 +20,13 @@ public static class TipoRegraCodigo
     public const string RegraDistribuicaoVagas = "regra_distribuicao_vagas";
     public const string RegraAjusteDistribuicaoVagas = "regra_ajuste_distribuicao_vagas";
     public const string RegraPrazoRecurso = "regra_prazo_recurso";
+    public const string AlgoritmoContagemPrazo = "algoritmo_contagem_prazo";
 
     /// <summary>
-    /// Converte o tipo para o código canônico. O <c>switch</c> é exaustivo: uma
-    /// 12ª variante quebra a build (CS8509 promovido a erro por
-    /// <c>TreatWarningsAsErrors</c>) até este mapeamento absorvê-la.
+    /// Converte o tipo para o código canônico. O <c>switch</c> nomeia todas as
+    /// variantes, mas o braço final captura qualquer valor fora do enum — logo
+    /// a paridade com <see cref="FromCodigo"/> não é imposta pelo compilador, e
+    /// sim por teste de ida e volta sobre todos os valores não sentinela.
     /// </summary>
     public static string ToCodigo(this TipoRegra tipo) => tipo switch
     {
@@ -39,6 +41,7 @@ public static class TipoRegraCodigo
         TipoRegra.RegraDistribuicaoVagas => RegraDistribuicaoVagas,
         TipoRegra.RegraAjusteDistribuicaoVagas => RegraAjusteDistribuicaoVagas,
         TipoRegra.RegraPrazoRecurso => RegraPrazoRecurso,
+        TipoRegra.AlgoritmoContagemPrazo => AlgoritmoContagemPrazo,
         TipoRegra.Nenhuma => throw new ArgumentOutOfRangeException(
             nameof(tipo), tipo, "TipoRegra.Nenhuma é sentinela e não tem código canônico."),
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "TipoRegra desconhecido."),
@@ -61,6 +64,7 @@ public static class TipoRegraCodigo
         RegraDistribuicaoVagas => TipoRegra.RegraDistribuicaoVagas,
         RegraAjusteDistribuicaoVagas => TipoRegra.RegraAjusteDistribuicaoVagas,
         RegraPrazoRecurso => TipoRegra.RegraPrazoRecurso,
+        AlgoritmoContagemPrazo => TipoRegra.AlgoritmoContagemPrazo,
         _ => throw new ArgumentOutOfRangeException(
             nameof(codigo), codigo, "Código de tipo de regra desconhecido."),
     };
