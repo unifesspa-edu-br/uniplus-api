@@ -163,23 +163,27 @@ internal static class FronteiraAppendOnlyDoRol
         // canonicalizador não produz essa forma, mas a afirmação "ninguém
         // referenciava" fica mais forte provando também a ausência dela.
         //
-        // Exigir versao ou hash é o que mantém o homônimo de fora: uma fase
-        // batizada com o código de uma regra não tem nenhum dos dois, e continua
-        // legitimamente invisível aqui — do contrário esta varredura acusaria
-        // justamente o caso que o canário acima declara benigno.
-        (await ContarAsync(context, ContaReferenciasReais, PredicadoDeMencaoComFormaDeReferencia(codigo), amostra: null))
+        // Exigir versao ou hash mantém o homônimo de fora: uma fase batizada com
+        // o código de uma regra não tem nenhum dos dois, e continua
+        // legitimamente invisível aqui. Exigir que FALTE uma das duas mantém de
+        // fora também a referência completa a OUTRA versão, que é legítima e não
+        // impede operar esta — do contrário a varredura contradiria o canário
+        // acima, que declara a outra versão irrelevante.
+        (await ContarAsync(context, ContaReferenciasReais, PredicadoDeReferenciaIncompleta(codigo), amostra: null))
             .Should().Be(
-                0, $"nenhuma configuração congelada menciona {codigo} em forma de referência, nem incompleta");
+                0, $"nenhuma configuração congelada menciona {codigo} em forma de referência truncada");
     }
 
     /// <summary>
-    /// Menção ao código acompanhada de <c>versao</c> ou <c>hash</c> — algo que
-    /// se apresenta como referência de regra, completa ou não. Serve de
-    /// varredura de segurança sobre dados reais; não decide o que É referência,
-    /// papel de <see cref="PredicadoDeReferencia"/>.
+    /// Menção ao código com <b>uma</b> das duas chaves que acompanham uma
+    /// referência — versão sem hash, ou hash sem versão. É a forma que o
+    /// canonicalizador não produz e que o predicado exato pularia; serve de
+    /// varredura de segurança, não de definição do que é referência.
     /// </summary>
-    private static string PredicadoDeMencaoComFormaDeReferencia(string codigo) =>
-        $"""$.** ? (@.codigo == "{Literal(codigo)}" && (exists(@.versao) || exists(@.hash)))""";
+    private static string PredicadoDeReferenciaIncompleta(string codigo) =>
+        $"""
+        $.** ? (@.codigo == "{Literal(codigo)}" && (exists(@.versao) || exists(@.hash)) && !(exists(@.versao) && exists(@.hash)))
+        """;
 
     private static void AdicionarParametro(DbCommand comando, string nome, string valor)
     {
