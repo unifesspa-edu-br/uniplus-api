@@ -110,18 +110,23 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado");
     }
 
-    [Fact(DisplayName = "Par inteiramente ausente recusa antes de consultar o catálogo — a causa é não ter declarado")]
-    public async Task Handle_ParAusente_RecusaSemConsultarCatalogo()
+    [Theory(DisplayName = "Par ausente ou pela metade recusa antes de consultar o catálogo — meio par não aponta entrada nenhuma")]
+    [InlineData(null, null)]
+    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, null)]
+    [InlineData(null, "v1")]
+    [InlineData(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "   ")]
+    public async Task Handle_ParAusenteOuIncompleto_RecusaSemConsultarCatalogo(string? codigo, string? versao)
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id, RegraDoCatalogo());
-        DefinirAlgoritmoContagemPrazoCommand command = new(processo.Id, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirAlgoritmoContagemPrazoCommand command = new(processo.Id, codigo, versao, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado");
+        result.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
+            "reportar 'não encontrado' diria a quem chamou que o par não existe no rol, quando o que houve foi um campo esquecido");
         await mocks.Catalogo.DidNotReceive().ObterAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
