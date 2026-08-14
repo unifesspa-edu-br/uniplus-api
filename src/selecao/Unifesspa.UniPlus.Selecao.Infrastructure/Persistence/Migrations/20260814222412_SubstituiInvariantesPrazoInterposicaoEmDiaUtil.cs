@@ -8,10 +8,19 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class SubstituiInvariantesPrazoInterposicaoEmDiaUtil : Migration
     {
+        /// <summary>Hash da definição que esta migration passa a valer.</summary>
+        private const string HashDaDefinicaoVigente =
+            "92e78394a057b6eadbdcb69c7b08793ff8801790856874d99355074483b2709c";
+
+        /// <summary>Hash da definição anterior, para o qual a reversão devolve as referências vivas.</summary>
+        private const string HashDaDefinicaoAnterior =
+            "94f2a02a12cccae0ebe98dabc9dc66b5aacac25053e91b768fdf0d47492e8240";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             ExigirQueNenhumaConfiguracaoCongeladaReferencie(migrationBuilder);
+            TratarRegrasDeRecursoVivas(migrationBuilder, HashDaDefinicaoVigente);
 
             migrationBuilder.UpdateData(
                 schema: "selecao",
@@ -53,13 +62,78 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 """);
         }
 
+        /// <summary>
+        /// Trata as regras de recurso <b>vivas</b> — as de rascunho, que ainda não foram
+        /// congeladas em versão nenhuma e por isso escapam da guarda acima.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Elas guardam a referência em colunas próprias, e o EF as reidrata sem passar por
+        /// <c>RegraRecursoFase.Criar</c> — nenhuma invariante da entidade é reavaliada ao
+        /// carregar. Duas consequências, e cada uma tem o seu tratamento:
+        /// </para>
+        /// <para>
+        /// Um rascunho com <c>prazo_unidade = DIAS</c> foi declarado quando dia corrido era
+        /// aceito na interposição. A unidade deixou de ser declarável, e como nada revalida
+        /// no caminho de publicação, o rascunho publicaria com um prazo que a regra vigente
+        /// recusa. O dado precisa ser redeclarado por quem o criou, então a migration aborta
+        /// em vez de escolher uma unidade no lugar dele — converter para dias úteis mudaria
+        /// o prazo, e para horas mudaria a granularidade.
+        /// </para>
+        /// <para>
+        /// Os demais rascunhos continuam válidos, mas guardam o <c>regra_hash</c> da
+        /// definição anterior. Como a substituição é no lugar e não há versão sucessora, o
+        /// hash antigo passaria a não descrever definição nenhuma do catálogo: a referência
+        /// acompanha a substituição.
+        /// </para>
+        /// </remarks>
+        private static void TratarRegrasDeRecursoVivas(MigrationBuilder migrationBuilder, string hashDestino)
+        {
+            // UnidadePrazo.Dias — a coluna é o enum convertido para int.
+            const int DiasCorridos = 2;
+
+            migrationBuilder.Sql($"""
+                DO $vivas$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM selecao.regras_recurso_fase
+                        WHERE regra_codigo = 'RECURSO-PRAZO-ANCORADO-EM-ATO'
+                          AND regra_versao = 'v1'
+                          AND prazo_unidade = {DiasCorridos}
+                    ) THEN
+                        RAISE EXCEPTION 'regras_recurso_fase: há rascunho com prazo de interposição em dias corridos, unidade que a regra vigente não admite; redeclare o prazo em dias úteis ou horas antes de aplicar esta migration';
+                    END IF;
+                END
+                $vivas$;
+                """);
+
+            ReapontarHashDasRegrasDeRecursoVivas(migrationBuilder, hashDestino);
+        }
+
+        /// <summary>Devolve as referências vivas ao hash anterior, na reversão.</summary>
+        private static void DevolverHashDasRegrasDeRecursoVivas(MigrationBuilder migrationBuilder) =>
+            ReapontarHashDasRegrasDeRecursoVivas(migrationBuilder, HashDaDefinicaoAnterior);
+
+        private static void ReapontarHashDasRegrasDeRecursoVivas(MigrationBuilder migrationBuilder, string hashDestino) =>
+            migrationBuilder.Sql($"""
+                UPDATE selecao.regras_recurso_fase
+                SET regra_hash = '{hashDestino}'
+                WHERE regra_codigo = 'RECURSO-PRAZO-ANCORADO-EM-ATO'
+                  AND regra_versao = 'v1'
+                  AND regra_hash <> '{hashDestino}';
+                """);
+
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             // A reversão reescreve a mesma definição e responde à mesma fronteira: se
             // alguma versão passou a referenciar a entrada depois do Up, voltar a definição
             // antiga quebraria a reprodutibilidade daquela versão tanto quanto avançá-la.
+            // As referências vivas voltam ao hash anterior pela mesma razão que avançaram —
+            // não há versão sucessora onde o hash antigo pudesse continuar existindo.
             ExigirQueNenhumaConfiguracaoCongeladaReferencie(migrationBuilder);
+            DevolverHashDasRegrasDeRecursoVivas(migrationBuilder);
 
             migrationBuilder.UpdateData(
                 schema: "selecao",

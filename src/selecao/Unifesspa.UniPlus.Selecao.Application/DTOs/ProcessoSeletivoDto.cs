@@ -45,6 +45,11 @@ public sealed record ProcessoSeletivoDto(
     // "ainda não declarado" (bloqueia publicação) de uma declaração explícita — diferente de
     // ConfiguracaoDivulgacao, aqui null NÃO é um estado publicável.
     ConfiguracaoTaxaInscricaoDto? ConfiguracaoTaxaInscricao,
+    // Convenção de contagem dos prazos (UNI-REQ-0112): read-back administrativo, pelo mesmo
+    // motivo das dimensões acima — sem ele, a tela não distingue "ainda não declarei" de
+    // "declarei e não sei qual", e reenviaria às cegas. null é estado publicável quando
+    // nenhuma contagem do certame distingue dia útil.
+    ReferenciaRegraDto? AlgoritmoContagemPrazo,
     DateTimeOffset CriadoEm)
 {
     /// <summary>

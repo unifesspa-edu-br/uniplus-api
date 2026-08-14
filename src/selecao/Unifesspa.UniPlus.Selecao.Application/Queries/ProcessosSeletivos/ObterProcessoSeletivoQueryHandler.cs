@@ -74,6 +74,9 @@ public static class ObterProcessoSeletivoQueryHandler
         processo.FormularioTermoAceiteTexto,
         ProjectConfiguracaoDivulgacao(processo.ConfiguracaoDivulgacao),
         ProjectConfiguracaoTaxaInscricao(processo.ConfiguracaoTaxaInscricao),
+        processo.AlgoritmoContagemPrazo is { } algoritmo
+            ? new ReferenciaRegraDto(algoritmo.Codigo, algoritmo.Versao, algoritmo.Hash)
+            : null,
         processo.CreatedAt);
 
     private static FatoColetadoDto ProjectFatoColetado(FatoColetado fato) => new(
