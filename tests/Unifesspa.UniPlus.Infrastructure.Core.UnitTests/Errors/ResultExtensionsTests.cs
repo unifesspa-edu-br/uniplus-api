@@ -8,11 +8,14 @@ using Kernel.Results;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 public sealed class ResultExtensionsTests
 {
+    private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
+
     private static readonly DomainErrorMapping MappingNaoEncontrado =
         new(StatusCodes.Status404NotFound, "uniplus.selecao.edital.nao_encontrado", "Edital não encontrado");
 
@@ -64,7 +67,7 @@ public sealed class ResultExtensionsTests
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        problem.Type.Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.selecao.edital.nao_encontrado");
+        problem.Type.Should().Be(BaseUriDoCatalogo + "uniplus.selecao.edital.nao_encontrado");
     }
 
     [Fact]
@@ -75,7 +78,7 @@ public sealed class ResultExtensionsTests
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        problem.Type.Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.erro_nao_mapeado");
+        problem.Type.Should().Be(BaseUriDoCatalogo + "uniplus.erro_nao_mapeado");
     }
 
     // ─── Extensão "code" ──────────────────────────────────────────────────
@@ -175,7 +178,13 @@ public sealed class ResultExtensionsTests
     {
         Dictionary<string, DomainErrorMapping> dict = entradas
             .ToDictionary(e => e.Code, e => e.Mapping, StringComparer.OrdinalIgnoreCase);
-        return new StubDomainErrorMapper(dict);
+
+        // Só o registro de status/title é stub: o type sai da fábrica real, sobre a base
+        // que o teste declara, para que a asserção descreva a URI que o consumidor recebe.
+        ProblemTypeUriFactory fabricaDeType = new(
+            Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo }));
+
+        return new StubDomainErrorMapper(dict, fabricaDeType);
     }
 
     private static ProblemDetails ExtrairProblemDetails(IActionResult actionResult)
@@ -184,7 +193,9 @@ public sealed class ResultExtensionsTests
         return objectResult.Value.Should().BeOfType<ProblemDetails>().Subject;
     }
 
-    private sealed class StubDomainErrorMapper(Dictionary<string, DomainErrorMapping> map) : IDomainErrorMapper
+    private sealed class StubDomainErrorMapper(
+        Dictionary<string, DomainErrorMapping> map,
+        IProblemTypeUriFactory problemTypeUriFactory) : IDomainErrorMapper
     {
         public bool TryGetMapping(string code, out DomainErrorMapping mapping)
         {
@@ -192,5 +203,7 @@ public sealed class ResultExtensionsTests
             mapping = m!;
             return found;
         }
+
+        public string GetProblemTypeUri(string code) => problemTypeUriFactory.Build(code);
     }
 }

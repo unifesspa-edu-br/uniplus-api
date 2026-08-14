@@ -76,10 +76,13 @@ public static class AuthenticationProblemDetailsWriter
 
         httpContext.Response.StatusCode = statusCode;
 
+        IProblemTypeUriFactory problemTypeUriFactory = httpContext.RequestServices
+            .GetRequiredService<IProblemTypeUriFactory>();
+
         ProblemDetails problem = new()
         {
             Status = statusCode,
-            Type = ProblemDetailsConstants.ErrorsBaseUri + code,
+            Type = problemTypeUriFactory.Build(code),
             Title = title,
             Detail = detail,
             Instance = $"urn:uuid:{Guid.CreateVersion7()}",

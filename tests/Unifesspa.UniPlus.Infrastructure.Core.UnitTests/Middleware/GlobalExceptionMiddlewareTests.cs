@@ -11,13 +11,17 @@ using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
 public sealed class GlobalExceptionMiddlewareTests
 {
+    private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
+
     // ─── Fluxo sem exceção ─────────────────────────────────────────────────
 
     [Fact]
@@ -216,7 +220,38 @@ public sealed class GlobalExceptionMiddlewareTests
         Regex.IsMatch(traceId!, "^[0-9a-f]{32}$").Should().BeTrue();
     }
 
+    // ─── type aponta para o catálogo público ──────────────────────────────
+
+    /// <summary>
+    /// As três recusas que o boundary emite sozinho não passam pelo registro de erros de
+    /// domínio, então o <c>type</c> delas só se liga ao catálogo aqui. Um caminho ficar
+    /// para trás é um erro cujo consumidor não encontra a explicação.
+    /// </summary>
+    [Theory]
+    [InlineData("uniplus.validacao")]
+    [InlineData("uniplus.concorrencia.conflito")]
+    [InlineData("uniplus.internal.unexpected")]
+    public async Task InvokeAsync_QualquerRecusaDoBoundary_TypeUsaBaseDoCatalogo(string codeEsperado)
+    {
+        DefaultHttpContext context = CriarContexto();
+        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw ExcecaoPara(codeEsperado));
+
+        await middleware.InvokeAsync(context);
+
+        using JsonDocument doc = await LerBodyAsync(context);
+        doc.RootElement.GetProperty("type").GetString()
+            .Should().Be(BaseUriDoCatalogo + codeEsperado);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────
+
+    private static Exception ExcecaoPara(string code) => code switch
+    {
+        "uniplus.validacao" => new ValidationException(
+            [new ValidationFailure("Campo", "Inválido") { ErrorCode = "Campo.Invalido" }]),
+        "uniplus.concorrencia.conflito" => new DbUpdateConcurrencyException("conflito"),
+        _ => new InvalidOperationException("erro"),
+    };
 
     private static DefaultHttpContext CriarContexto()
     {
@@ -228,7 +263,9 @@ public sealed class GlobalExceptionMiddlewareTests
     private static GlobalExceptionMiddleware CriarMiddleware(RequestDelegate next)
     {
         ILogger<GlobalExceptionMiddleware> logger = Substitute.For<ILogger<GlobalExceptionMiddleware>>();
-        return new GlobalExceptionMiddleware(next, logger);
+        ProblemTypeUriFactory problemTypeUriFactory = new(
+            Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo }));
+        return new GlobalExceptionMiddleware(next, logger, problemTypeUriFactory);
     }
 
     private static async Task<JsonDocument> LerBodyAsync(HttpContext context)

@@ -32,7 +32,7 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
 
         root.GetProperty("status").GetInt32().Should().Be(401);
         root.GetProperty("type").GetString()
-            .Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.auth.unauthorized");
+            .Should().Be("https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.auth.unauthorized");
         root.GetProperty("code").GetString().Should().Be("uniplus.auth.unauthorized");
     }
 

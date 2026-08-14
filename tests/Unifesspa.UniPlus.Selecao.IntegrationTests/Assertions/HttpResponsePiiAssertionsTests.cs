@@ -16,7 +16,7 @@ public sealed class HttpResponsePiiAssertionsTests
     {
         const string body = """
             {
-              "type": "https://uniplus.unifesspa.edu.br/errors/uniplus.selecao.edital.nao_encontrado",
+              "type": "https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.selecao.edital.nao_encontrado",
               "title": "Edital não encontrado",
               "status": 404,
               "detail": "Edital não encontrado.",
@@ -63,7 +63,7 @@ public sealed class HttpResponsePiiAssertionsTests
         // (?<!\d)\d{11}(?!\d) produzia falso positivo; padrão novo bloqueia.
         const string body = """
             {
-              "type": "https://uniplus.unifesspa.edu.br/errors/uniplus.selecao.edital.nao_encontrado",
+              "type": "https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.selecao.edital.nao_encontrado",
               "title": "Edital não encontrado",
               "status": 404,
               "detail": "Edital não encontrado.",

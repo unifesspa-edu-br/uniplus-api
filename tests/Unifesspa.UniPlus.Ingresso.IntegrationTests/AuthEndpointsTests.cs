@@ -52,7 +52,7 @@ public sealed class AuthEndpointsTests : IClassFixture<IngressoApiFactory>
 
         root.GetProperty("status").GetInt32().Should().Be(401);
         root.GetProperty("type").GetString()
-            .Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.auth.unauthorized");
+            .Should().Be("https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.auth.unauthorized");
         root.GetProperty("title").GetString().Should().Be("Não autenticado");
         root.GetProperty("code").GetString().Should().Be("uniplus.auth.unauthorized");
         root.GetProperty("traceId").GetString().Should().NotBeNullOrWhiteSpace();
