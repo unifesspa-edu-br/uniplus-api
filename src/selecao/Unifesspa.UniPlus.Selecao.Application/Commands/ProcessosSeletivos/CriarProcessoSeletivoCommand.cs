@@ -56,6 +56,12 @@ public sealed record CriarProcessoSeletivoCommand(
     /// recusas dizem coisas diferentes a quem chamou: uma esqueceu de declarar, a outra
     /// declarou errado.
     /// </summary>
+    /// <remarks>
+    /// <see cref="JsonIgnoreAttribute"/> porque este record é o corpo do POST: sem ele, o
+    /// derivado entra no schema como propriedade gravável, e o cliente gerado exporia um
+    /// campo de requisição que o servidor ignora.
+    /// </remarks>
+    [JsonIgnore]
     public bool LocalidadeNaoDeclarada =>
         string.IsNullOrWhiteSpace(LocalidadeCodigoIbge)
         && string.IsNullOrWhiteSpace(LocalidadeNome)

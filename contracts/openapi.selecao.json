@@ -6168,9 +6168,6 @@
               "null",
               "string"
             ]
-          },
-          "localidadeNaoDeclarada": {
-            "type": "boolean"
           }
         }
       },
