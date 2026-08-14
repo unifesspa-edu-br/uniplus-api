@@ -117,7 +117,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId));
 
     private static JsonObject Envelope(SnapshotCanonico snapshot) =>
         JsonNode.Parse(System.Text.Encoding.UTF8.GetString(snapshot.Bytes))!.AsObject();

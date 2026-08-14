@@ -13,9 +13,9 @@ public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string
 
 /// <summary>
 /// Informação do ato de retificação (ADR-0103) acrescentada ao envelope como um
-/// bloco adicional (<c>retificacao</c>) além dos 24 blocos canônicos.
+/// bloco adicional (<c>retificacao</c>) além dos 26 blocos canônicos.
 /// <see langword="null"/> na publicação de abertura — o envelope de abertura
-/// mantém exatamente os 24 blocos, sem o bloco de retificação.
+/// mantém exatamente os 26 blocos, sem o bloco de retificação.
 /// </summary>
 public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
 
@@ -116,6 +116,14 @@ public sealed record EntradaCanonicalizacao(
     ProcessoSeletivo Processo,
     DadosEdital Dados,
     string HashDocumento,
+    /// <summary>
+    /// Identificador IANA do fuso institucional aplicado nesta canonicalização. Obrigatório de
+    /// propósito: é dado forense que entra no envelope congelado, e um default silencioso deixaria
+    /// caller novo congelar fuso que ninguém escolheu. Na recodificação de uma versão já publicada,
+    /// é o fuso <b>congelado nela</b> que volta aqui — nunca o vigente —, senão a prova byte a byte
+    /// mudaria de resultado quando o padrão institucional mudasse.
+    /// </summary>
+    string FusoHorario,
     RetificacaoInfo? Retificacao = null,
     ResultadoConformidade? Conformidade = null,
     IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados = null,
@@ -124,7 +132,7 @@ public sealed record EntradaCanonicalizacao(
 /// <summary>
 /// Porta da projeção canônica do envelope de congelamento (ADR-0100, ADR-0109).
 /// Projeta a configuração viva do <see cref="ProcessoSeletivo"/> num payload de
-/// <b>24 blocos reais</b> — a Feature #40 fechou a última dimensão provisória
+/// <b>26 blocos reais</b> — a Feature #40 fechou a última dimensão provisória
 /// (<c>divulgacao</c>, UNI-REQ-0050, issue #563) — e devolve os bytes que
 /// <c>VersaoConfiguracao.Abrir</c> persiste como base do hash. Quando a entrada
 /// carrega <see cref="EntradaCanonicalizacao.Retificacao"/>, acrescenta o 25º

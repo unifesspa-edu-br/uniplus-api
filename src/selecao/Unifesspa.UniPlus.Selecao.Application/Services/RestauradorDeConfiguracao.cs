@@ -55,10 +55,17 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         // A RetificacaoInfo é a ORIGINAL, recuperada do próprio bloco `retificacao`: ela não
         // vem do agregado (é parâmetro externo da canonicalização), e sem ela a versão N>1
         // recanonicalizaria sem o bloco retificacao, que a acrescenta aos blocos da abertura.
+        //
+        // O fuso também é o CONGELADO, pelo mesmo motivo e com uma consequência a mais: além de
+        // compor o bloco de localidade, é ele que converte a âncora em dia civil ao recalcular
+        // `documentosExigidos.dataReferenciaFatos`. Recanonicalizar sob o fuso vigente faria a
+        // mesma versão produzir bytes diferentes depois que o padrão institucional mudasse — e a
+        // prova byte a byte, que é o que autoriza o descarte da retificação, deixaria de valer.
         Result<SnapshotCanonico> recodificado = registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
-                sombra, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade,
+                sombra, envelope.Dados, envelope.HashDocumento, envelope.FusoHorario,
+                envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados));
 
         if (recodificado.IsFailure)

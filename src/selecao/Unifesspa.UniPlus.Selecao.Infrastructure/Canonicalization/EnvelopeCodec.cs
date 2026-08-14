@@ -56,11 +56,12 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "versaoInterpretador",
         "modalidadesOfertadas",
         "taxaInscricao",
+        "localidade",
     ];
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.10";
+    public string SchemaVersion => "0.0.11";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -129,6 +130,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         (string? formularioTitulo, string? formularioTermoAceiteTexto) = LerFormulario(leitor, payload);
         ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
+        (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -184,10 +186,11 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             formularioTitulo: formularioTitulo,
             formularioTermoAceiteTexto: formularioTermoAceiteTexto,
             configuracaoDivulgacao: configuracaoDivulgacao,
-            configuracaoTaxaInscricao: configuracaoTaxaInscricao);
+            configuracaoTaxaInscricao: configuracaoTaxaInscricao,
+            localidade: localidade);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
-                grafo, dados!, hashDocumento, retificacao, conformidade,
+                grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
                 metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis));
     }
 
@@ -770,6 +773,54 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// (<see cref="ConfiguracaoTaxaInscricao.ConfirmacaoFundamentos"/>) antes de qualquer
     /// serialização, então o encoder nunca a emite.
     /// </remarks>
+    /// <summary>
+    /// Lê o bloco fechado com a localidade regente e o fuso aplicado (UNI-REQ-0111).
+    /// </summary>
+    /// <remarks>
+    /// A localidade é reconstruída por <see cref="LocalidadeRegente.Criar"/>, e não por atribuição
+    /// direta: um envelope adulterado com código fora de forma ou UF incoerente é malformado, e
+    /// reidratá-lo daria ao processo restaurado uma localidade que o domínio recusaria criar. O
+    /// fuso é validado como zona conhecida aqui mesmo — deixar
+    /// <c>FindSystemTimeZoneById</c> estourar depois transformaria envelope adulterado em exceção
+    /// sem causa nomeada.
+    /// </remarks>
+    private static (LocalidadeRegente? Localidade, string? FusoHorario) LerLocalidade(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "localidade", "$");
+        if (leitor.Falhou)
+        {
+            return (null, null);
+        }
+
+        leitor.ExigirChaves(bloco, "localidade", "codigoIbge", "nome", "uf", "fusoHorario");
+
+        string codigoIbge = leitor.TextoNaoVazio(bloco, "codigoIbge", "localidade");
+        string nome = leitor.TextoNaoVazio(bloco, "nome", "localidade");
+        string uf = leitor.TextoNaoVazio(bloco, "uf", "localidade");
+        string fusoHorario = leitor.TextoNaoVazio(bloco, "fusoHorario", "localidade");
+        if (leitor.Falhou)
+        {
+            return (null, null);
+        }
+
+        Result<LocalidadeRegente> localidade = LocalidadeRegente.Criar(codigoIbge, nome, uf);
+        if (localidade.IsFailure)
+        {
+            return (leitor.Propagar<LocalidadeRegente?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'localidade' congelada não é uma referência de cidade válida: {localidade.Error!.Message}")), null);
+        }
+
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(fusoHorario, out _))
+        {
+            return (leitor.Propagar<LocalidadeRegente?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'localidade.fusoHorario' congelado ('{fusoHorario}') não é uma zona reconhecida por este ambiente.")), null);
+        }
+
+        return (localidade.Value!, fusoHorario);
+    }
+
     private static ConfiguracaoTaxaInscricao? LerTaxaInscricao(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "taxaInscricao", "$");

@@ -657,39 +657,36 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         public override DateTimeOffset GetUtcNow() => instante;
     }
     /// <summary>
-    /// A localidade rege quais feriados incidem no prazo, e ainda não entra no envelope
-    /// congelado nem em <c>AplicarGrafo</c>. Liberá-la sob sessão editorial abriria dois
-    /// furos: fechar a retificação publicaria os mesmos bytes apesar da configuração
-    /// diferente, e descartá-la não reverteria o município — uma edição descartada
-    /// continuaria governando a contagem. Por isso a escrita é restrita ao rascunho até
-    /// que o congelamento exista.
+    /// A edição sob sessão editorial só é segura porque a localidade participa do ciclo inteiro:
+    /// o envelope a congela e o descarte a repõe. Enquanto isso não existia, a escrita ficava
+    /// restrita ao rascunho — este teste é o que prova que a liberação veio junto da garantia.
     /// </summary>
-    [Fact(DisplayName = "Localidade não é alterável em processo publicado")]
-    public void DefinirLocalidade_ProcessoPublicado_Recusa()
+    [Fact(DisplayName = "Localidade é alterável sob sessão editorial e move o ETag da sessão")]
+    public void DefinirLocalidade_ComSessaoAberta_AceitaEIncrementaRevisao()
+    {
+        ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
+        string tagInicial = rascunho.ETag;
+
+        Result resultado = processo.DefinirLocalidade(
+            LocalidadeRegente.Criar("1501402", "Belém", "PA").Value!,
+            PrecondicaoIfMatch.DeTags([tagInicial]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.Localidade.CodigoIbge.Should().Be("1501402");
+        rascunho.ETag.Should().NotBe(tagInicial,
+            "sem mover o ETag, uma escrita concorrente com revisão velha continuaria aceita");
+    }
+
+    [Fact(DisplayName = "Localidade não é alterável em processo publicado sem sessão aberta")]
+    public void DefinirLocalidade_PublicadoSemSessao_Recusa()
     {
         ProcessoSeletivo processo = NovoProcessoPublicado(out _);
 
         Result resultado = processo.DefinirLocalidade(
-            LocalidadeRegente.Criar("1501402", "Belém", "PA").Value!);
+            LocalidadeRegente.Criar("1501402", "Belém", "PA").Value!,
+            PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeSomenteEmRascunho");
-        processo.Localidade.CodigoIbge.Should().Be("1504208");
-    }
-
-    [Fact(DisplayName = "Localidade não é alterável nem com sessão editorial aberta")]
-    public void DefinirLocalidade_ComSessaoEditorialAberta_Recusa()
-    {
-        ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
-        processo.AbrirRetificacao("Correção do prazo", versao, "user-sub-1", Agora)
-            .IsSuccess.Should().BeTrue();
-
-        Result resultado = processo.DefinirLocalidade(
-            LocalidadeRegente.Criar("1501402", "Belém", "PA").Value!);
-
-        resultado.IsFailure.Should().BeTrue(
-            "a sessão editorial não restauraria a localidade no descarte, porque o envelope ainda não a congela");
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeSomenteEmRascunho");
         processo.Localidade.CodigoIbge.Should().Be("1504208");
     }
 }

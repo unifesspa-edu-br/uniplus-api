@@ -258,7 +258,7 @@ public sealed class ValoresSelecionaveisResolverTests
                     Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA")),
             mocks.ProcessoRepository,
             mocks.DocumentoRepository,
-            mocks.Canonicalizer,
+            mocks.Canonicalizer, new ResolvedorFusoDeTeste(),
             Substitute.For<ISelecaoUnitOfWork>(),
             userContext,
             mocks.TipoDeAtoReader,

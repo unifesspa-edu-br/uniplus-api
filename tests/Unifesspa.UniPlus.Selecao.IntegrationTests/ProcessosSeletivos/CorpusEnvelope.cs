@@ -584,7 +584,7 @@ internal static class CorpusEnvelope
         ResultadoConformidade? conformidade = null,
         bool permutarValoresSelecionaveis = false) =>
         new(
-            processo, DadosRicos(), HashDocumento, retificacao, conformidade,
+            processo, DadosRicos(), HashDocumento, FusoInstitucional.ZoneId, retificacao, conformidade,
             ValoresSelecionaveisCongelados: ValoresSelecionaveisRicos(permutarValoresSelecionaveis));
 
     /// <summary>

@@ -246,7 +246,7 @@ public sealed class RestauradorDeConfiguracaoTests
         registroDefeituoso.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             CorpusEnvelope.GrafoPobre(),
             CorpusEnvelope.DadosRicos(),
-            CorpusEnvelope.HashDocumento,
+            CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
             retificacao: null,
             conformidade: null)));
         registroDefeituoso
@@ -384,7 +384,7 @@ public sealed class RestauradorDeConfiguracaoTests
             periodoInscricaoFim: new DateOnly(2026, 1, 31),
             documentoEditalId: Guid.CreateVersion7()).Value!;
         string hashFixo = new('a', 64);
-        SnapshotCanonico congelado = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashFixo));
+        SnapshotCanonico congelado = canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashFixo, FusoInstitucional.ZoneId));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashFixo, "user-sub-123", TimeProvider.System);
@@ -472,11 +472,11 @@ public sealed class RestauradorDeConfiguracaoTests
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =
             CorpusEnvelope.ValoresSelecionaveisRicos();
         EntradaCanonicalizacao entrada = new(
-            processo, dados, CorpusEnvelope.HashDocumento,
+            processo, dados, CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.10", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.11", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -500,10 +500,52 @@ public sealed class RestauradorDeConfiguracaoTests
         // envelope decodificado (EnvelopeReidratado.MetadadosFatosCongelados), nunca porque
         // foi reconsultado.
         new EnvelopeCodec().Codificar(new EntradaCanonicalizacao(
-            processo, dados, CorpusEnvelope.HashDocumento,
+            processo, dados, CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
+    }
+
+    /// <summary>
+    /// A razão de o fuso viajar no envelope, e não ser lido da constante na hora de provar.
+    /// </summary>
+    /// <remarks>
+    /// A recanonicalização recalcula <c>documentosExigidos.dataReferenciaFatos</c>, que converte um
+    /// instante em dia civil — e o dia civil depende do fuso. Se a prova usasse o fuso vigente em
+    /// vez do congelado, bastaria o padrão institucional mudar para a mesma versão passar a produzir
+    /// bytes diferentes, e o descarte da retificação — que depende dessa igualdade byte a byte —
+    /// deixaria de ser possível. Este teste congela sob um fuso e recanonicaliza sob outro: os
+    /// bytes têm de vir do congelado.
+    /// </remarks>
+    [Fact(DisplayName = "UNI-REQ-0111: a prova byte a byte usa o fuso CONGELADO, não o vigente")]
+    public void Restaurar_ComFusoInstitucionalDiferenteDoCongelado_ProvaPeloCongelado()
+    {
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        DadosEdital dados = CorpusEnvelope.DadosRicos();
+
+        // Congela sob uma zona que NÃO é a institucional corrente — é o que simula o padrão
+        // institucional tendo mudado depois desta versão publicada.
+        const string FusoDaEpoca = "America/Manaus";
+        FusoDaEpoca.Should().NotBe(FusoInstitucional.ZoneId, "o teste perde o sentido se as duas coincidirem");
+
+        EntradaCanonicalizacao entrada = new(
+            processo, dados, CorpusEnvelope.HashDocumento, FusoDaEpoca,
+            ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos());
+        SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
+
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
+            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+
+        Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope())
+            .Restaurar(processo, publicacao.Value!);
+
+        // Passa: a recanonicalização leu o fuso de dentro do envelope. Falharia se lesse a
+        // constante corrente, porque o bloco de localidade sairia com outra zona.
+        resultado.IsSuccess.Should().BeTrue(
+            resultado.Error?.Message
+            + " — a prova tem de usar o fuso que a versão congelou, não o institucional de hoje");
     }
 
     /// <summary>
@@ -543,7 +585,7 @@ public sealed class RestauradorDeConfiguracaoTests
             };
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
-            new EntradaCanonicalizacao(processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento,
+            new EntradaCanonicalizacao(processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
                 ValoresSelecionaveisCongelados: valoresSelecionaveis));
 
         // Publica DIRETAMENTE com os bytes já codificados acima — CorpusEnvelope.Publicar(...)
@@ -589,7 +631,7 @@ public sealed class RestauradorDeConfiguracaoTests
         processo.RestaurarConfiguracaoCongelada(versao, resultado.Value!).IsSuccess.Should().BeTrue();
 
         CorpusEnvelope.Codec.Codificar(new EntradaCanonicalizacao(
-                processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento,
+                processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
                 ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
     }

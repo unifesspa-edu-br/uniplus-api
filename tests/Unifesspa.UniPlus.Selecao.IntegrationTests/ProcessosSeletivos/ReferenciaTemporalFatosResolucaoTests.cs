@@ -117,7 +117,7 @@ public sealed class ReferenciaTemporalFatosResolucaoTests
     }
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo) =>
-        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo));
+        Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId));
 
     private static string? DataReferenciaFatos(SnapshotCanonico snapshot)
     {

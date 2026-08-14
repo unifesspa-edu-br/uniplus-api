@@ -23,6 +23,7 @@ public sealed class EnvelopeReidratado
         GrafoConfiguracao grafo,
         DadosEdital dados,
         string hashDocumento,
+        string fusoHorario,
         RetificacaoInfo? retificacao,
         ResultadoConformidade? conformidade,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null,
@@ -31,10 +32,12 @@ public sealed class EnvelopeReidratado
         ArgumentNullException.ThrowIfNull(grafo);
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentException.ThrowIfNullOrWhiteSpace(hashDocumento);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fusoHorario);
 
         Grafo = grafo;
         Dados = dados;
         HashDocumento = hashDocumento;
+        FusoHorario = fusoHorario;
         Retificacao = retificacao;
         Conformidade = conformidade;
         MetadadosFatosCongelados = metadadosFatosCongelados;
@@ -46,6 +49,15 @@ public sealed class EnvelopeReidratado
     public DadosEdital Dados { get; }
 
     public string HashDocumento { get; }
+
+    /// <summary>
+    /// Fuso institucional <b>congelado nesta versão</b>, e não o vigente hoje. Acompanha o grafo em
+    /// vez de entrar nele porque não é estado do agregado — não há propriedade de fuso para repor na
+    /// raiz. Ele volta à recanonicalização porque <c>dataReferenciaFatos</c> é recalculada ao provar
+    /// a fidelidade: convertida sob o fuso de hoje, a mesma versão produziria bytes diferentes
+    /// depois que o padrão institucional mudasse, e a prova byte a byte deixaria de valer.
+    /// </summary>
+    public string FusoHorario { get; }
 
     /// <summary><see langword="null"/> na versão 1 — o envelope de abertura não tem o 18º bloco.</summary>
     public RetificacaoInfo? Retificacao { get; }

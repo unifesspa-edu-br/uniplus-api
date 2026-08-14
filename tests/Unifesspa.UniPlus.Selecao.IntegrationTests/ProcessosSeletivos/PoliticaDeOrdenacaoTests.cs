@@ -94,7 +94,7 @@ public sealed class PoliticaDeOrdenacaoTests
     private static EntradaCanonicalizacao Entrada(
         ProcessoSeletivo processo,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatos = null) =>
-        new(processo, Dados(), new string('0', 64), MetadadosFatosCongelados: metadadosFatos);
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadadosFatos);
 
     /// <summary>
     /// Um Guid com só o último dígito hexadecimal variando por <paramref name="sufixo"/> — as

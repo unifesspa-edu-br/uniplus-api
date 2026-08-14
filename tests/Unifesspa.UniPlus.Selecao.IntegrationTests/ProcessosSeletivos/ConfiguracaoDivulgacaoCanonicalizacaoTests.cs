@@ -84,7 +84,7 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
         ProcessoSeletivo processo = NovoProcessoConforme();
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo));
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId));
 
         JsonObject esperado = new()
         {
@@ -113,7 +113,7 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo));
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId));
 
         // Literal, escrito à mão — independente de qualquer chamada de normalização do encoder
         // ou da entidade.

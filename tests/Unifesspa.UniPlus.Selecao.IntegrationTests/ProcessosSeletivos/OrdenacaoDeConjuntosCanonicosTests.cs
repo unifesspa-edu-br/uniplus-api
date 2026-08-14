@@ -48,7 +48,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         ProcessoSeletivo processo,
         ResultadoConformidade? conformidade = null,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatos = null) =>
-        new(processo, Dados(), new string('0', 64), Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
 
     /// <summary>
     /// Serializa um FRAGMENTO do envelope (não o envelope inteiro) pelas mesmas regras de bytes
