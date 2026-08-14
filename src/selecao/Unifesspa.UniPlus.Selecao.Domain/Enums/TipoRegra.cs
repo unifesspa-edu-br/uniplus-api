@@ -14,7 +14,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Onze dos doze tipos vêm da modelagem do CEPS para distribuição de vagas e
 /// para classificação (com desempate e bônus), validada contra Postgres real.
 /// O décimo segundo (<see cref="AlgoritmoContagemPrazo"/>) veio da revisão do
-/// UNI-REQ-0080, que deixou de eleger uma leitura universal para a contagem do
+/// UNI-REQ-0112, que deixou de eleger uma leitura universal para a contagem do
 /// prazo de recurso e passou a exigir que o edital declare qual convenção usa.
 /// O sentinela <see cref="Nenhuma"/> garante que <c>default(TipoRegra)</c>
 /// nunca colida com um tipo real — a factory o rejeita explicitamente.

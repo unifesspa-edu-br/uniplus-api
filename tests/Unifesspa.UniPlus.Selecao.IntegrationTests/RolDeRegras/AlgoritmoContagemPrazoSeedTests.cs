@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Cobertura das entradas de <c>tipo=algoritmo_contagem_prazo</c> (#1135): as
-/// convenções nomeadas de contagem do prazo de interposição que o UNI-REQ-0080
+/// convenções nomeadas de contagem do prazo de interposição que o UNI-REQ-0112
 /// tornou decláraveis por edital. Prova o conteúdo do seed (as quatro
 /// resoluções declaradas, com exemplos nas âncoras canônicas; esquema de
 /// argumentos vazio; base legal com placeholder honesto de pendência), os
@@ -134,7 +134,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
             string[] invariantes = Invariantes(codigo);
 
             // As quatro perguntas que distinguem uma convenção da outra
-            // (UNI-REQ-0080), cada uma com resposta própria e explícita.
+            // (UNI-REQ-0112), cada uma com resposta própria e explícita.
             invariantes.Should().HaveCount(4, $"a entrada {codigo} declara as quatro resoluções");
             invariantes.Should().ContainSingle(i => i.StartsWith("âncora fora da meia-noite:", StringComparison.Ordinal));
             invariantes.Should().ContainSingle(i => i.StartsWith("âncora em dia não útil:", StringComparison.Ordinal));
