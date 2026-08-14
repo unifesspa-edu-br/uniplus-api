@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>CalendarioDiasUteis</c>
-/// (UNI-REQ-0080): routing, vendor media type, HATEOAS, autenticação/autorização,
+/// (UNI-REQ-0116): routing, vendor media type, HATEOAS, autenticação/autorização,
 /// idempotência, invariante de vigência única e bloqueio de remoção do dataset
 /// vigente, com Wolverine rodando contra Postgres efêmero.
 /// </summary>

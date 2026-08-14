@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Endpoints públicos de leitura (<c>GET /api/configuracao/calendarios-dias-uteis</c>,
 /// <c>GET /api/configuracao/calendarios-dias-uteis/{id}</c>) e endpoints admin
 /// (<c>POST/DELETE /api/configuracao/admin/calendarios-dias-uteis</c>,
-/// <c>POST .../{id}/vigente</c>) restritos a <c>plataforma-admin</c> (UNI-REQ-0080).
+/// <c>POST .../{id}/vigente</c>) restritos a <c>plataforma-admin</c> (UNI-REQ-0116).
 /// </summary>
 [ApiController]
 [SuppressMessage(
