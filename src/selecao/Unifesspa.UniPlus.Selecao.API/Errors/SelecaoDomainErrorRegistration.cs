@@ -41,6 +41,8 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("ProcessoSeletivo.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.nao_encontrado", "Processo Seletivo não encontrado")),
         new("ProcessoSeletivo.LocalidadeAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.localidade_ausente", "Localidade que rege a contagem dos prazos não declarada")),
         new("ProcessoSeletivo.FusoInstitucionalNaoReconhecido", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.processo_seletivo.fuso_institucional_nao_reconhecido", "O fuso institucional aplicado não é uma zona reconhecida")),
+        new("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado", "Convenção de contagem dos prazos não declarada")),
+        new("ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_encontrado", "Algoritmo de contagem não encontrado no rol_de_regras")),
         new("ProcessoSeletivo.EtapasVazias", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapas_vazias", "O processo deve ter ao menos uma etapa pontuada")),
         new("ProcessoSeletivo.OrdemEtapaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_etapa_duplicada", "Ordem de etapa duplicada no processo")),
         new("ProcessoSeletivo.IdEtapaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_duplicado", "O mesmo Id de etapa foi informado mais de uma vez no payload")),
@@ -354,14 +356,12 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         new("RegraRecursoFase.AncoraDeOutraFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_de_outra_fase", "O ato recorrido tem de ser o ato produzido pela própria fase")),
         new("RegraRecursoFase.AncoraEmAtoCongelante", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_em_ato_congelante", "A âncora do recurso nunca é o ato que congela a configuração")),
         new("RegraRecursoFase.AncoraNaoEncontradaNoCatalogo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_nao_encontrada_no_catalogo", "O tipo de ato âncora não tem versão vigente no catálogo de Publicações")),
-        // Os dois `code` mantêm o sufixo `sem_calendario` por compatibilidade: são chave
-        // estável de consumidor e integram o URI `type`. Os textos user-facing, porém,
-        // dizem a causa real: no prazo de interposição dias úteis é proibido em definitivo
-        // (UNI-REQ-0113); na suspensividade depende do algoritmo de contagem versionado
-        // (UNI-REQ-0116), que ainda não existe — o calendário de dias úteis já é
-        // cadastrável.
-        new("RegraRecursoFase.PrazoEmDiasUteisSemCalendario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_dias_uteis_sem_calendario", "Prazo de interposição em dias úteis não permitido")),
-        new("RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_em_dias_uteis_sem_calendario", "Suspensividade em dias úteis indisponível")),
+        // As duas unidades recusadas na interposição têm causas distintas e remediações
+        // distintas (UNI-REQ-0113), então cada uma tem código próprio: quem declarou dia
+        // corrido reescreve na unidade do edital; quem declarou fração de dia útil passa
+        // a declarar em horas.
+        new("RegraRecursoFase.PrazoEmDiasCorridos", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_dias_corridos", "Prazo de interposição em dias corridos não é aceito")),
+        new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.prazo_em_fracao_de_dia_util", "Prazo de interposição em dias úteis exige valor inteiro")),
         new("RegraRecursoFase.RegraCatalogoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida", "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do rol_de_regras")),
         // Codec do envelope (Story #859, ADR-0110 D1/D8). A recusa é NOMEADA: um descarte
         // que falha precisa distinguir uma versão que o sistema não conhece, uma que ele

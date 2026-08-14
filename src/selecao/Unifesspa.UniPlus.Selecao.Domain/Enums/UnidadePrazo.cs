@@ -5,20 +5,25 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// (<see cref="ValueObjects.ArgsRegraPrazoRecurso"/>, Story #851 §3.6).
 /// </summary>
 /// <remarks>
-/// <see cref="DiasUteis"/> <b>fica no enum</b> — nunca excluído do domínio fechado: o
-/// vocabulário legal admite dias úteis, e removê-lo do tipo seria mentir sobre o que o
-/// edital pode declarar. As duas recusas, porém, NÃO têm o mesmo motivo (UNI-REQ-0113):
-/// no prazo de interposição, dias úteis é proibido de forma <b>permanente</b> — é o prazo
-/// que fecha a porta do candidato, e um erro de contagem para menos cercearia direito;
-/// nunca deixa de ser recusado, mesmo com calendário e algoritmo de contagem disponíveis.
-/// Na suspensividade, dias úteis é condicionalmente aceitável (UNI-REQ-0116), mas só
-/// quando existirem, ao mesmo tempo, um calendário de dias úteis vigente E uma versão
-/// identificável do algoritmo de contagem — nenhum artefato de algoritmo versionado
-/// existe hoje (o motor de contagem é UNI-REQ-0081, incremento futuro), então a recusa
-/// também vale sempre, por ora. O gate recusa em runtime com erro nomeado
-/// (<c>RegraRecursoFase.PrazoEmDiasUteisSemCalendario</c> /
-/// <c>RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario</c>), nunca aproximando em
-/// silêncio.
+/// <para>
+/// O enum é o vocabulário completo, e nem todo valor é declarável nos dois prazos.
+/// </para>
+/// <para>
+/// No <b>prazo de interposição</b>, só <see cref="DiasUteis"/> em valor inteiro e
+/// <see cref="Horas"/> (UNI-REQ-0113): é o prazo que fecha a porta do candidato, e tempo
+/// que passa quando ele não tem como agir não pode consumir a janela.
+/// <see cref="Dias"/> é recusado — encolheria a janela sempre que calhasse de cair em
+/// feriado — e fração de dia útil também, por não ter leitura unívoca.
+/// <see cref="Entities.RegraRecursoFase.Criar"/> recusa em runtime com erro nomeado
+/// (<c>RegraRecursoFase.PrazoEmDiasCorridos</c> /
+/// <c>RegraRecursoFase.PrazoEmFracaoDeDiaUtil</c>), nunca aproximando em silêncio.
+/// </para>
+/// <para>
+/// Na <b>suspensividade</b>, as três unidades são declaráveis (UNI-REQ-0116) — é outro
+/// relógio, com outra regra. O que a contagem em dia útil exige, ali e na interposição, é
+/// a convenção de contagem declarada pelo processo (UNI-REQ-0112), invariante da raiz e
+/// não desta unidade.
+/// </para>
 /// </remarks>
 public enum UnidadePrazo
 {

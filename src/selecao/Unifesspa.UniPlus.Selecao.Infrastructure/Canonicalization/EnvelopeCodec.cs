@@ -57,11 +57,12 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         "modalidadesOfertadas",
         "taxaInscricao",
         "localidade",
+        "algoritmoContagemPrazo",
     ];
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
-    public string SchemaVersion => "0.0.11";
+    public string SchemaVersion => "0.0.12";
 
     public IPerfilCanonico Perfil => PerfilCanonicoV1.Instancia;
 
@@ -131,6 +132,7 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
         ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
         (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
+        ReferenciaRegra? algoritmoContagemPrazo = LerAlgoritmoContagemPrazo(leitor, payload);
         RetificacaoInfo? retificacao = temRetificacao ? EnvelopeCodecV11.LerRetificacao(leitor, payload) : null;
 
         if (leitor.Falhou)
@@ -187,7 +189,8 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
             formularioTermoAceiteTexto: formularioTermoAceiteTexto,
             configuracaoDivulgacao: configuracaoDivulgacao,
             configuracaoTaxaInscricao: configuracaoTaxaInscricao,
-            localidade: localidade);
+            localidade: localidade,
+            algoritmoContagemPrazo: algoritmoContagemPrazo);
         return Result<EnvelopeReidratado>.Success(
             new EnvelopeReidratado(
                 grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
@@ -773,6 +776,61 @@ public sealed class EnvelopeCodec : IEnvelopeCodec
     /// (<see cref="ConfiguracaoTaxaInscricao.ConfirmacaoFundamentos"/>) antes de qualquer
     /// serialização, então o encoder nunca a emite.
     /// </remarks>
+    /// <summary>
+    /// Lê o bloco da convenção de contagem congelada (UNI-REQ-0112).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// O bloco é fechado nas duas formas: ausente, só a chave de presença; presente, a
+    /// identidade inteira. A combinação parcial não é representável — uma versão que
+    /// declarasse código sem hash não provaria qual definição aplicou, que é a única razão
+    /// de o bloco existir.
+    /// </para>
+    /// <para>
+    /// A referência é reconstruída por <see cref="ReferenciaRegra.Criar"/>, e não por
+    /// atribuição direta, pela mesma razão da localidade: um envelope adulterado com hash
+    /// fora de forma é malformado, e reidratá-lo daria ao processo restaurado uma
+    /// referência que o domínio recusaria criar.
+    /// </para>
+    /// </remarks>
+    private static ReferenciaRegra? LerAlgoritmoContagemPrazo(LeitorEnvelope leitor, JsonObject payload)
+    {
+        JsonObject bloco = leitor.Objeto(payload, "algoritmoContagemPrazo", "$");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        bool presente = leitor.Booleano(bloco, "presente", "algoritmoContagemPrazo");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        if (!presente)
+        {
+            leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente");
+            return null;
+        }
+
+        leitor.ExigirChaves(bloco, "algoritmoContagemPrazo", "presente", "codigo", "versao", "hash");
+
+        string codigo = leitor.TextoNaoVazio(bloco, "codigo", "algoritmoContagemPrazo");
+        string versao = leitor.TextoNaoVazio(bloco, "versao", "algoritmoContagemPrazo");
+        string hash = leitor.TextoNaoVazio(bloco, "hash", "algoritmoContagemPrazo");
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
+        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(codigo, versao, hash);
+        return referencia.IsFailure
+            ? leitor.Propagar<ReferenciaRegra?>(new DomainError(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"'algoritmoContagemPrazo' congelado não é uma referência de regra válida: {referencia.Error!.Message}"))
+            : referencia.Value;
+    }
+
     /// <summary>
     /// Lê o bloco fechado com a localidade regente e o fuso aplicado (UNI-REQ-0111).
     /// </summary>

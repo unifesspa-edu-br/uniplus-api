@@ -29,11 +29,21 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         "660cf3fffe22069f5a7f302a98b1e44b96d2e992680f02304935a36548f95490";
 
     /// <summary>
-    /// Hash da regra nova, congelado na migration <c>SubstituiRegraRecursoMultiInstancia</c>.
-    /// Amarra a definição do seed ao literal da migration: editar o texto da regra
-    /// sem regenerar a migration quebra este teste.
+    /// Hash da regra vigente, congelado na migration
+    /// <c>SubstituiInvariantesPrazoInterposicaoEmDiaUtil</c>, que substituiu a definição no
+    /// lugar ao inverter a política de unidade do prazo de interposição. Amarra a definição
+    /// do seed ao literal da migration: editar o texto da regra sem regenerar a migration
+    /// quebra este teste.
     /// </summary>
     private const string HashRegraNova =
+        "92e78394a057b6eadbdcb69c7b08793ff8801790856874d99355074483b2709c";
+
+    /// <summary>
+    /// Hash da definição anterior à inversão da política de unidade, quando o prazo de
+    /// interposição recusava dias úteis. Contraprova de que a substituição no lugar mudou o
+    /// conteúdo, e não só o texto — hash content-addressable acompanha a definição.
+    /// </summary>
+    private const string HashAntesDaInversaoDeUnidade =
         "94f2a02a12cccae0ebe98dabc9dc66b5aacac25053e91b768fdf0d47492e8240";
 
     /// <summary>
@@ -144,6 +154,9 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         nova.ComputarHash().Should().NotBe(
             HashRegraRemovida,
             "trocar a definição da regra troca o hash content-addressable");
+        nova.ComputarHash().Should().NotBe(
+            HashAntesDaInversaoDeUnidade,
+            "inverter a política de unidade do prazo de interposição é mudança de conteúdo, e o hash acompanha");
     }
 
     [Fact(DisplayName = "CA-04 — as outras 17 regras do seed original permanecem idênticas; a substituição tocou uma linha")]

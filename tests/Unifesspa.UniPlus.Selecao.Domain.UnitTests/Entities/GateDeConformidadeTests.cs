@@ -25,89 +25,10 @@ public sealed class GateDeConformidadeTests
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
 
-    private static ProcessoSeletivo ProcessoConforme(bool declararTaxa = true)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Gate", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+    private static ProcessoSeletivo ProcessoConforme(bool declararTaxa = true) =>
+        ProcessoConformeFactory.Criar(declararTaxa);
 
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva").Value!, peso: 1m, ordem: 1),
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirDistribuicaoVagas([
-            ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: Guid.CreateVersion7(),
-                voBase: 40,
-                pr: 1m,
-                regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
-                regraAjuste: null,
-                referenciaDemografica: null,
-                modalidades: [
-                    ModalidadeSelecionada.Criar(
-                        modalidadeOrigemId: Guid.CreateVersion7(),
-                        codigo: "AC",
-                        descricao: null,
-                        naturezaLegal: NaturezaLegalModalidade.Ampla,
-                        composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-                        composicaoOrigemCodigo: null,
-                        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-                        remanejamentoDestino: null,
-                        remanejamentoPar: null,
-                        remanejamentoFallback: null,
-                        criteriosCumulativos: [],
-                        acaoQuandoIndeferido: null,
-                        baseLegal: "Res. Unifesspa 532/2021",
-                        quantidadeDeclarada: 40).Value!,
-                ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoOpcoesRn04, "c"),
-            nOpcoesAlocacao: 1,
-            regrasEliminacao: [], baseadoEmEnem: false).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        if (declararTaxa)
-        {
-            processo.DefinirTaxaInscricao(
-                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null, confirmacaoFundamentos: false).Value!,
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        }
-
-        return processo;
-    }
-
-    /// <summary>Fase mínima e conforme: agrupa etapas (há 1 acima), produz resultado e coleta inscrição (há vagas e a origem é InscricaoPropria).</summary>
-    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
-        ordem: 1,
-        faseCanonicaOrigemId: Guid.CreateVersion7(),
-        codigo: "RESULTADO_FINAL",
-        donoInstitucional: "CEPS",
-        origemData: OrigemDataFase.Propria,
-        agrupaEtapas: true,
-        permiteComplementacao: false,
-        produzResultado: true,
-        resultadoDefinitivo: true,
-        coletaInscricao: true,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        atoProduzidoCodigo: "RESULTADO_FINAL",
-        atoProduzidoEfeitoIrreversivel: false,
-        bancasRequeridas: [],
-        regraRecurso: null).Value!;
-
-    private static DadosEdital Dados() => DadosEdital.Criar(
-        numero: "001/2026",
-        periodoInscricaoInicio: new DateOnly(2026, 1, 1),
-        periodoInscricaoFim: new DateOnly(2026, 1, 31),
-        documentoEditalId: Guid.CreateVersion7()).Value!;
+    private static DadosEdital Dados() => ProcessoConformeFactory.Dados();
 
     private static VersaoConfiguracao Publicar(ProcessoSeletivo processo)
     {

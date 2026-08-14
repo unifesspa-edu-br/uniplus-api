@@ -78,6 +78,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public LocalidadeRegente Localidade { get; private set; } = null!;
 
+    /// <summary>
+    /// Convenção de contagem que o certame usa para os prazos que distinguem dia útil de
+    /// dia não útil (UNI-REQ-0112): a entrada do rol de regras, congelada pela identidade
+    /// <c>(codigo, versao, hash)</c> que reproduz a definição. Ausência = não declarada,
+    /// o que só impede publicar quando alguma contagem depende dela.
+    /// </summary>
+    /// <remarks>
+    /// É <b>uma por processo</b>, não uma por fase: um mesmo certame conta todos os seus
+    /// prazos pela mesma convenção. Declará-la por fase permitiria que duas fases do
+    /// mesmo edital fechassem a janela por leituras diferentes do que é um dia útil.
+    /// </remarks>
+    public ReferenciaRegra? AlgoritmoContagemPrazo { get; private set; }
+
     /// <summary>Título do formulário de inscrição apresentado ao candidato (Story #559). Ausência = sem título configurado.</summary>
     public string? FormularioTitulo { get; private set; }
 
@@ -1397,6 +1410,65 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
+    /// Declara a convenção de contagem que o certame usa nos prazos que distinguem dia
+    /// útil (UNI-REQ-0112), em rascunho ou sob sessão editorial aberta.
+    /// </summary>
+    /// <remarks>
+    /// A referência chega já resolvida contra o rol de regras: quem escolhe informa código
+    /// e versão, e o handler troca isso pela identidade completa antes de chegar aqui. A
+    /// raiz nunca monta a referência a partir do que veio na requisição — o <c>hash</c>
+    /// ecoado do payload não provaria nada sobre a definição aplicada.
+    /// </remarks>
+    public Result DefinirAlgoritmoContagemPrazo(ReferenciaRegra algoritmo, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (algoritmo is null)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
+                "A convenção de contagem dos prazos é obrigatória."));
+        }
+
+        AlgoritmoContagemPrazo = algoritmo;
+        // Mesmo motivo do município: sem mover o ETag, trocar a convenção dentro da sessão
+        // deixaria passar escrita concorrente com revisão velha.
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Recusa gerar versão quando alguma contagem do certame distingue dia útil e a
+    /// convenção não foi declarada (UNI-REQ-0112/UNI-REQ-0116).
+    /// </summary>
+    /// <remarks>
+    /// Basta existir regra de recurso para a dependência existir: toda regra declara prazo
+    /// de interposição, e as duas unidades declaráveis nele correm sobre dia útil — dias
+    /// úteis por definição, e horas porque só as horas situadas em dia útil avançam o
+    /// relógio. A suspensividade em dias úteis depende igualmente, mas nunca sozinha, já
+    /// que não existe suspensividade sem a regra que a carrega. Sem regra de recurso
+    /// nenhuma, não há o que contar e a declaração não é exigida.
+    /// </remarks>
+    private DomainError? PendenciaDoAlgoritmoDeContagem()
+    {
+        if (AlgoritmoContagemPrazo is not null)
+        {
+            return null;
+        }
+
+        bool algumaContagemDependeDaConvencao = _cronogramaFases.Exists(fase => fase.RegraRecurso is not null);
+
+        return algumaContagemDependeDaConvencao
+            ? new DomainError(
+                "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
+                "O processo tem prazo de recurso cuja contagem distingue dia útil, e não declarou a convenção de contagem que usa.")
+            : null;
+    }
+
+    /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
     /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
     /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
@@ -2512,6 +2584,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada."));
         }
 
+        // Convenção de contagem (UNI-REQ-0112): exigida só quando alguma contagem do
+        // certame distingue dia útil. Escolher em silêncio produziria versão imutável cujo
+        // prazo o sistema teria decidido no lugar do edital.
+        if (PendenciaDoAlgoritmoDeContagem() is { } pendenciaAlgoritmo)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaAlgoritmo);
+        }
+
         if (PendenciaDeConformidade() is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
@@ -2850,6 +2930,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada."));
         }
 
+        // Convenção de contagem (UNI-REQ-0112): exigida só quando alguma contagem do
+        // certame distingue dia útil. Escolher em silêncio produziria versão imutável cujo
+        // prazo o sistema teria decidido no lugar do edital.
+        if (PendenciaDoAlgoritmoDeContagem() is { } pendenciaAlgoritmo)
+        {
+            return Result<VersaoConfiguracao>.Failure(pendenciaAlgoritmo);
+        }
+
         if (PendenciaDeConformidade() is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
@@ -3034,6 +3122,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // localidade a lê — sem isso, restaurar um envelope anterior a esta fatia projetaria
         // sobre uma raiz sem município.
         Localidade = Localidade,
+        // Mesma razão da localidade: a sombra é recanonicalizada, e o bloco da convenção de
+        // contagem lê da raiz projetada.
+        AlgoritmoContagemPrazo = AlgoritmoContagemPrazo,
     };
 
     /// <summary>
@@ -3496,6 +3587,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             Localidade = localidadeCongelada;
         }
+
+        // Convenção de contagem (UNI-REQ-0112): reposição INCONDICIONAL, ao contrário da
+        // localidade acima. Ali, null significa grafo antigo que não a carrega, e apagar
+        // deixaria a raiz num estado que o domínio não admite. Aqui, null é o que a versão
+        // de fato tinha quando nenhuma contagem sua distinguia dia útil — repor só quando
+        // presente faria a declaração feita durante a sessão sobreviver ao descarte, que é
+        // precisamente o que o descarte existe para desfazer.
+        AlgoritmoContagemPrazo = grafo.AlgoritmoContagemPrazo;
 
         // Cronograma de fases (Story #851): nenhuma referência externa aponta para
         // FaseCronograma.Id (diferente das etapas) — o Id não é congelado no envelope

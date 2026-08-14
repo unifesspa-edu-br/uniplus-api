@@ -8,21 +8,20 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura de <see cref="RegraRecursoFase.Criar"/> (Story #851 §3.6): as invariantes
-/// puras que o VO consegue provar sozinho — referência por símbolo (CA-01/CA-02) e as duas
-/// recusas de DIAS_UTEIS (CA-20/CA-21), que não têm a mesma causa: no prazo de interposição
-/// a proibição é permanente; na suspensividade a indisponibilidade decorre da falta do
-/// algoritmo de contagem versionado. A resolução contra o catálogo vivo (existe, TipoRegra
-/// correto, hash bate) é do handler (Application) — ver
-/// <c>DefinirCronogramaFasesCommandHandlerTests</c>.
+/// Cobertura de <see cref="RegraRecursoFase.Criar"/>: as invariantes puras que a entidade
+/// prova sozinha — a referência por símbolo e as unidades declaráveis no prazo de
+/// interposição (UNI-REQ-0113). A resolução contra o catálogo vivo (existe, TipoRegra
+/// correto, hash bate) é do handler — ver <c>DefinirCronogramaFasesCommandHandlerTests</c>;
+/// a exigência da convenção de contagem é invariante do processo, não desta entidade.
 /// </summary>
 public sealed class RegraRecursoFaseTests
 {
     private static ArgsRegraPrazoRecurso ArgsBase(
         UnidadePrazo prazoUnidade = UnidadePrazo.Horas,
+        decimal prazoValor = 48m,
         UnidadePrazo? susp1Unidade = null,
         UnidadePrazo? susp2Unidade = null) => new(
-            PrazoValor: 48m,
+            PrazoValor: prazoValor,
             PrazoUnidade: prazoUnidade,
             AtoAncoraCodigo: "RESULTADO_PRELIMINAR",
             SuspensividadePrimeiraInstanciaValor: susp1Unidade is null ? null : 5m,
@@ -30,13 +29,13 @@ public sealed class RegraRecursoFaseTests
             SuspensividadeSegundaInstanciaValor: susp2Unidade is null ? null : 5m,
             SuspensividadeSegundaInstanciaUnidade: susp2Unidade);
 
+    private static ReferenciaRegra RegraAncorada() => ReferenciaRegra.Criar(
+        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+
     [Fact(DisplayName = "CA-01: referencia a regra por SÍMBOLO (RegraPrazoRecursoCodigo.AncoradoEmAto), não literal solto")]
     public void ReferenciaRegraPorSimbolo()
     {
-        ReferenciaRegra regra = ReferenciaRegra.Criar(
-            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
-
-        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(regra, ArgsBase());
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(RegraAncorada(), ArgsBase());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Regra.Codigo.Should().Be(RegraPrazoRecursoCodigo.AncoradoEmAto);
@@ -54,57 +53,81 @@ public sealed class RegraRecursoFaseTests
         resultado.Error!.Code.Should().Be("RegraRecursoFase.RegraCatalogoInvalida");
     }
 
-    [Fact(DisplayName = "CA-20: prazo de interposição em DIAS_UTEIS é recusado — proibição permanente, nunca aproximada em silêncio")]
-    public void PrazoDeInterposicaoEmDiasUteis_Recusa()
+    [Theory(DisplayName = "As duas unidades declaráveis na interposição são aceitas: dias úteis em valor inteiro, e horas")]
+    [InlineData(UnidadePrazo.DiasUteis, 2)]
+    [InlineData(UnidadePrazo.DiasUteis, 1)]
+    [InlineData(UnidadePrazo.Horas, 48)]
+    [InlineData(UnidadePrazo.Horas, 6)]
+    public void UnidadesDeclaraveis_Aceitas(UnidadePrazo unidade, int valor)
     {
-        ReferenciaRegra regra = ReferenciaRegra.Criar(
-            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
-
-        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(regra, ArgsBase(prazoUnidade: UnidadePrazo.DiasUteis));
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoEmDiasUteisSemCalendario");
-
-        // A mensagem chega ao administrador como `detail` do ProblemDetails: precisa
-        // orientar a unidade admitida, e nunca atribuir a recusa à falta de calendário —
-        // o calendário existe e é irrelevante para esta proibição.
-        resultado.Error.Message.Should().Be(
-            "O prazo de interposição deve ser informado em horas ou dias corridos; dias úteis não são aceitos.");
-    }
-
-    [Theory(DisplayName = "CA-21: suspensividade em DIAS_UTEIS é recusada em QUALQUER uma das duas instâncias, independentemente")]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void SuspensividadeEmDiasUteis_QualquerInstancia_Recusa(bool primeiraEmDiasUteis, bool segundaEmDiasUteis)
-    {
-        ReferenciaRegra regra = ReferenciaRegra.Criar(
-            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
-
-        UnidadePrazo? susp1 = primeiraEmDiasUteis ? UnidadePrazo.DiasUteis : UnidadePrazo.Dias;
-        UnidadePrazo? susp2 = segundaEmDiasUteis ? UnidadePrazo.DiasUteis : UnidadePrazo.Dias;
-
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            regra, ArgsBase(susp1Unidade: susp1, susp2Unidade: susp2));
+            RegraAncorada(), ArgsBase(prazoUnidade: unidade, prazoValor: valor));
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario");
-
-        // Diferente da interposição: aqui dias úteis é admissível em tese, e a recusa
-        // dura só enquanto o algoritmo de contagem não for artefato versionado.
-        resultado.Error.Message.Should().Be(
-            "A suspensividade em dias úteis, em qualquer uma das duas instâncias, exige calendário vigente e "
-                + "algoritmo de contagem versionado; o algoritmo ainda não está disponível.");
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.PrazoUnidade.Should().Be(unidade);
+        resultado.Value.Args.PrazoValor.Should().Be(valor);
     }
 
-    [Fact(DisplayName = "CA-21 (contraprova): suspensividade em DIAS corridos é aceita e congelada — em qualquer uma das duas instâncias, inclusive com a outra nula")]
+    [Fact(DisplayName = "Horas com valor fracionário é aceita — a restrição de valor inteiro é da unidade dias úteis")]
+    public void HorasFracionarias_Aceitas()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.Horas, prazoValor: 1.5m));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.PrazoValor.Should().Be(1.5m);
+    }
+
+    [Fact(DisplayName = "Prazo de interposição em dias CORRIDOS é recusado — a janela não pode encolher por cair em feriado")]
+    public void PrazoDeInterposicaoEmDiasCorridos_Recusa()
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.Dias, prazoValor: 5m));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoEmDiasCorridos");
+
+        // A mensagem chega ao administrador como `detail` do ProblemDetails: orienta as
+        // unidades admitidas, em vez de só negar a recebida.
+        resultado.Error.Message.Should().Be(
+            "O prazo de interposição deve ser informado em dias úteis ou horas; dias corridos não são aceitos.");
+    }
+
+    [Theory(DisplayName = "Prazo de interposição em FRAÇÃO de dia útil é recusado, com causa distinta da de dia corrido")]
+    [InlineData(1.5)]
+    [InlineData(0.5)]
+    [InlineData(2.25)]
+    public void PrazoDeInterposicaoEmFracaoDeDiaUtil_Recusa(decimal valorFracionario)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsBase(prazoUnidade: UnidadePrazo.DiasUteis, prazoValor: valorFracionario));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("RegraRecursoFase.PrazoEmFracaoDeDiaUtil",
+            "fração e dia corrido são causas diferentes, com remediação diferente — quem declarou fração é orientado a usar horas");
+        resultado.Error.Message.Should().Contain("horas");
+    }
+
+    [Theory(DisplayName = "A suspensividade aceita as três unidades, em qualquer uma das duas instâncias — é outro relógio")]
+    [InlineData(UnidadePrazo.DiasUteis, null)]
+    [InlineData(null, UnidadePrazo.DiasUteis)]
+    [InlineData(UnidadePrazo.DiasUteis, UnidadePrazo.DiasUteis)]
+    [InlineData(UnidadePrazo.Dias, UnidadePrazo.Horas)]
+    public void Suspensividade_AceitaAsTresUnidades(UnidadePrazo? susp1, UnidadePrazo? susp2)
+    {
+        Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
+            RegraAncorada(), ArgsBase(susp1Unidade: susp1, susp2Unidade: susp2));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        resultado.Value!.Args.SuspensividadePrimeiraInstanciaUnidade.Should().Be(susp1);
+        resultado.Value.Args.SuspensividadeSegundaInstanciaUnidade.Should().Be(susp2);
+    }
+
+    [Fact(DisplayName = "Suspensividade em dias corridos é congelada com a segunda instância nula — null é valor legítimo, não omissão")]
     public void Suspensividade_DiasCorridos_PrimeiraPreenchidaSegundaNula_Aceita()
     {
-        ReferenciaRegra regra = ReferenciaRegra.Criar(
-            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
-
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(
-            regra, ArgsBase(susp1Unidade: UnidadePrazo.Dias, susp2Unidade: null));
+            RegraAncorada(), ArgsBase(susp1Unidade: UnidadePrazo.Dias, susp2Unidade: null));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Args.SuspensividadePrimeiraInstanciaUnidade.Should().Be(UnidadePrazo.Dias);
