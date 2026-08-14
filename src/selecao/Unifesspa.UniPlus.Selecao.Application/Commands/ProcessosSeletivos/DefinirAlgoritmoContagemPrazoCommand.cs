@@ -28,9 +28,15 @@ public sealed record DefinirAlgoritmoContagemPrazoCommand(
     PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>
 {
     /// <summary>
-    /// Nenhum dos dois campos foi informado — distinto de par informado que não resolve no
-    /// rol de regras, que tem causa e remediação próprias.
+    /// Falta código, versão, ou ambos — em qualquer dos três casos nada foi declarado.
     /// </summary>
+    /// <remarks>
+    /// A condição é <b>ou</b>, não <b>e</b>: meio par não aponta entrada nenhuma do rol de
+    /// regras. Tratá-lo como declaração levaria o valor ausente ao leitor do catálogo e a
+    /// recusa sairia como "não encontrado", dizendo a quem chamou que o par não existe
+    /// quando o que houve foi um campo esquecido. É distinto de par completo que não
+    /// resolve, esse sim com causa e remediação próprias.
+    /// </remarks>
     public bool AlgoritmoNaoDeclarado =>
-        string.IsNullOrWhiteSpace(Codigo) && string.IsNullOrWhiteSpace(Versao);
+        string.IsNullOrWhiteSpace(Codigo) || string.IsNullOrWhiteSpace(Versao);
 }
