@@ -482,22 +482,15 @@ public sealed class ProcessoSeletivoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirLocalidade(
         Guid id,
         [FromBody] DefinirLocalidadeRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
         Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirLocalidadeCommand(id, request.CodigoIbge, request.Nome, request.Uf, precondicao),
+            new DefinirLocalidadeCommand(id, request.CodigoIbge, request.Nome, request.Uf),
             cancellationToken);
         return ResponderMutacao(resultado);
     }

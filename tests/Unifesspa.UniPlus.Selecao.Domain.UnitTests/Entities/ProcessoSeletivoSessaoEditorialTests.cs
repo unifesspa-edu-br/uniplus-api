@@ -656,4 +656,40 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     {
         public override DateTimeOffset GetUtcNow() => instante;
     }
+    /// <summary>
+    /// A localidade rege quais feriados incidem no prazo, e ainda não entra no envelope
+    /// congelado nem em <c>AplicarGrafo</c>. Liberá-la sob sessão editorial abriria dois
+    /// furos: fechar a retificação publicaria os mesmos bytes apesar da configuração
+    /// diferente, e descartá-la não reverteria o município — uma edição descartada
+    /// continuaria governando a contagem. Por isso a escrita é restrita ao rascunho até
+    /// que o congelamento exista.
+    /// </summary>
+    [Fact(DisplayName = "Localidade não é alterável em processo publicado")]
+    public void DefinirLocalidade_ProcessoPublicado_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoPublicado(out _);
+
+        Result resultado = processo.DefinirLocalidade(
+            LocalidadeRegente.Criar("1501402", "Belém", "PA").Value!);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeSomenteEmRascunho");
+        processo.Localidade.CodigoIbge.Should().Be("1504208");
+    }
+
+    [Fact(DisplayName = "Localidade não é alterável nem com sessão editorial aberta")]
+    public void DefinirLocalidade_ComSessaoEditorialAberta_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcessoPublicado(out VersaoConfiguracao versao);
+        processo.AbrirRetificacao("Correção do prazo", versao, "user-sub-1", Agora)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirLocalidade(
+            LocalidadeRegente.Criar("1501402", "Belém", "PA").Value!);
+
+        resultado.IsFailure.Should().BeTrue(
+            "a sessão editorial não restauraria a localidade no descarte, porque o envelope ainda não a congela");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeSomenteEmRascunho");
+        processo.Localidade.CodigoIbge.Should().Be("1504208");
+    }
 }

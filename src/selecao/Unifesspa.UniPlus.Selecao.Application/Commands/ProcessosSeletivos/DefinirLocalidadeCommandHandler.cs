@@ -36,11 +36,6 @@ public static class DefinirLocalidadeCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
-        {
-            return Result<MutacaoAceita>.Failure(bloqueio);
-        }
-
         if (command.LocalidadeNaoDeclarada)
         {
             return Result<MutacaoAceita>.Failure(new DomainError(
@@ -55,7 +50,7 @@ public static class DefinirLocalidadeCommandHandler
             return Result<MutacaoAceita>.Failure(localidadeResult.Error!);
         }
 
-        Result definirResult = processo.DefinirLocalidade(localidadeResult.Value!, command.Precondicao);
+        Result definirResult = processo.DefinirLocalidade(localidadeResult.Value!);
         if (definirResult.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(definirResult.Error!);

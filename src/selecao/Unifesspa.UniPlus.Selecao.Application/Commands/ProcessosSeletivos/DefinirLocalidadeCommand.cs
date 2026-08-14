@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Domain.ValueObjects;
-
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
@@ -12,12 +10,16 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// ausência: a localidade existe desde a criação do processo e só pode ser trocada por
 /// outra — um processo sem ela não é estado representável.
 /// </summary>
+/// <remarks>
+/// Sem precondição <c>If-Match</c> porque a escrita é restrita ao rascunho, que não tem
+/// ETag de sessão editorial. A alteração em processo publicado depende de a localidade
+/// ser congelada no envelope, e entra junto com esse congelamento.
+/// </remarks>
 public sealed record DefinirLocalidadeCommand(
     Guid ProcessoSeletivoId,
     string? CodigoIbge,
     string? Nome,
-    string? Uf,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>
+    string? Uf) : ICommand<Result<MutacaoAceita>>
 {
     /// <summary>
     /// Nenhum dos três campos foi informado — distinto de trio informado e incoerente,
