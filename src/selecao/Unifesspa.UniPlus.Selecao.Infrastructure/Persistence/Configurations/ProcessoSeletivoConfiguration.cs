@@ -97,6 +97,31 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         });
         builder.Navigation(p => p.UnidadeAdministradora).IsRequired();
 
+        // Localidade que rege a contagem de prazos (UNI-REQ-0111) — declarada na criação,
+        // por isso as três colunas são NOT NULL e não há check all-or-nothing: aqui não
+        // existe o estado "sem localidade" que o trio da Unidade administradora admite.
+        builder.OwnsOne(p => p.Localidade, l =>
+        {
+            l.Property(x => x.CodigoIbge)
+                .HasColumnName("localidade_codigo_ibge")
+                .HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength)
+                .IsFixedLength()
+                .IsRequired()
+                .HasComment("Código IBGE do município cujo calendário rege a contagem dos prazos — o único valor normativo da localidade.");
+            l.Property(x => x.Nome)
+                .HasColumnName("localidade_nome")
+                .HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength)
+                .IsRequired()
+                .HasComment("Nome do município da localidade regente — cache de exibição, não entra em cálculo de prazo.");
+            l.Property(x => x.Uf)
+                .HasColumnName("localidade_uf")
+                .HasMaxLength(ReferenciaCidadeGeo.UfLength)
+                .IsFixedLength()
+                .IsRequired()
+                .HasComment("UF da localidade regente — cache de exibição; a UF que vale é a derivada do prefixo do código.");
+        });
+        builder.Navigation(p => p.Localidade).IsRequired();
+
         // Coleções filhas do agregado: entidades próprias com FK para a raiz
         // (nunca owned types).
         builder.HasMany(p => p.Etapas)

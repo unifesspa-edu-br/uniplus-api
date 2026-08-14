@@ -490,6 +490,9 @@ public sealed class EnvelopeFechadoE2ETests
                 tipoProcessoOrigemId = Catalogos.TipoProcessoId,
                 origemCandidatos = 1, // OrigemCandidatos.InscricaoPropria
                 unidadeAdministradoraOrigemId = Catalogos.UnidadeId,
+                localidadeCodigoIbge = "1504208",
+                localidadeNome = "Marabá",
+                localidadeUf = "PA",
             },
             ifMatch: null);
 

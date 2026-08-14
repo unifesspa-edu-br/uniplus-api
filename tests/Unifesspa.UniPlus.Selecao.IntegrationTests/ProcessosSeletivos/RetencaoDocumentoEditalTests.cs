@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Npgsql;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
@@ -145,7 +146,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"Retenção {Guid.CreateVersion7()}", Domain.Enums.TipoProcesso.SiSU, Domain.Enums.OrigemCandidatos.InscricaoPropria,
             Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot
-                .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+                .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         DocumentoEdital documento = DocumentoEdital.IniciarPendente(
             processo.Id, TimeProvider.System, TimeSpan.FromMinutes(15));

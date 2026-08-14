@@ -62,16 +62,35 @@ public static class CriarProcessoSeletivoCommandHandler
                 $"Unidade administradora {command.UnidadeAdministradoraOrigemId} não encontrada ou não está mais viva."));
         }
 
-        // CA-02 (issue #1114): a localidade que governa a contagem de prazo em dias
-        // úteis (issue #1113) vem da Unidade administradora — criar um processo sem
-        // essa cidade cadastrada deixaria o prazo sem abrangência de feriado municipal
-        // resolvível depois, silenciosamente. Recusa nomeada aqui, antes de qualquer
-        // outra consulta, é mais barata que descobrir a lacuna na hora de publicar.
+        // A cidade da Unidade administradora descreve onde ela fica, e é copiada para o
+        // snapshot dela — não é a localidade que rege a contagem de prazos, que o processo
+        // declara por conta própria (UNI-REQ-0111). A exigência de a Unidade ter cidade
+        // permanece como regra do cadastro dela, e é avaliada aqui porque o snapshot a
+        // carrega; a justificativa original, que a apoiava na contagem de prazo, deixou de
+        // valer quando a localidade passou a ser declarada.
         if (string.IsNullOrWhiteSpace(unidade.CidadeCodigoIbge))
         {
             return Result<Guid>.Failure(new DomainError(
                 "ProcessoSeletivo.UnidadeAdministradoraSemCidade",
                 $"Unidade administradora {command.UnidadeAdministradoraOrigemId} não tem cidade cadastrada — obrigatória para criar processo seletivo."));
+        }
+
+        // Erro nomeado, e não validação de contrato: é este o código que o catálogo
+        // público publica para a causa (uniplus.selecao.processo_seletivo.localidade_ausente).
+        // Exigir os campos no validator devolveria uniplus.validacao e o consumidor perderia
+        // a página que explica a causa.
+        if (command.LocalidadeNaoDeclarada)
+        {
+            return Result<Guid>.Failure(new DomainError(
+                "ProcessoSeletivo.LocalidadeAusente",
+                "A localidade que rege a contagem dos prazos é obrigatória para criar o processo seletivo."));
+        }
+
+        Result<LocalidadeRegente> localidadeResult = LocalidadeRegente.Criar(
+            command.LocalidadeCodigoIbge, command.LocalidadeNome, command.LocalidadeUf);
+        if (localidadeResult.IsFailure)
+        {
+            return Result<Guid>.Failure(localidadeResult.Error!);
         }
 
         TipoProcessoView? tipo = await tipoProcessoReader
@@ -99,7 +118,8 @@ public static class CriarProcessoSeletivoCommandHandler
         }
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            command.Nome, tipoSnapshotResult.Value!, command.OrigemCandidatos, unidade.Id, snapshotResult.Value!);
+            command.Nome, tipoSnapshotResult.Value!, command.OrigemCandidatos, unidade.Id, snapshotResult.Value!,
+            localidadeResult.Value!);
 
         await processoSeletivoRepository.AdicionarAsync(processo, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

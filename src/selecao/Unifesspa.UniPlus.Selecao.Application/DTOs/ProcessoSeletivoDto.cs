@@ -14,6 +14,10 @@ public sealed record ProcessoSeletivoDto(
     string Status,
     string OrigemCandidatos,
     UnidadeAdministradoraSnapshotDto UnidadeAdministradora,
+    // Localidade que rege a contagem dos prazos (UNI-REQ-0111): read-back administrativo,
+    // sem o qual a tela de edição não consegue reler o que foi declarado na criação e
+    // poderia reenviar valor divergente do salvo. Sempre presente — é NOT NULL desde a criação.
+    LocalidadeRegenteDto Localidade,
     IReadOnlyList<EtapaProcessoDto> Etapas,
     OfertaAtendimentoEspecializadoDto? OfertaAtendimento,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
@@ -68,6 +72,13 @@ public sealed record ReferenciaTemporalFatosDto(string Tipo, DateOnly? Data, Gui
 public sealed record UnidadeAdministradoraSnapshotDto(
     Guid OrigemId, string Sigla, string Slug, string Nome, string Tipo,
     string? CidadeCodigoIbge, string? CidadeNome, string? CidadeUf);
+
+/// <summary>
+/// DTO de leitura da localidade que rege a contagem dos prazos (UNI-REQ-0111). Sempre
+/// presente — declarada desde a criação. <c>Nome</c> e <c>Uf</c> são cache de exibição:
+/// quem calcula prazo deriva município e UF do <c>CodigoIbge</c>, nunca destes.
+/// </summary>
+public sealed record LocalidadeRegenteDto(string CodigoIbge, string Nome, string Uf);
 
 /// <summary>Identidade e rótulo do tipo congelados na criação do processo (UNI-REQ-0098).</summary>
 public sealed record TipoProcessoSnapshotDto(Guid OrigemId, string Codigo, string Nome);

@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class ProcessoSeletivoTests
 {
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
     [Fact(DisplayName = "Criar inicia o processo em rascunho (CA-01)")]
     public void CriarProcesso_IniciaEmRascunho()
@@ -35,7 +35,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem tipo lanca ArgumentException")]
     public void Criar_SemTipo_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         act.Should().Throw<ArgumentException>().WithParameterName("tipoProcesso");
     }
@@ -43,7 +43,7 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Criar sem origem dos candidatos lanca ArgumentException (Story #851 §3.4)")]
     public void Criar_SemOrigemCandidatos_Lanca()
     {
-        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.Nenhuma, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        Action act = () => ProcessoSeletivo.Criar("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.Nenhuma, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         act.Should().Throw<ArgumentException>().WithParameterName("origemCandidatos");
     }
@@ -53,7 +53,7 @@ public sealed class ProcessoSeletivoTests
     {
         Action act = () => ProcessoSeletivo.Criar(
             "PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.Empty,
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         act.Should().Throw<ArgumentException>().WithParameterName("unidadeAdministradoraOrigemId");
     }
@@ -66,7 +66,7 @@ public sealed class ProcessoSeletivoTests
             .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!;
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId, snapshot);
+            "PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId, snapshot, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         processo.UnidadeAdministradoraOrigemId.Should().Be(unidadeId);
         processo.UnidadeAdministradora.Should().BeSameAs(snapshot);
@@ -562,8 +562,8 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "DefinirClassificacao produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
     public void DefinirClassificacao_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
     {
-        ProcessoSeletivo psiq = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
-        ProcessoSeletivo sisu = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo psiq = ProcessoSeletivo.Criar("PSIQ 2026", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        ProcessoSeletivo sisu = ProcessoSeletivo.Criar("SiSU 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         RegraEliminacao EliminacaoEnem() => RegraEliminacao.Criar(
             ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteRedacao, "v1", new string('e', 64)).Value!,
