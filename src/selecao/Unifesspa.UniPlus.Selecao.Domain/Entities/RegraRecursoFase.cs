@@ -56,7 +56,7 @@ public sealed class RegraRecursoFase : EntityBase
                 $"RegraRecursoFase só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
         }
 
-        // CA-20 (UNI-REQ-0080): a interposição em dias úteis é recusada de forma
+        // CA-20 (UNI-REQ-0113): a interposição em dias úteis é recusada de forma
         // PERMANENTE — não é limitação técnica temporária. É o prazo que fecha a porta do
         // candidato; um erro de contagem para menos cercearia direito, e nenhum calendário
         // ou algoritmo de contagem elimina esse risco. Nunca aproximado em silêncio; o
@@ -68,10 +68,10 @@ public sealed class RegraRecursoFase : EntityBase
                 "O prazo de interposição deve ser informado em horas ou dias corridos; dias úteis não são aceitos."));
         }
 
-        // CA-21 (UNI-REQ-0080): a suspensividade em dias úteis é condicionalmente
+        // CA-21 (UNI-REQ-0116): a suspensividade em dias úteis é condicionalmente
         // aceitável — mas exige, ao mesmo tempo, um calendário de dias úteis vigente E
-        // uma versão identificável do algoritmo de contagem, ambas congeladas no
-        // snapshot. Nenhum artefato de algoritmo versionado existe hoje (o motor de
+        // uma versão identificável do algoritmo de contagem, ambas congeladas no snapshot
+        // (UNI-REQ-0080). Nenhum artefato de algoritmo versionado existe hoje (o motor de
         // contagem é UNI-REQ-0081, incremento futuro), então a recusa vale sempre, por
         // ora — checagem POR INSTÂNCIA, independente: qualquer uma das duas em dias
         // úteis recusa, mesmo que a outra esteja em dias corridos ou seja null.

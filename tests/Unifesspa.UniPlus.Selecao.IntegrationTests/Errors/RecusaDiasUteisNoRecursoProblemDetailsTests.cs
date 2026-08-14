@@ -25,12 +25,12 @@ using Xunit;
 /// errada, então o teste percorre o caminho inteiro com os dois artefatos reais.
 /// </summary>
 /// <remarks>
-/// As duas recusas não têm a mesma causa (UNI-REQ-0080): no prazo de interposição, dias
+/// As duas recusas não têm a mesma causa (UNI-REQ-0113): no prazo de interposição, dias
 /// úteis é proibido em definitivo — é o prazo que fecha a porta do candidato, e errar para
-/// menos cercearia direito; na suspensividade, dias úteis é admissível, mas exige calendário
-/// vigente e algoritmo de contagem versionado, e é o algoritmo que ainda não existe. Nenhuma
-/// das duas decorre de ausência do calendário de dias úteis, que já é cadastrável no módulo
-/// Configuração — daí a contraprova literal ao fim de cada caso.
+/// menos cercearia direito; na suspensividade, dias úteis é admissível (UNI-REQ-0116), mas
+/// exige calendário vigente e algoritmo de contagem versionado, e é o algoritmo que ainda
+/// não existe. Nenhuma das duas decorre de ausência do calendário de dias úteis, que já é
+/// cadastrável no módulo Configuração — daí a contraprova literal ao fim de cada caso.
 /// <para>
 /// Os dois <c>code</c> conservam o sufixo <c>sem_calendario</c>: são chave estável de
 /// consumidor e integram o URI <c>type</c>. O teste fixa isso para que a correção editorial
