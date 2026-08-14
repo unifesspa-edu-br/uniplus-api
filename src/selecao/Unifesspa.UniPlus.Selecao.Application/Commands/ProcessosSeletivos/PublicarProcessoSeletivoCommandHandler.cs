@@ -28,6 +28,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoEditalRepository documentoEditalRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
+        IResolvedorFusoInstitucional resolvedorFuso,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         ITipoAtoPublicadoReader tipoDeAtoReader,
@@ -41,6 +42,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(documentoEditalRepository);
         ArgumentNullException.ThrowIfNull(canonicalizer);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
@@ -206,9 +208,17 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(valoresSelecionaveisResult.Error!), []);
         }
 
+        // Resolvido antes de canonicalizar: o serializador do bloco de localidade precisa do fuso,
+        // e uma falha aqui é da instalação — não faz sentido descobri-la no meio da projeção.
+        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
+        if (fusoResult.IsFailure)
+        {
+            return (Result.Failure(fusoResult.Error!), []);
+        }
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
-                processo, dados, documento.HashSha256!,
+                processo, dados, documento.HashSha256!, fusoResult.Value!.Id,
                 Conformidade: conformidadeLegal.Value,
                 MetadadosFatosCongelados: metadadosFatosResult.Value,
                 ValoresSelecionaveisCongelados: valoresSelecionaveisResult.Value));

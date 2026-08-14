@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Time;
 
 public static class SelecaoInfrastructureRegistration
 {
@@ -57,6 +58,10 @@ public static class SelecaoInfrastructureRegistration
 
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
         services.AddScoped<ISnapshotPublicacaoCanonicalizer, SnapshotPublicacaoCanonicalizer>();
+        // Singleton: a zona é constante e o resultado da busca na base de fusos do sistema não
+        // muda durante a execução — inclusive quando a base falta, que é o caso que o erro nomeado
+        // cobre.
+        services.AddSingleton<IResolvedorFusoInstitucional, ResolvedorFusoInstitucional>();
         services.AddScoped<IRegistroCodecsEnvelope, RegistroCodecsEnvelope>();
         services.AddScoped<IRestauradorDeConfiguracao, RestauradorDeConfiguracao>();
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();

@@ -81,6 +81,6 @@ internal static class CorpusFitness
             periodoInscricaoFim: new DateOnly(2026, 1, 31),
             documentoEditalId: new Guid("33333333-3333-3333-3333-333333333333")).Value!;
 
-        return new EntradaCanonicalizacao(processo, dados, new string('a', 64));
+        return new EntradaCanonicalizacao(processo, dados, new string('a', 64), FusoInstitucional.ZoneId);
     }
 }

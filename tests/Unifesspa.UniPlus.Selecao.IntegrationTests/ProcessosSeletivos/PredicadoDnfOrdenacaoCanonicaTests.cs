@@ -50,7 +50,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         documentoEditalId: Guid.CreateVersion7()).Value!;
 
     private static EntradaCanonicalizacao Entrada(ProcessoSeletivo processo) =>
-        new(processo, Dados(), new string('0', 64));
+        new(processo, Dados(), new string('0', 64), FusoInstitucional.ZoneId);
 
     private static JsonElement Escalar(string valor) => JsonSerializer.SerializeToElement(valor);
 
@@ -354,7 +354,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
 
         DadosEdital dados = Dados();
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
-        SnapshotCanonico congelado = Canonicalizador.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento));
+        SnapshotCanonico congelado = Canonicalizador.Canonicalizar(new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -382,7 +382,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             v1.SchemaVersion,
             new EntradaCanonicalizacao(
-                processo, reidratado.Value.Dados, reidratado.Value.HashDocumento, reidratado.Value.Retificacao,
+                processo, reidratado.Value.Dados, reidratado.Value.HashDocumento, FusoInstitucional.ZoneId, reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade, reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);

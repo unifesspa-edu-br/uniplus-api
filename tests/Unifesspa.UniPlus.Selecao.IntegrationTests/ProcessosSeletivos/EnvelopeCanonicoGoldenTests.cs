@@ -370,7 +370,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     internal static SnapshotCanonico CanonicalizarReferencia() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            ProcessoDeReferencia(), DadosDeReferencia(), HashFixo,
+            ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia()));
 
@@ -408,7 +408,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     private static SnapshotCanonico CanonicalizarReferenciaComCascata() =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo,
+            ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia()));
 
@@ -544,9 +544,9 @@ public sealed class EnvelopeCanonicoGoldenTests
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis = ValoresSelecionaveisDeReferencia();
 
         byte[] primeira = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, HashFixo, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
+            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
         byte[] segunda = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, HashFixo, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
+            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis)).Bytes;
 
         segunda.Should().Equal(primeira, "a projeção é pura — mesma entrada, mesmos bytes");
     }
@@ -566,7 +566,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         DadosEdital dados = DadosDeReferencia();
 
         Action canonicalizarSemDicionario = () => Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, HashFixo, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
+            new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: MetadadosFatosDeReferencia()));
 
         canonicalizarSemDicionario.Should().Throw<InvalidOperationException>()
             .WithMessage("*COR_RACA*",
@@ -593,7 +593,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
         Action canonicalizarComListaVazia = () => Canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
-                processo, dados, HashFixo,
+                processo, dados, HashFixo, FusoInstitucional.ZoneId,
                 MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
                 ValoresSelecionaveisCongelados: valoresComListaVazia));
 
@@ -649,7 +649,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             new(ValoresSelecionaveisDeReferencia()) { ["COR_RACA"] = empatados };
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, HashFixo, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis));
+            processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis));
 
         JsonArray valoresCorRaca = EnvelopeCodecRoundTripTests.Envelope(canonico)["fatosColetados"]!.AsArray()
             .Single(f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["valoresSelecionaveis"]!.AsArray();
@@ -805,7 +805,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo)).Bytes;
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId)).Bytes;
     }
 
     private static JsonObject EnvelopeComoObjeto() =>

@@ -42,6 +42,7 @@ public static class FecharRetificacaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoEditalRepository documentoEditalRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
+        IResolvedorFusoInstitucional resolvedorFuso,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         ITipoAtoPublicadoReader tipoDeAtoReader,
@@ -55,6 +56,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(documentoEditalRepository);
         ArgumentNullException.ThrowIfNull(canonicalizer);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
@@ -259,11 +261,20 @@ public static class FecharRetificacaoCommandHandler
         // A configuração canonicalizada é a VIVA — que é, agora, a EDITADA pela sessão. É a
         // diferença inteira em relação ao que a retificação fazia antes desta Feature: ela
         // recanonicalizava a mesma configuração de sempre, e a versão N+1 saía idêntica à N.
+        // Resolvido antes de canonicalizar: o bloco de localidade precisa do fuso, e uma falha
+        // aqui é da instalação — não faz sentido descobri-la no meio da projeção.
+        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
+        if (fusoResult.IsFailure)
+        {
+            return (Result.Failure(fusoResult.Error!), []);
+        }
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
                 processo,
                 dados,
                 documento.HashSha256!,
+                fusoResult.Value!.Id,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
                 conformidadeLegal.Value,
                 metadadosFatosResult.Value,

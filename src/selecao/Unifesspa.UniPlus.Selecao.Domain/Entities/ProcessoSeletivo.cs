@@ -1360,29 +1360,26 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Redeclara o município cujo calendário rege a contagem dos prazos (UNI-REQ-0111).
-    /// Só em rascunho, enquanto o envelope publicado não congela a localidade.
+    /// Redeclara o município cujo calendário rege a contagem dos prazos (UNI-REQ-0111), em rascunho
+    /// ou sob sessão editorial aberta.
     /// </summary>
     /// <remarks>
-    /// <para>A escrita não usa <c>MutacaoBloqueada</c>, que liberaria a edição sob sessão
-    /// editorial, porque a localidade ainda não entra no envelope congelado nem em
-    /// <c>AplicarGrafo</c>. Liberá-la agora abriria dois furos: fechar a retificação
-    /// publicaria os mesmos bytes apesar da configuração diferente, e descartá-la não
-    /// reverteria o município — uma edição descartada continuaria governando quais
-    /// feriados incidem no prazo. A liberação sob retificação entra junto com o
-    /// congelamento, na task que o traz.</para>
+    /// <para>A edição sob retificação só é segura porque a localidade agora participa do ciclo
+    /// editorial inteiro: entra no envelope congelado, é lida pelo decoder e é reposta por
+    /// <c>AplicarGrafo</c> no descarte. Enquanto o congelamento não existia, a escrita ficou
+    /// restrita ao rascunho — liberá-la antes teria deixado uma edição descartada governando quais
+    /// feriados incidem no prazo, e o fechamento publicaria os mesmos bytes apesar da configuração
+    /// diferente.</para>
     /// <para>A atribuição é incondicional de propósito: como a igualdade de
     /// <see cref="LocalidadeRegente"/> considera só o código IBGE, comparar antes de
     /// atribuir descartaria silenciosamente a correção de um nome de exibição divergente,
     /// que é justamente o caso em que a redeclaração serve para consertar o rótulo.</para>
     /// </remarks>
-    public Result DefinirLocalidade(LocalidadeRegente localidade)
+    public Result DefinirLocalidade(LocalidadeRegente localidade, PrecondicaoIfMatch precondicao)
     {
-        if (Status != StatusProcesso.Rascunho)
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.LocalidadeSomenteEmRascunho",
-                $"A localidade só pode ser alterada enquanto o processo está em rascunho — status atual: {Status}."));
+            return Result.Failure(bloqueio);
         }
 
         if (localidade is null)
@@ -1393,6 +1390,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         Localidade = localidade;
+        // Sem isto, alterar o município dentro da sessão não moveria o ETag, e uma escrita
+        // concorrente com revisão velha continuaria sendo aceita.
+        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
@@ -2491,6 +2491,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Só é possível publicar um processo em rascunho — status atual: {Status}."));
         }
 
+        // Localidade (UNI-REQ-0111): a versão publicada congela o município cujo calendário rege a
+        // contagem dos prazos, e sem ele a janela de recurso não se recalcula. Desde que a
+        // localidade é exigida na criação, chegar aqui sem ela não é estado alcançável pelo fluxo
+        // público — a recusa fica como invariante da raiz, defendendo contra caminho de escrita que
+        // a contorne, e porque o requisito exige a recusa nomeada nas três transições que geram
+        // versão. Publicar cobre a inicial; SucederVersao cobre a retificação e o fechamento.
+        if (Localidade is null)
+        {
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
+                "ProcessoSeletivo.LocalidadeAusente",
+                "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada."));
+        }
+
         if (PendenciaDeConformidade() is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
@@ -2816,6 +2829,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // abre uma versão append-only e vinculante; congelar configuração incompleta
         // aqui produz um documento irreparável, exatamente como na publicação. Mesma
         // fonte, mesmo DomainError.
+        // Localidade (UNI-REQ-0111): a versão publicada congela o município cujo calendário rege a
+        // contagem dos prazos, e sem ele a janela de recurso não se recalcula. Desde que a
+        // localidade é exigida na criação, chegar aqui sem ela não é estado alcançável pelo fluxo
+        // público — a recusa fica como invariante da raiz, defendendo contra caminho de escrita que
+        // a contorne, e porque o requisito exige a recusa nomeada nas três transições que geram
+        // versão. Publicar cobre a inicial; SucederVersao cobre a retificação e o fechamento.
+        if (Localidade is null)
+        {
+            return Result<VersaoConfiguracao>.Failure(new DomainError(
+                "ProcessoSeletivo.LocalidadeAusente",
+                "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada."));
+        }
+
         if (PendenciaDeConformidade() is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
@@ -2995,6 +3021,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         OrigemCandidatos = OrigemCandidatos,
         UnidadeAdministradoraOrigemId = UnidadeAdministradoraOrigemId,
         UnidadeAdministradora = UnidadeAdministradora,
+        // A localidade nasce igual à do processo e é sobrescrita pela congelada quando o grafo a
+        // traz. Copiá-la aqui não é redundância: a sombra é recanonicalizada, e o bloco de
+        // localidade a lê — sem isso, restaurar um envelope anterior a esta fatia projetaria
+        // sobre uma raiz sem município.
+        Localidade = Localidade,
     };
 
     /// <summary>
@@ -3448,6 +3479,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // de retificação e depois descartar deixaria o valor editado na configuração viva.
         grafo.ConfiguracaoTaxaInscricao?.VincularProcesso(Id);
         ConfiguracaoTaxaInscricao = grafo.ConfiguracaoTaxaInscricao;
+
+        // Localidade (UNI-REQ-0111): repõe a que estava congelada, senão editar o município sob
+        // sessão editorial e descartar deixaria a nova governando a contagem dos prazos. Só
+        // sobrescreve quando o grafo a traz — grafos de teste anteriores a esta fatia não têm, e
+        // apagar a localidade viva deixaria a raiz num estado que o domínio não admite.
+        if (grafo.Localidade is { } localidadeCongelada)
+        {
+            Localidade = localidadeCongelada;
+        }
 
         // Cronograma de fases (Story #851): nenhuma referência externa aponta para
         // FaseCronograma.Id (diferente das etapas) — o Id não é congelado no envelope

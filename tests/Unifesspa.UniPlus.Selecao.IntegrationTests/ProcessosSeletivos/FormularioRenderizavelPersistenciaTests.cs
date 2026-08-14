@@ -153,7 +153,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         };
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, hashDocumento, ValoresSelecionaveisCongelados: valoresSelecionaveis));
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: valoresSelecionaveis));
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

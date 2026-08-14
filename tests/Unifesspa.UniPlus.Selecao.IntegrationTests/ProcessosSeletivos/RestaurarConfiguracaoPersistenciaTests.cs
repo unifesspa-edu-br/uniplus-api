@@ -133,7 +133,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
-                reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento,
+                reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
                 ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos()));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,

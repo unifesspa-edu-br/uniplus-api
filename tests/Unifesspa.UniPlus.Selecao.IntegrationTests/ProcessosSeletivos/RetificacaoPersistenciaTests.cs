@@ -104,7 +104,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         ProcessoSeletivo processo = NovoProcessoConforme(nome);
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", clock);
@@ -131,7 +131,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
-                carregado, dadosRetificacao, docRetificacao.HashSha256!,
+                carregado, dadosRetificacao, docRetificacao.HashSha256!, FusoInstitucional.ZoneId,
                 // O alvo da retificação é o ato que criou a versão corrente — o
                 // topo da cadeia de CONFIGURAÇÃO —, como o handler faz.
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição")));
@@ -266,7 +266,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
@@ -302,7 +302,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await sessao.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
-                new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!));
+                new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!, FusoInstitucional.ZoneId));
 
             Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
                 dadosRetificacao, versaoAbertura, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
@@ -345,7 +345,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
@@ -417,7 +417,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
@@ -485,7 +485,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);
@@ -525,7 +525,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await sessao.DocumentosEdital.AddAsync(docRetificacao, CancellationToken.None);
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(
-                new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!));
+                new EntradaCanonicalizacao(carregado, dadosRetificacao, docRetificacao.HashSha256!, FusoInstitucional.ZoneId));
 
             Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
                 dadosRetificacao, versaoAbertura, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,
@@ -567,7 +567,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         DocumentoEdital docAbertura = DocumentoConfirmado(processo.Id);
         DadosEdital dadosAbertura = NovosDados(docAbertura.Id);
-        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!));
+        SnapshotCanonico canonicoAbertura = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosAbertura, docAbertura.HashSha256!, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dadosAbertura, canonicoAbertura.Bytes, canonicoAbertura.SchemaVersion, canonicoAbertura.AlgoritmoHash,
             docAbertura.HashSha256!, "integration-test-user", TimeProvider.System);

@@ -901,7 +901,7 @@ public sealed class EnvelopeCodecRecusaTests
             "088/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento));
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
         JsonArray exigencias = envelope["documentosExigidos"]!["exigencias"]!.AsArray();
@@ -1432,7 +1432,7 @@ public sealed class EnvelopeCodecRecusaTests
         ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
         DadosEdital dados = EnvelopeCanonicoGoldenTests.DadosDeReferencia();
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, EnvelopeCanonicoGoldenTests.HashFixo,
+            processo, dados, EnvelopeCanonicoGoldenTests.HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia()));
 

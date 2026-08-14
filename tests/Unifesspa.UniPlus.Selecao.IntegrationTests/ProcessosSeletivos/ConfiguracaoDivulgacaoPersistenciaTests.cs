@@ -237,7 +237,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
 
         DadosEdital dados = DadosEdital.Criar(
             "001/2026", new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 31), Guid.CreateVersion7()).Value!;
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, HashFixo));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, HashFixo, "integration-test-user", TimeProvider.System);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
@@ -317,7 +317,7 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         // publicação original — um DocumentoEditalId diferente mudaria 'hashesEdital' e a
         // comparação de bytes provaria outra coisa.
         Result<SnapshotCanonico> recodificado = new RegistroCodecsEnvelope().Recodificar(
-            versaoAbertura.SchemaVersion, new EntradaCanonicalizacao(relido, dados, HashFixo));
+            versaoAbertura.SchemaVersion, new EntradaCanonicalizacao(relido, dados, HashFixo, FusoInstitucional.ZoneId));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
         recodificado.Value!.Bytes.Should().Equal(bytesCongelados,
             "o processo relido do banco, sem a linha explícita, recanonicaliza nos MESMOS bytes que o ato publicado congelou");

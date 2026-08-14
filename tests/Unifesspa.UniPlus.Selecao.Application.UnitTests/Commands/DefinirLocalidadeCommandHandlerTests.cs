@@ -32,7 +32,7 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirLocalidadeCommand command = new(Guid.CreateVersion7(), "1501402", "Belém", "PA");
+        DefinirLocalidadeCommand command = new(Guid.CreateVersion7(), "1501402", "Belém", "PA", PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
@@ -46,7 +46,7 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, "1501402", "Belém", "PA");
+        DefinirLocalidadeCommand command = new(processo.Id, "1501402", "Belém", "PA", PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
@@ -67,10 +67,10 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirLocalidade(
-            LocalidadeRegente.Criar("1504208", "Maraba sem acento", "PA").Value!).IsSuccess.Should().BeTrue();
+            LocalidadeRegente.Criar("1504208", "Maraba sem acento", "PA").Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "PA");
+        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "PA", PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
@@ -84,7 +84,7 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, null, null, null);
+        DefinirLocalidadeCommand command = new(processo.Id, null, null, null, PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
@@ -100,7 +100,7 @@ public sealed class DefinirLocalidadeCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "SP");
+        DefinirLocalidadeCommand command = new(processo.Id, "1504208", "Marabá", "SP", PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoAceita> result = await DefinirLocalidadeCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);

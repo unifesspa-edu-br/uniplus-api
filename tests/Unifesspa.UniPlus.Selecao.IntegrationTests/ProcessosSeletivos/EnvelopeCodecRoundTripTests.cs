@@ -303,7 +303,7 @@ public sealed class EnvelopeCodecRoundTripTests
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
-                processo, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade,
+                processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
@@ -514,7 +514,7 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo,
                 reidratado.Value.Dados,
-                reidratado.Value.HashDocumento,
+                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
@@ -565,7 +565,7 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo,
                 reidratado.Value.Dados,
-                reidratado.Value.HashDocumento,
+                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
@@ -598,12 +598,12 @@ public sealed class EnvelopeCodecRoundTripTests
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
         "ProcessosSeletivos",
         "Fixtures",
-        "envelope-0.0.10-rico.json"));
+        "envelope-0.0.11-rico.json"));
 
     private static string CaminhoNoFonte([CallerFilePath] string origem = "") => Path.Join(
         Path.GetDirectoryName(origem)!,
         "Fixtures",
-        "envelope-0.0.10-rico.json");
+        "envelope-0.0.11-rico.json");
 
     // ── Round-trip 1.3 com exigência documental rica (Story #554, PR #903; Story #919, RN08) ──
 
@@ -632,6 +632,7 @@ public sealed class EnvelopeCodecRoundTripTests
             EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia();
         EntradaCanonicalizacao entrada = new(
             processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo,
+            FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis);
         // Story #923 (bump 1.4): o canonicalizador VIVO passou a emitir 1.4 — esta suíte prova
@@ -639,7 +640,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // corrente, então a fonte muda para o codec congelado (mesmo padrão que o próprio
         // EnvelopeCodecV13 já documenta para si).
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.10", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.11", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -657,7 +658,7 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo,
                 reidratado.Value.Dados,
-                reidratado.Value.HashDocumento,
+                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados,
@@ -787,8 +788,8 @@ public sealed class EnvelopeCodecRoundTripTests
         const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento));
-        congelado.SchemaVersion.Should().Be("0.0.10", "pré-condição: o codec corrente emite a forma única");
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId));
+        congelado.SchemaVersion.Should().Be("0.0.11", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -806,7 +807,7 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo,
                 reidratado.Value.Dados,
-                reidratado.Value.HashDocumento,
+                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade,
                 reidratado.Value.MetadadosFatosCongelados)).Value!.Bytes;
@@ -995,9 +996,9 @@ public sealed class EnvelopeCodecRoundTripTests
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
 
         EntradaCanonicalizacao entrada = new(
-            processo, dados, hashDocumento, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
+            processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.10", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.11", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1053,7 +1054,7 @@ public sealed class EnvelopeCodecRoundTripTests
         byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
             v1.SchemaVersion,
             new EntradaCanonicalizacao(
-                processo, envelope.Dados, envelope.HashDocumento, envelope.Retificacao, envelope.Conformidade,
+                processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
@@ -1149,7 +1150,7 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo,
                 reidratado.Value.Dados,
-                reidratado.Value.HashDocumento,
+                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
                 reidratado.Value.Retificacao,
                 reidratado.Value.Conformidade)).Value!.Bytes;
 

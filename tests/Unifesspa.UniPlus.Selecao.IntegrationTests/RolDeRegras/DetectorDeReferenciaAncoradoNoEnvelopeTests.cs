@@ -78,5 +78,5 @@ public sealed class DetectorDeReferenciaAncoradoNoEnvelopeTests : IClassFixture<
             "..",
             "ProcessosSeletivos",
             "Fixtures",
-            "envelope-0.0.10.json")));
+            "envelope-0.0.11.json")));
 }

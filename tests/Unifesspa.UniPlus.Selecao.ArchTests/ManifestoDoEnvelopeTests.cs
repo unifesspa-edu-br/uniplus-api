@@ -105,6 +105,15 @@ public sealed class ManifestoDoEnvelopeTests
             ["Cobra", "Valor", "Fundamentos", "ConfirmacaoFundamentos"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
+        // Localidade regente (UNI-REQ-0111) — o município cujo calendário rege a contagem dos
+        // prazos. Congela os três campos: o código é o valor normativo, e nome e UF viajam como
+        // cache de exibição da versão, que não participa de cálculo. O fuso aplicado vai no mesmo
+        // bloco do envelope, mas não é propriedade deste tipo — é constante institucional, e o
+        // envelope o carrega para que a recanonicalização use o congelado, não o vigente.
+        [typeof(LocalidadeRegente)] = (
+            ["CodigoIbge", "Nome", "Uf"],
+            []),
+
         // Story #575 — a cascata de remanejamento das cotas federais (RN-CASCATA-1..5).
         [typeof(ConfiguracaoCascataRemanejamento)] = (
             ["Regra", "FallbackCodigo", "Destinos"],

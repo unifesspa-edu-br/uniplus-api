@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>24 blocos
+/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>26 blocos
 /// reais</b> — e devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) já carrega <c>obrigatoriedades[]</c> e
 /// <c>exigencias[]</c> (#554) reais. <c>vagas</c> (issue #848/ADR-0115) é outro: o
@@ -169,7 +169,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>CriarProcessoSeletivoCommandHandler</c> (CA-02). Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.9</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.10";
+    internal const string SchemaVersionAtual = "0.0.11";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -221,10 +221,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["versaoInterpretador"] = MotorDerivacao.VersaoSemantica,
             ["modalidadesOfertadas"] = SerializarModalidadesOfertadas(processo.DistribuicaoVagas),
             ["taxaInscricao"] = SerializarTaxaInscricao(processo),
+            ["localidade"] = SerializarLocalidade(processo, entrada.FusoHorario),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 26º bloco preservando os 25
-        // anteriores (issue #1112 elevou de 24 para 25). A abertura não escreve esta chave —
+        // ADR-0101: a retificação ACRESCENTA um 27º bloco preservando os 26
+        // anteriores (a issue #1112 elevou de 24 para 25, e a localidade de 25 para 26). A
+        // abertura não escreve esta chave —
         // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
         if (retificacao is not null)
@@ -592,6 +594,25 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// nunca tem <c>"presente": false</c> aqui — o encoder trata o caso defensivamente pela
     /// mesma disciplina do resto do arquivo, não porque seja alcançável em produção.
     /// </summary>
+    /// <summary>
+    /// Localidade regente e fuso aplicado, no mesmo bloco (UNI-REQ-0111): os dois formam um
+    /// contexto civil único e têm o mesmo ciclo de publicação, e um bloco fechado impede a
+    /// combinação parcial — versão com município mas sem fuso não converte âncora em dia civil.
+    /// </summary>
+    /// <remarks>
+    /// O <c>codigoIbge</c> é o único valor normativo: dele se derivam os feriados municipais e,
+    /// pelo prefixo, os estaduais. <c>nome</c> e <c>uf</c> viajam como cache de exibição da versão,
+    /// e não participam de cálculo nenhum.
+    /// </remarks>
+    private static JsonObject SerializarLocalidade(ProcessoSeletivo processo, string fusoHorario) =>
+        new()
+        {
+            ["codigoIbge"] = processo.Localidade.CodigoIbge,
+            ["nome"] = HashCanonicalComputer.NormalizeNfc(processo.Localidade.Nome),
+            ["uf"] = processo.Localidade.Uf,
+            ["fusoHorario"] = fusoHorario,
+        };
+
     private static JsonObject SerializarTaxaInscricao(ProcessoSeletivo processo)
     {
         if (processo.ConfiguracaoTaxaInscricao is not { } taxa)

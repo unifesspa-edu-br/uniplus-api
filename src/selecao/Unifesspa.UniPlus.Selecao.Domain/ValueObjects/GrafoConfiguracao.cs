@@ -57,7 +57,12 @@ public sealed class GrafoConfiguracao
         // QUE BLOQUEIA PUBLICAÇÃO (CA-01), diferente do toggle-por-presença de BonusRegional
         // (onde ausência é estado válido). O grafo só carrega o valor tal como veio congelado;
         // a recusa de "não declarado" acontece na publicação, não aqui.
-        ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = null)
+        ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = null,
+        // Localidade regente (UNI-REQ-0111) — opcional na assinatura só porque os muitos grafos de
+        // teste anteriores a esta fatia não a constroem; o decoder do envelope sempre a passa, e
+        // AplicarGrafo só repõe quando presente. Diferente do fuso, que acompanha o envelope
+        // reidratado: este é estado vivo da raiz, e volta para ela no descarte da retificação.
+        LocalidadeRegente? localidade = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -72,6 +77,7 @@ public sealed class GrafoConfiguracao
         // agregado vivo. Guardar a referência do caller deixaria uma janela em que
         // mutá-la, depois da validação e antes da reposição, reporia configuração
         // que nunca foi validada.
+        Localidade = localidade;
         Etapas = [.. etapas];
         OfertaAtendimento = ofertaAtendimento;
         DistribuicaoVagas = [.. distribuicaoVagas];
@@ -160,4 +166,11 @@ public sealed class GrafoConfiguracao
     /// publicação — diferente de <see cref="BonusRegional"/>.
     /// </summary>
     public ConfiguracaoTaxaInscricao? ConfiguracaoTaxaInscricao { get; }
+
+    /// <summary>
+    /// Município cujo calendário regia a contagem dos prazos quando esta versão foi publicada
+    /// (UNI-REQ-0111). <see langword="null"/> só em grafos de teste anteriores à fatia que a
+    /// introduziu — o decoder do envelope sempre a traz.
+    /// </summary>
+    public LocalidadeRegente? Localidade { get; }
 }

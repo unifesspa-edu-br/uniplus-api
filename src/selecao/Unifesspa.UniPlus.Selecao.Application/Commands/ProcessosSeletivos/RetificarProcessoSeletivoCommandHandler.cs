@@ -28,6 +28,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoEditalRepository documentoEditalRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
+        IResolvedorFusoInstitucional resolvedorFuso,
         ISelecaoUnitOfWork unitOfWork,
         IUserContext userContext,
         ITipoAtoPublicadoReader tipoDeAtoReader,
@@ -41,6 +42,7 @@ public static class RetificarProcessoSeletivoCommandHandler
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(documentoEditalRepository);
         ArgumentNullException.ThrowIfNull(canonicalizer);
+        ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
@@ -245,11 +247,20 @@ public static class RetificarProcessoSeletivoCommandHandler
         // CONFIGURAÇÃO (ADR-0104), não o ato de maior data documental. É o mesmo
         // alvo que ProcessoSeletivo.Retificar elege; congelar aqui um id diferente
         // faria o bloco 'retificacao' do envelope apontar para outro documento.
+        // Resolvido antes de canonicalizar: o bloco de localidade precisa do fuso, e uma falha
+        // aqui é da instalação — não faz sentido descobri-la no meio da projeção.
+        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
+        if (fusoResult.IsFailure)
+        {
+            return (Result.Failure(fusoResult.Error!), []);
+        }
+
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(
             new EntradaCanonicalizacao(
                 processo,
                 dados,
                 documento.HashSha256!,
+                fusoResult.Value!.Id,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
                 conformidadeLegal.Value,
                 metadadosFatosResult.Value,
