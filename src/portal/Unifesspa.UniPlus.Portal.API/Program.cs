@@ -59,7 +59,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(
     options => options.Conventions.Add(new ModuleRoutePrefixConvention()));
 
 builder.Services.AddSingleton<IDomainErrorRegistration, PortalDomainErrorRegistration>();
-builder.Services.AddDomainErrorMapper();
+builder.Services.AddDomainErrorMapper(builder.Configuration);
 
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddCorrelationIdAccessor();

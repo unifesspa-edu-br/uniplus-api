@@ -8,9 +8,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 public sealed class AuthenticationProblemDetailsWriterTests
 {
+    private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
+
     [Fact]
     public async Task WriteUnauthorizedAsync_Should_Emit_ProblemJson_With_Canonical_Shape()
     {
@@ -100,6 +103,8 @@ public sealed class AuthenticationProblemDetailsWriterTests
         ServiceCollection services = new();
         services.AddOptions();
         services.AddLogging();
+        services.Configure<ProblemTypeOptions>(options => options.BaseUri = BaseUriDoCatalogo);
+        services.AddSingleton<IProblemTypeUriFactory, ProblemTypeUriFactory>();
         if (includeProblemDetailsService)
             services.AddProblemDetails();
 
@@ -126,7 +131,7 @@ public sealed class AuthenticationProblemDetailsWriterTests
 
         root.GetProperty("status").GetInt32().Should().Be(expectedStatus);
         root.GetProperty("type").GetString()
-            .Should().Be($"https://uniplus.unifesspa.edu.br/errors/{expectedCode}");
+            .Should().Be(BaseUriDoCatalogo + expectedCode);
         root.GetProperty("code").GetString().Should().Be(expectedCode);
         root.GetProperty("traceId").GetString().Should().NotBeNullOrWhiteSpace();
         root.GetProperty("instance").GetString().Should().StartWith("urn:uuid:");

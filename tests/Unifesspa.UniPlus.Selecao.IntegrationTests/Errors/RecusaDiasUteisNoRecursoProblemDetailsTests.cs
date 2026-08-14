@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
@@ -38,7 +39,7 @@ using Xunit;
 /// </remarks>
 public sealed class RecusaDiasUteisNoRecursoProblemDetailsTests
 {
-    private const string BaseUriDeErros = "https://uniplus.unifesspa.edu.br/errors/";
+    private const string BaseUriDeErros = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
 
     private const string CausaDesmentida = "calendário";
 
@@ -124,8 +125,15 @@ public sealed class RecusaDiasUteisNoRecursoProblemDetailsTests
     /// </summary>
     private static IDomainErrorMapper CriarMapperDoModulo()
     {
+        IConfiguration configuracao = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [$"{ProblemTypeOptions.SectionName}:{nameof(ProblemTypeOptions.BaseUri)}"] = BaseUriDeErros,
+            })
+            .Build();
+
         ServiceCollection services = new();
-        services.AddDomainErrorMapper();
+        services.AddDomainErrorMapper(configuracao);
         services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
 
         using ServiceProvider provider = services.BuildServiceProvider();

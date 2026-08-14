@@ -63,7 +63,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(
     options => options.Conventions.Add(new Unifesspa.UniPlus.Infrastructure.Core.Routing.ModuleRoutePrefixConvention()));
 
 // --- Cross-cutting compartilhado (registrado uma vez no host) ---
-builder.Services.AddDomainErrorMapper();
+builder.Services.AddDomainErrorMapper(builder.Configuration);
 builder.Services.AddUniPlusEncryption(builder.Configuration);
 builder.Services.AddCursorPagination(builder.Configuration);
 builder.Services.AddOidcAuthentication(builder.Configuration, builder.Environment);

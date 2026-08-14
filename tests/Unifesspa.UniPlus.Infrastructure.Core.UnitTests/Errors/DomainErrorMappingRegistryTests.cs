@@ -3,11 +3,14 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Errors;
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
 public sealed class DomainErrorMappingRegistryTests
 {
+    private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
+
     // ─── TryGetMapping — código existente ──────────────────────────────────
 
     [Fact]
@@ -76,7 +79,7 @@ public sealed class DomainErrorMappingRegistryTests
 
         DomainErrorMappingRegistrationStub reg1 = new(("Codigo.X", primeiro));
         DomainErrorMappingRegistrationStub reg2 = new(("Codigo.X", segundo));
-        DomainErrorMappingRegistry registry = new([reg1, reg2]);
+        DomainErrorMappingRegistry registry = new([reg1, reg2], CriarFabricaDeType());
 
         registry.TryGetMapping("Codigo.X", out DomainErrorMapping? obtido);
 
@@ -88,9 +91,34 @@ public sealed class DomainErrorMappingRegistryTests
     [Fact]
     public void Construtor_ComRegistrationsNulo_DeveLancarArgumentNullException()
     {
-        Action acao = () => _ = new DomainErrorMappingRegistry(null!);
+        Action acao = () => _ = new DomainErrorMappingRegistry(null!, CriarFabricaDeType());
 
         acao.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Construtor_ComFabricaDeTypeNula_DeveLancarArgumentNullException()
+    {
+        Action acao = () => _ = new DomainErrorMappingRegistry([], null!);
+
+        acao.Should().Throw<ArgumentNullException>();
+    }
+
+    // ─── type do catálogo público ─────────────────────────────────────────
+
+    /// <summary>
+    /// O código sem registro também tem página no catálogo: o fallback do mapeamento é
+    /// um <c>code</c> como qualquer outro, e o consumidor que o receber precisa chegar
+    /// à explicação da mesma forma.
+    /// </summary>
+    [Theory]
+    [InlineData("uniplus.selecao.edital.nao_encontrado")]
+    [InlineData("uniplus.erro_nao_mapeado")]
+    public void GetProblemTypeUri_ConcatenaCodigoNaBaseConfigurada(string code)
+    {
+        DomainErrorMappingRegistry registry = CriarRegistry();
+
+        registry.GetProblemTypeUri(code).Should().Be(BaseUriDoCatalogo + code);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────
@@ -98,8 +126,11 @@ public sealed class DomainErrorMappingRegistryTests
     private static DomainErrorMappingRegistry CriarRegistry(params (string Code, DomainErrorMapping Mapping)[] entradas)
     {
         DomainErrorMappingRegistrationStub registration = new(entradas);
-        return new DomainErrorMappingRegistry([registration]);
+        return new DomainErrorMappingRegistry([registration], CriarFabricaDeType());
     }
+
+    private static ProblemTypeUriFactory CriarFabricaDeType() =>
+        new(Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo }));
 
     private sealed class DomainErrorMappingRegistrationStub : IDomainErrorRegistration
     {

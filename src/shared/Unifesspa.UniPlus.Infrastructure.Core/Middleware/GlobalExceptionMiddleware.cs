@@ -18,13 +18,19 @@ public sealed partial class GlobalExceptionMiddleware
 
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionMiddleware> _logger;
+    private readonly IProblemTypeUriFactory _problemTypeUriFactory;
 
-    public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
+    public GlobalExceptionMiddleware(
+        RequestDelegate next,
+        ILogger<GlobalExceptionMiddleware> logger,
+        IProblemTypeUriFactory problemTypeUriFactory)
     {
         ArgumentNullException.ThrowIfNull(next);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(problemTypeUriFactory);
         _next = next;
         _logger = logger;
+        _problemTypeUriFactory = problemTypeUriFactory;
     }
 
     [SuppressMessage(
@@ -42,27 +48,30 @@ public sealed partial class GlobalExceptionMiddleware
         catch (ValidationException ex)
         {
             LogValidationError(_logger, context.Request.Path, ex);
-            await EscreverRespostaValidacao(context, ex).ConfigureAwait(false);
+            await EscreverRespostaValidacao(context, ex, _problemTypeUriFactory).ConfigureAwait(false);
         }
         catch (DbUpdateConcurrencyException ex)
         {
             LogConflitoDeConcorrencia(_logger, context.Request.Path, ex);
-            await EscreverRespostaConflitoDeConcorrencia(context).ConfigureAwait(false);
+            await EscreverRespostaConflitoDeConcorrencia(context, _problemTypeUriFactory).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             LogUnhandledError(_logger, context.Request.Path, ex);
-            await EscreverRespostaErro(context).ConfigureAwait(false);
+            await EscreverRespostaErro(context, _problemTypeUriFactory).ConfigureAwait(false);
         }
     }
 
-    private static async Task EscreverRespostaValidacao(HttpContext context, ValidationException exception)
+    private static async Task EscreverRespostaValidacao(
+        HttpContext context,
+        ValidationException exception,
+        IProblemTypeUriFactory problemTypeUriFactory)
     {
         context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
 
         Dictionary<string, object?> body = new()
         {
-            ["type"] = ProblemDetailsConstants.ErrorsBaseUri + "uniplus.validacao",
+            ["type"] = problemTypeUriFactory.Build("uniplus.validacao"),
             ["title"] = "Erro de validação",
             ["status"] = StatusCodes.Status422UnprocessableEntity,
             ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
@@ -80,13 +89,15 @@ public sealed partial class GlobalExceptionMiddleware
             .ConfigureAwait(false);
     }
 
-    private static async Task EscreverRespostaConflitoDeConcorrencia(HttpContext context)
+    private static async Task EscreverRespostaConflitoDeConcorrencia(
+        HttpContext context,
+        IProblemTypeUriFactory problemTypeUriFactory)
     {
         context.Response.StatusCode = StatusCodes.Status409Conflict;
 
         Dictionary<string, object?> body = new()
         {
-            ["type"] = ProblemDetailsConstants.ErrorsBaseUri + "uniplus.concorrencia.conflito",
+            ["type"] = problemTypeUriFactory.Build("uniplus.concorrencia.conflito"),
             ["title"] = "Conflito de concorrência",
             ["status"] = StatusCodes.Status409Conflict,
             ["detail"] = "Este recurso foi modificado por outra operação concorrente. Recarregue os dados e tente novamente.",
@@ -100,13 +111,15 @@ public sealed partial class GlobalExceptionMiddleware
             .ConfigureAwait(false);
     }
 
-    private static async Task EscreverRespostaErro(HttpContext context)
+    private static async Task EscreverRespostaErro(
+        HttpContext context,
+        IProblemTypeUriFactory problemTypeUriFactory)
     {
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
         Dictionary<string, object?> body = new()
         {
-            ["type"] = ProblemDetailsConstants.ErrorsBaseUri + "uniplus.internal.unexpected",
+            ["type"] = problemTypeUriFactory.Build("uniplus.internal.unexpected"),
             ["title"] = "Erro interno do servidor",
             ["status"] = StatusCodes.Status500InternalServerError,
             ["detail"] = "Ocorreu um erro inesperado. Tente novamente mais tarde.",

@@ -9,16 +9,27 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 
 public sealed class VendorMediaTypeAttributeTests
 {
+    private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
+
     private static readonly VendorMediaTypeAttribute Attribute = new()
     {
         Resource = "edital",
         Versions = [1],
     };
+
+    /// <summary>
+    /// O 406 é montado com a mesma fábrica de <c>type</c> do resto do pipeline, resolvida
+    /// do request — sem ela no container, o filtro não teria como emitir a URI do catálogo.
+    /// </summary>
+    private static readonly IServiceProvider ServicosDoRequest = CriarServicosDoRequest();
 
     [Theory]
     [InlineData("application/json")]
@@ -57,7 +68,7 @@ public sealed class VendorMediaTypeAttributeTests
 
         ProblemDetails problem = result.Value.Should().BeOfType<ProblemDetails>().Subject;
         problem.Status.Should().Be(StatusCodes.Status406NotAcceptable);
-        problem.Type.Should().Be("https://uniplus.unifesspa.edu.br/errors/uniplus.contract.versao_nao_suportada");
+        problem.Type.Should().Be(BaseUriDoCatalogo + "uniplus.contract.versao_nao_suportada");
         problem.Extensions["code"].Should().Be("uniplus.contract.versao_nao_suportada");
         problem.Extensions["available_versions"].Should().BeEquivalentTo(new[] { 1 });
     }
@@ -282,7 +293,10 @@ public sealed class VendorMediaTypeAttributeTests
 
     private static ActionExecutingContext CreateContext(string? accept)
     {
-        DefaultHttpContext httpContext = new();
+        DefaultHttpContext httpContext = new()
+        {
+            RequestServices = ServicosDoRequest,
+        };
         if (accept is not null)
         {
             httpContext.Request.Headers.Accept = accept;
@@ -294,5 +308,14 @@ public sealed class VendorMediaTypeAttributeTests
             [],
             new Dictionary<string, object?>(),
             controller: new object());
+    }
+
+    private static ServiceProvider CriarServicosDoRequest()
+    {
+        ServiceCollection services = new();
+        services.AddSingleton<IProblemTypeUriFactory>(
+            new ProblemTypeUriFactory(
+                Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo })));
+        return services.BuildServiceProvider();
     }
 }

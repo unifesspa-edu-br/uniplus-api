@@ -43,7 +43,7 @@ public static class ResultExtensions
         ProblemDetails problem = new()
         {
             Status = status,
-            Type = ProblemDetailsConstants.ErrorsBaseUri + code,
+            Type = mapper.GetProblemTypeUri(code),
             Title = title,
             // Invariante: error.Message não deve conter PII (CPF, e-mail, nome).
             // O linter AssertNoPiiAsync detecta violações nos testes de integração.
