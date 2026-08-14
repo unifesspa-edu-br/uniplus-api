@@ -192,7 +192,7 @@ public static class RegraCatalogoSeed
             "ADR-0120; Portaria MEC nº 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37), art. 20-A e Anexo — insere o art. 20-A na Portaria Normativa MEC nº 18/2012; Lei 12.711/2012 art. 3º §1º (red. Lei 14.723/2023)"),
 
         // algoritmo_contagem_prazo — convenções nomeadas de contagem do prazo de
-        // interposição (UNI-REQ-0080). A entrada descreve e congela a convenção;
+        // interposição (UNI-REQ-0112). A entrada descreve e congela a convenção;
         // o motor executa pelo par código e versão. Escolhido, não parametrizado:
         // esquema_args vazio. As invariantes embutem os exemplos resolvidos nas
         // âncoras canônicas do requisito (sexta 18h; domingo 18h), para que

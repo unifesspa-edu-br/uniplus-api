@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>
 /// Códigos canônicos das entradas de <c>tipo=algoritmo_contagem_prazo</c> do
 /// <c>rol_de_regras</c> (#1135): as convenções nomeadas de contagem do prazo
-/// de interposição que o UNI-REQ-0080 tornou decláraveis por edital. Cada
+/// de interposição que o UNI-REQ-0112 tornou decláraveis por edital. Cada
 /// entrada resolve, do seu jeito, as duas perguntas que distinguem uma
 /// convenção da outra — o que "um dia útil" significa quando a âncora não cai
 /// à meia-noite, e o que acontece quando a âncora cai em dia não útil.
