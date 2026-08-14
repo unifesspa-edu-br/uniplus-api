@@ -502,6 +502,36 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return ResponderMutacao(resultado);
     }
 
+    /// <summary>
+    /// Declara a convenção de contagem que o certame usa nos prazos que distinguem dia
+    /// útil, por código e versão do rol de regras.
+    /// </summary>
+    [HttpPut("{id:guid}/algoritmo-contagem-prazo")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirAlgoritmoContagemPrazo(
+        Guid id,
+        [FromBody] DefinirAlgoritmoContagemPrazoRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirAlgoritmoContagemPrazoCommand(id, request.Codigo, request.Versao, precondicao),
+            cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
     [HttpPut("{id:guid}/referencia-temporal-fatos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

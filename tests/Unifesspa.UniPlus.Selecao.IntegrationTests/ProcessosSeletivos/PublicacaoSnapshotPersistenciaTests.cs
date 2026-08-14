@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// congelamento do snapshot de publicação (RN08, ADR-0100, Story #759 T4
 /// #785). Mapa de testes de #759: <c>Snapshot_HashConfereAppEBanco</c>
 /// (re-hashear os bytes lidos de volta do banco bate com o hash persistido
-/// pela app) e <c>Snapshot_Contem26BlocosCanonicos</c> (os 26 blocos — todos
+/// pela app) e <c>Snapshot_Contem27BlocosCanonicos</c> (os 27 blocos — todos
 /// reais — estão presentes). Story #575 promoveu <c>cascataRemanejamento</c>
 /// de stub a bloco real; issue #849 promoveu <c>identidadesUnidade</c>;
 /// Story #559 promoveu <c>formulario</c>; issue #563 promoveu <c>divulgacao</c>
@@ -176,10 +176,10 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "ADR-0100 §Confirmação: re-hashear os bytes persistidos deve bater com o hash calculado pela aplicação na publicação");
     }
 
-    [Fact(DisplayName = "Snapshot_Contem26BlocosCanonicos — os 26 blocos, todos reais, estão presentes")]
-    public async Task Snapshot_Contem26BlocosCanonicos()
+    [Fact(DisplayName = "Snapshot_Contem27BlocosCanonicos — os 27 blocos, todos reais, estão presentes")]
+    public async Task Snapshot_Contem27BlocosCanonicos()
     {
-        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem26BlocosCanonicos));
+        (_, _, Guid snapshotId, _) = await PublicarAsync(nameof(Snapshot_Contem27BlocosCanonicos));
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
@@ -201,6 +201,8 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "taxaInscricao",
             // UNI-REQ-0111: município que rege a contagem dos prazos e fuso aplicado — 26º bloco.
             "localidade",
+            // UNI-REQ-0112: convenção de contagem declarada pelo certame — 27º bloco.
+            "algoritmoContagemPrazo",
         ];
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)

@@ -71,6 +71,14 @@ internal static class CorpusEnvelope
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
     /// <summary>
+    /// Convenção de contagem do corpus. Como as demais referências daqui, o hash é semente
+    /// fixa e não o do rol vivo — o codec e o round-trip nunca consultam o catálogo, e o
+    /// que precisa ser estável é o byte congelado.
+    /// </summary>
+    internal static ReferenciaRegra AlgoritmoDeContagemDoCorpus() =>
+        Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, '8');
+
+    /// <summary>
     /// Snapshots de tipo de etapa fixos (issue #1071) — mesmos <c>origemId</c> semeados no
     /// cadastro real de Configuração (<c>CriaCadastroTiposEtapa</c>), por legibilidade; o
     /// decoder/round-trip nunca consulta o cadastro, então a coincidência não é requisito.
@@ -131,6 +139,11 @@ internal static class CorpusEnvelope
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
                 cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+
+        // O corpus tem fase com regra de recurso, e o prazo de interposição corre sobre dia
+        // útil — logo a convenção de contagem é exigida para publicar.
+        processo.DefinirAlgoritmoContagemPrazo(
+            AlgoritmoDeContagemDoCorpus(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas(Ordem([
             EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),

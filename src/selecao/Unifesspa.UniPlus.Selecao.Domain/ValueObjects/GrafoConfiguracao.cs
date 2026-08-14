@@ -62,7 +62,12 @@ public sealed class GrafoConfiguracao
         // teste anteriores a esta fatia não a constroem; o decoder do envelope sempre a passa, e
         // AplicarGrafo só repõe quando presente. Diferente do fuso, que acompanha o envelope
         // reidratado: este é estado vivo da raiz, e volta para ela no descarte da retificação.
-        LocalidadeRegente? localidade = null)
+        LocalidadeRegente? localidade = null,
+        // Convenção de contagem (UNI-REQ-0112) — aqui a ausência é dupla: grafo de teste que
+        // não a constrói, e versão publicada que legitimamente não declarou porque nenhuma
+        // contagem sua distingue dia útil. AplicarGrafo repõe o que veio, inclusive a
+        // ausência, para que o descarte devolva a configuração que a versão de fato tinha.
+        ReferenciaRegra? algoritmoContagemPrazo = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(ofertaAtendimento);
@@ -78,6 +83,7 @@ public sealed class GrafoConfiguracao
         // mutá-la, depois da validação e antes da reposição, reporia configuração
         // que nunca foi validada.
         Localidade = localidade;
+        AlgoritmoContagemPrazo = algoritmoContagemPrazo;
         Etapas = [.. etapas];
         OfertaAtendimento = ofertaAtendimento;
         DistribuicaoVagas = [.. distribuicaoVagas];
@@ -173,4 +179,11 @@ public sealed class GrafoConfiguracao
     /// introduziu — o decoder do envelope sempre a traz.
     /// </summary>
     public LocalidadeRegente? Localidade { get; }
+
+    /// <summary>
+    /// Convenção de contagem que o certame declarava quando esta versão foi publicada
+    /// (UNI-REQ-0112). <see langword="null"/> é valor legítimo aqui: a versão pode não ter
+    /// nenhuma contagem que distinga dia útil, e nesse caso não declarou convenção alguma.
+    /// </summary>
+    public ReferenciaRegra? AlgoritmoContagemPrazo { get; }
 }

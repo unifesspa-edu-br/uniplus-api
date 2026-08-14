@@ -16,9 +16,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="EtapaProcesso"/>. As invariantes que dependem da fase-mãe (ProduzResultado,
 /// ResultadoDefinitivo, AtoProduzidoCodigo — itens 1 e 2 do §3.6) são validadas por
 /// <see cref="FaseCronograma.Criar"/>, que tem acesso aos dois lados; as que esta
-/// entidade consegue provar sozinha (itens 6/7 — dias úteis proibido no prazo de
-/// interposição, e indisponível na suspensividade enquanto o algoritmo de contagem não
-/// for artefato versionado; a coerência da regra referenciada) ficam aqui.
+/// entidade consegue provar sozinha ficam aqui: a coerência da regra referenciada e as
+/// unidades declaráveis no prazo de interposição.
+/// </remarks>
+/// <remarks>
+/// A convenção de contagem que o certame usa <b>não</b> é verificada aqui. Ela é uma por
+/// processo, e esta entidade não enxerga a raiz — o gate correspondente é invariante de
+/// <see cref="ProcessoSeletivo"/>, aplicado nas transições que geram versão.
 /// </remarks>
 public sealed class RegraRecursoFase : EntityBase
 {
@@ -56,33 +60,34 @@ public sealed class RegraRecursoFase : EntityBase
                 $"RegraRecursoFase só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
         }
 
-        // CA-20 (UNI-REQ-0113): a interposição em dias úteis é recusada de forma
-        // PERMANENTE — não é limitação técnica temporária. É o prazo que fecha a porta do
-        // candidato; um erro de contagem para menos cercearia direito, e nenhum calendário
-        // ou algoritmo de contagem elimina esse risco. Nunca aproximado em silêncio; o
-        // valor permanece representável no enum (vocabulário legal fechado).
-        if (args.PrazoUnidade == UnidadePrazo.DiasUteis)
+        // UNI-REQ-0113: o prazo de interposição corre exclusivamente em dia útil. É o
+        // prazo que fecha a porta do candidato, e tempo que passa quando ele não tem como
+        // agir não pode consumir a janela — dia corrido a encolheria sempre que calhasse
+        // de cair em feriado. Só duas unidades são declaráveis: dias úteis em valor
+        // inteiro, e horas, que só avançam o relógio quando situadas em dia útil.
+        if (args.PrazoUnidade == UnidadePrazo.Dias)
         {
             return Result<RegraRecursoFase>.Failure(new DomainError(
-                "RegraRecursoFase.PrazoEmDiasUteisSemCalendario",
-                "O prazo de interposição deve ser informado em horas ou dias corridos; dias úteis não são aceitos."));
+                "RegraRecursoFase.PrazoEmDiasCorridos",
+                "O prazo de interposição deve ser informado em dias úteis ou horas; dias corridos não são aceitos."));
         }
 
-        // CA-21 (UNI-REQ-0116): a suspensividade em dias úteis é condicionalmente
-        // aceitável — mas exige, ao mesmo tempo, um calendário de dias úteis vigente E
-        // uma versão identificável do algoritmo de contagem, ambas congeladas no snapshot
-        // (UNI-REQ-0080). Nenhum artefato de algoritmo versionado existe hoje (o motor de
-        // contagem é UNI-REQ-0081, incremento futuro), então a recusa vale sempre, por
-        // ora — checagem POR INSTÂNCIA, independente: qualquer uma das duas em dias
-        // úteis recusa, mesmo que a outra esteja em dias corridos ou seja null.
-        if (args.SuspensividadePrimeiraInstanciaUnidade == UnidadePrazo.DiasUteis
-            || args.SuspensividadeSegundaInstanciaUnidade == UnidadePrazo.DiasUteis)
+        // UNI-REQ-0113: fração de dia útil não tem leitura unívoca — meio expediente,
+        // doze horas dentro do dia, ou metade de um dia civil que, numa transição de
+        // fuso, nem sempre tem vinte e quatro horas. As três fecham a janela em instantes
+        // diferentes, então a declaração é recusada em vez de eleger uma em silêncio.
+        // Prazo menor que um dia se declara em horas.
+        if (args.PrazoUnidade == UnidadePrazo.DiasUteis && decimal.Truncate(args.PrazoValor) != args.PrazoValor)
         {
             return Result<RegraRecursoFase>.Failure(new DomainError(
-                "RegraRecursoFase.SuspensividadeEmDiasUteisSemCalendario",
-                "A suspensividade em dias úteis, em qualquer uma das duas instâncias, exige calendário vigente e algoritmo de contagem versionado; o algoritmo ainda não está disponível."));
+                "RegraRecursoFase.PrazoEmFracaoDeDiaUtil",
+                $"O prazo de interposição em dias úteis exige valor inteiro — recebido '{args.PrazoValor}'. Para prazo menor que um dia, declare em horas."));
         }
 
+        // A suspensividade admite as três unidades (UNI-REQ-0116), inclusive dias úteis:
+        // é outro relógio, com outra regra. O que a contagem em dia útil exige — a
+        // convenção de contagem declarada — é invariante do PROCESSO, não desta entidade,
+        // porque a declaração é uma por certame e esta regra não enxerga a raiz.
         return Result<RegraRecursoFase>.Success(new RegraRecursoFase { Regra = regra, Args = args });
     }
 

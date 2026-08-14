@@ -12,6 +12,12 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 {
     private const int ReferenciaTemporalFatosTipoMaxLength = 20;
 
+    // Mesmas larguras das demais referências ao rol_de_regras no módulo — a identidade
+    // (codigo, versao, hash) tem a mesma forma onde quer que uma dimensão aplique regra.
+    private const int RegraCodigoMaxLength = 128;
+    private const int RegraVersaoMaxLength = 16;
+    private const int HashLength = 64;
+
     public void Configure(EntityTypeBuilder<ProcessoSeletivo> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -121,6 +127,27 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
                 .HasComment("UF da localidade regente — cache de exibição; a UF que vale é a derivada do prefixo do código.");
         });
         builder.Navigation(p => p.Localidade).IsRequired();
+
+        // Convenção de contagem dos prazos (UNI-REQ-0112) — opcional na configuração: só
+        // vira obrigatória quando alguma contagem do certame distingue dia útil, e essa
+        // condição é do agregado, não da tabela. Colunas anuláveis, sem check
+        // all-or-nothing próprio: o owned type do EF já traz as três juntas ou nenhuma.
+        builder.OwnsOne(p => p.AlgoritmoContagemPrazo, algoritmo =>
+        {
+            algoritmo.Property(x => x.Codigo)
+                .HasColumnName("algoritmo_contagem_prazo_codigo")
+                .HasMaxLength(RegraCodigoMaxLength)
+                .HasComment("Código da entrada de algoritmo de contagem do rol_de_regras que o certame declarou.");
+            algoritmo.Property(x => x.Versao)
+                .HasColumnName("algoritmo_contagem_prazo_versao")
+                .HasMaxLength(RegraVersaoMaxLength)
+                .HasComment("Versão da entrada declarada — evolução da convenção é versão nova, nunca alteração da vigente.");
+            algoritmo.Property(x => x.Hash)
+                .HasColumnName("algoritmo_contagem_prazo_hash")
+                .HasMaxLength(HashLength)
+                .IsFixedLength()
+                .HasComment("Hash da definição resolvida no rol_de_regras — é o que prova que a convenção aplicada não mudou depois.");
+        });
 
         // Coleções filhas do agregado: entidades próprias com FK para a raiz
         // (nunca owned types).

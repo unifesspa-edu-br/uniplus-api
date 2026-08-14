@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação da projeção canônica do envelope de congelamento (ADR-0100,
-/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>26 blocos
+/// ADR-0109). Projeta a configuração viva do agregado num payload de <b>27 blocos
 /// reais</b> — e devolve os bytes via <see cref="PerfilCanonicoV1"/>.
 /// <c>documentosExigidos</c> (Story #853) já carrega <c>obrigatoriedades[]</c> e
 /// <c>exigencias[]</c> (#554) reais. <c>vagas</c> (issue #848/ADR-0115) é outro: o
@@ -169,7 +169,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>CriarProcessoSeletivoCommandHandler</c> (CA-02). Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.9</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.11";
+    internal const string SchemaVersionAtual = "0.0.12";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -226,10 +226,12 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["modalidadesOfertadas"] = SerializarModalidadesOfertadas(processo.DistribuicaoVagas),
             ["taxaInscricao"] = SerializarTaxaInscricao(processo),
             ["localidade"] = SerializarLocalidade(processo, entrada.FusoHorario),
+            ["algoritmoContagemPrazo"] = SerializarAlgoritmoContagemPrazo(processo),
         };
 
-        // ADR-0101: a retificação ACRESCENTA um 27º bloco preservando os 26
-        // anteriores (a issue #1112 elevou de 24 para 25, e a localidade de 25 para 26). A
+        // ADR-0101: a retificação ACRESCENTA um 28º bloco preservando os 27
+        // anteriores (a issue #1112 elevou de 24 para 25, a localidade de 25 para 26 e a
+        // convenção de contagem de 26 para 27). A
         // abertura não escreve esta chave —
         // seu payload é byte-a-byte o mesmo do T4 (a reordenação de chaves em
         // ComputeSnapshotBytes independe da ordem de inserção aqui).
@@ -616,6 +618,32 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["uf"] = processo.Localidade.Uf,
             ["fusoHorario"] = fusoHorario,
         };
+
+    /// <summary>
+    /// Bloco da convenção de contagem declarada (UNI-REQ-0112) — a identidade que reproduz
+    /// a definição aplicada.
+    /// </summary>
+    /// <remarks>
+    /// Presença explícita em vez de bloco ausente: uma versão publicada sem contagem que
+    /// distinga dia útil não declara convenção, e isso é fato da versão, não lacuna. O
+    /// <c>hash</c> é o que prova o conteúdo — sem ele, código e versão apontariam para uma
+    /// definição que poderia ter sido reescrita depois.
+    /// </remarks>
+    private static JsonObject SerializarAlgoritmoContagemPrazo(ProcessoSeletivo processo)
+    {
+        if (processo.AlgoritmoContagemPrazo is not { } algoritmo)
+        {
+            return new JsonObject { ["presente"] = false };
+        }
+
+        return new JsonObject
+        {
+            ["presente"] = true,
+            ["codigo"] = algoritmo.Codigo,
+            ["versao"] = algoritmo.Versao,
+            ["hash"] = algoritmo.Hash,
+        };
+    }
 
     private static JsonObject SerializarTaxaInscricao(ProcessoSeletivo processo)
     {
