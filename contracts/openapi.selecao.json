@@ -8470,6 +8470,7 @@
           "formularioTermoAceiteTexto",
           "configuracaoDivulgacao",
           "configuracaoTaxaInscricao",
+          "algoritmoContagemPrazo",
           "criadoEm"
         ],
         "type": "object",
@@ -8623,6 +8624,16 @@
               },
               {
                 "$ref": "#/components/schemas/ConfiguracaoTaxaInscricaoDto"
+              }
+            ]
+          },
+          "algoritmoContagemPrazo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenciaRegraDto"
               }
             ]
           },
