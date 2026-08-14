@@ -23,6 +23,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// escolher uma unidade no lugar de quem declarou.
 /// </para>
 /// <para>
+/// A guarda da viva é <b>simétrica</b>, e cada sentido recusa a unidade que a definição de
+/// destino não admite: avançar recusa dia corrido, reverter recusa dia útil. Sem a metade da
+/// reversão, um rascunho criado sob a política nova sobreviveria à volta da definição que
+/// proíbe dia útil na interposição.
+/// </para>
+/// <para>
 /// A validade sintática do SQL não é objeto deste arquivo: a suíte de integração aplica
 /// todas as migrations contra um Postgres real ao subir, e um bloco malformado derrubaria o
 /// fixture antes de qualquer asserção aqui.
@@ -53,12 +59,12 @@ public sealed class SubstituicaoDaRegraDeRecursoGuardaTests
 
         migration.Should().Contain("selecao.regras_recurso_fase",
             "a regra viva do rascunho referencia a entrada por colunas próprias, e escapa da guarda sobre a configuração congelada");
-        // O SQL interpola uma constante nomeada, então o fonte não traz o literal: o que se
-        // prova é que a constante vale o enum certo e que é ela que entra no predicado.
+        // O SQL interpola o parâmetro, então o fonte não traz o literal: o que se prova é
+        // que as constantes valem os enums certos e que o avanço passa a de dia corrido.
         migration.Should().Contain($"const int DiasCorridos = {(int)UnidadePrazo.Dias};",
             "apontar para outro valor do enum faria a guarda vigiar uma unidade que continua válida");
-        migration.Should().Contain("prazo_unidade = {DiasCorridos}",
-            "é a unidade que deixou de ser declarável; as demais continuam válidas e não podem bloquear o deploy");
+        migration.Should().Contain("DiasCorridos,",
+            "é a unidade que deixa de ser declarável ao avançar; as demais continuam válidas e não podem bloquear o deploy");
         migration.Should().Contain("redeclare o prazo em dias úteis ou horas",
             "a mensagem precisa dizer o que fazer — converter automaticamente mudaria o prazo ou a granularidade, e essa é decisão de quem declarou");
     }
@@ -82,5 +88,17 @@ public sealed class SubstituicaoDaRegraDeRecursoGuardaTests
             "voltar a definição sem voltar a referência viva deixaria o rascunho apontando para um hash que não existe mais");
         down.Should().Contain("ExigirQueNenhumaConfiguracaoCongeladaReferencie",
             "a reversão responde à mesma fronteira do avanço");
+    }
+
+    [Fact(DisplayName = "A reversão aborta diante de rascunho em dias úteis — o problema espelhado do avanço")]
+    public void Down_GuardaORascunhoEmDiasUteis()
+    {
+        string migration = Migration();
+
+        migration.Should().Contain($"const int DiasUteis = {(int)UnidadePrazo.DiasUteis};");
+        migration.Should().Contain("DiasUteis,",
+            "um rascunho declarado sob a política nova sobreviveria à volta de uma definição que proíbe dia útil na interposição, e publicaria — nada revalida a unidade ao carregar");
+        migration.Should().Contain("redeclare o prazo em horas ou dias corridos",
+            "a orientação da reversão é o inverso da do avanço: o que volta a valer é a política antiga");
     }
 }

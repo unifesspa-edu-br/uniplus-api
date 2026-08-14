@@ -16,11 +16,21 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         private const string HashDaDefinicaoAnterior =
             "94f2a02a12cccae0ebe98dabc9dc66b5aacac25053e91b768fdf0d47492e8240";
 
+        // Valores de UnidadePrazo — a coluna é o enum convertido para int. Cada sentido da
+        // migration proíbe a unidade que a definição de destino não admite: avançar recusa
+        // dia corrido, reverter recusa dia útil.
+        private const int DiasCorridos = 2;
+        private const int DiasUteis = 3;
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             ExigirQueNenhumaConfiguracaoCongeladaReferencie(migrationBuilder);
-            TratarRegrasDeRecursoVivas(migrationBuilder, HashDaDefinicaoVigente);
+            TratarRegrasDeRecursoVivas(
+                migrationBuilder,
+                DiasCorridos,
+                "redeclare o prazo em dias úteis ou horas",
+                HashDaDefinicaoVigente);
 
             migrationBuilder.UpdateData(
                 schema: "selecao",
@@ -87,11 +97,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         /// acompanha a substituição.
         /// </para>
         /// </remarks>
-        private static void TratarRegrasDeRecursoVivas(MigrationBuilder migrationBuilder, string hashDestino)
+        private static void TratarRegrasDeRecursoVivas(
+            MigrationBuilder migrationBuilder,
+            int unidadeQueDeixaDeSerDeclaravel,
+            string comoRedeclarar,
+            string hashDestino)
         {
-            // UnidadePrazo.Dias — a coluna é o enum convertido para int.
-            const int DiasCorridos = 2;
-
             migrationBuilder.Sql($"""
                 DO $vivas$
                 BEGIN
@@ -100,9 +111,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         FROM selecao.regras_recurso_fase
                         WHERE regra_codigo = 'RECURSO-PRAZO-ANCORADO-EM-ATO'
                           AND regra_versao = 'v1'
-                          AND prazo_unidade = {DiasCorridos}
+                          AND prazo_unidade = {unidadeQueDeixaDeSerDeclaravel}
                     ) THEN
-                        RAISE EXCEPTION 'regras_recurso_fase: há rascunho com prazo de interposição em dias corridos, unidade que a regra vigente não admite; redeclare o prazo em dias úteis ou horas antes de aplicar esta migration';
+                        RAISE EXCEPTION 'regras_recurso_fase: há rascunho cujo prazo de interposição usa unidade que a definição de destino não admite; {comoRedeclarar} antes de aplicar esta migration';
                     END IF;
                 END
                 $vivas$;
@@ -111,9 +122,17 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
             ReapontarHashDasRegrasDeRecursoVivas(migrationBuilder, hashDestino);
         }
 
-        /// <summary>Devolve as referências vivas ao hash anterior, na reversão.</summary>
+        /// <summary>
+        /// A reversão enfrenta o problema espelhado: um rascunho declarado <b>sob a política
+        /// nova</b>, em dias úteis, sobreviveria à volta de uma definição que os proíbe na
+        /// interposição — e publicaria, porque nada revalida a unidade ao carregar.
+        /// </summary>
         private static void DevolverHashDasRegrasDeRecursoVivas(MigrationBuilder migrationBuilder) =>
-            ReapontarHashDasRegrasDeRecursoVivas(migrationBuilder, HashDaDefinicaoAnterior);
+            TratarRegrasDeRecursoVivas(
+                migrationBuilder,
+                DiasUteis,
+                "redeclare o prazo em horas ou dias corridos",
+                HashDaDefinicaoAnterior);
 
         private static void ReapontarHashDasRegrasDeRecursoVivas(MigrationBuilder migrationBuilder, string hashDestino) =>
             migrationBuilder.Sql($"""
