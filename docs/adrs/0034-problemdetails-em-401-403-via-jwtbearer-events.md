@@ -41,10 +41,12 @@ A implementação compõe o evento já existente (`JwtBearerLoggingEvents.WithSt
 
 ### Type URLs canônicas
 
-| Status | `type` (URL absoluto)                                                       | `code`                            | `title`             |
-| ------ | --------------------------------------------------------------------------- | --------------------------------- | ------------------- |
-| 401    | `https://uniplus.unifesspa.edu.br/errors/uniplus.auth.unauthorized`         | `uniplus.auth.unauthorized`       | `Não autenticado`   |
-| 403    | `https://uniplus.unifesspa.edu.br/errors/uniplus.auth.forbidden`            | `uniplus.auth.forbidden`          | `Acesso negado`     |
+| Status | `type` (URL absoluto)                                                                     | `code`                      | `title`           |
+| ------ | ----------------------------------------------------------------------------------------- | --------------------------- | ----------------- |
+| 401    | `https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.auth.unauthorized`   | `uniplus.auth.unauthorized` | `Não autenticado` |
+| 403    | `https://unifesspa-edu-br.github.io/uniplus-developers/erros/uniplus.auth.forbidden`      | `uniplus.auth.forbidden`    | `Acesso negado`   |
+
+A base sob a qual o catálogo público publica cada causa é configuração (`ProblemType:BaseUri`), prescrita pela [ADR-0023](0023-contrato-de-erro-rfc9457.md) — a tabela mostra o valor em vigor, e a mesma fábrica o aplica a todo emissor de `problem+json`.
 
 Extensions: `code`, `traceId` (extraído do `Activity.Current` ou GUID v7 fallback), `instance` no formato `urn:uuid:<v7>`. Nenhum detalhe da falha de validação JWT é exposto no body.
 
