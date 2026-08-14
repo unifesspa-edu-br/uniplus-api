@@ -261,18 +261,21 @@ if should_run "POST"; then
 
   # --- POST conflito (mesmo regraCodigo, nova chave) ---
   # ProblemDetails canônico (RFC 9457 + ADR-0023): o slug da taxonomia
-  # `uniplus.<modulo>.<recurso>.<erro>` vive na URI `type`
-  # (`https://uniplus.unifesspa.edu.br/errors/<slug>`). O campo `code` é
-  # uma extension (`ProblemDetails.Extensions["code"]`) e NÃO consta da
-  # schema oficial — clientes que só leem o que está no contrato OpenAPI
-  # não enxergam `code`. Extrai do `type` por basename; fallback `.code`
-  # quando uma resposta omitir o type (cenário defensivo, não esperado).
+  # `uniplus.<modulo>.<recurso>.<erro>` é o último segmento da URI `type`,
+  # que aponta a página do catálogo público daquela causa. A base é
+  # configuração da API e muda com o endereço do catálogo, então a extração
+  # é por último segmento, não por prefixo fixo. O campo `code` é uma
+  # extension (`ProblemDetails.Extensions["code"]`) e NÃO consta da schema
+  # oficial — clientes que só leem o que está no contrato OpenAPI não
+  # enxergam `code`; serve de fallback quando a resposta omitir o type
+  # (cenário defensivo, não esperado).
   if [ -n "$CREATED_ID" ] && [ -n "$CONFLICT_FIELD" ]; then
     CODE=$(do_request POST "$API_BASE$PATH_ADMIN" "Idempotency-Key: $(uuidgen)" /tmp/smoke-crud.create.json)
     BODY=$(cat /tmp/smoke-crud.body)
     CODE_TAXONOMY=$(echo "$BODY" | jq -r '
       (.type // "") as $t |
-      if ($t | test("/errors/")) then ($t | sub(".*/errors/"; "")) else (.code // empty) end
+      ($t | sub(".*/"; "")) as $slug |
+      if ($slug | length) > 0 then $slug else (.code // empty) end
     ' 2>/dev/null)
     if [ "$CODE" = "409" ] && echo "$CODE_TAXONOMY" | grep -q "$CONFLICT_ERROR_SUFFIX"; then
       record "POST conflito ($CONFLICT_FIELD)" "OK" "409 $CODE_TAXONOMY"
