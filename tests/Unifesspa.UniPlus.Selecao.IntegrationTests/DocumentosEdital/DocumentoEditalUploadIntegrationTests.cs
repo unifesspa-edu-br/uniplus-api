@@ -23,6 +23,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosEdital;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -77,7 +78,7 @@ public sealed class DocumentoEditalUploadIntegrationTests : IClassFixture<Proces
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2026 — SiSU (teste #784)", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria,
             Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot
-                .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+                .Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         context.ProcessosSeletivos.Add(processo);
         await context.SaveChangesAsync();
         return (context, processo);

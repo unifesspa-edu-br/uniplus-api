@@ -34,7 +34,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
         tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
-        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId);
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA");
         ProcessoSeletivo? processoPersistido = null;
         repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
             .Do(ci => processoPersistido = ci.Arg<ProcessoSeletivo>());
@@ -72,7 +72,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
-        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId);
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -93,7 +93,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         UnidadeView unidadeSemCidade = new(
             UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(unidadeSemCidade);
-        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId);
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -116,11 +116,108 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            new CriarProcessoSeletivoCommand("PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId),
+            new CriarProcessoSeletivoCommand("PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA"),
             repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo");
         await repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+    }
+    /// <summary>
+    /// A recusa por localidade ausente é o código que o catálogo público publica para a
+    /// causa — não um erro genérico de validação de contrato. Se virar
+    /// <c>uniplus.validacao</c>, o consumidor perde a página que explica o que fazer.
+    /// </summary>
+    [Fact(DisplayName = "Criação sem localidade é recusada com o erro nomeado, e nada é persistido")]
+    public async Task Handle_SemLocalidade_RecusaComErroNomeado()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null);
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeAusente");
+        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// A Unidade administradora tem cidade cadastrada, e mesmo assim a criação é recusada:
+    /// é a prova de que o servidor não completa a localidade a partir dela. Deduzir
+    /// devolveria a rigidez que tornou a localidade configurável por certame.
+    /// </summary>
+    [Fact(DisplayName = "Unidade com cidade cadastrada não supre a localidade ausente")]
+    public async Task Handle_SemLocalidadeComUnidadeQueTemCidade_NaoDeduz()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null);
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        UnidadeCeps.CidadeCodigoIbge.Should().Be("1504208", "a unidade tem cidade — e ainda assim não supre");
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeAusente");
+    }
+
+    /// <summary>
+    /// Declarada uma localidade diferente da cidade da Unidade administradora, é a
+    /// declarada que persiste: o certame pode correr sob o calendário de outro município.
+    /// </summary>
+    [Fact(DisplayName = "Localidade declarada diferente da cidade da Unidade é a que persiste")]
+    public async Task Handle_LocalidadeDiferenteDaUnidade_PersisteADeclarada()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        // Belém, não Marabá: a unidade fica numa cidade, o certame corre sob o calendário de outra.
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1501402", "Belém", "PA");
+        ProcessoSeletivo? persistido = null;
+        repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
+            .Do(ci => persistido = ci.Arg<ProcessoSeletivo>());
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        persistido!.Localidade.CodigoIbge.Should().Be("1501402");
+        persistido.UnidadeAdministradora.CidadeCodigoIbge.Should().Be("1504208", "o snapshot da unidade guarda a cidade dela, independente da localidade regente");
+    }
+
+    [Fact(DisplayName = "Trio de localidade incoerente é recusado pela causa que o Kernel nomeia")]
+    public async Task Handle_LocalidadeIncoerente_RecusaPelaCausaDoKernel()
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
+        ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
+        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        CriarProcessoSeletivoCommand command = new(
+            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "SP");
+
+        Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
+            command, repository, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("CidadeReferencia.UfIncoerente");
     }
 }

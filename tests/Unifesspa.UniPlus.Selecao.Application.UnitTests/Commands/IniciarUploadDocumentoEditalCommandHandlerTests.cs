@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
 {
@@ -35,7 +36,7 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
     [Fact(DisplayName = "Handle com processo existente cria documento pendente e devolve URL pre-assinada")]
     public async Task Handle_ProcessoExistente_CriaPendenteEDevolveUrl()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
         IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();
@@ -60,7 +61,7 @@ public sealed class IniciarUploadDocumentoEditalCommandHandlerTests
     [Fact(DisplayName = "Handle não persiste nada quando a geração da URL pre-assinada falha")]
     public async Task Handle_FalhaAoGerarUrl_NaoPersisteRegistroOrfao()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoEditalRepository documentoRepository = Substitute.For<IDocumentoEditalRepository>();
         IDocumentoEditalStorage storage = Substitute.For<IDocumentoEditalStorage>();

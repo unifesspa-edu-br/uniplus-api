@@ -20,7 +20,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Gates de Grupo", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo.Criar("PS Gates de Grupo", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
     private static FaseCronograma NovaFase(Guid faseCanonicaOrigemId, bool permiteComplementacao) => FaseCronograma.Criar(
         1, faseCanonicaOrigemId, "INSCRICAO", "CEPS", OrigemDataFase.Delegada,

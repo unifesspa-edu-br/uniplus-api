@@ -129,7 +129,8 @@ internal static class CorpusEnvelope
             "PS Rico 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
-                cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!);
+                cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
 
         processo.DefinirEtapas(Ordem([
             EtapaProcesso.Reidratar(objetiva, "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1),

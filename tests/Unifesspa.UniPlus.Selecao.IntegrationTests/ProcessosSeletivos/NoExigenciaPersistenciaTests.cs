@@ -45,7 +45,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     [Fact(DisplayName = "Persiste e recarrega uma árvore OU[E[RG,CPF],CIN] em sessão NOVA do DbContext, pelo caminho de produção (ObterParaMutacaoAsync)")]
     public async Task PersisteERecarrega_ArvoreComGrupos_EmSessaoNova()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Árvore", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Árvore", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         FaseCronograma fase = FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,
@@ -117,7 +117,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     [Fact(DisplayName = "Issue #943: substituir uma árvore com grupo E/OU por outra, várias vezes seguidas na mesma sessão, não falha com 500")]
     public async Task SubstituiArvoreComGrupo_PorOutrasArvores_MultiplasVezesSeguidas()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Substituição de árvore", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Substituição de árvore", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
         FaseCronograma fase = FaseCronograma.Criar(
             1, Guid.CreateVersion7(), "INSCRICAO", "CEPS", OrigemDataFase.Delegada,
             agrupaEtapas: false, permiteComplementacao: false, produzResultado: false,

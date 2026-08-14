@@ -17,20 +17,47 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <param name="TipoProcessoOrigemId">Id de um tipo de processo ativo em Configuração, resolvido e congelado na criação.</param>
 /// <param name="OrigemCandidatos">De onde vêm os candidatos (Story #851 §3.4) — NOT NULL, exigido na criação.</param>
 /// <param name="UnidadeAdministradoraOrigemId">Quem responde pelo certame (CA-04 da Feature #40; issue #849) — NOT NULL, exigido na criação, resolvido via <c>IUnidadeReader</c>.</param>
+/// <param name="LocalidadeCodigoIbge">Código IBGE do município cujo calendário rege a contagem dos prazos (UNI-REQ-0111) — exigido na criação, nunca deduzido da Unidade administradora.</param>
+/// <param name="LocalidadeNome">Nome do município da localidade regente — cache de exibição.</param>
+/// <param name="LocalidadeUf">UF da localidade regente — cache de exibição.</param>
 [method: JsonConstructor]
 public sealed record CriarProcessoSeletivoCommand(
     string Nome,
     Guid TipoProcessoOrigemId,
     OrigemCandidatos OrigemCandidatos,
-    Guid UnidadeAdministradoraOrigemId) : ICommand<Result<Guid>>
+    Guid UnidadeAdministradoraOrigemId,
+    string? LocalidadeCodigoIbge,
+    string? LocalidadeNome,
+    string? LocalidadeUf) : ICommand<Result<Guid>>
 {
     /// <summary>Construtor de fixtures; o contrato HTTP canônico recebe somente o Id de origem.</summary>
     public CriarProcessoSeletivoCommand(
         string nome,
         TipoProcessoSnapshot? tipoProcesso,
         OrigemCandidatos origemCandidatos,
-        Guid unidadeAdministradoraOrigemId)
-        : this(nome, tipoProcesso?.OrigemId ?? Guid.Empty, origemCandidatos, unidadeAdministradoraOrigemId)
+        Guid unidadeAdministradoraOrigemId,
+        string? localidadeCodigoIbge,
+        string? localidadeNome,
+        string? localidadeUf)
+        : this(
+            nome,
+            tipoProcesso?.OrigemId ?? Guid.Empty,
+            origemCandidatos,
+            unidadeAdministradoraOrigemId,
+            localidadeCodigoIbge,
+            localidadeNome,
+            localidadeUf)
     {
     }
+
+    /// <summary>
+    /// Nenhum dos três campos da localidade foi informado — distinto de trio informado e
+    /// incoerente, que o Kernel já nomeia por causa. A separação existe porque as duas
+    /// recusas dizem coisas diferentes a quem chamou: uma esqueceu de declarar, a outra
+    /// declarou errado.
+    /// </summary>
+    public bool LocalidadeNaoDeclarada =>
+        string.IsNullOrWhiteSpace(LocalidadeCodigoIbge)
+        && string.IsNullOrWhiteSpace(LocalidadeNome)
+        && string.IsNullOrWhiteSpace(LocalidadeUf);
 }

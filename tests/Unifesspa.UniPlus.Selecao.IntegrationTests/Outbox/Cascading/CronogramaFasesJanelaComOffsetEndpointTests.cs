@@ -189,7 +189,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
                 OrigemCandidatos.InscricaoPropria,
                 Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar(
-                    "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!);
+                    "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
             await db.ProcessosSeletivos.AddAsync(processo).ConfigureAwait(false);
             await db.SaveChangesAsync().ConfigureAwait(false);
             processoId = processo.Id;

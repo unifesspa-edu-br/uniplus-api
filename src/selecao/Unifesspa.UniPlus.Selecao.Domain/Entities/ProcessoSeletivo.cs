@@ -70,6 +70,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Snapshot-copy (ADR-0061) da Unidade administradora, congelado na criação — ver <see cref="UnidadeAdministradoraOrigemId"/>.</summary>
     public UnidadeAdministradoraSnapshot UnidadeAdministradora { get; private set; } = null!;
 
+    /// <summary>
+    /// Município cujo calendário rege a contagem dos prazos do certame (UNI-REQ-0111).
+    /// Declarado na criação e alterável enquanto a configuração admite mutação — não é
+    /// derivado da Unidade administradora, cuja cidade descreve onde ela fica, não sob
+    /// que calendário o certame corre.
+    /// </summary>
+    public LocalidadeRegente Localidade { get; private set; } = null!;
+
     /// <summary>Título do formulário de inscrição apresentado ao candidato (Story #559). Ausência = sem título configurado.</summary>
     public string? FormularioTitulo { get; private set; }
 
@@ -185,7 +193,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         TipoProcessoSnapshot tipoProcesso,
         OrigemCandidatos origemCandidatos,
         Guid unidadeAdministradoraOrigemId,
-        UnidadeAdministradoraSnapshot unidadeAdministradora)
+        UnidadeAdministradoraSnapshot unidadeAdministradora,
+        LocalidadeRegente localidade)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         if (tipoProcesso is null)
@@ -204,6 +213,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         ArgumentNullException.ThrowIfNull(unidadeAdministradora);
+        ArgumentNullException.ThrowIfNull(localidade);
 
         return new ProcessoSeletivo
         {
@@ -212,6 +222,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             OrigemCandidatos = origemCandidatos,
             UnidadeAdministradoraOrigemId = unidadeAdministradoraOrigemId,
             UnidadeAdministradora = unidadeAdministradora,
+            Localidade = localidade,
             Status = StatusProcesso.Rascunho,
         };
     }
@@ -1344,6 +1355,34 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         ReferenciaTemporalFatos = referencia;
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Redeclara o município cujo calendário rege a contagem dos prazos (UNI-REQ-0111).
+    /// </summary>
+    /// <remarks>
+    /// A atribuição é incondicional de propósito: como a igualdade de
+    /// <see cref="LocalidadeRegente"/> considera só o código IBGE, comparar antes de
+    /// atribuir descartaria silenciosamente a correção de um nome de exibição divergente,
+    /// que é justamente o caso em que a redeclaração serve para consertar o rótulo.
+    /// </remarks>
+    public Result DefinirLocalidade(LocalidadeRegente localidade, PrecondicaoIfMatch precondicao)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (localidade is null)
+        {
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.LocalidadeAusente",
+                "A localidade que rege a contagem dos prazos é obrigatória."));
+        }
+
+        Localidade = localidade;
         Rascunho?.IncrementarRevisao();
         return Result.Success();
     }

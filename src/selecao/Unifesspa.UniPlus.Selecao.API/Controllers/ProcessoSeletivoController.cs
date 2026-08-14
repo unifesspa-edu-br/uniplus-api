@@ -473,6 +473,35 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story
     /// #554, PR #896 — B-03 do plano). <c>Tipo</c> nulo remove a referência.
     /// </summary>
+    /// <summary>
+    /// Redeclara o município cujo calendário rege a contagem dos prazos do certame.
+    /// </summary>
+    [HttpPut("{id:guid}/localidade")]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
+    [EmiteETag]
+    public async Task<IActionResult> DefinirLocalidade(
+        Guid id,
+        [FromBody] DefinirLocalidadeRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+            return malformada!;
+
+        Result<MutacaoAceita> resultado = await _commandBus.Send(
+            new DefinirLocalidadeCommand(id, request.CodigoIbge, request.Nome, request.Uf, precondicao),
+            cancellationToken);
+        return ResponderMutacao(resultado);
+    }
+
     [HttpPut("{id:guid}/referencia-temporal-fatos")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
