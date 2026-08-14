@@ -1361,18 +1361,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Redeclara o município cujo calendário rege a contagem dos prazos (UNI-REQ-0111).
+    /// Só em rascunho, enquanto o envelope publicado não congela a localidade.
     /// </summary>
     /// <remarks>
-    /// A atribuição é incondicional de propósito: como a igualdade de
+    /// <para>A escrita não usa <c>MutacaoBloqueada</c>, que liberaria a edição sob sessão
+    /// editorial, porque a localidade ainda não entra no envelope congelado nem em
+    /// <c>AplicarGrafo</c>. Liberá-la agora abriria dois furos: fechar a retificação
+    /// publicaria os mesmos bytes apesar da configuração diferente, e descartá-la não
+    /// reverteria o município — uma edição descartada continuaria governando quais
+    /// feriados incidem no prazo. A liberação sob retificação entra junto com o
+    /// congelamento, na task que o traz.</para>
+    /// <para>A atribuição é incondicional de propósito: como a igualdade de
     /// <see cref="LocalidadeRegente"/> considera só o código IBGE, comparar antes de
     /// atribuir descartaria silenciosamente a correção de um nome de exibição divergente,
-    /// que é justamente o caso em que a redeclaração serve para consertar o rótulo.
+    /// que é justamente o caso em que a redeclaração serve para consertar o rótulo.</para>
     /// </remarks>
-    public Result DefinirLocalidade(LocalidadeRegente localidade, PrecondicaoIfMatch precondicao)
+    public Result DefinirLocalidade(LocalidadeRegente localidade)
     {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        if (Status != StatusProcesso.Rascunho)
         {
-            return Result.Failure(bloqueio);
+            return Result.Failure(new DomainError(
+                "ProcessoSeletivo.LocalidadeSomenteEmRascunho",
+                $"A localidade só pode ser alterada enquanto o processo está em rascunho — status atual: {Status}."));
         }
 
         if (localidade is null)
@@ -1383,7 +1393,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         Localidade = localidade;
-        Rascunho?.IncrementarRevisao();
         return Result.Success();
     }
 
