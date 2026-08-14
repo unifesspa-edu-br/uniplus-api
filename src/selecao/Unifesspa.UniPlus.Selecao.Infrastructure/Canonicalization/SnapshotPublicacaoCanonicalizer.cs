@@ -194,6 +194,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ArgumentNullException.ThrowIfNull(dados);
         ArgumentException.ThrowIfNullOrWhiteSpace(entrada.HashDocumento);
 
+        // Uma resolução por canonicalização: o mesmo objeto de zona serve o bloco de localidade e
+        // o cálculo do dia civil, para que o envelope não possa declarar um fuso e contar por outro.
+        TimeZoneInfo fusoDaVersao = TimeZoneInfo.FindSystemTimeZoneById(entrada.FusoHorario);
+
         JsonObject payload = new()
         {
             ["tipoProcesso"] = SerializarTipoProcesso(processo),
@@ -208,7 +212,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             ["criteriosDesempate"] = SerializarCriteriosDesempate(processo),
             ["classificacao"] = SerializarClassificacao(processo),
             ["hashesEdital"] = SerializarHashesEdital(dados, entrada.HashDocumento),
-            ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.MetadadosFatosCongelados),
+            ["documentosExigidos"] = SerializarDocumentosExigidos(processo, entrada.Conformidade, entrada.MetadadosFatosCongelados, fusoDaVersao),
             ["arvoreSatisfacao"] = SerializarArvoreSatisfacao(processo),
             ["formulario"] = SerializarFormulario(processo),
             ["cascataRemanejamento"] = SerializarCascataRemanejamento(processo),
@@ -760,7 +764,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     private static JsonObject SerializarDocumentosExigidos(
         ProcessoSeletivo processo,
         ResultadoConformidade? conformidade,
-        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) => new()
+        IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados,
+        TimeZoneInfo fusoHorario) => new()
         {
             ["exigencias"] = SerializarExigencias(processo.DocumentosExigidos),
             ["obrigatoriedades"] = SerializarObrigatoriedades(conformidade),
@@ -771,7 +776,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["faseId"] = referencia.FaseId,
             }
             : null,
-            ["dataReferenciaFatos"] = processo.ResolverDataReferenciaFatos() is { } data
+            ["dataReferenciaFatos"] = processo.ResolverDataReferenciaFatos(fusoHorario) is { } data
             ? data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null,
             ["metadadosFatos"] = SerializarMetadadosFatos(metadadosFatosCongelados),

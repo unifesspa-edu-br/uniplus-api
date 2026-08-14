@@ -570,7 +570,7 @@ public sealed class ProcessoSeletivoPublicarTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.ResolverDataReferenciaFatos().Should().Be(new DateOnly(2026, 1, 15),
+        processo.ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 1, 15),
             "a fase de Ordem 1 (Fim 2026-01-15) precisa vencer a de Ordem 2 (Fim 2026-01-25) por Ordem — se a " +
             "escolha dependesse da ordem de inserção em _cronogramaFases, a reidratação (sempre ordenada por " +
             "Ordem) poderia resolver outra data e quebrar o round-trip");
@@ -616,7 +616,7 @@ public sealed class ProcessoSeletivoPublicarTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.ResolverDataReferenciaFatos().Should().Be(new DateOnly(2026, 3, 1),
+        processo.ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 3, 1),
             "o Fim (2026-03-02T01:30:00Z) convertido para America/Sao_Paulo (UTC-3, sem DST) é 2026-03-01T22:30 — o dia LOCAL, não o dia UTC");
     }
 
