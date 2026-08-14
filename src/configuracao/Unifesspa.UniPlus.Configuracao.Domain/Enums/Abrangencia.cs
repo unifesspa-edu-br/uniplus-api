@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
 /// Abrangência territorial de um dia não útil no calendário de contagem de prazos
-/// (UNI-REQ-0080/RN13). Persistida como token UPPER_SNAKE (<see cref="Abrangencias"/>).
+/// (UNI-REQ-0116/RN13). Persistida como token UPPER_SNAKE (<see cref="Abrangencias"/>).
 /// </summary>
 public enum Abrangencia
 {

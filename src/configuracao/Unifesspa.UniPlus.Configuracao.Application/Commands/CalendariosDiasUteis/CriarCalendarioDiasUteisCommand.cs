@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Cria um dataset de calendário de dias úteis (UNI-REQ-0080): a versão do dataset
+/// Cria um dataset de calendário de dias úteis (UNI-REQ-0116): a versão do dataset
 /// e a lista completa de dias não úteis. Nasce sempre não vigente — tornar-se o
 /// dataset corrente é o comando <c>MarcarVigenteCalendarioDiasUteisCommand</c>,
 /// separado. O ator de auditoria (<c>created_by</c>) é carimbado server-side via

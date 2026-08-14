@@ -1256,7 +1256,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.oferta_curso.nao_encontrada",
                 "Oferta de curso não encontrada")),
 
-        // ── Calendário de dias úteis (UNI-REQ-0080) ───────────────────────
+        // ── Calendário de dias úteis (UNI-REQ-0116) ───────────────────────
         new(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

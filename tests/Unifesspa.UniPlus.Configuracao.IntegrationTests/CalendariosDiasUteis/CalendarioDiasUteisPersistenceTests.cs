@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Integração ponta-a-ponta do calendário de dias úteis contra Postgres real
-/// (UNI-REQ-0080): persistência do dataset e dos dias não úteis (token de
+/// (UNI-REQ-0116): persistência do dataset e dos dias não úteis (token de
 /// <c>Abrangencia</c> via <c>AbrangenciaValueConverter</c>), índice único
 /// parcial de vigência, CHECK de coerência de município e soft-delete
 /// preservando os dias não úteis filhos (<c>ClientNoAction</c>).

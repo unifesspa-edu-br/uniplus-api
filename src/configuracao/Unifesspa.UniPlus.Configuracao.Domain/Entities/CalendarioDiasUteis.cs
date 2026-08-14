@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Um dataset versionado do calendário de dias não úteis (feriados nacionais,
 /// estaduais, municipais e recessos institucionais) usado para contar prazos
-/// expressos em dias úteis (UNI-REQ-0080/RN13).
+/// expressos em dias úteis (UNI-REQ-0116/RN13).
 /// </summary>
 /// <remarks>
 /// <para>Reference data versionada por dataset, não por linha: uma correção publica
