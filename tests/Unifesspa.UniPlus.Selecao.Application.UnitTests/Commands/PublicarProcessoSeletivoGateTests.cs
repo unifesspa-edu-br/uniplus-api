@@ -138,7 +138,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
         {
             FoiInvocado = true;
-            entrada.Processo.ResolverDataReferenciaFatos();
+            entrada.Processo.ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
             return new SnapshotCanonico("{}"u8.ToArray(), "1.2", "canonical-json/sha256@v1");
         }
     }
@@ -238,7 +238,7 @@ public sealed class PublicarProcessoSeletivoGateTests
 
         canonicalizer.FoiInvocado.Should().BeFalse(
             "o guard B-03 (PendenciaPreCanonicalizacao) precede a canonicalização — sem ele, " +
-            "ResolverDataReferenciaFatos() lançaria dentro do canonicalizador e a publicação " +
+            "ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)) lançaria dentro do canonicalizador e a publicação " +
             "devolveria 500 em vez do 422 nomeado.");
 
         eventos.Should().BeEmpty();

@@ -2360,8 +2360,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// não foi provada nem é necessária, e congelar uma data não pedida por ninguém seria
     /// dado morto no envelope, não uma garantia a mais.
     /// </returns>
-    public DateOnly? ResolverDataReferenciaFatos()
+    /// <param name="fusoHorario">
+    /// Zona em que a âncora vira dia civil. Vem da canonicalização — na publicação é o fuso
+    /// institucional corrente, e ao provar uma versão já publicada é o que ela congelou. Deixar o
+    /// método escolher a zona sozinho faria o envelope declarar um fuso no bloco de localidade e
+    /// calcular a data por outro, congelando o dia civil errado numa versão imutável.
+    /// </param>
+    public DateOnly? ResolverDataReferenciaFatos(TimeZoneInfo fusoHorario)
     {
+        ArgumentNullException.ThrowIfNull(fusoHorario);
+
         bool existeGatilhoPorFaixaEtaria = _documentosExigidos
             .SelectMany(static d => d.Condicoes)
             .Any(static c => string.Equals(c.Fato, "FAIXA_ETARIA", StringComparison.Ordinal));
@@ -2405,7 +2413,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "dataReferenciaFatos não resolvível a partir do cronograma — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
         }
 
-        return DateOnly.FromDateTime(instante.ParaHorarioBrasilia().DateTime);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instante, fusoHorario).DateTime);
     }
 
     /// <summary>
