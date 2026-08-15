@@ -26,11 +26,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             ExigirQueNenhumaConfiguracaoCongeladaReferencie(migrationBuilder);
-            TratarRegrasDeRecursoVivas(
-                migrationBuilder,
-                DiasCorridos,
-                "redeclare o prazo em dias úteis ou horas",
-                HashDaDefinicaoVigente);
+            TratarRegrasDeRecursoVivas(migrationBuilder, ArgumentosDoAvanco);
 
             migrationBuilder.UpdateData(
                 schema: "selecao",
@@ -99,28 +95,39 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         /// </remarks>
         private static void TratarRegrasDeRecursoVivas(
             MigrationBuilder migrationBuilder,
-            int unidadeQueDeixaDeSerDeclaravel,
-            string comoRedeclarar,
-            string hashDestino)
+            (int Unidade, string ComoRedeclarar, string HashDestino) sentido)
         {
-            migrationBuilder.Sql($"""
-                DO $vivas$
-                BEGIN
-                    IF EXISTS (
-                        SELECT 1
-                        FROM selecao.regras_recurso_fase
-                        WHERE regra_codigo = 'RECURSO-PRAZO-ANCORADO-EM-ATO'
-                          AND regra_versao = 'v1'
-                          AND prazo_unidade = {unidadeQueDeixaDeSerDeclaravel}
-                    ) THEN
-                        RAISE EXCEPTION 'regras_recurso_fase: há rascunho cujo prazo de interposição usa unidade que a definição de destino não admite; {comoRedeclarar} antes de aplicar esta migration';
-                    END IF;
-                END
-                $vivas$;
-                """);
-
-            ReapontarHashDasRegrasDeRecursoVivas(migrationBuilder, hashDestino);
+            migrationBuilder.Sql(SqlDaGuardaDeRegraViva(sentido.Unidade, sentido.ComoRedeclarar));
+            migrationBuilder.Sql(SqlDoReaponteDeHash(sentido.HashDestino));
         }
+
+        /// <summary>
+        /// O SQL da guarda, exposto para que o teste comportamental execute <b>este</b> bloco
+        /// contra o banco, em vez de uma cópia que pode divergir em silêncio.
+        /// </summary>
+        internal static string SqlDaGuardaDeRegraViva(int unidadeQueDeixaDeSerDeclaravel, string comoRedeclarar) => $"""
+            DO $vivas$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM selecao.regras_recurso_fase
+                    WHERE regra_codigo = 'RECURSO-PRAZO-ANCORADO-EM-ATO'
+                      AND regra_versao = 'v1'
+                      AND prazo_unidade = {unidadeQueDeixaDeSerDeclaravel}
+                ) THEN
+                    RAISE EXCEPTION 'regras_recurso_fase: há rascunho cujo prazo de interposição usa unidade que a definição de destino não admite; {comoRedeclarar} antes de aplicar esta migration';
+                END IF;
+            END
+            $vivas$;
+            """;
+
+        /// <summary>Os argumentos com que cada sentido da migration chama a guarda.</summary>
+        internal static (int Unidade, string ComoRedeclarar, string HashDestino) ArgumentosDoAvanco =>
+            (DiasCorridos, "redeclare o prazo em dias úteis ou horas", HashDaDefinicaoVigente);
+
+        /// <inheritdoc cref="ArgumentosDoAvanco"/>
+        internal static (int Unidade, string ComoRedeclarar, string HashDestino) ArgumentosDaReversao =>
+            (DiasUteis, "redeclare o prazo em horas ou dias corridos", HashDaDefinicaoAnterior);
 
         /// <summary>
         /// A reversão enfrenta o problema espelhado: um rascunho declarado <b>sob a política
@@ -128,20 +135,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         /// interposição — e publicaria, porque nada revalida a unidade ao carregar.
         /// </summary>
         private static void DevolverHashDasRegrasDeRecursoVivas(MigrationBuilder migrationBuilder) =>
-            TratarRegrasDeRecursoVivas(
-                migrationBuilder,
-                DiasUteis,
-                "redeclare o prazo em horas ou dias corridos",
-                HashDaDefinicaoAnterior);
+            TratarRegrasDeRecursoVivas(migrationBuilder, ArgumentosDaReversao);
 
-        private static void ReapontarHashDasRegrasDeRecursoVivas(MigrationBuilder migrationBuilder, string hashDestino) =>
-            migrationBuilder.Sql($"""
+        /// <summary>O reaponte, exposto pela mesma razão da guarda.</summary>
+        internal static string SqlDoReaponteDeHash(string hashDestino) => $"""
                 UPDATE selecao.regras_recurso_fase
                 SET regra_hash = '{hashDestino}'
                 WHERE regra_codigo = 'RECURSO-PRAZO-ANCORADO-EM-ATO'
                   AND regra_versao = 'v1'
                   AND regra_hash <> '{hashDestino}';
-                """);
+                """;
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
