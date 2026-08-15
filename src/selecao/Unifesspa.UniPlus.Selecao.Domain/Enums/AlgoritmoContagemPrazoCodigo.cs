@@ -35,16 +35,22 @@ public static class AlgoritmoContagemPrazoCodigo
     public const string AvancaDataUtil = "CONTAGEM-PRAZO-AVANCA-DATA-UTIL";
 
     /// <summary>
-    /// Placeholder honesto de pendência para a <c>base_legal</c> das entradas
-    /// de contagem (UNI-REQ-0095): o dispositivo exato ainda não foi
-    /// confirmado juridicamente, e citação aproximada seria pior que a lacuna.
-    /// Quando a confirmação vier, entra por substituição enquanto nenhuma
-    /// configuração congelada referenciar a entrada, ou por versão nova a
-    /// partir da primeira referência (ADR-0112).
+    /// Fundamento das entradas de contagem: a convenção aplicável é a que o edital
+    /// declara. Substituiu o placeholder de pendência quando a decisão institucional
+    /// sobre o prazo recursal foi registrada (UNI-REQ-0095).
     /// </summary>
-    public const string BaseLegalPendente =
-        "BASE LEGAL PENDENTE DE CONFIRMAÇÃO JURÍDICA — o dispositivo exato (lei, artigo e parágrafo) "
-        + "que sustenta o prazo de interposição e o efeito suspensivo do recurso administrativo ainda "
-        + "não foi confirmado (UNI-REQ-0095). A convenção de contagem desta entrada é escolha declarada "
-        + "pelo edital; nenhuma citação aproximada substitui este texto.";
+    /// <remarks>
+    /// O texto não excede o que a decisão sustenta. Ela é orientação institucional
+    /// juridicamente orientada — não parecer formal nem jurisprudência consolidada —, e não
+    /// converte o dispositivo geral em fonte do prazo do certame: o que prevalece no âmbito
+    /// do processo seletivo é a regra específica do edital. Nada aqui dispõe sobre efeito
+    /// suspensivo, cuja confirmação continua pendente em requisito próprio.
+    /// </remarks>
+    public const string BaseLegalDeclaradaPeloEdital =
+        "O edital de abertura é o fundamento normativo do prazo de interposição e declara a convenção "
+        + "pela qual ele se conta (UNI-REQ-0095): na ausência de norma específica que fixe outro prazo, o "
+        + "edital estabelece o seu, e o sistema congela e reproduz o declarado sem julgar a escolha. "
+        + "Decisão institucional juridicamente orientada — não é parecer formal nem jurisprudência "
+        + "consolidada. Não dispõe sobre efeito suspensivo, cuja confirmação é dependência própria "
+        + "(UNI-REQ-0117).";
 }
