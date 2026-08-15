@@ -94,7 +94,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
     }
 
     [Fact(DisplayName = "Nenhuma configuração congelada referencia a entrada substituída — e o detector que afirma isso funciona")]
-    public async Task NenhumaConfiguracaoCongeladaReferencia()
+    public async Task Fronteira_EntradaSubstituida_SemReferenciaCongelada()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
@@ -107,7 +107,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
     }
 
     [Fact(DisplayName = "Rascunho em dia corrido aborta o avanço — a unidade deixou de ser declarável")]
-    public async Task RascunhoEmDiaCorrido_AbortaOAvanco()
+    public async Task GuardaDoAvanco_RascunhoEmDiaCorrido_Aborta()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
@@ -127,7 +127,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
     }
 
     [Fact(DisplayName = "Rascunho em dias úteis aborta a reversão — o problema espelhado, sob a definição antiga")]
-    public async Task RascunhoEmDiasUteis_AbortaAReversao()
+    public async Task GuardaDaReversao_RascunhoEmDiasUteis_Aborta()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
@@ -142,7 +142,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
     }
 
     [Fact(DisplayName = "Rascunho em unidade aceita não bloqueia o deploy, e tem o hash reapontado para a definição vigente")]
-    public async Task RascunhoEmUnidadeAceita_NaoBloqueia_ETemOHashReapontado()
+    public async Task GuardaDoAvanco_RascunhoEmUnidadeAceita_NaoAbortaEReapontaOHash()
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
