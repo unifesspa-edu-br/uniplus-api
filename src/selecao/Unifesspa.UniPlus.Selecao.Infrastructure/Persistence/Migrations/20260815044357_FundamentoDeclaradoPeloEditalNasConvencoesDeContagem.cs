@@ -42,6 +42,14 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         internal static string SqlDaGuardaDeConfiguracaoCongelada(string codigo) => $"""
             DO $adr0112$
             BEGIN
+                -- Sem o lock, a checagem e a troca da definição são dois instantes: sob READ
+                -- COMMITTED o EXISTS não bloqueia quem escreve, e o deployment sobe o pod novo
+                -- antes de derrubar o antigo (maxSurge 1, maxUnavailable 0). O antigo poderia
+                -- congelar uma versão referenciando o hash de agora depois da checagem e antes
+                -- do commit — exatamente o que a fronteira existe para impedir. SHARE barra a
+                -- escrita e deixa a leitura passar; a transação da migration o solta no fim.
+                LOCK TABLE selecao.versoes_configuracao IN SHARE MODE;
+
                 IF EXISTS (
                     SELECT 1
                     FROM selecao.versoes_configuracao
