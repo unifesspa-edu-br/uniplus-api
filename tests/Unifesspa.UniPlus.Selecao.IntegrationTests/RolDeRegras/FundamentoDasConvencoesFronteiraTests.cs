@@ -111,36 +111,31 @@ public sealed class FundamentoDasConvencoesFronteiraTests : IClassFixture<RegraC
             "o reaponte nomeia uma convenção por vez — ampliá-lo mexeria em processo que declarou outra");
     }
 
-    [Fact(DisplayName = "Guarda_SemConfiguracaoCongelada_NaoAborta")]
-    public async Task Guarda_SemConfiguracaoCongelada_NaoAborta()
+    [Fact(DisplayName = "Guarda_ConformeExisteReferenciaCongelada_DeixaPassarEDepoisAborta")]
+    public async Task Guarda_ConformeExisteReferenciaCongelada_DeixaPassarEDepoisAborta()
     {
+        // Os dois lados vivem no mesmo fato de propósito. A VersaoConfiguracao que o segundo
+        // precisa é append-only por gatilho e não pode ser removida no fim — separá-los em
+        // dois fatos deixaria o resultado dependendo da ordem que o xUnit escolher, porque o
+        // que produz a referência contamina o que assere a ausência dela.
         await using SelecaoDbContext context = _fixture.CreateDbContext();
 
-        Func<Task> avancar = () => FronteiraAppendOnlyDoRol.ExecutarAsync(
+        Task Guardar() => FronteiraAppendOnlyDoRol.ExecutarAsync(
             context,
             FundamentoDeclaradoPeloEditalNasConvencoesDeContagem.SqlDaGuardaDeConfiguracaoCongelada(
                 ConvencaoDeclarada));
 
-        await avancar.Should().NotThrowAsync(
+        Func<Task> semReferencia = Guardar;
+        await semReferencia.Should().NotThrowAsync(
             "enquanto a entrada é vocabulário e não fato, substituir a definição no lugar é legítimo");
-    }
-
-    [Fact(DisplayName = "Guarda_ComConfiguracaoCongelada_Aborta")]
-    public async Task Guarda_ComConfiguracaoCongelada_Aborta()
-    {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
 
         await FronteiraAppendOnlyDoRol.FabricarConfiguracaoCongeladaAsync(
             context,
             "fundamento-das-convencoes",
             FronteiraAppendOnlyDoRol.TriplaDeReferencia(ConvencaoDeclarada, "v1"));
 
-        Func<Task> avancar = () => FronteiraAppendOnlyDoRol.ExecutarAsync(
-            context,
-            FundamentoDeclaradoPeloEditalNasConvencoesDeContagem.SqlDaGuardaDeConfiguracaoCongelada(
-                ConvencaoDeclarada));
-
-        (await avancar.Should().ThrowAsync<DbException>(
+        Func<Task> comReferencia = Guardar;
+        (await comReferencia.Should().ThrowAsync<DbException>(
             "a partir da primeira referência congelada a definição vira fato, e evoluir exige versão sucessora"))
             .WithMessage("*ADR-0112*");
     }
