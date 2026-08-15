@@ -297,10 +297,29 @@ public sealed class SessaoEditorialEndpointTests
             + "fechamento emendaria um ato já emendado e seria recusado por BaseDesatualizada");
     }
 
+    /// <summary>
+    /// Nada obriga as duas requisições a se sobreporem: elas são só disparadas juntas, e numa
+    /// rodada isolada podem acabar se serializando sozinhas — desfecho indistinguível do que o
+    /// lock produz, e que passaria mesmo sem ele. Daí a repetição. Medida com o
+    /// <c>FOR UPDATE</c> removido, a sobreposição acontece em 29 de 30 rodadas; cinco
+    /// tentativas põem a chance de a perda do lock escapar abaixo de uma em dez milhões, sem
+    /// custo perceptível e — o que importa mais — <b>sem ponto de sincronização no código de
+    /// produção</b>, que é o preço que uma barreira determinística cobraria.
+    /// </summary>
+    private const int RodadasDaCorrida = 5;
+
     [Fact(DisplayName = "D7 sob CORRIDA: abrir a sessão e usar o atalho ao mesmo tempo — o rascunho nasce sempre sobre o TOPO da cadeia, seja qual for a ordem")]
     public async Task Abrir_ConcorrenteComAtalho_RascunhoNasceSobreOTopo()
     {
-        Contexto ctx = await PublicarAsync(nameof(Abrir_ConcorrenteComAtalho_RascunhoNasceSobreOTopo));
+        for (int rodada = 1; rodada <= RodadasDaCorrida; rodada++)
+        {
+            await CorridaEntreAberturaEAtalhoAsync(rodada);
+        }
+    }
+
+    private async Task CorridaEntreAberturaEAtalhoAsync(int rodada)
+    {
+        Contexto ctx = await PublicarAsync($"{nameof(Abrir_ConcorrenteComAtalho_RascunhoNasceSobreOTopo)} rodada {rodada}");
         Guid documento = await SemearDocumentoConfirmadoAsync(ctx.Api, ctx.ProcessoId);
         int versoesAntes = await ContarVersoesAsync(ctx);
 
@@ -326,7 +345,7 @@ public sealed class SessaoEditorialEndpointTests
         // primeiro ao lock, ou chega depois e abre sobre o topo que o atalho acabou de criar.
         resultadoAbrir.StatusCode.Should().Be(
             HttpStatusCode.Created,
-            $"nada no domínio recusa a abertura de uma sessão sobre um certame publicado — atalho={resultadoAtalho.StatusCode}");
+            $"nada no domínio recusa a abertura de uma sessão sobre um certame publicado — rodada {rodada}, atalho={resultadoAtalho.StatusCode}");
 
         resultadoAtalho.StatusCode.Should().BeOneOf(
             [HttpStatusCode.NoContent, HttpStatusCode.Conflict],
@@ -346,8 +365,8 @@ public sealed class SessaoEditorialEndpointTests
         // ao tentar fechá-la (BaseDesatualizada).
         cadeia.VersaoBaseIdDoRascunho.Should().Be(
             cadeia.IdDoTopo,
-            $"o rascunho tem de estar ancorado no topo da cadeia — atalho={resultadoAtalho.StatusCode}, "
-            + $"versões {versoesAntes}->{cadeia.Versoes}");
+            $"o rascunho tem de estar ancorado no topo da cadeia — rodada {rodada}, "
+            + $"atalho={resultadoAtalho.StatusCode}, versões {versoesAntes}->{cadeia.Versoes}");
         cadeia.NumeroVersaoBaseDoRascunho.Should().Be(cadeia.NumeroDoTopo);
     }
 
