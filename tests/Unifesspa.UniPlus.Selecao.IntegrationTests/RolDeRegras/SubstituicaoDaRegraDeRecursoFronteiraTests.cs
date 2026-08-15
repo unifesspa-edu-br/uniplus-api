@@ -36,7 +36,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
     "Security",
     "CA2100:Review SQL queries for security vulnerabilities",
     Justification = "SQL fixo escrito no próprio teste, sem valor externo interpolado.")]
-public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<RegraCatalogoDbFixture>
+public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<RegraCatalogoDbFixture>, IAsyncLifetime
 {
     private const string CodigoDaRegra = "RECURSO-PRAZO-ANCORADO-EM-ATO";
 
@@ -57,9 +57,40 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
 
     private readonly RegraCatalogoDbFixture _fixture;
 
+    /// <summary>
+    /// Processos fabricados por este fato, para que ele os remova ao terminar.
+    /// </summary>
+    private readonly List<Guid> _processosFabricados = [];
+
     public SubstituicaoDaRegraDeRecursoFronteiraTests(RegraCatalogoDbFixture fixture)
     {
         _fixture = fixture;
+    }
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// Remove o que o fato inseriu — sem isso, a asserção de que a guarda <b>não</b> aborta
+    /// dependeria da ordem em que o xUnit executa os fatos da classe.
+    /// </summary>
+    /// <remarks>
+    /// A guarda varre <c>regras_recurso_fase</c> inteira, como a migration faz de verdade:
+    /// ela não tem como saber quais linhas pertencem a qual cenário. Então a linha em dia
+    /// corrido deixada por um fato faria o fato seguinte abortar por dado que não é dele.
+    /// Estreitar o predicado para o teste passar seria provar outra guarda, não esta —
+    /// a limpeza é que precisa acontecer. Cascade no banco leva fase e regra junto.
+    /// </remarks>
+    public async Task DisposeAsync()
+    {
+        if (_processosFabricados.Count == 0)
+        {
+            return;
+        }
+
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        string ids = string.Join(", ", _processosFabricados.Select(id => $"'{id}'"));
+        await FronteiraAppendOnlyDoRol.ExecutarAsync(
+            context, $"DELETE FROM selecao.processos_seletivos WHERE id IN ({ids});");
     }
 
     [Fact(DisplayName = "Nenhuma configuração congelada referencia a entrada substituída — e o detector que afirma isso funciona")]
@@ -133,7 +164,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
     /// Cria e persiste um processo em rascunho cuja fase declara regra de recurso, e devolve
     /// o Id da fase — a chave para alcançar a linha filha nas asserções.
     /// </summary>
-    private static async Task<Guid> FabricarRascunhoComRegraDeRecursoAsync(
+    private async Task<Guid> FabricarRascunhoComRegraDeRecursoAsync(
         SelecaoDbContext context,
         string cenario,
         UnidadePrazo unidade = UnidadePrazo.Horas,
@@ -177,6 +208,7 @@ public sealed class SubstituicaoDaRegraDeRecursoFronteiraTests : IClassFixture<R
 
         context.ProcessosSeletivos.Add(processo);
         await context.SaveChangesAsync(CancellationToken.None);
+        _processosFabricados.Add(processo.Id);
 
         return processo.CronogramaFases.Single(f => f.RegraRecurso is not null).RegraRecurso!.Id;
     }
