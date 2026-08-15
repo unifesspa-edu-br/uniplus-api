@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 
 /// <summary>
-/// Abrangência territorial de um dia não útil no calendário de contagem de prazos
-/// (UNI-REQ-0116/RN13). Persistida como token UPPER_SNAKE (<see cref="Abrangencias"/>).
+/// Abrangência territorial de um dia não útil no calendário de contagem de prazos (RN13).
+/// Quais entradas de abrangência estadual e municipal incidem num certame deriva da
+/// localidade regente que ele congela — é do código IBGE dela que saem a UF e o município
+/// (UNI-REQ-0111). Persistida como token UPPER_SNAKE (<see cref="Abrangencias"/>).
 /// </summary>
 public enum Abrangencia
 {

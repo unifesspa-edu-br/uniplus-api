@@ -84,9 +84,11 @@ public sealed class RegraRecursoFase : EntityBase
                 $"O prazo de interposição em dias úteis exige valor inteiro — recebido '{args.PrazoValor}'. Para prazo menor que um dia, declare em horas."));
         }
 
-        // A suspensividade admite as três unidades (UNI-REQ-0116), inclusive dias úteis:
-        // é outro relógio, com outra regra. O que a contagem em dia útil exige — a
-        // convenção de contagem declarada — é invariante do PROCESSO, não desta entidade,
+        // A suspensividade admite as três unidades — dias corridos, que a interposição
+        // acabou de recusar, e também dias úteis (UNI-REQ-0080 congela o par valor-unidade
+        // com as três; a recusa de UNI-REQ-0113 alcança só a interposição): é outro
+        // relógio, com outra regra. O que a contagem em dia útil exige — a convenção de
+        // contagem declarada (UNI-REQ-0116) — é invariante do PROCESSO, não desta entidade,
         // porque a declaração é uma por certame e esta regra não enxerga a raiz.
         return Result<RegraRecursoFase>.Success(new RegraRecursoFase { Regra = regra, Args = args });
     }

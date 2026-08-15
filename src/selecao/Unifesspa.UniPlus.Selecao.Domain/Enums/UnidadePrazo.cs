@@ -19,10 +19,12 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <c>RegraRecursoFase.PrazoEmFracaoDeDiaUtil</c>), nunca aproximando em silêncio.
 /// </para>
 /// <para>
-/// Na <b>suspensividade</b>, as três unidades são declaráveis (UNI-REQ-0116) — é outro
-/// relógio, com outra regra. O que a contagem em dia útil exige, ali e na interposição, é
-/// a convenção de contagem declarada pelo processo (UNI-REQ-0112), invariante da raiz e
-/// não desta unidade.
+/// Na <b>suspensividade</b>, as três unidades são declaráveis, <see cref="Dias"/> incluído
+/// (UNI-REQ-0080, que congela o par valor-unidade, e UNI-REQ-0113, cuja recusa alcança só a
+/// interposição) — é outro relógio, com outra regra. O que a contagem em dia útil exige,
+/// ali e na interposição, é a convenção de contagem declarada pelo processo (UNI-REQ-0112),
+/// que só é condição de publicar quando alguma contagem do certame distingue dia útil
+/// (UNI-REQ-0116) — invariante da raiz, não desta unidade.
 /// </para>
 /// </remarks>
 public enum UnidadePrazo
