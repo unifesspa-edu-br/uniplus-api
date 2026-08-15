@@ -253,7 +253,10 @@ public sealed class SessaoEditorialEndpointTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
-    // D7 — o atalho atômico recusa com sessão aberta
+    // D7 — o atalho atômico recusa com sessão aberta, e SÓ nessa direção: uma cadeia
+    // recém-sucedida pelo atalho não impede a abertura, porque o certame continua
+    // publicado e a sessão nasce sobre a versão nova. Os três testes abaixo são as
+    // duas ordens determinísticas mais a corrida que prova a serialização entre elas.
     // ══════════════════════════════════════════════════════════════════════════════
 
     [Fact(DisplayName = "D7: com sessão aberta, o atalho POST /retificacoes devolve 409")]
@@ -268,18 +271,43 @@ public sealed class SessaoEditorialEndpointTests
         atalho.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    [Fact(DisplayName = "D7 sob CORRIDA: abrir a sessão e usar o atalho ao mesmo tempo — exatamente um vence, e o certame nunca fica com sessão E versão nova")]
-    public async Task Abrir_ConcorrenteComAtalho_ExatamenteUmVence()
+    [Fact(DisplayName = "D7: com a cadeia recém-sucedida pelo atalho, abrir a sessão é ACEITO — e o rascunho nasce sobre a versão nova")]
+    public async Task Atalho_DepoisAbrir_SessaoNasceSobreAVersaoNova()
     {
-        Contexto ctx = await PublicarAsync(nameof(Abrir_ConcorrenteComAtalho_ExatamenteUmVence));
+        Contexto ctx = await PublicarAsync(nameof(Atalho_DepoisAbrir_SessaoNasceSobreAVersaoNova));
+        Guid documento = await SemearDocumentoConfirmadoAsync(ctx.Api, ctx.ProcessoId);
+
+        (await ctx.PostAtalhoRetificacaoAsync(documento, "Atalho atômico")).StatusCode
+            .Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage abertura = await ctx.AbrirAsync("Sessão editorial depois do atalho");
+
+        abertura.StatusCode.Should().Be(
+            HttpStatusCode.Created,
+            "a recusa entre os dois caminhos é de MÃO ÚNICA: uma sessão aberta bloqueia o atalho, porque o atalho "
+            + "congelaria a configuração que a sessão está no meio de editar. O inverso não bloqueia nada — um "
+            + "certame continua publicado depois de retificado, e retificá-lo de novo, agora pela sessão editorial, "
+            + "é o mesmo que abrir a primeira");
+
+        CadeiaDeConfiguracao cadeia = await LerCadeiaAsync(ctx);
+        cadeia.Rascunhos.Should().Be(1);
+        cadeia.VersaoBaseIdDoRascunho.Should().Be(
+            cadeia.IdDoTopo,
+            "a sessão se ancora na versão que o atalho acabou de criar — se ela nascesse presa à anterior, o "
+            + "fechamento emendaria um ato já emendado e seria recusado por BaseDesatualizada");
+    }
+
+    [Fact(DisplayName = "D7 sob CORRIDA: abrir a sessão e usar o atalho ao mesmo tempo — o rascunho nasce sempre sobre o TOPO da cadeia, seja qual for a ordem")]
+    public async Task Abrir_ConcorrenteComAtalho_RascunhoNasceSobreOTopo()
+    {
+        Contexto ctx = await PublicarAsync(nameof(Abrir_ConcorrenteComAtalho_RascunhoNasceSobreOTopo));
         Guid documento = await SemearDocumentoConfirmadoAsync(ctx.Api, ctx.ProcessoId);
         int versoesAntes = await ContarVersoesAsync(ctx);
 
-        // Os dois caminhos retificam o MESMO ato — o criador da versão corrente. Deixá-los
-        // passar juntos publicaria a versão N+1 a partir da configuração que a sessão está
-        // no meio de editar, e o rascunho sobreviveria ancorado numa base que deixou de ser
-        // o topo da cadeia. Quem os serializa é o FOR UPDATE da raiz, que ambos tomam em
-        // ObterParaMutacaoAsync; o perdedor vê o estado do vencedor já commitado.
+        // Quem serializa os dois é o FOR UPDATE da raiz, que ambos tomam em
+        // ObterParaMutacaoAsync; o segundo a chegar só prossegue depois do commit do primeiro,
+        // e enxerga o estado que ele deixou. A ordem em que eles alcançam o lock é do
+        // escalonador — e ela decide o desfecho, sem que nenhum dos dois seja irregular.
         Task<HttpResponseMessage> abrir = ctx.AbrirAsync("Sessão editorial");
         Task<HttpResponseMessage> atalho = ctx.PostAtalhoRetificacaoAsync(documento, "Atalho atômico");
 
@@ -287,38 +315,40 @@ public sealed class SessaoEditorialEndpointTests
         HttpResponseMessage resultadoAbrir = await abrir;
         HttpResponseMessage resultadoAtalho = await atalho;
 
-        bool abriu = resultadoAbrir.StatusCode == HttpStatusCode.Created;
-        bool retificou = resultadoAtalho.StatusCode == HttpStatusCode.NoContent;
-
-        // Um 5xx aqui é BUG, e ele precisa se anunciar como tal. Sem esta guarda, duas
-        // respostas 500 fariam `abriu` e `retificou` serem ambos `false`, e a asserção de
-        // exclusividade abaixo falharia dizendo "os dois perderam" — escondendo a causa real
-        // (um deadlock, um lock timeout) atrás de uma mensagem que fala de outra coisa.
+        // Um 5xx aqui é BUG, e ele precisa se anunciar como tal — um deadlock ou um lock
+        // timeout viraria, sem esta guarda, uma falha adiante falando de outra coisa.
         ((int)resultadoAbrir.StatusCode).Should().BeLessThan(
             500, $"a abertura não pode falhar com erro de servidor numa corrida — veio {resultadoAbrir.StatusCode}");
         ((int)resultadoAtalho.StatusCode).Should().BeLessThan(
             500, $"o atalho não pode falhar com erro de servidor numa corrida — veio {resultadoAtalho.StatusCode}");
 
-        abriu.Should().NotBe(
-            retificou,
-            $"exatamente um dos dois vence — abrir={resultadoAbrir.StatusCode}, atalho={resultadoAtalho.StatusCode}");
+        // A abertura não tem por que ser recusada em nenhuma das duas ordens: ou ela chega
+        // primeiro ao lock, ou chega depois e abre sobre o topo que o atalho acabou de criar.
+        resultadoAbrir.StatusCode.Should().Be(
+            HttpStatusCode.Created,
+            $"nada no domínio recusa a abertura de uma sessão sobre um certame publicado — atalho={resultadoAtalho.StatusCode}");
 
-        int versoesDepois = await ContarVersoesAsync(ctx);
-        int rascunhos = await ContarRascunhosAsync(ctx);
+        resultadoAtalho.StatusCode.Should().BeOneOf(
+            [HttpStatusCode.NoContent, HttpStatusCode.Conflict],
+            "o atalho ou tomou o lock primeiro e sucedeu a cadeia, ou o tomou depois, encontrou o rascunho e recusou");
 
-        if (abriu)
-        {
-            // A sessão venceu: o atalho encontrou o rascunho e recusou (RetificacaoJaAberta).
-            versoesDepois.Should().Be(versoesAntes, "nada foi congelado — a versão nova nasce só no fechamento");
-            rascunhos.Should().Be(1);
-        }
-        else
-        {
-            // O atalho venceu: a abertura encontrou a cadeia já sucedida. Nenhum rascunho
-            // ficou para trás ancorado numa versão que deixou de ser o topo.
-            versoesDepois.Should().Be(versoesAntes + 1);
-            rascunhos.Should().Be(0);
-        }
+        CadeiaDeConfiguracao cadeia = await LerCadeiaAsync(ctx);
+
+        cadeia.Versoes.Should().Be(
+            resultadoAtalho.StatusCode == HttpStatusCode.NoContent ? versoesAntes + 1 : versoesAntes,
+            "a versão nova nasce do atalho, e só dele — abrir não congela nada, e o fechamento nem chegou a ser pedido");
+
+        cadeia.Rascunhos.Should().Be(1, "a abertura foi aceita, e só há uma sessão editorial por certame");
+
+        // ESTA é a asserção que morre se a serialização sumir. Sem o lock, a abertura leria a
+        // versão N enquanto o atalho grava a N+1, e o rascunho ficaria ancorado numa base que
+        // deixou de ser o topo — a sessão nasceria condenada, e o administrador só descobriria
+        // ao tentar fechá-la (BaseDesatualizada).
+        cadeia.VersaoBaseIdDoRascunho.Should().Be(
+            cadeia.IdDoTopo,
+            $"o rascunho tem de estar ancorado no topo da cadeia — atalho={resultadoAtalho.StatusCode}, "
+            + $"versões {versoesAntes}->{cadeia.Versoes}");
+        cadeia.NumeroVersaoBaseDoRascunho.Should().Be(cadeia.NumeroDoTopo);
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -600,12 +630,42 @@ public sealed class SessaoEditorialEndpointTests
         throw new TimeoutException("A publicação que monta o cenário não entregou o evento esperado.");
     }
 
-    private static async Task<int> ContarRascunhosAsync(Contexto ctx)
+    /// <summary>
+    /// O topo da cadeia de configuração e a base em que a sessão editorial se ancorou — o par
+    /// que permite dizer se um rascunho está preso à versão corrente ou a uma que já foi
+    /// sucedida. O topo é a de maior <c>NumeroVersao</c>, o mesmo critério que
+    /// <c>ObterVersaoAtualAsync</c> usa.
+    /// </summary>
+    private sealed record CadeiaDeConfiguracao(
+        int Versoes,
+        int NumeroDoTopo,
+        Guid IdDoTopo,
+        int Rascunhos,
+        int? NumeroVersaoBaseDoRascunho,
+        Guid? VersaoBaseIdDoRascunho);
+
+    private static async Task<CadeiaDeConfiguracao> LerCadeiaAsync(Contexto ctx)
     {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
         SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-        return await db.RascunhosRetificacao.AsNoTracking()
-            .CountAsync(r => r.ProcessoSeletivoId == ctx.ProcessoId);
+
+        List<VersaoConfiguracao> versoes = await db.VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == ctx.ProcessoId)
+            .OrderByDescending(v => v.NumeroVersao)
+            .ToListAsync();
+
+        versoes.Should().NotBeEmpty("o cenário parte de um certame publicado, que já tem a versão de abertura");
+
+        RascunhoRetificacao? rascunho = await db.RascunhosRetificacao.AsNoTracking()
+            .SingleOrDefaultAsync(r => r.ProcessoSeletivoId == ctx.ProcessoId);
+
+        return new CadeiaDeConfiguracao(
+            versoes.Count,
+            versoes[0].NumeroVersao,
+            versoes[0].Id,
+            rascunho is null ? 0 : 1,
+            rascunho?.NumeroVersaoBase,
+            rascunho?.VersaoBaseId);
     }
 
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
