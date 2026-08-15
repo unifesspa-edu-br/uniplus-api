@@ -63,8 +63,10 @@ public sealed class SubstituicaoDaRegraDeRecursoGuardaTests
         // que as constantes valem os enums certos e que o avanço passa a de dia corrido.
         migration.Should().Contain($"const int DiasCorridos = {(int)UnidadePrazo.Dias};",
             "apontar para outro valor do enum faria a guarda vigiar uma unidade que continua válida");
-        migration.Should().Contain("DiasCorridos,",
+        migration.Should().Contain("(DiasCorridos,",
             "é a unidade que deixa de ser declarável ao avançar; as demais continuam válidas e não podem bloquear o deploy");
+        migration.Should().Contain("TratarRegrasDeRecursoVivas(migrationBuilder, ArgumentosDoAvanco)",
+            "o Up precisa chamar a guarda com o sentido do avanço — o teste comportamental executa o SQL, e é aqui que se prova que a migration o executa");
         migration.Should().Contain("redeclare o prazo em dias úteis ou horas",
             "a mensagem precisa dizer o que fazer — converter automaticamente mudaria o prazo ou a granularidade, e essa é decisão de quem declarou");
     }
@@ -96,8 +98,10 @@ public sealed class SubstituicaoDaRegraDeRecursoGuardaTests
         string migration = Migration();
 
         migration.Should().Contain($"const int DiasUteis = {(int)UnidadePrazo.DiasUteis};");
-        migration.Should().Contain("DiasUteis,",
+        migration.Should().Contain("(DiasUteis,",
             "um rascunho declarado sob a política nova sobreviveria à volta de uma definição que proíbe dia útil na interposição, e publicaria — nada revalida a unidade ao carregar");
+        migration.Should().Contain("TratarRegrasDeRecursoVivas(migrationBuilder, ArgumentosDaReversao)",
+            "sem a chamada com o sentido da reversão, o SQL provado pelo teste comportamental não seria executado ao reverter");
         migration.Should().Contain("redeclare o prazo em horas ou dias corridos",
             "a orientação da reversão é o inverso da do avanço: o que volta a valer é a política antiga");
     }
