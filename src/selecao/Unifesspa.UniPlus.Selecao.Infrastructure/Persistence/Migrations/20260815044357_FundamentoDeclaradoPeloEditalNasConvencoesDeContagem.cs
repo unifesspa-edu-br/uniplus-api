@@ -25,6 +25,27 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                 "73bf9e2448e2656e421243dff5f375c7fc9598eca71a5f291169efe01b777922"),
         ];
 
+        /// <summary>
+        /// Trava, num passo só e em ordem fixa, as duas tabelas que a fronteira toca.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Por que EXCLUSIVE e não SHARE.</b> O caminho de mutação do processo abre com
+        /// <c>SELECT ... FOR UPDATE</c>, que toma <c>ROW SHARE</c> na tabela — modo com o qual
+        /// <c>SHARE</c> é compatível. A migration passaria pelo lock, travaria no tuple que a
+        /// requisição já detém, e a requisição travaria no lock da migration ao gravar: deadlock.
+        /// <c>EXCLUSIVE</c> conflita com <c>ROW SHARE</c>, então a requisição espera antes de
+        /// tomar o tuple, e o ciclo não se forma.
+        /// </para>
+        /// <para>
+        /// <b>Por que num comando só.</b> Adquirir em dois passos abriria janela para outra
+        /// transação pegá-los na ordem inversa. Um único <c>LOCK TABLE</c> fixa a ordem.
+        /// </para>
+        /// </remarks>
+        internal static string SqlDoLockDaFronteira => """
+            LOCK TABLE selecao.processos_seletivos, selecao.versoes_configuracao IN EXCLUSIVE MODE;
+            """;
+
         /// <summary>Hash que esta migration passa a gravar para a convenção indicada.</summary>
         internal static string HashVigenteDe(string codigo) =>
             Array.Find(Convencoes, c => string.Equals(c.Codigo, codigo, StringComparison.Ordinal)).HashVigente;
@@ -42,14 +63,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         internal static string SqlDaGuardaDeConfiguracaoCongelada(string codigo) => $"""
             DO $adr0112$
             BEGIN
-                -- Sem o lock, a checagem e a troca da definição são dois instantes: sob READ
-                -- COMMITTED o EXISTS não bloqueia quem escreve, e o deployment sobe o pod novo
-                -- antes de derrubar o antigo (maxSurge 1, maxUnavailable 0). O antigo poderia
-                -- congelar uma versão referenciando o hash de agora depois da checagem e antes
-                -- do commit — exatamente o que a fronteira existe para impedir. SHARE barra a
-                -- escrita e deixa a leitura passar; a transação da migration o solta no fim.
-                LOCK TABLE selecao.versoes_configuracao IN SHARE MODE;
-
                 IF EXISTS (
                     SELECT 1
                     FROM selecao.versoes_configuracao
@@ -73,12 +86,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         internal static string SqlDoReaponteDaReferenciaViva(string codigo, string hashDestino) => $"""
             DO $viva$
             BEGIN
-                -- O lock sobre a configuração congelada não alcança esta tabela, e é aqui que a
-                -- referência viva é escrita. Sem barrar a escrita, quem declara a convenção
-                -- durante o deployment grava a linha depois de o UPDATE já ter passado por ela.
-                -- O bloco existe para dar transação ao LOCK, que fora dela é recusado.
-                LOCK TABLE selecao.processos_seletivos IN SHARE MODE;
-
                 UPDATE selecao.processos_seletivos
                 SET algoritmo_contagem_prazo_hash = '{hashDestino}'
                 WHERE algoritmo_contagem_prazo_codigo = '{codigo}'
@@ -90,6 +97,10 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
         private static void AplicarFronteira(MigrationBuilder migrationBuilder, bool avancando)
         {
+            // Uma vez, antes de qualquer checagem: as duas tabelas ficam travadas até o fim da
+            // transação da migration, e nenhuma escrita se intercala entre conferir e trocar.
+            migrationBuilder.Sql(SqlDoLockDaFronteira);
+
             foreach ((string codigo, string vigente, string anterior) in Convencoes)
             {
                 migrationBuilder.Sql(SqlDaGuardaDeConfiguracaoCongelada(codigo));
