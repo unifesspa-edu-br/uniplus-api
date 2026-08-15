@@ -71,11 +71,21 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
         /// hash anterior deixaria o processo apontando para definição que o catálogo não tem.
         /// </remarks>
         internal static string SqlDoReaponteDaReferenciaViva(string codigo, string hashDestino) => $"""
-            UPDATE selecao.processos_seletivos
-            SET algoritmo_contagem_prazo_hash = '{hashDestino}'
-            WHERE algoritmo_contagem_prazo_codigo = '{codigo}'
-              AND algoritmo_contagem_prazo_versao = 'v1'
-              AND algoritmo_contagem_prazo_hash <> '{hashDestino}';
+            DO $viva$
+            BEGIN
+                -- O lock sobre a configuração congelada não alcança esta tabela, e é aqui que a
+                -- referência viva é escrita. Sem barrar a escrita, quem declara a convenção
+                -- durante o deployment grava a linha depois de o UPDATE já ter passado por ela.
+                -- O bloco existe para dar transação ao LOCK, que fora dela é recusado.
+                LOCK TABLE selecao.processos_seletivos IN SHARE MODE;
+
+                UPDATE selecao.processos_seletivos
+                SET algoritmo_contagem_prazo_hash = '{hashDestino}'
+                WHERE algoritmo_contagem_prazo_codigo = '{codigo}'
+                  AND algoritmo_contagem_prazo_versao = 'v1'
+                  AND algoritmo_contagem_prazo_hash <> '{hashDestino}';
+            END
+            $viva$;
             """;
 
         private static void AplicarFronteira(MigrationBuilder migrationBuilder, bool avancando)
