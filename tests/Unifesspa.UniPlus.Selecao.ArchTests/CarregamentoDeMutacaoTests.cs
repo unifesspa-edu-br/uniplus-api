@@ -167,6 +167,75 @@ public sealed class CarregamentoDeMutacaoTests
     }
 
     /// <summary>
+    /// <b>O lock só trava se houver transação para ele viver.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// O <c>SELECT ... FOR UPDATE</c> de <c>ObterParaMutacaoAsync</c> serializa handlers
+    /// concorrentes porque roda dentro da transação ambiente que o Wolverine abre antes do
+    /// corpo do handler (<c>UseEntityFrameworkCoreTransactions</c> + <c>AutoApplyTransactions</c>,
+    /// ADR-0004). Fora dela, o comando roda em autocommit: o lock de linha é adquirido e
+    /// <b>liberado ao fim da própria instrução</b>, e duas requisições concorrentes passam a
+    /// ler o mesmo estado e gravar as duas.
+    /// </para>
+    /// <para>
+    /// <c>[NonTransactional]</c> desliga exatamente esse enrolamento. Ele é legítimo — e
+    /// necessário — num handler que alcança <b>dois</b> <c>DbContext</c> distintos, porque aí
+    /// o detector do Wolverine não teria um único contexto a enrolar e falharia no boot
+    /// (<c>CriarProcessoSeletivoCommandHandler</c> é o caso, e não carrega a raiz para mutar).
+    /// O que ele não pode é conviver com o carregamento que depende da transação para valer
+    /// alguma coisa: a perda seria <b>silenciosa</b> — nada falha, o lock apenas deixa de
+    /// travar, e a RN08 passa a depender só dos guard rails de banco.
+    /// </para>
+    /// </remarks>
+    [Fact(DisplayName = "Nenhum caller do carregamento de mutação desliga a transação ambiente — sem ela o FOR UPDATE não serializa nada")]
+    public void CarregamentoDeMutacao_NaoConviveComTransacaoDesligada()
+    {
+        // O identificador nu, e não a forma `[NonTransactional]`: o atributo também se escreve
+        // `[NonTransactionalAttribute]`, `[NonTransactional()]`, qualificado pelo namespace ou
+        // ao lado de outro atributo no mesmo par de colchetes — todas passariam por um detector
+        // que casasse só a forma curta, e a perda da transação é justamente silenciosa.
+        Regex transacaoDesligada = new(@"\bNonTransactional\w*\b", RegexOptions.None, TimeSpan.FromSeconds(5));
+        Regex carregaParaMutar = new($@"\.\s*{CarregamentoDeMutacao}\s*\(", RegexOptions.None, TimeSpan.FromSeconds(5));
+
+        List<string> callers = [];
+        List<string> infratores = [];
+
+        foreach (string arquivo in ArquivosDeProducao())
+        {
+            string codigo = CodigoSemComentarios(arquivo);
+            if (!carregaParaMutar.IsMatch(codigo))
+            {
+                continue;
+            }
+
+            callers.Add(Path.GetRelativePath(RaizDoSrc(), arquivo));
+
+            if (transacaoDesligada.IsMatch(codigo))
+            {
+                infratores.Add(Path.GetRelativePath(RaizDoSrc(), arquivo));
+            }
+        }
+
+        // Sem estas duas asserções, um detector que deixasse de casar tornaria o teste vácuo:
+        // zero callers ou zero atributos reconhecidos, zero infratores, verde. O handler de
+        // criação é o caso vivo do atributo — ele alcança dois DbContext e NÃO carrega a raiz.
+        callers.Should().NotBeEmpty("o detector precisa estar encontrando quem carrega a raiz para mutar");
+
+        string criacao = Path.Join(
+            RaizDoSrc(), "selecao", "Unifesspa.UniPlus.Selecao.Application", "Commands", "ProcessosSeletivos",
+            "CriarProcessoSeletivoCommandHandler.cs");
+        transacaoDesligada.IsMatch(CodigoSemComentarios(criacao)).Should().BeTrue(
+            "o detector do atributo precisa reconhecê-lo onde ele legitimamente está");
+
+        infratores.Should().BeEmpty(
+            "sem a transação ambiente o SELECT ... FOR UPDATE roda em autocommit e o lock de linha morre no fim da " +
+            "própria instrução — duas requisições concorrentes leem o mesmo estado e gravam as duas, sem que nada " +
+            $"acuse. Um handler que precise de dois DbContext não pode carregar a raiz por '{CarregamentoDeMutacao}'. " +
+            $"Infratores: {string.Join(", ", infratores)}");
+    }
+
+    /// <summary>
     /// <b>Ninguém muta uma etapa por fora do agregado.</b>
     /// </summary>
     /// <remarks>
