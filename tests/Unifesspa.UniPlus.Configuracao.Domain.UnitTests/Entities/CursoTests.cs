@@ -196,4 +196,51 @@ public sealed class CursoTests
         resultado.Error!.Code.Should().Be(CursoErrorCodes.GrupoAreaEnemInvalido);
         curso.GrupoAreaEnem!.Valor.Should().Be(GrupoCurso.HumanisticaII, "a falha de validação não muta o agregado");
     }
+
+    // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
+
+    [Fact(DisplayName = "Todos os quatro campos obrigatórios nulos não lançam — devolvem as quatro violações rotuladas")]
+    public void Criar_QuatroCamposObrigatoriosNulos_NaoLancaEDevolveAsQuatroViolacoes()
+    {
+        Result<Curso> resultado = Curso.Criar(null, null, null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(4);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[0].Error.Code.Should().Be(CursoErrorCodes.CodigoObrigatorio);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(CursoErrorCodes.NomeObrigatorio);
+        resultado.Errors[2].Field.Should().Be("grau");
+        resultado.Errors[2].Error.Code.Should().Be(CursoErrorCodes.GrauObrigatorio);
+        resultado.Errors[3].Field.Should().Be("nivelEnsino");
+        resultado.Errors[3].Error.Code.Should().Be(CursoErrorCodes.NivelEnsinoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Código, nome e grupo de área do ENEM inválidos ao mesmo tempo acumulam as três violações rotuladas")]
+    public void Criar_TresCamposInvalidos_AcumulaAsTresViolacoesRotuladas()
+    {
+        Result<Curso> resultado = Criar(codigo: "", nome: new string('N', 201), grupoAreaEnem: "Exatas");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[0].Error.Code.Should().Be(CursoErrorCodes.CodigoObrigatorio);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(CursoErrorCodes.NomeTamanho);
+        resultado.Errors[2].Field.Should().Be("grupoAreaEnem");
+        resultado.Errors[2].Error.Code.Should().Be(CursoErrorCodes.GrupoAreaEnemInvalido);
+    }
+
+    [Fact(DisplayName = "Atualizar com código e nível de ensino inválidos acumula as duas violações sem mutar o agregado")]
+    public void Atualizar_CodigoENivelEnsinoInvalidos_AcumulaAsDuasViolacoesSemMutar()
+    {
+        Curso curso = Criar().Value!;
+
+        Result resultado = curso.Atualizar("", Nome, Grau, "", null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        curso.Codigo.Should().Be(Codigo, "falha de validação não pode mutar o agregado");
+        curso.NivelEnsino.Should().Be(NivelEnsino);
+    }
 }

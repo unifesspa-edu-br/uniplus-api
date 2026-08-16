@@ -8,9 +8,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarCursoCommand"/> (convention-based Wolverine):
-/// confere a unicidade do código entre cursos vivos, cria o agregado, persiste e
-/// commita. Protege a corrida check-then-act traduzindo a violação do índice
-/// único parcial em <c>CodigoJaExiste</c>.
+/// valida o agregado por inteiro primeiro (sem I/O) — os cinco campos acumulam
+/// no mesmo lote — só então confere a unicidade do código entre vivos, com o
+/// código já normalizado. Protege a corrida check-then-act traduzindo a violação
+/// do índice único parcial em <c>CodigoJaExiste</c>.
 /// </summary>
 public static class CriarCursoCommandHandler
 {
@@ -24,24 +25,20 @@ public static class CriarCursoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        if (await repository.CodigoExisteEntreVivosAsync(command.Codigo, null, cancellationToken).ConfigureAwait(false))
+        Result<Curso> criar = Curso.Criar(
+            command.Codigo, command.Nome, command.Grau, command.NivelEnsino, command.GrupoAreaEnem);
+        if (criar.IsFailure)
         {
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
+            return Result<Guid>.ValidationFailure(criar.Errors);
         }
 
-        Result<Curso> cursoResult = Curso.Criar(
-            command.Codigo,
-            command.Nome,
-            command.Grau,
-            command.NivelEnsino,
-            command.GrupoAreaEnem);
+        Curso curso = criar.Value!;
 
-        if (cursoResult.IsFailure)
+        if (await repository.CodigoExisteEntreVivosAsync(curso.Codigo, null, cancellationToken).ConfigureAwait(false))
         {
-            return Result<Guid>.Failure(cursoResult.Error!);
+            return Result<Guid>.Failure(CodigoJaExisteErro());
         }
 
-        Curso curso = cursoResult.Value!;
         await repository.AdicionarAsync(curso, cancellationToken).ConfigureAwait(false);
 
         try
@@ -51,18 +48,18 @@ public static class CriarCursoCommandHandler
         catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && UniqueConstraintViolation.IsCodigoConflict(constraint))
         {
-            // Corrida entre CodigoExisteEntreVivosAsync e o INSERT (check-then-act): o
-            // índice único parcial dispara 23505 e viramos o mesmo CodigoJaExiste do
-            // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
-            // virar 500 no middleware global. O filtro do `when` garante que outras
-            // exceções propagam intactas.
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
+            // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync
+            // automático do Wolverine (AutoApplyTransactions) tenta a mesma inserção de
+            // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
+            // pretendido vira 500.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<Guid>.Failure(CodigoJaExisteErro());
         }
 
         return Result<Guid>.Success(curso.Id);
     }
 
-    private static DomainError CodigoJaExisteErro(string codigo) =>
+    private static DomainError CodigoJaExisteErro() =>
         new(CursoErrorCodes.CodigoJaExiste,
-            $"Já existe um curso vivo com o código '{codigo}'.");
+            "Já existe um curso vivo com o código informado.");
 }

@@ -194,6 +194,23 @@ public sealed class CursoEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "POST com código e grau ausentes ao mesmo tempo acumula as duas violações em errors[]")]
+    public async Task Criar_CodigoEGrauAusentes_AcumulaAsDuasViolacoesEmErrors()
+    {
+        var body = new { nome = "Curso sem código nem grau", nivelEnsino = "Graduação" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "campo ausente no JSON precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(2);
+        erros.EnumerateArray().Select(e => e.GetProperty("field").GetString())
+            .Should().BeEquivalentTo(["codigo", "grau"]);
+    }
+
     [Fact(DisplayName = "POST com código já existente entre vivos retorna 409")]
     public async Task Criar_CodigoDuplicado_Retorna409()
     {

@@ -43,7 +43,7 @@ public sealed record GrupoCurso
     /// canônico. Valor fora do domínio (ou nulo/em branco) retorna falha de
     /// domínio. O valor é normalizado por <c>Trim</c> antes da comparação.
     /// </summary>
-    public static Result<GrupoCurso> Criar(string valor)
+    public static Result<GrupoCurso> Criar(string? valor)
     {
         if (!EhValido(valor))
         {
@@ -52,11 +52,11 @@ public sealed record GrupoCurso
                 $"Grupo de curso deve ser um de: {string.Join(", ", Valores)}."));
         }
 
-        return Result<GrupoCurso>.Success(new GrupoCurso(valor.Trim()));
+        return Result<GrupoCurso>.Success(new GrupoCurso(valor!.Trim()));
     }
 
     /// <summary>Indica se <paramref name="valor"/> pertence ao domínio fechado, sem alocar.</summary>
-    public static bool EhValido(string valor) =>
+    public static bool EhValido(string? valor) =>
         !string.IsNullOrWhiteSpace(valor) && Valores.Contains(valor.Trim());
 
     public override string ToString() => Valor;

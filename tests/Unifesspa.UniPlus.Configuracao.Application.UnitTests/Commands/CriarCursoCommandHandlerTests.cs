@@ -63,12 +63,9 @@ public sealed class CriarCursoCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<Curso>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Grupo de área do ENEM inválido propaga o erro de domínio sem persistir")]
-    public async Task Handle_GrupoAreaEnemInvalido_RetornaErroSemPersistir()
+    [Fact(DisplayName = "Grupo de área do ENEM inválido propaga o erro de domínio sem consultar unicidade nem persistir")]
+    public async Task Handle_GrupoAreaEnemInvalido_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>())
-            .Returns(false);
-
         CriarCursoCommand comando = ComandoValido() with { GrupoAreaEnem = "Exatas" };
 
         Result<Guid> resultado = await CriarCursoCommandHandler.Handle(
@@ -76,6 +73,22 @@ public sealed class CriarCursoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CursoErrorCodes.GrupoAreaEnemInvalido);
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código ausente e nome ausente no mesmo payload acumulam as duas violações")]
+    public async Task Handle_CodigoENomeAusentes_AcumulaAsDuasViolacoes()
+    {
+        CriarCursoCommand comando = ComandoValido() with { Codigo = "", Nome = "" };
+
+        Result<Guid> resultado = await CriarCursoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[1].Field.Should().Be("nome");
     }
 }
