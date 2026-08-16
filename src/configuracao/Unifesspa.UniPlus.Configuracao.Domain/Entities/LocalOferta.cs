@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
@@ -20,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>O <see cref="Endereco"/> é uma referência de endereço estruturado ao
 /// Geo via CEP, opcional (<see cref="ReferenciaEnderecoGeo"/>, ADR-0096) — sucede
 /// o antigo <c>Endereco</c> texto-livre. Quando presente, seu snapshot de cidade
-/// deve coincidir com a referência de cidade do local (CA-04).</para>
+/// deve coincidir com a referência de cidade do local.</para>
 /// <para>O congelamento (snapshot RN08) é responsabilidade do Processo Seletivo
 /// (módulo Selecao, via oferta de curso congelada — ADR-0061); não há colunas
 /// de snapshot aqui.</para>
@@ -56,32 +58,36 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
     /// Cria um novo Local de Oferta. Valida formato e domínio local (tipo,
     /// referência de cidade e coerência cidade↔endereço). A existência do campus
     /// responsável (quando informado) é responsabilidade do handler. O
-    /// <paramref name="endereco"/> já chega validado.
+    /// <paramref name="endereco"/> já chega validado (construído pelo handler via
+    /// <see cref="ReferenciaEnderecoGeo.Criar"/>).
     /// </summary>
+    [SuppressMessage(
+        "Design",
+        "CA1062:Validate arguments of public methods",
+        Justification = "Nulo em cidadeCodigoIbge/cidadeNome/cidadeUf é violação de campo (\"obrigatório\"), " +
+            "não bug de contrato — ValidarCampos trata via IsNullOrWhiteSpace e devolve " +
+            "Result.ValidationFailure, não ArgumentNullException (ADR-0125: domínio é fonte única de " +
+            "validação, sem validator FluentValidation garantindo não-nulo a montante).")]
     public static Result<LocalOferta> Criar(
         TipoLocalOferta tipo,
         Guid? campusResponsavelId,
-        string cidadeCodigoIbge,
-        string cidadeNome,
-        string cidadeUf,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
         ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
-        ArgumentNullException.ThrowIfNull(cidadeCodigoIbge);
-        ArgumentNullException.ThrowIfNull(cidadeNome);
-        ArgumentNullException.ThrowIfNull(cidadeUf);
-
         Result validacao = ValidarCampos(tipo, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, codigoEmec);
         if (validacao.IsFailure)
         {
-            return Result<LocalOferta>.Failure(validacao.Error!);
+            return Result<LocalOferta>.ValidationFailure(validacao.Errors);
         }
 
         var local = new LocalOferta();
         local.AplicarCampos(
-            tipo, campusResponsavelId, cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem,
+            tipo, campusResponsavelId, cidadeCodigoIbge!, cidadeNome!, cidadeUf!, cidadeOrigem,
             cidadeDisplayAtualizadoEm, endereco, codigoEmec);
 
         return Result<LocalOferta>.Success(local);
@@ -91,21 +97,21 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
     /// Atualiza os atributos do Local de Oferta. A existência do campus
     /// responsável (quando informado) é responsabilidade do handler.
     /// </summary>
+    [SuppressMessage(
+        "Design",
+        "CA1062:Validate arguments of public methods",
+        Justification = "Ver justificativa equivalente em Criar.")]
     public Result Atualizar(
         TipoLocalOferta tipo,
         Guid? campusResponsavelId,
-        string cidadeCodigoIbge,
-        string cidadeNome,
-        string cidadeUf,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
         ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
-        ArgumentNullException.ThrowIfNull(cidadeCodigoIbge);
-        ArgumentNullException.ThrowIfNull(cidadeNome);
-        ArgumentNullException.ThrowIfNull(cidadeUf);
-
         Result validacao = ValidarCampos(tipo, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, codigoEmec);
         if (validacao.IsFailure)
         {
@@ -113,7 +119,7 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
         }
 
         AplicarCampos(
-            tipo, campusResponsavelId, cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem,
+            tipo, campusResponsavelId, cidadeCodigoIbge!, cidadeNome!, cidadeUf!, cidadeOrigem,
             cidadeDisplayAtualizadoEm, endereco, codigoEmec);
 
         return Result.Success();
@@ -144,43 +150,78 @@ public sealed class LocalOferta : SoftDeletableEntity, IAuditableEntity
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
-    private static Result ValidarCampos(
+    /// <summary>
+    /// Valida tipo, referência de cidade, coerência cidade↔endereço e código
+    /// e-MEC, acumulando toda violação independente em vez de parar na primeira
+    /// (ADR-0125) — sem mutar nada e sem depender de I/O. Público para o handler
+    /// de atualização poder validar o payload inteiro antes de buscar o registro
+    /// por Id (validação sempre vence 404); o <paramref name="endereco"/> já
+    /// chega resolvido (ou nulo, quando a resolução falhou — a coerência não é
+    /// checada nesse caso, para não mascarar a causa raiz).
+    /// </summary>
+    public static Result ValidarCampos(
         TipoLocalOferta tipo,
-        string cidadeCodigoIbge,
-        string cidadeNome,
-        string cidadeUf,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
         ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
+        List<FieldError> erros = [];
+
         if (!Enum.IsDefined(tipo) || tipo == TipoLocalOferta.Nenhum)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("tipo", new DomainError(
                 LocalOfertaErrorCodes.TipoInvalido,
-                "Tipo de Local de Oferta inválido — use um valor definido em TipoLocalOferta, diferente de Nenhum."));
+                "Tipo de Local de Oferta inválido — use um valor definido em TipoLocalOferta, diferente de Nenhum.")));
         }
 
         Result cidade = ReferenciaCidadeGeo.Validar(cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (cidade.IsFailure)
         {
-            return cidade;
+            // ReferenciaCidadeGeo.Validar acumula toda violação independente do
+            // trio de cidade — cada uma mapeada para o campo real que descreve.
+            foreach (FieldError erroCidade in cidade.Errors)
+            {
+                erros.Add(new(CampoDaCidade(erroCidade.Error.Code), erroCidade.Error));
+            }
         }
-
-        // CA-04: o snapshot de cidade do endereço deve coincidir com a referência
-        // de cidade do local (que aqui é sempre obrigatória).
-        Result coerencia = ReferenciaEnderecoGeo.ValidarCoerencia(
-            endereco?.CidadeCodigoIbge, endereco?.CidadeUf, cidadeCodigoIbge, cidadeUf);
-        if (coerencia.IsFailure)
+        else
         {
-            return coerencia;
+            // Só faz sentido checar coerência cidade↔endereço quando a referência
+            // de cidade em si já é válida — senão a causa raiz (formato) fica
+            // mascarada por "incoerente".
+            Result coerencia = ReferenciaEnderecoGeo.ValidarCoerencia(
+                endereco?.CidadeCodigoIbge, endereco?.CidadeUf, cidadeCodigoIbge, cidadeUf);
+            if (coerencia.IsFailure)
+            {
+                erros.Add(new("endereco", coerencia.Error!));
+            }
         }
 
         if (codigoEmec is not null && codigoEmec.Trim().Length > CodigoEmecMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("codigoEmec", new DomainError(
                 LocalOfertaErrorCodes.CodigoEmecTamanho,
-                $"Código e-MEC do Local de Oferta deve ter no máximo {CodigoEmecMaxLength} caracteres."));
+                $"Código e-MEC do Local de Oferta deve ter no máximo {CodigoEmecMaxLength} caracteres.")));
         }
 
-        return Result.Success();
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
+
+    /// <summary>
+    /// Mapeia o código interno de <see cref="ReferenciaCidadeGeo.Validar"/> para o
+    /// campo do payload (camelCase, ADR-0023) a que ele se refere de fato — sem
+    /// isso, todo erro de cidade seria rotulado com o mesmo campo, mesmo quando a
+    /// causa é o nome ou a UF, não o código IBGE.
+    /// </summary>
+    private static string CampoDaCidade(string codigoErro) => codigoErro switch
+    {
+        CidadeReferenciaErrorCodes.NomeObrigatorio
+            or CidadeReferenciaErrorCodes.NomeCaractereNulo
+            or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
+        CidadeReferenciaErrorCodes.UfObrigatoria
+            or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
+        _ => "cidadeCodigoIbge",
+    };
 }

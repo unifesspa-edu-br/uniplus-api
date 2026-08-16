@@ -135,6 +135,24 @@ public sealed class LocalOfertaEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "POST com tipo ausente e cidade ausente ao mesmo tempo acumula as violações em errors[]")]
+    public async Task Criar_TipoAusenteECidadeAusente_AcumulaAsViolacoesEmErrors()
+    {
+        var body = new { campusResponsavelId = (Guid?)null };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/locais-oferta", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "tipo ausente já desserializa para o sentinela Nenhum (enum, tipo valor) e cidade ausente " +
+            "precisa chegar ao domínio (ADR-0125), nenhum dos dois deve virar 400 de model binding");
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(4);
+        erros.EnumerateArray().Select(e => e.GetProperty("field").GetString())
+            .Should().BeEquivalentTo(["tipo", "cidadeCodigoIbge", "cidadeNome", "cidadeUf"]);
+    }
+
     private static string CamelCase(TipoLocalOferta tipo) =>
         System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(tipo.ToString());
 

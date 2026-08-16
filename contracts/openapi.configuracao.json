@@ -9322,13 +9322,22 @@
             "format": "uuid"
           },
           "cidadeCodigoIbge": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeNome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeUf": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "endereco": {
             "oneOf": [
@@ -10328,13 +10337,22 @@
             "format": "uuid"
           },
           "cidadeCodigoIbge": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeNome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeUf": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "endereco": {
             "oneOf": [
