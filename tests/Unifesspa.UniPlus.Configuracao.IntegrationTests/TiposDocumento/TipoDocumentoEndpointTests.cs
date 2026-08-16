@@ -184,6 +184,70 @@ public sealed class TipoDocumentoEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    [Fact(DisplayName = "ADR-0125: POST com nome vazio e categoria inválida devolve as duas violações em errors[], campo em camelCase")]
+    public async Task Criar_NomeVazioECategoriaInvalida_DevolveAsDuasViolacoesEmErrors()
+    {
+        var body = new { codigo = CodigoUnico(), nome = "", categoria = "FINANCEIRO" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.tipo_documento.nome_obrigatorio");
+
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(2);
+        errors[0].GetProperty("field").GetString().Should().Be("nome");
+        errors[1].GetProperty("field").GetString().Should().Be("categoria");
+    }
+
+    /// <summary>
+    /// ADR-0125: prova que "codigo" genuinamente ausente do JSON (não string
+    /// vazia) chega ao domínio como 422 específico, não ao 400 genérico do
+    /// ASP.NET — só possível porque
+    /// <see cref="Application.Commands.TiposDocumento.CriarTipoDocumentoCommand.Codigo"/>
+    /// é <c>string?</c>, não <c>string</c>.
+    /// </summary>
+    [Fact(DisplayName = "ADR-0125: POST com código genuinamente ausente do JSON chega ao domínio como 422 específico")]
+    public async Task Criar_CodigoAusenteDoJson_ChegaAoDominioComoViolacaoEspecifica()
+    {
+        const string json = """{"nome":"Documento de teste","categoria":"OUTROS"}""";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-documento", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.tipo_documento.codigo_obrigatorio");
+    }
+
+    [Fact(DisplayName = "PUT com Id inexistente e Nome vazio devolve 422 (validação vence sobre 404)")]
+    public async Task Atualizar_IdInexistenteENomeVazio_Retorna422()
+    {
+        Guid id = Guid.NewGuid();
+        var body = new { id, codigo = CodigoUnico(), nome = "", categoria = "OUTROS" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/configuracao/admin/tipos-documento/{id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(body);
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
     private static string CodigoUnico() => $"DOC_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)

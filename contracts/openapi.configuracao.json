@@ -9697,13 +9697,22 @@
             "format": "uuid"
           },
           "codigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "categoria": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
             "type": [
@@ -10690,13 +10699,22 @@
         "type": "object",
         "properties": {
           "codigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "categoria": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
             "type": [

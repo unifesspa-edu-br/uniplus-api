@@ -10,11 +10,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// podem ser editados. O <c>Id</c> é imutável. O ator (<c>updated_by</c>) é
 /// carimbado server-side via <c>IUserContext</c>.
 /// </summary>
+/// <remarks>
+/// <c>Codigo</c>, <c>Nome</c> e <c>Categoria</c> são <c>string?</c>, não
+/// <c>string</c> (ADR-0125) — ver justificativa equivalente em
+/// <see cref="CriarTipoDocumentoCommand"/>.
+/// </remarks>
 public sealed record AtualizarTipoDocumentoCommand(
     Guid Id,
-    string Codigo,
-    string Nome,
-    string Categoria,
+    string? Codigo,
+    string? Nome,
+    string? Categoria,
     string? Descricao = null,
     string? FormatosAceitos = null,
     int? TamanhoMaximoMb = null,

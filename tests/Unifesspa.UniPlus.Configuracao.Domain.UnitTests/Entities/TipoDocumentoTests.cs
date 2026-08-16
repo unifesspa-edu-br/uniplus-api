@@ -119,6 +119,84 @@ public sealed class TipoDocumentoTests
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.TipoEquivalenteIgualCodigo);
     }
 
+    /// <summary>
+    /// O guard de auto-equivalência compara os valores já normalizados dos dois
+    /// campos — só roda quando ambos passaram nas próprias checagens individuais.
+    /// Com código ausente não há valor normalizado para comparar, então o guard
+    /// nunca dispara, mesmo com um TipoEquivalente presente.
+    /// </summary>
+    [Fact(DisplayName = "Código ausente não dispara o guard de auto-equivalência")]
+    public void Criar_CodigoAusenteComTipoEquivalentePresente_NaoDisparaAutoEquivalencia()
+    {
+        Result<TipoDocumento> resultado = TipoDocumento.Criar(
+            "", Nome, null, Categoria, null, null, "RG");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Error.Code.Should().Be(TipoDocumentoErrorCodes.CodigoObrigatorio);
+    }
+
+    // ── Acumulação (ADR-0125) ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Antes: ValidarCampos retornava no primeiro campo inválido, mascarando as
+    /// demais violações — paridade com o FluentValidation removido, que
+    /// reportava cada campo em separado.
+    /// </summary>
+    [Fact(DisplayName = "Código, nome, categoria e tamanho máximo inválidos ao mesmo tempo acumulam as quatro violações rotuladas")]
+    public void Criar_QuatroCamposInvalidos_AcumulaAsQuatroViolacoesRotuladas()
+    {
+        Result<TipoDocumento> resultado = TipoDocumento.Criar(
+            "", "", null, "INEXISTENTE", null, 0, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(4);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[0].Error.Code.Should().Be(TipoDocumentoErrorCodes.CodigoObrigatorio);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
+        resultado.Errors[2].Field.Should().Be("categoria");
+        resultado.Errors[2].Error.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaInvalida);
+        resultado.Errors[3].Field.Should().Be("tamanhoMaximoMb");
+        resultado.Errors[3].Error.Code.Should().Be(TipoDocumentoErrorCodes.TamanhoMaximoInvalido);
+    }
+
+    [Fact(DisplayName = "Tipo equivalente igual ao código válido acumula junto com nome ausente")]
+    public void Criar_NomeAusenteEEquivalenteIgualCodigo_AcumulaAsDuasViolacoes()
+    {
+        Result<TipoDocumento> resultado = TipoDocumento.Criar(
+            "RG", "", null, Categoria, null, null, "RG");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[1].Field.Should().Be("tipoEquivalente");
+        resultado.Errors[1].Error.Code.Should().Be(TipoDocumentoErrorCodes.TipoEquivalenteIgualCodigo);
+    }
+
+    [Fact(DisplayName = "Campos obrigatórios nulos não lançam — devolvem a violação de domínio")]
+    public void Criar_CamposObrigatoriosNulos_NaoLancaEDevolveViolacaoDeDominio()
+    {
+        Result<TipoDocumento> resultado = TipoDocumento.Criar(
+            null, null, null, null, null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+    }
+
+    /// <summary>
+    /// O limite vale sobre o valor já normalizado (Trim), não sobre o bruto —
+    /// FluentValidation media o bruto; essa era uma divergência real entre as duas
+    /// camadas que o domínio como fonte única elimina.
+    /// </summary>
+    [Fact(DisplayName = "Descrição com 1000 caracteres úteis mais espaços nas pontas é aceita")]
+    public void Criar_DescricaoNoLimiteComEspacosNasPontas_Aceita()
+    {
+        TipoDocumento tipo = Criar(descricao: "  " + new string('a', 1000) + "  ").Value!;
+
+        tipo.Descricao.Should().Be(new string('a', 1000));
+    }
+
     [Fact(DisplayName = "Tipo equivalente apontando para outro código é aceito como rótulo classificatório")]
     public void Criar_EquivalenteOutroCodigo_Aceita()
     {

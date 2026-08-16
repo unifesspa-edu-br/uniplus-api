@@ -55,176 +55,195 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria um novo TipoDocumento. Valida formato/domínio local (incluindo a
-    /// categoria contra o domínio fechado e o guard de auto-equivalência). A
-    /// unicidade de <paramref name="codigo"/> entre tipos vivos é
-    /// responsabilidade do handler. A <paramref name="categoria"/> chega como
-    /// token textual (UPPER_SNAKE) e é validada pela allowlist.
+    /// Valida todos os campos, acumulando cada violação em vez de retornar na
+    /// primeira (ADR-0125), sem mutar nada — existe para o handler de atualização
+    /// decidir se vale a pena buscar a entidade e consultar unicidade antes mesmo
+    /// de chamar <see cref="Atualizar"/>/<see cref="Criar"/>, que revalidam por
+    /// conta própria e nunca confiam num resultado calculado por fora. O guard de
+    /// auto-equivalência (<paramref name="tipoEquivalente"/> igual a
+    /// <paramref name="codigo"/>) só roda depois que os dois já passaram nas
+    /// próprias checagens individuais, para não mascarar a causa raiz de um dos
+    /// dois atrás de uma relação inválida.
     /// </summary>
-    public static Result<TipoDocumento> Criar(
-        string codigo,
-        string nome,
+    public static Result<(
+        string Codigo,
+        string Nome,
+        string? Descricao,
+        CategoriaDocumento Categoria,
+        string? FormatosAceitos,
+        int? TamanhoMaximoMb,
+        string? TipoEquivalente)> ValidarCampos(
+        string? codigo,
+        string? nome,
         string? descricao,
-        string categoria,
+        string? categoria,
         string? formatosAceitos,
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(categoria);
+        List<FieldError> erros = [];
 
-        Result<CategoriaDocumento> validacao = ValidarCampos(
-            codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
+        string? codigoNorm = null;
+        if (string.IsNullOrWhiteSpace(codigo))
+        {
+            erros.Add(new("codigo", new DomainError(
+                TipoDocumentoErrorCodes.CodigoObrigatorio, "Código do tipo de documento é obrigatório.")));
+        }
+        else
+        {
+            codigoNorm = codigo.Trim();
+            if (codigoNorm.Length is < CodigoMinLength or > CodigoMaxLength)
+            {
+                erros.Add(new("codigo", new DomainError(
+                    TipoDocumentoErrorCodes.CodigoTamanho,
+                    $"Código do tipo de documento deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres.")));
+                codigoNorm = null;
+            }
+        }
+
+        string? nomeNorm = null;
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erros.Add(new("nome", new DomainError(
+                TipoDocumentoErrorCodes.NomeObrigatorio, "Nome do tipo de documento é obrigatório.")));
+        }
+        else
+        {
+            nomeNorm = nome.Trim();
+            if (nomeNorm.Length is < NomeMinLength or > NomeMaxLength)
+            {
+                erros.Add(new("nome", new DomainError(
+                    TipoDocumentoErrorCodes.NomeTamanho,
+                    $"Nome do tipo de documento deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
+                nomeNorm = null;
+            }
+        }
+
+        string? descricaoNorm = NormalizarOpcional(descricao);
+        if (descricaoNorm is not null && descricaoNorm.Length > DescricaoMaxLength)
+        {
+            erros.Add(new("descricao", new DomainError(
+                TipoDocumentoErrorCodes.DescricaoTamanho,
+                $"Descrição do tipo de documento deve ter no máximo {DescricaoMaxLength} caracteres.")));
+        }
+
+        bool categoriaValida = CategoriaDocumentos.TryAnalisar(categoria, out CategoriaDocumento categoriaResolvida);
+        if (!categoriaValida)
+        {
+            erros.Add(new("categoria", new DomainError(
+                TipoDocumentoErrorCodes.CategoriaInvalida,
+                $"Categoria do tipo de documento deve ser uma de: {string.Join(", ", CategoriaDocumentos.TokensCanonicos)}.")));
+        }
+
+        string? formatosAceitosNorm = NormalizarOpcional(formatosAceitos);
+        if (formatosAceitosNorm is not null && formatosAceitosNorm.Length > FormatosAceitosMaxLength)
+        {
+            erros.Add(new("formatosAceitos", new DomainError(
+                TipoDocumentoErrorCodes.FormatosAceitosTamanho,
+                $"Formatos aceitos devem ter no máximo {FormatosAceitosMaxLength} caracteres.")));
+        }
+
+        if (tamanhoMaximoMb is <= 0)
+        {
+            erros.Add(new("tamanhoMaximoMb", new DomainError(
+                TipoDocumentoErrorCodes.TamanhoMaximoInvalido,
+                "Tamanho máximo em MB, quando informado, deve ser positivo.")));
+        }
+
+        string? tipoEquivalenteNorm = NormalizarOpcional(tipoEquivalente);
+        if (tipoEquivalenteNorm is not null && tipoEquivalenteNorm.Length > TipoEquivalenteMaxLength)
+        {
+            erros.Add(new("tipoEquivalente", new DomainError(
+                TipoDocumentoErrorCodes.TipoEquivalenteTamanho,
+                $"Tipo equivalente deve ter no máximo {TipoEquivalenteMaxLength} caracteres.")));
+            tipoEquivalenteNorm = null;
+        }
+
+        if (codigoNorm is not null && tipoEquivalenteNorm is not null
+            && string.Equals(tipoEquivalenteNorm, codigoNorm, StringComparison.Ordinal))
+        {
+            // Guard de auto-equivalência case-sensitive (Ordinal), alinhado ao CHECK
+            // `tipo_equivalente <> codigo` do banco (também case-sensitive).
+            erros.Add(new("tipoEquivalente", new DomainError(
+                TipoDocumentoErrorCodes.TipoEquivalenteIgualCodigo,
+                "Um tipo de documento não pode declarar-se equivalente a si mesmo.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<(string, string, string?, CategoriaDocumento, string?, int?, string?)>.ValidationFailure(erros);
+        }
+
+        return Result<(string, string, string?, CategoriaDocumento, string?, int?, string?)>.Success((
+            codigoNorm!, nomeNorm!, descricaoNorm, categoriaResolvida, formatosAceitosNorm, tamanhoMaximoMb, tipoEquivalenteNorm));
+    }
+
+    /// <summary>
+    /// Cria um novo TipoDocumento. Revalida todos os campos via
+    /// <see cref="ValidarCampos"/>, acumulando toda violação no mesmo lote. A
+    /// unicidade de <c>Codigo</c> entre tipos vivos é responsabilidade do handler.
+    /// </summary>
+    public static Result<TipoDocumento> Criar(
+        string? codigo,
+        string? nome,
+        string? descricao,
+        string? categoria,
+        string? formatosAceitos,
+        int? tamanhoMaximoMb,
+        string? tipoEquivalente)
+    {
+        Result<(string Codigo, string Nome, string? Descricao, CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
-            return Result<TipoDocumento>.Failure(validacao.Error!);
+            return Result<TipoDocumento>.ValidationFailure(validacao.Errors);
         }
 
         var tipo = new TipoDocumento();
-        tipo.AplicarCampos(
-            codigo, nome, descricao, validacao.Value, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
+        tipo.AplicarCampos(validacao.Value);
 
         return Result<TipoDocumento>.Success(tipo);
     }
 
     /// <summary>
     /// Atualiza os atributos do TipoDocumento. O <c>Codigo</c> é editável; sua
-    /// unicidade (quando alterado) é responsabilidade do handler. Revalida
-    /// formato/domínio e o guard de auto-equivalência.
+    /// unicidade (quando alterado) é responsabilidade do handler. Revalida todos
+    /// os campos via <see cref="ValidarCampos"/>, incluindo o guard de
+    /// auto-equivalência.
     /// </summary>
     public Result Atualizar(
-        string codigo,
-        string nome,
+        string? codigo,
+        string? nome,
         string? descricao,
-        string categoria,
+        string? categoria,
         string? formatosAceitos,
         int? tamanhoMaximoMb,
         string? tipoEquivalente)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(categoria);
-
-        Result<CategoriaDocumento> validacao = ValidarCampos(
-            codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
+        Result<(string Codigo, string Nome, string? Descricao, CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente)> validacao =
+            ValidarCampos(codigo, nome, descricao, categoria, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
         if (validacao.IsFailure)
         {
-            return Result.Failure(validacao.Error!);
+            return Result.ValidationFailure(validacao.Errors);
         }
 
-        AplicarCampos(
-            codigo, nome, descricao, validacao.Value, formatosAceitos, tamanhoMaximoMb, tipoEquivalente);
+        AplicarCampos(validacao.Value);
 
         return Result.Success();
     }
 
     private void AplicarCampos(
-        string codigo,
-        string nome,
-        string? descricao,
-        CategoriaDocumento categoria,
-        string? formatosAceitos,
-        int? tamanhoMaximoMb,
-        string? tipoEquivalente)
+        (string Codigo, string Nome, string? Descricao, CategoriaDocumento Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente) campos)
     {
-        Codigo = codigo.Trim();
-        Nome = nome.Trim();
-        Descricao = NormalizarOpcional(descricao);
-        Categoria = categoria;
-        FormatosAceitos = NormalizarOpcional(formatosAceitos);
-        TamanhoMaximoMb = tamanhoMaximoMb;
-        TipoEquivalente = NormalizarOpcional(tipoEquivalente);
+        Codigo = campos.Codigo;
+        Nome = campos.Nome;
+        Descricao = campos.Descricao;
+        Categoria = campos.Categoria;
+        FormatosAceitos = campos.FormatosAceitos;
+        TamanhoMaximoMb = campos.TamanhoMaximoMb;
+        TipoEquivalente = campos.TipoEquivalente;
     }
 
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
-
-    private static Result<CategoriaDocumento> ValidarCampos(
-        string codigo,
-        string nome,
-        string? descricao,
-        string categoria,
-        string? formatosAceitos,
-        int? tamanhoMaximoMb,
-        string? tipoEquivalente)
-    {
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.CodigoObrigatorio,
-                "Código do tipo de documento é obrigatório."));
-        }
-
-        if (codigo.Trim().Length is < CodigoMinLength or > CodigoMaxLength)
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.CodigoTamanho,
-                $"Código do tipo de documento deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres."));
-        }
-
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.NomeObrigatorio,
-                "Nome do tipo de documento é obrigatório."));
-        }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.NomeTamanho,
-                $"Nome do tipo de documento deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
-        }
-
-        if (descricao is not null && descricao.Trim().Length > DescricaoMaxLength)
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.DescricaoTamanho,
-                $"Descrição do tipo de documento deve ter no máximo {DescricaoMaxLength} caracteres."));
-        }
-
-        if (!CategoriaDocumentos.TryAnalisar(categoria, out CategoriaDocumento categoriaResolvida))
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.CategoriaInvalida,
-                $"Categoria do tipo de documento deve ser uma de: {string.Join(", ", CategoriaDocumentos.TokensCanonicos)}."));
-        }
-
-        if (formatosAceitos is not null && formatosAceitos.Trim().Length > FormatosAceitosMaxLength)
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.FormatosAceitosTamanho,
-                $"Formatos aceitos devem ter no máximo {FormatosAceitosMaxLength} caracteres."));
-        }
-
-        if (tamanhoMaximoMb is <= 0)
-        {
-            return Result<CategoriaDocumento>.Failure(new DomainError(
-                TipoDocumentoErrorCodes.TamanhoMaximoInvalido,
-                "Tamanho máximo em MB, quando informado, deve ser positivo."));
-        }
-
-        if (tipoEquivalente is not null && !string.IsNullOrWhiteSpace(tipoEquivalente))
-        {
-            string equivalenteNorm = tipoEquivalente.Trim();
-            if (equivalenteNorm.Length > TipoEquivalenteMaxLength)
-            {
-                return Result<CategoriaDocumento>.Failure(new DomainError(
-                    TipoDocumentoErrorCodes.TipoEquivalenteTamanho,
-                    $"Tipo equivalente deve ter no máximo {TipoEquivalenteMaxLength} caracteres."));
-            }
-
-            // Guard de auto-equivalência case-sensitive (Ordinal), alinhado ao CHECK
-            // `tipo_equivalente <> codigo` do banco (também case-sensitive).
-            if (string.Equals(equivalenteNorm, codigo.Trim(), StringComparison.Ordinal))
-            {
-                return Result<CategoriaDocumento>.Failure(new DomainError(
-                    TipoDocumentoErrorCodes.TipoEquivalenteIgualCodigo,
-                    "Um tipo de documento não pode declarar-se equivalente a si mesmo."));
-            }
-        }
-
-        return Result<CategoriaDocumento>.Success(categoriaResolvida);
-    }
 }
