@@ -127,4 +127,45 @@ public sealed class TipoDeficienciaTests
         resultado.Error!.Code.Should().Be(TipoDeficienciaErrorCodes.DescricaoObrigatoria);
         tipo.Descricao.Should().Be(Descricao);
     }
+
+    // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
+
+    [Fact(DisplayName = "Nome e descrição nulos não lançam — devolvem as duas violações de domínio")]
+    public void Criar_NomeEDescricaoNulos_NaoLancaEAcumulaAsDuasViolacoes()
+    {
+        Result<TipoDeficiencia> resultado = TipoDeficiencia.Criar(null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[0].Error.Code.Should().Be(TipoDeficienciaErrorCodes.NomeObrigatorio);
+        resultado.Errors[1].Field.Should().Be("descricao");
+        resultado.Errors[1].Error.Code.Should().Be(TipoDeficienciaErrorCodes.DescricaoObrigatoria);
+    }
+
+    [Fact(DisplayName = "Nome curto e descrição longa ao mesmo tempo acumulam as duas violações rotuladas")]
+    public void Criar_NomeCurtoEDescricaoLonga_AcumulaAsDuasViolacoesRotuladas()
+    {
+        Result<TipoDeficiencia> resultado = TipoDeficiencia.Criar("A", new string('b', 1001));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[0].Error.Code.Should().Be(TipoDeficienciaErrorCodes.NomeTamanho);
+        resultado.Errors[1].Field.Should().Be("descricao");
+        resultado.Errors[1].Error.Code.Should().Be(TipoDeficienciaErrorCodes.DescricaoTamanho);
+    }
+
+    [Fact(DisplayName = "Atualizar com nome e descrição inválidos acumula as duas violações sem mutar o agregado")]
+    public void Atualizar_NomeEDescricaoInvalidos_AcumulaAsDuasViolacoesSemMutar()
+    {
+        TipoDeficiencia tipo = Criar(nome: "Visual").Value!;
+
+        Result resultado = tipo.Atualizar("", "   ");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        tipo.Nome.Should().Be("Visual", "falha de validação não pode mutar o agregado");
+        tipo.Descricao.Should().Be(Descricao);
+    }
 }

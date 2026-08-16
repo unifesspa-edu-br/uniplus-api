@@ -81,4 +81,19 @@ public sealed class AtualizarTipoDeficienciaCommandHandlerTests
             .NomeExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Payload inválido em Id inexistente retorna a violação de validação, não NaoEncontrado")]
+    public async Task Handle_PayloadInvalidoEIdInexistente_RetornaViolacaoDeValidacao()
+    {
+        Guid id = Guid.CreateVersion7();
+        AtualizarTipoDeficienciaCommand comando = Comando(id, nome: "") with { Descricao = "" };
+
+        Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Error!.Code.Should().NotBe(TipoDeficienciaErrorCodes.NaoEncontrado);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
 }

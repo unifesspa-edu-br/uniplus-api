@@ -9670,10 +9670,16 @@
             "format": "uuid"
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "permanente": {
             "type": [
@@ -10683,10 +10689,16 @@
         "type": "object",
         "properties": {
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "descricao": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "permanente": {
             "type": [
