@@ -29,33 +29,150 @@ public sealed class TipoProcesso : EntityBase, IAuditableEntity
 
     private TipoProcesso() { }
 
-    public static Result<TipoProcesso> Criar(string codigo, string nome, string? descricao)
+    /// <summary>
+    /// Valida o código (formato, tamanho e reserva de "*"), sem mutar nada —
+    /// existe para o handler de criação decidir se vale a pena consultar a
+    /// unicidade antes mesmo de chamar <see cref="Criar"/>, que revalida por
+    /// conta própria.
+    /// </summary>
+    public static Result<string> ValidarCodigo(string? codigo)
     {
-        Result<Campos> campos = ValidarCampos(codigo, nome, descricao);
-        if (campos.IsFailure)
+        if (string.IsNullOrWhiteSpace(codigo))
         {
-            return Result<TipoProcesso>.Failure(campos.Error!);
+            return Result<string>.ValidationFailure([new("codigo", new DomainError(
+                TipoProcessoErrorCodes.CodigoObrigatorio, "Código do tipo de processo seletivo é obrigatório."))]);
+        }
+
+        string codigoNormalizado = codigo.Trim();
+        if (codigoNormalizado.Contains(CaractereNulo))
+        {
+            return Result<string>.ValidationFailure([new("codigo", new DomainError(
+                TipoProcessoErrorCodes.CodigoComCaractereNulo,
+                "Código do tipo de processo seletivo não pode conter o caractere nulo (U+0000)."))]);
+        }
+
+        if (codigoNormalizado.Length > CodigoMaxLength)
+        {
+            return Result<string>.ValidationFailure([new("codigo", new DomainError(
+                TipoProcessoErrorCodes.CodigoTamanho,
+                $"Código do tipo de processo seletivo deve ter no máximo {CodigoMaxLength} caracteres."))]);
+        }
+
+        if (codigoNormalizado == "*")
+        {
+            return Result<string>.ValidationFailure([new("codigo", new DomainError(
+                TipoProcessoErrorCodes.CodigoReservado,
+                "O código '*' é reservado para obrigatoriedade legal universal."))]);
+        }
+
+        return Result<string>.Success(codigoNormalizado);
+    }
+
+    /// <summary>
+    /// Valida nome e descrição (os dois campos editáveis), acumulando toda
+    /// violação independente em vez de parar na primeira — sem mutar nada. O
+    /// código não participa: é imutável, então <see cref="Atualizar"/> e seu
+    /// handler nunca precisam revalidá-lo.
+    /// </summary>
+    public static Result<(string Nome, string? Descricao)> ValidarCamposEditaveis(string? nome, string? descricao)
+    {
+        List<FieldError> erros = [];
+
+        string? nomeNormalizado = null;
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erros.Add(new("nome", new DomainError(
+                TipoProcessoErrorCodes.NomeObrigatorio, "Nome do tipo de processo seletivo é obrigatório.")));
+        }
+        else
+        {
+            nomeNormalizado = nome.Trim();
+            if (nomeNormalizado.Contains(CaractereNulo))
+            {
+                erros.Add(new("nome", new DomainError(
+                    TipoProcessoErrorCodes.NomeComCaractereNulo,
+                    "Nome do tipo de processo seletivo não pode conter o caractere nulo (U+0000).")));
+                nomeNormalizado = null;
+            }
+            else if (nomeNormalizado.Length > NomeMaxLength)
+            {
+                erros.Add(new("nome", new DomainError(
+                    TipoProcessoErrorCodes.NomeTamanho,
+                    $"Nome do tipo de processo seletivo deve ter no máximo {NomeMaxLength} caracteres.")));
+                nomeNormalizado = null;
+            }
+        }
+
+        string? descricaoNormalizada = NormalizarOpcional(descricao);
+        if (descricaoNormalizada is not null)
+        {
+            if (descricaoNormalizada.Contains(CaractereNulo))
+            {
+                erros.Add(new("descricao", new DomainError(
+                    TipoProcessoErrorCodes.DescricaoComCaractereNulo,
+                    "Descrição do tipo de processo seletivo não pode conter o caractere nulo (U+0000).")));
+            }
+            else if (descricaoNormalizada.Length > DescricaoMaxLength)
+            {
+                erros.Add(new("descricao", new DomainError(
+                    TipoProcessoErrorCodes.DescricaoTamanho,
+                    $"Descrição do tipo de processo seletivo deve ter no máximo {DescricaoMaxLength} caracteres.")));
+            }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<(string, string?)>.ValidationFailure(erros);
+        }
+
+        return Result<(string, string?)>.Success((nomeNormalizado!, descricaoNormalizada));
+    }
+
+    /// <summary>
+    /// Cria um novo TipoProcesso. Revalida código, nome e descrição, acumulando
+    /// toda violação no mesmo lote. A unicidade do código é responsabilidade do
+    /// handler.
+    /// </summary>
+    public static Result<TipoProcesso> Criar(string? codigo, string? nome, string? descricao)
+    {
+        List<FieldError> erros = [];
+
+        Result<string> codigoResult = ValidarCodigo(codigo);
+        if (codigoResult.IsFailure)
+        {
+            erros.AddRange(codigoResult.Errors);
+        }
+
+        Result<(string Nome, string? Descricao)> camposResult = ValidarCamposEditaveis(nome, descricao);
+        if (camposResult.IsFailure)
+        {
+            erros.AddRange(camposResult.Errors);
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<TipoProcesso>.ValidationFailure(erros);
         }
 
         return Result<TipoProcesso>.Success(new TipoProcesso
         {
-            Codigo = campos.Value!.Codigo,
-            Nome = campos.Value.Nome,
-            Descricao = campos.Value.Descricao,
+            Codigo = codigoResult.Value!,
+            Nome = camposResult.Value.Nome,
+            Descricao = camposResult.Value.Descricao,
             Ativo = true,
         });
     }
 
     /// <summary>Atualiza apenas os campos editáveis; o código permanece imutável.</summary>
-    public Result Atualizar(string nome, string? descricao)
+    public Result Atualizar(string? nome, string? descricao)
     {
-        Result<Campos> campos = ValidarCampos(Codigo, nome, descricao);
+        Result<(string Nome, string? Descricao)> campos = ValidarCamposEditaveis(nome, descricao);
         if (campos.IsFailure)
         {
-            return Result.Failure(campos.Error!);
+            return Result.ValidationFailure(campos.Errors);
         }
 
-        Nome = campos.Value!.Nome;
+        Nome = campos.Value.Nome;
         Descricao = campos.Value.Descricao;
         return Result.Success();
     }
@@ -73,71 +190,6 @@ public sealed class TipoProcesso : EntityBase, IAuditableEntity
         return Result.Success();
     }
 
-    private static Result<Campos> ValidarCampos(string codigo, string nome, string? descricao)
-    {
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Falha(TipoProcessoErrorCodes.CodigoObrigatorio, "Código do tipo de processo seletivo é obrigatório.");
-        }
-
-        string codigoNormalizado = codigo.Trim();
-        if (codigoNormalizado.Contains(CaractereNulo))
-        {
-            return Falha(TipoProcessoErrorCodes.CodigoComCaractereNulo,
-                "Código do tipo de processo seletivo não pode conter o caractere nulo (U+0000).");
-        }
-
-        if (codigoNormalizado.Length > CodigoMaxLength)
-        {
-            return Falha(TipoProcessoErrorCodes.CodigoTamanho,
-                $"Código do tipo de processo seletivo deve ter no máximo {CodigoMaxLength} caracteres.");
-        }
-
-        if (codigoNormalizado == "*")
-        {
-            return Falha(TipoProcessoErrorCodes.CodigoReservado,
-                "O código '*' é reservado para obrigatoriedade legal universal.");
-        }
-
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Falha(TipoProcessoErrorCodes.NomeObrigatorio, "Nome do tipo de processo seletivo é obrigatório.");
-        }
-
-        string nomeNormalizado = nome.Trim();
-        if (nomeNormalizado.Contains(CaractereNulo))
-        {
-            return Falha(TipoProcessoErrorCodes.NomeComCaractereNulo,
-                "Nome do tipo de processo seletivo não pode conter o caractere nulo (U+0000).");
-        }
-
-        if (nomeNormalizado.Length > NomeMaxLength)
-        {
-            return Falha(TipoProcessoErrorCodes.NomeTamanho,
-                $"Nome do tipo de processo seletivo deve ter no máximo {NomeMaxLength} caracteres.");
-        }
-
-        string? descricaoNormalizada = NormalizarOpcional(descricao);
-        if (descricaoNormalizada is not null && descricaoNormalizada.Contains(CaractereNulo))
-        {
-            return Falha(TipoProcessoErrorCodes.DescricaoComCaractereNulo,
-                "Descrição do tipo de processo seletivo não pode conter o caractere nulo (U+0000).");
-        }
-
-        if (descricaoNormalizada is { Length: > DescricaoMaxLength })
-        {
-            return Falha(TipoProcessoErrorCodes.DescricaoTamanho,
-                $"Descrição do tipo de processo seletivo deve ter no máximo {DescricaoMaxLength} caracteres.");
-        }
-
-        return Result<Campos>.Success(new Campos(codigoNormalizado, nomeNormalizado, descricaoNormalizada));
-    }
-
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
-
-    private static Result<Campos> Falha(string code, string message) =>
-        Result<Campos>.Failure(new DomainError(code, message));
-
-    private sealed record Campos(string Codigo, string Nome, string? Descricao);
 }

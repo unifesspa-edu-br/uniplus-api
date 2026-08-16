@@ -6,6 +6,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
+/// <summary>
+/// Valida nome e descrição (sem I/O) antes de buscar a entidade: sem o validator
+/// removido, um payload mal formado não pode chegar a <c>ObterPorIdAsync</c>
+/// primeiro — validação sempre vence sobre "não encontrado".
+/// </summary>
 public static class AtualizarTipoProcessoCommandHandler
 {
     public static async Task<Result> Handle(
@@ -18,17 +23,22 @@ public static class AtualizarTipoProcessoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result<(string Nome, string? Descricao)> validacao = TipoProcesso.ValidarCamposEditaveis(command.Nome, command.Descricao);
+        if (validacao.IsFailure)
+        {
+            return Result.ValidationFailure(validacao.Errors);
+        }
+
         TipoProcesso? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
             return Result.Failure(new DomainError(TipoProcessoErrorCodes.NaoEncontrado, "Tipo de processo seletivo não encontrado."));
         }
 
-        Result atualizar = tipo.Atualizar(command.Nome, command.Descricao);
-        if (atualizar.IsFailure)
-        {
-            return atualizar;
-        }
+        // Revalida por dentro (barato, sem I/O) com exatamente os mesmos argumentos
+        // já confirmados acima, então sempre terá sucesso aqui; esta chamada só
+        // serve para aplicar a mutação.
+        tipo.Atualizar(command.Nome, command.Descricao);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
