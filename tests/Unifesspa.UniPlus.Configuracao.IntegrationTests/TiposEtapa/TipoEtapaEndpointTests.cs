@@ -182,6 +182,62 @@ public sealed class TipoEtapaEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "ADR-0125: POST com código e nome ausentes ao mesmo tempo devolve as duas violações em errors[], campo em camelCase")]
+    public async Task Criar_CodigoENomeAusentes_DevolveAsDuasViolacoesEmErrors()
+    {
+        var body = new { codigo = "", nome = "" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.tipo_etapa.codigo_obrigatorio");
+
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(2);
+        errors[0].GetProperty("field").GetString().Should().Be("codigo");
+        errors[1].GetProperty("field").GetString().Should().Be("nome");
+    }
+
+    /// <summary>
+    /// ADR-0125: prova que "codigo" genuinamente ausente do JSON (não string
+    /// vazia) chega ao domínio como 422 específico, não ao 400 genérico do
+    /// ASP.NET — só possível porque
+    /// <see cref="Application.Commands.TiposEtapa.CriarTipoEtapaCommand.Codigo"/>
+    /// é <c>string?</c>, não <c>string</c>.
+    /// </summary>
+    [Fact(DisplayName = "ADR-0125: POST com código genuinamente ausente do JSON chega ao domínio como 422 específico")]
+    public async Task Criar_CodigoAusenteDoJson_ChegaAoDominioComoViolacaoEspecifica()
+    {
+        const string json = """{"nome":"Nome válido"}""";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-etapa", UriKind.Relative));
+        AutenticarComoAdmin(request);
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.tipo_etapa.codigo_obrigatorio");
+    }
+
+    [Fact(DisplayName = "PUT com Id inexistente e Nome vazio devolve 422 (validação vence sobre 404)")]
+    public async Task Atualizar_IdInexistenteENomeVazio_Retorna422()
+    {
+        Guid id = Guid.NewGuid();
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, new { id, nome = "" });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
     [Fact(DisplayName = "DELETE desativa, remove da leitura pública e mantém o código reservado")]
     public async Task Desativar_OcultaDaLeituraPublicaESemReusoDoCodigo()
     {

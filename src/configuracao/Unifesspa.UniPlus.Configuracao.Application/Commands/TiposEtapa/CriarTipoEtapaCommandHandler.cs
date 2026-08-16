@@ -6,6 +6,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
+/// <summary>
+/// Valida o agregado por inteiro primeiro (sem I/O) — código, nome e descrição
+/// acumulam no mesmo lote — só então confere a unicidade do código entre vivos,
+/// com o código já normalizado.
+/// </summary>
 public static class CriarTipoEtapaCommandHandler
 {
     public static async Task<Result<Guid>> Handle(
@@ -18,18 +23,20 @@ public static class CriarTipoEtapaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        if (await repository.CodigoExisteAsync(command.Codigo, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExiste(command.Codigo));
-        }
-
         Result<TipoEtapa> criar = TipoEtapa.Criar(command.Codigo, command.Nome, command.Descricao);
         if (criar.IsFailure)
         {
-            return Result<Guid>.Failure(criar.Error!);
+            return Result<Guid>.ValidationFailure(criar.Errors);
         }
 
-        await repository.AdicionarAsync(criar.Value!, cancellationToken).ConfigureAwait(false);
+        TipoEtapa tipo = criar.Value!;
+
+        if (await repository.CodigoExisteAsync(tipo.Codigo, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(CodigoJaExiste());
+        }
+
+        await repository.AdicionarAsync(tipo, cancellationToken).ConfigureAwait(false);
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -41,12 +48,12 @@ public static class CriarTipoEtapaCommandHandler
             // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
             // pretendido vira 500.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(CodigoJaExiste(command.Codigo));
+            return Result<Guid>.Failure(CodigoJaExiste());
         }
-        return Result<Guid>.Success(criar.Value!.Id);
+        return Result<Guid>.Success(tipo.Id);
     }
 
-    private static DomainError CodigoJaExiste(string codigo) => new(
+    private static DomainError CodigoJaExiste() => new(
         TipoEtapaErrorCodes.CodigoJaExiste,
-        $"O código '{codigo.Trim()}' já foi reservado para um tipo de etapa.");
+        "Já existe um tipo de etapa com o código informado.");
 }
