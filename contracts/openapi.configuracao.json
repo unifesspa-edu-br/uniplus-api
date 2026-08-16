@@ -10520,10 +10520,16 @@
         "type": "object",
         "properties": {
           "antecessoraCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "sucessoraCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "permiteSobreposicao": {
             "type": "boolean",

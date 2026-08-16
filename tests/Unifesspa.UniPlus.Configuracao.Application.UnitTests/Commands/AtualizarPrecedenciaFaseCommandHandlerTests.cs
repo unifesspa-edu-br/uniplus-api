@@ -16,6 +16,23 @@ public sealed class AtualizarPrecedenciaFaseCommandHandlerTests
     private readonly IPrecedenciaFaseRepository _repository = Substitute.For<IPrecedenciaFaseRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
+    /// <summary>
+    /// ADR-0125: sem o validator removido (que recusava Id vazio com 422), o
+    /// Guid.Empty chega a ObterPorIdAsync como qualquer outro Id, não encontra
+    /// registro e devolve 404 — resposta domain-truthful, não uma regressão.
+    /// </summary>
+    [Fact(DisplayName = "Id vazio (Guid.Empty) devolve NaoEncontrada (404), não mais 422 do validator removido")]
+    public async Task Handle_IdVazio_RetornaNaoEncontrada()
+    {
+        _repository.ObterPorIdAsync(Guid.Empty, Arg.Any<CancellationToken>()).Returns((PrecedenciaFase?)null);
+
+        Result resultado = await AtualizarPrecedenciaFaseCommandHandler.Handle(
+            new AtualizarPrecedenciaFaseCommand(Guid.Empty, true), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.NaoEncontrada);
+    }
+
     [Fact(DisplayName = "Aresta inexistente retorna NaoEncontrada (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrada()
     {
