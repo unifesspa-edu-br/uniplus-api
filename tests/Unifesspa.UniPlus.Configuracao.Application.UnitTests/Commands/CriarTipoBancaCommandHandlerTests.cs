@@ -46,11 +46,9 @@ public sealed class CriarTipoBancaCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<TipoBanca>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem persistir")]
-    public async Task Handle_ForaDoCanonico_RetornaErroSemPersistir()
+    [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem consultar unicidade nem persistir")]
+    public async Task Handle_ForaDoCanonico_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
-
         var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "x");
 
         Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
@@ -58,6 +56,21 @@ public sealed class CriarTipoBancaCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico);
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código fora do canônico e nome ausente no mesmo payload acumulam as duas violações")]
+    public async Task Handle_CodigoForaDoCanonicoENomeAusente_AcumulaAsDuasViolacoes()
+    {
+        var comando = new CriarTipoBancaCommand("BANCA_LOGISTICA", Nome: "");
+
+        Result<Guid> resultado = await CriarTipoBancaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[1].Field.Should().Be("nome");
     }
 }

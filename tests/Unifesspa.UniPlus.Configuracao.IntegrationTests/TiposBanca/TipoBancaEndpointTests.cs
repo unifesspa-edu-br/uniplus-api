@@ -152,6 +152,69 @@ public sealed class TipoBancaEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    [Fact(DisplayName = "ADR-0125: POST com código fora do conjunto canônico e nome ausente devolve as duas violações em errors[], campo em camelCase")]
+    public async Task Criar_ForaDoCanonicoENomeAusente_DevolveAsDuasViolacoesEmErrors()
+    {
+        var body = new { codigo = "BANCA_LOGISTICA", nome = "" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.tipo_banca.codigo_fora_do_conjunto_canonico");
+
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(2);
+        errors[0].GetProperty("field").GetString().Should().Be("codigo");
+        errors[1].GetProperty("field").GetString().Should().Be("nome");
+    }
+
+    /// <summary>
+    /// ADR-0125: prova que "codigo" genuinamente ausente do JSON (não string
+    /// vazia) chega ao domínio como 422 específico, não ao 400 genérico do
+    /// ASP.NET — só possível porque
+    /// <see cref="Application.Commands.TiposBanca.CriarTipoBancaCommand.Codigo"/>
+    /// é <c>string?</c>, não <c>string</c>.
+    /// </summary>
+    [Fact(DisplayName = "ADR-0125: POST com código genuinamente ausente do JSON chega ao domínio como 422 específico")]
+    public async Task Criar_CodigoAusenteDoJson_ChegaAoDominioComoViolacaoEspecifica()
+    {
+        const string json = """{"nome":"Banca de teste"}""";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-banca", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.tipo_banca.codigo_obrigatorio");
+    }
+
+    [Fact(DisplayName = "PUT com Id inexistente e Nome vazio devolve 422 (validação vence sobre 404)")]
+    public async Task Atualizar_IdInexistenteENomeVazio_Retorna422()
+    {
+        var body = new { id = Guid.NewGuid(), nome = "" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Put, new Uri($"/api/configuracao/admin/tipos-banca/{body.id}", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = JsonContent.Create(body);
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/tipos-banca", UriKind.Relative));

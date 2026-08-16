@@ -33,6 +33,37 @@ public sealed class AtualizarTipoBancaCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// Antes do validator removido, um payload mal formado nunca chegava a
+    /// ObterPorIdAsync — validação sempre vencia sobre "não encontrado". Sem o
+    /// validator, o handler precisa preservar essa prioridade explicitamente.
+    /// </summary>
+    [Fact(DisplayName = "Id inexistente com Nome vazio devolve a violação de campo, não NaoEncontrado")]
+    public async Task Handle_IdInexistenteComNomeVazio_RetornaViolacaoDeCampoSemConsultarRepositorio()
+    {
+        Guid idInexistente = Guid.CreateVersion7();
+
+        Result resultado = await AtualizarTipoBancaCommandHandler.Handle(
+            new AtualizarTipoBancaCommand(idInexistente, Nome: ""), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoBancaErrorCodes.NomeObrigatorio);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Nome vazio e descrição longa no mesmo payload acumulam as duas violações")]
+    public async Task Handle_NomeVazioEDescricaoLonga_AcumulaAsDuasViolacoes()
+    {
+        Result resultado = await AtualizarTipoBancaCommandHandler.Handle(
+            new AtualizarTipoBancaCommand(Guid.CreateVersion7(), Nome: "", Descricao: new string('a', 301)),
+            _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[1].Field.Should().Be("descricao");
+    }
+
     [Fact(DisplayName = "Atualização válida persiste e o código permanece imutável")]
     public async Task Handle_Valido_PersisteCodigoImutavel()
     {

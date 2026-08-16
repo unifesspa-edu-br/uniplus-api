@@ -7,9 +7,12 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarTipoBancaCommand"/>. Carrega o tipo de banca (404
-/// se inexistente), aplica os campos editáveis (o <c>Codigo</c> é imutável, então
-/// não há checagem de unicidade nem corrida de índice) e commita. Sem integridade
+/// Handler do <see cref="AtualizarTipoBancaCommand"/>. Valida os campos (sem I/O)
+/// antes de buscar a entidade: sem o validator removido, um payload mal formado
+/// não pode passar a chegar a <c>ObterPorIdAsync</c> primeiro — validação sempre
+/// vence sobre "não encontrado", mesma prioridade que o validator garantia. Só um
+/// comando já confirmado válido consulta a existência. O <c>Codigo</c> é imutável,
+/// então não há checagem de unicidade nem corrida de índice aqui. Sem integridade
 /// referencial — o tipo de banca não é referenciado por FK intra-banco.
 /// </summary>
 public static class AtualizarTipoBancaCommandHandler
@@ -24,6 +27,13 @@ public static class AtualizarTipoBancaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result<(string Nome, string? FaseTipica, string? Descricao)> camposResult =
+            TipoBanca.ValidarCamposComuns(command.Nome, command.FaseTipica, command.Descricao);
+        if (camposResult.IsFailure)
+        {
+            return Result.ValidationFailure(camposResult.Errors);
+        }
+
         TipoBanca? banca = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (banca is null)
         {
@@ -32,15 +42,10 @@ public static class AtualizarTipoBancaCommandHandler
                 "Tipo de banca não encontrado."));
         }
 
-        Result atualizarResult = banca.Atualizar(
-            command.Nome,
-            command.FaseTipica,
-            command.Descricao);
-
-        if (atualizarResult.IsFailure)
-        {
-            return atualizarResult;
-        }
+        // Revalida por dentro (barato, sem I/O) com exatamente os mesmos argumentos
+        // já confirmados acima, então sempre terá sucesso aqui; esta chamada só
+        // serve para aplicar a mutação.
+        banca.Atualizar(command.Nome, command.FaseTipica, command.Descricao);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 

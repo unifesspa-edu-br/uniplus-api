@@ -33,7 +33,7 @@ public sealed partial record CodigoBanca
     /// do tamanho máximo) retorna <c>CodigoFormatoInvalido</c>. O valor é
     /// normalizado por <c>Trim</c> antes da validação.
     /// </summary>
-    public static Result<CodigoBanca> Criar(string valor)
+    public static Result<CodigoBanca> Criar(string? valor)
     {
         if (string.IsNullOrWhiteSpace(valor))
         {

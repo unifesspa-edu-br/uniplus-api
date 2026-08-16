@@ -47,42 +47,119 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria um novo tipo de banca. Valida o código (formato + pertença ao conjunto
-    /// canônico das quatro bancas) e o nome. A <paramref name="faseTipica"/> é
-    /// orientativa (não validada contra o cadastro de fases). A unicidade do código
-    /// entre vivos é responsabilidade do handler.
+    /// Valida o código (formato + pertença ao conjunto canônico das quatro
+    /// bancas), sem mutar nada — existe para o handler de criação decidir se vale
+    /// a pena consultar a unicidade antes mesmo de chamar <see cref="Criar"/>, que
+    /// revalida por conta própria e nunca confia num resultado calculado por fora.
+    /// </summary>
+    public static Result<CodigoBanca> ValidarCodigo(string? codigo)
+    {
+        Result<CodigoBanca> codigoResult = CodigoBanca.Criar(codigo);
+        if (codigoResult.IsFailure)
+        {
+            return Result<CodigoBanca>.ValidationFailure([new("codigo", codigoResult.Error!)]);
+        }
+
+        CodigoBanca codigoVo = codigoResult.Value!;
+        if (!TipoBancaCatalogo.EhCanonico(codigoVo.Valor))
+        {
+            // Mensagem genérica de propósito (ADR-0023): nunca ecoar o dado rejeitado.
+            return Result<CodigoBanca>.ValidationFailure([new("codigo", new DomainError(
+                TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico,
+                "Código do tipo de banca não pertence ao conjunto canônico das quatro bancas."))]);
+        }
+
+        return Result<CodigoBanca>.Success(codigoVo);
+    }
+
+    /// <summary>
+    /// Valida os três campos comuns a Criar e Atualizar (nome, fase típica,
+    /// descrição), acumulando toda violação independente em vez de parar na
+    /// primeira — sem mutar nada. Os limites de tamanho valem sobre o valor já
+    /// normalizado (<c>Trim</c>), a mesma medida que <see cref="AplicarCampos"/>
+    /// persiste.
+    /// </summary>
+    public static Result<(string Nome, string? FaseTipica, string? Descricao)> ValidarCamposComuns(
+        string? nome, string? faseTipica, string? descricao)
+    {
+        List<FieldError> erros = [];
+
+        string? nomeNorm = null;
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erros.Add(new("nome", new DomainError(
+                TipoBancaErrorCodes.NomeObrigatorio, "Nome do tipo de banca é obrigatório.")));
+        }
+        else
+        {
+            nomeNorm = nome.Trim();
+            if (nomeNorm.Length > NomeMaxLength)
+            {
+                erros.Add(new("nome", new DomainError(
+                    TipoBancaErrorCodes.NomeTamanho,
+                    $"Nome do tipo de banca deve ter no máximo {NomeMaxLength} caracteres.")));
+                nomeNorm = null;
+            }
+        }
+
+        string? faseTipicaNorm = NormalizarOpcional(faseTipica);
+        if (faseTipicaNorm is not null && faseTipicaNorm.Length > FaseTipicaMaxLength)
+        {
+            erros.Add(new("faseTipica", new DomainError(
+                TipoBancaErrorCodes.FaseTipicaTamanho,
+                $"Fase típica do tipo de banca deve ter no máximo {FaseTipicaMaxLength} caracteres.")));
+        }
+
+        string? descricaoNorm = NormalizarOpcional(descricao);
+        if (descricaoNorm is not null && descricaoNorm.Length > DescricaoMaxLength)
+        {
+            erros.Add(new("descricao", new DomainError(
+                TipoBancaErrorCodes.DescricaoTamanho,
+                $"Descrição do tipo de banca deve ter no máximo {DescricaoMaxLength} caracteres.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<(string, string?, string?)>.ValidationFailure(erros);
+        }
+
+        return Result<(string, string?, string?)>.Success((nomeNorm!, faseTipicaNorm, descricaoNorm));
+    }
+
+    /// <summary>
+    /// Cria um novo tipo de banca. Revalida <paramref name="codigo"/> via
+    /// <see cref="ValidarCodigo"/> e os demais campos via
+    /// <see cref="ValidarCamposComuns"/>, acumulando toda violação no mesmo lote.
+    /// A unicidade do código entre vivos é responsabilidade do handler.
     /// </summary>
     public static Result<TipoBanca> Criar(
-        string codigo,
+        string? codigo,
         string? nome,
         string? faseTipica,
         string? descricao)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
+        List<FieldError> erros = [];
 
-        Result<CodigoBanca> codigoResult = CodigoBanca.Criar(codigo);
+        Result<CodigoBanca> codigoResult = ValidarCodigo(codigo);
         if (codigoResult.IsFailure)
         {
-            return Result<TipoBanca>.Failure(codigoResult.Error!);
+            erros.AddRange(codigoResult.Errors);
         }
 
-        CodigoBanca codigoVo = codigoResult.Value!;
-
-        if (!TipoBancaCatalogo.EhCanonico(codigoVo.Valor))
-        {
-            return Result<TipoBanca>.Failure(new DomainError(
-                TipoBancaErrorCodes.CodigoForaDoConjuntoCanonico,
-                $"Código '{codigoVo.Valor}' não pertence ao conjunto canônico das quatro bancas."));
-        }
-
-        Result<CamposResolvidos> camposResult = ValidarComuns(nome, faseTipica, descricao);
+        Result<(string Nome, string? FaseTipica, string? Descricao)> camposResult =
+            ValidarCamposComuns(nome, faseTipica, descricao);
         if (camposResult.IsFailure)
         {
-            return Result<TipoBanca>.Failure(camposResult.Error!);
+            erros.AddRange(camposResult.Errors);
         }
 
-        var banca = new TipoBanca { Codigo = codigoVo };
-        banca.AplicarCampos(camposResult.Value!);
+        if (erros.Count > 0)
+        {
+            return Result<TipoBanca>.ValidationFailure(erros);
+        }
+
+        var banca = new TipoBanca { Codigo = codigoResult.Value! };
+        banca.AplicarCampos(camposResult.Value);
 
         return Result<TipoBanca>.Success(banca);
     }
@@ -96,67 +173,25 @@ public sealed class TipoBanca : SoftDeletableEntity, IAuditableEntity
         string? faseTipica,
         string? descricao)
     {
-        Result<CamposResolvidos> camposResult = ValidarComuns(nome, faseTipica, descricao);
+        Result<(string Nome, string? FaseTipica, string? Descricao)> camposResult =
+            ValidarCamposComuns(nome, faseTipica, descricao);
         if (camposResult.IsFailure)
         {
-            return Result.Failure(camposResult.Error!);
+            return Result.ValidationFailure(camposResult.Errors);
         }
 
-        AplicarCampos(camposResult.Value!);
+        AplicarCampos(camposResult.Value);
 
         return Result.Success();
     }
 
-    private void AplicarCampos(CamposResolvidos campos)
+    private void AplicarCampos((string Nome, string? FaseTipica, string? Descricao) campos)
     {
         Nome = campos.Nome;
         FaseTipica = campos.FaseTipica;
         Descricao = campos.Descricao;
     }
 
-    private static Result<CamposResolvidos> ValidarComuns(
-        string? nome,
-        string? faseTipica,
-        string? descricao)
-    {
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Falha(TipoBancaErrorCodes.NomeObrigatorio, "Nome do tipo de banca é obrigatório.");
-        }
-
-        string nomeNorm = nome.Trim();
-        if (nomeNorm.Length > NomeMaxLength)
-        {
-            return Falha(TipoBancaErrorCodes.NomeTamanho,
-                $"Nome do tipo de banca deve ter no máximo {NomeMaxLength} caracteres.");
-        }
-
-        if (faseTipica is not null && faseTipica.Trim().Length > FaseTipicaMaxLength)
-        {
-            return Falha(TipoBancaErrorCodes.FaseTipicaTamanho,
-                $"Fase típica do tipo de banca deve ter no máximo {FaseTipicaMaxLength} caracteres.");
-        }
-
-        if (descricao is not null && descricao.Trim().Length > DescricaoMaxLength)
-        {
-            return Falha(TipoBancaErrorCodes.DescricaoTamanho,
-                $"Descrição do tipo de banca deve ter no máximo {DescricaoMaxLength} caracteres.");
-        }
-
-        return Result<CamposResolvidos>.Success(new CamposResolvidos(
-            nomeNorm,
-            NormalizarOpcional(faseTipica),
-            NormalizarOpcional(descricao)));
-    }
-
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
-
-    private static Result<CamposResolvidos> Falha(string code, string mensagem) =>
-        Result<CamposResolvidos>.Failure(new DomainError(code, mensagem));
-
-    private sealed record CamposResolvidos(
-        string Nome,
-        string? FaseTipica,
-        string? Descricao);
 }
