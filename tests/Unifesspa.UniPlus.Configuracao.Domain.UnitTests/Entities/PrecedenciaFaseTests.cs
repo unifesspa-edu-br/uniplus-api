@@ -7,10 +7,10 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// As três guardas do grafo (self-loop, aresta duplicada, ciclo) dependem do
-/// conjunto de arestas vivas no momento da escrita — por isso são exercitadas
-/// contra listas de <see cref="PrecedenciaFase"/> construídas via <see cref="Criar"/>,
-/// nunca por navegação/consulta do domínio (ADR-0042).
+/// Duplicata e ciclo dependem do conjunto de arestas vivas no momento da
+/// escrita — por isso são exercitadas contra listas de <see cref="PrecedenciaFase"/>
+/// construídas via <see cref="Criar"/>, nunca por navegação/consulta do domínio
+/// (ADR-0042). Self-loop não depende do grafo — só compara os dois códigos.
 /// </summary>
 public sealed class PrecedenciaFaseTests
 {
@@ -66,6 +66,57 @@ public sealed class PrecedenciaFaseTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.SucessoraForaDoConjuntoCanonico);
+    }
+
+    [Fact(DisplayName = "Mensagem de código fora do conjunto canônico não ecoa o valor submetido")]
+    public void Criar_ForaDoCanonico_NaoEcoaValorSubmetidoNaMensagem()
+    {
+        Result<PrecedenciaFase> r = Criar(antecessora: "ENTREVISTA_FINAL_MUITO_LONGA_PARA_TESTE");
+
+        r.IsFailure.Should().BeTrue();
+        r.Error!.Message.Should().NotContain("ENTREVISTA_FINAL_MUITO_LONGA_PARA_TESTE");
+    }
+
+    /// <summary>
+    /// ADR-0125: os dois códigos são validados independentemente e acumulam, em
+    /// vez de o primeiro em falha mascarar o segundo — paridade com o
+    /// FluentValidation removido, que reportava cada campo em separado.
+    /// </summary>
+    [Fact(DisplayName = "Antecessora e sucessora ausentes ao mesmo tempo acumulam as duas violações rotuladas")]
+    public void Criar_AmbosOsCodigosAusentes_AcumulaAsDuasViolacoesRotuladas()
+    {
+        Result<PrecedenciaFase> r = PrecedenciaFase.Criar(null, null, false, []);
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors.Should().HaveCount(2);
+        r.Errors[0].Field.Should().Be("antecessoraCodigo");
+        r.Errors[0].Error.Code.Should().Be(PrecedenciaFaseErrorCodes.AntecessoraCodigoObrigatorio);
+        r.Errors[1].Field.Should().Be("sucessoraCodigo");
+        r.Errors[1].Error.Code.Should().Be(PrecedenciaFaseErrorCodes.SucessoraCodigoObrigatorio);
+    }
+
+    [Fact(DisplayName = "Antecessora em formato inválido e sucessora fora do canônico acumulam as duas violações")]
+    public void Criar_AntecessoraFormatoInvalidoESucessoraForaDoCanonico_AcumulaAsDuasViolacoes()
+    {
+        Result<PrecedenciaFase> r = Criar(antecessora: "inscricao", sucessora: "ENTREVISTA_FINAL");
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors.Should().HaveCount(2);
+        r.Errors[0].Error.Code.Should().Be(PrecedenciaFaseErrorCodes.AntecessoraCodigoFormatoInvalido);
+        r.Errors[1].Error.Code.Should().Be(PrecedenciaFaseErrorCodes.SucessoraForaDoConjuntoCanonico);
+    }
+
+    [Fact(DisplayName = "Self-loop só é avaliado depois que os dois códigos passam na validação de formato")]
+    public void Criar_AntecessoraInvalidaEIgualASucessora_ReportaFormatoNaoSelfLoop()
+    {
+        // "inscricao" (minúsculo) é formato inválido — se self-loop rodasse antes
+        // da validação de formato, compararia strings desiguais ("inscricao" vs
+        // "INSCRICAO" normalizado) e mascararia a causa raiz real.
+        Result<PrecedenciaFase> r = Criar(antecessora: "inscricao", sucessora: "inscricao");
+
+        r.IsFailure.Should().BeTrue();
+        r.Errors.Should().OnlyContain(e => e.Error.Code == PrecedenciaFaseErrorCodes.AntecessoraCodigoFormatoInvalido
+            || e.Error.Code == PrecedenciaFaseErrorCodes.SucessoraCodigoFormatoInvalido);
     }
 
     // ── Self-loop ──────────────────────────────────────────────────────────────

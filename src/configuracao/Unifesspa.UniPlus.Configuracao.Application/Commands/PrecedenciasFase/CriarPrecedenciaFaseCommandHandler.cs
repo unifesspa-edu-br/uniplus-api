@@ -8,10 +8,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarPrecedenciaFaseCommand"/> (convention-based
-/// Wolverine). Trava o grafo para escrita, carrega o grafo vigente (arestas
-/// vivas) e o passa como parâmetro para a factory <see cref="PrecedenciaFase.Criar"/>
-/// — o domínio não navega/consulta (ADR-0042); as guardas de self-loop, aresta
-/// duplicada e ciclo (422) moram lá.
+/// Wolverine). Valida os dois códigos (formato, conjunto canônico, self-loop —
+/// nenhuma depende do grafo) antes de qualquer I/O, via
+/// <see cref="PrecedenciaFase.ValidarCodigos"/>: um payload já inválido nunca
+/// trava o grafo nem consulta o repositório. Só então trava o grafo para
+/// escrita, carrega o grafo vigente (arestas vivas) e o passa como parâmetro
+/// para a factory <see cref="PrecedenciaFase.Criar"/> — o domínio não
+/// navega/consulta (ADR-0042); as guardas de aresta duplicada e ciclo (422)
+/// moram lá, porque dependem do grafo vigente.
 /// </summary>
 public static class CriarPrecedenciaFaseCommandHandler
 {
@@ -24,6 +28,13 @@ public static class CriarPrecedenciaFaseCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        Result<(string Antecessora, string Sucessora)> codigosResult =
+            PrecedenciaFase.ValidarCodigos(command.AntecessoraCodigo, command.SucessoraCodigo);
+        if (codigosResult.IsFailure)
+        {
+            return Result<Guid>.ValidationFailure(codigosResult.Errors);
+        }
 
         // Serializa contra outra escrita concorrente no grafo ANTES de ler as
         // arestas vivas — sem isso, duas arestas distintas (ex. A→B e B→A)
@@ -63,7 +74,7 @@ public static class CriarPrecedenciaFaseCommandHandler
             // outras exceções propagam intactas.
             return Result<Guid>.Failure(new DomainError(
                 PrecedenciaFaseErrorCodes.ArestaDuplicada,
-                $"Já existe uma aresta de precedência viva de '{aresta.AntecessoraCodigo}' para '{aresta.SucessoraCodigo}'."));
+                "Já existe uma aresta de precedência viva com este par de fases."));
         }
 
         return Result<Guid>.Success(aresta.Id);

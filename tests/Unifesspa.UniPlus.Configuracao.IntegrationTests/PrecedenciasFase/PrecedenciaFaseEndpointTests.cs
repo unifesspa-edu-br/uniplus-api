@@ -158,6 +158,63 @@ public sealed class PrecedenciaFaseEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "ADR-0125: POST com antecessora e sucessora vazias ao mesmo tempo devolve as duas violações em errors[], campo em camelCase")]
+    public async Task Criar_AmbosOsCodigosVazios_DevolveAsDuasViolacoesEmErrors()
+    {
+        var body = new { antecessoraCodigo = "", sucessoraCodigo = "" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.precedencia_fase.antecessora_codigo_obrigatorio");
+
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(2);
+        errors[0].GetProperty("field").GetString().Should().Be("antecessoraCodigo");
+        errors[1].GetProperty("field").GetString().Should().Be("sucessoraCodigo");
+    }
+
+    /// <summary>
+    /// ADR-0125: prova que "antecessoraCodigo" genuinamente ausente do JSON (não
+    /// string vazia) chega ao domínio como 422 específico, em vez de ser
+    /// interceptado pelo model binding automático do <c>[ApiController]</c> — só
+    /// possível porque <see cref="Application.Commands.PrecedenciasFase.CriarPrecedenciaFaseCommand.AntecessoraCodigo"/>
+    /// é <c>string?</c>, não <c>string</c>.
+    /// </summary>
+    [Fact(DisplayName = "ADR-0125: POST com antecessoraCodigo genuinamente ausente do JSON chega ao domínio como 422 específico")]
+    public async Task Criar_AntecessoraAusenteDoJson_ChegaAoDominioComoViolacaoEspecifica()
+    {
+        const string json = """{"sucessoraCodigo":"MATRICULA"}""";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/precedencias-fase", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.precedencia_fase.antecessora_codigo_obrigatorio");
+    }
+
+    [Fact(DisplayName = "PUT com Id vazio (Guid.Empty) devolve 404, não mais 422 do validator removido")]
+    public async Task Atualizar_IdVazio_Retorna404()
+    {
+        var body = new { id = Guid.Empty, permiteSobreposicao = true };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPutAdmin(client, Guid.Empty, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     [Fact(DisplayName = "PUT altera PermiteSobreposicao mantendo o par imutável; replay idempotente retorna o mesmo estado")]
     public async Task Atualizar_TrocaSobreposicaoEReplayIdempotente()
     {
