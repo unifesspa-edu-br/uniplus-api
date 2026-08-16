@@ -49,7 +49,7 @@ public sealed class LocalOfertaTests
         resultado.Value!.Endereco!.Cep.Should().Be("68507590");
     }
 
-    [Fact(DisplayName = "Criar com endereço de cidade incoerente falha (CA-04)")]
+    [Fact(DisplayName = "Criar com endereço de cidade incoerente com a cidade do local falha")]
     public void Criar_EnderecoCidadeIncoerente_Falha()
     {
         Result<LocalOferta> resultado = LocalOferta.Criar(
@@ -91,5 +91,63 @@ public sealed class LocalOfertaTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido);
+    }
+
+    // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
+
+    [Fact(DisplayName = "Tipo Nenhum e cidade ausente não lançam — devolvem as violações acumuladas")]
+    public void Criar_TipoNenhumECidadeAusente_NaoLancaEAcumulaAsViolacoes()
+    {
+        Result<LocalOferta> resultado = LocalOferta.Criar(
+            TipoLocalOferta.Nenhum, null, null, null, null,
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(4);
+        resultado.Errors[0].Field.Should().Be("tipo");
+        resultado.Errors[0].Error.Code.Should().Be(LocalOfertaErrorCodes.TipoInvalido);
+        resultado.Errors[1].Field.Should().Be("cidadeCodigoIbge");
+        resultado.Errors[2].Field.Should().Be("cidadeNome");
+        resultado.Errors[3].Field.Should().Be("cidadeUf");
+    }
+
+    [Fact(DisplayName = "Tipo inválido e código e-MEC longo (independentes) acumulam as duas violações")]
+    public void Criar_TipoInvalidoECodigoEmecLongo_AcumulaAsDuasViolacoes()
+    {
+        Result<LocalOferta> resultado = LocalOferta.Criar(
+            TipoLocalOferta.Nenhum, null, "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, new string('E', 21));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("tipo");
+        resultado.Errors[1].Field.Should().Be("codigoEmec");
+        resultado.Errors[1].Error.Code.Should().Be(LocalOfertaErrorCodes.CodigoEmecTamanho);
+    }
+
+    [Fact(DisplayName = "Atualizar com tipo inválido acumula com cidade ausente sem mutar o agregado")]
+    public void Atualizar_TipoInvalidoECidadeAusente_AcumulaAsViolacoesSemMutar()
+    {
+        LocalOferta local = LocalOferta.Criar(
+            TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA",
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
+
+        Result resultado = local.Atualizar(
+            TipoLocalOferta.Nenhum, null, null, null, null,
+            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(4);
+        local.Tipo.Should().Be(TipoLocalOferta.PoloEad, "falha de validação não pode mutar o agregado");
+        local.CidadeCodigoIbge.Should().Be("1504208");
+    }
+
+    [Fact(DisplayName = "ValidarCampos isolado é público e reusável sem instanciar o agregado")]
+    public void ValidarCampos_TipoValido_Aceita()
+    {
+        Result resultado = LocalOferta.ValidarCampos(
+            TipoLocalOferta.CampusSede, "1504208", "Marabá", "PA", null, null);
+
+        resultado.IsSuccess.Should().BeTrue();
     }
 }

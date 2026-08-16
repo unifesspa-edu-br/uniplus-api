@@ -57,4 +57,33 @@ public sealed class CriarLocalOfertaCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         await _repository.Received(1).AdicionarAsync(Arg.Any<LocalOferta>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Tipo inválido propaga o erro de domínio sem consultar o campus responsável nem persistir")]
+    public async Task Handle_TipoInvalido_RetornaErroSemConsultarCampusNemPersistir()
+    {
+        Guid campusId = Guid.CreateVersion7();
+        CriarLocalOfertaCommand comando = ComandoValido(campusId) with { Tipo = TipoLocalOferta.Nenhum };
+
+        Result<Guid> resultado = await CriarLocalOfertaCommandHandler.Handle(
+            comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(LocalOfertaErrorCodes.TipoInvalido);
+        await _campusRepository.DidNotReceive().ExisteVivoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Tipo inválido e cidade ausente no mesmo payload acumulam as violações")]
+    public async Task Handle_TipoInvalidoECidadeAusente_AcumulaAsViolacoes()
+    {
+        var comando = new CriarLocalOfertaCommand(TipoLocalOferta.Nenhum, null, null, null, null, null, null);
+
+        Result<Guid> resultado = await CriarLocalOfertaCommandHandler.Handle(
+            comando, _repository, _campusRepository, _unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(4);
+        resultado.Errors[0].Field.Should().Be("tipo");
+        resultado.Errors[1].Field.Should().Be("cidadeCodigoIbge");
+    }
 }
