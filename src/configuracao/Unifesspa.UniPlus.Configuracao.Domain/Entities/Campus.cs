@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
@@ -64,57 +66,90 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
     /// vivos é responsabilidade do handler. O <paramref name="endereco"/> já
     /// chega validado (construído pelo handler via <see cref="ReferenciaEnderecoGeo.Criar"/>).
     /// </summary>
+    [SuppressMessage(
+        "Design",
+        "CA1062:Validate arguments of public methods",
+        Justification = "Nulo em sigla/nome/cidade é violação de campo (\"obrigatório\"), não bug de " +
+            "contrato — ValidarCampos trata via IsNullOrWhiteSpace e devolve Result.ValidationFailure, " +
+            "não ArgumentNullException (ADR-0125: domínio é fonte única de validação, sem validator " +
+            "FluentValidation garantindo não-nulo a montante).")]
     public static Result<Campus> Criar(
-        string sigla,
-        string nome,
-        string cidadeCodigoIbge,
-        string cidadeNome,
-        string cidadeUf,
+        string? sigla,
+        string? nome,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
         ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
-        ArgumentNullException.ThrowIfNull(sigla);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(cidadeCodigoIbge);
-        ArgumentNullException.ThrowIfNull(cidadeNome);
-        ArgumentNullException.ThrowIfNull(cidadeUf);
+        // Assinatura nullable de propósito (ADR-0125): sem validator FluentValidation
+        // garantindo não-nulo a montante, domínio é fonte única — nulo é
+        // Result.ValidationFailure("obrigatório"), não ArgumentNullException/500.
+        // ValidarCampos trata nulo e vazio da mesma forma (IsNullOrWhiteSpace); os
+        // parâmetros só chegam não-nulos em AplicarCampos porque essa checagem já
+        // passou.
 
         Result validacao = ValidarCampos(sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, codigoEmec);
         if (validacao.IsFailure)
         {
-            return Result<Campus>.Failure(validacao.Error!);
+            return Result<Campus>.ValidationFailure(validacao.Errors);
         }
 
         var campus = new Campus();
         campus.AplicarCampos(
-            sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
+            sigla!, nome!, cidadeCodigoIbge!, cidadeNome!, cidadeUf!, cidadeOrigem, cidadeDisplayAtualizadoEm,
             endereco, codigoEmec);
 
         return Result<Campus>.Success(campus);
     }
 
     /// <summary>
-    /// Atualiza os atributos do Campus. A unicidade de <paramref name="sigla"/>
-    /// (quando alterada) é responsabilidade do handler.
+    /// Valida os campos de uma atualização sem mutar o agregado. Existe porque o
+    /// handler de atualização precisa confirmar unicidade de <c>Sigla</c> antes
+    /// de mutar: o agregado chega já rastreado pelo EF (via <c>ObterPorIdAsync</c>),
+    /// e o Wolverine roda <c>SaveChangesAsync</c> depois do handler retornar
+    /// mesmo quando o <see cref="Result"/> devolvido é falha — mutar antes de
+    /// confirmar a unicidade persistiria a sigla em conflito apesar do 409.
     /// </summary>
+    [SuppressMessage(
+        "Design",
+        "CA1062:Validate arguments of public methods",
+        Justification = "Ver justificativa equivalente em Criar.")]
+    public static Result ValidarAtualizacao(
+        string? sigla,
+        string? nome,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
+        ReferenciaEnderecoGeo? endereco,
+        string? codigoEmec) =>
+        ValidarCampos(sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, codigoEmec);
+
+    /// <summary>
+    /// Atualiza os atributos do Campus. A unicidade de <paramref name="sigla"/>
+    /// (quando alterada) é responsabilidade do handler, que precisa confirmá-la
+    /// com <see cref="ValidarAtualizacao"/> antes de chamar este método — ver o
+    /// comentário ali sobre por que a mutação não pode acontecer antes disso.
+    /// </summary>
+    [SuppressMessage(
+        "Design",
+        "CA1062:Validate arguments of public methods",
+        Justification = "Ver justificativa equivalente em Criar.")]
     public Result Atualizar(
-        string sigla,
-        string nome,
-        string cidadeCodigoIbge,
-        string cidadeNome,
-        string cidadeUf,
+        string? sigla,
+        string? nome,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
         string? cidadeOrigem,
         DateTimeOffset? cidadeDisplayAtualizadoEm,
         ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
-        ArgumentNullException.ThrowIfNull(sigla);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(cidadeCodigoIbge);
-        ArgumentNullException.ThrowIfNull(cidadeNome);
-        ArgumentNullException.ThrowIfNull(cidadeUf);
+        // Ver comentário equivalente em Criar: nulo é violação de campo, não bug
+        // de contrato — precisa virar ValidationFailure, não ArgumentNullException.
 
         Result validacao = ValidarCampos(sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, endereco, codigoEmec);
         if (validacao.IsFailure)
@@ -123,7 +158,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
         }
 
         AplicarCampos(
-            sigla, nome, cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
+            sigla!, nome!, cidadeCodigoIbge!, cidadeNome!, cidadeUf!, cidadeOrigem, cidadeDisplayAtualizadoEm,
             endereco, codigoEmec);
 
         return Result.Success();
@@ -154,65 +189,98 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 
+    /// <summary>
+    /// Valida todos os campos do Campus, acumulando cada violação em vez de
+    /// retornar na primeira (ADR-0125) — o array <c>errors[]</c> do contrato
+    /// público (ADR-0023) precisa de todas as regras de campo violadas no mesmo
+    /// lote, não só a primeira. Cidade/endereço delegam a
+    /// <see cref="ReferenciaCidadeGeo"/>/<see cref="ReferenciaEnderecoGeo"/>
+    /// (fonte única compartilhada com os demais cadastros que referenciam cidade)
+    /// e contribuem no máximo um erro cada.
+    /// </summary>
     private static Result ValidarCampos(
-        string sigla,
-        string nome,
-        string cidadeCodigoIbge,
-        string cidadeNome,
-        string cidadeUf,
+        string? sigla,
+        string? nome,
+        string? cidadeCodigoIbge,
+        string? cidadeNome,
+        string? cidadeUf,
         ReferenciaEnderecoGeo? endereco,
         string? codigoEmec)
     {
+        List<FieldError> erros = [];
+
         if (string.IsNullOrWhiteSpace(sigla))
         {
-            return Result.Failure(new DomainError(
-                CampusErrorCodes.SiglaObrigatoria,
-                "Sigla do Campus é obrigatória."));
+            erros.Add(new("sigla", new DomainError(
+                CampusErrorCodes.SiglaObrigatoria, "Sigla do Campus é obrigatória.")));
         }
-
-        if (sigla.Trim().Length is < SiglaMinLength or > SiglaMaxLength)
+        else if (sigla.Trim().Length is < SiglaMinLength or > SiglaMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("sigla", new DomainError(
                 CampusErrorCodes.SiglaTamanho,
-                $"Sigla do Campus deve ter entre {SiglaMinLength} e {SiglaMaxLength} caracteres."));
+                $"Sigla do Campus deve ter entre {SiglaMinLength} e {SiglaMaxLength} caracteres.")));
         }
 
         if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result.Failure(new DomainError(
-                CampusErrorCodes.NomeObrigatorio,
-                "Nome do Campus é obrigatório."));
+            erros.Add(new("nome", new DomainError(
+                CampusErrorCodes.NomeObrigatorio, "Nome do Campus é obrigatório.")));
         }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
+        else if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("nome", new DomainError(
                 CampusErrorCodes.NomeTamanho,
-                $"Nome do Campus deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
+                $"Nome do Campus deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
         }
 
         Result cidade = ReferenciaCidadeGeo.Validar(cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (cidade.IsFailure)
         {
-            return cidade;
+            // ReferenciaCidadeGeo.Validar acumula toda violação independente do
+            // trio de cidade (ex.: código, nome e UF ausentes ao mesmo tempo
+            // viram três erros) — cada um mapeado para o campo real que descreve.
+            foreach (FieldError erroCidade in cidade.Errors)
+            {
+                erros.Add(new(CampoDaCidade(erroCidade.Error.Code), erroCidade.Error));
+            }
         }
-
-        // CA-04: o snapshot de cidade do endereço deve coincidir com a referência
-        // de cidade do campus (que aqui é sempre obrigatória).
-        Result coerencia = ReferenciaEnderecoGeo.ValidarCoerencia(
-            endereco?.CidadeCodigoIbge, endereco?.CidadeUf, cidadeCodigoIbge, cidadeUf);
-        if (coerencia.IsFailure)
+        else
         {
-            return coerencia;
+            // CA-04: só faz sentido checar coerência quando a referência de cidade em
+            // si já é válida — senão a causa raiz (formato) fica mascarada por
+            // "incoerente".
+            Result coerencia = ReferenciaEnderecoGeo.ValidarCoerencia(
+                endereco?.CidadeCodigoIbge, endereco?.CidadeUf, cidadeCodigoIbge, cidadeUf);
+            if (coerencia.IsFailure)
+            {
+                erros.Add(new("endereco", coerencia.Error!));
+            }
         }
 
         if (codigoEmec is not null && codigoEmec.Trim().Length > CodigoEmecMaxLength)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new("codigoEmec", new DomainError(
                 CampusErrorCodes.CodigoEmecTamanho,
-                $"Código e-MEC do Campus deve ter no máximo {CodigoEmecMaxLength} caracteres."));
+                $"Código e-MEC do Campus deve ter no máximo {CodigoEmecMaxLength} caracteres.")));
         }
 
-        return Result.Success();
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
+
+    /// <summary>
+    /// Mapeia o código interno de <see cref="ReferenciaCidadeGeo.Validar"/> para o
+    /// campo do payload (camelCase, ADR-0023) a que ele se refere de fato — sem
+    /// isso, todo erro de cidade seria rotulado com o mesmo campo em
+    /// <c>errors[].field</c>, mesmo quando a causa é o nome ou a UF, não o código
+    /// IBGE.
+    /// </summary>
+    private static string CampoDaCidade(string codigoErro) => codigoErro switch
+    {
+        CidadeReferenciaErrorCodes.NomeObrigatorio
+            or CidadeReferenciaErrorCodes.NomeCaractereNulo
+            or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
+        CidadeReferenciaErrorCodes.UfObrigatoria
+            or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
+        _ => "cidadeCodigoIbge",
+    };
 }

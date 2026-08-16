@@ -9107,19 +9107,34 @@
             "format": "uuid"
           },
           "sigla": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeCodigoIbge": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeNome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeUf": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "endereco": {
             "oneOf": [
@@ -10066,19 +10081,34 @@
         "type": "object",
         "properties": {
           "sigla": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeCodigoIbge": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeNome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "cidadeUf": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "endereco": {
             "oneOf": [

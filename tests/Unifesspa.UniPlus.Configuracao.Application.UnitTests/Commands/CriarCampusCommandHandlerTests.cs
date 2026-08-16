@@ -30,7 +30,7 @@ public sealed class CriarCampusCommandHandlerTests
     [Fact(DisplayName = "Cria o campus, persiste e retorna o Id")]
     public async Task Handle_SiglaLivre_CriaEPersiste()
     {
-        _repository.SiglaExisteEntreLivosAsync("CAMar", null, Arg.Any<CancellationToken>())
+        _repository.SiglaExisteEntreLivosAsync("CAMAR", null, Arg.Any<CancellationToken>())
             .Returns(false);
 
         Result<Guid> resultado = await CriarCampusCommandHandler.Handle(
@@ -45,7 +45,7 @@ public sealed class CriarCampusCommandHandlerTests
     [Fact(DisplayName = "Sigla já existente entre vivos retorna conflito (SiglaJaExiste)")]
     public async Task Handle_SiglaDuplicada_RetornaConflito()
     {
-        _repository.SiglaExisteEntreLivosAsync("CAMar", null, Arg.Any<CancellationToken>())
+        _repository.SiglaExisteEntreLivosAsync("CAMAR", null, Arg.Any<CancellationToken>())
             .Returns(true);
 
         Result<Guid> resultado = await CriarCampusCommandHandler.Handle(
@@ -59,9 +59,6 @@ public sealed class CriarCampusCommandHandlerTests
     [Fact(DisplayName = "Cidade malformada propaga o erro de domínio sem persistir")]
     public async Task Handle_CidadeMalformada_RetornaErroDeFormato()
     {
-        _repository.SiglaExisteEntreLivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>())
-            .Returns(false);
-
         CriarCampusCommand comando = ComandoValido() with { CidadeCodigoIbge = "150420" };
 
         Result<Guid> resultado = await CriarCampusCommandHandler.Handle(
@@ -70,12 +67,18 @@ public sealed class CriarCampusCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+
+        // Prova direta de que a unicidade só é consultada depois da validação de
+        // campo: cidade malformada falha em Campus.Criar antes do handler chegar
+        // a perguntar ao repositório se a sigla já existe.
+        await _repository.DidNotReceive()
+            .SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Endereço estruturado é construído e persistido com o campus")]
     public async Task Handle_ComEndereco_PersisteEnderecoEstruturado()
     {
-        _repository.SiglaExisteEntreLivosAsync("CAMar", null, Arg.Any<CancellationToken>())
+        _repository.SiglaExisteEntreLivosAsync("CAMAR", null, Arg.Any<CancellationToken>())
             .Returns(false);
 
         Campus? capturado = null;
@@ -90,6 +93,27 @@ public sealed class CriarCampusCommandHandlerTests
         capturado!.Endereco.Should().NotBeNull();
         capturado.Endereco!.Cep.Should().Be("68507590");
         capturado.Endereco.CidadeCodigoIbge.Should().Be("1504208");
+    }
+
+    [Fact(DisplayName = "Sigla vazia e CEP em formato inválido no mesmo payload acumulam as duas violações")]
+    public async Task Handle_SiglaVaziaEEnderecoInvalido_AcumulaAsDuasViolacoes()
+    {
+        // Antes: o handler retornava cedo no erro de endereço, sem nunca chamar
+        // Campus.Criar — a violação de Sigla nunca aparecia junto.
+        CriarCampusCommand comando = ComandoValido() with
+        {
+            Sigla = "",
+            Endereco = EnderecoValido() with { Cep = "123" },
+        };
+
+        Result<Guid> resultado = await CriarCampusCommandHandler.Handle(
+            comando, _repository, _unitOfWork, TimeProvider.System, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Error.Code.Should().Be(CampusErrorCodes.SiglaObrigatoria);
+        resultado.Errors[1].Field.Should().Be("endereco");
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Endereço com cidade incoerente com a cidade do campus propaga erro sem persistir")]

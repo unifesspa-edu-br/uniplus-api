@@ -221,6 +221,98 @@ public sealed class CampusEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
+    [Fact(DisplayName = "CA-03: POST com CEP em formato inválido no endereço estruturado retorna 422")]
+    public async Task Criar_CepInvalido_Retorna422()
+    {
+        var body = new
+        {
+            sigla = $"C{Guid.NewGuid().ToString("N")[..6]}",
+            nome = "Campus CEP Inválido",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+            endereco = new
+            {
+                cep = "123", // formato inválido — não são 8 dígitos
+                cidade = new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" },
+                nivelResolucao = "cidade",
+                origem = "faixa-cidade",
+            },
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "ADR-0125: POST com Sigla e Nome vazios ao mesmo tempo retorna as duas violações em errors[], campo em camelCase")]
+    public async Task Criar_SiglaENomeVazios_DeveConterAsDuasViolacoesEmErrors()
+    {
+        var body = new
+        {
+            sigla = "",
+            nome = "",
+            cidadeCodigoIbge = "1504208",
+            cidadeNome = "Marabá",
+            cidadeUf = "PA",
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, "/api/configuracao/admin/campi", body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+
+        // field usa o mesmo casing do payload JSON (camelCase, ADR-0023 — "caminho
+        // dot-notation"), não o PascalCase do C#.
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(2);
+        errors[0].GetProperty("field").GetString().Should().Be("sigla");
+        errors[0].GetProperty("code").GetString().Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+        errors[1].GetProperty("field").GetString().Should().Be("nome");
+        errors[1].GetProperty("code").GetString().Should().Be("uniplus.configuracao.campus.nome_obrigatorio");
+    }
+
+    /// <summary>
+    /// ADR-0125: prova que o campo <c>sigla</c> genuinamente ausente do JSON (não
+    /// só uma string vazia) chega ao domínio como violação específica, em vez de
+    /// ser interceptado pelo model binding automático do <c>[ApiController]</c>
+    /// (que rejeitaria com um 400 genérico do ASP.NET, fora do formato RFC 9457).
+    /// Só é possível porque
+    /// <see cref="Application.Commands.Campi.CriarCampusCommand.Sigla"/> é
+    /// <c>string?</c>, não <c>string</c>.
+    /// </summary>
+    [Fact(DisplayName = "ADR-0125: POST com sigla genuinamente ausente do JSON (não string vazia) chega ao domínio como 422 específico")]
+    public async Task Criar_SiglaAusenteDoJson_ChegaAoDominioComoViolacaoEspecifica()
+    {
+        // Corpo cru — "sigla" nem existe como chave, diferente de sigla: "".
+        const string json = """{"nome":"Campus Teste","cidadeCodigoIbge":"1504208","cidadeNome":"Marabá","cidadeUf":"PA"}""";
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri("/api/configuracao/admin/campi", UriKind.Relative));
+        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
+        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+
+        // ADR-0023: errors[] é condicional a status 422, não a haver mais de uma
+        // violação — uma única Sigla ausente também carrega o array, com 1 elemento.
+        JsonElement errors = doc.RootElement.GetProperty("errors");
+        errors.GetArrayLength().Should().Be(1);
+        errors[0].GetProperty("field").GetString().Should().Be("sigla");
+        errors[0].GetProperty("code").GetString().Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+    }
+
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, string path, object body)
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri(path, UriKind.Relative));
