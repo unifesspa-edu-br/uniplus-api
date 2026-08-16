@@ -105,76 +105,93 @@ public static class ReferenciaCidadeGeo
     }
 
     /// <summary>
-    /// Valida a referência de cidade (formato + coerência de UF). Retorna
-    /// <see cref="Result.Success"/> quando o código tem 7 dígitos numéricos com
-    /// prefixo de UF coerente com <paramref name="cidadeUf"/> e
-    /// <paramref name="cidadeNome"/> não-vazio; caso contrário, um
-    /// <see cref="DomainError"/> com o código apropriado de
+    /// Valida a referência de cidade (formato + coerência de UF), acumulando
+    /// toda violação independente em vez de parar na primeira — os três campos
+    /// (código IBGE, nome, UF) ausentes ao mesmo tempo devolvem os três erros,
+    /// não só um. Checagens dependentes (formato do código, coerência de UF com
+    /// o prefixo) só rodam quando o campo do qual dependem já está presente,
+    /// para não mascarar a causa raiz nem arriscar checar algo ausente. Retorna
+    /// <see cref="Result.Success"/> quando não há nenhuma violação; caso
+    /// contrário, um <see cref="Result"/> com um <see cref="FieldError"/> (campo
+    /// não rotulado — quem chama mapeia por <see cref="DomainError.Code"/>, ex.:
+    /// <c>Campus.CampoDaCidade</c>) por violação, na taxonomia de
     /// <see cref="CidadeReferenciaErrorCodes"/>.
     /// </summary>
     public static Result Validar(string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
     {
-        if (string.IsNullOrWhiteSpace(cidadeCodigoIbge))
+        List<FieldError> erros = [];
+
+        bool codigoPresente = !string.IsNullOrWhiteSpace(cidadeCodigoIbge);
+        if (!codigoPresente)
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new(null, new DomainError(
                 CidadeReferenciaErrorCodes.CodigoIbgeObrigatorio,
-                "Código IBGE da cidade é obrigatório."));
+                "Código IBGE da cidade é obrigatório.")));
         }
 
         if (string.IsNullOrWhiteSpace(cidadeNome))
         {
-            return Result.Failure(new DomainError(
+            erros.Add(new(null, new DomainError(
                 CidadeReferenciaErrorCodes.NomeObrigatorio,
-                "Nome da cidade é obrigatório."));
+                "Nome da cidade é obrigatório.")));
+        }
+        else
+        {
+            string nome = cidadeNome.Trim();
+            if (nome.Contains('\0'))
+            {
+                erros.Add(new(null, new DomainError(
+                    CidadeReferenciaErrorCodes.NomeCaractereNulo,
+                    "Nome da cidade não pode conter o caractere nulo (U+0000).")));
+            }
+            else if (nome.Length > NomeMaxLength)
+            {
+                erros.Add(new(null, new DomainError(
+                    CidadeReferenciaErrorCodes.NomeTamanho,
+                    $"Nome da cidade deve ter no máximo {NomeMaxLength} caracteres.")));
+            }
         }
 
-        string nome = cidadeNome.Trim();
-        if (nome.Contains('\0'))
+        bool ufPresente = !string.IsNullOrWhiteSpace(cidadeUf);
+        if (!ufPresente)
         {
-            return Result.Failure(new DomainError(
-                CidadeReferenciaErrorCodes.NomeCaractereNulo,
-                "Nome da cidade não pode conter o caractere nulo (U+0000)."));
-        }
-
-        if (nome.Length > NomeMaxLength)
-        {
-            return Result.Failure(new DomainError(
-                CidadeReferenciaErrorCodes.NomeTamanho,
-                $"Nome da cidade deve ter no máximo {NomeMaxLength} caracteres."));
-        }
-
-        if (string.IsNullOrWhiteSpace(cidadeUf))
-        {
-            return Result.Failure(new DomainError(
+            erros.Add(new(null, new DomainError(
                 CidadeReferenciaErrorCodes.UfObrigatoria,
-                "UF da cidade é obrigatória."));
+                "UF da cidade é obrigatória.")));
         }
 
-        string codigo = cidadeCodigoIbge.Trim();
-        if (codigo.Length != CodigoIbgeLength || !codigo.All(char.IsAsciiDigit))
+        // Coerência com o prefixo só faz sentido quando o código tem formato
+        // válido — ufDoPrefixo permanece nulo (checagem abaixo pulada) quando o
+        // código está ausente ou malformado.
+        string? ufDoPrefixo = null;
+        if (codigoPresente)
         {
-            return Result.Failure(new DomainError(
-                CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
-                $"Código IBGE da cidade deve ter exatamente {CodigoIbgeLength} dígitos numéricos."));
+            string codigo = cidadeCodigoIbge!.Trim();
+            if (codigo.Length != CodigoIbgeLength || !codigo.All(char.IsAsciiDigit))
+            {
+                erros.Add(new(null, new DomainError(
+                    CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
+                    $"Código IBGE da cidade deve ter exatamente {CodigoIbgeLength} dígitos numéricos.")));
+            }
+            else if (!UfPorPrefixo.TryGetValue(codigo[..2], out ufDoPrefixo))
+            {
+                erros.Add(new(null, new DomainError(
+                    CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
+                    "Os dois primeiros dígitos do código IBGE não correspondem a uma UF válida.")));
+            }
         }
 
-        string prefixo = codigo[..2];
-        if (!UfPorPrefixo.TryGetValue(prefixo, out string? ufDoPrefixo))
+        if (ufDoPrefixo is not null && ufPresente
+            && !string.Equals(ufDoPrefixo, cidadeUf!.Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            return Result.Failure(new DomainError(
-                CidadeReferenciaErrorCodes.CodigoIbgeFormatoInvalido,
-                $"Os dois primeiros dígitos do código IBGE ('{prefixo}') não correspondem a uma UF válida."));
-        }
-
-        if (!string.Equals(ufDoPrefixo, cidadeUf.Trim(), StringComparison.OrdinalIgnoreCase))
-        {
-            return Result.Failure(new DomainError(
+            // Mensagem genérica de propósito (ADR-0023): nunca ecoar o dado
+            // rejeitado — cidadeUf chega sem limite de tamanho validado até aqui.
+            erros.Add(new(null, new DomainError(
                 CidadeReferenciaErrorCodes.UfIncoerente,
-                $"O prefixo do código IBGE ('{prefixo}') corresponde à UF '{ufDoPrefixo}', "
-                + $"incompatível com a UF informada ('{cidadeUf.Trim()}')."));
+                "A UF informada não corresponde à UF do código IBGE informado.")));
         }
 
-        return Result.Success();
+        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
     }
 
     /// <summary>

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Kernel.UnitTests.Domain.Cidades;
 
+using System.Linq;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
@@ -19,6 +21,21 @@ public sealed class ReferenciaCidadeGeoTests
         Result resultado = ReferenciaCidadeGeo.Validar("1504208", "Marabá", "PA");
 
         resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Código, nome e UF ausentes ao mesmo tempo acumulam as três violações independentes")]
+    public void Validar_TrioTotalmenteAusente_AcumulaAsTresViolacoes()
+    {
+        Result resultado = ReferenciaCidadeGeo.Validar(null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            CidadeReferenciaErrorCodes.CodigoIbgeObrigatorio,
+            CidadeReferenciaErrorCodes.NomeObrigatorio,
+            CidadeReferenciaErrorCodes.UfObrigatoria,
+        ]);
     }
 
     [Theory(DisplayName = "Código com número de dígitos diferente de 7 é rejeitado por formato")]
@@ -58,6 +75,22 @@ public sealed class ReferenciaCidadeGeoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.UfIncoerente);
+    }
+
+    /// <summary>
+    /// ADR-0023: mensagem de erro nunca ecoa o dado rejeitado. cidadeUf chega sem
+    /// nenhum limite de tamanho validado até este ponto — um valor arbitrariamente
+    /// grande não pode acabar refletido na mensagem de resposta.
+    /// </summary>
+    [Fact(DisplayName = "UF incoerente não ecoa o valor submetido na mensagem")]
+    public void Validar_UfIncoerente_NaoEcoaValorSubmetidoNaMensagem()
+    {
+        string ufMuitoLonga = new('X', 500);
+
+        Result resultado = ReferenciaCidadeGeo.Validar("1504208", "Marabá", ufMuitoLonga);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Message.Should().NotContain(ufMuitoLonga);
     }
 
     [Fact(DisplayName = "UF coerente em caixa diferente é aceita (case-insensitive)")]
