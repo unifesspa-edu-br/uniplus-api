@@ -46,11 +46,9 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<FaseCanonica>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem persistir")]
-    public async Task Handle_ForaDoCanonico_RetornaErroSemPersistir()
+    [Fact(DisplayName = "Código fora do conjunto canônico propaga o erro sem consultar unicidade nem persistir")]
+    public async Task Handle_ForaDoCanonico_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
-
         var comando = new CriarFaseCanonicaCommand("ENTREVISTA_FINAL", Nome: "x", DonoTipico: "CEPS", OrigemData: "PROPRIA");
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
@@ -58,6 +56,8 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico);
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -76,7 +76,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "CA-04: resultado definitivo sem produzir resultado propaga o erro sem persistir")]
+    [Fact(DisplayName = "Resultado definitivo sem produzir resultado propaga o erro sem persistir")]
     public async Task Handle_ResultadoDefinitivoSemProduzirResultado_RetornaErroSemPersistir()
     {
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
@@ -91,5 +91,19 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código ausente e nome ausente no mesmo payload acumulam as duas violações")]
+    public async Task Handle_CodigoENomeAusentes_AcumulaAsDuasViolacoes()
+    {
+        var comando = new CriarFaseCanonicaCommand(null, Nome: "", DonoTipico: "CEPS", OrigemData: "PROPRIA");
+
+        Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[1].Field.Should().Be("nome");
     }
 }

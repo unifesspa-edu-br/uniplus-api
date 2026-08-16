@@ -8,10 +8,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarFaseCanonicaCommand"/> (convention-based Wolverine).
-/// Orquestra: unicidade do código entre vivos (409), construção do agregado
-/// (formato + pertença ao conjunto canônico + coerência, 422), persistência e
-/// commit. Protege a corrida check-then-act traduzindo a violação do índice único
-/// parcial em <c>CodigoJaExiste</c>.
+/// Orquestra: construção do agregado por inteiro primeiro (sem I/O — formato,
+/// pertença ao conjunto canônico e coerência acumulados no mesmo lote, 422), só
+/// então a unicidade do código entre vivos (409), persistência e commit. Protege
+/// a corrida check-then-act traduzindo a violação do índice único parcial em
+/// <c>CodigoJaExiste</c>.
 /// </summary>
 public static class CriarFaseCanonicaCommandHandler
 {
@@ -25,12 +26,7 @@ public static class CriarFaseCanonicaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        if (await repository.CodigoExisteEntreVivosAsync(command.Codigo, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
-        }
-
-        Result<FaseCanonica> faseResult = FaseCanonica.Criar(
+        Result<FaseCanonica> criar = FaseCanonica.Criar(
             command.Codigo,
             command.Nome,
             command.Descricao,
@@ -43,12 +39,17 @@ public static class CriarFaseCanonicaCommandHandler
             command.ColetaInscricao,
             command.OrigemData);
 
-        if (faseResult.IsFailure)
+        if (criar.IsFailure)
         {
-            return Result<Guid>.Failure(faseResult.Error!);
+            return Result<Guid>.ValidationFailure(criar.Errors);
         }
 
-        FaseCanonica fase = faseResult.Value!;
+        FaseCanonica fase = criar.Value!;
+
+        if (await repository.CodigoExisteEntreVivosAsync(fase.Codigo.Valor, null, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(CodigoJaExisteErro());
+        }
 
         await repository.AdicionarAsync(fase, cancellationToken).ConfigureAwait(false);
 
@@ -59,17 +60,18 @@ public static class CriarFaseCanonicaCommandHandler
         catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && UniqueConstraintViolation.IsCodigoConflict(constraint))
         {
-            // Corrida entre CodigoExisteEntreVivosAsync e o INSERT (check-then-act): o
-            // índice único parcial dispara 23505 e viramos o mesmo CodigoJaExiste do
-            // caminho não-race — 409 consistente. O filtro do `when` garante que
-            // outras exceções propagam intactas.
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
+            // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync
+            // automático do Wolverine (AutoApplyTransactions) tenta a mesma inserção de
+            // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
+            // pretendido vira 500.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<Guid>.Failure(CodigoJaExisteErro());
         }
 
         return Result<Guid>.Success(fase.Id);
     }
 
-    private static DomainError CodigoJaExisteErro(string codigo) =>
+    private static DomainError CodigoJaExisteErro() =>
         new(FaseCanonicaErrorCodes.CodigoJaExiste,
-            $"Já existe uma fase canônica viva com o código '{codigo}'.");
+            "Já existe uma fase canônica viva com o código informado.");
 }

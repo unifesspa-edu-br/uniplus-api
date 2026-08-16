@@ -10,11 +10,17 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (<c>OrigemData</c>), e os sinalizadores <c>AgrupaEtapas</c> /
 /// <c>PermiteComplementacao</c> / <c>ProduzResultado</c> / <c>ResultadoDefinitivo</c> /
 /// <c>ColetaInscricao</c> (falsos por omissão — <c>ResultadoDefinitivo</c> verdadeiro
-/// exige <c>ProduzResultado</c> verdadeiro, CA-04). O ator de auditoria
+/// exige <c>ProduzResultado</c> verdadeiro). O ator de auditoria
 /// (<c>created_by</c>) é carimbado server-side via <c>IUserContext</c>, não no payload.
 /// </summary>
+/// <remarks>
+/// <c>Codigo</c> é <c>string?</c>, não <c>string</c> (ADR-0125): sem validator
+/// FluentValidation garantindo não-nulo a montante, o model binding automático do
+/// <c>[ApiController]</c> interceptaria um campo ausente/nulo com um 400 genérico
+/// do ASP.NET, antes de o domínio rodar.
+/// </remarks>
 public sealed record CriarFaseCanonicaCommand(
-    string Codigo,
+    string? Codigo,
     string? Nome = null,
     string? Descricao = null,
     string? DonoTipico = null,
