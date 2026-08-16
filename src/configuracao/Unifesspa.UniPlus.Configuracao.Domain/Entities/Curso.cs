@@ -53,154 +53,161 @@ public sealed class Curso : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria um novo Curso. Valida formato/domínio local (incluindo o grupo de
-    /// área do ENEM contra o domínio fechado, quando informado — nulo é aceito).
-    /// A unicidade de <paramref name="codigo"/> entre cursos vivos é
-    /// responsabilidade do handler. Grau e nível de ensino são texto livre
-    /// obrigatório (ex.: Bacharelado / Graduação).
+    /// Valida e normaliza os cinco campos editáveis, acumulando toda violação
+    /// independente em vez de parar na primeira — sem mutar nada. Existe para o
+    /// handler validar o payload por inteiro antes de qualquer I/O (checagem de
+    /// unicidade do código, leitura por Id). Os cinco campos são independentes,
+    /// sem gating cruzado entre eles.
     /// </summary>
-    public static Result<Curso> Criar(
-        string codigo,
-        string nome,
-        string grau,
-        string nivelEnsino,
-        string? grupoAreaEnem)
+    public static Result<(string Codigo, string Nome, string Grau, string NivelEnsino, GrupoCurso? GrupoAreaEnem)>
+        ValidarCamposEditaveis(string? codigo, string? nome, string? grau, string? nivelEnsino, string? grupoAreaEnem)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(grau);
-        ArgumentNullException.ThrowIfNull(nivelEnsino);
+        List<FieldError> erros = [];
 
-        Result<GrupoCurso?> validacao = ValidarCampos(codigo, nome, grau, nivelEnsino, grupoAreaEnem);
-        if (validacao.IsFailure)
+        string? codigoNormalizado = null;
+        if (string.IsNullOrWhiteSpace(codigo))
         {
-            return Result<Curso>.Failure(validacao.Error!);
+            erros.Add(new("codigo", new DomainError(
+                CursoErrorCodes.CodigoObrigatorio, "Código do curso é obrigatório.")));
+        }
+        else
+        {
+            codigoNormalizado = codigo.Trim();
+            if (codigoNormalizado.Length is < CodigoMinLength or > CodigoMaxLength)
+            {
+                erros.Add(new("codigo", new DomainError(
+                    CursoErrorCodes.CodigoTamanho,
+                    $"Código do curso deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres.")));
+                codigoNormalizado = null;
+            }
+        }
+
+        string? nomeNormalizado = null;
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erros.Add(new("nome", new DomainError(
+                CursoErrorCodes.NomeObrigatorio, "Nome do curso é obrigatório.")));
+        }
+        else
+        {
+            nomeNormalizado = nome.Trim();
+            if (nomeNormalizado.Length is < NomeMinLength or > NomeMaxLength)
+            {
+                erros.Add(new("nome", new DomainError(
+                    CursoErrorCodes.NomeTamanho,
+                    $"Nome do curso deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
+                nomeNormalizado = null;
+            }
+        }
+
+        string? grauNormalizado = null;
+        if (string.IsNullOrWhiteSpace(grau))
+        {
+            erros.Add(new("grau", new DomainError(
+                CursoErrorCodes.GrauObrigatorio, "Grau do curso é obrigatório.")));
+        }
+        else
+        {
+            grauNormalizado = grau.Trim();
+            if (grauNormalizado.Length is < GrauMinLength or > GrauMaxLength)
+            {
+                erros.Add(new("grau", new DomainError(
+                    CursoErrorCodes.GrauTamanho,
+                    $"Grau do curso deve ter entre {GrauMinLength} e {GrauMaxLength} caracteres.")));
+                grauNormalizado = null;
+            }
+        }
+
+        string? nivelEnsinoNormalizado = null;
+        if (string.IsNullOrWhiteSpace(nivelEnsino))
+        {
+            erros.Add(new("nivelEnsino", new DomainError(
+                CursoErrorCodes.NivelEnsinoObrigatorio, "Nível de ensino do curso é obrigatório.")));
+        }
+        else
+        {
+            nivelEnsinoNormalizado = nivelEnsino.Trim();
+            if (nivelEnsinoNormalizado.Length is < NivelEnsinoMinLength or > NivelEnsinoMaxLength)
+            {
+                erros.Add(new("nivelEnsino", new DomainError(
+                    CursoErrorCodes.NivelEnsinoTamanho,
+                    $"Nível de ensino do curso deve ter entre {NivelEnsinoMinLength} e {NivelEnsinoMaxLength} caracteres.")));
+                nivelEnsinoNormalizado = null;
+            }
+        }
+
+        // Grupo de área do ENEM é opcional: nem todo curso classifica por área.
+        GrupoCurso? grupoResolvido = null;
+        if (!string.IsNullOrWhiteSpace(grupoAreaEnem))
+        {
+            Result<GrupoCurso> grupo = GrupoCurso.Criar(grupoAreaEnem);
+            if (grupo.IsFailure)
+            {
+                erros.Add(new("grupoAreaEnem", new DomainError(
+                    CursoErrorCodes.GrupoAreaEnemInvalido, grupo.Error!.Message)));
+            }
+            else
+            {
+                grupoResolvido = grupo.Value;
+            }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<(string, string, string, string, GrupoCurso?)>.ValidationFailure(erros);
+        }
+
+        return Result<(string, string, string, string, GrupoCurso?)>.Success(
+            (codigoNormalizado!, nomeNormalizado!, grauNormalizado!, nivelEnsinoNormalizado!, grupoResolvido));
+    }
+
+    /// <summary>
+    /// Cria um novo Curso. Revalida os cinco campos editáveis, acumulando toda
+    /// violação no mesmo lote. A unicidade do código entre cursos vivos é
+    /// responsabilidade do handler.
+    /// </summary>
+    public static Result<Curso> Criar(string? codigo, string? nome, string? grau, string? nivelEnsino, string? grupoAreaEnem)
+    {
+        Result<(string Codigo, string Nome, string Grau, string NivelEnsino, GrupoCurso? GrupoAreaEnem)> campos =
+            ValidarCamposEditaveis(codigo, nome, grau, nivelEnsino, grupoAreaEnem);
+        if (campos.IsFailure)
+        {
+            return Result<Curso>.ValidationFailure(campos.Errors);
         }
 
         var curso = new Curso();
-        curso.AplicarCampos(codigo, nome, grau, nivelEnsino, validacao.Value);
+        curso.AplicarCampos(
+            campos.Value.Codigo, campos.Value.Nome, campos.Value.Grau, campos.Value.NivelEnsino, campos.Value.GrupoAreaEnem);
 
         return Result<Curso>.Success(curso);
     }
 
     /// <summary>
     /// Atualiza os atributos do Curso. O <c>Codigo</c> é editável; sua unicidade
-    /// (quando alterado) é responsabilidade do handler. Revalida formato/domínio,
-    /// incluindo o grupo de área do ENEM (nulo é aceito). O <c>Id</c> é imutável.
+    /// (quando alterado) é responsabilidade do handler. Revalida os cinco campos
+    /// editáveis, acumulando toda violação no mesmo lote. O <c>Id</c> é imutável.
     /// </summary>
-    public Result Atualizar(
-        string codigo,
-        string nome,
-        string grau,
-        string nivelEnsino,
-        string? grupoAreaEnem)
+    public Result Atualizar(string? codigo, string? nome, string? grau, string? nivelEnsino, string? grupoAreaEnem)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(grau);
-        ArgumentNullException.ThrowIfNull(nivelEnsino);
-
-        Result<GrupoCurso?> validacao = ValidarCampos(codigo, nome, grau, nivelEnsino, grupoAreaEnem);
-        if (validacao.IsFailure)
+        Result<(string Codigo, string Nome, string Grau, string NivelEnsino, GrupoCurso? GrupoAreaEnem)> campos =
+            ValidarCamposEditaveis(codigo, nome, grau, nivelEnsino, grupoAreaEnem);
+        if (campos.IsFailure)
         {
-            return Result.Failure(validacao.Error!);
+            return Result.ValidationFailure(campos.Errors);
         }
 
-        AplicarCampos(codigo, nome, grau, nivelEnsino, validacao.Value);
+        AplicarCampos(
+            campos.Value.Codigo, campos.Value.Nome, campos.Value.Grau, campos.Value.NivelEnsino, campos.Value.GrupoAreaEnem);
 
         return Result.Success();
     }
 
-    private void AplicarCampos(
-        string codigo,
-        string nome,
-        string grau,
-        string nivelEnsino,
-        GrupoCurso? grupoAreaEnem)
+    private void AplicarCampos(string codigo, string nome, string grau, string nivelEnsino, GrupoCurso? grupoAreaEnem)
     {
-        Codigo = codigo.Trim();
-        Nome = nome.Trim();
-        Grau = grau.Trim();
-        NivelEnsino = nivelEnsino.Trim();
+        Codigo = codigo;
+        Nome = nome;
+        Grau = grau;
+        NivelEnsino = nivelEnsino;
         GrupoAreaEnem = grupoAreaEnem;
-    }
-
-    private static Result<GrupoCurso?> ValidarCampos(
-        string codigo,
-        string nome,
-        string grau,
-        string nivelEnsino,
-        string? grupoAreaEnem)
-    {
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.CodigoObrigatorio,
-                "Código do curso é obrigatório."));
-        }
-
-        if (codigo.Trim().Length is < CodigoMinLength or > CodigoMaxLength)
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.CodigoTamanho,
-                $"Código do curso deve ter entre {CodigoMinLength} e {CodigoMaxLength} caracteres."));
-        }
-
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.NomeObrigatorio,
-                "Nome do curso é obrigatório."));
-        }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.NomeTamanho,
-                $"Nome do curso deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
-        }
-
-        if (string.IsNullOrWhiteSpace(grau))
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.GrauObrigatorio,
-                "Grau do curso é obrigatório."));
-        }
-
-        if (grau.Trim().Length is < GrauMinLength or > GrauMaxLength)
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.GrauTamanho,
-                $"Grau do curso deve ter entre {GrauMinLength} e {GrauMaxLength} caracteres."));
-        }
-
-        if (string.IsNullOrWhiteSpace(nivelEnsino))
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.NivelEnsinoObrigatorio,
-                "Nível de ensino do curso é obrigatório."));
-        }
-
-        if (nivelEnsino.Trim().Length is < NivelEnsinoMinLength or > NivelEnsinoMaxLength)
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.NivelEnsinoTamanho,
-                $"Nível de ensino do curso deve ter entre {NivelEnsinoMinLength} e {NivelEnsinoMaxLength} caracteres."));
-        }
-
-        if (string.IsNullOrWhiteSpace(grupoAreaEnem))
-        {
-            // Grupo de área do ENEM é opcional: nem todo curso classifica por área.
-            return Result<GrupoCurso?>.Success(null);
-        }
-
-        Result<GrupoCurso> grupo = GrupoCurso.Criar(grupoAreaEnem);
-        if (grupo.IsFailure)
-        {
-            return Result<GrupoCurso?>.Failure(new DomainError(
-                CursoErrorCodes.GrupoAreaEnemInvalido, grupo.Error!.Message));
-        }
-
-        return Result<GrupoCurso?>.Success(grupo.Value);
     }
 }

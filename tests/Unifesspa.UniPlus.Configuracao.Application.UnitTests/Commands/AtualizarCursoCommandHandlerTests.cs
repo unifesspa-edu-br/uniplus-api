@@ -82,17 +82,30 @@ public sealed class AtualizarCursoCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Grupo de área do ENEM inválido propaga o erro de domínio sem persistir")]
-    public async Task Handle_GrupoAreaEnemInvalido_RetornaErroSemPersistir()
+    [Fact(DisplayName = "Grupo de área do ENEM inválido propaga o erro de domínio sem buscar por Id nem persistir")]
+    public async Task Handle_GrupoAreaEnemInvalido_RetornaErroSemBuscarPorIdNemPersistir()
     {
-        Curso existente = CursoExistente("ENG_CIVIL");
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
         Result resultado = await AtualizarCursoCommandHandler.Handle(
-            Comando(existente.Id) with { GrupoAreaEnem = "Exatas" }, _repository, _unitOfWork, CancellationToken.None);
+            Comando(Guid.CreateVersion7()) with { GrupoAreaEnem = "Exatas" }, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CursoErrorCodes.GrupoAreaEnemInvalido);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Payload inválido em Id inexistente retorna a violação de validação, não NaoEncontrado")]
+    public async Task Handle_PayloadInvalidoEIdInexistente_RetornaViolacaoDeValidacao()
+    {
+        Guid id = Guid.CreateVersion7();
+        var comando = new AtualizarCursoCommand(id, "", "", "", "", null);
+
+        Result resultado = await AtualizarCursoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(4);
+        resultado.Error!.Code.Should().NotBe(CursoErrorCodes.NaoEncontrado);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

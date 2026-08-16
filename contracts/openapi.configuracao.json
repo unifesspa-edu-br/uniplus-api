@@ -9201,16 +9201,28 @@
             "format": "uuid"
           },
           "codigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "grau": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nivelEnsino": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "grupoAreaEnem": {
             "type": [
@@ -10198,16 +10210,28 @@
         "type": "object",
         "properties": {
           "codigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "grau": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nivelEnsino": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "grupoAreaEnem": {
             "type": [
