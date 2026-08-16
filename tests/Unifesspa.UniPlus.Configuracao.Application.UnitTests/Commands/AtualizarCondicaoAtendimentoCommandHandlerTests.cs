@@ -82,12 +82,11 @@ public sealed class AtualizarCondicaoAtendimentoCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Renomear o código reservado PCD é bloqueado (CodigoProtegidoNaoEditavel) sem persistir")]
-    public async Task Handle_RenomearPcd_Bloqueia()
+    [Fact(DisplayName = "Renomear o código reservado PCD é bloqueado (CodigoProtegidoNaoEditavel) sem consultar unicidade nem persistir")]
+    public async Task Handle_RenomearPcd_BloqueiaSemConsultarUnicidadeNemPersistir()
     {
         CondicaoAtendimentoEspecializado pcd = Existente(CodigoCondicao.Pcd);
         _repository.ObterPorIdAsync(pcd.Id, Arg.Any<CancellationToken>()).Returns(pcd);
-        _repository.CodigoExisteEntreVivosAsync("LACTANTE", pcd.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         Result resultado = await AtualizarCondicaoAtendimentoCommandHandler.Handle(
             new AtualizarCondicaoAtendimentoCommand(pcd.Id, "LACTANTE", "Lactante", null),
@@ -95,6 +94,23 @@ public sealed class AtualizarCondicaoAtendimentoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CondicaoAtendimentoErrorCodes.CodigoProtegidoNaoEditavel);
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Payload inválido em Id inexistente retorna a violação de validação, não NaoEncontrada")]
+    public async Task Handle_PayloadInvalidoEIdInexistente_RetornaViolacaoDeValidacao()
+    {
+        Guid id = Guid.CreateVersion7();
+        var comando = new AtualizarCondicaoAtendimentoCommand(id, "", "", null);
+
+        Result resultado = await AtualizarCondicaoAtendimentoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Error!.Code.Should().NotBe(CondicaoAtendimentoErrorCodes.NaoEncontrada);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

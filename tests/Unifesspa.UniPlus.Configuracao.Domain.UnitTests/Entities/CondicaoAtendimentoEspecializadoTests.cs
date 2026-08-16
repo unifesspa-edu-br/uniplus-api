@@ -143,4 +143,71 @@ public sealed class CondicaoAtendimentoEspecializadoTests
         pcd.Nome.Should().Be("Pessoa com deficiência (PcD)");
         pcd.Codigo.Valor.Should().Be(CodigoCondicao.Pcd);
     }
+
+    // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
+
+    [Fact(DisplayName = "Código e nome nulos não lançam — devolvem as duas violações de domínio")]
+    public void Criar_CodigoENomeNulos_NaoLancaEDevolveAsDuasViolacoes()
+    {
+        Result<CondicaoAtendimentoEspecializado> resultado = CondicaoAtendimentoEspecializado.Criar(null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[0].Error.Code.Should().Be(CondicaoAtendimentoErrorCodes.CodigoObrigatorio);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(CondicaoAtendimentoErrorCodes.NomeObrigatorio);
+    }
+
+    [Fact(DisplayName = "Código inválido, nome ausente e descrição longa ao mesmo tempo acumulam as três violações rotuladas")]
+    public void Criar_TresCamposInvalidos_AcumulaAsTresViolacoesRotuladas()
+    {
+        Result<CondicaoAtendimentoEspecializado> resultado = Criar(
+            codigo: "minusculo", nome: "", descricao: new string('D', 1001));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[0].Error.Code.Should().Be(CondicaoAtendimentoErrorCodes.CodigoFormatoInvalido);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(CondicaoAtendimentoErrorCodes.NomeObrigatorio);
+        resultado.Errors[2].Field.Should().Be("descricao");
+        resultado.Errors[2].Error.Code.Should().Be(CondicaoAtendimentoErrorCodes.DescricaoTamanho);
+    }
+
+    [Fact(DisplayName = "Atualizar com código e nome inválidos acumula as duas violações sem mutar o agregado")]
+    public void Atualizar_CodigoENomeInvalidos_AcumulaAsDuasViolacoesSemMutar()
+    {
+        CondicaoAtendimentoEspecializado condicao = Criar(codigo: "LACTANTE", nome: "Lactante").Value!;
+
+        Result resultado = condicao.Atualizar("minusculo", "", null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        condicao.Codigo.Valor.Should().Be("LACTANTE", "falha de validação não pode mutar o agregado");
+        condicao.Nome.Should().Be("Lactante");
+    }
+
+    [Fact(DisplayName = "ValidarTransicaoDeCodigo isolado recusa transição PCD → não-PCD sem I/O")]
+    public void ValidarTransicaoDeCodigo_PcdParaNaoPcd_Recusa()
+    {
+        CondicaoAtendimentoEspecializado pcd = Criar(codigo: CodigoCondicao.Pcd, nome: "Pessoa com deficiência").Value!;
+        CodigoCondicao novoCodigo = CodigoCondicao.Criar("OUTRA_CONDICAO").Value!;
+
+        Result resultado = pcd.ValidarTransicaoDeCodigo(novoCodigo);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CondicaoAtendimentoErrorCodes.CodigoProtegidoNaoEditavel);
+    }
+
+    [Fact(DisplayName = "ValidarTransicaoDeCodigo isolado aceita transição de/para código não protegido")]
+    public void ValidarTransicaoDeCodigo_NaoProtegido_Aceita()
+    {
+        CondicaoAtendimentoEspecializado condicao = Criar(codigo: "LACTANTE", nome: "Lactante").Value!;
+        CodigoCondicao novoCodigo = CodigoCondicao.Criar("GESTANTE").Value!;
+
+        Result resultado = condicao.ValidarTransicaoDeCodigo(novoCodigo);
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
 }

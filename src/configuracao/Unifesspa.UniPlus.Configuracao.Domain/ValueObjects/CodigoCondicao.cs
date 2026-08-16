@@ -44,7 +44,7 @@ public sealed partial record CodigoCondicao
     /// <c>CodigoFormatoInvalido</c>. O valor é normalizado por <c>Trim</c> antes
     /// da validação.
     /// </summary>
-    public static Result<CodigoCondicao> Criar(string valor)
+    public static Result<CodigoCondicao> Criar(string? valor)
     {
         if (string.IsNullOrWhiteSpace(valor))
         {
