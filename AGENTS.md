@@ -36,8 +36,11 @@ types, members, constants, and static readonly fields; camelCase for locals and
 parameters; `_camelCase` for private fields. Keep infrastructure identifiers in
 English; domain identifiers preserve the ubiquitous language of the domain and
 are therefore in pt-BR (`ProcessoSeletivo`, `RegraCatalogo`, `TipoRegra`).
-User-facing API messages are in pt-BR. Application validation uses FluentValidation;
-EF mappings use `IEntityTypeConfiguration<T>` and the global snake_case
+User-facing API messages are in pt-BR. The domain is the sole source of
+validation (ADR-0125): a Command validator only covers shape/DTO checks with
+no domain equivalent (e.g., a route/DTO identity check with nothing to
+validate against in the aggregate) — never a rule the aggregate's own factory
+or `Atualizar` method already checks. EF mappings use `IEntityTypeConfiguration<T>` and the global snake_case
 convention. New logging should use `[LoggerMessage]`, not direct
 `logger.LogInformation(...)` calls.
 
