@@ -8,9 +8,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarCondicaoAtendimentoCommand"/> (convention-based
-/// Wolverine): confere a unicidade do código entre condições vivas, cria o
-/// agregado, persiste e commita. Protege a corrida check-then-act traduzindo a
-/// violação do índice único parcial em <c>CodigoJaExiste</c>.
+/// Wolverine): valida o agregado por inteiro primeiro (sem I/O) — código, nome e
+/// descrição acumulam no mesmo lote — só então confere a unicidade do código
+/// entre vivas, com o código já normalizado. Protege a corrida check-then-act
+/// traduzindo a violação do índice único parcial em <c>CodigoJaExiste</c>.
 /// </summary>
 public static class CriarCondicaoAtendimentoCommandHandler
 {
@@ -24,22 +25,20 @@ public static class CriarCondicaoAtendimentoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        if (await repository.CodigoExisteEntreVivosAsync(command.Codigo, null, cancellationToken).ConfigureAwait(false))
+        Result<CondicaoAtendimentoEspecializado> criar = CondicaoAtendimentoEspecializado.Criar(
+            command.Codigo, command.Nome, command.Descricao);
+        if (criar.IsFailure)
         {
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
+            return Result<Guid>.ValidationFailure(criar.Errors);
         }
 
-        Result<CondicaoAtendimentoEspecializado> condicaoResult = CondicaoAtendimentoEspecializado.Criar(
-            command.Codigo,
-            command.Nome,
-            command.Descricao);
+        CondicaoAtendimentoEspecializado condicao = criar.Value!;
 
-        if (condicaoResult.IsFailure)
+        if (await repository.CodigoExisteEntreVivosAsync(condicao.Codigo.Valor, null, cancellationToken).ConfigureAwait(false))
         {
-            return Result<Guid>.Failure(condicaoResult.Error!);
+            return Result<Guid>.Failure(CodigoJaExisteErro());
         }
 
-        CondicaoAtendimentoEspecializado condicao = condicaoResult.Value!;
         await repository.AdicionarAsync(condicao, cancellationToken).ConfigureAwait(false);
 
         try
@@ -49,18 +48,18 @@ public static class CriarCondicaoAtendimentoCommandHandler
         catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
             && UniqueConstraintViolation.IsCodigoConflict(constraint))
         {
-            // Corrida entre CodigoExisteEntreVivosAsync e o INSERT (check-then-act): o
-            // índice único parcial dispara 23505 e viramos o mesmo CodigoJaExiste do
-            // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
-            // virar 500 no middleware global. O filtro do `when` garante que outras
-            // exceções propagam intactas.
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
+            // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync
+            // automático do Wolverine (AutoApplyTransactions) tenta a mesma inserção de
+            // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
+            // pretendido vira 500.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<Guid>.Failure(CodigoJaExisteErro());
         }
 
         return Result<Guid>.Success(condicao.Id);
     }
 
-    private static DomainError CodigoJaExisteErro(string codigo) =>
+    private static DomainError CodigoJaExisteErro() =>
         new(CondicaoAtendimentoErrorCodes.CodigoJaExiste,
-            $"Já existe uma condição de atendimento especializado viva com o código '{codigo}'.");
+            "Já existe uma condição de atendimento especializado viva com o código informado.");
 }

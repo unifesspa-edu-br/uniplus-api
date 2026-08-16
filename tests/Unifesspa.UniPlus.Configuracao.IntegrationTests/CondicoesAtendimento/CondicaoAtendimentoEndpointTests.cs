@@ -176,6 +176,34 @@ public sealed class CondicaoAtendimentoEndpointTests
             "a condição reservada PCD não pode ser removida (ADR-0067)");
     }
 
+    [Fact(DisplayName = "POST com código e nome inválidos ao mesmo tempo acumula as duas violações em errors[]")]
+    public async Task Criar_CodigoENomeInvalidos_AcumulaAsDuasViolacoesEmErrors()
+    {
+        var body = new { codigo = "invalido-minusculo", nome = "" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(2);
+        erros.EnumerateArray().Select(e => e.GetProperty("field").GetString())
+            .Should().BeEquivalentTo(["codigo", "nome"]);
+    }
+
+    [Fact(DisplayName = "POST com código genuinamente ausente no JSON retorna 422 (não 400 de model binding)")]
+    public async Task Criar_CodigoAusenteNoJson_Retorna422()
+    {
+        var body = new { nome = "Nome válido" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "sem validator FluentValidation a montante, o campo ausente precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+    }
+
     private static string CodigoUnico() => $"COND_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)

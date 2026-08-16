@@ -45,53 +45,96 @@ public sealed class CondicaoAtendimentoEspecializado : SoftDeletableEntity, IAud
     }
 
     /// <summary>
-    /// Cria uma nova condição de atendimento especializado. Valida o código (via
-    /// <see cref="CodigoCondicao.Criar"/>), o nome (obrigatório, tamanho) e a
-    /// descrição (tamanho). A unicidade do <paramref name="codigo"/> entre
-    /// condições vivas é responsabilidade do handler.
+    /// Valida e normaliza código, nome e descrição (os três campos editáveis),
+    /// acumulando toda violação independente em vez de parar na primeira — sem
+    /// mutar nada. Existe para o handler validar o payload por inteiro antes de
+    /// qualquer I/O (checagem de unicidade do código, leitura por Id).
     /// </summary>
-    public static Result<CondicaoAtendimentoEspecializado> Criar(
-        string codigo,
-        string nome,
-        string? descricao)
+    public static Result<(CodigoCondicao Codigo, string Nome, string? Descricao)> ValidarCamposEditaveis(
+        string? codigo, string? nome, string? descricao)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
+        List<FieldError> erros = [];
 
-        Result<CodigoCondicao> validacao = ValidarCampos(codigo, nome, descricao);
-        if (validacao.IsFailure)
+        CodigoCondicao? codigoValidado = null;
+        Result<CodigoCondicao> codigoResult = CodigoCondicao.Criar(codigo);
+        if (codigoResult.IsFailure)
         {
-            return Result<CondicaoAtendimentoEspecializado>.Failure(validacao.Error!);
+            erros.Add(new("codigo", codigoResult.Error!));
+        }
+        else
+        {
+            codigoValidado = codigoResult.Value;
+        }
+
+        string? nomeNormalizado = null;
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            erros.Add(new("nome", new DomainError(
+                CondicaoAtendimentoErrorCodes.NomeObrigatorio,
+                "Nome da condição de atendimento especializado é obrigatório.")));
+        }
+        else
+        {
+            nomeNormalizado = nome.Trim();
+            if (nomeNormalizado.Length is < NomeMinLength or > NomeMaxLength)
+            {
+                erros.Add(new("nome", new DomainError(
+                    CondicaoAtendimentoErrorCodes.NomeTamanho,
+                    $"Nome da condição deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
+                nomeNormalizado = null;
+            }
+        }
+
+        string? descricaoNormalizada = NormalizarOpcional(descricao);
+        if (descricaoNormalizada is not null && descricaoNormalizada.Length > DescricaoMaxLength)
+        {
+            erros.Add(new("descricao", new DomainError(
+                CondicaoAtendimentoErrorCodes.DescricaoTamanho,
+                $"Descrição da condição deve ter no máximo {DescricaoMaxLength} caracteres.")));
+            descricaoNormalizada = null;
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<(CodigoCondicao, string, string?)>.ValidationFailure(erros);
+        }
+
+        return Result<(CodigoCondicao, string, string?)>.Success((codigoValidado!, nomeNormalizado!, descricaoNormalizada));
+    }
+
+    /// <summary>
+    /// Cria uma nova condição de atendimento especializado. Revalida código, nome
+    /// e descrição, acumulando toda violação no mesmo lote. A unicidade do código
+    /// entre condições vivas é responsabilidade do handler.
+    /// </summary>
+    public static Result<CondicaoAtendimentoEspecializado> Criar(string? codigo, string? nome, string? descricao)
+    {
+        Result<(CodigoCondicao Codigo, string Nome, string? Descricao)> campos =
+            ValidarCamposEditaveis(codigo, nome, descricao);
+        if (campos.IsFailure)
+        {
+            return Result<CondicaoAtendimentoEspecializado>.ValidationFailure(campos.Errors);
         }
 
         var condicao = new CondicaoAtendimentoEspecializado();
-        condicao.AplicarCampos(validacao.Value!, nome, descricao);
+        condicao.AplicarCampos(campos.Value.Codigo, campos.Value.Nome, campos.Value.Descricao);
 
         return Result<CondicaoAtendimentoEspecializado>.Success(condicao);
     }
 
     /// <summary>
-    /// Atualiza os atributos da condição. O <c>Codigo</c> é editável e sua
-    /// unicidade (quando alterado) é responsabilidade do handler — <b>exceto</b>
-    /// quando o código atual é <see cref="CodigoCondicao.Pcd"/>: a condição
-    /// reservada não pode ser renomeada (retorna
-    /// <c>CodigoProtegidoNaoEditavel</c>). Revalida formato/tamanho.
+    /// Verifica se a transição do código atual para <paramref name="novoCodigo"/>
+    /// é permitida — recusa apenas quando o código atual é o reservado
+    /// <see cref="CodigoCondicao.Pcd"/> e o novo não é (ADR-0067). Não muta o
+    /// agregado; existe para o handler avaliar essa regra logo após o fetch,
+    /// antes da consulta de unicidade (que não faz sentido rodar se a transição
+    /// já é proibida) — a mesma checagem é revalidada dentro de
+    /// <see cref="Atualizar"/> como rede de segurança.
     /// </summary>
-    public Result Atualizar(string codigo, string nome, string? descricao)
+    public Result ValidarTransicaoDeCodigo(CodigoCondicao novoCodigo)
     {
-        ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(nome);
+        ArgumentNullException.ThrowIfNull(novoCodigo);
 
-        Result<CodigoCondicao> validacao = ValidarCampos(codigo, nome, descricao);
-        if (validacao.IsFailure)
-        {
-            return Result.Failure(validacao.Error!);
-        }
-
-        CodigoCondicao novoCodigo = validacao.Value!;
-
-        // O código reservado PCD não pode ser renomeado (ADR-0067). Editar o nome
-        // ou a descrição mantendo o código PCD continua permitido.
         if (Codigo.EhProtegido && !novoCodigo.EhProtegido)
         {
             return Result.Failure(new DomainError(
@@ -99,7 +142,32 @@ public sealed class CondicaoAtendimentoEspecializado : SoftDeletableEntity, IAud
                 $"A condição reservada '{CodigoCondicao.Pcd}' não pode ter o código alterado."));
         }
 
-        AplicarCampos(novoCodigo, nome, descricao);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Atualiza os atributos da condição. O <c>Codigo</c> é editável e sua
+    /// unicidade (quando alterado) é responsabilidade do handler — <b>exceto</b>
+    /// quando o código atual é <see cref="CodigoCondicao.Pcd"/>: a condição
+    /// reservada não pode ser renomeada (<see cref="ValidarTransicaoDeCodigo"/>).
+    /// Revalida código, nome e descrição, acumulando toda violação no mesmo lote.
+    /// </summary>
+    public Result Atualizar(string? codigo, string? nome, string? descricao)
+    {
+        Result<(CodigoCondicao Codigo, string Nome, string? Descricao)> campos =
+            ValidarCamposEditaveis(codigo, nome, descricao);
+        if (campos.IsFailure)
+        {
+            return Result.ValidationFailure(campos.Errors);
+        }
+
+        Result transicao = ValidarTransicaoDeCodigo(campos.Value.Codigo);
+        if (transicao.IsFailure)
+        {
+            return transicao;
+        }
+
+        AplicarCampos(campos.Value.Codigo, campos.Value.Nome, campos.Value.Descricao);
 
         return Result.Success();
     }
@@ -107,42 +175,10 @@ public sealed class CondicaoAtendimentoEspecializado : SoftDeletableEntity, IAud
     private void AplicarCampos(CodigoCondicao codigo, string nome, string? descricao)
     {
         Codigo = codigo;
-        Nome = nome.Trim();
-        Descricao = NormalizarOpcional(descricao);
+        Nome = nome;
+        Descricao = descricao;
     }
 
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
-
-    private static Result<CodigoCondicao> ValidarCampos(string codigo, string nome, string? descricao)
-    {
-        Result<CodigoCondicao> codigoResult = CodigoCondicao.Criar(codigo);
-        if (codigoResult.IsFailure)
-        {
-            return Result<CodigoCondicao>.Failure(codigoResult.Error!);
-        }
-
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Result<CodigoCondicao>.Failure(new DomainError(
-                CondicaoAtendimentoErrorCodes.NomeObrigatorio,
-                "Nome da condição de atendimento especializado é obrigatório."));
-        }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
-        {
-            return Result<CodigoCondicao>.Failure(new DomainError(
-                CondicaoAtendimentoErrorCodes.NomeTamanho,
-                $"Nome da condição deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
-        }
-
-        if (descricao is not null && descricao.Trim().Length > DescricaoMaxLength)
-        {
-            return Result<CodigoCondicao>.Failure(new DomainError(
-                CondicaoAtendimentoErrorCodes.DescricaoTamanho,
-                $"Descrição da condição deve ter no máximo {DescricaoMaxLength} caracteres."));
-        }
-
-        return Result<CodigoCondicao>.Success(codigoResult.Value!);
-    }
 }

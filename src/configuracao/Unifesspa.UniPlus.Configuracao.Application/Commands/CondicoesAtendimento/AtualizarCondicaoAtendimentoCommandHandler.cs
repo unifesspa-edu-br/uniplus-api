@@ -4,15 +4,18 @@ using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="AtualizarCondicaoAtendimentoCommand"/>. Como o código é
-/// editável, confere a unicidade entre condições vivas quando ele muda (ignorando
-/// o próprio registro) e protege a corrida traduzindo a violação do índice único
-/// parcial em <c>CodigoJaExiste</c>. O bloqueio de renomeação do código reservado
-/// <c>PCD</c> é aplicado pelo agregado em <c>Atualizar</c>
-/// (<c>CodigoProtegidoNaoEditavel</c>).
+/// Handler do <see cref="AtualizarCondicaoAtendimentoCommand"/>. Valida código,
+/// nome e descrição primeiro (sem I/O) — validação sempre vence 404 — só então
+/// busca o registro por Id; avalia a transição de código contra o reservado
+/// <c>PCD</c> (<c>CodigoProtegidoNaoEditavel</c>) antes mesmo de consultar
+/// unicidade, já que essa consulta não faz sentido se a transição já é proibida;
+/// como o código é editável, confere a unicidade entre condições vivas quando ele
+/// muda (ignorando o próprio registro) e protege a corrida traduzindo a violação
+/// do índice único parcial em <c>CodigoJaExiste</c>.
 /// </summary>
 public static class AtualizarCondicaoAtendimentoCommandHandler
 {
@@ -26,6 +29,13 @@ public static class AtualizarCondicaoAtendimentoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result<(CodigoCondicao Codigo, string Nome, string? Descricao)> campos =
+            CondicaoAtendimentoEspecializado.ValidarCamposEditaveis(command.Codigo, command.Nome, command.Descricao);
+        if (campos.IsFailure)
+        {
+            return Result.ValidationFailure(campos.Errors);
+        }
+
         CondicaoAtendimentoEspecializado? condicao = await repository
             .ObterPorIdAsync(command.Id, cancellationToken)
             .ConfigureAwait(false);
@@ -36,19 +46,21 @@ public static class AtualizarCondicaoAtendimentoCommandHandler
                 "Condição de atendimento especializado não encontrada."));
         }
 
-        // Código é case-sensitive (Ordinal), normalizado por Trim no agregado — só
-        // checa colisão quando o código efetivamente muda.
-        if (!string.Equals(command.Codigo.Trim(), condicao.Codigo.Valor, StringComparison.Ordinal)
-            && await repository.CodigoExisteEntreVivosAsync(command.Codigo, command.Id, cancellationToken).ConfigureAwait(false))
+        Result transicao = condicao.ValidarTransicaoDeCodigo(campos.Value.Codigo);
+        if (transicao.IsFailure)
         {
-            return Result.Failure(CodigoJaExisteErro(command.Codigo));
+            return transicao;
         }
 
-        Result atualizarResult = condicao.Atualizar(
-            command.Codigo,
-            command.Nome,
-            command.Descricao);
+        // Código é case-sensitive (Ordinal) — só checa colisão quando o código
+        // normalizado efetivamente muda em relação ao atual.
+        if (!string.Equals(campos.Value.Codigo.Valor, condicao.Codigo.Valor, StringComparison.Ordinal)
+            && await repository.CodigoExisteEntreVivosAsync(campos.Value.Codigo.Valor, command.Id, cancellationToken).ConfigureAwait(false))
+        {
+            return Result.Failure(CodigoJaExisteErro());
+        }
 
+        Result atualizarResult = condicao.Atualizar(command.Codigo, command.Nome, command.Descricao);
         if (atualizarResult.IsFailure)
         {
             return atualizarResult;
@@ -62,14 +74,16 @@ public static class AtualizarCondicaoAtendimentoCommandHandler
             && UniqueConstraintViolation.IsCodigoConflict(constraint))
         {
             // Corrida entre a checagem de unicidade e o UPDATE: o índice único parcial
-            // dispara 23505 e viramos o mesmo CodigoJaExiste do caminho não-race.
-            return Result.Failure(CodigoJaExisteErro(command.Codigo));
+            // dispara 23505; sem descartar, o SaveChangesAsync automático do Wolverine
+            // repetiria o mesmo UPDATE fora deste catch e o 409 pretendido viraria 500.
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(CodigoJaExisteErro());
         }
 
         return Result.Success();
     }
 
-    private static DomainError CodigoJaExisteErro(string codigo) =>
+    private static DomainError CodigoJaExisteErro() =>
         new(CondicaoAtendimentoErrorCodes.CodigoJaExiste,
-            $"Já existe uma condição de atendimento especializado viva com o código '{codigo}'.");
+            "Já existe uma condição de atendimento especializado viva com o código informado.");
 }

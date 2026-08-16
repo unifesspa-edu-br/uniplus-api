@@ -48,12 +48,9 @@ public sealed class CriarCondicaoAtendimentoCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<CondicaoAtendimentoEspecializado>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Código fora do formato propaga o erro de domínio sem persistir")]
-    public async Task Handle_CodigoFormatoInvalido_RetornaErroSemPersistir()
+    [Fact(DisplayName = "Código fora do formato propaga o erro de domínio sem consultar unicidade nem persistir")]
+    public async Task Handle_CodigoFormatoInvalido_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>())
-            .Returns(false);
-
         CriarCondicaoAtendimentoCommand comando = ComandoValido() with { Codigo = "dislexia" };
 
         Result<Guid> resultado = await CriarCondicaoAtendimentoCommandHandler.Handle(
@@ -61,6 +58,22 @@ public sealed class CriarCondicaoAtendimentoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CondicaoAtendimentoErrorCodes.CodigoFormatoInvalido);
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código ausente e nome ausente no mesmo payload acumulam as duas violações")]
+    public async Task Handle_CodigoENomeAusentes_AcumulaAsDuasViolacoes()
+    {
+        CriarCondicaoAtendimentoCommand comando = ComandoValido() with { Codigo = "", Nome = "" };
+
+        Result<Guid> resultado = await CriarCondicaoAtendimentoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[1].Field.Should().Be("nome");
     }
 }
