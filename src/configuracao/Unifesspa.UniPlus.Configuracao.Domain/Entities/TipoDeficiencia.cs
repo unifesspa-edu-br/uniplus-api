@@ -48,23 +48,74 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria um novo TipoDeficiencia. Valida obrigatoriedade/tamanho do nome, a
-    /// obrigatoriedade/tamanho da descrição. A unicidade de <paramref name="nome"/>
-    /// entre tipos vivos é responsabilidade do handler.
+    /// Valida e normaliza nome e descrição (os dois campos editáveis),
+    /// acumulando toda violação independente em vez de parar na primeira — sem
+    /// mutar nada. Existe para o handler validar o payload por inteiro antes de
+    /// qualquer I/O (consulta de unicidade do nome, leitura por Id).
     /// </summary>
-    public static Result<TipoDeficiencia> Criar(string nome, string descricao, bool? permanente = null)
+    public static Result<(string Nome, string Descricao)> ValidarCamposEditaveis(string? nome, string? descricao)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(descricao);
+        List<FieldError> erros = [];
 
-        Result validacao = ValidarCampos(nome, descricao);
-        if (validacao.IsFailure)
+        string? nomeNormalizado = null;
+        if (string.IsNullOrWhiteSpace(nome))
         {
-            return Result<TipoDeficiencia>.Failure(validacao.Error!);
+            erros.Add(new("nome", new DomainError(
+                TipoDeficienciaErrorCodes.NomeObrigatorio, "Nome do tipo de deficiência é obrigatório.")));
+        }
+        else
+        {
+            nomeNormalizado = nome.Trim();
+            if (nomeNormalizado.Length is < NomeMinLength or > NomeMaxLength)
+            {
+                erros.Add(new("nome", new DomainError(
+                    TipoDeficienciaErrorCodes.NomeTamanho,
+                    $"Nome do tipo de deficiência deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
+                nomeNormalizado = null;
+            }
+        }
+
+        string? descricaoNormalizada = null;
+        if (string.IsNullOrWhiteSpace(descricao))
+        {
+            erros.Add(new("descricao", new DomainError(
+                TipoDeficienciaErrorCodes.DescricaoObrigatoria, "Descrição do tipo de deficiência é obrigatória.")));
+        }
+        else
+        {
+            descricaoNormalizada = descricao.Trim();
+            if (descricaoNormalizada.Length > DescricaoMaxLength)
+            {
+                erros.Add(new("descricao", new DomainError(
+                    TipoDeficienciaErrorCodes.DescricaoTamanho,
+                    $"Descrição do tipo de deficiência deve ter no máximo {DescricaoMaxLength} caracteres.")));
+                descricaoNormalizada = null;
+            }
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<(string, string)>.ValidationFailure(erros);
+        }
+
+        return Result<(string, string)>.Success((nomeNormalizado!, descricaoNormalizada!));
+    }
+
+    /// <summary>
+    /// Cria um novo TipoDeficiencia. Revalida nome e descrição, acumulando toda
+    /// violação no mesmo lote. A unicidade de <paramref name="nome"/> entre
+    /// tipos vivos é responsabilidade do handler.
+    /// </summary>
+    public static Result<TipoDeficiencia> Criar(string? nome, string? descricao, bool? permanente = null)
+    {
+        Result<(string Nome, string Descricao)> campos = ValidarCamposEditaveis(nome, descricao);
+        if (campos.IsFailure)
+        {
+            return Result<TipoDeficiencia>.ValidationFailure(campos.Errors);
         }
 
         var tipo = new TipoDeficiencia();
-        tipo.AplicarCampos(nome, descricao, permanente);
+        tipo.AplicarCampos(campos.Value.Nome, campos.Value.Descricao, permanente);
 
         return Result<TipoDeficiencia>.Success(tipo);
     }
@@ -72,61 +123,25 @@ public sealed class TipoDeficiencia : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Atualiza os atributos do TipoDeficiencia. O <c>Nome</c> é editável; sua
     /// unicidade (quando alterado) é responsabilidade do handler. Revalida
-    /// obrigatoriedade/tamanho do nome e a obrigatoriedade/tamanho da descrição.
+    /// nome e descrição, acumulando toda violação no mesmo lote.
     /// </summary>
-    public Result Atualizar(string nome, string descricao, bool? permanente = null)
+    public Result Atualizar(string? nome, string? descricao, bool? permanente = null)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(descricao);
-
-        Result validacao = ValidarCampos(nome, descricao);
-        if (validacao.IsFailure)
+        Result<(string Nome, string Descricao)> campos = ValidarCamposEditaveis(nome, descricao);
+        if (campos.IsFailure)
         {
-            return validacao;
+            return Result.ValidationFailure(campos.Errors);
         }
 
-        AplicarCampos(nome, descricao, permanente);
+        AplicarCampos(campos.Value.Nome, campos.Value.Descricao, permanente);
 
         return Result.Success();
     }
 
     private void AplicarCampos(string nome, string descricao, bool? permanente)
     {
-        Nome = nome.Trim();
-        Descricao = descricao.Trim();
+        Nome = nome;
+        Descricao = descricao;
         Permanente = permanente;
-    }
-
-    private static Result ValidarCampos(string nome, string? descricao)
-    {
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Result.Failure(new DomainError(
-                TipoDeficienciaErrorCodes.NomeObrigatorio,
-                "Nome do tipo de deficiência é obrigatório."));
-        }
-
-        if (nome.Trim().Length is < NomeMinLength or > NomeMaxLength)
-        {
-            return Result.Failure(new DomainError(
-                TipoDeficienciaErrorCodes.NomeTamanho,
-                $"Nome do tipo de deficiência deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
-        }
-
-        if (string.IsNullOrWhiteSpace(descricao))
-        {
-            return Result.Failure(new DomainError(
-                TipoDeficienciaErrorCodes.DescricaoObrigatoria,
-                "Descrição do tipo de deficiência é obrigatória."));
-        }
-
-        if (descricao.Trim().Length > DescricaoMaxLength)
-        {
-            return Result.Failure(new DomainError(
-                TipoDeficienciaErrorCodes.DescricaoTamanho,
-                $"Descrição do tipo de deficiência deve ter no máximo {DescricaoMaxLength} caracteres."));
-        }
-
-        return Result.Success();
     }
 }

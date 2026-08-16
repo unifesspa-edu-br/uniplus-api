@@ -153,6 +153,34 @@ public sealed class TipoDeficienciaEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    [Fact(DisplayName = "POST com nome e descrição inválidos ao mesmo tempo acumula as duas violações em errors[]")]
+    public async Task Criar_NomeEDescricaoInvalidos_AcumulaAsDuasViolacoesEmErrors()
+    {
+        var body = new { nome = "A", descricao = "" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(2);
+        erros.EnumerateArray().Select(e => e.GetProperty("field").GetString())
+            .Should().BeEquivalentTo(["nome", "descricao"]);
+    }
+
+    [Fact(DisplayName = "POST com nome genuinamente ausente no JSON retorna 422 (não 400 de model binding)")]
+    public async Task Criar_NomeAusenteNoJson_Retorna422()
+    {
+        var body = new { descricao = "Descrição válida" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "sem validator FluentValidation a montante, o campo ausente precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+    }
+
     private static string NomeUnico() => $"Deficiência {Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)
