@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarTipoDocumentoCommand"/> (convention-based
-/// Wolverine): confere a unicidade do código entre tipos vivos, cria o agregado,
+/// Wolverine): valida o agregado por inteiro primeiro (sem I/O), só então confere
+/// a unicidade do código entre tipos vivos, com o código já normalizado, cria,
 /// persiste e commita. Protege a corrida check-then-act traduzindo a violação do
 /// índice único parcial em <c>CodigoJaExiste</c> (CA-02).
 /// </summary>
@@ -24,11 +25,6 @@ public static class CriarTipoDocumentoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        if (await repository.CodigoExisteEntreVivosAsync(command.Codigo, null, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
-        }
-
         Result<TipoDocumento> tipoResult = TipoDocumento.Criar(
             command.Codigo,
             command.Nome,
@@ -40,10 +36,16 @@ public static class CriarTipoDocumentoCommandHandler
 
         if (tipoResult.IsFailure)
         {
-            return Result<Guid>.Failure(tipoResult.Error!);
+            return Result<Guid>.ValidationFailure(tipoResult.Errors);
         }
 
         TipoDocumento tipo = tipoResult.Value!;
+
+        if (await repository.CodigoExisteEntreVivosAsync(tipo.Codigo, null, cancellationToken).ConfigureAwait(false))
+        {
+            return Result<Guid>.Failure(CodigoJaExisteErro());
+        }
+
         await repository.AdicionarAsync(tipo, cancellationToken).ConfigureAwait(false);
 
         try
@@ -58,13 +60,13 @@ public static class CriarTipoDocumentoCommandHandler
             // caminho não-race — 409 consistente, em vez de deixar o DbUpdateException
             // virar 500 no middleware global. O filtro do `when` garante que outras
             // exceções propagam intactas.
-            return Result<Guid>.Failure(CodigoJaExisteErro(command.Codigo));
+            return Result<Guid>.Failure(CodigoJaExisteErro());
         }
 
         return Result<Guid>.Success(tipo.Id);
     }
 
-    private static DomainError CodigoJaExisteErro(string codigo) =>
+    private static DomainError CodigoJaExisteErro() =>
         new(TipoDocumentoErrorCodes.CodigoJaExiste,
-            $"Já existe um tipo de documento vivo com o código '{codigo}'.");
+            "Já existe um tipo de documento vivo com o código informado.");
 }

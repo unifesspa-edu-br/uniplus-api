@@ -67,6 +67,47 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <summary>
+    /// Antes do validator removido, um payload mal formado nunca chegava a
+    /// ObterPorIdAsync — validação sempre vencia sobre "não encontrado". Sem o
+    /// validator, o handler precisa preservar essa prioridade explicitamente.
+    /// </summary>
+    [Fact(DisplayName = "Id inexistente com Nome vazio devolve a violação de campo, não NaoEncontrado, sem consultar o repositório")]
+    public async Task Handle_IdInexistenteComNomeVazio_RetornaViolacaoDeCampoSemConsultarRepositorio()
+    {
+        AtualizarTipoDocumentoCommand comando = Comando(Guid.CreateVersion7()) with { Nome = "" };
+
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Antes: a checagem de unicidade rodava antes de o agregado revalidar os
+    /// demais campos, então um código colidente mascarava qualquer outra
+    /// violação de campo atrás de um CodigoJaExiste.
+    /// </summary>
+    [Fact(DisplayName = "Editar para código colidente com Nome vazio reporta a violação de Nome, não CodigoJaExiste")]
+    public async Task Handle_CodigoColidenteComNomeVazio_ReportaViolacaoDeCampoAntesDeConsultarUnicidade()
+    {
+        TipoDocumento existente = TipoExistente("CIN");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(true);
+
+        AtualizarTipoDocumentoCommand comando = Comando(existente.Id, codigo: "RG") with { Nome = "" };
+
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NomeObrigatorio);
+        await _repository.DidNotReceive()
+            .CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Editar sem mudar o código não consulta a unicidade")]
     public async Task Handle_CodigoInalterado_NaoChecaUnicidade()
     {

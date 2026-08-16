@@ -48,12 +48,9 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<TipoDocumento>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Categoria inválida propaga o erro de domínio sem persistir")]
-    public async Task Handle_CategoriaInvalida_RetornaErroSemPersistir()
+    [Fact(DisplayName = "Categoria inválida propaga o erro de domínio sem consultar unicidade nem persistir")]
+    public async Task Handle_CategoriaInvalida_RetornaErroSemConsultarUnicidadeNemPersistir()
     {
-        _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>())
-            .Returns(false);
-
         CriarTipoDocumentoCommand comando = ComandoValido() with { Categoria = "FINANCEIRO" };
 
         Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
@@ -61,6 +58,21 @@ public sealed class CriarTipoDocumentoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CategoriaInvalida);
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Nome ausente e categoria inválida no mesmo payload acumulam as duas violações")]
+    public async Task Handle_NomeAusenteECategoriaInvalida_AcumulaAsDuasViolacoes()
+    {
+        CriarTipoDocumentoCommand comando = ComandoValido() with { Nome = "", Categoria = "FINANCEIRO" };
+
+        Result<Guid> resultado = await CriarTipoDocumentoCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[1].Field.Should().Be("categoria");
     }
 }
