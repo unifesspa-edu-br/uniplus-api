@@ -135,6 +135,88 @@ public sealed class ResultExtensionsTests
         Guid.TryParse(problem.Instance!["urn:uuid:".Length..], out _).Should().BeTrue();
     }
 
+    // ─── ValidationFailure multi-erro — errors[] (ADR-0023, ADR-0125) ────
+
+    [Fact]
+    public void ToActionResult_ComValidationFailureDeUmErro_DeveConterExtensionErrorsComUmElemento()
+    {
+        // ADR-0023: errors[] é condicional a ter Field associado (ValidationFailure),
+        // não a ter mais de uma violação — uma única Sigla vazia ainda é erro de
+        // validação e o cliente precisa achar o field sem tratar "erro único" como
+        // caso especial.
+        IDomainErrorMapper mapper = CriarMapper(("Campus.SiglaObrigatoria", MappingValidacao));
+        Result resultado = Result.ValidationFailure(
+            [new FieldError("Sigla", new DomainError("Campus.SiglaObrigatoria", "Sigla obrigatória."))]);
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        object? errosObj = problem.Extensions["errors"];
+        errosObj.Should().NotBeNull();
+        dynamic[] erros = ((System.Collections.IEnumerable)errosObj!).Cast<dynamic>().ToArray();
+        ((int)erros.Length).Should().Be(1);
+        ((string)erros[0].field).Should().Be("Sigla");
+    }
+
+    [Fact]
+    public void ToActionResult_ComFailureDeConflito_NaoDeveConterExtensionErrors()
+    {
+        // Um Failure comum (ex.: SiglaJaExiste, 409) vira FieldError(null, error) só
+        // pela forma interna do Result — não é erro de validação, então errors[]
+        // continua fora do wire.
+        IDomainErrorMapper mapper = CriarMapper(
+            ("Campus.SiglaJaExiste", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.configuracao.campus.sigla_ja_existe", "Sigla já existe")));
+        Result resultado = Result.Failure(new DomainError("Campus.SiglaJaExiste", "Já existe um Campus vivo com essa sigla."));
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        problem.Extensions.Should().NotContainKey("errors");
+    }
+
+    [Fact]
+    public void ToActionResult_ComFailureDeRegraDeNegocioMapeadoPara422_NaoDeveConterExtensionErrors()
+    {
+        // Nem todo 422 é erro de validação de campo: um Result.Failure comum (ex.:
+        // Campus responsável não encontrado, snapshot vigente ausente) também
+        // resolve para 422 por regra de negócio, sem nenhum "field" associado — a
+        // condição não pode ser "status == 422", ou o array sairia com field: null.
+        IDomainErrorMapper mapper = CriarMapper(
+            ("LocalOferta.CampusResponsavelNaoEncontrado", MappingValidacao));
+        Result resultado = Result.Failure(
+            new DomainError("LocalOferta.CampusResponsavelNaoEncontrado", "O Campus responsável informado não foi encontrado."));
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        problem.Status.Should().Be(StatusCodes.Status422UnprocessableEntity);
+        problem.Extensions.Should().NotContainKey("errors");
+    }
+
+    [Fact]
+    public void ToActionResult_ComValidationFailureDeVariosErros_DeveConterErrorsPorCampoComCodeTraduzido()
+    {
+        IDomainErrorMapper mapper = CriarMapper(
+            ("Campus.SiglaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.sigla_obrigatoria", "Sigla obrigatória")),
+            ("Campus.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.nome_obrigatorio", "Nome obrigatório")));
+        Result resultado = Result.ValidationFailure(
+        [
+            new FieldError("Sigla", new DomainError("Campus.SiglaObrigatoria", "Sigla do Campus é obrigatória.")),
+            new FieldError("Nome", new DomainError("Campus.NomeObrigatorio", "Nome do Campus é obrigatório.")),
+        ]);
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        // Raiz usa o primeiro erro — fail-fast, mesma semântica que o domínio já tinha.
+        problem.Extensions["code"].Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+
+        object? errosObj = problem.Extensions["errors"];
+        errosObj.Should().NotBeNull();
+        dynamic[] erros = ((System.Collections.IEnumerable)errosObj!).Cast<dynamic>().ToArray();
+        ((int)erros.Length).Should().Be(2);
+        ((string)erros[0].field).Should().Be("Sigla");
+        ((string)erros[0].code).Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
+        ((string)erros[1].field).Should().Be("Nome");
+        ((string)erros[1].code).Should().Be("uniplus.configuracao.campus.nome_obrigatorio");
+    }
+
     // ─── Overload genérico Result<T> ──────────────────────────────────────
 
     [Fact]
