@@ -240,9 +240,9 @@ public sealed class FaseCanonicaTests
         f.PermiteComplementacao.Should().BeFalse();
     }
 
-    // ── Coerência resultado_definitivo ⇒ produz_resultado (CA-04) ──────────────
+    // ── Coerência resultado_definitivo ⇒ produz_resultado ──────────────────────
 
-    [Fact(DisplayName = "CA-04: resultado definitivo sem produzir resultado é rejeitado")]
+    [Fact(DisplayName = "Resultado definitivo sem produzir resultado é rejeitado")]
     public void Criar_ResultadoDefinitivoSemProduzirResultado_Falha()
     {
         Result<FaseCanonica> r = Criar(
@@ -253,7 +253,7 @@ public sealed class FaseCanonicaTests
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
     }
 
-    [Fact(DisplayName = "CA-04: resultado definitivo com produzir resultado é aceito")]
+    [Fact(DisplayName = "Resultado definitivo com produzir resultado é aceito")]
     public void Criar_ResultadoDefinitivoComProduzirResultado_Aceita()
     {
         Result<FaseCanonica> r = Criar(
@@ -333,7 +333,7 @@ public sealed class FaseCanonicaTests
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
     }
 
-    [Fact(DisplayName = "Atualizar revalida CA-04 (resultado definitivo sem produzir resultado)")]
+    [Fact(DisplayName = "Atualizar revalida a coerência resultado definitivo sem produzir resultado")]
     public void Atualizar_ResultadoDefinitivoSemProduzirResultado_Falha()
     {
         FaseCanonica f = Criar(codigo: "RESULTADO_FINAL", nome: "Resultado final").Value!;
@@ -346,5 +346,60 @@ public sealed class FaseCanonicaTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
+    }
+
+    // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
+
+    [Fact(DisplayName = "Código nulo não lança e acumula com nome ausente")]
+    public void Criar_CodigoNuloENomeAusente_NaoLancaEAcumulaAsDuasViolacoes()
+    {
+        Result<FaseCanonica> resultado = FaseCanonica.Criar(
+            null, "", null, "CEPS", false, false, null, false, false, false, "PROPRIA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.CodigoObrigatorio);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(FaseCanonicaErrorCodes.NomeObrigatorio);
+    }
+
+    [Fact(DisplayName = "Código fora do conjunto canônico com AgrupaEtapas=true não soma a coerência dependente do código")]
+    public void Criar_CodigoInvalidoComAgrupaEtapas_NaoSomaCoerenciaDependente()
+    {
+        Result<FaseCanonica> resultado = Criar(codigo: "ENTREVISTA_FINAL", agrupaEtapas: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(
+            "a coerência AgrupaEtapasApenasAvaliacao depende de um código já confiável — "
+            + "com o código inválido, relatá-la seria um segundo erro derivado do primeiro");
+        resultado.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico);
+    }
+
+    [Fact(DisplayName = "Nome ausente e resultado definitivo sem produzir resultado (independente do código) acumulam as duas violações")]
+    public void Criar_NomeAusenteECA04_AcumulaAsDuasViolacoes()
+    {
+        Result<FaseCanonica> resultado = Criar(
+            nome: "", produzResultado: false, resultadoDefinitivo: true);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[1].Field.Should().Be("resultadoDefinitivo");
+        resultado.Errors[1].Error.Code.Should().Be(FaseCanonicaErrorCodes.ResultadoDefinitivoSemProduzirResultado);
+    }
+
+    [Fact(DisplayName = "ValidarCamposComuns isolado acumula violações independentes do código, sem I/O")]
+    public void ValidarCamposComuns_TresCamposInvalidos_AcumulaAsTresViolacoes()
+    {
+        Result<(string Nome, string? Descricao, DonoTipico DonoTipico, string? BaseLegal,
+            bool ProduzResultado, bool ResultadoDefinitivo, OrigemDataFase OrigemData)> resultado =
+            FaseCanonica.ValidarCamposComuns(null, null, null, null, false, false, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("nome");
+        resultado.Errors[1].Field.Should().Be("donoTipico");
+        resultado.Errors[2].Field.Should().Be("origemData");
     }
 }

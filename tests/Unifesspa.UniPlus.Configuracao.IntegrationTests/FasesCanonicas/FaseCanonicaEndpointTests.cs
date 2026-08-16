@@ -167,7 +167,7 @@ public sealed class FaseCanonicaEndpointTests
         segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    [Fact(DisplayName = "POST com resultado definitivo sem produzir resultado retorna 422 (CA-04)")]
+    [Fact(DisplayName = "POST com resultado definitivo sem produzir resultado retorna 422")]
     public async Task Criar_ResultadoDefinitivoSemProduzirResultado_Retorna422()
     {
         var body = new
@@ -184,6 +184,38 @@ public sealed class FaseCanonicaEndpointTests
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "POST com código e nome ausentes ao mesmo tempo acumula as duas violações em errors[]")]
+    public async Task Criar_CodigoENomeAusentes_AcumulaAsDuasViolacoesEmErrors()
+    {
+        var body = new { donoTipico = "CEPS", origemData = "PROPRIA" };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "campo ausente no JSON precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(2);
+        erros.EnumerateArray().Select(e => e.GetProperty("field").GetString())
+            .Should().BeEquivalentTo(["codigo", "nome"]);
+    }
+
+    [Fact(DisplayName = "POST com código inválido e AgrupaEtapas=true não soma a coerência dependente do código em errors[]")]
+    public async Task Criar_CodigoInvalidoComAgrupaEtapas_NaoSomaCoerenciaDependenteEmErrors()
+    {
+        var body = new { codigo = "ENTREVISTA_FINAL", nome = "x", donoTipico = "CEPS", origemData = "PROPRIA", agrupaEtapas = true };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(1,
+            "a coerência AgrupaEtapasApenasAvaliacao depende de um código já confiável e não deve somar ao erro de código");
     }
 
     private static async Task<HttpResponseMessage> EnviarPostAdmin(HttpClient client, object body)

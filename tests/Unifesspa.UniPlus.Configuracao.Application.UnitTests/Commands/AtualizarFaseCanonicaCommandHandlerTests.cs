@@ -51,8 +51,8 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Coerência revalidada contra o código congelado (agrupar etapas) retorna 422 sem persistir")]
-    public async Task Handle_CoerenciaInvalida_Retorna422()
+    [Fact(DisplayName = "Coerência dependente do código (agrupar etapas) busca a fase por Id e só então recusa (422) sem persistir")]
+    public async Task Handle_CoerenciaInvalida_BuscaPorIdERecusa422SemPersistir()
     {
         FaseCanonica existente = Existente("HOMOLOGACAO");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
@@ -64,7 +64,24 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
             comando, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
+        resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao,
+            "essa coerência só é decidível depois do fetch, porque depende do código persistido (imutável)");
+        await _repository.Received(1).ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Nome ausente (independente do código) retorna a violação sem buscar a fase por Id")]
+    public async Task Handle_NomeAusente_RetornaViolacaoSemBuscarPorId()
+    {
+        var comando = new AtualizarFaseCanonicaCommand(
+            Guid.CreateVersion7(), Nome: "", DonoTipico: "CEPS", OrigemData: "PROPRIA");
+
+        Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.NomeObrigatorio);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

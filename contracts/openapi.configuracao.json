@@ -10248,7 +10248,10 @@
         "type": "object",
         "properties": {
           "codigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "nome": {
             "type": [
