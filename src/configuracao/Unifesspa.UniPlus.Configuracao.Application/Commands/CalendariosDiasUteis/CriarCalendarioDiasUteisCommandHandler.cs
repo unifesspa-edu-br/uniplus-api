@@ -25,18 +25,20 @@ public static class CriarCalendarioDiasUteisCommandHandler
 
         Result<CalendarioDiasUteis> calendarioResult = CalendarioDiasUteis.Criar(
             command.VersaoDataset,
-            [.. command.DiasNaoUteis.Select(d => new DiaNaoUtilCriacao(
-                d.Abrangencia,
-                d.MunicipioIbge,
-                d.MunicipioNome,
-                d.MunicipioUf,
-                d.Data,
-                d.Descricao,
-                d.Uf))]);
+            command.DiasNaoUteis?.Select(d => d is null
+                ? null
+                : new DiaNaoUtilCriacao(
+                    d.Abrangencia,
+                    d.MunicipioIbge,
+                    d.MunicipioNome,
+                    d.MunicipioUf,
+                    d.Data,
+                    d.Descricao,
+                    d.Uf)).ToList());
 
         if (calendarioResult.IsFailure)
         {
-            return Result<Guid>.Failure(calendarioResult.Error!);
+            return Result<Guid>.ValidationFailure(calendarioResult.Errors);
         }
 
         CalendarioDiasUteis calendario = calendarioResult.Value!;

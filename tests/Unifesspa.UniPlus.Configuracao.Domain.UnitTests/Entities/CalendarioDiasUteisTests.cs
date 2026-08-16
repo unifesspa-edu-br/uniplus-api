@@ -362,4 +362,78 @@ public sealed class CalendarioDiasUteisTests
 
         calendario.Vigente.Should().BeFalse();
     }
+
+    // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
+
+    [Fact(DisplayName = "Versão do dataset e lista de dias nulas não lançam — devolvem as duas violações rotuladas")]
+    public void Criar_VersaoEListaNulas_NaoLancaEDevolveAsDuasViolacoesRotuladas()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("versaoDataset");
+        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.VersaoDatasetObrigatoria);
+        resultado.Errors[1].Field.Should().Be("diasNaoUteis");
+        resultado.Errors[1].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.SemDiaNaoUtil);
+    }
+
+    [Fact(DisplayName = "Item nulo é rotulado pela posição na lista (diasNaoUteis[i])")]
+    public void Criar_ItemNulo_RotuladoPelaPosicao()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar("2027.1", [Nacional(), null]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("diasNaoUteis[1]");
+        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.DiaNaoUtilNulo);
+    }
+
+    [Fact(DisplayName = "Abrangência inválida e descrição ausente no mesmo item acumulam as duas violações rotuladas")]
+    public void Criar_AbrangenciaInvalidaEDescricaoAusenteNoMesmoItem_AcumulaAsDuasViolacoes()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1", [new DiaNaoUtilCriacao("INVALIDO", null, null, null, DataBase, "")]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("diasNaoUteis[0].abrangencia");
+        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.AbrangenciaInvalida);
+        resultado.Errors[1].Field.Should().Be("diasNaoUteis[0].descricao");
+        resultado.Errors[1].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.DescricaoObrigatoria);
+    }
+
+    [Fact(DisplayName = "Violações em itens distintos da lista acumulam com o índice de cada item")]
+    public void Criar_ViolacoesEmItensDistintos_AcumulaComIndiceDeCadaItem()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1",
+            [
+                Nacional(),
+                new DiaNaoUtilCriacao("ESTADUAL", null, null, null, DataBase.AddDays(1), "Falta UF"),
+                Municipal(DataBase.AddDays(2), municipioIbge: null),
+            ]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        resultado.Errors[0].Field.Should().Be("diasNaoUteis[1].uf");
+        resultado.Errors[0].Error.Code.Should().Be(CalendarioDiasUteisErrorCodes.UfObrigatoriaParaEstadual);
+        resultado.Errors[1].Field.Should().Be("diasNaoUteis[2].municipioIbge");
+        resultado.Errors[1].Error.Code.Should().Be(CidadeReferenciaErrorCodes.CodigoIbgeObrigatorio);
+    }
+
+    [Fact(DisplayName = "Item inválido ao lado de item válido na mesma lista não introduz erro espúrio para o item válido")]
+    public void Criar_ItemInvalidoEItemValidoNaMesmaLista_NaoIntroduzErroEspurioNoValido()
+    {
+        Result<CalendarioDiasUteis> resultado = CalendarioDiasUteis.Criar(
+            "2027.1",
+            [
+                new DiaNaoUtilCriacao("INVALIDO", null, null, null, DataBase, "Item quebrado"),
+                Nacional(DataBase.AddDays(1)),
+            ]);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle();
+        resultado.Errors[0].Field.Should().Be("diasNaoUteis[0].abrangencia");
+    }
 }

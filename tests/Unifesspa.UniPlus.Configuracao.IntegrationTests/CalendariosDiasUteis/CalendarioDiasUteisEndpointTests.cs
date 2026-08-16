@@ -244,6 +244,74 @@ public sealed class CalendarioDiasUteisEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    [Fact(DisplayName = "POST com versaoDataset genuinamente ausente no JSON retorna 422 (não 400 de model binding)")]
+    public async Task Criar_VersaoDatasetAusenteNoJson_Retorna422()
+    {
+        var corpo = new
+        {
+            diasNaoUteis = new[]
+            {
+                new
+                {
+                    abrangencia = "NACIONAL",
+                    municipioIbge = (string?)null,
+                    municipioNome = (string?)null,
+                    municipioUf = (string?)null,
+                    data = "2027-01-01",
+                    descricao = "Confraternização Universal",
+                },
+            },
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, corpo);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "sem validator FluentValidation a montante, o campo ausente precisa chegar ao domínio (ADR-0125), não virar 400 de model binding");
+    }
+
+    [Fact(DisplayName = "POST com violações em dois itens da lista acumula em errors[] com o índice de cada item")]
+    public async Task Criar_ViolacoesEmDoisItens_AcumulaEmErrorsComIndiceDeCadaItem()
+    {
+        var corpo = new
+        {
+            versaoDataset = VersaoUnica(),
+            diasNaoUteis = new object[]
+            {
+                new
+                {
+                    abrangencia = "INVALIDO",
+                    municipioIbge = (string?)null,
+                    municipioNome = (string?)null,
+                    municipioUf = (string?)null,
+                    uf = (string?)null,
+                    data = "2027-05-08",
+                    descricao = "Item quebrado",
+                },
+                new
+                {
+                    abrangencia = "ESTADUAL",
+                    municipioIbge = (string?)null,
+                    municipioNome = (string?)null,
+                    municipioUf = (string?)null,
+                    uf = (string?)null,
+                    data = "2027-05-09",
+                    descricao = "Falta UF",
+                },
+            },
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, corpo);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement erros = doc.RootElement.GetProperty("errors");
+        erros.GetArrayLength().Should().Be(2);
+        erros.EnumerateArray().Select(e => e.GetProperty("field").GetString())
+            .Should().BeEquivalentTo(["diasNaoUteis[0].abrangencia", "diasNaoUteis[1].uf"]);
+    }
+
     private static object CorpoValido(string? versaoDataset = null) => new
     {
         versaoDataset = versaoDataset ?? "2027.1",
