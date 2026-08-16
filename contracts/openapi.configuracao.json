@@ -10079,10 +10079,16 @@
         "type": "object",
         "properties": {
           "versaoDataset": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "diasNaoUteis": {
-            "type": "array",
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "$ref": "#/components/schemas/DiaNaoUtilCommandItem"
             }
@@ -10878,7 +10884,10 @@
         "type": "object",
         "properties": {
           "abrangencia": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "municipioIbge": {
             "type": [
@@ -10903,7 +10912,10 @@
             "format": "date"
           },
           "descricao": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "uf": {
             "type": [

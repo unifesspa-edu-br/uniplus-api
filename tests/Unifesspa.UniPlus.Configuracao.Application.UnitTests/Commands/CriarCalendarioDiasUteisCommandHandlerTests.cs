@@ -56,4 +56,18 @@ public sealed class CriarCalendarioDiasUteisCommandHandlerTests
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<CalendarioDiasUteis>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "Comando com versão e lista de dias nulas não lança — devolve violação de domínio sem persistir")]
+    public async Task Handle_VersaoEListaNulas_NaoLancaEDevolveViolacaoDeDominio()
+    {
+        var comando = new CriarCalendarioDiasUteisCommand(null, null);
+
+        Result<Guid> resultado = await CriarCalendarioDiasUteisCommandHandler.Handle(
+            comando, _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<CalendarioDiasUteis>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
 }
