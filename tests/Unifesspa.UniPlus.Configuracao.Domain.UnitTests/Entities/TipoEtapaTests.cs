@@ -80,6 +80,53 @@ public sealed class TipoEtapaTests
         result.Error!.Code.Should().Be(codigoEsperado);
     }
 
+    [Theory(DisplayName = "Código, nome ou descrição nulos não lançam — devolvem a violação de domínio")]
+    [InlineData(null, "Nome válido", null, TipoEtapaErrorCodes.CodigoObrigatorio)]
+    [InlineData("CODIGO_VALIDO", null, null, TipoEtapaErrorCodes.NomeObrigatorio)]
+    public void Criar_CamposObrigatoriosNulos_NaoLancaEDevolveViolacaoDeDominio(
+        string? codigo, string? nome, string? descricao, string codigoEsperado)
+    {
+        Result<TipoEtapa> resultado = TipoEtapa.Criar(codigo, nome, descricao);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(codigoEsperado);
+    }
+
+    // ── Acumulação (ADR-0125) ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Antes: ValidarCampos retornava no primeiro campo inválido, mascarando as
+    /// demais violações — paridade com o FluentValidation removido, que
+    /// reportava cada campo em separado.
+    /// </summary>
+    [Fact(DisplayName = "Código, nome e descrição inválidos ao mesmo tempo acumulam as três violações rotuladas")]
+    public void Criar_TresCamposInvalidos_AcumulaAsTresViolacoesRotuladas()
+    {
+        Result<TipoEtapa> resultado = TipoEtapa.Criar(
+            new string('A', 65), "", new string('b', 1001));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors[0].Field.Should().Be("codigo");
+        resultado.Errors[0].Error.Code.Should().Be(TipoEtapaErrorCodes.CodigoTamanho);
+        resultado.Errors[1].Field.Should().Be("nome");
+        resultado.Errors[1].Error.Code.Should().Be(TipoEtapaErrorCodes.NomeObrigatorio);
+        resultado.Errors[2].Field.Should().Be("descricao");
+        resultado.Errors[2].Error.Code.Should().Be(TipoEtapaErrorCodes.DescricaoTamanho);
+    }
+
+    [Fact(DisplayName = "Atualizar com nome e descrição inválidos acumula as duas violações sem mutar o agregado")]
+    public void Atualizar_NomeEDescricaoInvalidos_AcumulaAsDuasViolacoesSemMutar()
+    {
+        TipoEtapa tipo = TipoEtapa.Criar("CODIGO_VALIDO", "Nome original", null).Value!;
+
+        Result resultado = tipo.Atualizar("", new string('a', 1001));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(2);
+        tipo.Nome.Should().Be("Nome original", "falha de validação não pode mutar o agregado");
+    }
+
     [Fact(DisplayName = "Desativação é terminal e não remove a identidade")]
     public void Desativar_ItemAtivo_DesativaSemApagarCodigo()
     {
