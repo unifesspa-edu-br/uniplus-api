@@ -134,6 +134,53 @@ public sealed class PesoAreaEnemEndpointTests
         doc.RootElement.GetProperty("corteRedacao").GetDecimal().Should().Be(400m);
     }
 
+    [Fact(DisplayName = "POST admin com peso acima do teto persistível retorna 422 (não 400 de código não mapeado)")]
+    public async Task Criar_PesoAcimaDoMaximo_Retorna422()
+    {
+        var body = new
+        {
+            resolucao = ResolucaoUnica(),
+            grupoCurso = GrupoCurso.Tecnologica,
+            pesoRedacao = 100.00m,
+            pesoCienciasNatureza = 1.00m,
+            pesoCienciasHumanas = 1.00m,
+            pesoLinguagens = 1.00m,
+            pesoMatematica = 2.00m,
+            corteRedacao = 400m,
+            baseLegal = BaseLegal,
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "PesoExcedeMaximo precisa estar registrado em ConfiguracaoDomainErrorRegistration — " +
+            "sem isso o mapeador cai no fallback uniplus.erro_nao_mapeado (400)");
+    }
+
+    [Fact(DisplayName = "POST admin com corte de redação acima do máximo retorna 422 (não 400 de código não mapeado)")]
+    public async Task Criar_CorteAcimaDoMaximo_Retorna422()
+    {
+        var body = new
+        {
+            resolucao = ResolucaoUnica(),
+            grupoCurso = GrupoCurso.Tecnologica,
+            pesoRedacao = 1.50m,
+            pesoCienciasNatureza = 1.00m,
+            pesoCienciasHumanas = 1.00m,
+            pesoLinguagens = 1.00m,
+            pesoMatematica = 2.00m,
+            corteRedacao = 1000.001m,
+            baseLegal = BaseLegal,
+        };
+
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await EnviarPostAdmin(client, AdminPath, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity,
+            "CorteRedacaoExcedeMaximo precisa estar registrado em ConfiguracaoDomainErrorRegistration");
+    }
+
     [Fact(DisplayName = "POST admin com grupo fora do domínio retorna 422")]
     public async Task Criar_GrupoInvalido_Retorna422()
     {
