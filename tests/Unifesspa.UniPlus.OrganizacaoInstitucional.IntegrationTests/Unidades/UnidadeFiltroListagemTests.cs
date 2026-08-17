@@ -176,7 +176,7 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         TipoUnidade tipo = TipoUnidade.Centro)
     {
         Unidade unidade = Unidade.Criar(
-            nome, alias, Slug.From(slug).Value!, sigla, codigo, null,
+            nome, alias, slug, sigla, codigo, null,
             tipo, false, DataInicio, null).Value!;
 
         await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext("admin-640");

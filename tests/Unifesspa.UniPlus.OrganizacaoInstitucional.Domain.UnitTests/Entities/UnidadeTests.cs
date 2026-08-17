@@ -18,7 +18,7 @@ public sealed class UnidadeTests
         Unidade.Criar(
             "Centro de Processos Seletivos",
             alias,
-            SlugValido,
+            SlugValido.Valor,
             "CEPS",
             "0001",
             superiorId,
@@ -35,7 +35,7 @@ public sealed class UnidadeTests
         Result<Unidade> resultado = Unidade.Criar(
             "Centro de Processos Seletivos",
             null,
-            SlugValido,
+            SlugValido.Valor,
             "CEPS",
             "0001",
             null,
@@ -85,7 +85,7 @@ public sealed class UnidadeTests
     public void Criar_ComNomeVazio_DeveRetornarNomeObrigatorio(string nomeInvalido)
     {
         Result<Unidade> resultado = Unidade.Criar(
-            nomeInvalido, null, SlugValido, "CEPS", "0001", null,
+            nomeInvalido, null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
@@ -96,7 +96,7 @@ public sealed class UnidadeTests
     public void Criar_ComNomeMuitoCurto_DeveRetornarNomeTamanho()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "a", null, SlugValido, "CEPS", "0001", null,
+            "a", null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
@@ -107,7 +107,7 @@ public sealed class UnidadeTests
     public void Criar_ComSiglaVazia_DeveRetornarSiglaObrigatoria()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "  ", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "  ", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
@@ -118,7 +118,7 @@ public sealed class UnidadeTests
     public void Criar_ComSiglaMuitoLonga_DeveRetornarSiglaTamanho()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, new string('A', 51), "0001", null,
+            "Nome valido", null, SlugValido.Valor, new string('A', 51), "0001", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
@@ -129,7 +129,7 @@ public sealed class UnidadeTests
     public void Criar_ComCodigoVazio_DeveRetornarCodigoObrigatorio()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "  ", null,
+            "Nome valido", null, SlugValido.Valor, "CEPS", "  ", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
@@ -140,7 +140,7 @@ public sealed class UnidadeTests
     public void Criar_ComAliasMuitoLongo_DeveRetornarAliasTamanho()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", new string('a', 101), SlugValido, "CEPS", "0001", null,
+            "Nome valido", new string('a', 101), SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
@@ -153,7 +153,7 @@ public sealed class UnidadeTests
     public void Criar_ComTipoInvalido_DeveRetornarTipoInvalido(TipoUnidade tipoInvalido)
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
             tipoInvalido, false, DataInicio, null);
 
         resultado.IsFailure.Should().BeTrue();
@@ -166,7 +166,7 @@ public sealed class UnidadeTests
         DateOnly fimAnterior = DataInicio.AddDays(-1);
 
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, fimAnterior);
 
         resultado.IsFailure.Should().BeTrue();
@@ -184,7 +184,7 @@ public sealed class UnidadeTests
 
         Result resultado = unidade.Atualizar(
             "Centro de Processos Seletivos Alterado",
-            null, SlugValido, "CEPS", "0001", null,
+            null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, true, null, dataAtual);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -201,7 +201,7 @@ public sealed class UnidadeTests
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, novoSlug, "CEPS", "0001", null,
+            unidade.Nome, null, novoSlug.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, null, dataAtual, "Adequação de naming");
 
         resultado.IsSuccess.Should().BeTrue();
@@ -224,12 +224,12 @@ public sealed class UnidadeTests
     public void Atualizar_ComCodigoMudandoApenasCaixa_AdicionaEntradaDeHistorico()
     {
         Unidade unidade = Unidade.Criar(
-            "Centro de Processos Seletivos", null, SlugValido, "CEPS", "ABC", null,
+            "Centro de Processos Seletivos", null, SlugValido.Valor, "CEPS", "ABC", null,
             TipoUnidade.Centro, false, DataInicio, null).Value!;
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, SlugValido, "CEPS", "abc", null,
+            unidade.Nome, null, SlugValido.Valor, "CEPS", "abc", null,
             TipoUnidade.Centro, false, null, dataAtual, "Correção de caixa");
 
         resultado.IsSuccess.Should().BeTrue();
@@ -249,7 +249,7 @@ public sealed class UnidadeTests
     public void Criar_SiglaEhNormalizadaParaUppercase()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "ceps", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "ceps", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -258,11 +258,11 @@ public sealed class UnidadeTests
 
     // ── Cidade (issue #1114) — opcional all-or-nothing ────────────────────
 
-    [Fact(DisplayName = "Criar sem cidade tem sucesso — cidade é opcional em Unidade (CA-02)")]
+    [Fact(DisplayName = "Criar sem cidade tem sucesso — cidade é opcional em Unidade")]
     public void Criar_SemCidade_Sucesso()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -275,7 +275,7 @@ public sealed class UnidadeTests
     public void Criar_ComCidadeCompleta_Sucesso()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null,
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "pa");
 
@@ -292,7 +292,7 @@ public sealed class UnidadeTests
     public void Criar_ComCidadeParcial_Falha(string? codigo, string? nome, string? uf)
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null,
             cidadeCodigoIbge: codigo, cidadeNome: nome, cidadeUf: uf);
 
@@ -303,7 +303,7 @@ public sealed class UnidadeTests
     public void Criar_ComCidadeUfIncoerente_Falha()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido, "CEPS", "0001", null,
+            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null,
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "SP");
 
@@ -318,7 +318,7 @@ public sealed class UnidadeTests
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, SlugValido, "CEPS", "0001", null,
+            unidade.Nome, null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, null, dataAtual,
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA");
 
@@ -332,18 +332,61 @@ public sealed class UnidadeTests
     public void Atualizar_RemovendoCidade_ZeraOsTresCampos()
     {
         Unidade unidade = Unidade.Criar(
-            "Centro de Processos Seletivos", null, SlugValido, "CEPS", "0001", null,
+            "Centro de Processos Seletivos", null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, DataInicio, null,
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!;
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, SlugValido, "CEPS", "0001", null,
+            unidade.Nome, null, SlugValido.Valor, "CEPS", "0001", null,
             TipoUnidade.Centro, false, null, dataAtual);
 
         resultado.IsSuccess.Should().BeTrue();
         unidade.CidadeCodigoIbge.Should().BeNull();
         unidade.CidadeNome.Should().BeNull();
         unidade.CidadeUf.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Criar com três violações independentes acumula as três no mesmo lote")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
+    {
+        Result<Unidade> resultado = Unidade.Criar(
+            nome: "",
+            alias: null,
+            slug: "SLUG-INVALIDO",
+            sigla: "CEPS",
+            codigo: "0001",
+            unidadeSuperiorId: null,
+            tipo: TipoUnidade.Nenhum,
+            unidadeAcademica: false,
+            vigenciaInicio: DataInicio,
+            vigenciaFim: null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().HaveCount(3);
+        resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);
+        resultado.Errors.Should().Contain(e => e.Field == "slug" && e.Error.Code == UnidadeErrorCodes.SlugFormatoInvalido);
+        resultado.Errors.Should().Contain(e => e.Field == "tipo" && e.Error.Code == UnidadeErrorCodes.TipoInvalido);
+    }
+
+    [Fact(DisplayName = "ValidarCampos replica o resultado de Criar sem instanciar o agregado")]
+    public void ValidarCampos_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
+    {
+        Result validacao = Unidade.ValidarCampos(
+            nome: null,
+            alias: null,
+            slug: null,
+            sigla: "CEPS",
+            codigo: "0001",
+            tipo: TipoUnidade.Centro,
+            vigenciaInicio: DataInicio,
+            vigenciaFim: null,
+            cidadeCodigoIbge: null,
+            cidadeNome: null,
+            cidadeUf: null);
+
+        validacao.IsFailure.Should().BeTrue();
+        validacao.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);
+        validacao.Errors.Should().ContainSingle(e => e.Field == "slug" && e.Error.Code == UnidadeErrorCodes.SlugObrigatorio);
     }
 }

@@ -180,7 +180,7 @@ public sealed class UnidadeEndpointTests
         Unidade unidade = Unidade.Criar(
             nome,
             null,
-            Slug.From($"u-{sufixo}").Value!,
+            $"u-{sufixo}",
             sigla,
             sufixo,
             null,

@@ -7,6 +7,12 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
+/// <summary>
+/// Handler do <see cref="AtualizarUnidadeCommand"/>. Valida o payload por
+/// inteiro (incluindo o formato do Slug) ANTES de qualquer I/O — validação
+/// sempre vence 404 — e só então busca a Unidade por Id, confere unicidade e
+/// hierarquia.
+/// </summary>
 public static class AtualizarUnidadeCommandHandler
 {
     public static async Task<Result> Handle(
@@ -23,6 +29,26 @@ public static class AtualizarUnidadeCommandHandler
         ArgumentNullException.ThrowIfNull(cacheInvalidator);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
+        Result validacao = Unidade.ValidarCampos(
+            command.Nome,
+            command.Alias,
+            command.Slug,
+            command.Sigla,
+            command.Codigo,
+            command.Tipo,
+            // VigenciaInicio não é editável — a checagem de coerência com VigenciaFim
+            // exige o valor persistido, então roda de novo dentro de Atualizar
+            // (após o fetch), com o VigenciaInicio real da Unidade existente.
+            DateOnly.MinValue,
+            null,
+            command.CidadeCodigoIbge,
+            command.CidadeNome,
+            command.CidadeUf);
+        if (validacao.IsFailure)
+        {
+            return Result.ValidationFailure(validacao.Errors);
+        }
+
         Unidade? unidade = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (unidade is null)
         {
@@ -31,13 +57,9 @@ public static class AtualizarUnidadeCommandHandler
                 "Unidade não encontrada."));
         }
 
-        Result<Slug> slugResult = Slug.From(command.Slug);
-        if (slugResult.IsFailure)
-        {
-            return Result.Failure(slugResult.Error!);
-        }
-
-        Slug slug = slugResult.Value!;
+        // O payload já foi confirmado válido acima, com o mesmo Slug — não pode
+        // falhar de novo.
+        Slug slug = Slug.From(command.Slug).Value!;
 
         if (!string.Equals(slug.Valor, unidade.Slug.Valor, StringComparison.OrdinalIgnoreCase)
             && await repository.SlugExisteEntreLivosAsync(slug, command.Id, cancellationToken).ConfigureAwait(false))
@@ -48,7 +70,7 @@ public static class AtualizarUnidadeCommandHandler
         }
 
         if (!string.Equals(command.Sigla, unidade.Sigla, StringComparison.OrdinalIgnoreCase)
-            && await repository.SiglaExisteEntreLivosAsync(command.Sigla, command.Id, cancellationToken).ConfigureAwait(false))
+            && await repository.SiglaExisteEntreLivosAsync(command.Sigla!, command.Id, cancellationToken).ConfigureAwait(false))
         {
             return Result.Failure(new DomainError(
                 UnidadeErrorCodes.SiglaJaExiste,
@@ -58,7 +80,7 @@ public static class AtualizarUnidadeCommandHandler
         // Codigo é case-sensitive (o agregado preserva a caixa e o índice único é
         // case-sensitive) — compara com Ordinal para que ABC→abc conte como
         // mudança e dispare a checagem, em vez de estourar no índice (500).
-        if (!string.Equals(command.Codigo.Trim(), unidade.Codigo, StringComparison.Ordinal)
+        if (!string.Equals(command.Codigo!.Trim(), unidade.Codigo, StringComparison.Ordinal)
             && await repository.CodigoExisteEntreLivosAsync(command.Codigo, command.Id, cancellationToken).ConfigureAwait(false))
         {
             return Result.Failure(new DomainError(
@@ -99,7 +121,7 @@ public static class AtualizarUnidadeCommandHandler
         Result atualizarResult = unidade.Atualizar(
             command.Nome,
             command.Alias,
-            slug,
+            command.Slug,
             command.Sigla,
             command.Codigo,
             command.UnidadeSuperiorId,
