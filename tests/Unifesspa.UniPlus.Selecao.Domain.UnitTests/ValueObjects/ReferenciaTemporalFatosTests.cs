@@ -110,4 +110,31 @@ public sealed class ReferenciaTemporalFatosTests
         resultado.Value!.Data.Should().Be(Data);
         resultado.Value.FaseId.Should().BeNull();
     }
+
+    [Fact(DisplayName = "Sobrecarga de wire: tipo nulo é tratado como ausente")]
+    public void Criar_TokenNulo_TratadoComoAusente()
+    {
+        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar((string?)null, null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ReferenciaTemporalFatos.TipoObrigatorio");
+    }
+
+    [Fact(DisplayName = "Sobrecarga de wire: token fora do catálogo é distinto de ausente")]
+    public void Criar_TokenDesconhecido_DistintoDeAusente()
+    {
+        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar("QUALQUER_COISA", null, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ReferenciaTemporalFatos.TipoDesconhecido");
+    }
+
+    [Fact(DisplayName = "Sobrecarga de wire: token reconhecido delega para a coerência tudo-ou-nada")]
+    public void Criar_TokenReconhecido_DelegaParaCoerencia()
+    {
+        Result<ReferenciaTemporalFatos> resultado = ReferenciaTemporalFatos.Criar("FIM_INSCRICAO", null, null);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Tipo.Should().Be(ReferenciaTipo.FimInscricao);
+    }
 }

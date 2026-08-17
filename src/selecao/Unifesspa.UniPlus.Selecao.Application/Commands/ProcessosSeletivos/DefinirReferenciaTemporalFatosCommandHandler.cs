@@ -45,11 +45,10 @@ public static class DefinirReferenciaTemporalFatosCommandHandler
         ReferenciaTemporalFatos? referencia = null;
         if (command.Tipo is not null)
         {
-            ReferenciaTipo tipo = ReferenciaTipoCodigo.FromCodigo(command.Tipo);
-            Result<ReferenciaTemporalFatos> referenciaResult = ReferenciaTemporalFatos.Criar(tipo, command.Data, command.FaseId);
+            Result<ReferenciaTemporalFatos> referenciaResult = ReferenciaTemporalFatos.Criar(command.Tipo, command.Data, command.FaseId);
             if (referenciaResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(referenciaResult.Error!);
+                return Result<MutacaoAceita>.ValidationFailure(referenciaResult.Errors);
             }
 
             referencia = referenciaResult.Value!;
