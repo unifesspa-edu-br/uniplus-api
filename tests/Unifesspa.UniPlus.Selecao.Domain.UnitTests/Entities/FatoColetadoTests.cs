@@ -65,4 +65,43 @@ public sealed class FatoColetadoTests
         resultado.Value!.TipoRenderizacao.Should().Be(TipoRenderizacao.Booleano);
         resultado.Value!.Obrigatorio.Should().BeTrue();
     }
+
+    [Fact(DisplayName = "Código do fato acima do limite é recusado")]
+    public void Criar_FatoCodigoMuitoLongo_Recusa()
+    {
+        string codigoLongo = new('A', FatoColetado.FatoCodigoMaxLength + 1);
+
+        Result<FatoColetado> resultado = FatoColetado.Criar(
+            codigoLongo, 0, "Rótulo", TipoRenderizacao.SelecaoUnica, obrigatorio: false, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.FatoCodigoTamanho);
+    }
+
+    [Fact(DisplayName = "Rótulo acima do limite é recusado")]
+    public void Criar_RotuloMuitoLongo_Recusa()
+    {
+        string rotuloLongo = new('a', FatoColetado.RotuloMaxLength + 1);
+
+        Result<FatoColetado> resultado = FatoColetado.Criar(
+            "COR_RACA", 0, rotuloLongo, TipoRenderizacao.SelecaoUnica, obrigatorio: false, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.RotuloTamanho);
+    }
+
+    [Fact(DisplayName = "ADR-0125: violações independentes acumulam num único lote")]
+    public void Criar_OrdemNegativaERotuloVazioETipoRenderizacaoAusente_AcumulaAsTresViolacoes()
+    {
+        Result<FatoColetado> resultado = FatoColetado.Criar(
+            "COR_RACA", -1, "", TipoRenderizacao.Nenhuma, obrigatorio: false, null);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            FatoColetadoErrorCodes.OrdemInvalida,
+            FatoColetadoErrorCodes.RotuloObrigatorio,
+            FatoColetadoErrorCodes.TipoRenderizacaoObrigatorio,
+        ]);
+    }
 }

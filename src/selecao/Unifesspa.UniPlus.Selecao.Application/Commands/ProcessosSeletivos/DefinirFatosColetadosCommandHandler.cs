@@ -65,16 +65,36 @@ public static class DefinirFatosColetadosCommandHandler
         // contra um catálogo global.
         IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos = ResolverDominiosDinamicos(processo);
 
+        // Acumula (ADR-0125) as violações de FORMA de FatoColetado.Criar (fatoCodigo/ordem/
+        // rotulo/tipoRenderizacao/autorreferência) através de TODOS os fatos, com o índice
+        // prefixado ao field — o FluentValidation removido já garantia essa granularidade via
+        // RuleForEach, rodando como middleware antes do handler. As checagens mais profundas
+        // (vocabulário cross-módulo, coerência de renderização, semântica de pré-condição) nunca
+        // foram cobertas pelo validator — permanecem parando no primeiro fato que falhar, como já
+        // acontecia; o sinal para distinguir os dois casos é a presença de Field (só existe vindo
+        // de ValidationFailure, nunca de Failure(DomainError) — ADR-0125).
         List<FatoColetado> fatos = [];
-        foreach (FatoColetadoInput input in command.Fatos)
+        List<FieldError> formaErros = [];
+        for (int indice = 0; indice < command.Fatos.Count; indice++)
         {
-            Result<FatoColetado> fatoResult = ResolverFato(input, catalogo, vocabulario, dominiosDinamicos);
+            Result<FatoColetado> fatoResult = ResolverFato(command.Fatos[indice], catalogo, vocabulario, dominiosDinamicos);
             if (fatoResult.IsFailure)
             {
+                if (fatoResult.Errors.Any(erro => erro.Field is not null))
+                {
+                    formaErros.AddRange(fatoResult.Errors.Select(erro => erro with { Field = $"fatos[{indice}].{erro.Field}" }));
+                    continue;
+                }
+
                 return Result<MutacaoAceita>.Failure(fatoResult.Error!);
             }
 
             fatos.Add(fatoResult.Value!);
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
         }
 
         Result result = processo.DefinirFatosColetados(fatos, command.Precondicao);

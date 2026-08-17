@@ -243,9 +243,11 @@ internal sealed class SelecaoDomainErrorRegistration : IDomainErrorRegistration
         // (ProcessoSeletivo.MutacaoPosPublicacaoBloqueada). Os códigos de FatoColetado usam
         // constantes e escapam do fitness test — registrados aqui à mão para não caírem em 500.
         new("FatoColetado.FatoCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_codigo_obrigatorio", "O código do fato coletado é obrigatório")),
+        new("FatoColetado.FatoCodigoTamanho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.fato_codigo_tamanho", "O código do fato coletado excede o tamanho máximo permitido")),
         new("FatoColetado.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.ordem_invalida", "A ordem de coleta não pode ser negativa")),
         // Apresentação do campo no formulário de inscrição (Story #559).
         new("FatoColetado.RotuloObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.rotulo_obrigatorio", "O rótulo do fato coletado é obrigatório")),
+        new("FatoColetado.RotuloTamanho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.rotulo_tamanho", "O rótulo do fato coletado excede o tamanho máximo permitido")),
         new("FatoColetado.TipoRenderizacaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.tipo_renderizacao_obrigatorio", "O tipo de renderização do fato coletado é obrigatório")),
         new("FatoColetado.TipoRenderizacaoIncoerenteComDominio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.tipo_renderizacao_incoerente_com_dominio", "O tipo de renderização não é coerente com o domínio/cardinalidade do fato no catálogo")),
         new("FatoColetado.PrecondicaoAutorreferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.precondicao_autorreferente", "A pré-condição de um fato cita o próprio fato")),

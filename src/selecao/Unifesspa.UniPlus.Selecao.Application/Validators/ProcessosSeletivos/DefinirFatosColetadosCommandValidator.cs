@@ -4,6 +4,17 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
+/// <summary>
+/// Duas checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
+/// identificador de rota; a lista de fatos e cada item não podem ser nulos — o handler
+/// desreferencia sem checagem defensiva. FatoCodigo/Ordem/Rotulo/TipoRenderizacao (via a
+/// coerência de <c>FatoColetado.Criar</c>) e a autorreferência de pré-condição já têm
+/// equivalente completo no domínio e ficaram fora daqui. A forma da pré-condição
+/// (<c>Must</c> abaixo) permanece: não tem equivalente em <c>FatoColetado.Criar</c>, que só
+/// recebe a lista já montada — a montagem e a checagem de forma bruta acontecem na
+/// Application (<c>DefinirFatosColetadosCommandHandler</c>), que resolve o vocabulário
+/// cross-módulo.
+/// </summary>
 public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<DefinirFatosColetadosCommand>
 {
     public DefinirFatosColetadosCommandValidator()
@@ -24,22 +35,6 @@ public sealed class DefinirFatosColetadosCommandValidator : AbstractValidator<De
 
         RuleForEach(x => x.Fatos).ChildRules(fato =>
         {
-            fato.RuleFor(f => f.FatoCodigo)
-                .NotEmpty()
-                .WithMessage("O código do fato coletado é obrigatório.");
-
-            fato.RuleFor(f => f.Ordem)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("A ordem de coleta não pode ser negativa.");
-
-            // Alinhado a FatoColetadoConfiguration (varchar(300)) — sem o limite aqui, um valor
-            // mais longo passa a validação e só falha em SaveChanges com erro de banco em vez de
-            // 422 (mesmo achado já corrigido em DefinirBonusRegionalCommandValidator).
-            fato.RuleFor(f => f.Rotulo)
-                .NotEmpty()
-                .MaximumLength(300)
-                .WithMessage("O rótulo do fato coletado é obrigatório e deve ter no máximo 300 caracteres.");
-
             // Ausência de pré-condição é null, nunca []. Uma lista externa vazia, uma cláusula
             // interna vazia ou uma condição nula deixariam a semântica DNF ambígua (um predicado
             // sem cláusula, ou uma cláusula sem condição, avaliaria falso — o oposto de "sem
