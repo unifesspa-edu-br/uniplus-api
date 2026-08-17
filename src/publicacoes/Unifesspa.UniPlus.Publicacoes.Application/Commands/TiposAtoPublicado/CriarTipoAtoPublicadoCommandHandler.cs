@@ -8,8 +8,10 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="CriarTipoAtoPublicadoCommand"/> (convention-based
-/// Wolverine): confere que nenhuma versão viva do mesmo código intercepta a janela
-/// informada, cria o agregado, persiste e commita.
+/// Wolverine): valida o payload por inteiro primeiro (sem I/O — validação sempre
+/// vence I/O), só então confere que nenhuma versão viva do mesmo código intercepta
+/// a janela informada, cria o agregado (que não pode falhar de novo, já validado),
+/// persiste e commita.
 /// </summary>
 /// <remarks>
 /// A consulta prévia dá a mensagem legível no caso comum; a exclusion constraint
@@ -28,15 +30,22 @@ public static class CriarTipoAtoPublicadoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result validacao = TipoAtoPublicado.ValidarCampos(
+            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal);
+        if (validacao.IsFailure)
+        {
+            return Result<Guid>.ValidationFailure(validacao.Errors);
+        }
+
         bool sobreposta = await repository.ExisteSobreposicaoDeVigenciaAsync(
-            command.Codigo, command.VigenciaInicio, command.VigenciaFim, null, cancellationToken)
+            command.Codigo!, command.VigenciaInicio, command.VigenciaFim, null, cancellationToken)
             .ConfigureAwait(false);
         if (sobreposta)
         {
-            return Result<Guid>.Failure(VigenciaSobrepostaErro(command.Codigo));
+            return Result<Guid>.Failure(VigenciaSobrepostaErro(command.Codigo!));
         }
 
-        Result<TipoAtoPublicado> tipoResult = TipoAtoPublicado.Criar(
+        TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             command.Codigo,
             command.Nome,
             command.CongelaConfiguracao,
@@ -44,14 +53,8 @@ public static class CriarTipoAtoPublicadoCommandHandler
             command.EfeitoIrreversivel,
             command.VigenciaInicio,
             command.VigenciaFim,
-            command.BaseLegal);
+            command.BaseLegal).Value!;
 
-        if (tipoResult.IsFailure)
-        {
-            return Result<Guid>.Failure(tipoResult.Error!);
-        }
-
-        TipoAtoPublicado tipo = tipoResult.Value!;
         await repository.AdicionarAsync(tipo, cancellationToken).ConfigureAwait(false);
 
         try
@@ -70,7 +73,7 @@ public static class CriarTipoAtoPublicadoCommandHandler
             // handler retorna, e sem isso a mesma exceção estouraria de novo
             // fora deste catch, virando 500 em vez do DomainError já traduzido.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(VigenciaSobrepostaErro(command.Codigo));
+            return Result<Guid>.Failure(VigenciaSobrepostaErro(command.Codigo!));
         }
 
         return Result<Guid>.Success(tipo.Id);

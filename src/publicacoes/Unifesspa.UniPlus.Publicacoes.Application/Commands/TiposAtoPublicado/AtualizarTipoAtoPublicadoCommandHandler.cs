@@ -7,9 +7,12 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
 /// <summary>
-/// Handler do <see cref="AtualizarTipoAtoPublicadoCommand"/>. Revalida a
-/// sobreposição apenas quando o código ou a janela mudam — alterar o nome ou os
-/// atributos de consequência não pode criar conflito.
+/// Handler do <see cref="AtualizarTipoAtoPublicadoCommand"/>. Valida os campos
+/// independentes do payload ANTES de qualquer I/O — validação sempre vence 404 —
+/// e só então busca o tipo por Id (a checagem de imutabilidade do código depende
+/// do valor persistido, então roda depois do fetch). Revalida a sobreposição
+/// apenas quando o código ou a janela mudam — alterar o nome ou os atributos de
+/// consequência não pode criar conflito.
 /// </summary>
 public static class AtualizarTipoAtoPublicadoCommandHandler
 {
@@ -23,6 +26,13 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result validacaoPreCheck = TipoAtoPublicado.ValidarCampos(
+            command.Codigo, command.Nome, command.VigenciaInicio, command.VigenciaFim, command.BaseLegal);
+        if (validacaoPreCheck.IsFailure)
+        {
+            return Result.ValidationFailure(validacaoPreCheck.Errors);
+        }
+
         TipoAtoPublicado? tipo = await repository
             .ObterPorIdAsync(command.Id, cancellationToken)
             .ConfigureAwait(false);
@@ -31,7 +41,17 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
             return Result.Failure(NaoEncontradoErro());
         }
 
-        if (JanelaOuCodigoMudou(tipo, command))
+        if (!string.Equals(tipo.Codigo, command.Codigo!.Trim(), StringComparison.Ordinal))
+        {
+            return Result.Failure(new DomainError(
+                TipoAtoPublicadoErrorCodes.CodigoImutavel,
+                "O código do tipo de ato é a sua identidade e não muda: a série de vigências "
+                + "agrupa-se por ele, e é por ele que um objeto reserva a vaga de um ato único. "
+                + "Para um tipo diferente, cadastre um tipo novo."));
+        }
+
+        // O código já foi confirmado inalterado acima — só a janela pode ter mudado.
+        if (JanelaMudou(tipo, command))
         {
             bool sobreposta = await repository.ExisteSobreposicaoDeVigenciaAsync(
                 command.Codigo, command.VigenciaInicio, command.VigenciaFim, command.Id, cancellationToken)
@@ -79,10 +99,8 @@ public static class AtualizarTipoAtoPublicadoCommandHandler
         return Result.Success();
     }
 
-    private static bool JanelaOuCodigoMudou(TipoAtoPublicado tipo, AtualizarTipoAtoPublicadoCommand command) =>
-        !string.Equals(tipo.Codigo, command.Codigo.Trim(), StringComparison.Ordinal)
-        || tipo.VigenciaInicio != command.VigenciaInicio
-        || tipo.VigenciaFim != command.VigenciaFim;
+    private static bool JanelaMudou(TipoAtoPublicado tipo, AtualizarTipoAtoPublicadoCommand command) =>
+        tipo.VigenciaInicio != command.VigenciaInicio || tipo.VigenciaFim != command.VigenciaFim;
 
     private static DomainError NaoEncontradoErro() =>
         new(TipoAtoPublicadoErrorCodes.NaoEncontrado, "Tipo de ato não encontrado.");

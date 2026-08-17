@@ -8,6 +8,6 @@ public sealed class RemoverTipoAtoPublicadoCommandValidator
     public RemoverTipoAtoPublicadoCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage(TipoAtoPublicadoRegras.IdObrigatorio);
+            .NotEmpty().WithMessage("Identificador do tipo de ato é obrigatório.");
     }
 }
