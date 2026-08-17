@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler do <see cref="RemoverPesoAreaEnemCommand"/>. Soft-delete via
 /// <c>SoftDeleteInterceptor</c>. Nenhuma FK aponta para este cadastro: a ligação
 /// do curso é por valor sobre o vocabulário de grupos e o congelamento em outro
-/// banco (ADR-0061) é cópia desacoplada — por isso a remoção nunca é bloqueada (CA-05).
+/// banco (ADR-0061) é cópia desacoplada — por isso a remoção nunca é bloqueada.
 /// </summary>
 public static class RemoverPesoAreaEnemCommandHandler
 {

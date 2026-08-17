@@ -40,7 +40,7 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Edição válida persiste e preserva a chave de negócio (CA-04b)")]
+    [Fact(DisplayName = "Edição válida persiste e preserva a chave de negócio")]
     public async Task Handle_DadosValidos_PreservaChave()
     {
         PesoAreaEnem existente = Existente();
@@ -67,6 +67,18 @@ public sealed class AtualizarPesoAreaEnemCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.PesoNegativo);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Campo inválido no payload propaga o erro sem buscar a linha por Id — validação vence 404")]
+    public async Task Handle_CampoInvalido_RetornaErroSemBuscarPorId()
+    {
+        Result resultado = await AtualizarPesoAreaEnemCommandHandler.Handle(
+            Comando(Guid.CreateVersion7(), mt: -1.00m), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(PesoAreaEnemErrorCodes.PesoNegativo);
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

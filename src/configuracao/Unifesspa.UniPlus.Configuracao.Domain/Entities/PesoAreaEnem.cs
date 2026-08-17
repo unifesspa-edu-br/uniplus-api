@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (<c>Resolucao</c>, <c>GrupoCurso</c>), único entre linhas vivas — validado
 /// pelo handler e reforçado por índice único parcial de banco
 /// (<c>WHERE is_deleted = false</c>). O par e o <c>Id</c> são imutáveis na
-/// atualização (CA-04b).</para>
+/// atualização — mudar resolução ou grupo caracterizaria outra linha, não uma edição.</para>
 /// <para>Dado institucional de referência, sem PII (LGPD inaplicável). Nenhuma
 /// FK aponta para este cadastro: a ligação <c>curso.grupo_area_enem</c> é por
 /// valor sobre o vocabulário de grupos, e o congelamento no bloco de
@@ -73,46 +73,49 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria uma nova linha de pesos do ENEM. Valida a resolução, o grupo de área
-    /// (domínio fechado), a não-negatividade dos cinco pesos e do corte de
+    /// Cria uma nova linha de pesos do ENEM, acumulando toda violação
+    /// independente em vez de parar na primeira. Valida a resolução, o grupo de
+    /// área (domínio fechado), a não-negatividade dos cinco pesos e do corte de
     /// redação (que assume <see cref="CorteRedacaoPadrao"/> quando omitido) e a
     /// base legal. A unicidade do par (<paramref name="resolucao"/>,
     /// <paramref name="grupoCurso"/>) entre linhas vivas é responsabilidade do handler.
     /// </summary>
     public static Result<PesoAreaEnem> Criar(
-        string resolucao,
-        string grupoCurso,
+        string? resolucao,
+        string? grupoCurso,
         decimal pesoRedacao,
         decimal pesoCienciasNatureza,
         decimal pesoCienciasHumanas,
         decimal pesoLinguagens,
         decimal pesoMatematica,
         decimal? corteRedacao,
-        string baseLegal)
+        string? baseLegal)
     {
-        ArgumentNullException.ThrowIfNull(resolucao);
-        ArgumentNullException.ThrowIfNull(grupoCurso);
-        ArgumentNullException.ThrowIfNull(baseLegal);
+        List<FieldError> erros = [];
 
+        string? resolucaoNorm = null;
         if (string.IsNullOrWhiteSpace(resolucao))
         {
-            return Result<PesoAreaEnem>.Failure(new DomainError(
-                PesoAreaEnemErrorCodes.ResolucaoObrigatoria,
-                "Resolução é obrigatória."));
+            erros.Add(new("resolucao", new DomainError(
+                PesoAreaEnemErrorCodes.ResolucaoObrigatoria, "Resolução é obrigatória.")));
         }
-
-        if (resolucao.Trim().Length is < ResolucaoMinLength or > ResolucaoMaxLength)
+        else
         {
-            return Result<PesoAreaEnem>.Failure(new DomainError(
-                PesoAreaEnemErrorCodes.ResolucaoTamanho,
-                $"Resolução deve ter entre {ResolucaoMinLength} e {ResolucaoMaxLength} caracteres."));
+            resolucaoNorm = resolucao.Trim();
+            if (resolucaoNorm.Length is < ResolucaoMinLength or > ResolucaoMaxLength)
+            {
+                erros.Add(new("resolucao", new DomainError(
+                    PesoAreaEnemErrorCodes.ResolucaoTamanho,
+                    $"Resolução deve ter entre {ResolucaoMinLength} e {ResolucaoMaxLength} caracteres.")));
+                resolucaoNorm = null;
+            }
         }
 
         Result<GrupoCurso> grupo = GrupoCurso.Criar(grupoCurso);
         if (grupo.IsFailure)
         {
-            return Result<PesoAreaEnem>.Failure(new DomainError(
-                PesoAreaEnemErrorCodes.GrupoCursoInvalido, grupo.Error!.Message));
+            erros.Add(new("grupoCurso", new DomainError(
+                PesoAreaEnemErrorCodes.GrupoCursoInvalido, grupo.Error!.Message)));
         }
 
         Result<decimal> pesosCorte = ValidarPesosCorteEBaseLegal(
@@ -120,26 +123,32 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
             corteRedacao, baseLegal);
         if (pesosCorte.IsFailure)
         {
-            return Result<PesoAreaEnem>.Failure(pesosCorte.Error!);
+            erros.AddRange(pesosCorte.Errors);
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<PesoAreaEnem>.ValidationFailure(erros);
         }
 
         var peso = new PesoAreaEnem
         {
-            Resolucao = resolucao.Trim(),
+            Resolucao = resolucaoNorm!,
             GrupoCurso = grupo.Value!,
         };
         peso.AplicarPesos(
             pesoRedacao, pesoCienciasNatureza, pesoCienciasHumanas, pesoLinguagens, pesoMatematica,
-            pesosCorte.Value, baseLegal);
+            pesosCorte.Value, baseLegal!);
 
         return Result<PesoAreaEnem>.Success(peso);
     }
 
     /// <summary>
-    /// Atualiza os cinco pesos, o corte de redação e a base legal. Nunca altera o
-    /// <c>Id</c>, a <c>Resolucao</c> nem o <c>GrupoCurso</c> (chave de negócio
-    /// imutável — CA-04b). Revalida a não-negatividade dos pesos e do corte e a
-    /// presença da base legal.
+    /// Atualiza os cinco pesos, o corte de redação e a base legal, acumulando
+    /// toda violação independente. Nunca altera o <c>Id</c>, a <c>Resolucao</c>
+    /// nem o <c>GrupoCurso</c> (chave de negócio imutável — mudá-la
+    /// caracterizaria outra linha, não uma edição). Revalida a não-negatividade
+    /// dos pesos e do corte e a presença da base legal.
     /// </summary>
     public Result Atualizar(
         decimal pesoRedacao,
@@ -148,23 +157,43 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         decimal pesoLinguagens,
         decimal pesoMatematica,
         decimal corteRedacao,
-        string baseLegal)
+        string? baseLegal)
     {
-        ArgumentNullException.ThrowIfNull(baseLegal);
-
         Result<decimal> pesosCorte = ValidarPesosCorteEBaseLegal(
             pesoRedacao, pesoCienciasNatureza, pesoCienciasHumanas, pesoLinguagens, pesoMatematica,
             corteRedacao, baseLegal);
         if (pesosCorte.IsFailure)
         {
-            return Result.Failure(pesosCorte.Error!);
+            return Result.ValidationFailure(pesosCorte.Errors);
         }
 
         AplicarPesos(
             pesoRedacao, pesoCienciasNatureza, pesoCienciasHumanas, pesoLinguagens, pesoMatematica,
-            pesosCorte.Value, baseLegal);
+            pesosCorte.Value, baseLegal!);
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Valida os cinco pesos, o corte de redação e a base legal — os únicos
+    /// campos editáveis na atualização — sem I/O e sem mutar nada. Para o handler
+    /// de atualização falhar rápido antes de buscar a linha por Id (validação
+    /// sempre vence 404).
+    /// </summary>
+    public static Result ValidarCamposDoPayload(
+        decimal pesoRedacao,
+        decimal pesoCienciasNatureza,
+        decimal pesoCienciasHumanas,
+        decimal pesoLinguagens,
+        decimal pesoMatematica,
+        decimal corteRedacao,
+        string? baseLegal)
+    {
+        Result<decimal> resultado = ValidarPesosCorteEBaseLegal(
+            pesoRedacao, pesoCienciasNatureza, pesoCienciasHumanas, pesoLinguagens, pesoMatematica,
+            corteRedacao, baseLegal);
+
+        return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
 
     private void AplicarPesos(
@@ -186,7 +215,8 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
     }
 
     // Valida os cinco pesos (não-negativos), resolve e valida o corte de redação
-    // (padrão 400 quando omitido; não-negativo) e a base legal. Devolve o corte resolvido.
+    // (padrão 400 quando omitido; não-negativo) e a base legal, acumulando toda
+    // violação independente. Devolve o corte resolvido.
     private static Result<decimal> ValidarPesosCorteEBaseLegal(
         decimal pesoRedacao,
         decimal pesoCienciasNatureza,
@@ -194,49 +224,51 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         decimal pesoLinguagens,
         decimal pesoMatematica,
         decimal? corteRedacao,
-        string baseLegal)
+        string? baseLegal)
     {
-        DomainError? pesoInvalido =
-            ValidarPeso(pesoRedacao, "redação")
-            ?? ValidarPeso(pesoCienciasNatureza, "ciências da natureza")
-            ?? ValidarPeso(pesoCienciasHumanas, "ciências humanas")
-            ?? ValidarPeso(pesoLinguagens, "linguagens e códigos")
-            ?? ValidarPeso(pesoMatematica, "matemática");
-        if (pesoInvalido is not null)
-        {
-            return Result<decimal>.Failure(pesoInvalido);
-        }
+        List<FieldError> erros = [];
+
+        AdicionarSeInvalido(erros, "pesoRedacao", pesoRedacao, "redação");
+        AdicionarSeInvalido(erros, "pesoCienciasNatureza", pesoCienciasNatureza, "ciências da natureza");
+        AdicionarSeInvalido(erros, "pesoCienciasHumanas", pesoCienciasHumanas, "ciências humanas");
+        AdicionarSeInvalido(erros, "pesoLinguagens", pesoLinguagens, "linguagens e códigos");
+        AdicionarSeInvalido(erros, "pesoMatematica", pesoMatematica, "matemática");
 
         decimal corte = corteRedacao ?? CorteRedacaoPadrao;
         if (corte < 0)
         {
-            return Result<decimal>.Failure(new DomainError(
-                PesoAreaEnemErrorCodes.CorteRedacaoNegativo,
-                "Corte de redação não pode ser negativo."));
+            erros.Add(new("corteRedacao", new DomainError(
+                PesoAreaEnemErrorCodes.CorteRedacaoNegativo, "Corte de redação não pode ser negativo.")));
         }
-
-        if (corte > CorteRedacaoMaximo)
+        else if (corte > CorteRedacaoMaximo)
         {
-            return Result<decimal>.Failure(new DomainError(
+            erros.Add(new("corteRedacao", new DomainError(
                 PesoAreaEnemErrorCodes.CorteRedacaoExcedeMaximo,
-                $"Corte de redação não pode exceder {CorteRedacaoMaximo} (nota máxima da redação do ENEM)."));
+                $"Corte de redação não pode exceder {CorteRedacaoMaximo} (nota máxima da redação do ENEM).")));
         }
 
         if (string.IsNullOrWhiteSpace(baseLegal))
         {
-            return Result<decimal>.Failure(new DomainError(
-                PesoAreaEnemErrorCodes.BaseLegalObrigatoria,
-                "Base legal é obrigatória."));
+            erros.Add(new("baseLegal", new DomainError(
+                PesoAreaEnemErrorCodes.BaseLegalObrigatoria, "Base legal é obrigatória.")));
         }
-
-        if (baseLegal.Trim().Length > BaseLegalMaxLength)
+        else if (baseLegal.Trim().Length > BaseLegalMaxLength)
         {
-            return Result<decimal>.Failure(new DomainError(
+            erros.Add(new("baseLegal", new DomainError(
                 PesoAreaEnemErrorCodes.BaseLegalTamanho,
-                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres."));
+                $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
         }
 
-        return Result<decimal>.Success(corte);
+        return erros.Count == 0 ? Result<decimal>.Success(corte) : Result<decimal>.ValidationFailure(erros);
+    }
+
+    private static void AdicionarSeInvalido(List<FieldError> erros, string campo, decimal valor, string area)
+    {
+        DomainError? erro = ValidarPeso(valor, area);
+        if (erro is not null)
+        {
+            erros.Add(new(campo, erro));
+        }
     }
 
     private static DomainError? ValidarPeso(decimal valor, string area) =>

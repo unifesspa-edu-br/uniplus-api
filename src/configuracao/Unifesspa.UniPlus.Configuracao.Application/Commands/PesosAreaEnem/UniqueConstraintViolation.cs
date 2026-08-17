@@ -14,7 +14,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 /// Mesmo padrão do <c>UniqueConstraintViolation</c> da Referência de reserva
 /// demográfica (#593). A tradução cross-cutting de 23505 → 409 via
 /// <c>GlobalExceptionMiddleware</c> permanece como follow-up separado (#504);
-/// este helper cobre o caso específico da unicidade do par (CA-02).
+/// este helper cobre o caso específico da unicidade do par (resolução, grupo).
 /// </remarks>
 internal static class UniqueConstraintViolation
 {

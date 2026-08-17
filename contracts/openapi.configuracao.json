@@ -9568,7 +9568,10 @@
             "format": "double"
           },
           "baseLegal": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -10546,10 +10549,16 @@
         "type": "object",
         "properties": {
           "resolucao": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "grupoCurso": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "pesoRedacao": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
@@ -10592,7 +10601,10 @@
             "format": "double"
           },
           "baseLegal": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "corteRedacao": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
