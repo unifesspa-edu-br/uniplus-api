@@ -416,6 +416,30 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         await mocks.FatoCandidatoReader.DidNotReceiveWithAnyArgs().ListarAsync(default);
     }
 
+    [Fact(DisplayName = "ADR-0125: aplicabilidade Nenhuma numa fase profunda da árvore recusa ANTES de consultar TipoDocumento/vocabulário de fatos")]
+    public async Task Handle_AplicabilidadeInvalidaEmFolhaProfunda_RecusaSemConsultarReaders()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!);
+        FaseCronograma fase = FaseQualquer();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        // TipoDocumentoReader/FatoCandidatoReader propositalmente NÃO configurados.
+        Guid tipoDocumentoId = Guid.CreateVersion7();
+
+        ItemDocumentoExigidoInput folha = new(fase.Id, tipoDocumentoId, "INVALIDA", true, null, [], [], null, Qualquer, null);
+        NoExigenciaInput noFolha = new("FOLHA", folha, null, null, null, null);
+        NoExigenciaInput grupo = new("OU", null, 1, "ELIMINA", [], [noFolha]);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo], PrecondicaoIfMatch.Ausente);
+
+        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.AplicabilidadeObrigatoria"]);
+        await mocks.TipoDocumentoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await mocks.FatoCandidatoReader.DidNotReceiveWithAnyArgs().ListarAsync(default);
+    }
+
     [Fact(DisplayName = "ADR-0125: duas bases legais inválidas na mesma folha acumulam, com o índice prefixado ao field")]
     public async Task Handle_DuasBasesLegaisInvalidasNaMesmaFolha_AcumulaComIndicePrefixado()
     {

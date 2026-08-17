@@ -142,6 +142,48 @@ public sealed class DocumentoExigidoTests
         exigencia.DeterminaResultado().Should().BeFalse();
     }
 
+    [Fact(DisplayName = "Tamanho máximo em bytes não positivo é recusado")]
+    public void Criar_TamanhoMaximoBytesInvalido_Recusa()
+    {
+        Result<DocumentoExigido> resultado = Exigencia(tamanhoMaximoBytes: 0);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("DocumentoExigido.TamanhoMaximoBytesInvalido");
+    }
+
+    [Fact(DisplayName = "ADR-0125: aplicabilidade Nenhuma, consequência inválida e tamanho inválido acumulam no mesmo lote")]
+    public void Criar_TresViolacoesIndependentes_AcumulaAsTresViolacoes()
+    {
+        Result<DocumentoExigido> resultado = Exigencia(
+            Aplicabilidade.Nenhuma, consequenciaIndeferimento: "REPROVA_TUDO", tamanhoMaximoBytes: -1);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        [
+            "DocumentoExigido.AplicabilidadeObrigatoria",
+            "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
+            "DocumentoExigido.TamanhoMaximoBytesInvalido",
+        ]);
+    }
+
+    [Fact(DisplayName = "ValidarFormaBasica sem violação retorna lote vazio")]
+    public void ValidarFormaBasica_SemViolacao_Vazio()
+    {
+        List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
+            Aplicabilidade.Geral, consequenciaIndeferimento: null, tamanhoMaximoBytes: 1024, quantidadeCondicoes: 0);
+
+        erros.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "ValidarFormaBasica com GERAL e quantidadeCondicoes > 0 reporta GeralComCondicao sem precisar de nenhuma condição resolvida")]
+    public void ValidarFormaBasica_GeralComQuantidadeCondicoes_ReportaGeralComCondicao()
+    {
+        List<FieldError> erros = DocumentoExigido.ValidarFormaBasica(
+            Aplicabilidade.Geral, consequenciaIndeferimento: null, tamanhoMaximoBytes: null, quantidadeCondicoes: 1);
+
+        erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.GeralComCondicao"]);
+    }
+
     // ── Story #554/issue #549 (PR #898) — base legal 1:N ──
 
     [Fact(DisplayName = "CA-06: BasesLegaisResolvidas exclui toda base PENDENTE")]

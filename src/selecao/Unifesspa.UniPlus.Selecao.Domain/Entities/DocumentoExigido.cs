@@ -100,6 +100,62 @@ public sealed class DocumentoExigido : EntityBase
 
     private DocumentoExigido() { }
 
+    /// <summary>
+    /// Acumula (ADR-0125) as quatro checagens que dependem só de primitivos do payload cru
+    /// (ou de contagens já conhecidas sem I/O) — nenhuma resolve cadastro externo.
+    /// <see cref="Entities.CondicaoGatilho.Criar"/> também é 100% I/O-free, então a contagem
+    /// de condições (<paramref name="quantidadeCondicoes"/>) já é conhecida direto dos itens
+    /// crus do payload, sem esperar a resolução do vocabulário de fatos (que só valida a
+    /// COERÊNCIA de cada condição, não a contagem). Exposta para o handler confirmar a forma
+    /// de TODAS as exigências do payload antes de qualquer I/O.
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(
+        Aplicabilidade aplicabilidade, string? consequenciaIndeferimento, int? tamanhoMaximoBytes, int quantidadeCondicoes)
+    {
+        List<FieldError> erros = [];
+
+        if (aplicabilidade == Aplicabilidade.Nenhuma)
+        {
+            erros.Add(new("aplicabilidade", new DomainError(
+                "DocumentoExigido.AplicabilidadeObrigatoria",
+                "A aplicabilidade da exigência documental é obrigatória e deve ser GERAL ou CONDICIONAL.")));
+        }
+
+        string? consequenciaNormalizada = NormalizarConsequencia(consequenciaIndeferimento);
+        if (consequenciaNormalizada is not null
+            && !ConsequenciasValidas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
+        {
+            erros.Add(new("consequenciaIndeferimento", new DomainError(
+                "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
+                $"Consequência de indeferimento '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}.")));
+        }
+
+        if (tamanhoMaximoBytes is <= 0)
+        {
+            erros.Add(new("tamanhoMaximoBytes", new DomainError(
+                "DocumentoExigido.TamanhoMaximoBytesInvalido",
+                "O tamanho máximo em bytes, quando presente, deve ser maior que zero.")));
+        }
+
+        // CA-01 (Story #554, issue #547/#892): GERAL nunca convive com condição viva.
+        if (aplicabilidade == Aplicabilidade.Geral && quantidadeCondicoes > 0)
+        {
+            erros.Add(new("condicoes", new DomainError(
+                "DocumentoExigido.GeralComCondicao",
+                "A exigência é GERAL e não pode conviver com condição de gatilho viva.")));
+        }
+
+        return erros;
+    }
+
+    /// <summary>
+    /// Normaliza espaços-em-branco para <see langword="null"/> ANTES de validar — sem isso,
+    /// " " escapa da checagem de domínio (não é "presente" o bastante para reprovar, nem
+    /// null o bastante para <see cref="DeterminaResultado"/> ignorar) e é persistido cru.
+    /// </summary>
+    private static string? NormalizarConsequencia(string? consequenciaIndeferimento) =>
+        string.IsNullOrWhiteSpace(consequenciaIndeferimento) ? null : consequenciaIndeferimento.Trim();
+
     public static Result<DocumentoExigido> Criar(
         Guid exigidoNaFaseId,
         Guid tipoDocumentoOrigemId,
@@ -132,33 +188,10 @@ public sealed class DocumentoExigido : EntityBase
             throw new ArgumentException("O id de origem do tipo de documento é obrigatório.", nameof(tipoDocumentoOrigemId));
         }
 
-        if (aplicabilidade == Aplicabilidade.Nenhuma)
+        List<FieldError> erros = ValidarFormaBasica(aplicabilidade, consequenciaIndeferimento, tamanhoMaximoBytes, condicoes.Count);
+        if (erros.Count > 0)
         {
-            return Result<DocumentoExigido>.Failure(new DomainError(
-                "DocumentoExigido.AplicabilidadeObrigatoria",
-                "A aplicabilidade da exigência documental é obrigatória e deve ser GERAL ou CONDICIONAL."));
-        }
-
-        // Normaliza espaços-em-branco para null ANTES de validar — sem isso, " " escapa
-        // da checagem de domínio (não é "presente" o bastante para reprovar, nem null o
-        // bastante para DeterminaResultado() ignorar) e é persistido cru.
-        string? consequenciaNormalizada = string.IsNullOrWhiteSpace(consequenciaIndeferimento)
-            ? null
-            : consequenciaIndeferimento.Trim();
-
-        if (consequenciaNormalizada is not null
-            && !ConsequenciasValidas.Contains(consequenciaNormalizada, StringComparer.Ordinal))
-        {
-            return Result<DocumentoExigido>.Failure(new DomainError(
-                "DocumentoExigido.ConsequenciaIndeferimentoInvalida",
-                $"Consequência de indeferimento '{consequenciaNormalizada}' inválida — esperado um de: {string.Join(", ", ConsequenciasValidas)}."));
-        }
-
-        if (tamanhoMaximoBytes is <= 0)
-        {
-            return Result<DocumentoExigido>.Failure(new DomainError(
-                "DocumentoExigido.TamanhoMaximoBytesInvalido",
-                "O tamanho máximo em bytes, quando presente, deve ser maior que zero."));
+            return Result<DocumentoExigido>.ValidationFailure(erros);
         }
 
         DocumentoExigido documento = new()
@@ -170,14 +203,14 @@ public sealed class DocumentoExigido : EntityBase
             TipoDocumentoCategoria = tipoDocumentoCategoria.Trim(),
             Aplicabilidade = aplicabilidade,
             Obrigatorio = obrigatorio,
-            ConsequenciaIndeferimento = consequenciaNormalizada,
+            ConsequenciaIndeferimento = NormalizarConsequencia(consequenciaIndeferimento),
             IdadeMaximaEmissao = idadeMaximaEmissao,
             FormatosPermitidos = formatosPermitidos,
             TamanhoMaximoBytes = tamanhoMaximoBytes,
         };
 
-        // CA-01 (Story #554, issue #547/#892): GERAL nunca convive com condição viva —
-        // agora conectado à coleção REAL (PR #896), não mais ao parâmetro sintético da PR #895.
+        // Já confirmada em ValidarFormaBasica — chamada mantida como defesa em
+        // profundidade (nunca deveria disparar de fato a partir daqui).
         DomainError? coerencia = documento.GarantirCoerenciaAplicabilidade(condicoes.Count > 0);
         if (coerencia is not null)
         {

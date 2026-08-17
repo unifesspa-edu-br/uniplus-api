@@ -180,11 +180,11 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
         Validar(ItemComIdade(idade)).IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "TamanhoMaximoBytes zero ou negativo é rejeitado")]
-    public void Rejeita_TamanhoMaximoBytesNaoPositivo()
+    [Fact(DisplayName = "Validator passa com TamanhoMaximoBytes zero ou negativo — a rejeição é do agregado (DocumentoExigido.Criar, ADR-0125)")]
+    public void Aceita_TamanhoMaximoBytesNaoPositivoNoValidator()
     {
-        Validar(ItemComIdade(tamanhoMaximoBytes: 0)).IsValid.Should().BeFalse();
-        Validar(ItemComIdade(tamanhoMaximoBytes: -1)).IsValid.Should().BeFalse();
+        Validar(ItemComIdade(tamanhoMaximoBytes: 0)).IsValid.Should().BeTrue();
+        Validar(ItemComIdade(tamanhoMaximoBytes: -1)).IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "TamanhoMaximoBytes positivo é aceito")]
