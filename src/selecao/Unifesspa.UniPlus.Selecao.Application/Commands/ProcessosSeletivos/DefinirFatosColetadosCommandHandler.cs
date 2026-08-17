@@ -14,13 +14,16 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirFatosColetadosCommand"/> (Story #984): substitui integralmente
-/// a coleta de fatos de um processo em rascunho. A validação de <b>coletabilidade</b> (só se
-/// coleta fato <c>Origem = DECLARADO</c> com binding de campo de inscrição) e a validação
-/// <b>semântica</b> das pré-condições (operador × domínio × valor do fato citado, contra a
-/// oferta do próprio processo para os domínios dinâmicos) são resolvidas aqui, na Application,
-/// que tem acesso ao vocabulário cross-módulo (<see cref="IFatoCandidatoReader"/>, ADR-0056).
-/// A validação <b>estrutural</b> do grafo (ordem única, pré-condição cita fato coletado e
-/// anterior, aciclicidade) e o guard de rascunho são do agregado
+/// a coleta de fatos de um processo em rascunho, em duas passadas. A primeira confirma a
+/// <b>forma básica</b> de TODOS os fatos (<see cref="FatoColetado.ValidarFormaBasica"/>) sem
+/// tocar o vocabulário cross-módulo, acumulando (ADR-0125) através da lista inteira. Só então a
+/// segunda resolve <b>coletabilidade</b> (só se coleta fato <c>Origem = DECLARADO</c> com
+/// binding de campo de inscrição) e a validação <b>semântica</b> das pré-condições (operador ×
+/// domínio × valor do fato citado, contra a oferta do próprio processo para os domínios
+/// dinâmicos), que tem acesso ao vocabulário cross-módulo (<see cref="IFatoCandidatoReader"/>,
+/// ADR-0056) — parando no primeiro fato que falhar, granularidade nunca coberta pelo
+/// FluentValidation. A validação <b>estrutural</b> do grafo (ordem única, pré-condição cita
+/// fato coletado e anterior, aciclicidade) e o guard de rascunho são do agregado
 /// (<see cref="ProcessoSeletivo.DefinirFatosColetados"/>).
 /// </summary>
 public static class DefinirFatosColetadosCommandHandler
@@ -56,6 +59,27 @@ public static class DefinirFatosColetadosCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        // Acumula (ADR-0125) a forma básica de TODOS os fatos (fatoCodigo/ordem/rotulo/
+        // tipoRenderizacao) numa primeira passada, ANTES de resolver o vocabulário cross-módulo
+        // — o FluentValidation removido já garantia essa granularidade via RuleForEach, rodando
+        // como middleware antes do handler. Rodar depois da resolução semântica (achado de
+        // revisão) trocaria um fatoCodigo vazio pelo FatoDesconhecido menos específico da busca
+        // no catálogo, e uma violação de forma de um fato podia ser mascarada pelo erro
+        // semântico de outro fato da mesma lista.
+        List<FieldError> formaErros = [];
+        for (int indice = 0; indice < command.Fatos.Count; indice++)
+        {
+            FatoColetadoInput input = command.Fatos[indice];
+            List<FieldError> itemErros = FatoColetado.ValidarFormaBasica(
+                input.FatoCodigo, input.Ordem, input.Rotulo, TipoRenderizacaoCodigo.FromCodigo(input.TipoRenderizacao));
+            formaErros.AddRange(itemErros.Select(erro => erro with { Field = $"fatos[{indice}].{erro.Field}" }));
+        }
+
+        if (formaErros.Count > 0)
+        {
+            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+        }
+
         (IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
             IReadOnlyDictionary<string, DescritorFatoCandidato> vocabulario) =
             await ResolverVocabularioAsync(fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
@@ -65,36 +89,21 @@ public static class DefinirFatosColetadosCommandHandler
         // contra um catálogo global.
         IReadOnlyDictionary<string, IReadOnlySet<string>> dominiosDinamicos = ResolverDominiosDinamicos(processo);
 
-        // Acumula (ADR-0125) as violações de FORMA de FatoColetado.Criar (fatoCodigo/ordem/
-        // rotulo/tipoRenderizacao/autorreferência) através de TODOS os fatos, com o índice
-        // prefixado ao field — o FluentValidation removido já garantia essa granularidade via
-        // RuleForEach, rodando como middleware antes do handler. As checagens mais profundas
-        // (vocabulário cross-módulo, coerência de renderização, semântica de pré-condição) nunca
-        // foram cobertas pelo validator — permanecem parando no primeiro fato que falhar, como já
-        // acontecia; o sinal para distinguir os dois casos é a presença de Field (só existe vindo
-        // de ValidationFailure, nunca de Failure(DomainError) — ADR-0125).
+        // Segunda passada: forma básica já confirmada para todos os fatos — resolve o
+        // vocabulário e a semântica de cada um, parando no primeiro que falhar. Essas checagens
+        // (catálogo, coerência de renderização, semântica de pré-condição, autorreferência)
+        // nunca foram cobertas pelo FluentValidation e continuam com essa granularidade, como já
+        // acontecia antes desta migração.
         List<FatoColetado> fatos = [];
-        List<FieldError> formaErros = [];
-        for (int indice = 0; indice < command.Fatos.Count; indice++)
+        foreach (FatoColetadoInput input in command.Fatos)
         {
-            Result<FatoColetado> fatoResult = ResolverFato(command.Fatos[indice], catalogo, vocabulario, dominiosDinamicos);
+            Result<FatoColetado> fatoResult = ResolverFato(input, catalogo, vocabulario, dominiosDinamicos);
             if (fatoResult.IsFailure)
             {
-                if (fatoResult.Errors.Any(erro => erro.Field is not null))
-                {
-                    formaErros.AddRange(fatoResult.Errors.Select(erro => erro with { Field = $"fatos[{indice}].{erro.Field}" }));
-                    continue;
-                }
-
                 return Result<MutacaoAceita>.Failure(fatoResult.Error!);
             }
 
             fatos.Add(fatoResult.Value!);
-        }
-
-        if (formaErros.Count > 0)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
         }
 
         Result result = processo.DefinirFatosColetados(fatos, command.Precondicao);

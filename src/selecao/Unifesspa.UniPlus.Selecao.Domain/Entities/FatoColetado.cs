@@ -83,6 +83,56 @@ public sealed class FatoColetado : EntityBase
         bool obrigatorio,
         IReadOnlyList<CondicaoPrecondicaoFato>? precondicoes)
     {
+        List<FieldError> erros = ValidarFormaBasica(fatoCodigo, ordem, rotulo, tipoRenderizacao);
+
+        string codigo = fatoCodigo?.Trim() ?? string.Empty;
+        IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
+
+        // Auto-referência é ciclo de comprimento um. Barrada aqui, na criação, porque não depende
+        // de conhecer os irmãos — e um erro específico diz mais do que o genérico de ciclo, que
+        // reportaria um caminho de um nó só. Toda a validação acontece antes de qualquer mutação:
+        // uma condição só é vinculada depois de o fato inteiro ser aceito, para nunca deixar uma
+        // instância recebida do chamador apontando para um fato que a factory acabou de recusar.
+        if (condicoes.Any(precondicao => string.Equals(precondicao.Fato, codigo, StringComparison.Ordinal)))
+        {
+            erros.Add(new("precondicao", new DomainError(
+                FatoColetadoErrorCodes.PrecondicaoAutorreferente,
+                "A pré-condição cita o próprio fato.")));
+        }
+
+        if (erros.Count > 0)
+        {
+            return Result<FatoColetado>.ValidationFailure(erros);
+        }
+
+        FatoColetado fato = new()
+        {
+            FatoCodigo = codigo,
+            Ordem = ordem,
+            Rotulo = rotulo.Trim(),
+            TipoRenderizacao = tipoRenderizacao,
+            Obrigatorio = obrigatorio,
+        };
+        foreach (CondicaoPrecondicaoFato precondicao in condicoes)
+        {
+            precondicao.VincularFatoColetado(fato.Id);
+            fato._precondicoes.Add(precondicao);
+        }
+
+        return Result<FatoColetado>.Success(fato);
+    }
+
+    /// <summary>
+    /// Os quatro campos que não dependem do vocabulário cross-módulo nem de a pré-condição já
+    /// ter sido resolvida — ao contrário da autorreferência, checada só dentro de
+    /// <see cref="Criar"/>. Existe separada para o handler poder confirmar a forma de TODOS os
+    /// fatos do payload numa primeira passada, antes de resolver o catálogo de cada um (achado
+    /// de revisão): sem essa ordem, um <c>fatoCodigo</c> vazio caía direto no
+    /// <c>FatoDesconhecido</c> da busca no catálogo — um erro menos específico — e uma violação
+    /// de forma de um fato podia ser mascarada pelo erro semântico de outro fato da mesma lista.
+    /// </summary>
+    public static List<FieldError> ValidarFormaBasica(string? fatoCodigo, int ordem, string? rotulo, TipoRenderizacao tipoRenderizacao)
+    {
         List<FieldError> erros = [];
 
         if (string.IsNullOrWhiteSpace(fatoCodigo))
@@ -125,41 +175,7 @@ public sealed class FatoColetado : EntityBase
                 "O tipo de renderização do fato coletado é obrigatório.")));
         }
 
-        string codigo = fatoCodigo?.Trim() ?? string.Empty;
-        IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
-
-        // Auto-referência é ciclo de comprimento um. Barrada aqui, na criação, porque não depende
-        // de conhecer os irmãos — e um erro específico diz mais do que o genérico de ciclo, que
-        // reportaria um caminho de um nó só. Toda a validação acontece antes de qualquer mutação:
-        // uma condição só é vinculada depois de o fato inteiro ser aceito, para nunca deixar uma
-        // instância recebida do chamador apontando para um fato que a factory acabou de recusar.
-        if (condicoes.Any(precondicao => string.Equals(precondicao.Fato, codigo, StringComparison.Ordinal)))
-        {
-            erros.Add(new("precondicao", new DomainError(
-                FatoColetadoErrorCodes.PrecondicaoAutorreferente,
-                "A pré-condição cita o próprio fato.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<FatoColetado>.ValidationFailure(erros);
-        }
-
-        FatoColetado fato = new()
-        {
-            FatoCodigo = codigo,
-            Ordem = ordem,
-            Rotulo = rotulo.Trim(),
-            TipoRenderizacao = tipoRenderizacao,
-            Obrigatorio = obrigatorio,
-        };
-        foreach (CondicaoPrecondicaoFato precondicao in condicoes)
-        {
-            precondicao.VincularFatoColetado(fato.Id);
-            fato._precondicoes.Add(precondicao);
-        }
-
-        return Result<FatoColetado>.Success(fato);
+        return erros;
     }
 
     /// <summary>Indica se o fato é coletado incondicionalmente.</summary>
